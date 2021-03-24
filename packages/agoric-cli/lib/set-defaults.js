@@ -58,12 +58,14 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   if (configFile) {
     log(`read ${configFile}`);
-    const { persistentPeers } = opts;
+    const { persistentPeers, seeds, unconditionalPeerIds } = opts;
     const configToml = await fs.readFile(configFile, 'utf-8');
 
     const newConfigToml = finishTendermintConfig({
       configToml,
       persistentPeers,
+      seeds,
+      unconditionalPeerIds,
       exportMetrics,
     });
     await create(configFile, newConfigToml);

@@ -14,6 +14,11 @@ variable "SSH_KEY_FILE" {
   type = "string"
 }
 
+variable "ROLE" {
+  description = "Role of this cluster"
+  default = "node"
+}
+
 variable "SERVERS" {
   description = "Number of nodes in cluster"
   default = "5"
@@ -40,6 +45,7 @@ module "cluster" {
   name             = "${var.CLUSTER_NAME}"
   offset           = "${var.OFFSET}"
   regions          = "${var.REGIONS}"
+  role             = "${var.ROLE}"
   ssh_key          = "${var.SSH_KEY_FILE}"
   servers          = "${var.SERVERS}"
 }

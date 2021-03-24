@@ -8,7 +8,7 @@ resource "digitalocean_ssh_key" "cluster" {
 }
 
 resource "digitalocean_droplet" "cluster" {
-  name = "${var.name}-node${var.offset + count.index}"
+  name = "${var.name}-${var.role}${var.offset + count.index}"
   image = "debian-10-x64"
   size = "${var.instance_size}"
   region = "${element(var.regions, count.index)}"

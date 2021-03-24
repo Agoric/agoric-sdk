@@ -5,17 +5,29 @@ import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { assert, details as X } from '@agoric/assert';
-import doInit from './init';
+import { doInit } from './init';
 import { shellMetaRegexp, shellEscape } from './run';
 import { streamFromString } from './files';
 import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup';
 
 const PROVISION_DIR = 'provision';
-const PROVISIONER_NODE = 'node0'; // FIXME: Allow configuration.
 const COSMOS_DIR = 'ag-chain-cosmos';
 const DWEB_DIR = 'dweb';
 const SECONDS_BETWEEN_BLOCKS = 5;
 const DEFAULT_SWINGSET_PROMETHEUS_PORT = 9464;
+
+// We now use Cloudflare, not dweb.
+const ALL_NODES_DWEB = false;
+
+const isPublicRpc = (roles, cluster) => {
+  if (Object.values(roles).includes('peer')) {
+    // We have some marked as "peer", so only advertise them.
+    return roles[cluster] === 'peer';
+  }
+  // Advertise all validators.
+  return roles[cluster] === 'validator';
+};
+const isPersistentPeer = isPublicRpc;
 
 const makeGuardFile = ({ rd, wr }) => async (file, maker) => {
   if (await rd.exists(file)) {
@@ -55,7 +67,7 @@ const waitForStatus = ({ setup, running }) => async (
     await doRetry(retryNum);
     let buf = '';
     // eslint-disable-next-line no-await-in-loop
-    const code = await running.needDoRun(
+    const code = await running.doRun(
       setup.playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
       undefined,
       chunk => {
@@ -368,6 +380,10 @@ show-config      display the client connection parameters
         const files = await rd.readdir(`${COSMOS_DIR}/data`);
         const dsts = files.filter(fname => fname.endsWith('.dst'));
         const peers = await needBacktick(`${shellEscape(progname)} show-peers`);
+        const seeds = await needBacktick(`${shellEscape(progname)} show-seeds`);
+        const allIds = await needBacktick(
+          `${shellEscape(progname)} show-all-ids`,
+        );
         await Promise.all(
           dsts.map(async (dst, i) => {
             // Update the config.toml and genesis.json.
@@ -376,6 +392,8 @@ show-config      display the client connection parameters
               `set-defaults`,
               `ag-chain-cosmos`,
               `--persistent-peers=${peers}`,
+              `--seeds=${seeds}`,
+              `--unconditional-peer-ids=${allIds}`,
               ...importFlags,
               `${COSMOS_DIR}/data/${dst}`,
             ]);
@@ -543,12 +561,13 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       setSilent(true);
       await chdir(setup.SETUP_HOME);
       await inited();
-      const [chainName, gci, peers, rpcAddrs] = await Promise.all(
+      const [chainName, gci, peers, rpcAddrs, seeds] = await Promise.all(
         [
           'show-chain-name',
           'show-gci',
           'show-peers',
           'show-rpcaddrs',
+          'show-seeds',
         ].map(subcmd =>
           needBacktick([progname, subcmd].map(shellEscape).join(' ')),
         ),
@@ -558,6 +577,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         gci,
         peers: peers.split(','),
         rpcAddrs: rpcAddrs.split(','),
+        seeds: seeds.split(','),
       };
       stdout.write(`${JSON.stringify(obj, undefined, 2)}\n`);
       break;
@@ -572,20 +592,18 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       // Expand the hosts into nodes.
-      const nodeMap = {};
+      const nodeSet = new Set();
       for (const host of hosts) {
         const hostLines = await needBacktick(
           `ansible --list-hosts ${shellEscape(host)}`,
         );
-        for (const line of hostLines.split('\n')) {
-          const match = line.match(/^\s*(node\d+)/);
-          if (match) {
-            nodeMap[match[1]] = true;
-          }
-        }
+        hostLines
+          .split('\n')
+          .slice(1)
+          .forEach(h => nodeSet.add(h.trim()));
       }
 
-      const nodes = Object.keys(nodeMap).sort();
+      const nodes = [...nodeSet.keys()].sort();
       assert(nodes.length > 0, X`Need at least one node`);
 
       for (const node of nodes) {
@@ -602,7 +620,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       await inited();
 
       if (!host) {
-        host = 'ag-chain-cosmos';
+        host = 'validator';
       }
 
       // Detect when blocks are being produced.
@@ -615,7 +633,11 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
             SECONDS_BETWEEN_BLOCKS + 1,
             `to check if ${chalk.underline(host)} has committed a block`,
           ),
-        buf => {
+        (buf, code) => {
+          if (buf === '' && code === 1) {
+            // No status information.  Probably an empty inventory label.
+            return true;
+          }
           const match = buf.match(
             /( block-manager: block ([1-9]\d*) commit|Committed state.*module=state.*height=([1-9]\d*))/,
           );
@@ -653,6 +675,10 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       let rpcaddrs = '';
       let sep = '';
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
+        if (!isPublicRpc(prov.roles.value, CLUSTER)) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
         const ips = prov.public_ips.value[CLUSTER];
         const PORT = 26657;
         for (const IP of ips) {
@@ -665,32 +691,55 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       break;
     }
 
-    case 'show-peers': {
+    case 'show-seeds':
+    case 'show-peers':
+    case 'show-all-ids': {
       await inited();
+
       const prov = await provisionOutput({ rd, wr, running });
       const publicIps = [];
       const publicPorts = [];
+      const hosts = [];
+      let selector;
+      switch (cmd) {
+        case 'show-seeds': {
+          selector = placement => prov.roles.value[placement] === 'seed';
+          break;
+        }
+        case 'show-peers': {
+          selector = placement => isPersistentPeer(prov.roles.value, placement);
+          break;
+        }
+        case 'show-all-ids': {
+          selector = _placement => true;
+          break;
+        }
+        default: {
+          assert.fail(X`Unrecognized show command ${cmd}`);
+        }
+      }
+
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
+        if (!selector(CLUSTER)) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
         const ips = prov.public_ips.value[CLUSTER];
         const offset = Number(prov.offsets.value[CLUSTER]);
         for (let i = 0; i < ips.length; i += 1) {
-          publicIps[offset + i] = ips[i];
+          publicIps.push(ips[i]);
+          hosts.push(`${prov.roles.value[CLUSTER]}${offset + i}`);
         }
       }
 
       const DEFAULT_PORT = 26656;
 
-      let peers = '';
+      let ret = '';
       let sep = '';
-      let idPath;
-      let i = 0;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
+      for (let i = 0; i < hosts.length; i += 1) {
         // Read the node-id file for this node.
-        idPath = `${COSMOS_DIR}/data/node${i}/node-id`;
-        if (!(await rd.exists(idPath))) {
-          break;
-        }
+        const host = hosts[i];
+        const idPath = `${COSMOS_DIR}/data/${host}/node-id`;
 
         const raw = await trimReadFile(idPath);
         const ID = String(raw);
@@ -700,15 +749,17 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
           ID.match(/^[a-f0-9]+/),
           X`${idPath} contains an invalid ID ${ID}`,
         );
-        const IP = publicIps[i];
-        assert(IP, X`${idPath} does not correspond to a Terraform public IP`);
-        const PORT = publicPorts[i] || DEFAULT_PORT;
-        peers += `${sep}${ID}@${IP}:${PORT}`;
+        if (cmd.endsWith('-ids')) {
+          ret += `${sep}${ID}`;
+        } else {
+          const IP = publicIps[i];
+          assert(IP, X`${idPath} does not correspond to a Terraform public IP`);
+          const PORT = publicPorts[i] || DEFAULT_PORT;
+          ret += `${sep}${ID}@${IP}:${PORT}`;
+        }
         sep = ',';
-        i += 1;
       }
-      assert(i !== 0, X`No ${idPath} file found`);
-      stdout.write(peers);
+      stdout.write(ret);
       break;
     }
 
@@ -801,39 +852,46 @@ ${name}:
       const addAll = makeGroup('all');
       const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
       const addDweb = makeGroup('dweb', 4);
+      const addRole = {};
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
         const addProvider = makeGroup(provider, 4);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
+        const role = prov.roles.value[provider];
+        if (!addRole[role]) {
+          addRole[role] = makeGroup(role, 4);
+        }
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
-          const node = `node${offset + instance}`;
-          const units =
-            node === PROVISIONER_NODE
-              ? `\
-  units:
-  - ag-chain-cosmos.service
-`
-              : '';
-          const host = `\
-${node}:
+          const node = `${role}${offset + instance}`;
+          let roleParams = '';
+          if (role === 'validator') {
+            // These are the validator params.
+            roleParams = `
   moniker: Agoric${offset + instance}
   website: https://testnet.agoric.com
-  identity: https://keybase.io/team/agoric.testnet.validators
+  identity: https://keybase.io/team/agoric.testnet.validators`;
+          }
+          const host = `\
+${node}:${roleParams}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
-  ansible_python_interpreter: /usr/bin/python
-${units}`;
+  ansible_python_interpreter: /usr/bin/python`;
           addProvider(host);
 
           addAll(host);
 
-          // We add all the nodes to ag-chain-cosmos.
+          // We add all the cosmos nodes to ag-chain-cosmos.
           addChainCosmos(host);
 
-          // Install the decentralised web on all the hosts.
-          addDweb(host);
+          if (ALL_NODES_DWEB) {
+            // Install the decentralised web on all the hosts.
+            addDweb(host);
+          }
+
+          // Add the role-specific group.
+          addRole[role](host);
         }
       }
       out.write(byGroup.all);

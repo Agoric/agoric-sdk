@@ -120,6 +120,12 @@ const main = async (progname, rawArgs, powers) => {
       'set the config.toml p2p.persistent_peers value',
       '',
     )
+    .option('--seeds <addrs>', 'set the config.toml p2p.seeds value', '')
+    .option(
+      '--unconditional-peer-ids <ids>',
+      'set the config.toml p2p.unconditional_peer_ids value',
+      '',
+    )
     .option(
       '--export-metrics',
       'open ports to export Prometheus metrics',

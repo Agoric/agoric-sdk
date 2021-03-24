@@ -8,6 +8,11 @@ variable "regions" {
   default = ["AMS3", "FRA1", "LON1", "NYC3", "SFO2", "SGP1", "TOR1"]
 }
 
+variable "role" {
+  description = "Role of this cluster"
+  default = "node"
+}
+
 variable "offset" {
   description = "Offset of node id"
   default = 0
@@ -20,7 +25,7 @@ variable "ssh_key" {
 
 variable "instance_size" {
   description = "The instance size to use"
-  default = "s-2vcpu-4gb"
+  default = "s-8vcpu-16gb"
 }
 
 variable "volume_size" {

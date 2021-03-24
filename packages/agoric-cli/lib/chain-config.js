@@ -56,6 +56,8 @@ export function finishTendermintConfig({
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
   persistentPeers = '',
+  seeds = '',
+  unconditionalPeerIds = '',
 }) {
   const rpcPort = Number(portNum);
 
@@ -70,6 +72,8 @@ export function finishTendermintConfig({
   // Update addresses in the config.
   config.p2p.laddr = `tcp://0.0.0.0:${rpcPort - 1}`;
   config.p2p.persistent_peers = persistentPeers;
+  config.p2p.unconditional_peer_ids = unconditionalPeerIds;
+  config.p2p.seeds = seeds;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
   config.rpc.max_body_bytes = 15 * 10 ** 6;
 

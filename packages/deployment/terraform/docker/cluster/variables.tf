@@ -7,6 +7,12 @@ variable "offset" {
   default = 0
 }
 
+variable "role" {
+  description = "Role of the nodes in this cluster"
+  type = "string"
+  default = "node"
+}
+
 variable "ssh_key" {
   description = "SSH key filename to copy to the nodes"
   type = "string"
