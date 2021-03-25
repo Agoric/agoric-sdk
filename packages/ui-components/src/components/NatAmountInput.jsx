@@ -3,7 +3,12 @@ import { stringifyNat } from '../display/natValue/stringifyNat';
 
 // https://material-ui.com/api/text-field/
 
-const makeNatAmountInput = (React, TextField) => ({
+// Because we are importing the ui-components from the locally linked
+// version of agoric-sdk, we must make sure that we are not using
+// multiple instances of React and MaterialUI. Thus, we pass the
+// instances to the component.
+
+const makeNatAmountInput = ({ React, TextField }) => ({
   label,
   value,
   decimalPlaces = 0,

@@ -2,7 +2,12 @@ import { MathKind } from '@agoric/ertp';
 import clsx from 'clsx';
 import { stringifyValue } from '../display';
 
-const makeNatPurseSelector = (
+// Because we are importing the ui-components from the locally linked
+// version of agoric-sdk, we must make sure that we are not using
+// multiple instances of React and MaterialUI. Thus, we pass the
+// instances to the component.
+
+const makeNatPurseSelector = ({
   React,
   MenuItem,
   TextField,
@@ -10,7 +15,7 @@ const makeNatPurseSelector = (
   ListItemText,
   PurseIcon,
   makeStyles,
-) => ({
+}) => ({
   label = 'Purse',
   purseSelected,
   onChange,
