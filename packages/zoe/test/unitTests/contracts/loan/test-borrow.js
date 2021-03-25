@@ -153,8 +153,7 @@ test('borrow not enough collateral', async t => {
   // collateral is 0
   const { borrowSeat } = await setupBorrowFacet(0n);
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
-    message:
-      'The required margin is (a bigint)% but collateral only had value of (a bigint)',
+    message: /The required margin is .*% but collateral only had value of .*/,
   });
 });
 
@@ -360,8 +359,7 @@ test('getDebtNotifier with interest', async t => {
   const seat = await E(zoe).offer(closeLoanInvitation, proposal, payments);
 
   await t.throwsAsync(() => seat.getOfferResult(), {
-    message:
-      'Not enough Loan assets have been repaid.  (an object) is required, but only (an object) was repaid.',
+    message: /Not enough Loan assets have been repaid. {2}.* is required, but only .* was repaid./,
   });
 });
 
@@ -373,8 +371,7 @@ test('borrow collateral just too low', async t => {
 
   const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74n);
   await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
-    message:
-      'The required margin is (a bigint)% but collateral only had value of (a bigint)',
+    message: /The required margin is .*% but collateral only had value of .*/,
   });
 });
 

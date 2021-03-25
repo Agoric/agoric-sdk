@@ -68,9 +68,15 @@ test('ratio - complement', t => {
   amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
 
   t.throws(() => oneMinus(moe(3)), {
-    message: /Parameter must be a Ratio record, but \(an object\) has "brand"/,
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /Parameter must be a Ratio record, but .* has "brand"/,
+      /Parameter must be a Ratio record, but .* has .*/,
   });
   t.throws(() => oneMinus(makeRatioFromAmounts(moe(30), moe(20))), {
-    message: 'Parameter must be less than or equal to 1: (a bigint)/(a bigint)',
+    message: /Parameter must be less than or equal to 1: .*/,
   });
 });

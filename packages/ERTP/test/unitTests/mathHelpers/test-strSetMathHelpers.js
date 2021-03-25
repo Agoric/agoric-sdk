@@ -20,7 +20,7 @@ test('set with strings make', t => {
   );
   t.throws(
     () => m.make('abc', mockBrand),
-    { message: `value (a string) must be a Nat or an array` },
+    { message: /value .* must be a Nat or an array/ },
     `'abc' is not a valid string array`,
   );
   t.throws(
@@ -42,7 +42,7 @@ test('set with strings coerce', t => {
   );
   t.throws(
     () => m.coerce({ brand: mockBrand, value: '6' }, mockBrand),
-    { message: `value (a string) must be a Nat or an array` },
+    { message: /value .* must be a Nat or an array/ },
     `'6' is not a valid array`,
   );
   t.throws(
@@ -71,7 +71,7 @@ test('set with strings makeEmpty', t => {
   );
   t.throws(
     () => m.isEmpty({ brand: mockBrand, value: ['a', 'a'] }),
-    { message: `value has duplicates: (a string) and (a string)` },
+    { message: /value has duplicates: .* and .*/ },
     `duplicates in isEmpty throw`,
   );
 });
@@ -185,7 +185,7 @@ test('set with strings add', t => {
         { brand: mockBrand, value: ['a'] },
         { brand: mockBrand, value: ['a'] },
       ),
-    { message: `value has duplicates: (a string) and (a string)` },
+    { message: /value has duplicates: .* and .*/ },
     `overlap between left and right of add should throw`,
   );
   t.deepEqual(
@@ -231,7 +231,7 @@ test('set with strings subtract', t => {
         { brand: mockBrand, value: ['a', 'b'] },
         { brand: mockBrand, value: ['c'] },
       ),
-    { message: `right element (a string) was not in left` },
+    { message: /right element .* was not in left/ },
     `elements in right but not in left of subtract should throw`,
   );
   t.deepEqual(

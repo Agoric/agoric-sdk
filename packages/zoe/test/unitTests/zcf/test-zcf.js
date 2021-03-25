@@ -162,17 +162,41 @@ test(`zcf.assertUniqueKeyword`, async t => {
   const issuerKeywordRecord = { A: moolaKit.issuer, B: simoleanKit.issuer };
   const { zcf } = await setupZCFTest(issuerKeywordRecord);
   t.throws(() => zcf.assertUniqueKeyword('A'), {
-    message: 'keyword "A" must be unique',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /keyword "A" must be unique/,
+      /keyword .* must be unique/,
   });
   t.throws(() => zcf.assertUniqueKeyword('B'), {
-    message: 'keyword "B" must be unique',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /keyword "B" must be unique/,
+      /keyword .* must be unique/,
   });
   // Unique, but not a valid Keyword
   t.throws(() => zcf.assertUniqueKeyword('a'), {
-    message: 'keyword "a" must be ascii and must start with a capital letter.',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // 'keyword "a" must be ascii and must start with a capital letter.',
+      /keyword .* must be ascii and must start with a capital letter./,
   });
   t.throws(() => zcf.assertUniqueKeyword('3'), {
-    message: 'keyword "3" must be ascii and must start with a capital letter.',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // 'keyword "3" must be ascii and must start with a capital letter.',
+      /keyword .* must be ascii and must start with a capital letter./,
   });
   zcf.assertUniqueKeyword('MyKeyword');
 });
@@ -226,7 +250,13 @@ test(`zcf.saveIssuer - bad keyword`, async t => {
   await t.throwsAsync(
     async () => zcf.saveIssuer(moolaKit.issuer, 'bad keyword'),
     {
-      message: `keyword "bad keyword" must be ascii and must start with a capital letter.`,
+      message:
+        // Should be able to use more informative error once SES double
+        // disclosure bug is fixed. See
+        // https://github.com/endojs/endo/pull/640
+        //
+        // `keyword "bad keyword" must be ascii and must start with a capital letter.`,
+        /keyword .* must be ascii and must start with a capital letter./,
     },
   );
 });
@@ -238,7 +268,7 @@ test(`zcf.saveIssuer - args reversed`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1702
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(async () => zcf.saveIssuer('A', moolaKit.issuer), {
-    message: `(an object) must be a string`,
+    message: /.* must be a string/,
   });
 });
 
@@ -283,7 +313,7 @@ test(`zcf.makeInvitation - no description`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}), {
-    message: `invitations must have a description string: (an undefined)`,
+    message: /invitations must have a description string: "\[undefined\]"/,
   });
 });
 
@@ -293,7 +323,7 @@ test(`zcf.makeInvitation - non-string description`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1704
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}, { something: 'a' }), {
-    message: `invitations must have a description string: (an object)`,
+    message: /invitations must have a description string: .*/,
   });
 });
 
@@ -348,7 +378,13 @@ test(`zcf.makeZCFMint - no keyword`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint(), {
-    message: '(an undefined) must be a string',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /"\[undefined\]" must be a string/,
+      /.* must be a string/,
   });
 });
 
@@ -356,14 +392,20 @@ test(`zcf.makeZCFMint - keyword already in use`, async t => {
   const { moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ A: moolaIssuer });
   await t.throwsAsync(() => zcf.makeZCFMint('A'), {
-    message: 'Keyword (a string) already registered',
+    message: /Keyword .* already registered/,
   });
 });
 
 test(`zcf.makeZCFMint - bad keyword`, async t => {
   const { zcf } = await setupZCFTest();
   await t.throwsAsync(() => zcf.makeZCFMint('a'), {
-    message: 'keyword "a" must be ascii and must start with a capital letter.',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // 'keyword "a" must be ascii and must start with a capital letter.',
+      /keyword .* must be ascii and must start with a capital letter./,
   });
 });
 
@@ -371,8 +413,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message:
-      '(a string) must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated',
+    message: /.* must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated/,
   });
 });
 
@@ -421,7 +462,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
-    message: `gains (an undefined) must be an amountKeywordRecord`,
+    message: /gains "\[undefined\]" must be an amountKeywordRecord/,
   });
 });
 
@@ -445,7 +486,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1696
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
-    message: 'gains (an undefined) must be an amountKeywordRecord',
+    message: /gains "\[undefined\]" must be an amountKeywordRecord/,
   });
 });
 
@@ -454,7 +495,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
-    message: 'losses (an undefined) must be an amountKeywordRecord',
+    message: /losses "\[undefined\]" must be an amountKeywordRecord/,
   });
 });
 
@@ -464,7 +505,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
-    message: 'losses (an undefined) must be an amountKeywordRecord',
+    message: /losses "\[undefined\]" must be an amountKeywordRecord/,
   });
 });
 
@@ -475,7 +516,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
-    message: `Only digital assets of brand (an object) can be minted in this call. (an object) has the wrong brand.`,
+    message: /Only digital assets of brand .* can be minted in this call. .* has the wrong brand./,
   });
 });
 
@@ -486,7 +527,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
-    message: `Only digital assets of brand (an object) can be burned in this call. (an object) has the wrong brand.`,
+    message: /Only digital assets of brand .* can be burned in this call. .* has the wrong brand./,
   });
 });
 
@@ -1200,7 +1241,7 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
   });
 
   t.throws(() => zcf.reallocate(staging1, staging2, staging3), {
-    message: `rights were not conserved for brand (an object)`,
+    message: /rights were not conserved for brand .*/,
   });
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {

@@ -198,10 +198,10 @@ test('ratio bad inputs', t => {
     message: 'undefined is a undefined but must be a bigint or a number',
   });
   t.throws(() => multiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
-    message: 'Expected an amount: (a number)',
+    message: /Expected an amount: .*/,
   });
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
-    message: `Expected an amount: (an object)`,
+    message: /Expected an amount: .*/,
   });
   t.throws(() => makeRatio(3n, brand, 0n), {
     message: /No infinite ratios! Denominator was 0/,

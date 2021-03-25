@@ -45,7 +45,12 @@ test('bad display info', t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
     message:
-      'key "somethingUnexpected" was not one of the expected keys ["decimalPlaces"]',
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces"\]/,
+      /key .* was not one of the expected keys .*/,
   });
 });
 
@@ -415,7 +420,15 @@ test('issuer.combine bad payments', async t => {
 
   await t.throwsAsync(
     () => E(issuer).combine(payments),
-    { message: /"payment" not found/ },
+    {
+      message:
+        // Should be able to use more informative error once SES double
+        // disclosure bug is fixed. See
+        // https://github.com/endojs/endo/pull/640
+        //
+        // /"payment" not found/
+        /.* not found/,
+    },
     'payment from other mint is not found',
   );
 });

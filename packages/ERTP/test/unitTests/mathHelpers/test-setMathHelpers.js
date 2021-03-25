@@ -48,7 +48,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.throws(
     () => m.make('a', mockBrand),
-    { message: `value (a string) must be a Nat or an array` },
+    { message: /value .* must be a Nat or an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -87,7 +87,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.throws(
     () => m.coerce({ brand: mockBrand, value: 'a' }, mockBrand),
-    { message: `value (a string) must be a Nat or an array` },
+    { message: /value .* must be a Nat or an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -119,7 +119,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.throws(
     () => m.isEmpty({ brand: mockBrand, value: harden({}) }),
-    { message: `value (an object) must be a Nat or an array` },
+    { message: /value .* must be a Nat or an array/ },
     `m.isEmpty({}) throws`,
   );
   t.falsy(m.isEmpty(m.make(['abc'], mockBrand)), `m.isEmpty(['abc']) is false`);

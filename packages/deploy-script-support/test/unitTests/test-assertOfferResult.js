@@ -12,6 +12,6 @@ test('assertOfferResult', async t => {
   };
   await t.notThrowsAsync(() => assertOfferResult(mockSeat, 'result'));
   await t.throwsAsync(() => assertOfferResult(mockSeat, 'not result'), {
-    message: 'offerResult ((a string)) did not equal expected: (a string)',
+    message: /offerResult (.*) did not equal expected: .*/,
   });
 });

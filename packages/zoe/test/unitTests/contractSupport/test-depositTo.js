@@ -94,7 +94,7 @@ test(`depositToSeat - mismatched keywords`, async t => {
   await t.throwsAsync(
     () => depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { D: newBucks }),
     {
-      message: `payment not found for (a string)`,
+      message: /payment not found for .*/,
     },
     'mismatched keywords',
   );
