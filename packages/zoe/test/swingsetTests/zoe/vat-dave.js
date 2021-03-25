@@ -75,28 +75,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
-      const { source } = await E(installation).getBundle();
-      // pick some arbitrary code points as a signature.
-      assert(
-        source.includes('asset: give.Asset,'),
-        X`source bundle didn't match at "asset: give.Asset,"`,
-      );
-      assert(
-        source.includes('swap(zcf, firstSeat, matchingSeat)'),
-        X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
-      );
-      assert(
-        source.includes('makeMatchingInvitation'),
-        X`source bundle didn't match at "makeMatchingInvitation"`,
-      );
-      assert(installation === installations.atomicSwap, X`wrong installation`);
-      assert(
-        sameStructure(
-          harden({ Asset: invitationIssuer, Price: bucksIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
+
+      // TODO
+      // const { sha256 } = await E(installation).getBundle();
+      // assert.is(sha256, '');
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:

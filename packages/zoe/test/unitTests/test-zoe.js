@@ -40,7 +40,8 @@ test(`zoe.install`, async t => {
   const { zoe } = setup();
   const contractPath = `${__dirname}/../../src/contracts/atomicSwap`;
   const bundle = await bundleSource(contractPath);
-  t.truthy(bundle.source.includes('start'));
+  // TODO
+  // t.is(bundle.sha256, '');
   const installation = await E(zoe).install(bundle);
   t.is(await E(installation).getBundle(), bundle);
 });
