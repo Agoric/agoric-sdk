@@ -1,2 +1,3 @@
 export { default as makeNatAmountInput } from './components/NatAmountInput';
-export * from './display/display';
+export { default as makeNatPurseSelector } from './components/NatPurseSelector';
+export * from './display';
