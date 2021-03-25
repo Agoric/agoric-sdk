@@ -9,7 +9,7 @@ import '@agoric/install-metering-and-ses';
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
-import bundleSource from '../../bundle-source';
+import bundleSource from '@agoric/bundle-source';
 
 // Don't let unhandled promises crash our process.
 process.on('unhandledRejection', e => console.log('unhandled rejection', e));
