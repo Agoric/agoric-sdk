@@ -45,8 +45,11 @@ test(`E(zoe).install`, async t => {
   const { zoe } = setup();
   const contractPath = `${dirname}/../../src/contracts/atomicSwap`;
   const bundle = await bundleSource(contractPath);
-  t.truthy(bundle.source.includes('start'));
   const installation = await E(zoe).install(bundle);
+  // TODO Check the integrity of the installation by its hash.
+  // https://github.com/Agoric/agoric-sdk/issues/3859
+  // const hash = await E(installation).getHash();
+  // assert.is(hash, 'XXX');
   t.is(await E(installation).getBundle(), bundle);
 });
 
