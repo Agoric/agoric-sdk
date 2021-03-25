@@ -15,5 +15,5 @@
     "moduleResolution": "node",
     "jsx": "react",
   },
-  "include": ["src/**/*.js", "test/**/*.js", "exported.js"],
+  "include": ["src/**/*.js", "src/**/*.jsx", "test/**/*.js", "exported.js"],
 }

@@ -1,3 +1,4 @@
+import { assert } from '@agoric/assert';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
@@ -13,6 +14,7 @@ export const stringifyNat = (
   decimalPlaces = 0,
   placesToShow = CONVENTIONAL_DECIMAL_PLACES,
 ) => {
+  assert.typeof(natValue, 'bigint');
   const str = `${natValue}`.padStart(decimalPlaces, '0');
   const leftOfDecimalStr = str.substring(0, str.length - decimalPlaces) || '0';
   const rightOfDecimalStr = roundToDecimalPlaces(

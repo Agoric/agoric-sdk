@@ -1,2 +1,5 @@
+// eslint-disable-next-line import/no-unresolved
 export { default as makeNatAmountInput } from './components/NatAmountInput';
-export * from './display/display';
+// eslint-disable-next-line import/no-unresolved
+export { default as makeNatPurseSelector } from './components/NatPurseSelector';
+export * from './display';
