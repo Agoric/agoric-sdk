@@ -12,7 +12,7 @@ import { shallow, render } from 'enzyme';
 // @ts-ignore path is correct for compiled output
 import { makeNatAmountInput } from '../../../dist'; // eslint-disable-line import/no-unresolved
 
-const NatAmountInput = makeNatAmountInput(React, TextField);
+const NatAmountInput = makeNatAmountInput({ React, TextField });
 
 const makeShallowNatAmountInput = ({
   label = 'myLabel',
