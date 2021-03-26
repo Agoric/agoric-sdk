@@ -19,13 +19,13 @@ test('natMathHelpers make', t => {
   t.throws(
     () => m.make('abc', mockBrand),
     {
-      message: 'value (a string) must be a Nat or an array',
+      message: /value .* must be a Nat or an array/,
     },
     `'abc' is not a nat`,
   );
   t.throws(
     () => m.make(-1, mockBrand),
-    { message: 'value (a number) must be a Nat or an array' },
+    { message: /value .* must be a Nat or an array/ },
     `- 1 is not a valid Nat`,
   );
 });
@@ -34,7 +34,7 @@ test('natMathHelpers make no brand', t => {
   t.throws(
     () => m.make(4n),
     {
-      message: "The brand (an undefined) doesn't look like a brand.",
+      message: /The brand "\[undefined\]" doesn't look like a brand./,
     },
     `brand is required in make`,
   );
@@ -70,7 +70,7 @@ test('natMathHelpers coerce', t => {
   t.throws(
     () => m.coerce(3n, mockBrand),
     {
-      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
+      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
     },
     `coerce needs a brand`,
   );
@@ -81,7 +81,7 @@ test('natMathHelpers coerce no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
-      message: "The brand (an undefined) doesn't look like a brand.",
+      message: /The brand "\[undefined\]" doesn't look like a brand./,
     },
     `brand is required in coerce`,
   );
@@ -97,7 +97,7 @@ test('natMathHelpers getValue no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
-      message: "The brand (an undefined) doesn't look like a brand.",
+      message: /The brand "\[undefined\]" doesn't look like a brand./,
     },
     `brand is required in getValue`,
   );
@@ -114,7 +114,7 @@ test('natMathHelpers makeEmpty no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.makeEmpty(MathKind.NAT),
     {
-      message: "The brand (a string) doesn't look like a brand.",
+      message: /The brand .* doesn't look like a brand./,
     },
     `make empty no brand`,
   );
@@ -128,21 +128,21 @@ test('natMathHelpers isEmpty', t => {
   t.throws(
     () => m.isEmpty('abc'),
     {
-      message: `The amount (a string) doesn't look like an amount. Did you pass a value instead?`,
+      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
     () => m.isEmpty({ brand: mockBrand, value: 'abc' }),
     {
-      message: 'value (a string) must be a Nat or an array',
+      message: /value .* must be a Nat or an array/,
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
     () => m.isEmpty(0n),
     {
-      message: `The amount (a bigint) doesn't look like an amount. Did you pass a value instead?`,
+      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
     },
     `isEmpty(0) throws because it cannot be coerced`,
   );
@@ -161,8 +161,7 @@ test('natMathHelpers isGTE mixed brands', t => {
   t.throws(
     () => m.isGTE(m.make(5n, Far('otherBrand', {})), m.make(3n, mockBrand)),
     {
-      message:
-        'Brands in left (an object) and right (an object) should match but do not',
+      message: /Brands in left .* and right .* should match but do not/,
     },
   );
 });
@@ -176,8 +175,7 @@ test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
         Far('otherBrand', {}),
       ),
     {
-      message:
-        "amount's brand (an object) did not match expected brand (an object)",
+      message: /amount's brand .* did not match expected brand .*/,
     },
   );
 });
@@ -197,8 +195,7 @@ test('natMathHelpers isEqual mixed brands', t => {
   t.throws(
     () => m.isEqual(m.make(4n, Far('otherBrand', {})), m.make(4n, mockBrand)),
     {
-      message:
-        'Brands in left (an object) and right (an object) should match but do not',
+      message: /Brands in left .* and right .* should match but do not/,
     },
   );
 });
@@ -212,8 +209,7 @@ test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
         Far('otherBrand', {}),
       ),
     {
-      message:
-        "amount's brand (an object) did not match expected brand (an object)",
+      message: /amount's brand .* did not match expected brand .*/,
     },
   );
 });
@@ -230,8 +226,7 @@ test('natMathHelpers add mixed brands', t => {
   t.throws(
     () => m.add(m.make(5n, Far('otherBrand', {})), m.make(9n, mockBrand)),
     {
-      message:
-        'Brands in left (an object) and right (an object) should match but do not',
+      message: /Brands in left .* and right .* should match but do not/,
     },
   );
 });
@@ -245,8 +240,7 @@ test(`natMathHelpers add - brands don't match objective brand`, t => {
         Far('otherBrand', {}),
       ),
     {
-      message:
-        "amount's brand (an object) did not match expected brand (an object)",
+      message: /amount's brand .* did not match expected brand .*/,
     },
   );
 });
@@ -263,8 +257,7 @@ test('natMathHelpers subtract mixed brands', t => {
   t.throws(
     () => m.subtract(m.make(6n, Far('otherBrand', {})), m.make(1n, mockBrand)),
     {
-      message:
-        'Brands in left (an object) and right (an object) should match but do not',
+      message: /Brands in left .* and right .* should match but do not/,
     },
   );
 });
@@ -278,8 +271,7 @@ test(`natMathHelpers subtract brands don't match brand`, t => {
         Far('otherBrand', {}),
       ),
     {
-      message:
-        "amount's brand (an object) did not match expected brand (an object)",
+      message: /amount's brand .* did not match expected brand .*/,
     },
   );
 });

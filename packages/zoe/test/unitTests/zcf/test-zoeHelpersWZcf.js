@@ -119,7 +119,7 @@ test.failing(`zcf assertUsesNatMath - not brand`, async t => {
   // TODO: distinguish non-brands from brands
   // https://github.com/Agoric/agoric-sdk/issues/1800
   t.throws(() => assertUsesNatMath(zcf, issuer), {
-    message: /assertUsesNatMath requires a brand, not (an object)/,
+    message: /assertUsesNatMath requires a brand, not .*/,
   });
 });
 
@@ -127,7 +127,13 @@ test(`zcf assertUsesNatMath - brand not registered`, async t => {
   const { zcf } = await setupZCFTest();
   const { brand } = makeIssuerKit('gelt');
   t.throws(() => assertUsesNatMath(zcf, brand), {
-    message: '"brand" not found: (an object)',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /"brand" not found: .*/,
+      /.* not found: .*/,
   });
 });
 
@@ -188,14 +194,26 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
   t.throws(
     () => zcf.getBrandForIssuer(pIssuer),
     {
-      message: '"issuer" not found: (an object)',
+      message:
+        // Should be able to use more informative error once SES double
+        // disclosure bug is fixed. See
+        // https://github.com/endojs/endo/pull/640
+        //
+        // /"issuer" not found: .*/,
+        /.* not found: .*/,
     },
     'issuer should not be found',
   );
 
   t.notThrows(() => assertUsesNatMath(zcf, pandaBrand), 'default');
   t.throws(() => assertUsesNatMath(zcf, pBrand), {
-    message: '"brand" not found: (an object)',
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /"brand" not found: .*/,
+      /.* not found: .*/,
   });
 });
 
@@ -220,28 +238,28 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.throws(
     () => assertIssuerKeywords(zcf, []),
     {
-      message: 'keywords: (an object) were not as expected: (an object)',
+      message: /keywords: .* were not as expected: .*/,
     },
     'empty keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A']),
     {
-      message: 'keywords: (an object) were not as expected: (an object)',
+      message: /keywords: .* were not as expected: .*/,
     },
     'missing keyword from keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A', 'b']),
     {
-      message: 'keywords: (an object) were not as expected: (an object)',
+      message: /keywords: .* were not as expected: .*/,
     },
     'wrong keyword in keywordRecord does not match',
   );
   t.throws(
     () => assertIssuerKeywords(zcf, ['A', 'B', 'C']),
     {
-      message: 'keywords: (an object) were not as expected: (an object)',
+      message: /keywords: .* were not as expected: .*/,
     },
     'extra keywords in keywordRecord does not match',
   );
@@ -281,7 +299,7 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   t.throws(
     () => assertProposalShape(zcfSeat, { want: { C: null } }),
     {
-      message: 'actual (an object) did not match expected (an object)',
+      message: /actual .* did not match expected .*/,
     },
     'empty keywordRecord does not match',
   );
@@ -290,14 +308,14 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   t.throws(
     () => assertProposalShape(zcfSeat, { give: { c: null } }),
     {
-      message: 'actual (an object) did not match expected (an object)',
+      message: /actual .* did not match expected .*/,
     },
     'wrong key in keywordRecord does not match',
   );
   t.throws(
     () => assertProposalShape(zcfSeat, { exit: { onDemaind: null } }),
     {
-      message: 'actual (an object) did not match expected (an object)',
+      message: /actual .* did not match expected .*/,
     },
     'missing exit rule',
   );
@@ -514,6 +532,6 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
 
   // @ts-ignore invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3) } }), {
-    message: `The value of the expected record must be null but was (an object)`,
+    message: /The value of the expected record must be null but was .*/,
   });
 });

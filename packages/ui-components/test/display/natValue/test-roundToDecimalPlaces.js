@@ -18,14 +18,14 @@ test('roundToDecimalPlaces', t => {
 test('roundToDecimalPlaces non-string throws', t => {
   // @ts-ignore deliberate error for testing
   t.throws(() => round({}, 0), {
-    message: '(an object) must be a string',
+    message: /.* must be a string/,
   });
 });
 
 test('roundToDecimalPlaces non-num decimalPlaces throws', t => {
   // @ts-ignore deliberate error for testing
   t.throws(() => round('020', '0'), {
-    message: '(a string) must be a number',
+    message: /.* must be a number/,
   });
 });
 

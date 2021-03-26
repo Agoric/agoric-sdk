@@ -13,24 +13,24 @@ test('captureNum', t => {
 
 test('captureNum neg num throws', t => {
   t.throws(() => captureNum('-200'), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
   t.throws(() => captureNum('-200.00'), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
   t.throws(() => captureNum('-0200.00'), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
   t.throws(() => captureNum('-200.020'), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
 });
 
 test('captureNum non-number throws', t => {
   t.throws(() => captureNum('a'), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
   t.throws(() => captureNum({}), {
-    message: '(an object) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
 });

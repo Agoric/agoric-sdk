@@ -91,7 +91,6 @@ test('cleanProposal - wrong mathKind', t => {
   const getMathKindByBrand = _brand => MathKind.SET;
 
   t.throws(() => cleanProposal(proposal, getMathKindByBrand), {
-    message:
-      'The amount (an object) did not have the mathKind of the brand (a string)',
+    message: /The amount .* did not have the mathKind of the brand .*/,
   });
 });

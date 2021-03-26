@@ -18,7 +18,7 @@ test('makeDehydrator', async t => {
   instanceHandleMapping.addPetname('atomicSwap', handle2);
   instanceHandleMapping.addPetname('automaticRefund', handle3);
   t.throws(() => instanceHandleMapping.addPetname('simpleExchange2', handle1), {
-    message: /val \(an object\) already has a petname/,
+    message: /val .* already has a petname/,
   });
   t.throws(
     () =>
@@ -26,7 +26,7 @@ test('makeDehydrator', async t => {
         'simpleExchange',
         Far('simpleExchangeHandle'),
       ),
-    { message: /petname \(a string\) is already in use/ },
+    { message: /petname .* is already in use/ },
   );
 
   // Test renaming.
@@ -77,7 +77,15 @@ test('makeDehydrator', async t => {
   instanceHandleMapping.deletePetname('to be deleted');
   t.throws(
     () => instanceHandleMapping.petnameToVal.get('to be deleted'),
-    { message: /"petname" not found/ },
+    {
+      message:
+        // Should be able to use more informative error once SES double
+        // disclosure bug is fixed. See
+        // https://github.com/endojs/endo/pull/640
+        //
+        // /"petname" not found/
+        /.* not found/,
+    },
     `can't get what has been deleted`,
   );
 

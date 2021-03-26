@@ -57,7 +57,7 @@ test('getInputPrice no reserves', t => {
     outputReserve: 0n,
     inputValue: 1n,
   };
-  const message = 'inputReserve (a bigint) must be positive';
+  const message = /inputReserve .* must be positive/;
   getInputPricethrows(t, input, message);
 });
 
@@ -127,7 +127,7 @@ test('getInputPrice bad reserve 1', t => {
     inputReserve: 43n,
     inputValue: 347n,
   };
-  const message = 'outputReserve (a bigint) must be positive';
+  const message = /outputReserve .* must be positive/;
   getInputPricethrows(t, input, message);
 });
 
@@ -137,7 +137,7 @@ test('getInputPrice bad reserve 2', t => {
     inputReserve: 0n,
     inputValue: 828n,
   };
-  const message = 'inputReserve (a bigint) must be positive';
+  const message = /inputReserve .* must be positive/;
   getInputPricethrows(t, input, message);
 });
 
@@ -147,7 +147,7 @@ test('getInputPrice zero input', t => {
     inputReserve: 320n,
     inputValue: 0n,
   };
-  const message = 'inputValue (a bigint) must be positive';
+  const message = /inputValue .* must be positive/;
   getInputPricethrows(t, input, message);
 });
 
@@ -192,7 +192,7 @@ test('getOutputPrice zero output reserve', t => {
     inputReserve: 43n,
     outputValue: 37n,
   };
-  const message = 'outputReserve (a bigint) must be positive';
+  const message = /outputReserve .* must be positive/;
   getOutputPricethrows(t, input, message);
 });
 
@@ -202,7 +202,7 @@ test('getOutputPrice zero input reserve', t => {
     inputReserve: 0n,
     outputValue: 37n,
   };
-  const message = 'inputReserve (a bigint) must be positive';
+  const message = /inputReserve .* must be positive/;
   getOutputPricethrows(t, input, message);
 });
 
@@ -212,8 +212,7 @@ test('getOutputPrice too much output', t => {
     inputReserve: 1132n,
     outputValue: 20923n,
   };
-  const message =
-    'outputReserve (a bigint) must be greater than outputValue (a bigint)';
+  const message = /outputReserve .* must be greater than outputValue .*/;
   getOutputPricethrows(t, input, message);
 });
 
@@ -223,8 +222,7 @@ test('getOutputPrice too much output 2', t => {
     inputReserve: 1132n,
     outputValue: 345n,
   };
-  const message =
-    'outputReserve (a bigint) must be greater than outputValue (a bigint)';
+  const message = /outputReserve .* must be greater than outputValue .*/;
   getOutputPricethrows(t, input, message);
 });
 

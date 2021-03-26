@@ -63,7 +63,7 @@ test('throw in offerHandler', async t => {
 
   // "Rejected promise returned by test. Reason:
   // Error {
-  //   message: '"brand" not found: (an object)',
+  //   message: /"brand" not found: .*/,
   // }
   // › makeDetailedError (/Users/katesills/code/agoric-sdk/node_modules/ses/dist/ses.cjs:3437:17)
   // › fail (/Users/katesills/code/agoric-sdk/node_modules/ses/dist/ses.cjs:3582:19)
@@ -78,6 +78,12 @@ test('throw in offerHandler', async t => {
   // › src/zoeService/zoe.js:408:28"
 
   await t.throwsAsync(() => throwsInDepositToSeatResult, {
-    message: `"brand" not found: (an object)`,
+    message:
+      // Should be able to use more informative error once SES double
+      // disclosure bug is fixed. See
+      // https://github.com/endojs/endo/pull/640
+      //
+      // /"brand" not found: .*/,
+      /.* not found: .*/,
   });
 });

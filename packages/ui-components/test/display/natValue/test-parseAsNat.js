@@ -45,6 +45,6 @@ test('parseAsNat ether to wei', t => {
 
 test('parseAsNat negative throws', t => {
   t.throws(() => parseAsNat('-200.00', 2), {
-    message: '(a string) must be a non-negative decimal number',
+    message: /.* must be a non-negative decimal number/,
   });
 });

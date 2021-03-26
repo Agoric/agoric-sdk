@@ -100,7 +100,15 @@ test('zoe - escrowToVote', async t => {
     const voter = await E(seat).getOfferResult();
     await t.throwsAsync(
       () => E(voter).vote('NOT A VALID ANSWER'),
-      { message: /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/ },
+      {
+        message:
+          // Should be able to use more informative error once SES double
+          // disclosure bug is fixed. See
+          // https://github.com/endojs/endo/pull/640
+          //
+          // /the answer "NOT A VALID ANSWER" was not 'YES' or 'NO'/
+          /the answer .* was not 'YES' or 'NO'/,
+      },
       `A vote with an invalid answer throws`,
     );
 

@@ -68,6 +68,6 @@
     "access": "public"
   },
   "dependencies": {
-    "ses": "^0.12.3"
+    "ses": "^0.12.5"
   }
 }

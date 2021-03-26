@@ -472,7 +472,15 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
   t.throws(
     () => wallet.getInstallation('whatever'),
-    { message: /"petname" not found/ },
+    {
+      message:
+        // Should be able to use more informative error once SES double
+        // disclosure bug is fixed. See
+        // https://github.com/endojs/endo/pull/640
+        //
+        // /"petname" not found/
+        /.* not found/,
+    },
     `using a petname that doesn't exist errors`,
   );
 

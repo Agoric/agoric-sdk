@@ -33,7 +33,7 @@
     "@agoric/install-ses": "^0.5.4",
     "esm": "^3.2.5",
     "glob": "^7.1.6",
-    "ses": "^0.12.3"
+    "ses": "^0.12.5"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.1.0",
