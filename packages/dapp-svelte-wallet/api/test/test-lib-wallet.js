@@ -183,10 +183,14 @@ test('lib-wallet issuer and purse methods', async t => {
     `deposit successful`,
   );
   t.is(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
+  const purseLog = JSON.parse(
+    pursesStateChangeLog[pursesStateChangeLog.length - 1],
+  );
   t.deepEqual(
-    JSON.parse(pursesStateChangeLog[pursesStateChangeLog.length - 1]),
+    purseLog,
     [
       {
+        brand: purseLog[0].brand,
         brandBoardId: '1667979430',
         depositBoardId: '604346717',
         displayInfo: {
@@ -206,6 +210,7 @@ test('lib-wallet issuer and purse methods', async t => {
         },
       },
       {
+        brand: purseLog[1].brand,
         brandBoardId: '727995140',
         brandPetname: 'moola',
         displayInfo: {
@@ -319,6 +324,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   t.deepEqual(
     zoeInvitePurseState[0],
     {
+      brand: zoeInvitePurseState[0].brand,
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
@@ -402,6 +408,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   t.deepEqual(
     zoeInvitePurseState2,
     {
+      brand: zoeInvitePurseState2.brand,
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
@@ -502,6 +509,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   t.deepEqual(
     zoeInvitePurseState3,
     {
+      brand: zoeInvitePurseState3.brand,
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
@@ -681,6 +689,7 @@ test('lib-wallet offer methods', async t => {
   t.deepEqual(
     zoeInvitePurseState,
     {
+      brand: zoeInvitePurseState.brand,
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       brandPetname: 'zoe invite',
@@ -704,6 +713,7 @@ test('lib-wallet offer methods', async t => {
   t.deepEqual(
     moolaPurseState,
     {
+      brand: moolaPurseState.brand,
       brandBoardId: '1532665031',
       brandPetname: 'moola',
       displayInfo: {

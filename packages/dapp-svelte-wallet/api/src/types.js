@@ -90,6 +90,7 @@
 
 /**
  * @typedef {Object} PursesJSONState
+ * @property {Brand} brand
  * @property {string} brandBoardId  the board ID for this purse's brand
  * @property {string=} depositBoardId the board ID for the deposit-only facet of
  * this purse
