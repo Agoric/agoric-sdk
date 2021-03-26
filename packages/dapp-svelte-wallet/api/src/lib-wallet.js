@@ -244,6 +244,7 @@ export function makeWallet({
      * @type {PursesJSONState}
      */
     const jstate = {
+      brand,
       brandBoardId,
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
