@@ -4,10 +4,6 @@
  */
 
 /**
- * @typedef {import('@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board').Board} Board
- */
-
-/**
  * @typedef {string | string[]} Petname A petname can either be a plain string
  * or a path for which the first element is a petname for the origin, and the
  * rest of the elements are a snapshot of the names that were first given by that
@@ -83,6 +79,10 @@
  * Get the Zoe Service
  * @property {() => Promise<Board>} getBoard
  * Get the Board
+ * @property {(...path: Array<unknown>) => Promise<unknown>} getAgoricNames
+ * Get the curated Agoric public naming hub
+ * @property {(...path: Array<unknown>) => Promise<unknown>} getNamesByAddress
+ * Get the Agoric address mapped to its public naming hub
  * @property {(brands: Array<Brand>) => Promise<Array<Petname>>}
  * getBrandPetnames
  * Get the petnames for the brands that are passed in

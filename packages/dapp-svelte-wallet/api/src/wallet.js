@@ -75,8 +75,10 @@ export function buildRootObject(_vatPowers) {
     },
   });
 
-  async function startup({ zoe, board }) {
+  async function startup({ zoe, board, agoricNames, namesByAddress }) {
     const w = makeWallet({
+      agoricNames,
+      namesByAddress,
       zoe,
       board,
       pursesStateChangeHandler: pursesPublish,
@@ -178,6 +180,14 @@ export function buildRootObject(_vatPowers) {
         await approve();
         return walletAdmin.getBoard();
       },
+      async getAgoricNames(...path) {
+        await approve();
+        return walletAdmin.getAgoricNames(...path);
+      },
+      async getNamesByAddress(...path) {
+        await approve();
+        return walletAdmin.getNamesByAddress(...path);
+      },
       async getBrandPetnames(brands) {
         await approve();
         return walletAdmin.getBrandPetnames(brands);
@@ -226,6 +236,12 @@ export function buildRootObject(_vatPowers) {
     },
     async getBoard() {
       return walletAdmin.getBoard();
+    },
+    async getAgoricNames(...path) {
+      return walletAdmin.getAgoricNames(...path);
+    },
+    async getNamesByAddress(...path) {
+      return walletAdmin.getNamesByAddress(...path);
     },
     async getBrandPetnames(brands) {
       return walletAdmin.getBrandPetnames(brands);

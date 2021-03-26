@@ -15,7 +15,7 @@ export function buildRootObject(_vatPowers) {
     vattp = v;
   }
 
-  async function pleaseProvision(nickname, pubkey, powerFlags) {
+  async function pleaseProvision(nickname, address, powerFlags) {
     let chainBundle;
     const fetch = Far('fetch', {
       getDemoBundle() {
@@ -24,15 +24,19 @@ export function buildRootObject(_vatPowers) {
     });
 
     // Add a remote and egress for the pubkey.
-    const { transmitter, setReceiver } = await E(vattp).addRemote(pubkey);
-    await E(comms).addRemote(pubkey, transmitter, setReceiver);
+    const { transmitter, setReceiver } = await E(vattp).addRemote(address);
+    await E(comms).addRemote(address, transmitter, setReceiver);
 
     const INDEX = 1;
-    await E(comms).addEgress(pubkey, INDEX, fetch);
+    await E(comms).addEgress(address, INDEX, fetch);
 
     // Do this here so that any side-effects don't happen unless
     // the egress has been successfully added.
-    chainBundle = E(bundler).createUserBundle(nickname, powerFlags || []);
+    chainBundle = E(bundler).createUserBundle(
+      nickname,
+      address,
+      powerFlags || [],
+    );
     return { ingressIndex: INDEX };
   }
 

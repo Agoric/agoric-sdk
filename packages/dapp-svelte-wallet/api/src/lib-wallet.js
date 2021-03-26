@@ -53,6 +53,8 @@ const cmp = (a, b) => {
  * @typedef {Object} MakeWalletParams
  * @property {ZoeService} zoe
  * @property {Board} board
+ * @property {NameHub} [agoricNames]
+ * @property {NameHub} [namesByAddress]
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
  * @param {MakeWalletParams} param0
@@ -60,6 +62,8 @@ const cmp = (a, b) => {
 export function makeWallet({
   zoe,
   board,
+  agoricNames,
+  namesByAddress,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
@@ -1471,6 +1475,17 @@ export function makeWallet({
     },
     getBoard() {
       return board;
+    },
+    getAgoricNames(...path) {
+      assert(agoricNames, X`agoricNames was not supplied to the wallet maker`);
+      return E(agoricNames).lookup(...path);
+    },
+    getNamesByAddress(...path) {
+      assert(
+        namesByAddress,
+        X`namesByAddress was not supplied to the wallet maker`,
+      );
+      return E(namesByAddress).lookup(...path);
     },
   });
 

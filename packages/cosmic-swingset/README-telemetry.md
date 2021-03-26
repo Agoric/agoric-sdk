@@ -53,13 +53,13 @@ enable = true
 address = "tcp://0.0.0.0:1317"
 ```
 
-If the API server is enabled, then this will export metrics at
+If the API server is enabled, then this will export Cosmos SDK metrics at
 http://0.0.0.0:1317/metrics?format=prometheus (at your enabled API server port).
 The metrics will also be exported at the Tendermint Prometheus port if enabled
 in the next section.
 
 The exported metrics are listed at:
-https://docs.cosmos.network/v0.40/core/telemetry.html
+https://docs.cosmos.network/v0.42/core/telemetry.html
 
 ## Tendermint metrics
 
