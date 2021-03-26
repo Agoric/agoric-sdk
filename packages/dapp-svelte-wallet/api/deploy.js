@@ -13,7 +13,7 @@ export default async function deployWallet(
   const home = await homePromise;
   // console.log('have home', home);
   const {
-    agoric: { board, faucet, zoe },
+    agoric: { agoricNames, namesByAddress, board, faucet, zoe },
     local: { http, spawner, wallet: oldWallet },
   } = home;
 
@@ -25,6 +25,8 @@ export default async function deployWallet(
 
   // Wallet for both end-user client and dapp dev client
   const walletVat = await E(walletInstall).spawn({
+    agoricNames,
+    namesByAddress,
     zoe,
     board,
     faucet,
