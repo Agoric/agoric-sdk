@@ -79,7 +79,12 @@ test('getPursesNotifier', async t => {
 });
 
 test('getAttenuatedPursesNotifier', async t => {
-  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME, moolaKit } = await setup();
+  const {
+    wallet,
+    MOOLA_ISSUER_PETNAME,
+    MOOLA_PURSE_PETNAME,
+    moolaKit,
+  } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 7);
