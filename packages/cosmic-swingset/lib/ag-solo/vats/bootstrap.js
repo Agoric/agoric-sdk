@@ -210,6 +210,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
 
     const {
+      nameHub: agoricNames,
+      nameAdmin: agoricNamesAdmin,
+    } = makeNameHubKit();
+    const {
       nameHub: namesByAddress,
       nameAdmin: namesByAddressAdmin,
     } = makeNameHubKit();
@@ -231,6 +235,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
         if (powerFlags && powerFlags.includes('agoric.priceAuthorityAdmin')) {
           additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
+        }
+        if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
+          additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
         }
 
         const payments = await E(vats.mints).mintInitialPayments(
@@ -264,6 +271,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         const bundle = harden({
           ...additionalPowers,
+          agoricNames,
           chainTimerService,
           sharingService,
           contractHost,
@@ -526,6 +534,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                 // to give capabilities to all clients (since we are running
                 // locally with the `--give-me-all-the-agoric-powers` flag).
                 return chainBundler.createUserBundle(nickname, 'demo', [
+                  'agoric.agoricNamesAdmin',
                   'agoric.priceAuthorityAdmin',
                   'agoric.vattp',
                 ]);
