@@ -1,5 +1,6 @@
-import '@agoric/install-ses'; // adds 'harden' to global
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import {

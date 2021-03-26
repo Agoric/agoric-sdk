@@ -1,7 +1,8 @@
 /* global __dirname */
-import '@agoric/install-ses';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
 import { initSwingStore } from '@agoric/swing-store-simple';
-import test from 'ava';
 import path from 'path';
 import { buildLoopbox } from '../src/devices/loopbox';
 import {

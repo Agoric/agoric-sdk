@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env';
+import '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { roundToDecimalPlaces as round } from '../../../src/display/natValue/helpers/roundToDecimalPlaces';

@@ -1,5 +1,5 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../../tools/prepare-test-env-ava';
+
 import { makeCache } from '../../src/kernel/virtualObjectManager';
 
 function makeFakeStore() {

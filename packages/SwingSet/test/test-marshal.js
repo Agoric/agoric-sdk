@@ -1,7 +1,8 @@
 /* global setImmediate */
-import '@agoric/install-ses';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
 import { Far } from '@agoric/marshal';
-import test from 'ava';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref';

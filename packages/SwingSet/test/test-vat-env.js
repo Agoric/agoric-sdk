@@ -1,8 +1,7 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/swingset-vat/tools/prepare-test-env';
+import { test } from '../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import { Far } from '@agoric/marshal';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 test('harden from SES is in the vat environment', t => {
   harden();

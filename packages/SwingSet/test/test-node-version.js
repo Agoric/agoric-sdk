@@ -1,7 +1,9 @@
 // eslint-disable-next-line no-redeclare
 /* global process */
+import { test } from '../tools/prepare-test-env-ava';
+
+// eslint-disable-next-line import/order
 import semver from 'semver';
-import test from 'ava';
 
 test('Node version for IO queue priority', t => {
   t.true(

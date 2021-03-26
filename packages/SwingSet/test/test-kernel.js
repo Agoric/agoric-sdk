@@ -1,5 +1,6 @@
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
 import anylogger from 'anylogger';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { assert, details as X } from '@agoric/assert';

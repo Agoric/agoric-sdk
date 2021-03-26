@@ -1,7 +1,7 @@
 /* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env';
+import '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';

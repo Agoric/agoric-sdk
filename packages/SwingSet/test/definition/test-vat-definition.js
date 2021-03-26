@@ -1,6 +1,6 @@
 /* global require */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '../../tools/prepare-test-env-ava';
+
 import { buildVatController } from '../../src/index';
 
 const mUndefined = { '@qclass': 'undefined' };

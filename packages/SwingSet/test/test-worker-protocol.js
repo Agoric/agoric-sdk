@@ -1,7 +1,6 @@
 /* global Buffer */
-import '@agoric/install-ses'; // adds 'harden' to global
+import { test } from '../tools/prepare-test-env-ava';
 
-import test from 'ava';
 import { arrayEncoderStream, arrayDecoderStream } from '../src/worker-protocol';
 import {
   encode,
