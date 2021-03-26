@@ -36,8 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Save SDK_VERSION
-      run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
     - name: Build ibc-alpha image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
@@ -46,7 +44,7 @@ jobs:
         context: packages/deployment/docker
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        tags: "ibc-alpha,${{ env.SDK_VERSION }}"
+        tags: "ibc-alpha"
 
   docker-solo:
     needs: docker-sdk
