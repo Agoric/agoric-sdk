@@ -5,7 +5,7 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeStore } from '@agoric/store';
 
-import './types.js';
+// import './types.js';
 
 /**
  * @returns {NameHubKit}
