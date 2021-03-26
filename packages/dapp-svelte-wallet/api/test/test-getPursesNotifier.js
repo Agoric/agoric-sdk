@@ -79,7 +79,7 @@ test('getPursesNotifier', async t => {
 });
 
 test('getAttenuatedPursesNotifier', async t => {
-  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } = await setup();
+  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME, moolaKit } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 7);
@@ -87,7 +87,7 @@ test('getAttenuatedPursesNotifier', async t => {
   t.is(update.value.length, 2);
   const moolaPurseInfo = update.value[1];
   t.false('actions' in moolaPurseInfo);
-  t.false('brand' in moolaPurseInfo);
+  t.is(moolaPurseInfo.brand, moolaKit.brand);
   t.is(moolaPurseInfo.brandBoardId, '1532665031');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
