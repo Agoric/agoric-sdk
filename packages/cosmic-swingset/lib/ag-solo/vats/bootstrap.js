@@ -13,6 +13,7 @@ import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager'
 import { assert, details as X } from '@agoric/assert';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
+import { makeNameHubKit } from './nameHub';
 
 const NUM_IBC_PORTS = 3;
 const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
@@ -208,8 +209,13 @@ export function buildRootObject(vatPowers, vatParameters) {
       }),
     );
 
+    const {
+      nameHub: namesByAddress,
+      nameAdmin: namesByAddressAdmin,
+    } = makeNameHubKit();
+
     return Far('chainBundler', {
-      async createUserBundle(_nickname, powerFlags = []) {
+      async createUserBundle(_nickname, address, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
         // and provide them for the user to have.
         const ibcport = [];
@@ -248,6 +254,14 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
 
+        // Create a name hub for this address.
+        const {
+          nameHub: myAddressNameHub,
+          nameAdmin: myAddressNameAdmin,
+        } = makeNameHubKit();
+        // Register it with the namesByAddress hub.
+        namesByAddressAdmin.update(address, myAddressNameHub);
+
         const bundle = harden({
           ...additionalPowers,
           chainTimerService,
@@ -255,6 +269,13 @@ export function buildRootObject(vatPowers, vatParameters) {
           contractHost,
           faucet,
           ibcport,
+          myAddressNameAdmin: {
+            ...myAddressNameAdmin,
+            getMyAddress() {
+              return address;
+            },
+          },
+          namesByAddress,
           priceAuthority,
           registrar: registry,
           registry,
@@ -504,12 +525,12 @@ export function buildRootObject(vatPowers, vatParameters) {
                 // NOTE: This is a special exception to the security model,
                 // to give capabilities to all clients (since we are running
                 // locally with the `--give-me-all-the-agoric-powers` flag).
-                return chainBundler.createUserBundle(nickname, [
+                return chainBundler.createUserBundle(nickname, 'demo', [
                   'agoric.priceAuthorityAdmin',
                   'agoric.vattp',
                 ]);
               }
-              return chainBundler.createUserBundle(nickname);
+              return chainBundler.createUserBundle(nickname, 'demo');
             },
           });
           await Promise.all(

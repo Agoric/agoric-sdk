@@ -11,7 +11,8 @@
 /**
  * @typedef {Object} NameHub
  * @property {(...path: Array<unknown>) => Promise<unknown>} lookup Look up a
- * path of keys starting from the current NameHub.
+ * path of keys starting from the current NameHub.  Wait on any reserved
+ * promises.
  */
 
 /**
