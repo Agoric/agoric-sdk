@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.16.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.15.1...@agoric/sdk@2.16.0-dev.0) (2021-03-26)
+
+
+### Bug Fixes
+
+* update to depend on ses 0.12.5 ([#2718](https://github.com/Agoric/agoric-sdk/issues/2718)) ([08dbe0d](https://github.com/Agoric/agoric-sdk/commit/08dbe0db5ce06944dc92c710865e441a60b31b5b))
+* update yarn.lock ([#2729](https://github.com/Agoric/agoric-sdk/issues/2729)) ([298edf9](https://github.com/Agoric/agoric-sdk/commit/298edf9e187c5b6b61b9901def0c502e5f6a1aa4))
+* use ses-ava in SwingSet where possible ([#2709](https://github.com/Agoric/agoric-sdk/issues/2709)) ([85b674e](https://github.com/Agoric/agoric-sdk/commit/85b674e7942443219fa9828841cc7bd8ef909b47))
+
+
+### Features
+
+* **dapp-svelte-wallet:** add getAgoricNames and getNamesByAddress ([7c8f4d5](https://github.com/Agoric/agoric-sdk/commit/7c8f4d55cd3956267a72882303d4430a72a58e70))
+* add home.agoricNames and home.agoricNamesAdmin ([04c5bdd](https://github.com/Agoric/agoric-sdk/commit/04c5bddaae2e482793c8cc584385a841dd9f4b17))
+* add namesByAddress and myAddressNameAdmin ([945a6c3](https://github.com/Agoric/agoric-sdk/commit/945a6c3aa58146dc1909df3793d417b288c6e1de))
+* implement and test makeNameHubKit as specified ([7deac62](https://github.com/Agoric/agoric-sdk/commit/7deac62b5921a2e71d602ec2201938de2625b7be))
+
+
+
+
+
 # [2.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.14.0...@agoric/sdk@2.15.0) (2021-03-24)
 
 

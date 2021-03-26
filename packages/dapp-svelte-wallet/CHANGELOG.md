@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.7.1...@agoric/dapp-svelte-wallet@0.8.0-dev.0) (2021-03-26)
+
+
+### Bug Fixes
+
+* update to depend on ses 0.12.5 ([#2718](https://github.com/Agoric/agoric-sdk/issues/2718)) ([08dbe0d](https://github.com/Agoric/agoric-sdk/commit/08dbe0db5ce06944dc92c710865e441a60b31b5b))
+* use ses-ava in SwingSet where possible ([#2709](https://github.com/Agoric/agoric-sdk/issues/2709)) ([85b674e](https://github.com/Agoric/agoric-sdk/commit/85b674e7942443219fa9828841cc7bd8ef909b47))
+
+
+### Features
+
+* **dapp-svelte-wallet:** add getAgoricNames and getNamesByAddress ([7c8f4d5](https://github.com/Agoric/agoric-sdk/commit/7c8f4d55cd3956267a72882303d4430a72a58e70))
+
+
+
+
+
 ## [0.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.7.0...@agoric/dapp-svelte-wallet@0.7.1) (2021-03-24)
 
 

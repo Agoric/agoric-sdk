@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.27.0...@agoric/cosmic-swingset@0.28.0-dev.0) (2021-03-26)
+
+
+### Features
+
+* add home.agoricNames and home.agoricNamesAdmin ([04c5bdd](https://github.com/Agoric/agoric-sdk/commit/04c5bddaae2e482793c8cc584385a841dd9f4b17))
+* add namesByAddress and myAddressNameAdmin ([945a6c3](https://github.com/Agoric/agoric-sdk/commit/945a6c3aa58146dc1909df3793d417b288c6e1de))
+* implement and test makeNameHubKit as specified ([7deac62](https://github.com/Agoric/agoric-sdk/commit/7deac62b5921a2e71d602ec2201938de2625b7be))
+
+
+
+
+
 # [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.26.0...@agoric/cosmic-swingset@0.27.0) (2021-03-24)
 
 

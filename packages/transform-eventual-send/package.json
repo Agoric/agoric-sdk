@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-eventual-send",
-  "version": "1.4.4",
+  "version": "1.4.5-dev.0",
   "description": "transform-eventual-send",
   "parsers": {
     "js": "mjs"
@@ -15,7 +15,7 @@
     "build": "exit 0"
   },
   "devDependencies": {
-    "@agoric/acorn-eventual-send": "^2.1.4",
+    "@agoric/acorn-eventual-send": "^2.1.5-dev.0",
     "@agoric/babel-parser": "^7.6.4",
     "@babel/generator": "^7.5.0",
     "acorn": "^8.0.5",
