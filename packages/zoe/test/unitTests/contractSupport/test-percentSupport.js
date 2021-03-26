@@ -67,11 +67,9 @@ test('ratio - complement', t => {
   amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
   amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
 
-  t.throws(() =>
-    oneMinus(moe(3), {
-      message: 'Ratio must be a record with 4 fields',
-    }),
-  );
+  t.throws(() => oneMinus(moe(3)), {
+    message: /Parameter must be a Ratio record, but \(an object\) has "brand"/,
+  });
   t.throws(() => oneMinus(makeRatioFromAmounts(moe(30), moe(20))), {
     message: 'Parameter must be less than or equal to 1: (a bigint)/(a bigint)',
   });
