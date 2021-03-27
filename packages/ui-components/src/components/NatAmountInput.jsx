@@ -1,5 +1,6 @@
 import { parseAsNat } from '../display/natValue/parseAsNat';
 import { stringifyNat } from '../display/natValue/stringifyNat';
+import { debounce } from '../helpers';
 
 // https://material-ui.com/api/text-field/
 
@@ -7,6 +8,8 @@ import { stringifyNat } from '../display/natValue/stringifyNat';
 // version of agoric-sdk, we must make sure that we are not using
 // multiple instances of React and MaterialUI. Thus, we pass the
 // instances to the component.
+
+const DEBOUNCE_WAIT_MS = 800;
 
 const makeNatAmountInput = ({ React, TextField }) => ({
   label = 'Amount',
@@ -19,8 +22,20 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   required = false,
   helperText = null,
 }) => {
-  let displayString =
-    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow);
+  console.log('receiving new value', value);
+
+  // Use react state so it knows to re-render on displayString change
+  const [displayString, setDisplayString] = React.useState(
+    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+  );
+
+  console.log('displayString', displayString);
+
+  // React.useEffect(() => {
+  //   setDisplayString(
+  //     value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+  //   );
+  // }, [value, decimalPlaces, placesToShow]);
 
   const step = 1;
   placesToShow = decimalPlaces > 0 ? 2 : 0;
@@ -37,33 +52,19 @@ const makeNatAmountInput = ({ React, TextField }) => ({
     }
   };
 
-  // Returns a function, that, as long as it continues to be invoked, will not
-  // be triggered. The function will be called after it stops being called for
-  // `wait` milliseconds.
-  const debounce = (func, wait) => {
-    let timeout;
-
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  };
-
   const delayedOnChange = debounce(str => {
-    onChange(parseAsNat(str, decimalPlaces));
-  }, 50);
+    console.log('actually parsing');
+    const parsed = parseAsNat(str, decimalPlaces);
+    setDisplayString(stringifyNat(parsed, decimalPlaces, placesToShow));
+    onChange(parsed);
+  }, DEBOUNCE_WAIT_MS);
 
   // We want to delay the input validation so that the user can type
   // freely, and then it gets formatted appropriately after the user stops.
   const handleOnChange = ev => {
     const str = ev.target.value;
     // Show the user exactly what they are typing
-    displayString = str;
+    setDisplayString(str);
 
     // Wait until the user stops typing to parse it
     delayedOnChange(str);
