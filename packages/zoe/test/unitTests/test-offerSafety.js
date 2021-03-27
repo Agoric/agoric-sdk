@@ -1,8 +1,6 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { isOfferSafe } from '../../src/contractFacet/offerSafety';
 import { setup } from './setupBasicMints';

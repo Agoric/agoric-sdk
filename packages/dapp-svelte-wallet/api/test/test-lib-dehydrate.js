@@ -1,6 +1,5 @@
-import '@agoric/zoe/tools/prepare-test-env-ava'; // calls lockdown()
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava'; // calls lockdown()
+
 import { Far } from '@agoric/marshal';
 
 import { makeDehydrator } from '../src/lib-dehydrate';

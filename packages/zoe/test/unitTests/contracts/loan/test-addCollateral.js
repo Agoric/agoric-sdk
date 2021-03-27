@@ -1,11 +1,9 @@
 // @ts-check
-
-import '../../../../exported';
-
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
+import '../../../../exported';
 
 import { amountMath } from '@agoric/ertp';
 

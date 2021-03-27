@@ -1,10 +1,10 @@
 /* global __dirname */
 // @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/zoe/tools/prepare-test-env';
 
 import '../../../../exported';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { amountMath } from '@agoric/ertp';
