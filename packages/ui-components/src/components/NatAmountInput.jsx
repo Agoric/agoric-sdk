@@ -19,10 +19,8 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   required = false,
   helperText = null,
 }) => {
-  console.log('DISPLAYING NAT AMOUNT INPUT');
-  const [displayString, setDisplayString] = React.useState(
-    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
-  );
+  let displayString =
+    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow);
 
   const step = 1;
   placesToShow = decimalPlaces > 0 ? 2 : 0;
@@ -39,13 +37,36 @@ const makeNatAmountInput = ({ React, TextField }) => ({
     }
   };
 
+  // Returns a function, that, as long as it continues to be invoked, will not
+  // be triggered. The function will be called after it stops being called for
+  // `wait` milliseconds.
+  const debounce = (func, wait) => {
+    let timeout;
+
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  const delayedOnChange = debounce(str => {
+    onChange(parseAsNat(str, decimalPlaces));
+  }, 50);
+
+  // We want to delay the input validation so that the user can type
+  // freely, and then it gets formatted appropriately after the user stops.
   const handleOnChange = ev => {
     const str = ev.target.value;
-    console.log('STRING', str);
-    const parsed = parseAsNat(str, decimalPlaces);
-    console.log('PARSED', parsed);
-    setDisplayString(str);
-    // onChange(parsed);
+    // Show the user exactly what they are typing
+    displayString = str;
+
+    // Wait until the user stops typing to parse it
+    delayedOnChange(str);
   };
 
   return (
