@@ -9,7 +9,7 @@ import { stringifyNat } from '../display/natValue/stringifyNat';
 // instances to the component.
 
 const makeNatAmountInput = ({ React, TextField }) => ({
-  label = 'Input',
+  label = 'Amount',
   value = 0n,
   decimalPlaces = 0,
   placesToShow = 2,
