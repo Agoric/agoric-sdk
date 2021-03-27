@@ -9,19 +9,21 @@ import { stringifyNat } from '../display/natValue/stringifyNat';
 // instances to the component.
 
 const makeNatAmountInput = ({ React, TextField }) => ({
-  label,
-  value,
+  label = 'Amount',
+  value = 0n,
   decimalPlaces = 0,
   placesToShow = 2,
-  disabled,
-  error,
-  onChange,
-  required,
-  helperText,
+  disabled = false,
+  error = false,
+  onChange = () => {},
+  required = false,
+  helperText = null,
 }) => {
+  const step = decimalPlaces > 0 ? 1 / 10 ** placesToShow : 1;
+
   // No negative values allowed in the input
-  const noNegativeValues = {
-    inputProps: { min: 0 },
+  const inputProps = {
+    inputProps: { min: 0, step },
   };
 
   const preventSubtractChar = e => {
@@ -36,8 +38,7 @@ const makeNatAmountInput = ({ React, TextField }) => ({
       label={label}
       type="number"
       variant="outlined"
-      fullWidth
-      InputProps={noNegativeValues}
+      InputProps={inputProps}
       onChange={ev => onChange(parseAsNat(ev.target.value, decimalPlaces))}
       onKeyPress={preventSubtractChar}
       value={

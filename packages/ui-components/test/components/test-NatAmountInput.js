@@ -63,11 +63,10 @@ test('has props', t => {
   t.is(wrapper.prop('label'), 'myLabel');
   t.is(wrapper.prop('type'), 'number');
   t.is(wrapper.prop('variant'), 'outlined');
-  t.is(wrapper.prop('fullWidth'), true);
   t.is(wrapper.prop('disabled'), false);
   t.is(wrapper.prop('error'), false);
   t.is(wrapper.prop('value'), '0');
-  t.deepEqual(wrapper.prop('InputProps'), { inputProps: { min: 0 } });
+  t.deepEqual(wrapper.prop('InputProps'), { inputProps: { min: 0, step: 1 } });
 });
 
 test('has label text', t => {
