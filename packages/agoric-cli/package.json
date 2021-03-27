@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.12.0",
+  "version": "0.12.6",
   "description": "Manage the Agoric Javascript smart contract platform",
   "parsers": {
     "js": "mjs"
