@@ -1,10 +1,7 @@
 // @ts-check
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
 /* global makeKind, makeWeakStore */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 test('harden from SES is in the zoe contract environment', t => {
   // @ts-ignore testing existence of function only

@@ -1,10 +1,7 @@
 // @ts-check
-
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 import { E } from '@agoric/eventual-send';
 import buildManualTimer from '../../tools/manualTimer';
 

@@ -1,12 +1,10 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 import { makeIssuerKit, MathKind, amountMath } from '../../src';
 

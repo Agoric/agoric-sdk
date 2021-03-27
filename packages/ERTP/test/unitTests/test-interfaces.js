@@ -1,10 +1,7 @@
 // @ts-check
-
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 import { getInterfaceOf } from '@agoric/marshal';
 import { makeIssuerKit, amountMath } from '../../src';
 import { ERTPKind, makeInterface } from '../../src/interfaces';

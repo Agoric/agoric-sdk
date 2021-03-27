@@ -1,7 +1,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
+
 import { parseAsValue } from '../../src/display/display';
 
 test('parseAsValue', t => {

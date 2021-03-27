@@ -1,9 +1,8 @@
 /* global require */
 // @ts-check
 
-import '@agoric/zoe/tools/prepare-test-env-ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';

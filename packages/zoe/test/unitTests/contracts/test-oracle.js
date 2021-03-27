@@ -1,10 +1,8 @@
 /* global __dirname */
 // @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import anyTest from 'ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
@@ -29,8 +27,6 @@ import '../../../src/contracts/exported';
  */
 
 const contractPath = `${__dirname}/../../../src/contracts/oracle`;
-
-const test = /** @type {import('ava').TestInterface<TestContext>} */ (anyTest);
 
 test.before(
   'setup oracle',

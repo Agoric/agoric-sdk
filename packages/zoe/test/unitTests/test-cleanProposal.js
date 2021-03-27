@@ -1,9 +1,6 @@
 // @ts-check
-
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { MathKind } from '@agoric/ertp/src/deprecatedAmountMath';
 import { cleanProposal } from '../../src/cleanProposal';
