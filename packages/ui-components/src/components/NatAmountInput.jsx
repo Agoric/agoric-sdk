@@ -31,11 +31,13 @@ const makeNatAmountInput = ({ React, TextField }) => ({
 
   console.log('displayString', displayString);
 
+  // With use effect, the display gets completely disassociated from
+  // the user's typing.
   // React.useEffect(() => {
   //   setDisplayString(
   //     value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
   //   );
-  // }, [value, decimalPlaces, placesToShow]);
+  // }, [value, decimalPlaces, placesToShow, displayString]);
 
   const step = 1;
   placesToShow = decimalPlaces > 0 ? 2 : 0;
