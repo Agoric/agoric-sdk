@@ -17,12 +17,12 @@ const makeNatPurseSelector = ({
   makeStyles,
 }) => ({
   label = 'Purse',
-  purseSelected,
-  onChange,
-  disabled,
-  error,
+  purseSelected = null,
+  onChange = () => {},
+  disabled = false,
+  error = false,
   purses: pursesUnfiltered,
-  brandToFilter,
+  brandToFilter = null,
 }) => {
   const useStyles = makeStyles(theme => ({
     select: {
@@ -61,6 +61,11 @@ const makeNatPurseSelector = ({
   if (brandToFilter) {
     purses = purses.filter(isSameBrand);
   }
+
+  if (purseSelected === null && purses.length) {
+    purseSelected = purses[0];
+  }
+
   if (purses && purses.length > 0) {
     items = purses.map(({ pursePetname, displayInfo, brandPetname, value }) => (
       <MenuItem key={pursePetname} value={pursePetname} divider>
@@ -78,14 +83,22 @@ const makeNatPurseSelector = ({
       </MenuItem>
     ));
   }
+
+  const getPurse = event => {
+    const pursePetname = event.target.value;
+    const purse = purses.find(
+      p => JSON.stringify(p.pursePetname) === JSON.stringify(pursePetname),
+    );
+    onChange(purse);
+  };
+
   return (
     <TextField
       select
       label={label}
       variant="outlined"
-      fullWidth
       value={purseSelected === null ? '' : purseSelected.pursePetname}
-      onChange={onChange}
+      onChange={getPurse}
       disabled={disabled}
       error={error}
       inputProps={{
