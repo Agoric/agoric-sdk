@@ -1,5 +1,6 @@
 import { parseAsNat } from '../display/natValue/parseAsNat';
 import { stringifyNat } from '../display/natValue/stringifyNat';
+import { debounce } from '../helpers';
 
 // https://material-ui.com/api/text-field/
 
@@ -8,18 +9,38 @@ import { stringifyNat } from '../display/natValue/stringifyNat';
 // multiple instances of React and MaterialUI. Thus, we pass the
 // instances to the component.
 
+const DEBOUNCE_WAIT_MS = 800;
+
 const makeNatAmountInput = ({ React, TextField }) => ({
   label = 'Amount',
   value = 0n,
   decimalPlaces = 0,
-  placesToShow = 2,
+  placesToShow = 0,
   disabled = false,
   error = false,
   onChange = () => {},
   required = false,
   helperText = null,
 }) => {
-  const step = decimalPlaces > 0 ? 1 / 10 ** placesToShow : 1;
+  console.log('receiving new value', value);
+
+  // Use react state so it knows to re-render on displayString change
+  const [displayString, setDisplayString] = React.useState(
+    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+  );
+
+  console.log('displayString', displayString);
+
+  // With use effect, the display gets completely disassociated from
+  // the user's typing.
+  // React.useEffect(() => {
+  //   setDisplayString(
+  //     value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+  //   );
+  // }, [value, decimalPlaces, placesToShow, displayString]);
+
+  const step = 1;
+  placesToShow = decimalPlaces > 0 ? 2 : 0;
 
   // No negative values allowed in the input
   const inputProps = {
@@ -33,17 +54,33 @@ const makeNatAmountInput = ({ React, TextField }) => ({
     }
   };
 
+  const delayedOnChange = debounce(str => {
+    console.log('actually parsing');
+    const parsed = parseAsNat(str, decimalPlaces);
+    setDisplayString(stringifyNat(parsed, decimalPlaces, placesToShow));
+    onChange(parsed);
+  }, DEBOUNCE_WAIT_MS);
+
+  // We want to delay the input validation so that the user can type
+  // freely, and then it gets formatted appropriately after the user stops.
+  const handleOnChange = ev => {
+    const str = ev.target.value;
+    // Show the user exactly what they are typing
+    setDisplayString(str);
+
+    // Wait until the user stops typing to parse it
+    delayedOnChange(str);
+  };
+
   return (
     <TextField
       label={label}
       type="number"
       variant="outlined"
       InputProps={inputProps}
-      onChange={ev => onChange(parseAsNat(ev.target.value, decimalPlaces))}
+      onChange={handleOnChange}
       onKeyPress={preventSubtractChar}
-      value={
-        value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow)
-      }
+      value={displayString}
       disabled={disabled}
       error={error}
       required={required}
