@@ -12,14 +12,20 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   label = 'Amount',
   value = 0n,
   decimalPlaces = 0,
-  placesToShow = 2,
+  placesToShow = 0,
   disabled = false,
   error = false,
   onChange = () => {},
   required = false,
   helperText = null,
 }) => {
-  const step = decimalPlaces > 0 ? 1 / 10 ** placesToShow : 1;
+  console.log('DISPLAYING NAT AMOUNT INPUT');
+  const [displayString, setDisplayString] = React.useState(
+    value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow),
+  );
+
+  const step = 1;
+  placesToShow = decimalPlaces > 0 ? 2 : 0;
 
   // No negative values allowed in the input
   const inputProps = {
@@ -33,17 +39,24 @@ const makeNatAmountInput = ({ React, TextField }) => ({
     }
   };
 
+  const handleOnChange = ev => {
+    const str = ev.target.value;
+    console.log('STRING', str);
+    const parsed = parseAsNat(str, decimalPlaces);
+    console.log('PARSED', parsed);
+    setDisplayString(str);
+    // onChange(parsed);
+  };
+
   return (
     <TextField
       label={label}
       type="number"
       variant="outlined"
       InputProps={inputProps}
-      onChange={ev => onChange(parseAsNat(ev.target.value, decimalPlaces))}
+      onChange={handleOnChange}
       onKeyPress={preventSubtractChar}
-      value={
-        value === null ? '0' : stringifyNat(value, decimalPlaces, placesToShow)
-      }
+      value={displayString}
       disabled={disabled}
       error={error}
       required={required}
