@@ -11587,10 +11587,10 @@ ses@^0.12.3:
     "@agoric/make-hardener" "^0.1.2"
     "@agoric/transform-module" "^0.4.1"
 
-ses@^0.12.5:
-  version "0.12.5"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.5.tgz#c19bc0454438c42f235566bc6fa180b29ead6b1a"
-  integrity sha512-aKbOsk8Sb1zuDffS33SdXzuzoDmhYe0cYxL+BrkxFlSi6APn4yKfy0XRIVBOpZc2nyV732S6Xd3EFIkUjO4Bfg==
+ses@^0.12.6:
+  version "0.12.6"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.6.tgz#397f2818ec2c8d33d61bb42aaaac3a9d8e7d9eae"
+  integrity sha512-NXV6K/6nxqnORv0/Kc+HtdIubdPZr6EXNUu/TMeNla69rSxhhAH7huKKaG8GBOhX87RyiDYz/31IlJR+1xUbdg==
   dependencies:
     "@agoric/babel-standalone" "^7.9.5"
     "@agoric/make-hardener" "^0.1.2"
