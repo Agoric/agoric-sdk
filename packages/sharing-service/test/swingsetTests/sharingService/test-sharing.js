@@ -1,6 +1,6 @@
 /* global __dirname */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import path from 'path';
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 

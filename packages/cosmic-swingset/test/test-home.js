@@ -1,6 +1,6 @@
 /* global require process */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
 

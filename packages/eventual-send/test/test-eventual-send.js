@@ -1,6 +1,6 @@
 /* global setTimeout */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import { assert, details as X } from '@agoric/assert';
 import { HandledPromise } from './get-hp';
 

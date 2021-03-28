@@ -1,6 +1,6 @@
 // @ts-check
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,

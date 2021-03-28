@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import {
   makeStore,
   makeExternalStore,

@@ -1,7 +1,7 @@
 /* global __dirname process setTimeout clearTimeout setInterval clearInterval */
 /* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import fs from 'fs';
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';

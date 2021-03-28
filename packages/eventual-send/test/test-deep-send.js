@@ -2,8 +2,8 @@
 // automated test. Rather, its purpose is just to run it to see what a
 // deep stack looks like.
 
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import { assert } from '@agoric/assert';
 import { E } from './get-hp';
 

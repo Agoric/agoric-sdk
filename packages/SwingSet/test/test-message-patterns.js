@@ -3,8 +3,11 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-import '@agoric/install-ses';
+// `test.repeat` does not yet seem compatible with ses-ava
+// import { test } from '../tools/prepare-test-env-ava';
+import '../tools/prepare-test-env';
 import test from 'ava';
+
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';

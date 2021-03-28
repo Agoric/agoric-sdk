@@ -1,6 +1,7 @@
 /* global require */
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
 

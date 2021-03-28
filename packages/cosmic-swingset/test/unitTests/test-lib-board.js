@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 
 import { Far } from '@agoric/marshal';
 import { makeBoard } from '../../lib/ag-solo/vats/lib-board';

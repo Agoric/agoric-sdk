@@ -1,5 +1,5 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
 import { importBundle } from '@agoric/import-bundle';
 import { bundleFunction } from './make-function-bundle';
 
