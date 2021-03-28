@@ -42,6 +42,8 @@ export const makeStartInstance = (
       terms,
     } = config;
 
+    console.log(`- Creating Contract Instance: ${instancePetname}`);
+
     const issuerKeywordRecordToUse = getIssuerKeywordRecord(
       issuerKeywordRecord,
       issuerPetnameKeywordRecord,
@@ -60,6 +62,7 @@ export const makeStartInstance = (
       adminFacet,
     } = startInstanceResult;
 
+    console.log(`-- Registering Contract Instance: ${instancePetname}`);
     await E(instanceManager).add(instancePetname, instance);
 
     if (passStyleOf(creatorInvitation) === 'presence') {
@@ -67,9 +70,12 @@ export const makeStartInstance = (
         creatorInvitation,
         `creatorInvitation must be defined to be deposited`,
       );
+      console.log(`-- Adding Invitation for: ${instancePetname}`);
       const invitationAmount = await E(zoeInvitationPurse).deposit(
         creatorInvitation,
       );
+      console.log(`- Created Contract Instance: ${instancePetname}`);
+
       const creatorInvitationDetails = invitationAmount.value[0];
       return {
         creatorFacet,
@@ -79,7 +85,7 @@ export const makeStartInstance = (
         creatorInvitationDetails,
       };
     }
-
+    console.log(`- Created Contract Instance: ${instancePetname}`);
     return startInstanceResult;
   };
 
