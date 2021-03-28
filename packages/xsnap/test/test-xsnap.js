@@ -409,12 +409,16 @@ test('heap exhaustion: orderly fail-stop', async t => {
 test('property name space exhaustion: orderly fail-stop', async t => {
   const grow = qty => `
   const objmap = {};
-  for (let ix = 0; ix < ${qty}; ix += 1) {
-    const key = \`k\${ix}\`;
-    objmap[key] = 1;
-    if (!(key in objmap)) {
-      throw Error(key);
+  try {
+    for (let ix = 0; ix < ${qty}; ix += 1) {
+      const key = \`k\${ix}\`;
+      objmap[key] = 1;
+      if (!(key in objmap)) {
+        throw Error(key);
+      }
     }
+  } catch (err) {
+    // name space exhaustion should not be catchable!
   }
   `;
   for (const debug of [false, true]) {
@@ -435,10 +439,15 @@ test('parser buffer exhaustion: orderly fail-stop', async t => {
   const grow = `
   const send = it => issueCommand(ArrayBuffer.fromString(it));
   let expr = '1+1';
-  for(;;) {
-    send(expr.length);
-    eval(expr);
-    expr = expr + ',' + expr;
+  try {
+    for(;;) {
+      send(expr.length);
+      eval(expr);
+      expr = expr + ',' + expr;
+    }
+  } catch (err) {
+    // buffer exhaustion should not be catchable!
+    send(err.message);
   }
   `;
   for (const debug of [false, true]) {
