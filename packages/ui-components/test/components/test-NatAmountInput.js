@@ -56,7 +56,6 @@ const renderNatAmountInput = ({
       error={error}
     />,
   );
-  console.log('VALUE:', result.find('input').attr('value'));
   return result;
 };
 
