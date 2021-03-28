@@ -12,7 +12,7 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   label = 'Amount',
   value = 0n,
   decimalPlaces = 0,
-  placesToShow = 0,
+  placesToShow = undefined,
   disabled = false,
   error = false,
   onChange = () => {},
@@ -20,7 +20,9 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   helperText = null,
 }) => {
   const step = 1;
-  placesToShow = decimalPlaces > 0 ? 2 : 0;
+  if (typeof placesToShow !== 'number') {
+    placesToShow = decimalPlaces > 0 ? 2 : 0;
+  }
 
   // No negative values allowed in the input
   const inputProps = {
