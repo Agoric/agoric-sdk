@@ -61,7 +61,7 @@ const makeNatAmountInput = ({ React, TextField }) => ({
 
   // If what the user is typing parses to the current
   // value (though it might have extra punctuation),
-  // then show that rather than a computed dispaly string
+  // then show that rather than a computed display string
   const displayString =
     value === parseAsNat(fieldString, decimalPlaces)
       ? fieldString
