@@ -38,6 +38,7 @@
     "packages/dapp-svelte-wallet/ui",
     "packages/dapp-svelte-wallet/api",
     "packages/dapp-svelte-wallet",
+    "packages/treasury",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
     "packages/deployment",

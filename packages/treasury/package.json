@@ -1,0 +1,86 @@
+{
+  "name": "@agoric/treasury",
+  "version": "0.1.1",
+  "description": "Core cryptoeconomy contracts",
+  "parsers": {
+    "js": "mjs"
+  },
+  "main": "src/stablecoinMachine.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "yarn build:bundles",
+    "build:bundles": "node -r esm scripts/build-bundles.js",
+    "test": "ava --verbose",
+    "test:nyc": "nyc ava",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:eslint": "eslint '**/*.js'",
+    "lint:types": "tsc -p jsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/assert": "^0.2.4",
+    "@agoric/bundle-source": "^1.2.4",
+    "@agoric/captp": "^1.7.4",
+    "@agoric/deploy-script-support": "^0.1.1",
+    "@agoric/ertp": "^0.10.1",
+    "@agoric/eventual-send": "^0.13.4",
+    "@agoric/marshal": "^0.4.1",
+    "@agoric/nat": "^4.0.0",
+    "@agoric/notifier": "^0.3.4",
+    "@agoric/promise-kit": "^0.2.4",
+    "@agoric/store": "^0.4.4",
+    "@agoric/swingset-vat": "^0.14.0",
+    "@agoric/zoe": "^0.13.1"
+  },
+  "devDependencies": {
+    "@agoric/install-ses": "^0.5.4",
+    "ava": "^3.12.1",
+    "esm": "^3.2.25",
+    "nyc": "^15.1.0",
+    "ses": "^0.12.6"
+  },
+  "files": [
+    "bundles/",
+    "src/",
+    "exported.js",
+    "NEWS.md"
+  ],
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "10m"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
