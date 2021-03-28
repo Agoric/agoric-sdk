@@ -44,7 +44,7 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   };
 
   // Display the rendered version of the value when
-  // the user stops editign the component.
+  // the user stops editing the component.
   const handleOnBlur = _ => {
     setFieldString(valueString);
   };
