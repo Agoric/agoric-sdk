@@ -435,50 +435,40 @@ test('property name space exhaustion: orderly fail-stop', async t => {
   }
 });
 
-test('parser buffer exhaustion: orderly fail-stop', async t => {
-  const grow = `
-  const send = it => issueCommand(ArrayBuffer.fromString(it));
-  let expr = '1+1';
+(() => {
+  const grow = qty => `
+  const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  let expr = \`"\${Array(${qty}).fill('abcd').join('')}"\`;
   try {
-    for(;;) {
-      send(expr.length);
-      eval(expr);
-      expr = expr + ',' + expr;
-    }
+    eval(expr);
+    send(expr.length);
   } catch (err) {
-    // buffer exhaustion should not be catchable!
     send(err.message);
   }
   `;
   for (const debug of [false, true]) {
-    const opts = options();
-    const vat = xsnap({ ...opts, debug });
-    t.teardown(() => vat.terminate());
-    // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow), { message: /exited with code 7$/ });
-    t.deepEqual(opts.messages.slice(0, 19), [
-      '3',
-      '7',
-      '15',
-      '31',
-      '63',
-      '127',
-      '255',
-      '511',
-      '1023',
-      '2047',
-      '4095',
-      '8191',
-      '16383',
-      '32767',
-      '65535',
-      '131071',
-      '262143',
-      '524287',
-      '1048575',
-    ]);
+    for (const [parserBufferSize, qty, failure] of [
+      [undefined, 100, null],
+      [undefined, 8192 * 1024 + 100, 'buffer overflow'],
+      [2, 10, null],
+      [2, 50000, 'buffer overflow'],
+    ]) {
+      test(`parser buffer size ${parserBufferSize ||
+        'default'}k; rep ${qty}; debug ${debug}`, async t => {
+        const opts = options();
+        const vat = xsnap({ ...opts, debug, parserBufferSize });
+        t.teardown(() => vat.terminate());
+        const expected = failure ? [failure] : [qty * 4 + 2];
+        // eslint-disable-next-line no-await-in-loop
+        await t.notThrowsAsync(vat.evaluate(grow(qty)));
+        t.deepEqual(
+          expected,
+          opts.messages.map(txt => JSON.parse(txt)),
+        );
+      });
+    }
   }
-});
+})();
 
 (() => {
   const challenges = [
