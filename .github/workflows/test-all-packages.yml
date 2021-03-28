@@ -324,6 +324,10 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - name: yarn test (treasury)
+      run: cd packages/treasury && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
       env:
