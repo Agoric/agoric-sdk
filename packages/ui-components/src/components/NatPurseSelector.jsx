@@ -25,6 +25,9 @@ const makeNatPurseSelector = ({
   brandToFilter = null,
 }) => {
   const useStyles = makeStyles(theme => ({
+    root: {
+      minWidth: '150px',
+    },
     select: {
       display: 'flex',
       alignItems: 'center',
@@ -104,6 +107,7 @@ const makeNatPurseSelector = ({
       inputProps={{
         className: clsx(purseSelected && classes.noPadding, classes.select),
       }}
+      className={classes.root}
     >
       {items}
     </TextField>
