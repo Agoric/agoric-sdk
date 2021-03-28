@@ -45,7 +45,7 @@ const renderNatAmountInput = ({
   disabled = false,
   error = false,
 } = {}) => {
-  const result =  render(
+  const result = render(
     <NatAmountInput
       label={label}
       onChange={onChange}
