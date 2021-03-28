@@ -45,7 +45,7 @@ const renderNatAmountInput = ({
   disabled = false,
   error = false,
 } = {}) => {
-  return render(
+  const result = render(
     <NatAmountInput
       label={label}
       onChange={onChange}
@@ -56,6 +56,7 @@ const renderNatAmountInput = ({
       error={error}
     />,
   );
+  return result;
 };
 
 test('has props', t => {
@@ -116,8 +117,7 @@ test('error=true', t => {
   t.is(input.attr('aria-invalid'), 'true');
 });
 
-// TODO: change test to account for the delayed validation
-test.failing('can simulate input - just calls onChange', async t => {
+test('can simulate input - just calls onChange', async t => {
   let receivedValue;
   const onChange = newValue => {
     receivedValue = newValue;

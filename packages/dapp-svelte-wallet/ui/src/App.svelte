@@ -51,7 +51,7 @@
     --text-color-normal: green;
     --text-color-light: #273242;
     color: var(--theme-text);
-    --agoric-bg: #ab2328;
+    --agoric-bg: rgb(215, 50, 82);
     --banner-height: 70px;
     --content-width: 1024px;
   }
