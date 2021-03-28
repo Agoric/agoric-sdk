@@ -992,28 +992,28 @@ void fxAbort(txMachine* the, int status)
 #ifdef mxDebug
 			fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-			fxExitToHost(the);
+		c_exit(status);
 			break;
 	case XS_NOT_ENOUGH_MEMORY_EXIT:
 		xsLog("memory full\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_NO_MORE_KEYS_EXIT:
 		xsLog("not enough keys\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_TOO_MUCH_COMPUTATION_EXIT:
 		xsLog("too much computation\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_UNHANDLED_EXCEPTION_EXIT:
 	case XS_UNHANDLED_REJECTION_EXIT:

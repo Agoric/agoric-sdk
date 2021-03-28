@@ -50,18 +50,19 @@ test('evaluate until idle', async t => {
 test('evaluate infinite loop', async t => {
   const opts = options();
   const vat = xsnap(opts);
+  t.teardown(vat.terminate);
   await t.throwsAsync(vat.evaluate(`for (;;) {}`), {
-    message: 'xsnap test worker exited',
+    message: /exited with code 7/,
     instanceOf: Error,
   });
-  await vat.close();
   t.deepEqual([], opts.messages);
 });
 
 // TODO: Reenable when this doesn't take 3.6 seconds.
-test.skip('evaluate promise loop', async t => {
+test('evaluate promise loop', async t => {
   const opts = options();
   const vat = xsnap(opts);
+  t.teardown(vat.terminate);
   await t.throwsAsync(
     vat.evaluate(`
     function f() {
@@ -70,11 +71,10 @@ test.skip('evaluate promise loop', async t => {
     f();
   `),
     {
-      message: 'xsnap test worker exited',
+      message: /exited with code 7/,
       instanceOf: Error,
     },
   );
-  await vat.close();
   t.deepEqual([], opts.messages);
 });
 
@@ -402,7 +402,7 @@ test('heap exhaustion: orderly fail-stop', async t => {
     const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
     // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow));
+    await t.throwsAsync(vat.evaluate(grow), { message: /exited with code 1$/ });
   }
 });
 
@@ -425,11 +425,9 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     await t.notThrowsAsync(vat.evaluate(grow(31000)));
     console.log({ debug, qty: 4000000000 });
     // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(
-      vat.evaluate(grow(4000000000)),
-      undefined,
-      'not enough keys',
-    );
+    await t.throwsAsync(vat.evaluate(grow(4000000000)), {
+      message: /exited with code 6/,
+    });
   }
 });
 
@@ -448,7 +446,7 @@ test('parser buffer exhaustion: orderly fail-stop', async t => {
     const vat = xsnap({ ...opts, debug });
     t.teardown(() => vat.terminate());
     // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow));
+    await t.throwsAsync(vat.evaluate(grow), { message: /exited with code 7$/ });
     t.deepEqual(opts.messages.slice(0, 19), [
       '3',
       '7',
@@ -498,6 +496,7 @@ test('parser buffer exhaustion: orderly fail-stop', async t => {
             // ignore
           }
         })()`),
+        { message: /exited with code 1$/ },
       );
     });
   }
