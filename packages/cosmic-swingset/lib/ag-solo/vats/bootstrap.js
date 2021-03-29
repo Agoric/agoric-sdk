@@ -104,7 +104,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     await installEconomy();
-    const centralIssuer = await E(agoricNames).lookup('issuer', 'Moe');
+    const centralIssuer = await E(agoricNames).lookup('issuer', 'MOE');
 
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,

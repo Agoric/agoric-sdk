@@ -100,8 +100,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
     [instanceAdmin, treasuryUiDefaults.AMM_NAME, ammInstance],
     [brandAdmin, 'TreasuryGovernance', govBrand],
     [issuerAdmin, 'TreasuryGovernance', govIssuer],
-    [brandAdmin, 'Moe', moeBrand],
-    [issuerAdmin, 'Moe', moeIssuer],
+    [brandAdmin, 'MOE', moeBrand],
+    [issuerAdmin, 'MOE', moeIssuer],
   ];
   await Promise.all(
     nameAdminUpdates.map(([nameAdmin, name, value]) => E(nameAdmin).update(name, value)),

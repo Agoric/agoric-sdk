@@ -119,7 +119,7 @@ test.serial('home.wallet - MOE setup', async t => {
   const issuersMap = new Map(issuers);
   const moeIssuer = issuersMap.get('MOE');
 
-  const moePurse = await E(wallet).getPurse('MOE funds');
+  const moePurse = await E(wallet).getPurse('Local currency');
   const brandFromIssuer = await E(moeIssuer).getBrand();
   const brandFromPurse = await E(moePurse).getAllegedBrand();
   t.is(brandFromPurse, brandFromIssuer);
