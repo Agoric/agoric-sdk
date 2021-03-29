@@ -3,7 +3,7 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-// `test.repeat` does not yet seem compatible with ses-ava
+// `test.serial` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
 // TODO restore
 // import { test } from '../tools/prepare-test-env-ava';
