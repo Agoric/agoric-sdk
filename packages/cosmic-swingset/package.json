@@ -49,6 +49,7 @@
     "@agoric/swing-store-simple": "^0.3.4",
     "@agoric/swingset-vat": "^0.14.0",
     "@agoric/transform-eventual-send": "^1.4.4",
+    "@agoric/treasury": "^0.1.1",
     "@agoric/zoe": "^0.13.1",
     "@babel/generator": "^7.6.4",
     "@iarna/toml": "^2.2.3",
