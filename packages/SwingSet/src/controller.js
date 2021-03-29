@@ -59,7 +59,6 @@ export async function makeSwingsetController(
     slogCallbacks,
     slogFile,
     testTrackDecref,
-    defaultManagerType = env.WORKER_TYPE || 'local',
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -230,7 +229,7 @@ export async function makeSwingsetController(
     FinalizationRegistry,
   };
 
-  const kernelOptions = { verbose, testTrackDecref, defaultManagerType };
+  const kernelOptions = { verbose, testTrackDecref };
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -324,14 +323,12 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     testTrackDecref,
-    defaultManagerType,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
     testTrackDecref,
     slogCallbacks,
-    defaultManagerType,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;

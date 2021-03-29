@@ -198,7 +198,10 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     storage.set('crankNumber', `${crankNumber + 1n}`);
   }
 
-  function createStartingKernelState() {
+  /**
+   * @param { ManagerType } defaultManagerType
+   */
+  function createStartingKernelState(defaultManagerType) {
     storage.set('vat.names', '[]');
     storage.set('vat.dynamicIDs', '[]');
     storage.set('vat.nextID', `${FIRST_VAT_ID}`);
@@ -209,6 +212,11 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     storage.set('kp.nextID', `${FIRST_PROMISE_ID}`);
     storage.set('runQueue', JSON.stringify([]));
     storage.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
+    storage.set('kernel.defaultManagerType', defaultManagerType);
+  }
+
+  function getDefaultManagerType() {
+    return getRequired('kernel.defaultManagerType');
   }
 
   function addBundle(name, bundle) {
@@ -819,6 +827,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
     getInitialized,
     setInitialized,
     createStartingKernelState,
+    getDefaultManagerType,
     addBundle,
     getBundle,
 

@@ -1,4 +1,4 @@
-/* global require */
+/* global require, process */
 // @ts-check
 import fs from 'fs';
 import path from 'path';
@@ -75,6 +75,7 @@ function byName(a, b) {
 /**
  * @typedef {Object} SwingSetConfig a swingset config object
  * @property {string} [bootstrap]
+ * @property { ManagerType } [defaultManagerType]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {*} [devices]
@@ -212,7 +213,6 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
  */
 export function loadSwingsetConfigFile(configPath) {
   try {
-    /** @type { SwingSetConfig } */
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const dirname = path.dirname(configPath);
     normalizeConfigDescriptor(config.vats, dirname, true);
@@ -238,17 +238,18 @@ export function swingsetIsInitialized(storage) {
 }
 
 /**
- *
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {*} hostStorage
  * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
+ * @param {{ env?: Record<string, string> }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
   argv = [],
   hostStorage = initSwingStore().storage,
   initializationOptions = {},
+  runtimeOptions = {},
 ) {
   insistStorageAPI(hostStorage);
 
@@ -267,6 +268,23 @@ export async function initializeSwingset(
   }
   if (!config.devices) {
     config.devices = {};
+  }
+
+  // Use ambient process.env only if caller did not specify.
+  const { env: { WORKER_TYPE } = process.env } = runtimeOptions;
+  const defaultManagerType = config.defaultManagerType || WORKER_TYPE;
+  switch (defaultManagerType) {
+    case 'local':
+    case 'nodeWorker':
+    case 'node-subprocess':
+    case 'xs-worker':
+      config.defaultManagerType = defaultManagerType;
+      break;
+    case undefined:
+      config.defaultManagerType = 'local';
+      break;
+    default:
+      assert.fail(X`unknown manager type ${defaultManagerType}`);
   }
 
   const { kernelBundles = await buildKernelBundles() } = initializationOptions;
