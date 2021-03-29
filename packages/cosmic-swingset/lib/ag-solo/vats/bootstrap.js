@@ -14,9 +14,9 @@ import { assert, details as X } from '@agoric/assert';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
+import { CENTRAL_ISSUER_NAME, fakeIssuerNameToRecord } from './issuers';
 
 const NUM_IBC_PORTS = 3;
-const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
 const QUOTE_INTERVAL = 30;
 
 console.debug(`loading bootstrap.js`);
@@ -66,81 +66,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
-    // Make the other demo mints
-    /**
-     * @typedef {Object} IssuerRecord
-     * @property {Array<any>} [issuerArgs]
-     * @property {string} pursePetname
-     * @property {number} mintValue
-     * @property {Array<[number, number]>} [fakeTradesGivenCentral]
-     */
-    /** @type {Map<string, IssuerRecord>} */
-    const fakeIssuerNameToRecord = new Map(
-      harden([
-        [
-          CENTRAL_ISSUER_NAME,
-          {
-            issuerArgs: [undefined, { decimalPlaces: 3 }],
-            mintValue: 20000,
-            pursePetname: 'Local currency',
-            fakeTradesGivenCentral: [[1, 1]],
-          },
-        ],
-        [
-          'Testnet.$LINK',
-          {
-            issuerArgs: [undefined, { decimalPlaces: 6 }],
-            mintValue: 7 * 10 ** 6,
-            pursePetname: 'Oracle fee',
-            fakeTradesGivenCentral: [
-              [1000, 3000000],
-              [1000, 2500000],
-              [1000, 2750000],
-            ],
-          },
-        ],
-        [
-          'moola',
-          {
-            mintValue: 1900,
-            pursePetname: 'Fun budget',
-            fakeTradesGivenCentral: [
-              [10, 1],
-              [13, 1],
-              [12, 1],
-              [18, 1],
-              [15, 1],
-            ],
-          },
-        ],
-        [
-          'MOE',
-          {
-            mintValue: 0,
-            pursePetname: 'MOE funds',
-            fakeTradesGivenCentral: [
-              [10, 15],
-              [13, 9],
-              [12, 13],
-              [18, 15],
-              [15, 17],
-            ],
-          },
-        ],
-        [
-          'simolean',
-          {
-            mintValue: 1900,
-            pursePetname: 'Nest egg',
-            fakeTradesGivenCentral: [
-              [2135, 50],
-              [2172, 50],
-              [2124, 50],
-            ],
-          },
-        ],
-      ]),
-    );
     const issuerNameToRecord = noFakeCurrencies
       ? new Map()
       : fakeIssuerNameToRecord;
@@ -148,6 +73,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const centralIssuerIndex = issuerNames.findIndex(
       issuerName => issuerName === CENTRAL_ISSUER_NAME,
     );
+    // Make the other demo mints
     const issuers = await Promise.all(
       issuerNames.map(issuerName =>
         E(vats.mints).makeMintAndIssuer(
