@@ -1,5 +1,12 @@
 /* global require process */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
+// `test.after.always` does not yet seem compatible with ses-ava
+// See https://github.com/endojs/endo/issues/647
+// TODO restore
+// import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import '@agoric/zoe/tools/prepare-test-env';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';

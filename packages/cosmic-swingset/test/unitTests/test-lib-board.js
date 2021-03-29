@@ -2,7 +2,6 @@
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-
 import { Far } from '@agoric/marshal';
 import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
 
