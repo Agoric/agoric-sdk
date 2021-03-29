@@ -14,6 +14,7 @@ import {
   getAmountIn,
   getQuoteValues,
 } from '../../src/contractSupport';
+import { assertAmountsEqual } from '../zoeTestHelpers';
 
 const makeTestPriceAuthority = (brands, priceList, timer) =>
   makeFakePriceAuthority({
@@ -37,8 +38,8 @@ test('priceAuthority quoteAtTime', async t => {
   const done = E(priceAuthority)
     .quoteAtTime(3n, moola(5), bucksBrand)
     .then(async quote => {
-      t.deepEqual(moola(5), getAmountIn(quote), 'amountIn match');
-      t.deepEqual(bucks(55 * 5), getAmountOut(quote));
+      assertAmountsEqual(t, moola(5), getAmountIn(quote));
+      assertAmountsEqual(t, bucks(55 * 5), getAmountOut(quote));
       t.is(3n, getTimestamp(quote));
     });
 
@@ -82,8 +83,8 @@ test('priceAuthority quoteWanted', async t => {
   const quote = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400));
   const quoteAmount = quote.quoteAmount.value[0];
   t.is(1n, quoteAmount.timestamp);
-  t.deepEqual(bucks(400), quoteAmount.amountOut);
-  t.deepEqual(moola(20), quoteAmount.amountIn);
+  assertAmountsEqual(t, bucks(400), quoteAmount.amountOut);
+  assertAmountsEqual(t, moola(20), quoteAmount.amountIn);
 });
 
 test('priceAuthority paired quotes', async t => {
@@ -104,14 +105,14 @@ test('priceAuthority paired quotes', async t => {
   const quoteOut = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400));
   const quoteOutAmount = quoteOut.quoteAmount.value[0];
   t.is(1n, quoteOutAmount.timestamp);
-  t.deepEqual(bucks(400), quoteOutAmount.amountOut);
-  t.deepEqual(moola(20), quoteOutAmount.amountIn);
+  assertAmountsEqual(t, bucks(400), quoteOutAmount.amountOut);
+  assertAmountsEqual(t, moola(20), quoteOutAmount.amountIn);
 
   const quoteIn = await E(priceAuthority).quoteGiven(moola(22), bucksBrand);
   const quoteInAmount = quoteIn.quoteAmount.value[0];
   t.is(1n, quoteInAmount.timestamp);
-  t.deepEqual(bucks(20 * 22), quoteInAmount.amountOut);
-  t.deepEqual(moola(22), quoteInAmount.amountIn);
+  assertAmountsEqual(t, bucks(20 * 22), quoteInAmount.amountOut);
+  assertAmountsEqual(t, moola(22), quoteInAmount.amountIn);
 });
 
 test('priceAuthority quoteWhenGTE', async t => {
@@ -129,8 +130,8 @@ test('priceAuthority quoteWhenGTE', async t => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.is(4n, manualTimer.getCurrentTimestamp());
       t.is(4n, quoteInAmount.timestamp);
-      t.deepEqual(bucks(40), quoteInAmount.amountOut);
-      t.deepEqual(moola(1), quoteInAmount.amountIn);
+      assertAmountsEqual(t, bucks(40), quoteInAmount.amountOut);
+      assertAmountsEqual(t, moola(1), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -155,8 +156,8 @@ test('priceAuthority quoteWhenLT', async t => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.is(3n, manualTimer.getCurrentTimestamp());
       t.is(3n, quoteInAmount.timestamp);
-      t.deepEqual(bucks(29), quoteInAmount.amountOut);
-      t.deepEqual(moola(1), quoteInAmount.amountIn);
+      assertAmountsEqual(t, bucks(29), quoteInAmount.amountOut);
+      assertAmountsEqual(t, moola(1), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -180,8 +181,8 @@ test('priceAuthority quoteWhenGT', async t => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.is(3n, manualTimer.getCurrentTimestamp());
       t.is(3n, quoteInAmount.timestamp);
-      t.deepEqual(bucks(41), quoteInAmount.amountOut);
-      t.deepEqual(moola(1), quoteInAmount.amountIn);
+      assertAmountsEqual(t, bucks(41), quoteInAmount.amountOut);
+      assertAmountsEqual(t, moola(1), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -205,8 +206,8 @@ test('priceAuthority quoteWhenLTE', async t => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.is(4n, quoteInAmount.timestamp);
       t.is(4n, manualTimer.getCurrentTimestamp());
-      t.deepEqual(bucks(25), quoteInAmount.amountOut);
-      t.deepEqual(moola(1), quoteInAmount.amountIn);
+      assertAmountsEqual(t, bucks(25), quoteInAmount.amountOut);
+      assertAmountsEqual(t, moola(1), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();

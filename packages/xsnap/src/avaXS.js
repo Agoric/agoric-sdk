@@ -15,7 +15,7 @@ import { assert, details as X, q } from '@agoric/assert';
 import { xsnap } from './xsnap';
 
 // scripts for use in xsnap subprocesses
-const SESboot = `../dist/bundle-ses-boot.umd.js`;
+const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.js`;
 
@@ -32,6 +32,8 @@ const asset = (ref, readFile) =>
  */
 const externals = [
   'ava',
+  'ses',
+  '@agoric/ses-ava',
   '@agoric/bundle-source',
   '@agoric/install-ses',
   '@agoric/install-metering-and-ses',
