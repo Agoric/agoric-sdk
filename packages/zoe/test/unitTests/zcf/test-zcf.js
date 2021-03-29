@@ -11,6 +11,7 @@ import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
 
 import { setupZCFTest } from './setupZcfTest';
+import { assertAmountsEqual } from '../../zoeTestHelpers';
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -470,7 +471,8 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const zcfSeat = zcfMint.mintGains({ A: amountMath.make(4n, brand) });
   t.truthy(zcfSeat);
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     zcfSeat.getAmountAllocated('A', brand),
     amountMath.make(4n, brand),
   );
@@ -540,7 +542,8 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     zcfSeat.getAmountAllocated('A', brand),
     amountMath.make(4n, brand),
   );
@@ -557,7 +560,8 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     zcfSeat.getAmountAllocated('A', brand),
     amountMath.make(4n, brand),
   );
@@ -565,7 +569,8 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1709
   const result = zcfMint.burnLosses({ A: amountMath.make(1n, brand) }, zcfSeat);
   t.is(result, undefined);
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     zcfSeat.getAmountAllocated('A', brand),
     amountMath.make(3n, brand),
   );
@@ -595,7 +600,8 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     zcfSeat.getAmountAllocated('A', brand),
     amountMath.make(4n, brand),
   );
@@ -853,7 +859,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
 
-  t.deepEqual(zcfSeat.getAmountAllocated('A', brand1), {
+  assertAmountsEqual(t, zcfSeat.getAmountAllocated('A', brand1), {
     brand: brand1,
     value: 3n,
   });
@@ -861,12 +867,12 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Again, mint some gains to change the allocation.
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
 
-  t.deepEqual(zcfSeat.getAmountAllocated('B'), {
+  assertAmountsEqual(t, zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
     value: 6n,
   });
 
-  t.deepEqual(zcfSeat.getAmountAllocated('B', brand2), {
+  assertAmountsEqual(t, zcfSeat.getAmountAllocated('B', brand2), {
     brand: brand2,
     value: 6n,
   });
@@ -1102,11 +1108,11 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await payoutPs.A, await payoutAP);
   t.deepEqual(await payoutPs.B, await payoutBP);
 
-  t.deepEqual(await E(issuer1).getAmountOf(payoutAP), {
+  assertAmountsEqual(t, await E(issuer1).getAmountOf(payoutAP), {
     brand: brand1,
     value: 3n,
   });
-  t.deepEqual(await E(issuer2).getAmountOf(payoutBP), {
+  assertAmountsEqual(t, await E(issuer2).getAmountOf(payoutBP), {
     brand: brand2,
     value: 6n,
   });
