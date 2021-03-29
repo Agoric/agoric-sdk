@@ -23,6 +23,7 @@ async function prepare() {
   // new (metered) dynamic vat
   const dynamicVatBundle = await bundleSource(
     require.resolve('./metered-dynamic-vat.js'),
+    'nestedEvaluate',
   );
   const bootstrapBundle = await bundleSource(
     require.resolve('./vat-load-dynamic.js'),

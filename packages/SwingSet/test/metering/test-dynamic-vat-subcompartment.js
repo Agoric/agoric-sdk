@@ -54,6 +54,7 @@ test('metering dynamic vat which imports bundle', async t => {
   // then we tell the dynamic vat to load the grandchild.js bundle
   const grandchildBundle = await bundleSource(
     require.resolve('./grandchild.js'),
+    'nestedEvaluate',
   );
   const r = c.queueToVatExport(
     'bootstrap',
