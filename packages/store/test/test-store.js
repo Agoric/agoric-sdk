@@ -1,6 +1,7 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
 import { makeStore, makeWeakStore } from '../src/index';

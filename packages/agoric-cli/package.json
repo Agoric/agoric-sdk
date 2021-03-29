@@ -20,6 +20,7 @@
     "lint-fix": "eslint --fix '**/*.{js,jsx}'"
   },
   "devDependencies": {
+    "@agoric/swingset-vat": "^0.14.0",
     "ava": "^3.12.1",
     "nyc": "^15.1.0",
     "tmp": "^0.1.0"

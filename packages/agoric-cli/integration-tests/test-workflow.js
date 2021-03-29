@@ -1,6 +1,6 @@
 /* global __dirname process setTimeout clearTimeout setInterval clearInterval */
 /* eslint-disable import/no-extraneous-dependencies */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import fs from 'fs';
 import tmp from 'tmp';

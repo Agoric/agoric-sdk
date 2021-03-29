@@ -1,10 +1,11 @@
 /* global setTimeout */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { assert, details as X } from '@agoric/assert';
 import { HandledPromise } from './get-hp';
 
 const { getPrototypeOf } = Object;
+const { details: X } = assert;
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.

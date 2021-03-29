@@ -1,4 +1,5 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { assert, details as X } from '@agoric/assert';
 import { wrapInescapableCompartment } from '../src/compartment-wrapper.js';

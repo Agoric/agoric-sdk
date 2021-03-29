@@ -1,6 +1,6 @@
 /* global require */
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava'; // calls lockdown()
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
