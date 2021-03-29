@@ -423,8 +423,6 @@ export function makeVaultKit(
     return interestKit.interest;
   }
 
-  // todo: add liquidateSome(collateralAmount): sells some collateral, reduces some debt
-
   function getDebtAmount() {
     return sconeDebt;
   }
@@ -433,12 +431,10 @@ export function makeVaultKit(
   const vault = harden({
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
-    // repay, borrowMore, recapitalize, withdrawCollateral, close
 
     // for status/debugging
     getCollateralAmount,
     getDebtAmount,
-    // getFeeAmount,
   });
 
   return harden({
@@ -449,13 +445,3 @@ export function makeVaultKit(
     liquidated,
   });
 }
-
-// payback could be split into:
-// * returnScones: reduces sconeDebt
-// * withdrawSomeCollateral: do margin check, remove collateral
-// * close: do margin check, remove all collateral, close Vault
-//
-// the downside is that a buggy vault contract could accept returnScones()
-// but break before withdrawSomeCollateral() finishes
-
-// consider payback() and close()
