@@ -3,7 +3,19 @@ import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "Scone" stablecoin.
+// "Scone" stablecoin. This overarching SCM will hold ownershipTokens in the
+// individual per-type vaultManagers.
+//
+// makeAddTypeInvitation is a closely held method that adds a brand new
+// collateral type. It specifies the initial exchange rate for that type.
+//
+// a second closely held method (not implemented yet) would add collateral of a
+// type for which there is an existing pool. It gets the current price from the
+// pool.
+//
+// ownershipTokens for vaultManagers entitle holders to distributions, but you
+// can't redeem them outright, that would drain the utility from the economy.
+
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
