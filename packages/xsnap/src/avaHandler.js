@@ -44,6 +44,10 @@ const testRequire = function require(specifier) {
   switch (specifier) {
     case 'ava':
       return test;
+    case 'ses':
+      return undefined;
+    case '@agoric/ses-ava':
+      return { wrapTest: test => test };
     case '@agoric/install-ses':
       return undefined;
     case '@agoric/install-metering-and-ses':
