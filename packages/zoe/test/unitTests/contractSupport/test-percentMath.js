@@ -64,7 +64,7 @@ test('percentMath - ALL', t => {
   /** @param {bigint} value */
   const moe = value => amountMath.make(value, brand);
 
-  assertAmountsEqual(t, moe(100000), makeAll(brand).scale(moe(100000n)));
+  assertAmountsEqual(t, moe(100000n), makeAll(brand).scale(moe(100000n)));
 });
 
 test('percentMath - NONE', t => {
@@ -74,7 +74,7 @@ test('percentMath - NONE', t => {
 
   assertAmountsEqual(
     t,
-    amountMath.getEmpty(),
+    amountMath.makeEmpty(brand),
     makeNone(brand).scale(moe(100000n)),
   );
 });

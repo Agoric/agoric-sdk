@@ -45,7 +45,7 @@ const testTerms = async (t, zcf, expected) => {
   const zcfTerms = zcf.getTerms();
   const zcfTermsMinusAmountMath = { ...zcfTerms, maths: {} };
   const expectedMinusAmountMath = { ...expected, maths: {} };
-  assertAmountsEqual(t, zcfTermsMinusAmountMath, expectedMinusAmountMath);
+  t.deepEqual(zcfTermsMinusAmountMath, expectedMinusAmountMath);
 
   compareAmountMaths(t, zcfTerms.maths, expected.maths);
 };
@@ -226,7 +226,7 @@ test(`zcf.saveIssuer & zoe.getTerms`, async t => {
   const zoeTerms = await E(zoe).getTerms(instance);
   const zoeTermsMinusAmountMath = { ...zoeTerms, maths: {} };
   const expectedMinusAmountMath = { ...expected, maths: {} };
-  assertAmountsEqual(t, zoeTermsMinusAmountMath, expectedMinusAmountMath);
+  t.deepEqual(zoeTermsMinusAmountMath, expectedMinusAmountMath);
 
   compareAmountMaths(t, zoeTerms.maths, expected.maths);
 });
@@ -346,7 +346,7 @@ test(`zcf.makeInvitation - customProperties`, async t => {
     timer,
   });
   const details = await E(zoe).getInvitationDetails(invitationP);
-  assertAmountsEqual(t, details, {
+  t.deepEqual(details, {
     description: 'myInvitation',
     handle: details.handle,
     installation,
@@ -364,7 +364,7 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     instance: 'whatever',
   });
   const details = await E(zoe).getInvitationDetails(invitationP);
-  assertAmountsEqual(t, details, {
+  t.deepEqual(details, {
     description: 'myInvitation',
     handle: details.handle,
     installation,

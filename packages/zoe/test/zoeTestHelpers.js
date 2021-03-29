@@ -3,9 +3,8 @@
 import { E } from '@agoric/eventual-send';
 
 import '../exported';
-import strSetMathHelpers from '@agoric/ertp/src/mathHelpers/strSetMathHelpers';
 import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers';
-import { MathKind } from '@agoric/ertp';
+import { MathKind, amountMath } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';
 
@@ -23,7 +22,7 @@ export const assertAmountsEqual = (
       valuesEqual = amount.value === expected.value;
       break;
     case MathKind.STRING_SET:
-      valuesEqual = strSetMathHelpers.doIsEqual(amount.value, expected.value);
+      valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
       break;
     case MathKind.SET:
       valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
@@ -33,19 +32,17 @@ export const assertAmountsEqual = (
   }
 
   const l = label ? `${label} ` : '';
-  if (brandsEqual && !valuesEqual) {
+  if (brandsEqual && valuesEqual) {
+    t.truthy(amountMath.isEqual(amount, expected), l);
+  } else if (brandsEqual && !valuesEqual) {
     t.fail(
       `${l}value (${q(amount.value)}) expected to equal ${q(expected.value)}`,
     );
   } else if (!brandsEqual && valuesEqual) {
     t.fail(`${l}brand (${amount.brand}) expected to equal ${expected.brand}`);
-  } else if (!brandsEqual && !valuesEqual) {
+  } else {
     t.fail(`${l}Neither brand nor value matched: ${q(amount)}, ${q(expected)}`);
   }
-
-  // In tests with a fakeT, we'll get here even after failing, otherwise not.
-  // assert pass() in case there are no other tests.
-  t.pass(`values are equal`);
 };
 
 export const assertPayoutAmount = async (
@@ -66,7 +63,13 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
     E(purse)
       .deposit(payment)
       .then(payoutAmount =>
-        assertAmountsEqual(t, payoutAmount, amount, MathKind.NAT, 'payout'),
+        assertAmountsEqual(
+          t,
+          payoutAmount,
+          amount,
+          MathKind.NAT,
+          `payout was ${payoutAmount.value}, expected ${amount}.value`,
+        ),
       );
   });
 };

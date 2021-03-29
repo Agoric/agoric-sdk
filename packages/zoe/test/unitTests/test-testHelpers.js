@@ -1,7 +1,6 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
-
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { MathKind } from '@agoric/ertp';
 import { assertAmountsEqual } from '../zoeTestHelpers';
@@ -9,13 +8,11 @@ import { setup } from './setupBasicMints';
 import { setupNonFungible } from './setupNonFungibleMints';
 
 function makeFakeT() {
-  let message;
   let error;
   return harden({
     fail: msg => (error = msg),
-    pass: msg => (message = msg),
+    truthy: () => {},
     getError: () => error,
-    getMessage: () => message,
   });
 }
 
@@ -24,7 +21,6 @@ test('assertAmountsEqual - Nat dup', t => {
 
   const fakeT = makeFakeT();
   assertAmountsEqual(fakeT, moola(0), moola(0));
-  t.is(fakeT.getMessage(), 'values are equal');
   t.falsy(fakeT.getError());
 });
 
@@ -35,8 +31,7 @@ test('assertAmountsEqual - Nat manual', t => {
   } = setup();
 
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), { value: 0, brand: moolaBrand });
-  t.is(fakeT.getMessage(), 'values are equal');
+  assertAmountsEqual(fakeT, moola(0), { value: 0n, brand: moolaBrand });
   t.falsy(fakeT.getError());
 });
 
@@ -45,7 +40,7 @@ test('assertAmountsEqual - false Nat', t => {
   const fakeT = makeFakeT();
 
   assertAmountsEqual(fakeT, moola(0), moola(1));
-  t.is(fakeT.getError(), 'value (0) expected to equal 1');
+  t.is(fakeT.getError(), 'value ("[0n]") expected to equal "[1n]"');
 });
 
 test('assertAmountsEqual - Set', t => {
@@ -55,7 +50,6 @@ test('assertAmountsEqual - Set', t => {
   const shinyAmount = rpgItems(shinyHat);
   const fakeT = makeFakeT();
   assertAmountsEqual(fakeT, shinyAmount, shinyAmount, MathKind.SET);
-  t.is(fakeT.getMessage(), 'values are equal');
   t.falsy(fakeT.getError());
 });
 
@@ -80,7 +74,6 @@ test('assertAmountsEqual - StrSet dupe', t => {
   const felix = cryptoCats(harden(['Felix']));
   const fakeT = makeFakeT();
   assertAmountsEqual(fakeT, felix, felix, MathKind.STRING_SET);
-  t.is(fakeT.getMessage(), 'values are equal');
   t.falsy(fakeT.getError());
 });
 
@@ -91,7 +84,6 @@ test('assertAmountsEqual - StrSet copy', t => {
   const felixAgain = cryptoCats(harden(['Felix']));
   const fakeT = makeFakeT();
   assertAmountsEqual(fakeT, felix, felixAgain, MathKind.STRING_SET);
-  t.is(fakeT.getMessage(), 'values are equal');
   t.falsy(fakeT.getError());
 });
 
@@ -120,9 +112,14 @@ test('assertAmountsEqual - both mismatch', t => {
   const { cryptoCats } = setupNonFungible();
 
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), cryptoCats(harden(['Garfield'])));
+  assertAmountsEqual(
+    fakeT,
+    moola(0),
+    cryptoCats(harden(['Garfield'])),
+    MathKind.SET,
+  );
   t.is(
     fakeT.getError(),
-    'Neither brand nor value matched: {"brand":{},"value":0}, {"brand":{},"value":["Garfield"]}',
+    'Neither brand nor value matched: {"brand":"[Alleged: moola brand]","value":"[0n]"}, {"brand":"[Alleged: CryptoCats brand]","value":["Garfield"]}',
   );
 });
