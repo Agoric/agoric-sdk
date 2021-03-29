@@ -28,8 +28,9 @@ export function buildCommsDispatch(
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
     const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum : '';
+    const ackSeqNum = remote.lastReceivedSeqNum;
     const args = harden({
-      body: JSON.stringify([`${seqNum}:${msg}`]),
+      body: JSON.stringify([`${seqNum}:${ackSeqNum}:${msg}`]),
       slots: [],
     });
     remote.nextSendSeqNum += 1;
@@ -109,9 +110,6 @@ export function buildCommsDispatch(
 
   function notify(resolutions) {
     resolveFromKernel(resolutions);
-
-    // XXX question: do we need to call retirePromiseIDIfEasy (or some special
-    // comms vat version of it) here?
   }
 
   function dropExports(vrefs) {

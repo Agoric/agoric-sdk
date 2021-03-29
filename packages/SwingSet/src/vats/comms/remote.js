@@ -41,17 +41,21 @@ export function addRemote(state, name, transmitterID) {
   // loNN -> ro-NN (exported/exporting to remote machine)
   const toRemote = new Map(); // lo/lpNN -> ro/rp+-NN
 
+  const lastMentioned = new Map(); // ro/rp+-NN -> seqNum
+
   state.remotes.set(remoteID, {
     remoteID,
     name,
     fromRemote,
     toRemote,
+    lastMentioned,
     nextObjectIndex: state.identifierBase + 20,
     nextResolverIndex: state.identifierBase + 30,
     nextPromiseIndex: state.identifierBase + 40,
     transmitterID,
     nextSendSeqNum: 1,
-    nextExpectedRecvSeqNum: 1,
+    lastReceivedSeqNum: 0,
+    retirementQueue: [],
   });
   state.identifierBase += 1000;
   state.names.set(name, remoteID);

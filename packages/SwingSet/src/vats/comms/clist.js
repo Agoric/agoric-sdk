@@ -53,6 +53,9 @@ export function makeCListKit(state, syscall, stateKit) {
     provideLocalForRemote,
     getLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    enqueueRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
   } = makeInbound(state, stateKit);
 
   // *-RemoteForLocal: sending a local object/promise to a remote machine
@@ -83,6 +86,9 @@ export function makeCListKit(state, syscall, stateKit) {
     provideLocalForRemote,
     getLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    enqueueRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
 
     getRemoteForLocal,
     provideRemoteForLocal,

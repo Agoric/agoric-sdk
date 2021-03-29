@@ -68,7 +68,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('1:deliver:ro+23:foo:;argsbytes'),
+    encodeArgs('1:0:deliver:ro+23:foo:;argsbytes'),
   ]);
 
   // bob!bar(alice, bob)
@@ -81,7 +81,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('2:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeArgs('2:0:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
   t.is(getLocalForRemote(remoteID, 'ro+20'), aliceLocal);
@@ -95,7 +95,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('3:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeArgs('3:0:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
   ]);
 
   // bob!cat(alice, bob, ayana)
@@ -109,7 +109,7 @@ test('transmit', t => {
   t.deepEqual(sends.shift(), [
     transmitterID,
     'transmit',
-    encodeArgs('4:deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
+    encodeArgs('4:0:deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
   ]);
 });
 
@@ -140,7 +140,7 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`1:deliver:${bobRemote}:foo:;argsbytes`),
+    encodeArgs(`1:0:deliver:${bobRemote}:foo:;argsbytes`),
     null,
   );
   t.deepEqual(sends.shift(), [bobKernel, 'foo', capdata('argsbytes')]);
@@ -149,7 +149,7 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`2:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
+    encodeArgs(`2:0:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
   const expectedAliceKernel = 'o+31';
@@ -169,7 +169,7 @@ test('receive', t => {
   d.deliver(
     receiverID,
     'receive',
-    encodeArgs(`:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
+    encodeArgs(`:0:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
     null,
   );
   t.deepEqual(sends.shift(), [
@@ -184,7 +184,7 @@ test('receive', t => {
     receiverID,
     'receive',
     encodeArgs(
-      `4:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`,
+      `4:0:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`,
     ),
     null,
   );

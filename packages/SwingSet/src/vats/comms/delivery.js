@@ -21,6 +21,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     getLocalForRemote,
     provideLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    enqueueRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
 
     getKernelForLocal,
     provideKernelForLocal,
@@ -118,8 +121,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       retireKernelPromiseID(kfpid);
     }
     handleResolutions(localResolutions);
-    // XXX question: do we need to call retirePromiseIDIfEasy (or some special
-    // comms vat version of it) here?
+  }
+
+  function handleAckFromRemote(remoteID, ackSeqNum) {
+    retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum);
   }
 
   // dispatch.deliver with msg from vattp lands here, containing a message
@@ -132,19 +137,29 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // changed to assert here that the result parameter is null or undefined.
       syscall.resolve([[result, false, UNDEFINED]]);
     }
-    // The message is preceded by an optional sequence number:
-    // `$seqnum:$actualMessage` or `:actualMessage`
-    const colon = message.indexOf(':');
-    assert(colon >= 0, X`received message ${message} lacks seqNum delimiter`);
-    const seqNum = message.substring(0, colon);
+    // The message is preceded by an optional sequence number followed by the
+    // sequence number that the remote end had most recently received from us as
+    // of sending the message:
+    // `$seqnum:$ackSeqNum:$actualMessage` or `:$ackSeqNum:$actualMessage`
+    const delim1 = message.indexOf(':');
+    assert(delim1 >= 0, X`received message ${message} lacks seqNum delimiter`);
+    const seqNum = message.substring(0, delim1);
     const remote = getRemote(state, remoteID);
+    remote.lastReceivedSeqNum += 1;
     assert(
-      seqNum === '' || seqNum === `${remote.nextExpectedRecvSeqNum}`,
+      seqNum === '' || seqNum === `${remote.lastReceivedSeqNum}`,
       X`unexpected recv seqNum ${seqNum}`,
     );
-    remote.nextExpectedRecvSeqNum += 1;
 
-    const msgBody = message.substring(colon + 1);
+    const delim2 = message.indexOf(':', delim1 + 1);
+    assert(
+      delim2 >= 0,
+      X`received message ${message} lacks ackSeqNum delimiter`,
+    );
+    const ackSeqNum = message.substring(delim1 + 1, delim2);
+    handleAckFromRemote(remoteID, ackSeqNum);
+
+    const msgBody = message.substring(delim2 + 1);
     const command = msgBody.split(':', 1)[0];
     if (command === 'deliver') {
       return sendFromRemote(remoteID, msgBody);
@@ -153,6 +168,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return resolveFromRemote(remoteID, msgBody);
     }
     assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
+  }
+
+  function mapDataFromRemote(remoteID, rdata) {
+    insistCapData(rdata);
+    const slots = rdata.slots.map(slot =>
+      provideLocalForRemote(remoteID, slot),
+    );
+    return harden({ ...rdata, slots });
   }
 
   function sendFromRemote(remoteID, message) {
@@ -179,7 +202,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     handleSend(localDelivery);
   }
 
-  function resolveFromRemote(remoteID, message) {
+  function parseResolveMessage(message) {
     // message is created by resolveToRemote.  It consists of 1 or more
     // resolutions, separated by newlines, each taking the form of either:
     // `resolve:fulfill:${target}${rmss};${resolution.body}`
@@ -190,27 +213,40 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     for (const submsg of subMessages) {
       const sci = submsg.indexOf(';');
       assert(sci !== -1, X`missing semicolon in resolve ${submsg}`);
-
       const pieces = submsg.slice(0, sci).split(':');
       assert(pieces[0] === 'resolve');
       const rejected = pieces[1] === 'reject';
       assert(rejected || pieces[1] === 'fulfill');
-      const remoteTarget = pieces[2];
-      const remoteSlots = pieces.slice(3);
-      insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
-      const lpid = getLocalForRemote(remoteID, remoteTarget);
-      // rp+NN maps to target=p-+NN and we look at the promiseTable to make
-      // sure it's in the right state.
-      insistPromiseIsUnresolved(lpid);
-      insistDeciderIsRemote(lpid, remoteID);
-
-      const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
+      const rpid = pieces[2];
+      const slots = pieces.slice(3);
       const body = submsg.slice(sci + 1);
       const data = harden({ body, slots });
-      changeDeciderFromRemoteToComms(lpid, remoteID);
-      resolutions.push([lpid, rejected, data]);
+      resolutions.push([rpid, rejected, data]);
     }
-    handleResolutions(harden(resolutions));
+    return resolutions;
+  }
+
+  function resolveFromRemote(remoteID, message) {
+    const resolutions = parseResolveMessage(message);
+    const localResolutions = [];
+    for (const resolution of resolutions) {
+      const [rpid, rejected, data] = resolution;
+      insistCapData(data);
+      insistRemoteType('promise', rpid);
+      const lpid = getLocalForRemote(remoteID, rpid);
+      insistPromiseIsUnresolved(lpid);
+      insistDeciderIsRemote(lpid, remoteID);
+      changeDeciderFromRemoteToComms(lpid, remoteID);
+      localResolutions.push([
+        lpid,
+        rejected,
+        mapDataFromRemote(remoteID, data),
+      ]);
+    }
+    for (const resolution of resolutions) {
+      retireRemotePromiseID(remoteID, resolution[0]);
+    }
+    handleResolutions(localResolutions);
   }
 
   function extractPresenceIfPresent(data) {
@@ -302,19 +338,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       scanSlots(p.data.slots);
     }
 
-    function forPromise(lpid) {
-      collect(lpid);
-      return resolutions;
-    }
-
-    function forSlots(slots) {
-      scanSlots(slots);
-      return resolutions;
-    }
-
     return {
-      forPromise,
-      forSlots,
+      forSlots(slots) {
+        scanSlots(slots);
+        return resolutions;
+      },
+      getResolutions() {
+        return resolutions;
+      },
     };
   }
 
@@ -397,6 +428,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(
       primaryLpid,
     );
+    const collector = resolutionCollector();
+    for (const resolution of resolutions) {
+      const [_lpid, _rejected, data] = resolution;
+      collector.forSlots(data.slots);
+    }
     for (const resolution of resolutions) {
       const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
@@ -408,6 +444,11 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // mark it as resolved in the promise table, so later messages to it will
       // be handled properly
       markPromiseAsResolved(lpid, rejected, data);
+    }
+    const auxResolutions = collector.getResolutions();
+    if (auxResolutions.length > 0) {
+      // console.log(`@@@ adding ${auxResolutions.length} aux resolutions`);
+      resolutions = resolutions.concat(auxResolutions);
     }
 
     // what remotes need to know?
@@ -448,6 +489,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const rejectedTag = rejected ? 'reject' : 'fulfill';
       // prettier-ignore
       msgs.push(`resolve:${rejectedTag}:${rpid}${mapSlots()};${data.body}`);
+      enqueueRemotePromiseIDRetirement(remoteID, rpid);
     }
     transmit(remoteID, msgs.join('\n'));
   }
@@ -458,6 +500,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const [lpid, rejected, data] = localResolution;
       const kfpid = getKernelForLocal(lpid);
       resolutions.push([kfpid, rejected, mapDataToKernel(data)]);
+    }
+    for (const resolution of resolutions) {
+      retireKernelPromiseID(resolution[0]);
     }
     syscall.resolve(resolutions);
   }
