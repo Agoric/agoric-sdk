@@ -1,8 +1,9 @@
 /* global __dirname process setTimeout clearTimeout setInterval clearInterval */
-/* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+
 import fs from 'fs';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { request } from 'http';

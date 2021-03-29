@@ -1,10 +1,6 @@
 // @ts-check
-
-import '@agoric/zoe/tools/prepare-test-env';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '@agoric/zoe/exported';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
