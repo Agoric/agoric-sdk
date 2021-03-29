@@ -934,13 +934,11 @@ test('zoe - coveredCall non-fungible', async t => {
     t,
     optionValue.underlyingAssets.UnderlyingAsset,
     growlTigerAmount,
-    MathKind.SET,
   );
   assertAmountsEqual(
     t,
     optionValue.strikePrice.StrikePrice,
     aGloriousShieldAmount,
-    MathKind.SET,
   );
   t.is(optionValue.expirationDate, 1n);
   t.deepEqual(optionValue.timeAuthority, timer);

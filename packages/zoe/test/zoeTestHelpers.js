@@ -4,34 +4,22 @@ import { E } from '@agoric/eventual-send';
 
 import '../exported';
 import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers';
-import { MathKind, amountMath } from '@agoric/ertp';
+import { amountMath, isSetValue, isNatValue } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';
 
-export const assertAmountsEqual = (
-  t,
-  amount,
-  expected,
-  mathKind = MathKind.NAT,
-  label = '',
-) => {
+export const assertAmountsEqual = (t, amount, expected, label = '') => {
   const brandsEqual = amount.brand === expected.brand;
+  const l = label ? `${label} ` : '';
   let valuesEqual;
-  switch (mathKind) {
-    case MathKind.NAT:
-      valuesEqual = amount.value === expected.value;
-      break;
-    case MathKind.STRING_SET:
-      valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
-      break;
-    case MathKind.SET:
-      valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
-      break;
-    default:
-      valuesEqual = false;
+  if (isSetValue(expected.value)) {
+    valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
+  } else if (isNatValue(expected.value)) {
+    valuesEqual = amount.value === expected.value;
+  } else {
+    t.fail(`${l} illegal value; neither isNat() or isSet() was true`);
   }
 
-  const l = label ? `${label} ` : '';
   if (brandsEqual && valuesEqual) {
     t.truthy(amountMath.isEqual(amount, expected), l);
   } else if (brandsEqual && !valuesEqual) {
@@ -53,8 +41,7 @@ export const assertPayoutAmount = async (
   label = '',
 ) => {
   const amount = await issuer.getAmountOf(payout);
-  const amountMathKind = issuer.getAmountMathKind();
-  assertAmountsEqual(t, amount, expectedAmount, amountMathKind, label);
+  assertAmountsEqual(t, amount, expectedAmount, label);
 };
 
 // Returns a promise that can be awaited in tests to ensure the check completes.
@@ -67,7 +54,6 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
           t,
           payoutAmount,
           amount,
-          MathKind.NAT,
           `payout was ${payoutAmount.value}, expected ${amount}.value`,
         ),
       );

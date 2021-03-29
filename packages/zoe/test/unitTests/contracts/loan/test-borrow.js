@@ -5,7 +5,7 @@ import '@agoric/zoe/tools/prepare-test-env-ava';
 import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
 import '../../../../exported';
 
-import { amountMath, MathKind } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -214,7 +214,7 @@ test('borrow getLiquidationPromise', async t => {
   const { quoteAmount, quotePayment } = await liquidationPromise;
   const quoteAmount2 = await E(quoteIssuer).getAmountOf(quotePayment);
 
-  assertAmountsEqual(t, quoteAmount, quoteAmount2, MathKind.SET);
+  assertAmountsEqual(t, quoteAmount, quoteAmount2);
   assertAmountsEqual(
     t,
     quoteAmount,
@@ -229,7 +229,6 @@ test('borrow getLiquidationPromise', async t => {
       ],
       quoteBrand,
     ),
-    MathKind.SET,
   );
 });
 
@@ -279,7 +278,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
 
   const quoteBrand = await E(quoteIssuer).getBrand();
 
-  assertAmountsEqual(t, quoteAmount, quoteAmount2, MathKind.SET);
+  assertAmountsEqual(t, quoteAmount, quoteAmount2);
   assertAmountsEqual(
     t,
     quoteAmount,
@@ -294,7 +293,6 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
       ],
       quoteBrand,
     ),
-    MathKind.SET,
   );
 
   await checkPayouts(
