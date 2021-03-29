@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/src/types';
 
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -25,11 +25,7 @@ export async function start(zcf) {
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
   const sconeMint = await zcf.makeZCFMint('Scones');
-  const {
-    issuer: _sconeIssuer,
-    amountMath: sconeMath,
-    brand: sconeBrand,
-  } = sconeMint.getIssuerRecord();
+  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
 
   const { zcfSeat: _collateralSt, userSeat: liqSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: stableCoinSeat } = zcf.makeEmptySeatKit();
@@ -38,13 +34,15 @@ export async function start(zcf) {
   const autoswapMock = {
     getInputPrice(amountIn, brandOut) {
       assert.equal(brandOut, sconeBrand);
-      return sconeMath.make(4n * amountIn.value);
+      return amountMath.make(4n * amountIn.value, sconeBrand);
     },
   };
 
   function stageReward(amount, _fromSeat) {
     const priorReward = stableCoinSeat.getAmountAllocated('Scones', sconeBrand);
-    return stableCoinSeat.stage({ Scones: sconeMath.add(priorReward, amount) });
+    return stableCoinSeat.stage({
+      Scones: amountMath.add(priorReward, amount),
+    });
   }
 
   /** @type {InnerVaultManager} */
