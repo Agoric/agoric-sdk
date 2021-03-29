@@ -1,11 +1,7 @@
 // @ts-check
 /* global require */
-
-import '@agoric/zoe/tools/prepare-test-env';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '@agoric/zoe/exported';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makeFakeVatAdmin } from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
