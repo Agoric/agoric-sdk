@@ -1,4 +1,5 @@
 /* global require */
+// @ts-check
 import fs from 'fs';
 import path from 'path';
 
@@ -48,10 +49,19 @@ function byName(a, b) {
   return 0;
 }
 /**
- * @typedef {Object} SwingSetConfigProperties
- * @property {string} [sourceSpec] path to the source code
- * @property {string} [bundleSpec]
- * @property {Record<string, any>} [parameters]
+ * @typedef {{
+ *   sourceSpec: string // path to the source code
+ * }} SourceSpec
+ * @typedef {{
+ *   bundleSpec: string
+ * }} BundleSpec
+ * @typedef {{
+ *   bundle: unknown
+ * }} BundleRef
+ * @typedef {(SourceSpec | BundleSpec | BundleRef ) & {
+ *   creationOptions?: Record<string, any>,
+ *   parameters?: Record<string, any>,
+ * }} SwingSetConfigProperties
  */
 
 /**
@@ -64,7 +74,7 @@ function byName(a, b) {
 
 /**
  * @typedef {Object} SwingSetConfig a swingset config object
- * @property {string} bootstrap
+ * @property {string} [bootstrap]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {*} [devices]
@@ -97,6 +107,7 @@ function byName(a, b) {
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
 export function loadBasedir(basedir) {
+  /** @type { SwingSetConfigDescriptor } */
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
@@ -117,6 +128,7 @@ export function loadBasedir(basedir) {
       vats[name] = { sourceSpec: vatSourcePath, parameters: {} };
     }
   });
+  /** @type {string | void} */
   let bootstrapPath = path.resolve(basedir, 'bootstrap.js');
   try {
     fs.statSync(bootstrapPath);
@@ -165,7 +177,7 @@ function resolveSpecFromConfig(dirname, specPath) {
  * it to normal form: resolve each pathname to a context-insensitive absolute
  * path and make sure it has a `parameters` property if it's supposed to.
  *
- * @param {SwingSetConfigDescriptor} desc  The config descriptor to be normalized.
+ * @param {SwingSetConfigDescriptor | void} desc  The config descriptor to be normalized.
  * @param {string} dirname  The pathname of the directory in which the config file was found
  * @param {boolean} expectParameters `true` if the entries should have parameters (for
  *    example, `true` for `vats` but `false` for bundles).
@@ -174,10 +186,10 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
-      if (entry.sourceSpec) {
+      if ('sourceSpec' in entry) {
         entry.sourceSpec = resolveSpecFromConfig(dirname, entry.sourceSpec);
       }
-      if (entry.bundleSpec) {
+      if ('bundleSpec' in entry) {
         entry.bundleSpec = resolveSpecFromConfig(dirname, entry.bundleSpec);
       }
       if (expectParameters && !entry.parameters) {
@@ -192,7 +204,7 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
  *
  * @param {string} configPath  Path to the config file to be processed
  *
- * @returns {SwingSetConfig} the contained config object, in normalized form, or null if the
+ * @returns {SwingSetConfig | null} the contained config object, in normalized form, or null if the
  *    requested config file did not exist.
  *
  * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
@@ -200,14 +212,15 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
  */
 export function loadSwingsetConfigFile(configPath) {
   try {
-    const config = JSON.parse(fs.readFileSync(configPath));
+    /** @type { SwingSetConfig } */
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const dirname = path.dirname(configPath);
     normalizeConfigDescriptor(config.vats, dirname, true);
     normalizeConfigDescriptor(config.bundles, dirname, false);
     // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
     assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
     assert(
-      config.vats[config.bootstrap],
+      config.vats && config.vats[config.bootstrap],
       X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
     );
     return config;
@@ -224,6 +237,13 @@ export function swingsetIsInitialized(storage) {
   return !!storage.get('initialized');
 }
 
+/**
+ *
+ * @param {SwingSetConfig} config
+ * @param {string[]} argv
+ * @param {*} hostStorage
+ * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
+ */
 export async function initializeSwingset(
   config,
   argv = [],
@@ -256,11 +276,12 @@ export async function initializeSwingset(
   hostStorage.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 
   if (config.bootstrap && argv) {
-    if (config.vats[config.bootstrap]) {
-      if (!config.vats[config.bootstrap].parameters) {
-        config.vats[config.bootstrap].parameters = {};
+    const bootConfig = config.vats[config.bootstrap];
+    if (bootConfig) {
+      if (!bootConfig.parameters) {
+        bootConfig.parameters = {};
       }
-      config.vats[config.bootstrap].parameters.argv = argv;
+      bootConfig.parameters.argv = argv;
     }
   }
 
@@ -311,6 +332,7 @@ export async function initializeSwingset(
         throw Error(
           `config bundles.${descName}: "bundleName" is only available in vat or device descriptors`,
         );
+        // @ts-ignore
       } else if (!config.bundles[desc.bundleName]) {
         throw Error(
           `config ${groupName}.${descName}: bundle ${desc.bundleName} is undefined`,
