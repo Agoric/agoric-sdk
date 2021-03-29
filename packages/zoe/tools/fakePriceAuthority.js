@@ -153,7 +153,22 @@ export async function makeFakePriceAuthority(options) {
     );
   }
 
-  async function startTimer() {
+  let latestTick;
+  function checkComparisonRequest(req) {
+    const priceQuote = priceInQuote(req.amountIn, req.brandOut, latestTick);
+    const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
+    if (!req.operator(quotedOut)) {
+      return false;
+    }
+    req.resolve(priceQuote);
+    const reqIndex = comparisonQueue.indexOf(req);
+    if (reqIndex >= 0) {
+      comparisonQueue.splice(reqIndex, 1);
+    }
+    return true;
+  }
+
+  async function startTicker() {
     let firstTime = true;
     const handler = harden({
       wake: async t => {
@@ -162,32 +177,45 @@ export async function makeFakePriceAuthority(options) {
         } else {
           currentPriceIndex += 1;
         }
+        latestTick = t;
         tickUpdater.updateState(t);
         for (const req of comparisonQueue) {
-          // eslint-disable-next-line no-await-in-loop
-          const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
-          const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
-          if (req.operator(quotedOut)) {
-            req.resolve(priceQuote);
-            comparisonQueue.splice(comparisonQueue.indexOf(req), 1);
-          }
+          checkComparisonRequest(req);
         }
       },
     });
     const repeater = E(timer).makeRepeater(0n, quoteInterval);
     return E(repeater).schedule(handler);
   }
-  await startTimer();
+
+  // Only start the ticker if we have actual price changes.
+  if (tradeList) {
+    if (tradeList.length > 1) {
+      await startTicker();
+    }
+  } else if (priceList) {
+    if (priceList.length > 1) {
+      await startTicker();
+    }
+  } else {
+    // We have a single-entry list, just update the ticker once.
+    const timestamp = await E(timer).getCurrentTimestamp();
+    tickUpdater.updateState(timestamp);
+    latestTick = timestamp;
+  }
 
   function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
     assertBrands(amountIn.brand, amountOutLimit.brand);
     const promiseKit = makePromiseKit();
-    comparisonQueue.push({
+    const req = {
       operator,
       amountIn,
       brandOut: amountOutLimit.brand,
       resolve: promiseKit.resolve,
-    });
+    };
+    if (!checkComparisonRequest(req)) {
+      comparisonQueue.push(req);
+    }
     return promiseKit.promise;
   }
 
