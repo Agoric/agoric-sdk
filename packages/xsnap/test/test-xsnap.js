@@ -52,7 +52,7 @@ test('evaluate infinite loop', async t => {
   const vat = xsnap(opts);
   t.teardown(vat.terminate);
   await t.throwsAsync(vat.evaluate(`for (;;) {}`), {
-    message: /exited with code 7/,
+    message: /xsnap test worker exited with code 7/,
     instanceOf: Error,
   });
   t.deepEqual([], opts.messages);
