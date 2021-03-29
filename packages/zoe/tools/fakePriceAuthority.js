@@ -153,9 +153,14 @@ export async function makeFakePriceAuthority(options) {
     );
   }
 
+  // Keep track of the time of the latest price change.
   let latestTick;
+
+  // Check if a comparison request has been satisfied.
+  // Returns true if it has, false otherwise.
   function checkComparisonRequest(req) {
     if (latestTick === undefined) {
+      // We haven't got any quotes.
       return false;
     }
     const priceQuote = priceInQuote(req.amountIn, req.brandOut, latestTick);
