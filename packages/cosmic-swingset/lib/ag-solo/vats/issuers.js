@@ -1,9 +1,10 @@
 // @ts-check
 
-export const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
+export const CENTRAL_ISSUER_NAME = 'MOE';
 
 /**
  * @typedef {Object} IssuerInitializationRecord
+ * @property {Issuer} [issuer]
  * @property {Array<any>} [issuerArgs]
  * @property {string} pursePetname
  * @property {number} mintValue
@@ -14,16 +15,7 @@ export const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
 export const fakeIssuerNameToRecord = new Map(
   harden([
     [
-      CENTRAL_ISSUER_NAME,
-      {
-        issuerArgs: [undefined, { decimalPlaces: 3 }],
-        mintValue: 20000,
-        pursePetname: 'Local currency',
-        fakeTradesGivenCentral: [[1, 1]],
-      },
-    ],
-    [
-      'Testnet.$LINK',
+      '$LINK',
       {
         issuerArgs: [undefined, { decimalPlaces: 6 }],
         mintValue: 7 * 10 ** 6,
@@ -46,20 +38,6 @@ export const fakeIssuerNameToRecord = new Map(
           [12, 1],
           [18, 1],
           [15, 1],
-        ],
-      },
-    ],
-    [
-      'MOE',
-      {
-        mintValue: 0,
-        pursePetname: 'MOE funds',
-        fakeTradesGivenCentral: [
-          [10, 15],
-          [13, 9],
-          [12, 13],
-          [18, 15],
-          [15, 17],
         ],
       },
     ],

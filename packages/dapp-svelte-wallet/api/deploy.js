@@ -103,6 +103,9 @@ export default async function deployWallet(
             ),
         );
       }
+      if (!payment) {
+        return;
+      }
       pursePetname = await issuerToPursePetnameP.get(issuer);
 
       // Deposit payment.
