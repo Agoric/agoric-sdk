@@ -155,6 +155,9 @@ export async function makeFakePriceAuthority(options) {
 
   let latestTick;
   function checkComparisonRequest(req) {
+    if (latestTick === undefined) {
+      return false;
+    }
     const priceQuote = priceInQuote(req.amountIn, req.brandOut, latestTick);
     const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
     if (!req.operator(quotedOut)) {
@@ -188,17 +191,18 @@ export async function makeFakePriceAuthority(options) {
     return E(repeater).schedule(handler);
   }
 
-  // Only start the ticker if we have actual price changes.
+  let tickListLength = 0;
   if (tradeList) {
-    if (tradeList.length > 1) {
-      await startTicker();
-    }
+    tickListLength = tradeList.length;
   } else if (priceList) {
-    if (priceList.length > 1) {
-      await startTicker();
-    }
-  } else {
-    // We have a single-entry list, just update the ticker once.
+    tickListLength = priceList.length;
+  }
+
+  if (tickListLength > 1) {
+    // Only start the ticker if we have actual price changes.
+    await startTicker();
+  } else if (tickListLength === 1) {
+    // Constant price, so schedule it.
     const timestamp = await E(timer).getCurrentTimestamp();
     tickUpdater.updateState(timestamp);
     latestTick = timestamp;
