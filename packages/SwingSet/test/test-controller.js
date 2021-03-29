@@ -1,8 +1,9 @@
 /* global require __dirname */
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava';
 
-// eslint-disable-next-line import/order
 import path from 'path';
+import { initSwingStore } from '@agoric/swing-store-simple';
 import { buildVatController, loadBasedir } from '../src/index';
 import { checkKT } from './util';
 
@@ -92,6 +93,36 @@ test('bootstrap', async t => {
   // left[0].bootstrap
   const c = await buildVatController(config);
   t.deepEqual(c.dump().log, ['bootstrap called']);
+});
+
+test('XS bootstrap', async t => {
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-controller-2'),
+  );
+  config.defaultManagerType = 'xs-worker';
+  const hostStorage = initSwingStore().storage;
+  const c = await buildVatController(config, [], { hostStorage });
+  t.deepEqual(c.dump().log, ['bootstrap called']);
+  t.is(
+    hostStorage.get('kernel.defaultManagerType'),
+    'xs-worker',
+    'defaultManagerType is saved by kernelKeeper',
+  );
+  const vatID = c.vatNameToID('bootstrap');
+  const options = JSON.parse(hostStorage.get(`${vatID}.options`));
+  t.is(
+    options.managerType,
+    'xs-worker',
+    'managerType gets recorded for the bootstrap vat',
+  );
+});
+
+test('validate config.defaultManagerType', async t => {
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-controller-2'),
+  );
+  config.defaultManagerType = 'XYZ';
+  await t.throwsAsync(buildVatController(config), { message: /XYZ/ });
 });
 
 test('bootstrap export', async t => {

@@ -33,6 +33,12 @@ export function makeVatLoader(stuff) {
     const vatID = allocateUnusedVatID();
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
+    if (!dynamicOptions.managerType) {
+      dynamicOptions = {
+        ...dynamicOptions,
+        managerType: kernelKeeper.getDefaultManagerType(),
+      };
+    }
     vatKeeper.setSourceAndOptions(source, dynamicOptions);
     // eslint-disable-next-line no-use-before-define
     create(vatID, source, dynamicOptions, true, true);

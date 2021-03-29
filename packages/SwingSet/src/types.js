@@ -17,8 +17,9 @@
  * TODO: metered...
  *
  * See validateManagerOptions() in factory.js
+ * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
  * @typedef {{
- *   managerType: 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker',
+ *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableInternalMetering?: boolean,
  *   enableDisavow?: boolean,

@@ -24,7 +24,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);
-  kernelKeeper.createStartingKernelState();
+  kernelKeeper.createStartingKernelState(config.defaultManagerType || 'local');
 
   if (config.bundles) {
     for (const name of Object.keys(config.bundles)) {
@@ -68,6 +68,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
+      if (!creationOptions.managerType) {
+        creationOptions.managerType = kernelKeeper.getDefaultManagerType();
+      }
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);

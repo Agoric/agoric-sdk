@@ -271,7 +271,7 @@ test('kernel state', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
   t.truthy(!k.getInitialized());
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
   k.setInitialized();
 
   commitCrank();
@@ -287,13 +287,14 @@ test('kernel state', async t => {
     ['ko.nextID', '20'],
     ['kd.nextID', '30'],
     ['kp.nextID', '40'],
+    ['kernel.defaultManagerType', 'local'],
   ]);
 });
 
 test('kernelKeeper vat names', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
   const v2 = k.allocateVatIDForNameIfNeeded('Frank');
@@ -314,6 +315,7 @@ test('kernelKeeper vat names', async t => {
     ['kp.nextID', '40'],
     ['vat.name.vatname5', 'v1'],
     ['vat.name.Frank', 'v2'],
+    ['kernel.defaultManagerType', 'local'],
   ]);
   t.deepEqual(k.getStaticVats(), [
     ['Frank', 'v2'],
@@ -334,7 +336,7 @@ test('kernelKeeper vat names', async t => {
 test('kernelKeeper device names', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
   const d8 = k.allocateDeviceIDForNameIfNeeded('Frank');
@@ -355,6 +357,7 @@ test('kernelKeeper device names', async t => {
     ['kp.nextID', '40'],
     ['device.name.devicename5', 'd7'],
     ['device.name.Frank', 'd8'],
+    ['kernel.defaultManagerType', 'local'],
   ]);
   t.deepEqual(k.getDevices(), [
     ['Frank', 'd8'],
@@ -375,7 +378,7 @@ test('kernelKeeper device names', async t => {
 test('kernelKeeper runQueue', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   t.truthy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 0);
@@ -411,7 +414,7 @@ test('kernelKeeper runQueue', async t => {
 test('kernelKeeper promises', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
   t.deepEqual(k.getKernelPromise(p1), {
@@ -519,13 +522,14 @@ test('kernelKeeper promises', async t => {
     ['kp40.data.slots', 'ko44'],
     ['kp40.state', 'fulfilled'],
     ['kp40.refCount', '0'],
+    ['kernel.defaultManagerType', 'local'],
   ]);
 });
 
 test('kernelKeeper promise resolveToData', async t => {
   const { kstorage } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
   const capdata = harden({
@@ -546,7 +550,7 @@ test('kernelKeeper promise resolveToData', async t => {
 test('kernelKeeper promise reject', async t => {
   const { kstorage } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
   const capdata = harden({
@@ -567,7 +571,7 @@ test('kernelKeeper promise reject', async t => {
 test('vatKeeper', async t => {
   const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kstorage);
-  k.createStartingKernelState();
+  k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
   const vk = k.allocateVatKeeper(v1);
@@ -594,4 +598,11 @@ test('vatKeeper', async t => {
   vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
+});
+
+test('XS vatKeeper defaultManagerType', async t => {
+  const { kstorage } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kstorage);
+  k.createStartingKernelState('xs-worker');
+  t.is(k.getDefaultManagerType(), 'xs-worker');
 });
