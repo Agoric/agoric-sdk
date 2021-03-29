@@ -419,6 +419,8 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     }
   } catch (err) {
     // name space exhaustion should not be catchable!
+    // spin and fail with "too much computation"
+    for (;;) {}
   }
   `;
   for (const debug of [false, true]) {
