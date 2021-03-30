@@ -1,8 +1,9 @@
 /* global __dirname process setTimeout clearTimeout setInterval clearInterval */
-/* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+
 import fs from 'fs';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { request } from 'http';
@@ -10,6 +11,8 @@ import { request } from 'http';
 import { spawn } from 'child_process';
 
 import { makePspawn } from '../lib/helpers';
+
+const TIMEOUT_SECONDS = 2 * 60;
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
@@ -112,7 +115,11 @@ test('workflow', async t => {
       });
     }
 
-    let timeout = setTimeout(startResult.resolve, 60000, 'timeout');
+    let timeout = setTimeout(
+      startResult.resolve,
+      TIMEOUT_SECONDS * 1000,
+      'timeout',
+    );
     t.is(await startResult.promise, true, `swingset running before timeout`);
     clearTimeout(timeout);
 

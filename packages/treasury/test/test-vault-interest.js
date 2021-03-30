@@ -1,11 +1,7 @@
 // @ts-check
 /* global require */
-
-import '@agoric/zoe/tools/prepare-test-env';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '@agoric/zoe/exported';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
 
 import { E } from '@agoric/eventual-send';
 import { makeFakeVatAdmin } from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
@@ -14,6 +10,7 @@ import { makeZoe } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import { amountMath } from '@agoric/ertp';
 import { makeTracer } from '../src/makeTracer';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -55,15 +52,19 @@ async function launch(zoeP, sourceRoot) {
   const { creatorInvitation, creatorFacet, instance } = await E(
     zoeP,
   ).startInstance(installation);
-  const { sconeMint, collateralKit } = testJig;
-  const sconeMath = sconeMint.getIssuerRecord().amountMath;
-  const collateral50 = collateralKit.amountMath.make(50n);
+  const {
+    sconeMint,
+    collateralKit: { mint: collateralMint, brand: collaterlBrand },
+  } = testJig;
+  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+
+  const collateral50 = amountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Scones: sconeMath.make(70n) },
+    want: { Scones: amountMath.make(70n, sconeBrand) },
   });
   const payments = harden({
-    Collateral: collateralKit.mint.mintPayment(collateral50),
+    Collateral: collateralMint.mintPayment(collateral50),
   });
   return {
     creatorSeat: E(zoeP).offer(creatorInvitation, proposal, payments),
@@ -81,33 +82,33 @@ test('interest', async t => {
   // Scones (charging 3 scones fee), which uses an autoswap that presents a
   // fixed price of 4 Scones per Collateral.
   const { notifier, actions } = await E(creatorSeat).getOfferResult();
-  const { sconeMint, collateralKit, vault, timer } = testJig;
-
-  const { amountMath: cMath } = collateralKit;
   const {
-    amountMath: sconeMath,
-    brand: sconeBrand,
-  } = sconeMint.getIssuerRecord();
+    sconeMint,
+    collateralKit: { brand: collateralBrand },
+    vault,
+    timer,
+  } = testJig;
+  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
 
   const { value: v1, updateCount: c1 } = await E(notifier).getUpdateSince();
-  t.deepEqual(v1.debt, sconeMath.make(73n));
-  t.deepEqual(v1.locked, collateralKit.amountMath.make(50n));
+  t.deepEqual(v1.debt, amountMath.make(73n, sconeBrand));
+  t.deepEqual(v1.locked, amountMath.make(50n, collateralBrand));
   t.is(c1, 2);
 
   t.deepEqual(
     vault.getDebtAmount(),
-    sconeMath.make(73n),
+    amountMath.make(73n, sconeBrand),
     'borrower owes 73 Scones',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    cMath.make(50n),
+    amountMath.make(50n, collateralBrand),
     'vault holds 50 Collateral',
   );
 
   timer.tick();
   const noInterest = actions.accrueInterestAndAddToPool(1n);
-  t.truthy(sconeMath.isEqual(noInterest, sconeMath.getEmpty()));
+  t.truthy(amountMath.isEqual(noInterest, amountMath.makeEmpty(sconeBrand)));
 
   // { chargingPeriod: 3, recordingPeriod: 9 }  charge 2% 3 times
   for (let i = 0; i < 12; i += 1) {
@@ -116,11 +117,11 @@ test('interest', async t => {
 
   const nextInterest = actions.accrueInterestAndAddToPool(10n);
   t.truthy(
-    sconeMath.isEqual(nextInterest, sconeMath.make(3n)),
+    amountMath.isEqual(nextInterest, amountMath.make(3n, sconeBrand)),
     `interest should be 3, was ${nextInterest.value}`,
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
-  t.deepEqual(v2.debt, sconeMath.make(76n));
+  t.deepEqual(v2.debt, amountMath.make(76n, sconeBrand));
   t.deepEqual(v2.interestRate, makeRatio(200n, sconeBrand, 10000n));
   t.deepEqual(v2.liquidationRatio, makeRatio(105n, sconeBrand));
   const collateralization = v2.collateralizationRatio;

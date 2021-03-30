@@ -46,6 +46,7 @@ function echoCommand(arg) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} [options.handleCommand]
  * @param {string=} [options.name]
  * @param {boolean=} [options.debug]
+ * @param {number=} [options.parserBufferSize] in kB (must be an integer)
  * @param {string=} [options.snapshot]
  * @param {'ignore' | 'inherit'} [options.stdout]
  * @param {'ignore' | 'inherit'} [options.stderr]
@@ -58,6 +59,7 @@ export function xsnap(options) {
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
     debug = false,
+    parserBufferSize = undefined,
     snapshot = undefined,
     stdout = 'ignore',
     stderr = 'ignore',
@@ -82,9 +84,15 @@ export function xsnap(options) {
   /** @type {Deferred<void>} */
   const vatExit = defer();
 
-  const args = snapshot ? ['-r', snapshot] : [];
+  const args = [];
+  if (snapshot) {
+    args.push('-r', snapshot);
+  }
   if (meteringLimit) {
     args.push('-l', `${meteringLimit}`);
+  }
+  if (parserBufferSize) {
+    args.push('-s', `${parserBufferSize}`);
   }
 
   const xsnapProcess = spawn(bin, args, {

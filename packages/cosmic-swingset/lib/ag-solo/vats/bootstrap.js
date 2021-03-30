@@ -6,6 +6,8 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { makeStore } from '@agoric/store';
+import { installOnChain as installEconomyOnChain } from '@agoric/treasury/bundles/install-on-chain';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
@@ -14,9 +16,9 @@ import { assert, details as X } from '@agoric/assert';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
+import { CENTRAL_ISSUER_NAME, fakeIssuerNameToRecord } from './issuers';
 
 const NUM_IBC_PORTS = 3;
-const CENTRAL_ISSUER_NAME = 'Testnet.$USD';
 const QUOTE_INTERVAL = 30;
 
 console.debug(`loading bootstrap.js`);
@@ -66,98 +68,72 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
-    // Make the other demo mints
-    /**
-     * @typedef {Object} IssuerRecord
-     * @property {Array<any>} [issuerArgs]
-     * @property {string} pursePetname
-     * @property {number} mintValue
-     * @property {Array<[number, number]>} [fakeTradesGivenCentral]
-     */
-    /** @type {Map<string, IssuerRecord>} */
-    const fakeIssuerNameToRecord = new Map(
-      harden([
-        [
-          CENTRAL_ISSUER_NAME,
-          {
-            issuerArgs: [undefined, { decimalPlaces: 3 }],
-            mintValue: 20000,
-            pursePetname: 'Local currency',
-            fakeTradesGivenCentral: [[1, 1]],
+    const {
+      nameHub: agoricNames,
+      nameAdmin: agoricNamesAdmin,
+    } = makeNameHubKit();
+    const {
+      nameHub: namesByAddress,
+      nameAdmin: namesByAddressAdmin,
+    } = makeNameHubKit();
+
+    async function installEconomy() {
+      // Create a mapping from all the nameHubs we create to their corresponding
+      // nameAdmin.
+      const nameAdmins = makeStore();
+      await Promise.all(
+        ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
+          async nm => {
+            const { nameHub, nameAdmin } = makeNameHubKit();
+            await E(agoricNamesAdmin).update(nm, nameHub);
+            nameAdmins.init(nameHub, nameAdmin);
           },
-        ],
-        [
-          'Testnet.$LINK',
-          {
-            issuerArgs: [undefined, { decimalPlaces: 6 }],
-            mintValue: 7 * 10 ** 6,
-            pursePetname: 'Oracle fee',
-            fakeTradesGivenCentral: [
-              [1000, 3000000],
-              [1000, 2500000],
-              [1000, 2750000],
-            ],
-          },
-        ],
-        [
-          'moola',
-          {
-            mintValue: 1900,
-            pursePetname: 'Fun budget',
-            fakeTradesGivenCentral: [
-              [10, 1],
-              [13, 1],
-              [12, 1],
-              [18, 1],
-              [15, 1],
-            ],
-          },
-        ],
-        [
-          'MOE',
-          {
-            mintValue: 0,
-            pursePetname: 'MOE funds',
-            fakeTradesGivenCentral: [
-              [10, 15],
-              [13, 9],
-              [12, 13],
-              [18, 15],
-              [15, 17],
-            ],
-          },
-        ],
-        [
-          'simolean',
-          {
-            mintValue: 1900,
-            pursePetname: 'Nest egg',
-            fakeTradesGivenCentral: [
-              [2135, 50],
-              [2172, 50],
-              [2124, 50],
-            ],
-          },
-        ],
-      ]),
-    );
+        ),
+      );
+
+      // Install the economy, giving it access to the name admins we made.
+      await installEconomyOnChain({
+        agoricNames,
+        board,
+        chainTimerService,
+        nameAdmins,
+        priceAuthority,
+        zoe,
+      });
+    }
+
+    // Now we can bootstrap the economy!
+    await installEconomy();
+    const centralIssuer = await E(agoricNames).lookup('issuer', 'MOE');
+
+    const CENTRAL_ISSUER_ENTRY = [
+      CENTRAL_ISSUER_NAME,
+      {
+        issuer: centralIssuer,
+        mintValue: 0,
+        pursePetname: 'Local currency',
+        fakeTradesGivenCentral: [[1, 1]],
+      },
+    ];
+
     const issuerNameToRecord = noFakeCurrencies
       ? new Map()
       : fakeIssuerNameToRecord;
-    const issuerNames = [...issuerNameToRecord.keys()];
-    const centralIssuerIndex = issuerNames.findIndex(
-      issuerName => issuerName === CENTRAL_ISSUER_NAME,
-    );
-    const issuers = await Promise.all(
-      issuerNames.map(issuerName =>
-        E(vats.mints).makeMintAndIssuer(
-          issuerName,
-          ...(issuerNameToRecord.get(issuerName).issuerArgs || []),
-        ),
-      ),
-    );
+    issuerNameToRecord.set(...CENTRAL_ISSUER_ENTRY);
 
-    const centralIssuer = issuers[centralIssuerIndex];
+    const issuerNames = [...issuerNameToRecord.keys()];
+    const issuers = await Promise.all(
+      issuerNames.map(issuerName => {
+        const record = issuerNameToRecord.get(issuerName);
+        if (record.issuer !== undefined) {
+          return record.issuer;
+        }
+        return E(vats.mints).makeMintAndIssuer(
+          issuerName,
+          ...(record.issuerArgs || []),
+        );
+      }),
+    );
 
     /**
      * @param {ERef<Issuer>} issuerIn
@@ -186,7 +162,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     };
     await Promise.all(
       issuers.map(async (issuer, i) => {
-        // Create priceAuthority pairs for centralIssuerIndex based on the
+        // Create priceAuthority pairs for centralIssuer based on the
         // FakePriceAuthority.
         console.debug(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
         const { fakeTradesGivenCentral } = issuerNameToRecord.get(
@@ -208,15 +184,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         ]);
       }),
     );
-
-    const {
-      nameHub: agoricNames,
-      nameAdmin: agoricNamesAdmin,
-    } = makeNameHubKit();
-    const {
-      nameHub: namesByAddress,
-      nameAdmin: namesByAddressAdmin,
-    } = makeNameHubKit();
 
     return Far('chainBundler', {
       async createUserBundle(_nickname, address, powerFlags = []) {

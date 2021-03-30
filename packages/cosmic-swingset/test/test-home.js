@@ -1,6 +1,13 @@
 /* global require process */
-import '@agoric/install-ses';
+
+// `test.after.always` does not yet seem compatible with ses-ava
+// See https://github.com/endojs/endo/issues/647
+// TODO restore
+// import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import '@agoric/swingset-vat/tools/prepare-test-env';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
 import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
 
@@ -112,7 +119,7 @@ test.serial('home.wallet - MOE setup', async t => {
   const issuersMap = new Map(issuers);
   const moeIssuer = issuersMap.get('MOE');
 
-  const moePurse = await E(wallet).getPurse('MOE funds');
+  const moePurse = await E(wallet).getPurse('Local currency');
   const brandFromIssuer = await E(moeIssuer).getBrand();
   const brandFromPurse = await E(moePurse).getAllegedBrand();
   t.is(brandFromPurse, brandFromIssuer);

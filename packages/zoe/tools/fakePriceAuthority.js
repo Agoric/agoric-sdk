@@ -153,7 +153,30 @@ export async function makeFakePriceAuthority(options) {
     );
   }
 
-  async function startTimer() {
+  // Keep track of the time of the latest price change.
+  let latestTick;
+
+  // Check if a comparison request has been satisfied.
+  // Returns true if it has, false otherwise.
+  function checkComparisonRequest(req) {
+    if (latestTick === undefined) {
+      // We haven't got any quotes.
+      return false;
+    }
+    const priceQuote = priceInQuote(req.amountIn, req.brandOut, latestTick);
+    const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
+    if (!req.operator(quotedOut)) {
+      return false;
+    }
+    req.resolve(priceQuote);
+    const reqIndex = comparisonQueue.indexOf(req);
+    if (reqIndex >= 0) {
+      comparisonQueue.splice(reqIndex, 1);
+    }
+    return true;
+  }
+
+  async function startTicker() {
     let firstTime = true;
     const handler = harden({
       wake: async t => {
@@ -162,32 +185,46 @@ export async function makeFakePriceAuthority(options) {
         } else {
           currentPriceIndex += 1;
         }
+        latestTick = t;
         tickUpdater.updateState(t);
         for (const req of comparisonQueue) {
-          // eslint-disable-next-line no-await-in-loop
-          const priceQuote = priceInQuote(req.amountIn, req.brandOut, t);
-          const { amountOut: quotedOut } = priceQuote.quoteAmount.value[0];
-          if (req.operator(quotedOut)) {
-            req.resolve(priceQuote);
-            comparisonQueue.splice(comparisonQueue.indexOf(req), 1);
-          }
+          checkComparisonRequest(req);
         }
       },
     });
     const repeater = E(timer).makeRepeater(0n, quoteInterval);
     return E(repeater).schedule(handler);
   }
-  await startTimer();
+
+  let tickListLength = 0;
+  if (tradeList) {
+    tickListLength = tradeList.length;
+  } else if (priceList) {
+    tickListLength = priceList.length;
+  }
+
+  if (tickListLength > 1) {
+    // Only start the ticker if we have actual price changes.
+    await startTicker();
+  } else if (tickListLength === 1) {
+    // Constant price, so schedule it.
+    const timestamp = await E(timer).getCurrentTimestamp();
+    tickUpdater.updateState(timestamp);
+    latestTick = timestamp;
+  }
 
   function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
     assertBrands(amountIn.brand, amountOutLimit.brand);
     const promiseKit = makePromiseKit();
-    comparisonQueue.push({
+    const req = {
       operator,
       amountIn,
       brandOut: amountOutLimit.brand,
       resolve: promiseKit.resolve,
-    });
+    };
+    if (!checkComparisonRequest(req)) {
+      comparisonQueue.push(req);
+    }
     return promiseKit.promise;
   }
 

@@ -12,6 +12,7 @@ import { sameStructure } from '@agoric/same-structure';
 import buildManualTimer from '../../../tools/manualTimer';
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';
+import { assertAmountsEqual } from '../../zoeTestHelpers';
 
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
@@ -721,9 +722,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
-  t.truthy(
-    amountMath.isEqual(daveOptionValue.strikePrice.StrikePrice, bucks(1)),
-  );
+  assertAmountsEqual(t, daveOptionValue.strikePrice.StrikePrice, bucks(1));
   t.is(daveOptionValue.expirationDate, 100n);
   t.deepEqual(daveOptionValue.timeAuthority, timer);
 
@@ -736,12 +735,11 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].expirationDate,
     100n,
   );
-  t.truthy(
-    amountMath.isEqual(
-      daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].strikePrice
-        .StrikePrice,
-      simoleans(7),
-    ),
+  assertAmountsEqual(
+    t,
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].strikePrice
+      .StrikePrice,
+    simoleans(7),
   );
   t.deepEqual(
     daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timeAuthority,
@@ -932,17 +930,15 @@ test('zoe - coveredCall non-fungible', async t => {
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.truthy(
-    amountMath.isEqual(
-      optionValue.underlyingAssets.UnderlyingAsset,
-      growlTigerAmount,
-    ),
+  assertAmountsEqual(
+    t,
+    optionValue.underlyingAssets.UnderlyingAsset,
+    growlTigerAmount,
   );
-  t.truthy(
-    amountMath.isEqual(
-      optionValue.strikePrice.StrikePrice,
-      aGloriousShieldAmount,
-    ),
+  assertAmountsEqual(
+    t,
+    optionValue.strikePrice.StrikePrice,
+    aGloriousShieldAmount,
   );
   t.is(optionValue.expirationDate, 1n);
   t.deepEqual(optionValue.timeAuthority, timer);

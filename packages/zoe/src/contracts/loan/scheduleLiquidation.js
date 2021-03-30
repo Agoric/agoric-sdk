@@ -57,7 +57,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       // contract, kicking out any remaining seats.
       zcf.reallocate(
         lenderSeat.stage({ Collateral: allCollateral }),
-        lenderSeat.stage({}),
+        collateralSeat.stage({}),
       );
       zcf.shutdownWithFailure(err);
       throw err;

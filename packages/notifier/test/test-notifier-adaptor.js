@@ -1,6 +1,7 @@
 // @ts-check
-import '@agoric/install-ses';
-import test from 'ava';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
