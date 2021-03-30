@@ -103,6 +103,12 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           outputBrand,
         );
         assert(isNatValue(inputAmount.value));
+        if (amountMath.isEmpty(inputAmount)) {
+          return {
+            amountOut: amountMath.makeEmpty(outputBrand),
+            amountIn: amountMath.makeEmpty(inputAmount.brand),
+          };
+        }
         const valueOut = getInputPrice(
           inputAmount.value,
           inputReserve,
@@ -126,6 +132,12 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           outputAmount.brand,
         );
         assert(isNatValue(outputAmount.value));
+        if (amountMath.isEmpty(outputAmount)) {
+          return {
+            amountOut: amountMath.makeEmpty(outputAmount.brand),
+            amountIn: amountMath.makeEmpty(inputBrand),
+          };
+        }
         const valueIn = getOutputPrice(
           outputAmount.value,
           inputReserve,

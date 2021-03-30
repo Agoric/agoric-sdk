@@ -190,3 +190,33 @@ test('pool getOutputPrice cenToCen', async t => {
     },
   );
 });
+
+test('pool getPrice zero', async t => {
+  const allocations = { central: 100n, secondary: 100n };
+  const { pool, centralBrand, central, secondary } = await setupPool(
+    allocations,
+  );
+  const valueIn = 0n;
+  const { amountOut, amountIn } = await E(pool).getPriceGivenAvailableInput(
+    secondary(valueIn),
+    centralBrand,
+  );
+  const expected = 0n;
+  t.deepEqual(amountOut, central(expected));
+  t.deepEqual(amountIn, secondary(valueIn));
+});
+
+test('pool getOutputPrice zero', async t => {
+  const poolBalances = { central: 100n, secondary: 100n };
+  const { pool, secondaryBrand, central, secondary } = await setupPool(
+    poolBalances,
+  );
+  const valueOut = 0n;
+  const { amountOut, amountIn } = await E(pool).getPriceGivenRequiredOutput(
+    secondaryBrand,
+    central(valueOut),
+  );
+  const expected = 0n;
+  t.deepEqual(amountOut, central(valueOut));
+  t.deepEqual(amountIn, secondary(expected));
+});
