@@ -42,11 +42,17 @@ import '@agoric/eventual-send/shim';
 let optionsString;
 if (typeof LOCKDOWN_OPTIONS === 'string') {
   optionsString = LOCKDOWN_OPTIONS;
+  console.log(
+    `'@agoric/install-ses' sniffed and found a 'LOCKDOWN_OPTIONS' global variable\n`,
+  );
 } else if (
   typeof process === 'object' &&
   typeof process.env.LOCKDOWN_OPTIONS === 'string'
 ) {
   optionsString = process.env.LOCKDOWN_OPTIONS;
+  console.log(
+    `'@agoric/install-ses' sniffed and found a 'LOCKDOWN_OPTIONS' environment variable\n`,
+  );
 }
 
 if (typeof optionsString === 'string') {
