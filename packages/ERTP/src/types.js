@@ -56,12 +56,15 @@
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
+ * @property {(brand: Brand), allegedValue: Value => Amount} make
  * @property {(allegedValue: Value, brand: Brand) => Amount} make
  * Make an amount from a value by adding the brand.
  *
+ * @property {(brand: Brand, allegedAmount: Amount) => Amount} coerce
  * @property {(allegedAmount: Amount, brand: Brand) => Amount} coerce
  * Make sure this amount is valid and return it if so.
  *
+ * @property {(brand: Brand, amount: Amount) => Value} getValue
  * @property {(amount: Amount, brand: Brand) => Value} getValue
  * Extract and return the value.
  *

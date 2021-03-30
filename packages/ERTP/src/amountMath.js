@@ -2,14 +2,17 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
-import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
-import { isNat } from '@agoric/nat';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
 import { makeAmountMath } from './deprecatedAmountMath';
-import { isSetValue, isNatValue } from './typeGuards';
+import {
+  looksLikeSetValue,
+  looksLikeNatValue,
+  assertLooksLikeBrand,
+  assertLooksLikeValue,
+} from './typeGuards';
 
 // We want an enum, but narrowed to the AmountMathKind type.
 /**
@@ -74,10 +77,10 @@ const helpers = {
  * @returns {NatMathHelpers | SetMathHelpers}
  */
 const getHelpersFromValue = value => {
-  if (isSetValue(value)) {
+  if (looksLikeSetValue(/** @type { unknown } */ (value))) {
     return setMathHelpers;
   }
-  if (isNatValue(value)) {
+  if (looksLikeNatValue(value)) {
     return natMathHelpers;
   }
   assert.fail(X`value ${value} must be a bigint or an array`);
@@ -85,10 +88,10 @@ const getHelpersFromValue = value => {
 
 /** @type {(amount: Amount) => AmountMathKind} */
 const getMathKind = amount => {
-  if (isSetValue(amount.value)) {
+  if (looksLikeSetValue(amount.value)) {
     return 'set';
   }
-  if (isNatValue(amount.value)) {
+  if (looksLikeNatValue(amount.value)) {
     return 'nat';
   }
   assert.fail(X`value ${amount.value} must be a bigint or an array`);
@@ -122,28 +125,12 @@ const optionalBrandCheck = (amount, brand) => {
   }
 };
 
-/** @type {(value: Value, brand: Brand) => Amount} */
+/**
+ * @type {(value: Value, brand: Brand) => Amount}
+ */
 const noCoerceMake = (value, brand) => {
   const amount = harden({ brand, value });
   return amount;
-};
-
-/** @type {(value: Value) => void} */
-const assertLooksLikeValue = value => {
-  assert(
-    Array.isArray(value) || isNat(value),
-    X`value ${value} must be a Nat or an array`,
-  );
-};
-
-const assertBrand = (brand, msg) => {
-  assert(passStyleOf(brand) === REMOTE_STYLE, msg);
-};
-
-/** @type {(brand: Brand) => void} */
-const assertLooksLikeBrand = brand => {
-  const msg = X`The brand ${brand} doesn't look like a brand.`;
-  assertBrand(brand, msg);
 };
 
 /**
@@ -154,7 +141,7 @@ const assertLooksLikeBrand = brand => {
  */
 const assertLooksLikeAmountBrand = amount => {
   const msg = X`The amount ${amount} doesn't look like an amount. Did you pass a value instead?`;
-  assertBrand(amount.brand, msg);
+  assertLooksLikeBrand(amount.brand, msg);
 };
 
 const assertLooksLikeAmount = amount => {
@@ -181,14 +168,14 @@ const coerceLR = (h, leftAmount, rightAmount) => {
 
 /** @type {AmountMath} */
 const amountMath = {
-  make: (allegedValue, brand) => {
+  make: (brandOrAllegedValue, allegedAmountOrBrand) => {
     assertLooksLikeBrand(brand);
     assertLooksLikeValue(allegedValue);
     // @ts-ignore Needs better typing to express Value to Helpers relationship
     const value = getHelpersFromValue(allegedValue).doCoerce(allegedValue);
     return harden({ brand, value });
   },
-  coerce: (allegedAmount, brand) => {
+  coerce: (brandOrAllegedValue, allegedAmountOrBrand) => {
     assertLooksLikeAmount(allegedAmount);
     assertLooksLikeBrand(brand);
     assert(
@@ -198,7 +185,8 @@ const amountMath = {
     // Will throw on inappropriate value
     return amountMath.make(allegedAmount.value, brand);
   },
-  getValue: (amount, brand) => amountMath.coerce(amount, brand).value,
+  getValue: (brandOrAllegedValue, allegedAmountOrBrand) =>
+    amountMath.coerce(brandOrAllegedValue, allegedAmountOrBrand).value,
   makeEmpty: (brand, mathKind = MathKind.NAT) => {
     assert(
       helpers[mathKind],
