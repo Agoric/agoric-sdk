@@ -151,7 +151,7 @@ export function loadBasedir(basedir) {
  */
 function resolveSpecFromConfig(dirname, specPath) {
   try {
-    return require.resolve(specPath, { path: [dirname] });
+    return require.resolve(specPath, { paths: [dirname] });
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND') {
       throw e;
