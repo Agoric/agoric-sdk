@@ -271,8 +271,8 @@ export async function initializeSwingset(
   }
 
   // Use ambient process.env only if caller did not specify.
-  const { env: { WORKER_TYPE } = process.env } = runtimeOptions;
-  const defaultManagerType = config.defaultManagerType || WORKER_TYPE;
+  const { env: { SWINGSET_WORKER_TYPE } = process.env } = runtimeOptions;
+  const defaultManagerType = config.defaultManagerType || SWINGSET_WORKER_TYPE;
   switch (defaultManagerType) {
     case 'local':
     case 'nodeWorker':
