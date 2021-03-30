@@ -10,10 +10,13 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
  * @returns {string}
  */
 export const stringifyNat = (
-  natValue = 0n,
+  natValue = null,
   decimalPlaces = 0,
   placesToShow = CONVENTIONAL_DECIMAL_PLACES,
 ) => {
+  if (natValue === null) {
+    return '';
+  }
   assert.typeof(natValue, 'bigint');
   const str = `${natValue}`.padStart(decimalPlaces, '0');
   const leftOfDecimalStr = str.substring(0, str.length - decimalPlaces) || '0';
