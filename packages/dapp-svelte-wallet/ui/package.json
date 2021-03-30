@@ -3,6 +3,9 @@
   "version": "1.7.7",
   "license": "Apache-2.0",
   "author": "Agoric",
+  "parsers": {
+    "js": "mjs"
+  },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
