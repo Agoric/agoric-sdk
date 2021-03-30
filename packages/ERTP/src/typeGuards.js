@@ -4,16 +4,14 @@ import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 const { isFrozen } = Object;
 
 // A type guard predicate named `looksLikeFoo` tests that something seems to be
-// a
-// Foo, produces static type info on the truthy path alleging that it is a Foo,
-// but does not validate that it is a well formed Foo. Names like `isFoo` should
-// be reserved for predicates that actually validate objects coming from
+// a Foo, produces static type info on the truthy path alleging that it is a
+// Foo, but does not validate that it is a well formed Foo. Names like `isFoo`
+// should be reserved for predicates that actually validate objects coming from
 // untrusted callers.
 //
 // The corresponding assertions would be `assertLooksLikeFoo` and `assertFoo`.
-// These
-// produce the same static type info, but on the success path rather than the
-// truthy path.
+// These produce the same static type info, but on the success path rather than
+// the truthy path.
 
 /**
  * Non-validating type guard for SetValue

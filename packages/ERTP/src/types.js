@@ -78,6 +78,20 @@
  * @returns {Amount}
  *
  * @typedef {AmountCoerceBrandAmount & AmountCoerceAmountBrand} AmountCoerce
+ *
+ * @callback AmountGetValueBrandAmount
+ * @param {Brand} brand
+ * @param {Amount} allegedAmount
+ * @returns {Amount}
+ *
+ * @callback AmountGetValueAmountBrand
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
+ * @param {Amount} brand
+ * @param {Brand} allegedAmount
+ * @returns {Amount}
+ *
+ * @typedef {AmountGetValueBrandAmount & AmountGetValueAmountBrand} AmountGetValue
  */
 
 /**
@@ -101,7 +115,7 @@
  * Please use the brand-first overload. The amount-first overload
  * is deprecated and will go way.
  *
- * @property {AmountCoerce} getValue
+ * @property {AmountGetValue} getValue
  * Extract and return the value.
  * Please use the brand-first overload. The amount-first overload
  * is deprecated and will go way.
