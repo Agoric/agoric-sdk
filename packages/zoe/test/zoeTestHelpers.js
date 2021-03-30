@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 
 import '../exported';
 import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers';
-import { amountMath, isSetValue, isNatValue } from '@agoric/ertp';
+import { amountMath, looksLikeSetValue, isNatValue } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';
 
@@ -12,7 +12,7 @@ export const assertAmountsEqual = (t, amount, expected, label = '') => {
   const brandsEqual = amount.brand === expected.brand;
   const l = label ? `${label} ` : '';
   let valuesEqual;
-  if (isSetValue(expected.value)) {
+  if (looksLikeSetValue(expected.value)) {
     valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
   } else if (isNatValue(expected.value)) {
     valuesEqual = amount.value === expected.value;

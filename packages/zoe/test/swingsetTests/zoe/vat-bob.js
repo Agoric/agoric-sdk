@@ -5,7 +5,7 @@ import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { amountMath } from '@agoric/ertp';
-import { isSetValue } from '@agoric/ertp/src/typeGuards';
+import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 
 import { showPurseBalance, setupIssuers } from '../helpers';
 
@@ -508,7 +508,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);
       // find the value corresponding to ticket #1
-      assert(isSetValue(availableTickets.value));
+      assert(looksLikeSetValue(availableTickets.value));
       const ticket1Value = availableTickets.value.find(
         ticket => ticket.number === 1,
       );
