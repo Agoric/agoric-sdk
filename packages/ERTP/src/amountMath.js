@@ -10,8 +10,9 @@ import { makeAmountMath } from './deprecatedAmountMath';
 import {
   looksLikeSetValue,
   looksLikeNatValue,
-  assertLooksLikeBrand,
   assertLooksLikeValue,
+  assertLooksLikeBrand,
+  assertLooksLikeAmount,
 } from './typeGuards';
 
 // We want an enum, but narrowed to the AmountMathKind type.
@@ -126,29 +127,10 @@ const optionalBrandCheck = (amount, brand) => {
 };
 
 /**
- * @type {(value: Value, brand: Brand) => Amount}
+ * @param {Amount} leftAmount
+ * @param {Amount} rightAmount
+ * @param {Brand=} brand
  */
-const noCoerceMake = (value, brand) => {
-  const amount = harden({ brand, value });
-  return amount;
-};
-
-/**
- * Give a better error message by logging the entire amount
- * rather than just the brand
- *
- * @type {(amount: Amount) => void}
- */
-const assertLooksLikeAmountBrand = amount => {
-  const msg = X`The amount ${amount} doesn't look like an amount. Did you pass a value instead?`;
-  assertLooksLikeBrand(amount.brand, msg);
-};
-
-const assertLooksLikeAmount = amount => {
-  assertLooksLikeAmountBrand(amount);
-  assertLooksLikeValue(amount.value);
-};
-
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   assertLooksLikeAmount(leftAmount);
   assertLooksLikeAmount(rightAmount);

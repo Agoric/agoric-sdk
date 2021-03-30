@@ -52,21 +52,29 @@
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
- * by issuers and mints, and represent the goods and currency carried by purses and
+ * by issuers and mints, and represent the goods and currency carried by purses
+ * and
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
  * @property {(brand: Brand), allegedValue: Value => Amount} make
  * @property {(allegedValue: Value, brand: Brand) => Amount} make
  * Make an amount from a value by adding the brand.
+ * Please use the brand-first overload. The value-first overload
+ * is deprecated and will go way.
  *
  * @property {(brand: Brand, allegedAmount: Amount) => Amount} coerce
  * @property {(allegedAmount: Amount, brand: Brand) => Amount} coerce
- * Make sure this amount is valid and return it if so.
+ * Make sure this amount is valid enough, and return a corresponding
+ * valid amount if so.
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
  *
  * @property {(brand: Brand, amount: Amount) => Value} getValue
  * @property {(amount: Amount, brand: Brand) => Value} getValue
  * Extract and return the value.
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
  *
  * @property {MakeEmpty} makeEmpty
  * Return the amount representing an empty amount. This is the

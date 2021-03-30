@@ -19,7 +19,7 @@ import './types';
  * Used as a pre-validation check to select which validator
  * (mathHelpers) to use.
  *
- * @param {unknown} allegedValue
+ * @param {any} allegedValue
  * @returns {allegedValue is SetValue}
  */
 export const looksLikeSetValue = allegedValue => Array.isArray(allegedValue);
@@ -30,7 +30,7 @@ export const looksLikeSetValue = allegedValue => Array.isArray(allegedValue);
  * Used as a pre-validation check to select which validator
  * (mathHelpers) to use.
  *
- * @param {unknown} allegedValue
+ * @param {any} allegedValue
  * @returns {allegedValue is NatValue}
  */
 export const looksLikeNatValue = allegedValue => isNat(allegedValue);
@@ -38,25 +38,16 @@ export const looksLikeNatValue = allegedValue => isNat(allegedValue);
 /**
  * Non-validating type guard for Value
  *
- * @param {unknown} allegedValue
+ * @param {any} allegedValue
  * @returns {allegedValue is Value}
  */
 export const looksLikeValue = allegedValue =>
   looksLikeSetValue(allegedValue) || looksLikeNatValue(allegedValue);
 
 /**
- * Non-validating type guard for Brand
- *
- * @param {unknown} allegedBrand
- * @returns {allegedBrand is Brand}
- */
-export const looksLikeBrand = allegedBrand =>
-  passStyleOf(allegedBrand) === REMOTE_STYLE;
-
-/**
  * Non-validating type assertion for Value
  *
- * @param {unknown} allegedValue
+ * @param {any} allegedValue
  * @returns {asserts allegedValue is Value}
  */
 export const assertLooksLikeValue = allegedValue =>
@@ -66,9 +57,18 @@ export const assertLooksLikeValue = allegedValue =>
   );
 
 /**
+ * Non-validating type guard for Brand
+ *
+ * @param {any} allegedBrand
+ * @returns {allegedBrand is Brand}
+ */
+export const looksLikeBrand = allegedBrand =>
+  passStyleOf(allegedBrand) === REMOTE_STYLE;
+
+/**
  * Non-validating type assertion for Brand
  *
- * @param {unknown} allegedBrand
+ * @param {any} allegedBrand
  * @param {Details=} msg
  * @returns {asserts allegedBrand is Brand}
  */
@@ -76,3 +76,18 @@ export const assertLooksLikeBrand = (
   allegedBrand,
   msg = X`The brand ${allegedBrand} doesn't look like a brand.`,
 ) => assert(looksLikeBrand(allegedBrand), msg);
+
+/**
+ * Non-validating type assertion for Amount
+ *
+ * @param {any} allegedAmount
+ * @returns {asserts allegedAmount is Amount}
+ */
+export const assertLooksLikeAmount = allegedAmount => {
+  assertLooksLikeBrand(
+    allegedAmount.brand,
+    X`The amount ${allegedAmount} doesn't look like an amount. Did you pass a value instead?`,
+  );
+  // `return` only to satisfy jsdoc type checker
+  return assertLooksLikeValue(allegedAmount.value);
+};
