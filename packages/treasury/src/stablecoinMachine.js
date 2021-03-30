@@ -3,7 +3,19 @@ import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "Scone" stablecoin.
+// "Scone" stablecoin. This overarching SCM will hold ownershipTokens in the
+// individual per-type vaultManagers.
+//
+// makeAddTypeInvitation is a closely held method that adds a brand new
+// collateral type. It specifies the initial exchange rate for that type.
+//
+// a second closely held method (not implemented yet) would add collateral of a
+// type for which there is an existing pool. It gets the current price from the
+// pool.
+//
+// ownershipTokens for vaultManagers entitle holders to distributions, but you
+// can't redeem them outright, that would drain the utility from the economy.
+
 import { E } from '@agoric/eventual-send';
 import { assert, details } from '@agoric/assert';
 import makeStore from '@agoric/store';
@@ -61,7 +73,6 @@ export async function start(zcf) {
     });
   }
 
-  // TODO sinclair+us: is there a scm/gov token per collateralType (joe says yes), or just one?
   /** @type {Store<Brand,VaultManager>} */
   const collateralTypes = makeStore(); // Brand -> vaultManager
 
@@ -97,9 +108,6 @@ export async function start(zcf) {
         want: { Governance: _govOut }, // ownership of the whole stablecoin machine
       } = seat.getProposal();
       assert(!collateralTypes.has(collateralBrand));
-      // TODO check that hte collateral is of the expected type
-      // of restructure so that's not an issue
-      // TODO assert that the collateralIn is of the right brand
       const sconesAmount = multiplyBy(collateralIn, rates.initialPrice);
       // arbitrarily, give governance tokens equal to scones tokens
       const govAmount = amountMath.make(sconesAmount.value, govBrand);
@@ -171,9 +179,6 @@ export async function start(zcf) {
       // TODO(hibbert): make use of these assets (Liquidity: 19899 Aeth)
       trace('depositValue', depositValue);
 
-      // const { payout: salesPayoutP } = await E(zoe).offer(swapInvitation, saleOffer, payout2);
-      // const { Scones: sconeProceeds, ...otherProceeds } = await salesPayoutP;
-
       const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
         liquidationInstall,
         {
@@ -234,22 +239,6 @@ export async function start(zcf) {
 
     return zcf.makeInvitation(makeLoanHook, 'make a loan');
   }
-
-  // this overarching SCM holds ownershipTokens in the individual per-type
-  // vaultManagers
-
-  // one exposed (but closely held) method is to add a brand new collateral
-  // type. This gets to specify the initial exchange rate
-  // function invest_new(collateral, price) -> govTokens
-
-  // a second closely held method is to add a collateral type for which there
-  // was an existing pool. We ask the pool for the current price, and then
-  // call x_new(). The price will be stale, but it's the same kind of stale
-  // as addLiquidity
-  // function invest_existing(collateral) -> govTokens
-
-  // govTokens entitle you to distributions, but you can't redeem them
-  // outright, that would drain the utility from the economy
 
   zcf.setTestJig(() => ({
     stablecoin: sconeMint.getIssuerRecord(),
