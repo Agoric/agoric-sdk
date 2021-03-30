@@ -3,8 +3,14 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-import '@agoric/install-ses';
+// `test.serial` does not yet seem compatible with ses-ava
+// See https://github.com/endojs/endo/issues/647
+// TODO restore
+// import { test } from '../tools/prepare-test-env-ava';
+import '../tools/prepare-test-env';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';

@@ -204,19 +204,7 @@ int main(int argc, char* argv[])
 	int error = 0;
 	int interval = 0;
 	int freeze = 0;
-	xsCreation _creation = {
-		16 * 1024 * 1024,	/* initialChunkSize */
-		16 * 1024 * 1024,	/* incrementalChunkSize */
-		1 * 1024 * 1024,	/* initialHeapCount */
-		1 * 1024 * 1024,	/* incrementalHeapCount */
-		4096,				/* stackCount */
-		32000,				/* keyCount */
-		1993,				/* nameModulo */
-		127,				/* symbolModulo */
-		8192 * 1024,		/* parserBufferSize */
-		1993,				/* parserTableModulo */
-	};
-	xsCreation* creation = &_creation;
+	int parserBufferSize = 8192 * 1024;
 
 	txSnapshot snapshot = {
 		SNAPSHOT_SIGNATURE,
@@ -279,6 +267,15 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 		}
+		else if (!strcmp(argv[argi], "-s")) {
+			argi++;
+			if (argi < argc)
+				parserBufferSize = 1024 * atoi(argv[argi]);
+			else {
+				fxPrintUsage();
+				return 1;
+			}
+		}
 		else if (!strcmp(argv[argi], "-v")) {
 			printf("xsnap %s (XS %d.%d.%d)\n", XSNAP_VERSION, XS_MAJOR_VERSION, XS_MINOR_VERSION, XS_PATCH_VERSION);
 			return 0;
@@ -287,6 +284,20 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
+	xsCreation _creation = {
+		16 * 1024 * 1024,	/* initialChunkSize */
+		16 * 1024 * 1024,	/* incrementalChunkSize */
+		1 * 1024 * 1024,	/* initialHeapCount */
+		1 * 1024 * 1024,	/* incrementalHeapCount */
+		4096,				/* stackCount */
+		32000,				/* keyCount */
+		1993,				/* nameModulo */
+		127,				/* symbolModulo */
+		parserBufferSize,	/* parserBufferSize */
+		1993,				/* parserTableModulo */
+	};
+	xsCreation* creation = &_creation;
+
 	if (gxCrankMeteringLimit) {
 		if (interval == 0)
 			interval = 1;
@@ -850,11 +861,12 @@ void fxPatchBuiltIns(txMachine* machine)
 
 void fxPrintUsage()
 {
-	printf("xsnap [-h] [-f] [-i <interval>] [-l <limit>] [-m] [-r <snapshot>] [-s] [-v]\n");
+	printf("xsnap [-h] [-f] [-i <interval>] [-l <limit>] [-s <size>] [-m] [-r <snapshot>] [-s] [-v]\n");
 	printf("\t-f: freeze the XS machine\n");
 	printf("\t-h: print this help message\n");
 	printf("\t-i <interval>: metering interval (default to 1)\n");
 	printf("\t-l <limit>: metering limit (default to none)\n");
+	printf("\t-s <size>: parser buffer size, in kB (default to 8192)\n");
 	printf("\t-r <snapshot>: read snapshot to create the XS machine\n");
 	printf("\t-v: print XS version\n");
 }
@@ -992,28 +1004,28 @@ void fxAbort(txMachine* the, int status)
 #ifdef mxDebug
 			fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-			fxExitToHost(the);
+		c_exit(status);
 			break;
 	case XS_NOT_ENOUGH_MEMORY_EXIT:
 		xsLog("memory full\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_NO_MORE_KEYS_EXIT:
 		xsLog("not enough keys\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_TOO_MUCH_COMPUTATION_EXIT:
 		xsLog("too much computation\n");
 #ifdef mxDebug
 		fxDebugger(the, (char *)__FILE__, __LINE__);
 #endif
-		fxExitToHost(the);
+		c_exit(status);
 		break;
 	case XS_UNHANDLED_EXCEPTION_EXIT:
 	case XS_UNHANDLED_REJECTION_EXIT:

@@ -31,6 +31,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
     "@agoric/install-ses": "^0.5.4",
+    "@agoric/swingset-vat": "^0.14.0",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"

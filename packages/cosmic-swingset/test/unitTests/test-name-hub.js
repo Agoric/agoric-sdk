@@ -1,5 +1,4 @@
-import '@agoric/install-ses';
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { makeNameHubKit } from '../../lib/ag-solo/vats/nameHub';
 
@@ -28,7 +27,7 @@ test('makeNameHubKit - reserve and update', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
   await t.throwsAsync(() => nameHub.lookup('hello'), {
-    message: '"nameKey" not found: (a string)',
+    message: /"nameKey" not found: .*/,
   });
 
   // Try reserving and looking up.
@@ -52,7 +51,7 @@ test('makeNameHubKit - reserve and delete', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
-    message: '"nameKey" not found: (a string)',
+    message: /"nameKey" not found: .*/,
   });
 
   nameAdmin.reserve('goodbye');
@@ -64,11 +63,11 @@ test('makeNameHubKit - reserve and delete', async t => {
   t.falsy(lookedUpGoodbye);
   nameAdmin.delete('goodbye');
   await t.throwsAsync(lookupGoodbyeP, {
-    message: '"nameKey" not found: (a string)',
+    message: /"nameKey" not found: .*/,
   });
   t.truthy(lookedUpGoodbye);
 
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
-    message: '"nameKey" not found: (a string)',
+    message: /"nameKey" not found: .*/,
   });
 });

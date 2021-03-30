@@ -32,6 +32,9 @@ export function buildRootObject(_vatPowers) {
       return issuer;
     },
     mintInitialPayment: (issuerName, value) => {
+      if (!mintsAndMath.has(issuerName)) {
+        return undefined;
+      }
       const { mint, amountMath } = mintsAndMath.get(issuerName);
       const amount = amountMath.make(value);
       return mint.mintPayment(amount);

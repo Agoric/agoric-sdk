@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
+import '@agoric/swingset-vat/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
 
