@@ -32,10 +32,6 @@ export function makeInbound(state, stateKit) {
     const remote = getRemote(state, remoteID);
     const lpid = remote.fromRemote.get(rpid);
     assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
-    assert(
-      remote.toRemote.has(lpid),
-      X`unmapped remote ${remoteID} promise ${lpid}`,
-    );
     const p = state.promiseTable.get(lpid);
     assert(
       !p.subscribers || p.subscribers.indexOf(remoteID) === -1,
@@ -46,10 +42,13 @@ export function makeInbound(state, stateKit) {
     cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
   }
 
-  function enqueueRemotePromiseIDRetirement(remoteID, rpid) {
+  function beginRemotePromiseIDRetirement(remoteID, rpid) {
     insistRemoteType('promise', rpid);
     const remote = getRemote(state, remoteID);
+    const lpid = remote.fromRemote.get(flipRemoteSlot(rpid));
+    remote.toRemote.delete(lpid);
     remote.retirementQueue.push([remote.nextSendSeqNum, rpid]);
+    cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }
 
   function retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum) {
@@ -145,7 +144,7 @@ export function makeInbound(state, stateKit) {
     getLocalForRemote,
     provideLocalForRemoteResult,
     retireRemotePromiseID,
-    enqueueRemotePromiseIDRetirement,
+    beginRemotePromiseIDRetirement,
     retireAcknowledgedRemotePromiseIDs,
   });
 }

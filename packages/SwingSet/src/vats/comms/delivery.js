@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X } from '@agoric/assert';
@@ -22,7 +23,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     provideLocalForRemote,
     provideLocalForRemoteResult,
     retireRemotePromiseID,
-    enqueueRemotePromiseIDRetirement,
+    beginRemotePromiseIDRetirement,
     retireAcknowledgedRemotePromiseIDs,
 
     getKernelForLocal,
@@ -123,6 +124,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     handleResolutions(localResolutions);
   }
 
+  /** @type { (remoteID: string, ackSeqNum: number) => void } */
   function handleAckFromRemote(remoteID, ackSeqNum) {
     retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum);
   }
@@ -130,6 +132,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   // dispatch.deliver with msg from vattp lands here, containing a message
   // from some remote machine. figure out whether it's a deliver or a
   // resolve, parse, merge with handleSend/handleResolutions
+  /** @type { (remoteID: string, message: string, result?: string) => void} */
   function messageFromRemote(remoteID, message, result) {
     if (result) {
       // TODO: eventually, the vattp vat will be changed to send the 'receive'
@@ -156,7 +159,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       delim2 >= 0,
       X`received message ${message} lacks ackSeqNum delimiter`,
     );
-    const ackSeqNum = message.substring(delim1 + 1, delim2);
+    const ackSeqNum = Number.parseInt(
+      message.substring(delim1 + 1, delim2),
+      10,
+    );
     handleAckFromRemote(remoteID, ackSeqNum);
 
     const msgBody = message.substring(delim2 + 1);
@@ -489,7 +495,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const rejectedTag = rejected ? 'reject' : 'fulfill';
       // prettier-ignore
       msgs.push(`resolve:${rejectedTag}:${rpid}${mapSlots()};${data.body}`);
-      enqueueRemotePromiseIDRetirement(remoteID, rpid);
+      beginRemotePromiseIDRetirement(remoteID, rpid);
     }
     transmit(remoteID, msgs.join('\n'));
   }
