@@ -1,4 +1,4 @@
-/* global __filename */
+/* global __filename process */
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
@@ -51,6 +51,7 @@ function echoCommand(arg) {
  * @param {'ignore' | 'inherit'} [options.stdout]
  * @param {'ignore' | 'inherit'} [options.stderr]
  * @param {number} [options.meteringLimit]
+ * @param {Record<string, string>} [options.env]
  */
 export function xsnap(options) {
   const {
@@ -64,6 +65,7 @@ export function xsnap(options) {
     stdout = 'ignore',
     stderr = 'ignore',
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
+    env = process.env,
   } = options;
 
   const platform = {
@@ -76,7 +78,7 @@ export function xsnap(options) {
     throw new Error(`xsnap does not support platform ${os}`);
   }
 
-  const bin = new URL(
+  let bin = new URL(
     `../build/bin/${platform}/${debug ? 'debug' : 'release'}/xsnap`,
     importMetaUrl,
   ).pathname;
@@ -84,7 +86,7 @@ export function xsnap(options) {
   /** @type {Deferred<void>} */
   const vatExit = defer();
 
-  const args = [name];
+  let args = [name];
   if (snapshot) {
     args.push('-r', snapshot);
   }
@@ -95,6 +97,11 @@ export function xsnap(options) {
     args.push('-s', `${parserBufferSize}`);
   }
 
+  if (env.XSNAP_DEBUG_RR) {
+    args = [bin, ...args];
+    bin = 'rr';
+    console.log('XSNAP_DEBUG_RR', { bin, args });
+  }
   const xsnapProcess = spawn(bin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
