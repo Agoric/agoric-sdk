@@ -7,7 +7,7 @@
   "parsers": {
     "js": "mjs"
   },
-  "main": "./src/xsnap.js",
+  "main": "./src/index.js",
   "bin": {
     "ava-xs": "./src/ava-xs.js",
     "xsrepl": "./src/xsrepl"
