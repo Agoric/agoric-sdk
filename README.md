@@ -1,10 +1,16 @@
 # Agoric Platform SDK
 
-This repository contains most of the packages that make up the Agoric
-platform. If you want to build on top of this platform, you don't need this
-repository: instead you should [follow our instructions for getting started](https://agoric.com/documentation/getting-started/) with the Agoric SDK.
+This repository contains most of the packages that make up the upper
+layers of the Agoric platform, with
+[the endo repository](https://github.com/endojs/endo)
+providing the lower layers.
+If you want to build on top of this platform, you don't need these
+repositories: instead you should
+[follow our instructions for getting started](https://agoric.com/documentation/getting-started/)
+with the Agoric SDK.
 
-But if you are improving the platform itself, this is the repository to use.
+But if you are improving the platform itself, these are the repositories
+to use.
 
 ## Prerequisites
 
