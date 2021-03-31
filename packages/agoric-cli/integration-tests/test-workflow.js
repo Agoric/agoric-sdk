@@ -34,28 +34,14 @@ test('workflow', async t => {
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
-  function pspawnStdout(...args) {
-    let output = '';
-    const ps = pspawn(...args);
-    ps.childProcess.stdout.on('data', chunk => {
-      output += chunk.toString('utf-8');
-    });
-    ps.then(ret => {
-      if (ret !== 0) {
-        process.stdout.write(output);
-      }
-    });
-    return ps;
-  }
-
   // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
   const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
     ? ['--sdk']
     : [];
   function myMain(args) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(`agoric`, [...extraArgs, ...args], {
-      stdio: ['ignore', 'pipe', 'inherit'],
+    return pspawn(`agoric`, [...extraArgs, ...args], {
+      stdio: ['ignore', 'inherit', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,
     });
@@ -85,6 +71,7 @@ test('workflow', async t => {
 
   try {
     process.on('SIGINT', runFinalizers);
+    process.on('exit', runFinalizers);
     process.chdir(name);
 
     // ==============
