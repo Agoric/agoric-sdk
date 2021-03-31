@@ -56,6 +56,9 @@
  * @param {Value} allegedValue
  * @returns {Amount}
  *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
  * @callback AmountMakeValueBrand
  * Please use the brand-first overload. The value-first overload
  * is deprecated and will go way.
@@ -70,6 +73,9 @@
  * @param {Amount} allegedAmount
  * @returns {Amount}
  *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
  * @callback AmountCoerceAmountBrand
  * Please use the brand-first overload. The amount-first overload
  * is deprecated and will go way.
@@ -84,6 +90,9 @@
  * @param {Amount} allegedAmount
  * @returns {Amount}
  *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
  * @callback AmountGetValueAmountBrand
  * Please use the brand-first overload. The amount-first overload
  * is deprecated and will go way.
