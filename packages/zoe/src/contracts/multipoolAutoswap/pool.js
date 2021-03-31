@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { MathKind, amountMath, isNatValue } from '@agoric/ertp/';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import {
   getInputPrice,
@@ -14,20 +15,38 @@ import {
 } from '../../contractSupport';
 
 import '../../../exported';
+import { makePriceAuthority } from './priceAuthority';
 
 /**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand, pool: Pool) => void} initPool
  * @param {Brand} centralBrand
+ * @param {Timer} timer
+ * @param {IssuerKit} quoteIssuerKit
  */
-export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
+export const makeAddPool = (
+  zcf,
+  isSecondary,
+  initPool,
+  centralBrand,
+  timer,
+  quoteIssuerKit,
+) => {
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     let liqTokenSupply = 0n;
     const {
       brand: liquidityBrand,
       issuer: liquidityIssuer,
     } = liquidityZcfMint.getIssuerRecord();
+    const { notifier, updater } = makeNotifierKit();
+
+    const updateState = pool =>
+      // TODO: when governance can change the interest rate, include it here
+      updater.updateState({
+        central: pool.getCentralAmount(),
+        secondary: pool.getSecondaryAmount(),
+      });
 
     const addLiquidityActual = (pool, zcfSeat, secondaryAmount) => {
       const liquidityValueOut = calcLiqValueToMint(
@@ -58,6 +77,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         },
       );
       zcfSeat.exit();
+      updateState(pool);
       return 'Added liquidity.';
     };
 
@@ -182,6 +202,7 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
           'insufficient Secondary deposited',
         );
 
+        updateState(pool);
         return addLiquidityActual(pool, zcfSeat, secondaryOut);
       },
       removeLiquidity: userSeat => {
@@ -227,9 +248,38 @@ export const makeAddPool = (zcf, isSecondary, initPool, centralBrand) => {
         );
 
         userSeat.exit();
+        updateState(pool);
         return 'Liquidity successfully removed.';
       },
+      getNotifier: () => notifier,
+      updateState: () => updateState(pool),
+      // eslint-disable-next-line no-use-before-define
+      getToCentralPriceAuthority: () => toCentralPriceAuthority,
+      // eslint-disable-next-line no-use-before-define
+      getFromCentralPriceAuthority: () => fromCentralPriceAuthority,
     };
+
+    // TODO: if the pool exists, but its liquidity is zero,
+    //  getPriceGivenAvailableInput() throws.
+    const toCentralPriceAuthority = makePriceAuthority(
+      pool.getPriceGivenAvailableInput,
+      secondaryBrand,
+      centralBrand,
+      timer,
+      zcf,
+      notifier,
+      quoteIssuerKit,
+    );
+    const fromCentralPriceAuthority = makePriceAuthority(
+      pool.getPriceGivenAvailableInput,
+      centralBrand,
+      secondaryBrand,
+      timer,
+      zcf,
+      notifier,
+      quoteIssuerKit,
+    );
+
     return pool;
   };
 
