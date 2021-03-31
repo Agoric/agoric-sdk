@@ -13,13 +13,18 @@ import { installOnChain as installEconomyOnChain } from '@agoric/treasury/bundle
 // has been run to update gci.js
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { assert, details as X } from '@agoric/assert';
+import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { amountMath } from '@agoric/ertp';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
-import { CENTRAL_ISSUER_NAME, fakeIssuerNameToRecord } from './issuers';
+import { CENTRAL_ISSUER_NAME, fakeIssuerEntries } from './issuers';
 
 const NUM_IBC_PORTS = 3;
 const QUOTE_INTERVAL = 30;
+
+const PERCENT_DENOM = 100n;
+const BASIS_POINTS_DENOM = 10000n;
 
 console.debug(`loading bootstrap.js`);
 
@@ -63,7 +68,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
-      E(vats.zoe).buildZoe(vatAdminSvc),
+      /** @type {ZoeService} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
       E(vats.host).makeHost(),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
@@ -92,7 +97,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
 
       // Install the economy, giving it access to the name admins we made.
-      await installEconomyOnChain({
+      return installEconomyOnChain({
         agoricNames,
         board,
         chainTimerService,
@@ -103,8 +108,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
 
     // Now we can bootstrap the economy!
-    await installEconomy();
-    const centralIssuer = await E(agoricNames).lookup('issuer', 'MOE');
+    const treasuryCreator = await installEconomy();
+    const [centralIssuer, centralBrand] = await Promise.all(
+      ['issuer', 'brand'].map(hub => E(agoricNames).lookup(hub, 'MOE')),
+    );
 
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,
@@ -116,22 +123,31 @@ export function buildRootObject(vatPowers, vatParameters) {
       },
     ];
 
-    const issuerNameToRecord = noFakeCurrencies
-      ? new Map()
-      : fakeIssuerNameToRecord;
-    issuerNameToRecord.set(...CENTRAL_ISSUER_ENTRY);
+    /** @type {Store<string, import('./issuers').IssuerInitializationRecord>} */
+    const issuerNameToRecord = makeStore();
+    if (!noFakeCurrencies) {
+      fakeIssuerEntries.map(entry => issuerNameToRecord.init(...entry));
+    }
+    issuerNameToRecord.init(...CENTRAL_ISSUER_ENTRY);
 
     const issuerNames = [...issuerNameToRecord.keys()];
     const issuers = await Promise.all(
-      issuerNames.map(issuerName => {
+      issuerNames.map(async issuerName => {
         const record = issuerNameToRecord.get(issuerName);
         if (record.issuer !== undefined) {
           return record.issuer;
         }
-        return E(vats.mints).makeMintAndIssuer(
+        /** @type {Issuer} */
+        const issuer = await E(vats.mints).makeMintAndIssuer(
           issuerName,
           ...(record.issuerArgs || []),
         );
+        const brand = await E(issuer).getBrand();
+        issuerNameToRecord.set(
+          issuerName,
+          harden({ ...record, brand, issuer }),
+        );
+        return issuer;
       }),
     );
 
@@ -161,13 +177,13 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
     };
     await Promise.all(
-      issuers.map(async (issuer, i) => {
+      issuerNames.map(async issuerName => {
         // Create priceAuthority pairs for centralIssuer based on the
         // FakePriceAuthority.
-        console.debug(`Creating ${issuerNames[i]}-${CENTRAL_ISSUER_NAME}`);
-        const { fakeTradesGivenCentral } = issuerNameToRecord.get(
-          issuerNames[i],
-        );
+        console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
+        const record = issuerNameToRecord.get(issuerName);
+        assert(record);
+        const { fakeTradesGivenCentral, issuer } = record;
         if (!fakeTradesGivenCentral) {
           return;
         }
@@ -184,6 +200,79 @@ export function buildRootObject(vatPowers, vatParameters) {
         ]);
       }),
     );
+
+    async function addAllCollateral() {
+      const govBrand = await E(agoricNames).lookup(
+        'brand',
+        'TreasuryGovernance',
+      );
+      return Promise.all(
+        issuerNames.map(async issuerName => {
+          const record = issuerNameToRecord.get(issuerName);
+          const config = record.collateralConfig;
+          if (!config) {
+            return undefined;
+          }
+          const rates = {
+            initialPrice: makeRatio(
+              config.initialPricePercent,
+              centralBrand,
+              PERCENT_DENOM,
+              record.brand,
+            ),
+            initialMargin: makeRatio(config.initialMarginPercent, centralBrand),
+            liquidationMargin: makeRatio(
+              config.liquidationMarginPercent,
+              centralBrand,
+            ),
+            interestRate: makeRatio(
+              config.interestRateBasis,
+              centralBrand,
+              BASIS_POINTS_DENOM,
+            ),
+            loanFee: makeRatio(
+              config.loanFeeBasis,
+              centralBrand,
+              BASIS_POINTS_DENOM,
+            ),
+          };
+
+          const addTypeInvitation = E(treasuryCreator).makeAddTypeInvitation(
+            record.issuer,
+            config.keyword,
+            rates,
+          );
+
+          const payments = E(vats.mints).mintInitialPayments(
+            [issuerName],
+            [config.collateralValue],
+          );
+          const payment = E.get(payments)[0];
+
+          const amount = await E(record.issuer).getAmountOf(payment);
+          const proposal = harden({
+            give: {
+              Collateral: amount,
+            },
+            want: {
+              // We just throw away our governance tokens.
+              Governance: amountMath.make(0n, govBrand),
+            },
+          });
+          const paymentKeywords = harden({
+            Collateral: payment,
+          });
+          const seat = E(zoe).offer(
+            addTypeInvitation,
+            proposal,
+            paymentKeywords,
+          );
+          const vaultManager = E(seat).getOfferResult();
+          return vaultManager;
+        }),
+      );
+    }
+    await addAllCollateral();
 
     return Far('chainBundler', {
       async createUserBundle(_nickname, address, powerFlags = []) {
@@ -205,6 +294,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
         if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
           additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
+        }
+        if (powerFlags && powerFlags.includes('agoric.treasuryCreator')) {
+          additionalPowers.treasuryCreator = treasuryCreator;
         }
 
         const payments = await E(vats.mints).mintInitialPayments(

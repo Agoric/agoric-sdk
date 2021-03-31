@@ -6,7 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { assert } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
-import { isSetValue } from '@agoric/ertp/src/typeGuards';
+import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
 
@@ -211,7 +211,7 @@ test(`mint and sell opera tickets`, async t => {
       3,
       'Alice should see 3 available tickets',
     );
-    assert(isSetValue(availableTickets.value));
+    assert(looksLikeSetValue(availableTickets.value));
     t.truthy(
       availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets contains ticket number 1`,
@@ -435,7 +435,7 @@ test(`mint and sell opera tickets`, async t => {
       ticketSalesPublicFacet,
     ).getAvailableItems();
 
-    assert(isSetValue(availableTickets.value));
+    assert(looksLikeSetValue(availableTickets.value));
     // Bob sees the currently available tickets
     t.is(
       availableTickets.value.length,

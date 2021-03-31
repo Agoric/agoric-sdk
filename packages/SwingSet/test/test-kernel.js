@@ -1229,3 +1229,13 @@ test('pipelined promise queueing', async t => {
     },
   ]);
 });
+
+test('xs-worker default manager type', async t => {
+  const endowments = makeEndowments();
+  initializeKernel({ defaultManagerType: 'xs-worker' }, endowments.hostStorage);
+  buildKernel(endowments, {}, {});
+  t.deepEqual(
+    endowments.hostStorage.get('kernel.defaultManagerType'),
+    'xs-worker',
+  );
+});

@@ -63,6 +63,8 @@ export function makeVatKeeper(
   insistVatID(vatID);
 
   function setSourceAndOptions(source, options) {
+    // take care with API change
+    assert(options.managerType, X`vat options missing managerType`);
     assert.typeof(source, 'object');
     assert(source.bundle || source.bundleName);
     assert.typeof(options, 'object');

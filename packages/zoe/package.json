@@ -16,7 +16,7 @@
     "test:xs": "yarn test:xs-unit",
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-unit-debug": "ava-xs --debug",
-    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
+    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
@@ -85,7 +85,7 @@
       "# bad plan: 6 still to go",
       "test-automaticRefund",
       "test-coveredCall",
-      "# We use WORKER_TYPE=xs ava to run these...",
+      "# We use SWINGSET_WORKER_TYPE=xs ava to run these...",
       "swingsetTests"
     ]
   },

@@ -10,6 +10,8 @@ export const makeSaveIssuer = (
 ) => {
   /** @type {SaveIssuerHelper} */
   const saveIssuer = async (issuerP, brandPetname, pursePetname) => {
+    console.log(`-- Installing issuer for: ${brandPetname}`);
+
     const issuer = await Promise.resolve(issuerP);
     await E(issuerManager).add(brandPetname, issuer);
     const emptyPurseMadeP = E(walletAdmin).makeEmptyPurse(
@@ -18,7 +20,9 @@ export const makeSaveIssuer = (
     );
     const localAmountMathSavedP = saveLocalAmountMaths([brandPetname]);
 
-    return Promise.all([emptyPurseMadeP, localAmountMathSavedP]);
+    const result = await Promise.all([emptyPurseMadeP, localAmountMathSavedP]);
+    console.log(`-- Installed issuer for: ${brandPetname}`);
+    return result;
   };
 
   return saveIssuer;

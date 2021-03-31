@@ -106,4 +106,6 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
   await Promise.all(
     nameAdminUpdates.map(([nameAdmin, name, value]) => E(nameAdmin).update(name, value)),
   );
+
+  return creatorFacet;
 }

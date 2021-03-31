@@ -343,6 +343,9 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
     assert(isNatValue(amountIn.value));
+    if (amountMath.isEmpty(amountIn)) {
+      return amountMath.makeEmpty(brandOut);
+    }
     const outputValue = getInputPrice(
       amountIn.value,
       inputReserve,
@@ -362,6 +365,9 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
     assert(isNatValue(amountOut.value));
+    if (amountMath.isEmpty(amountOut)) {
+      return amountMath.makeEmpty(brandIn);
+    }
     const outputValue = getOutputPrice(
       amountOut.value,
       inputReserve,

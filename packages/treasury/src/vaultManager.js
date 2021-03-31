@@ -72,7 +72,7 @@ export function makeVaultManager(
   // better performance, use virtual objects.)
   // eslint-disable-next-line no-use-before-define
   const sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
-  // The hightest debt ratio for which we have a request outstanding
+  // The highest debt ratio for which we have a request outstanding
   let highestDebtRatio = sortedVaultKits.highestRatio();
 
   // When any Vault's debt ratio is higher than the current high-water level,
@@ -100,8 +100,8 @@ export function makeVaultManager(
       highestRatioWhenScheduled.numerator,
       liquidationMargin,
     );
-    // Notice that this is schedueing a callback for later (possibly much later).
-    // Callers shouldn't be expecting a response from this function.
+    // Notice that this is scheduleing a callback for later (possibly much
+    // later). Callers shouldn't be expecting a response from this function.
     const quote = await E(priceAuthority).quoteWhenLT(
       highestRatioWhenScheduled.denominator,
       triggerPoint,
@@ -198,8 +198,6 @@ export function makeVaultManager(
       want: { Scones: null },
     });
 
-    // TODO check that it's for the right type of collateral
-
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
     const vaultKit = makeVaultKit(
       zcf,
@@ -225,13 +223,6 @@ export function makeVaultManager(
       liquidationPayout: collateralPayoutP,
     });
   }
-
-  // Called by the vault when liquidation is insufficient. We're expected to
-  // come up with 'underwaterBy' Scones.
-  /**
-   * @param {any} underwaterBy
-   */
-  // function helpLiquidateFallback(underwaterBy) {}
 
   /** @type {VaultManager} */
   return harden({

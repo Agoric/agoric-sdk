@@ -65,6 +65,7 @@ export function makeVatManagerFactory({
       'virtualObjectCacheSize',
       'vatParameters',
       'vatConsole',
+      'name',
     ]);
     const { setup, bundle, enableSetup = false } = managerOptions;
     assert(setup || bundle);

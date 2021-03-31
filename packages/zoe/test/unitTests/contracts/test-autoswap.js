@@ -622,3 +622,62 @@ test('autoSwap jig - swap varying amounts', async t => {
 
   // attempt a trade with bad numbers
 });
+
+test('autoSwap price quote for zero', async t => {
+  const {
+    moolaIssuer,
+    simoleanIssuer,
+    moolaMint,
+    simoleanMint,
+    moola,
+    simoleans,
+    zoe,
+  } = setup();
+  const installation = await installationPFromSource(zoe, autoswap);
+
+  // Setup Alice
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
+  // Let's assume that simoleans are worth 2x as much as moola
+  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
+
+  // Alice creates an autoswap instance
+  const issuerKeywordRecord = harden({
+    Central: moolaIssuer,
+    Secondary: simoleanIssuer,
+  });
+  const startRecord = await zoe.startInstance(
+    installation,
+    issuerKeywordRecord,
+  );
+  /** @type {AutoswapPublicFacet} */
+  const publicFacet = startRecord.publicFacet;
+  const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
+  const liquidityBrand = await E(liquidityIssuerP).getBrand();
+  const liquidity = value => amountMath.make(value, liquidityBrand);
+
+  // Alice adds liquidity
+  // 10 moola = 5 simoleans at the time of the liquidity adding
+  // aka 2 moola = 1 simolean
+  const aliceProposal = harden({
+    want: { Liquidity: liquidity(10) },
+    give: { Central: moola(10), Secondary: simoleans(5) },
+  });
+  const alicePayments = {
+    Central: aliceMoolaPayment,
+    Secondary: aliceSimoleanPayment,
+  };
+  const aliceInvitation = await publicFacet.makeAddLiquidityInvitation();
+  await zoe.offer(aliceInvitation, aliceProposal, alicePayments);
+
+  const simoleanAmounts = await E(publicFacet).getInputPrice(
+    moola(0),
+    simoleans(0).brand,
+  );
+  t.deepEqual(simoleanAmounts, simoleans(0), `currentPrice`);
+
+  const moolaAmounts = await E(publicFacet).getOutputPrice(
+    simoleans(0),
+    moola(0n).brand,
+  );
+  t.deepEqual(moolaAmounts, moola(0), `price 0`);
+});

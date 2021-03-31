@@ -81,6 +81,7 @@ async function buildSwingset(
   vatsDir,
   argv,
   broadcast,
+  defaultManagerType,
 ) {
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
@@ -143,6 +144,9 @@ async function buildSwingset(
   const { storage, commit } = openSwingStore(kernelStateDBDir);
 
   if (!swingsetIsInitialized(storage)) {
+    if (defaultManagerType && !config.defaultManagerType) {
+      config.defaultManagerType = defaultManagerType;
+    }
     await initializeSwingset(config, argv, storage);
   }
   const controller = await makeSwingsetController(storage, deviceEndowments);
@@ -277,6 +281,10 @@ export default async function start(basedir, argv) {
     }
   }
 
+  const { wallet, defaultManagerType } = JSON.parse(
+    fs.readFileSync('options.json', 'utf-8'),
+  );
+
   const vatsDir = path.join(basedir, 'vats');
   const stateDBDir = path.join(basedir, 'swingset-kernel-state');
   const d = await buildSwingset(
@@ -285,6 +293,7 @@ export default async function start(basedir, argv) {
     vatsDir,
     argv,
     broadcast,
+    defaultManagerType,
   );
 
   const {
@@ -297,8 +306,6 @@ export default async function start(basedir, argv) {
 
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
-
-  const { wallet } = JSON.parse(fs.readFileSync('options.json', 'utf-8'));
 
   // Symlink the wallet.
   const pjs = require.resolve(`${wallet}/package.json`);

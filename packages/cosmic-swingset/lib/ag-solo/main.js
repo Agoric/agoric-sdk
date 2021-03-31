@@ -78,6 +78,7 @@ start
           webport: '8000',
           webhost: '127.0.0.1',
           egresses: DEFAULT_EGRESSES,
+          defaultManagerType: process.env.SWINGSET_WORKER_TYPE || 'local',
         },
       });
       const webport = Number(subOpts.webport);

@@ -48,22 +48,86 @@
  */
 
 /**
+ * This section blindly imitates what Endo's ses/src/error/types.js
+ * does to express type overloaded methods.
+ *
+ * @callback AmountMakeBrandValue
+ * @param {Brand} brand
+ * @param {Value} allegedValue
+ * @returns {Amount}
+ *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
+ * @callback AmountMakeValueBrand
+ * Please use the brand-first overload. The value-first overload
+ * is deprecated and will go way.
+ * @param {Value} brand
+ * @param {Brand} allegedValue
+ * @returns {Amount}
+ *
+ * @typedef {AmountMakeBrandValue & AmountMakeValueBrand} AmountMake
+ *
+ * @callback AmountCoerceBrandAmount
+ * @param {Brand} brand
+ * @param {Amount} allegedAmount
+ * @returns {Amount}
+ *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
+ * @callback AmountCoerceAmountBrand
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
+ * @param {Amount} brand
+ * @param {Brand} allegedAmount
+ * @returns {Amount}
+ *
+ * @typedef {AmountCoerceBrandAmount & AmountCoerceAmountBrand} AmountCoerce
+ *
+ * @callback AmountGetValueBrandAmount
+ * @param {Brand} brand
+ * @param {Amount} allegedAmount
+ * @returns {Amount}
+ *
+ * TODO find out how to get this "deprecated" marking recognized,
+ * or remove it.
+ * @deprecated Use brand-first overload instead
+ * @callback AmountGetValueAmountBrand
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
+ * @param {Amount} brand
+ * @param {Brand} allegedAmount
+ * @returns {Amount}
+ *
+ * @typedef {AmountGetValueBrandAmount & AmountGetValueAmountBrand} AmountGetValue
+ */
+
+/**
  * @typedef {Object} AmountMath
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
- * by issuers and mints, and represent the goods and currency carried by purses and
+ * by issuers and mints, and represent the goods and currency carried by purses
+ * and
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  *
- * @property {(allegedValue: Value, brand: Brand) => Amount} make
+ * @property {AmountMake} make
  * Make an amount from a value by adding the brand.
+ * Please use the brand-first overload. The value-first overload
+ * is deprecated and will go way.
  *
- * @property {(allegedAmount: Amount, brand: Brand) => Amount} coerce
- * Make sure this amount is valid and return it if so.
+ * @property {AmountCoerce} coerce
+ * Make sure this amount is valid enough, and return a corresponding
+ * valid amount if so.
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
  *
- * @property {(amount: Amount, brand: Brand) => Value} getValue
+ * @property {AmountGetValue} getValue
  * Extract and return the value.
+ * Please use the brand-first overload. The amount-first overload
+ * is deprecated and will go way.
  *
  * @property {MakeEmpty} makeEmpty
  * Return the amount representing an empty amount. This is the

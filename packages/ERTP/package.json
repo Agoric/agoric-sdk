@@ -14,7 +14,7 @@
     "test": "ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
-    "test:xs-worker": "WORKER_TYPE=xs-worker ava",
+    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
