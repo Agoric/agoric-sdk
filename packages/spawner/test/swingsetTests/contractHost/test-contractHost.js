@@ -46,7 +46,7 @@ test('run contractHost Demo --trivial-oldformat', async t => {
 const contractExhaustedGolden = [
   'starting exhaustedContractTest',
   'Does source match? true',
-  'spawn rejected: Compute meter exceeded',
+  'spawn rejected: Remote: Compute meter exceeded',
   'got return: 123',
 ];
 
