@@ -15,6 +15,7 @@ const {
   setPrototypeOf,
   create,
   getOwnPropertyDescriptors,
+  defineProperty,
   defineProperties,
   is,
   isFrozen,
@@ -147,7 +148,19 @@ const errorConstructors = new Map([
   ['URIError', URIError],
 ]);
 
+const prefixRemote = name => `Remote ${name}`;
+const matchRemote = /^Remote (.*)$/;
+const unprefixRemote = name => {
+  assert.typeof(name, 'string');
+  const match = matchRemote.exec(name);
+  if (match) {
+    return match[1];
+  }
+  return name;
+};
+
 export function getErrorConstructor(name) {
+  name = unprefixRemote(name);
   return errorConstructors.get(name);
 }
 
@@ -718,6 +731,9 @@ export function makeMarshal(
               // identifier and include it in the message, to help
               // with the correlation.
 
+              const name = unprefixRemote(val.name);
+              const { message } = val;
+
               if (errorTagging === 'on') {
                 const errorId = nextErrorId();
                 assert.note(val, X`Sent as ${errorId}`);
@@ -725,14 +741,14 @@ export function makeMarshal(
                 return harden({
                   [QCLASS]: 'error',
                   errorId,
-                  message: `${val.message}`,
-                  name: `${val.name}`,
+                  message: `${message}`,
+                  name: `${name}`,
                 });
               } else {
                 return harden({
                   [QCLASS]: 'error',
-                  message: `${val.message}`,
-                  name: `${val.name}`,
+                  message: `${message}`,
+                  name: `${name}`,
                 });
               }
             }
@@ -854,7 +870,8 @@ export function makeMarshal(
           }
 
           case 'error': {
-            const { name, message, errorId } = rawTree;
+            const name = unprefixRemote(rawTree.name);
+            const { message, errorId } = rawTree;
             assert.typeof(
               name,
               'string',
@@ -866,10 +883,11 @@ export function makeMarshal(
               X`invalid error message typeof ${q(typeof message)}`,
             );
             const EC = getErrorConstructor(`${name}`) || Error;
-            const msg = message.startsWith('Remote: ')
-              ? message
-              : `Remote: ${message}`;
-            const error = harden(new EC(`${msg}`));
+            const error = new EC(`${message}`);
+            defineProperty(error, 'name', {
+              value: prefixRemote(name),
+            });
+            harden(error);
             ibidTable.register(error);
             if (typeof errorId === 'string') {
               // errorId is a late addition so be tolerant of its absence.
