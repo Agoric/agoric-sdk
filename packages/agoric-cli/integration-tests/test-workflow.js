@@ -12,7 +12,7 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../lib/helpers';
 
-const TIMEOUT_SECONDS = 8 * 60;
+const TIMEOUT_SECONDS = 10 * 60;
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
@@ -56,7 +56,9 @@ test('workflow', async t => {
     // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(`agoric`, [...extraArgs, ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env, DEBUG: 'agoric' },
+      // FIXME: Run with $NO_FAKE_CURRENCIES to reduce load.
+      // (We're running extremely long under Github Actions.)
+      env: { ...process.env, DEBUG: 'agoric', NO_FAKE_CURRENCIES: 'true' },
       detached: true,
     });
   }
@@ -116,7 +118,7 @@ test('workflow', async t => {
     }
 
     let timeout = setTimeout(
-      startResult.resolve,
+      startResult.reject,
       TIMEOUT_SECONDS * 1000,
       'timeout',
     );
