@@ -31,7 +31,7 @@ test('natMathHelpers make no brand', t => {
   t.throws(
     () => m.make(4n),
     {
-      message: /The brand "\[undefined\]" doesn't look like a brand./,
+      message: /The brand "\[4n\]" doesn't look like a brand./,
     },
     `brand is required in make`,
   );
@@ -78,7 +78,7 @@ test('natMathHelpers coerce no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
-      message: /The brand "\[undefined\]" doesn't look like a brand./,
+      message: /The brand {"brand":"\[Alleged: brand\]","value":"\[4n\]"} doesn't look like a brand./,
     },
     `brand is required in coerce`,
   );
@@ -94,7 +94,7 @@ test('natMathHelpers getValue no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
-      message: /The brand "\[undefined\]" doesn't look like a brand./,
+      message: /The brand {"brand":"\[Alleged: brand\]","value":"\[4n\]"} doesn't look like a brand./,
     },
     `brand is required in getValue`,
   );
