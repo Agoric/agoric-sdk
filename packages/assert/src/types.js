@@ -26,6 +26,7 @@
  * @param {Details=} optDetails The details of what was asserted
  * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
  * constructor to use.
+ * @param {string=} optErrorName
  * @returns {Error}
  */
 
@@ -182,10 +183,10 @@
  * );
  * ```
  *
- * The normal convention is to locally rename `details` to `X` and import `q`
- * and `assert` unmodified.
+ * The normal convention is to locally rename `quote` to `q` and
+ * `details` to `X`
  * ```js
- * import { assert, details as X, q } from \'@agoric/assert\';
+ * const { details: X, quote: q } = assert;
  * ```
  * so the above example would then be
  * ```js
@@ -198,6 +199,7 @@
  *
  * @callback AssertQuote
  * @param {*} payload What to declassify
+ * @param {(string|number)=} spaces
  * @returns {StringablePayload} The declassified payload
  */
 
@@ -231,6 +233,7 @@
  * `optRaise(reason)` would still happen.
  *
  * @param {Raise=} optRaise
+ * @param {boolean=} unredacted
  * @returns {Assert}
  */
 
