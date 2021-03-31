@@ -35,7 +35,6 @@
   "dependencies": {
     "@agoric/assert": "^0.2.4",
     "@agoric/babel-parser": "^7.6.4",
-    "@agoric/base64": "^0.1.4",
     "@agoric/bundle-source": "^1.2.4",
     "@agoric/captp": "^1.7.4",
     "@agoric/eventual-send": "^0.13.4",
@@ -53,6 +52,7 @@
     "@agoric/xsnap": "^0.4.0",
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
+    "@endo/base64": "^0.1.0",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5",
     "re2": "^1.10.5",
