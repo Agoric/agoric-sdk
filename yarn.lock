@@ -19,6 +19,13 @@
   dependencies:
     ses "^0.11.0"
 
+"@agoric/compartment-mapper@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@agoric/compartment-mapper/-/compartment-mapper-0.2.4.tgz#db78b3d3c34db2204aba6eaa29155a3e0a371e73"
+  integrity sha512-HppJtvTQP9R/a55dX+7H4xXYlj6oPmvN9xVvWVk+BDEq0//AiS1/3qpV+R6B34raNvBPatsBzYuhZQjdHSw3+A==
+  dependencies:
+    ses "^0.12.6"
+
 "@agoric/make-hardener@^0.1.0", "@agoric/make-hardener@^0.1.2":
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.3.tgz#807b0072bef95d935c3370d406d9dfeb719f69ee"
