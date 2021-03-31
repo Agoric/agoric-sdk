@@ -85,6 +85,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     async function installEconomy() {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
+      /** @type {Store<NameHub, NameAdmin>} */
       const nameAdmins = makeStore();
       await Promise.all(
         ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
@@ -92,6 +93,10 @@ export function buildRootObject(vatPowers, vatParameters) {
             const { nameHub, nameAdmin } = makeNameHubKit();
             await E(agoricNamesAdmin).update(nm, nameHub);
             nameAdmins.init(nameHub, nameAdmin);
+            if (nm === 'uiConfig') {
+              // Reserve the Treasury's config until we've populated it.
+              nameAdmin.reserve('Treasury');
+            }
           },
         ),
       );

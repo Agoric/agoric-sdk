@@ -29,13 +29,13 @@ export const CENTRAL_ISSUER_NAME = 'MOE';
 /** @type {Array<[string, IssuerInitializationRecord]>} */
 const fakeIssuerEntries = [
   [
-    '$LINK',
+    'LINK',
     {
       issuerArgs: [undefined, { decimalPlaces: 18 }],
-      mintValue: 7n * 10n ** 18n,
+      mintValue: 51n * 10n ** 18n,
       collateralConfig: {
         keyword: 'LINK',
-        collateralValue: 6000n * 10n ** 18n,
+        collateralValue: 1000000n * 10n ** 18n,
         initialPricePercent: 125n,
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
@@ -44,9 +44,9 @@ const fakeIssuerEntries = [
       },
       pursePetname: 'Oracle fee',
       fakeTradesGivenCentral: [
-        [1000, 3000n * 10n ** 15n],
-        [1000, 2500n * 10n ** 15n],
-        [1000, 2750n * 10n ** 15n],
+        [279000n, 10n ** 18n],
+        [257000n, 10n ** 18n],
+        [268000n, 10n ** 18n],
       ],
     },
   ],
@@ -55,7 +55,7 @@ const fakeIssuerEntries = [
     {
       mintValue: 1900,
       collateralConfig: {
-        collateralValue: 74000,
+        collateralValue: 7400000,
         keyword: 'Moola',
         initialPricePercent: 150n,
         initialMarginPercent: 150n,
@@ -65,20 +65,20 @@ const fakeIssuerEntries = [
       },
       pursePetname: 'Fun budget',
       fakeTradesGivenCentral: [
-        [10, 1],
-        [13, 1],
-        [12, 1],
-        [18, 1],
-        [15, 1],
+        [10000, 1],
+        [13000, 1],
+        [12000, 1],
+        [18000, 1],
+        [15000, 1],
       ],
     },
   ],
   [
     'simolean',
     {
-      mintValue: 1900,
+      mintValue: 970,
       collateralConfig: {
-        collateralValue: 96800,
+        collateralValue: 968000,
         keyword: 'Simolean',
         initialPricePercent: 110n,
         initialMarginPercent: 120n,
@@ -88,9 +88,9 @@ const fakeIssuerEntries = [
       },
       pursePetname: 'Nest egg',
       fakeTradesGivenCentral: [
-        [2135, 50],
-        [2172, 50],
-        [2124, 50],
+        [213500, 1],
+        [217200, 1],
+        [212400, 1],
       ],
     },
   ],
