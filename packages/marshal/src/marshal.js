@@ -538,7 +538,7 @@ export function makeMarshal(
   );
   // Ascending numbers identifying the sending of errors relative to this
   // marshal instance.
-  let errorCount = 0;
+  let errorCount = 10000;
   const nextErrorId = () => {
     errorCount += 1;
     return `error:${marshalName}#${errorCount}`;
@@ -872,11 +872,11 @@ export function makeMarshal(
               error = assert.error(
                 `${message}`,
                 EC,
-                `Remote ${EC.name}#${errorId}`,
+                `Remote${EC.name}(${errorId})`,
               );
               assert.note(error, X`Received as ${errorId}`);
             } else {
-              error = assert.error(`${message}`, EC);
+              error = assert.error(`${message}`, EC, `Remote${EC.name}`);
             }
             ibidTable.register(error);
             return error;

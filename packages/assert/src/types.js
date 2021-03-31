@@ -5,6 +5,8 @@
 // Based on
 // https://github.com/Agoric/SES-shim/blob/master/packages/ses/src/error/types.js
 // Coordinate edits until we refactor to avoid this duplication
+// At https://github.com/Agoric/agoric-sdk/issues/2774
+// is a record of a failed attempt to remove this duplication.
 
 /**
  * @callback BaseAssert
