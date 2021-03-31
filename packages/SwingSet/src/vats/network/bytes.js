@@ -1,7 +1,7 @@
 // @ts-check
 
 import './types';
-import { encodeBase64, decodeBase64 } from '@agoric/base64';
+import { encodeBase64, decodeBase64 } from '@endo/base64';
 
 /* eslint-disable no-bitwise */
 /**

@@ -8,7 +8,6 @@
     "packages/eslint-plugin",
     "packages/eslint-config",
     "packages/assert",
-    "packages/base64",
     "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
