@@ -866,7 +866,10 @@ export function makeMarshal(
               X`invalid error message typeof ${q(typeof message)}`,
             );
             const EC = getErrorConstructor(`${name}`) || Error;
-            const error = harden(new EC(`${message}`));
+            const msg = message.startsWith('Remote: ')
+              ? message
+              : `Remote: ${message}`;
+            const error = harden(new EC(`${msg}`));
             ibidTable.register(error);
             if (typeof errorId === 'string') {
               // errorId is a late addition so be tolerant of its absence.
