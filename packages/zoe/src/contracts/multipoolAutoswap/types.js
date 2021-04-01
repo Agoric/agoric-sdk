@@ -86,7 +86,7 @@
  * AmountKeywordRecord showing the current balances in the pool for brand.
  * getQuoteIssuer {() => Issuer} getQuoteIssuer - get the Issuer that attests to
  * the prices in the priceQuotes issued by the PriceAuthorities
- * @property {(brand: Brand) => Record<string, PriceAuthority>} getPriceAuthorities
+ * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
  */
