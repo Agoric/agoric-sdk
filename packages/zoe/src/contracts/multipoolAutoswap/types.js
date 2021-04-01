@@ -44,7 +44,7 @@
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  * @property {() => Notifier} getNotifier
- * @property {() => Void} updateState
+ * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
  */
@@ -84,7 +84,7 @@
  * of amountOut that can be gained for that amountIn.
  * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool for brand.
- * getQuoteIssuer {() => Issuer} getQuoteIssuer - get the Issuer that attests to
+ * @property {() => Issuer} getQuoteIssuer - get the Issuer that attests to
  * the prices in the priceQuotes issued by the PriceAuthorities
  * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
