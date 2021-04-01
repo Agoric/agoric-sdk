@@ -74,17 +74,6 @@
   ],
   "ava-xs": {
     "exclude": [
-      "# F test/unitTests/contracts/loan/test-borrow.js borrow, then addCollateral, then getLiquidationPromise",
-      "# amount value: 100, expected value: 101, message",
-      "loan/test-borrow.js",
-      "# https://github.com/Moddable-OpenSource/moddable/issues/604 ",
-      "test-fakePriceAuthority.js",
-      "# message: 'isOfferSafe - less than want, less than give threw: get super 32554: no home'",
-      "test-offerSafety",
-      "# F test/unitTests/contracts/test-automaticRefund.js multiple instances of automaticRefund for the same Zoe",
-      "# bad plan: 6 still to go",
-      "test-automaticRefund",
-      "test-coveredCall",
       "# We use SWINGSET_WORKER_TYPE=xs ava to run these...",
       "swingsetTests"
     ]
