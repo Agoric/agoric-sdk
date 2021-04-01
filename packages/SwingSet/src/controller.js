@@ -1,5 +1,6 @@
 /* global require */
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import re2 from 're2';
 import { spawn } from 'child_process';
@@ -9,6 +10,7 @@ import * as babelCore from '@babel/core';
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 import anylogger from 'anylogger';
+import { tmpName } from 'tmp';
 
 import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
@@ -16,7 +18,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { makeTransform } from '@agoric/transform-eventual-send';
-import { xsnap } from '@agoric/xsnap';
+import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
@@ -42,6 +44,57 @@ function unhandledRejectionHandler(e) {
   console.error('UnhandledPromiseRejectionWarning:', e);
 }
 
+export function makeStartXSnap(bundles, { snapstorePath, env }) {
+  const xsnapOpts = {
+    os: osType(),
+    spawn,
+    stdout: 'inherit',
+    stderr: 'inherit',
+    debug: !!env.XSNAP_DEBUG,
+  };
+
+  let snapStore;
+
+  if (snapstorePath) {
+    fs.mkdirSync(snapstorePath, { recursive: true });
+
+    snapStore = makeSnapstore(snapstorePath, {
+      tmpName,
+      existsSync: fs.existsSync,
+      createReadStream: fs.createReadStream,
+      createWriteStream: fs.createWriteStream,
+      rename: fs.promises.rename,
+      unlink: fs.promises.unlink,
+      resolve: path.resolve,
+    });
+  }
+
+  let supervisorHash = '';
+  return async function startXSnap(name, handleCommand) {
+    if (supervisorHash) {
+      return snapStore.load(supervisorHash, async snapshot => {
+        const xs = xsnap({ snapshot, name, handleCommand, ...xsnapOpts });
+        await xs.evaluate('null'); // ensure that spawn is done
+        return xs;
+      });
+    }
+    const worker = xsnap({ handleCommand, name, ...xsnapOpts });
+
+    for (const bundle of bundles) {
+      assert(
+        bundle.moduleFormat === 'getExport',
+        X`unexpected: ${bundle.moduleFormat}`,
+      );
+      // eslint-disable-next-line no-await-in-loop
+      await worker.evaluate(`(${bundle.source}\n)()`.trim());
+    }
+    if (snapStore) {
+      supervisorHash = await snapStore.save(async fn => worker.snapshot(fn));
+    }
+    return worker;
+  };
+}
+
 export async function makeSwingsetController(
   hostStorage = initSwingStore().storage,
   deviceEndowments = {},
@@ -59,6 +112,7 @@ export async function makeSwingsetController(
     slogCallbacks,
     slogFile,
     testTrackDecref,
+    snapstorePath,
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -177,23 +231,11 @@ export async function makeSwingsetController(
     return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
   }
 
-  const startXSnap = (name, handleCommand) => {
-    const worker = xsnap({
-      os: osType(),
-      spawn,
-      handleCommand,
-      name,
-      stdout: 'inherit',
-      stderr: 'inherit',
-      debug: !!env.XSNAP_DEBUG,
-    });
-
-    const bundles = {
-      lockdown: JSON.parse(hostStorage.get('lockdownBundle')),
-      supervisor: JSON.parse(hostStorage.get('supervisorBundle')),
-    };
-    return harden({ worker, bundles });
-  };
+  const bundles = [
+    JSON.parse(hostStorage.get('lockdownBundle')),
+    JSON.parse(hostStorage.get('supervisorBundle')),
+  ];
+  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env });
 
   const slogF =
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
@@ -323,12 +365,14 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     testTrackDecref,
+    snapstorePath,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
     testTrackDecref,
     slogCallbacks,
+    snapstorePath,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
