@@ -59,8 +59,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
     ammInstance,
     invitationIssuer,
     {
-      issuers: { Governance: govIssuer, Scones: moeIssuer },
-      brands: { Governance: govBrand, Scones: moeBrand },
+      issuers: { Governance: govIssuer, Scones: centralIssuer },
+      brands: { Governance: govBrand, Scones: centralBrand },
     },
   ] = await Promise.all([E(creatorFacet).getAMM(), E(zoe).getInvitationIssuer(), E(zoe).getTerms(instance)]);
 
@@ -77,8 +77,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instance],
     ['INSTALLATION_BOARD_ID', stablecoinMachineInstall],
-    ['SCONE_ISSUER_BOARD_ID', moeIssuer],
-    ['SCONE_BRAND_BOARD_ID', moeBrand],
+    ['SCONE_ISSUER_BOARD_ID', centralIssuer],
+    ['SCONE_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', autoswapInstall],
     ['LIQ_INSTALLATION_BOARD_ID', liquidationInstall],
     ['AMM_INSTANCE_BOARD_ID', ammInstance],
@@ -100,8 +100,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
     [instanceAdmin, treasuryUiDefaults.AMM_NAME, ammInstance],
     [brandAdmin, 'TreasuryGovernance', govBrand],
     [issuerAdmin, 'TreasuryGovernance', govIssuer],
-    [brandAdmin, 'MOE', moeBrand],
-    [issuerAdmin, 'MOE', moeIssuer],
+    [brandAdmin, 'RUN', centralBrand],
+    [issuerAdmin, 'RUN', centralIssuer],
   ];
   await Promise.all(
     nameAdminUpdates.map(([nameAdmin, name, value]) => E(nameAdmin).update(name, value)),

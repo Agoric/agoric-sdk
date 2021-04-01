@@ -50,7 +50,7 @@ export async function start(zcf) {
   } = zcf.getTerms();
 
   const [sconeMint, govMint] = await Promise.all([
-    zcf.makeZCFMint('Scones', undefined, harden({ decimalPlaces: 4 })),
+    zcf.makeZCFMint('Scones', undefined, harden({ decimalPlaces: 6 })),
     zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
   ]);
   const {
