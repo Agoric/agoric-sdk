@@ -18,7 +18,7 @@ const decoder = new TextDecoder();
  * @param {{
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
- *   startXSnap: (name: string, handleCommand: SyncHandler) => { worker: XSnap, bundles: Record<string, ExportBundle> },
+ *   startXSnap: (name: string, handleCommand: SyncHandler) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  *   decref: (vatID: unknown, vref: unknown, count: number) => void,
  * }} tools
@@ -128,15 +128,7 @@ export function makeXsSubprocessFactory({
     }
 
     // start the worker and establish a connection
-    const { worker, bundles } = startXSnap(`${vatID}:${name}`, handleCommand);
-    for await (const [it, superCode] of Object.entries(bundles)) {
-      parentLog(vatID, 'eval bundle', it);
-      assert(
-        superCode.moduleFormat === 'getExport',
-        X`${it} unexpected: ${superCode.moduleFormat}`,
-      );
-      await worker.evaluate(`(${superCode.source}\n)()`.trim());
-    }
+    const worker = await startXSnap(`${vatID}:${name}`, handleCommand);
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
