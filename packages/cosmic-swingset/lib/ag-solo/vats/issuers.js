@@ -107,7 +107,74 @@ const fromPegasusIssuerEntries = [
     },
   ],
   // FIXME: Either of these entries (LINK or USDC) screw up the bootstrap process.
-  // I'm not sure why.
+  // I'm not sure why.  Here is the error message:
+  /*
+2021-04-01T19:22:22.268Z SwingSet: vat: v16: ----- ST.5  5 depositValue {
+  Central: {
+    brand: Alleged: Scones brand <[Object: null prototype] [Alleged: Scones brand] {}> [Alleged: Scones brand] {},
+    value: 0n
+  },
+  Liquidity: {
+    brand: Alleged: LINKLiquidity brand <[Object: null prototype] [Alleged: LINKLiquidity brand] {}> [Alleged: LINKLiquidity brand] {},
+    value: 27900000000000n
+  },
+  Secondary: {
+    brand: Alleged: LINK brand <[Object: null prototype] [Alleged: LINK brand] {}> [Alleged: LINK brand] {},
+    value: 0n
+  }
+}
+2021-04-01T19:23:07.013Z start: swingset running
+2021-04-01T19:23:07.014Z outbound: invoking deliverator; 1 new messages for mySimGCI
+2021-04-01T19:23:07.119Z fake-chain: delivering to mySimGCI (trips=1)
+Open CapTP connection to ws://127.0.0.1:8000/private/captp..........2021-04-01T19:23:15.382Z web: 127.0.0.1:57343[3]: new WebSocket /private/captp?accessToken=4S0eZD5CRoeSeMHQW3XO8lM6GWYgNmRuwwF2TUy3-AO4XK_qYokaYp4aUTTe7sV7
+ooooooooooooooooooooooooooo2021-04-01T19:23:41.000Z SwingSet: vat: v3: IBC downcall bindPort { packet: { source_port: 'echo' } }
+2021-04-01T19:23:41.022Z SwingSet: ls: v14: Logging sent error stack (Error#1)
+Error#1: already have remote mySimGCI-client
+
+  at Alleged: vat-tp handler.addRemote (packages/SwingSet/src/vats/vat-tp.js:150:14)
+
+Error#1 ERROR_NOTE: Thrown from: (Error#2) : 1407 . 0
+Error#1 ERROR_NOTE: Sent as error:liveSlots:v14#1
+Nested error under Error#1
+  Error#2: Event: 1406.1
+  
+    at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
+    at meteredConstructor.deliver (packages/SwingSet/src/kernel/liveSlots.js:522:28)
+    at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+  
+2021-04-01T19:23:41.028Z SwingSet: ls: v11: Logging sent error stack (Error#3)
+Error#3: already have remote (a string)
+
+  at fullRevive (packages/marshal/src/marshal.js:869:36)
+  at meteredConstructor.unserialize (packages/marshal/src/marshal.js:953:19)
+  at notifyOnePromise (packages/SwingSet/src/kernel/liveSlots.js:594:19)
+  at meteredConstructor.notify (packages/SwingSet/src/kernel/liveSlots.js:607:7)
+  at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+
+Error#3 ERROR_NOTE: Received as error:liveSlots:v14#1
+Error#3 ERROR_NOTE: Rejection from: (Error#4) : 1404 . 0
+Error#3 ERROR_NOTE: Rejection from: (Error#5) : 60 . 1
+Error#3 ERROR_NOTE: Sent as error:liveSlots:v11#1
+Nested 2 errors under Error#3
+  Error#4: Event: 1403.1
+  
+    at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
+    at Proxy.eval (packages/eventual-send/src/E.js:37:49)
+    at eval (packages/cosmic-swingset/t3/vats/bootstrap.js:639:15)
+    at Array.map (<anonymous>)
+    at Array.map (packages/tame-metering/src/tame.js:184:20)
+    at Alleged: root.bootstrap (packages/cosmic-swingset/t3/vats/bootstrap.js:636:38)
+  
+  Error#5: Event: 59.1
+  
+    at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
+    at meteredConstructor.deliver (packages/SwingSet/src/kernel/liveSlots.js:522:28)
+    at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+  
+2021-04-01T19:23:41.029Z SwingSet: kernel: ##### KERNEL PANIC: kp40.policy panic: rejected {"body":"{\"@qclass\":\"error\",\"errorId\":\"error:liveSlots:v11#1\",\"message\":\"already have remote (a string)\",\"name\":\"Error\"}","slots":[]} #####
+2021-04-01T19:23:41.030Z fake-chain: error fake processing (Error#6)
+Error#6: kernel panic kp40.policy panic: rejected {"body":"{\"@qclass\":\"error\",\"errorId\":\"error:liveSlots:v11#1\",\"message\":\"already have remote (a string)\",\"name\":\"Error\"}","slots":[]}
+*/
   /*
   [
     'LINK',
