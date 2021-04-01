@@ -63,6 +63,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   /** @type {Set<Trigger>} */
   const triggers = new Set();
+  const mutableTriggers = new Map();
 
   /**
    * @param {PriceQuoteCreate} triggerCreateQuote
@@ -73,16 +74,18 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return;
     }
     await Promise.all(
-      [...triggers].map(trigger => trigger(triggerCreateQuote)),
+      [...triggers, ...Array.from(mutableTriggers.values())].map(trigger =>
+        trigger(triggerCreateQuote),
+      ),
     );
   };
 
   /**
    * Create a quoteWhen* function.
    *
-   * @param {CompareAmount} compareAmount
+   * @param {CompareAmount} compareAmountsFn
    */
-  const makeQuoteWhenOut = compareAmount =>
+  const makeQuoteWhenOut = compareAmountsFn =>
     /**
      * Return a quote when triggerWhen is true of the arguments.
      *
@@ -107,7 +110,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             }
             const amountOut = calcAmountOut(amountIn);
 
-            if (!compareAmount(amountOut, amountOutLimit)) {
+            if (!compareAmountsFn(amountOut, amountOutLimit)) {
               // Don't fire the trigger yet.
               return undefined;
             }
@@ -136,6 +139,69 @@ export function makeOnewayPriceAuthorityKit(opts) {
       await trigger(createQuote);
 
       return triggerPK.promise;
+    };
+
+  const makeMutableQuote = compareAmountsFn =>
+    async function mutableQuoteWhenOutTrigger(amountInArg, amountOutLimitArg) {
+      let amountIn = amountMath.coerce(amountInArg, actualBrandIn);
+      let amountOutLimit = amountMath.coerce(amountOutLimitArg, actualBrandOut);
+
+      /** @type {PromiseRecord<PriceQuote>} */
+      const triggerPK = makePromiseKit();
+
+      const mutableQuote = Far('MutableQuote', {
+        cancel: e => triggerPK.reject(e),
+        updateLevel: (newAmountIn, newAmountOutLimit) => {
+          const coercedAmountIn = amountMath.coerce(newAmountIn, actualBrandIn);
+          const coercedAmountOutLimit = amountMath.coerce(
+            newAmountOutLimit,
+            actualBrandOut,
+          );
+          amountIn = coercedAmountIn;
+          amountOutLimit = coercedAmountOutLimit;
+        },
+        getPromise: () => triggerPK.promise,
+      });
+
+      /** @type {PriceQuoteTrigger} */
+      const mutableTrigger = async createInstantQuote => {
+        try {
+          const quoteP = createInstantQuote(calcAmountOut => {
+            if (!mutableTriggers.has(mutableQuote)) {
+              // Already fired.
+              return undefined;
+            }
+            const amountOut = calcAmountOut(amountIn);
+
+            if (!compareAmountsFn(amountOut, amountOutLimit)) {
+              // Don't fire the mutableTrigger yet.
+              return undefined;
+            }
+
+            // Generate the quote.
+            return { amountIn, amountOut };
+          });
+
+          if (!quoteP) {
+            // We shouldn't resolve yet.
+            return;
+          }
+
+          mutableTriggers.delete(mutableQuote);
+          triggerPK.resolve(quoteP);
+        } catch (e) {
+          // Trigger failed, so reject and drop.
+          triggerPK.reject(e);
+          mutableTriggers.delete(mutableQuote);
+        }
+      };
+
+      mutableTriggers.set(mutableQuote, mutableTrigger);
+
+      // Fire now, just in case.
+      await mutableTrigger(createQuote);
+
+      return mutableQuote;
     };
 
   /**
@@ -234,6 +300,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
     quoteWhenLTE: makeQuoteWhenOut(isLTE),
     quoteWhenGTE: makeQuoteWhenOut(isGTE),
     quoteWhenGT: makeQuoteWhenOut(isGT),
+    mutableQuoteWhenLT: makeMutableQuote(isLT),
+    mutableQuoteWhenLTE: makeMutableQuote(isLTE),
+    mutableQuoteWhenGT: makeMutableQuote(isGT),
+    mutableQuoteWhenGTE: makeMutableQuote(isGTE),
   });
 
   return { priceAuthority, adminFacet: { fireTriggers } };
