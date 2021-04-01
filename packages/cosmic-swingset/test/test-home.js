@@ -12,6 +12,7 @@ import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
 
 import { makeFixture, E } from './captp-fixture';
+import { CENTRAL_ISSUER_NAME } from '../lib/ag-solo/vats/issuers';
 
 // This runs before all the tests.
 let home;
@@ -111,17 +112,17 @@ test.serial('home.wallet - receive zoe invite', async t => {
   );
 });
 
-test.serial('home.wallet - MOE setup', async t => {
+test.serial('home.wallet - central issuer setup', async t => {
   const { wallet } = E.get(home);
 
-  // Check that the wallet knows about the MOE issuer.
+  // Check that the wallet knows about the central issuer.
   const issuers = await E(wallet).getIssuers();
   const issuersMap = new Map(issuers);
-  const moeIssuer = issuersMap.get('MOE');
+  const centralIssuer = issuersMap.get(CENTRAL_ISSUER_NAME);
 
-  const moePurse = await E(wallet).getPurse('Local currency');
-  const brandFromIssuer = await E(moeIssuer).getBrand();
-  const brandFromPurse = await E(moePurse).getAllegedBrand();
+  const centralPurse = await E(wallet).getPurse('Agoric RUN currency');
+  const brandFromIssuer = await E(centralIssuer).getBrand();
+  const brandFromPurse = await E(centralPurse).getAllegedBrand();
   t.is(brandFromPurse, brandFromIssuer);
 });
 

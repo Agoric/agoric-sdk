@@ -3,6 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import fs from 'fs';
+import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -47,9 +48,10 @@ test('workflow', async t => {
   const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
     ? ['--sdk']
     : [];
+  const agoricCli = path.join(__dirname, '..', 'bin', 'agoric');
   function myMain(args) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(`agoric`, [...extraArgs, ...args], {
+    return pspawnStdout(agoricCli, [...extraArgs, ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,

@@ -18,12 +18,16 @@ import { amountMath } from '@agoric/ertp';
 import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
-import { CENTRAL_ISSUER_NAME, fakeIssuerEntries } from './issuers';
+import {
+  CENTRAL_ISSUER_NAME,
+  fakeIssuerEntries,
+  fromCosmosIssuerEntries,
+  fromPegasusIssuerEntries,
+} from './issuers';
 
 const NUM_IBC_PORTS = 3;
 const QUOTE_INTERVAL = 30;
 
-const PERCENT_DENOM = 100n;
 const BASIS_POINTS_DENOM = 10000n;
 
 console.debug(`loading bootstrap.js`);
@@ -105,6 +109,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       return installEconomyOnChain({
         agoricNames,
         board,
+        centralName: CENTRAL_ISSUER_NAME,
         chainTimerService,
         nameAdmins,
         priceAuthority,
@@ -115,28 +120,36 @@ export function buildRootObject(vatPowers, vatParameters) {
     // Now we can bootstrap the economy!
     const treasuryCreator = await installEconomy();
     const [centralIssuer, centralBrand] = await Promise.all(
-      ['issuer', 'brand'].map(hub => E(agoricNames).lookup(hub, 'MOE')),
+      ['issuer', 'brand'].map(hub =>
+        E(agoricNames).lookup(hub, CENTRAL_ISSUER_NAME),
+      ),
     );
 
+    // [string, import('./issuers').IssuerInitializationRecord]
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,
       {
         issuer: centralIssuer,
-        mintValue: 0,
-        pursePetname: 'Local currency',
-        fakeTradesGivenCentral: [[1, 1]],
+        defaultPurses: [['Agoric RUN currency', 0]],
+        tradesGivenCentral: [[1, 1]],
       },
     ];
 
     /** @type {Store<string, import('./issuers').IssuerInitializationRecord>} */
     const issuerNameToRecord = makeStore();
+    /** @type {Array<[string, import('./issuers').IssuerInitializationRecord]>} */
+    const issuerEntries = [
+      CENTRAL_ISSUER_ENTRY,
+      ...fromCosmosIssuerEntries,
+      ...fromPegasusIssuerEntries,
+    ];
     if (!noFakeCurrencies) {
-      fakeIssuerEntries.map(entry => issuerNameToRecord.init(...entry));
+      issuerEntries.push(...fakeIssuerEntries);
     }
-    issuerNameToRecord.init(...CENTRAL_ISSUER_ENTRY);
+    issuerEntries.forEach(entry => issuerNameToRecord.init(...entry));
 
     const issuerNames = [...issuerNameToRecord.keys()];
-    const issuers = await Promise.all(
+    await Promise.all(
       issuerNames.map(async issuerName => {
         const record = issuerNameToRecord.get(issuerName);
         if (record.issuer !== undefined) {
@@ -188,20 +201,20 @@ export function buildRootObject(vatPowers, vatParameters) {
         console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
         const record = issuerNameToRecord.get(issuerName);
         assert(record);
-        const { fakeTradesGivenCentral, issuer } = record;
-        if (!fakeTradesGivenCentral) {
+        const { tradesGivenCentral, issuer } = record;
+        if (!tradesGivenCentral) {
           return;
         }
-        const fakeTradesGivenOther =
+        const tradesGivenOther =
           centralIssuer !== issuer &&
-          fakeTradesGivenCentral.map(([valueCentral, valueOther]) => [
+          tradesGivenCentral.map(([valueCentral, valueOther]) => [
             valueOther,
             valueCentral,
           ]);
         await Promise.all([
-          makeFakePriceAuthority(centralIssuer, issuer, fakeTradesGivenCentral),
-          fakeTradesGivenOther &&
-            makeFakePriceAuthority(issuer, centralIssuer, fakeTradesGivenOther),
+          makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
+          tradesGivenOther &&
+            makeFakePriceAuthority(issuer, centralIssuer, tradesGivenOther),
         ]);
       }),
     );
@@ -218,11 +231,14 @@ export function buildRootObject(vatPowers, vatParameters) {
           if (!config) {
             return undefined;
           }
+          assert(record.tradesGivenCentral);
+          const initialPrice = record.tradesGivenCentral[0];
+          assert(initialPrice);
           const rates = {
             initialPrice: makeRatio(
-              config.initialPricePercent,
+              initialPrice[0],
               centralBrand,
-              PERCENT_DENOM,
+              initialPrice[1],
               record.brand,
             ),
             initialMargin: makeRatio(config.initialMarginPercent, centralBrand),
@@ -304,18 +320,30 @@ export function buildRootObject(vatPowers, vatParameters) {
           additionalPowers.treasuryCreator = treasuryCreator;
         }
 
+        const mintIssuerNames = [];
+        const mintPurseNames = [];
+        const mintValues = [];
+        issuerNames.forEach(issuerName => {
+          const record = issuerNameToRecord.get(issuerName);
+          if (!record.defaultPurses) {
+            return;
+          }
+          record.defaultPurses.forEach(([purseName, value]) => {
+            mintIssuerNames.push(issuerName);
+            mintPurseNames.push(purseName);
+            mintValues.push(value);
+          });
+        });
         const payments = await E(vats.mints).mintInitialPayments(
-          issuerNames,
-          issuerNames.map(
-            issuerName => issuerNameToRecord.get(issuerName).mintValue,
-          ),
+          mintIssuerNames,
+          mintValues,
         );
 
-        const paymentInfo = issuerNames.map((issuerName, i) => ({
-          issuer: issuers[i],
+        const paymentInfo = mintIssuerNames.map((issuerName, i) => ({
+          issuer: issuerNameToRecord.get(issuerName).issuer,
           issuerPetname: issuerName,
           payment: payments[i],
-          pursePetname: issuerNameToRecord.get(issuerName).pursePetname,
+          pursePetname: mintPurseNames[i],
         }));
 
         const faucet = Far('faucet', {
@@ -600,6 +628,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                 return chainBundler.createUserBundle(nickname, 'demo', [
                   'agoric.agoricNamesAdmin',
                   'agoric.priceAuthorityAdmin',
+                  'agoric.treasuryCreator',
                   'agoric.vattp',
                 ]);
               }
