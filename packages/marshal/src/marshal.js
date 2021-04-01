@@ -538,10 +538,10 @@ export function makeMarshal(
   );
   // Ascending numbers identifying the sending of errors relative to this
   // marshal instance.
-  let errorCount = 10000;
+  let errorIdNum = 10000;
   const nextErrorId = () => {
-    errorCount += 1;
-    return `error:${marshalName}#${errorCount}`;
+    errorIdNum += 1;
+    return `error:${marshalName}#${errorIdNum}`;
   };
 
   /**
