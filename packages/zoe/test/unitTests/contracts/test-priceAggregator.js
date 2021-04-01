@@ -547,8 +547,9 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
   await E(oracleTimer).tick();
 
   // The above trigger should fire here.
-  await E(mutableQuoteWhenGTE).getPromise();
   t.truthy(abovePriceQuote);
+  await E(mutableQuoteWhenGTE).getPromise();
+
   assert(abovePriceQuote);
   const aboveQuote = await E(quoteIssuer).getAmountOf(
     abovePriceQuote.quotePayment,
@@ -579,6 +580,9 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
   await E(price1300Admin).delete();
 
   // The below trigger should fire here.
+  // TODO(hibbert): the delete() call above should cause belowPriceQuote to
+  //   trigger. It appears that updateState() has been called, but it hasn't
+  //   propagated yet
   await E(mutableQuoteWhenLTE).getPromise();
   t.truthy(belowPriceQuote);
   assert(belowPriceQuote);

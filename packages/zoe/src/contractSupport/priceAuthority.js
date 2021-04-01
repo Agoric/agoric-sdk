@@ -152,8 +152,13 @@ export function makeOnewayPriceAuthorityKit(opts) {
       const mutableQuote = Far('MutableQuote', {
         cancel: e => triggerPK.reject(e),
         updateLevel: (newAmountIn, newAmountOutLimit) => {
-          amountIn = amountMath.coerce(newAmountIn, actualBrandIn);
-          amountOutLimit = amountMath.coerce(newAmountOutLimit, actualBrandOut);
+          const coercedAmountIn = amountMath.coerce(newAmountIn, actualBrandIn);
+          const coercedAmountOutLimit = amountMath.coerce(
+            newAmountOutLimit,
+            actualBrandOut,
+          );
+          amountIn = coercedAmountIn;
+          amountOutLimit = coercedAmountOutLimit;
         },
         getPromise: () => triggerPK.promise,
       });
