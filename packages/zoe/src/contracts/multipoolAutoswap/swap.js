@@ -68,6 +68,7 @@ export const makeMakeSwapInvitation = (
         },
       );
       seat.exit();
+      getPool(brandOut).updateState();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
       // this branch is very similar to the above, with only pool and the left
@@ -91,6 +92,7 @@ export const makeMakeSwapInvitation = (
         },
       );
       seat.exit();
+      getPool(brandIn).updateState();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
       const {
@@ -135,6 +137,8 @@ export const makeMakeSwapInvitation = (
 
       zcf.reallocate(poolBrandInStaging, poolBrandOutStaging, seatStaging);
       seat.exit();
+      getPool(brandIn).updateState();
+      getPool(brandOut).updateState();
       return `Swap successfully completed.`;
     }
 
@@ -184,6 +188,7 @@ export const makeMakeSwapInvitation = (
         },
       );
       seat.exit();
+      getPool(brandIn).updateState();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandOut) && isCentral(brandIn)) {
       const pool = getPool(brandOut);
@@ -206,6 +211,7 @@ export const makeMakeSwapInvitation = (
         },
       );
       seat.exit();
+      getPool(brandOut).updateState();
       return `Swap successfully completed.`;
     } else if (isSecondary(brandOut) && isSecondary(brandIn)) {
       const {
@@ -246,6 +252,8 @@ export const makeMakeSwapInvitation = (
 
       zcf.reallocate(poolBrandInStaging, poolBrandOutStaging, seatStaging);
       seat.exit();
+      getPool(brandIn).updateState();
+      getPool(brandOut).updateState();
       return `Swap successfully completed.`;
     }
 

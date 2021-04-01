@@ -6,12 +6,14 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
+import { MathKind } from '@agoric/ertp';
 import { setupZCFTest } from '../zcf/setupZcfTest';
 
 import { setup } from '../setupBasicMints';
 import { makeAddPool } from '../../../src/contracts/multipoolAutoswap/pool';
 import { outputFromInputPrice, priceFromTargetOutput } from '../../autoswapJig';
 import { depositToSeat } from '../../../src/contractSupport';
+import buildManualTimer from '../../../tools/manualTimer';
 
 async function setupPool(poolBalances) {
   const {
@@ -38,7 +40,16 @@ async function setupPool(poolBalances) {
     pool = newPool;
   };
   const isSecondary = b => poolInitialized && b === secondaryBrand;
-  const addPool = makeAddPool(zcf, isSecondary, initPool, centralBrand);
+  const timer = buildManualTimer(console.log);
+  const quoteMint = await zcf.makeZCFMint('AutoswapQuotes', MathKind.SET);
+  const addPool = makeAddPool(
+    zcf,
+    isSecondary,
+    initPool,
+    centralBrand,
+    timer,
+    quoteMint,
+  );
   await addPool(moolaIssuer, 'Moola');
 
   const moolaAmount = moola(poolBalances.secondary);
