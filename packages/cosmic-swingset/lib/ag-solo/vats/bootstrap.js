@@ -109,6 +109,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       return installEconomyOnChain({
         agoricNames,
         board,
+        centralName: CENTRAL_ISSUER_NAME,
         chainTimerService,
         nameAdmins,
         priceAuthority,
@@ -119,7 +120,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     // Now we can bootstrap the economy!
     const treasuryCreator = await installEconomy();
     const [centralIssuer, centralBrand] = await Promise.all(
-      ['issuer', 'brand'].map(hub => E(agoricNames).lookup(hub, 'RUN')),
+      ['issuer', 'brand'].map(hub =>
+        E(agoricNames).lookup(hub, CENTRAL_ISSUER_NAME),
+      ),
     );
 
     // [string, import('./issuers').IssuerInitializationRecord]
@@ -127,7 +130,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       CENTRAL_ISSUER_NAME,
       {
         issuer: centralIssuer,
-        defaultPurses: [['Agoric local currency', 0]],
+        defaultPurses: [['Agoric RUN currency', 0]],
         tradesGivenCentral: [[1, 1]],
       },
     ];
@@ -317,8 +320,8 @@ export function buildRootObject(vatPowers, vatParameters) {
           additionalPowers.treasuryCreator = treasuryCreator;
         }
 
-        const mintNames = [];
-        const mintPurses = [];
+        const mintIssuerNames = [];
+        const mintPurseNames = [];
         const mintValues = [];
         issuerNames.forEach(issuerName => {
           const record = issuerNameToRecord.get(issuerName);
@@ -326,21 +329,21 @@ export function buildRootObject(vatPowers, vatParameters) {
             return;
           }
           record.defaultPurses.forEach(([purseName, value]) => {
-            mintNames.push(issuerName);
-            mintPurses.push(purseName);
+            mintIssuerNames.push(issuerName);
+            mintPurseNames.push(purseName);
             mintValues.push(value);
           });
         });
         const payments = await E(vats.mints).mintInitialPayments(
-          mintNames,
+          mintIssuerNames,
           mintValues,
         );
 
-        const paymentInfo = mintNames.map((issuerName, i) => ({
+        const paymentInfo = mintIssuerNames.map((issuerName, i) => ({
           issuer: issuerNameToRecord.get(issuerName).issuer,
           issuerPetname: issuerName,
           payment: payments[i],
-          pursePetname: mintPurses[i],
+          pursePetname: mintPurseNames[i],
         }));
 
         const faucet = Far('faucet', {

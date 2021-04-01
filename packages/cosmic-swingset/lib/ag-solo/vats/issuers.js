@@ -1,4 +1,6 @@
 // @ts-check
+import { assert } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 
 export const CENTRAL_ISSUER_NAME = 'RUN';
 
@@ -7,7 +9,8 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
 /**
  * @typedef {Object} CollateralConfig
  * @property {string} keyword
- * @property {Bigish} collateralValue
+ * @property {Bigish} collateralValue the initial price of this collateral is
+ * provided by tradesGivenCentral[0]
  * @property {bigint} initialMarginPercent
  * @property {bigint} liquidationMarginPercent
  * @property {bigint} interestRateBasis
@@ -24,14 +27,37 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  * @property {Array<[Bigish, Bigish]>} [tradesGivenCentral]
  */
 
-export const makeScaler = toDecimals => (n, fromDecimals = 0) => {
-  if (typeof n === 'bigint') {
-    return n * 10n ** BigInt(toDecimals);
-  }
-  return (
-    BigInt(Math.floor(n * 10 ** fromDecimals)) *
-    10n ** BigInt(toDecimals - fromDecimals)
-  );
+/**
+ * @callback Scaler Scale a number from a (potentially fractional) input to a
+ * fixed-precision bigint
+ * @param {Bigish} n the input number to scale
+ * @param {number} [fromDecimalPlaces=0] number of decimal places to keep from the input
+ * @returns {bigint} the scaled integer
+ */
+
+/**
+ * Create a decimal scaler.
+ *
+ * @param {number} toDecimalPlaces number of decimal places in the scaled value
+ * @returns {Scaler}
+ */
+export const makeScaler = toDecimalPlaces => {
+  assert.typeof(toDecimalPlaces, 'number');
+  Nat(toDecimalPlaces);
+  return (n, fromDecimalPlaces = 0) => {
+    assert.typeof(fromDecimalPlaces, 'number');
+    Nat(fromDecimalPlaces);
+    if (typeof n === 'bigint') {
+      // Bigints never preserve decimal places.
+      return Nat(n) * 10n ** Nat(toDecimalPlaces);
+    }
+    // Fractional scaling needs a number, not a bigint.
+    assert.typeof(n, 'number');
+    return (
+      Nat(Math.floor(n * 10 ** fromDecimalPlaces)) *
+      10n ** Nat(toDecimalPlaces - fromDecimalPlaces)
+    );
+  };
 };
 export const scaleMills = makeScaler(4);
 export const scaleMicro = makeScaler(6);
@@ -140,7 +166,7 @@ Nested error under Error#1
   
     at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
     at meteredConstructor.deliver (packages/SwingSet/src/kernel/liveSlots.js:522:28)
-    at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+    at eval* (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
   
 2021-04-01T19:23:41.028Z SwingSet: ls: v11: Logging sent error stack (Error#3)
 Error#3: already have remote (a string)
@@ -149,7 +175,7 @@ Error#3: already have remote (a string)
   at meteredConstructor.unserialize (packages/marshal/src/marshal.js:953:19)
   at notifyOnePromise (packages/SwingSet/src/kernel/liveSlots.js:594:19)
   at meteredConstructor.notify (packages/SwingSet/src/kernel/liveSlots.js:607:7)
-  at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+  at eval* (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
 
 Error#3 ERROR_NOTE: Received as error:liveSlots:v14#1
 Error#3 ERROR_NOTE: Rejection from: (Error#4) : 1404 . 0
@@ -159,8 +185,8 @@ Nested 2 errors under Error#3
   Error#4: Event: 1403.1
   
     at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
-    at Proxy.eval (packages/eventual-send/src/E.js:37:49)
-    at eval (packages/cosmic-swingset/t3/vats/bootstrap.js:639:15)
+    at Proxy.eval* (packages/eventual-send/src/E.js:37:49)
+    at eval* (packages/cosmic-swingset/t3/vats/bootstrap.js:639:15)
     at Array.map (<anonymous>)
     at Array.map (packages/tame-metering/src/tame.js:184:20)
     at Alleged: root.bootstrap (packages/cosmic-swingset/t3/vats/bootstrap.js:636:38)
@@ -169,7 +195,7 @@ Nested 2 errors under Error#3
   
     at Function.applyMethod (packages/tame-metering/src/tame.js:184:20)
     at meteredConstructor.deliver (packages/SwingSet/src/kernel/liveSlots.js:522:28)
-    at eval (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
+    at eval* (packages/SwingSet/src/kernel/vatManager/deliver.js:51:48)
   
 2021-04-01T19:23:41.029Z SwingSet: kernel: ##### KERNEL PANIC: kp40.policy panic: rejected {"body":"{\"@qclass\":\"error\",\"errorId\":\"error:liveSlots:v11#1\",\"message\":\"already have remote (a string)\",\"name\":\"Error\"}","slots":[]} #####
 2021-04-01T19:23:41.030Z fake-chain: error fake processing (Error#6)
