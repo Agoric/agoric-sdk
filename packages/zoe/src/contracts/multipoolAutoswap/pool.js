@@ -262,6 +262,7 @@ export const makeAddPool = (
     //  getPriceGivenAvailableInput() throws.
     const toCentralPriceAuthority = makePriceAuthority(
       pool.getPriceGivenAvailableInput,
+      pool.getPriceGivenRequiredOutput,
       secondaryBrand,
       centralBrand,
       timer,
@@ -271,6 +272,7 @@ export const makeAddPool = (
     );
     const fromCentralPriceAuthority = makePriceAuthority(
       pool.getPriceGivenAvailableInput,
+      pool.getPriceGivenRequiredOutput,
       centralBrand,
       secondaryBrand,
       timer,

@@ -119,11 +119,12 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     const treasuryCreator = await installEconomy();
-    const [centralIssuer, centralBrand] = await Promise.all(
-      ['issuer', 'brand'].map(hub =>
+    const [centralIssuer, centralBrand, ammInstance] = await Promise.all([
+      ...['issuer', 'brand'].map(hub =>
         E(agoricNames).lookup(hub, CENTRAL_ISSUER_NAME),
       ),
-    );
+      E(agoricNames).lookup('instance', 'autoswap'),
+    ]);
 
     // [string, import('./issuers').IssuerInitializationRecord]
     const CENTRAL_ISSUER_ENTRY = [
@@ -166,56 +167,6 @@ export function buildRootObject(vatPowers, vatParameters) {
           harden({ ...record, brand, issuer }),
         );
         return issuer;
-      }),
-    );
-
-    /**
-     * @param {ERef<Issuer>} issuerIn
-     * @param {ERef<Issuer>} issuerOut
-     * @param {Array<[number, number]>} tradeList
-     */
-    const makeFakePriceAuthority = async (issuerIn, issuerOut, tradeList) => {
-      const [brandIn, brandOut] = await Promise.all([
-        E(issuerIn).getBrand(),
-        E(issuerOut).getBrand(),
-      ]);
-      const pa = await E(vats.priceAuthority).makeFakePriceAuthority({
-        issuerIn,
-        issuerOut,
-        actualBrandIn: brandIn,
-        actualBrandOut: brandOut,
-        tradeList,
-        timer: chainTimerService,
-        quoteInterval: QUOTE_INTERVAL,
-      });
-      return E(priceAuthorityAdmin).registerPriceAuthority(
-        pa,
-        brandIn,
-        brandOut,
-      );
-    };
-    await Promise.all(
-      issuerNames.map(async issuerName => {
-        // Create priceAuthority pairs for centralIssuer based on the
-        // FakePriceAuthority.
-        console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
-        const record = issuerNameToRecord.get(issuerName);
-        assert(record);
-        const { tradesGivenCentral, issuer } = record;
-        if (!tradesGivenCentral) {
-          return;
-        }
-        const tradesGivenOther =
-          centralIssuer !== issuer &&
-          tradesGivenCentral.map(([valueCentral, valueOther]) => [
-            valueOther,
-            valueCentral,
-          ]);
-        await Promise.all([
-          makeFakePriceAuthority(centralIssuer, issuer, tradesGivenCentral),
-          tradesGivenOther &&
-            makeFakePriceAuthority(issuer, centralIssuer, tradesGivenOther),
-        ]);
       }),
     );
 
@@ -293,7 +244,104 @@ export function buildRootObject(vatPowers, vatParameters) {
         }),
       );
     }
+    // await addAllCollateral();
+
+    /**
+     * @param {ERef<Issuer>} issuerIn
+     * @param {ERef<Issuer>} issuerOut
+     * @param {ERef<Brand>} brandIn
+     * @param {ERef<Brand>} brandOut
+     * @param {Array<[number, number]>} tradeList
+     */
+    const makeFakePriceAuthority = (
+      issuerIn,
+      issuerOut,
+      brandIn,
+      brandOut,
+      tradeList,
+    ) =>
+      E(vats.priceAuthority).makeFakePriceAuthority({
+        issuerIn,
+        issuerOut,
+        actualBrandIn: brandIn,
+        actualBrandOut: brandOut,
+        tradeList,
+        timer: chainTimerService,
+        quoteInterval: QUOTE_INTERVAL,
+      });
+
+    const ammPublicFacet = E(zoe).getPublicFacet(ammInstance);
     await addAllCollateral();
+
+    await Promise.all(
+      issuerNames.map(async issuerName => {
+        // Create priceAuthority pairs for centralIssuer based on the
+        // AMM or FakePriceAuthority.
+        console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
+        const record = issuerNameToRecord.get(issuerName);
+        assert(record);
+        const { tradesGivenCentral, issuer } = record;
+
+        const brand = await E(issuer).getBrand();
+        let { toCentral, fromCentral } = await E(ammPublicFacet)
+          .getPriceAuthorities(brand)
+          .catch(_e => {
+            // console.warn('could not get AMM priceAuthorities', _e);
+            return {};
+          });
+
+        if (!fromCentral && tradesGivenCentral) {
+          // We have no amm from-central price authority, make one from trades.
+          if (issuerName !== CENTRAL_ISSUER_NAME) {
+            console.log(
+              `Making fake price authority for ${CENTRAL_ISSUER_NAME}-${issuerName}`,
+            );
+          }
+          fromCentral = makeFakePriceAuthority(
+            centralIssuer,
+            issuer,
+            centralBrand,
+            brand,
+            tradesGivenCentral,
+          );
+        }
+
+        if (!toCentral && centralIssuer !== issuer && tradesGivenCentral) {
+          // We have no amm to-central price authority, make one from trades.
+          console.log(
+            `Making fake price authority for ${issuerName}-${CENTRAL_ISSUER_NAME}`,
+          );
+          const tradesGivenOther = tradesGivenCentral.map(
+            ([valueCentral, valueOther]) => [valueOther, valueCentral],
+          );
+          toCentral = makeFakePriceAuthority(
+            issuer,
+            centralIssuer,
+            brand,
+            centralBrand,
+            tradesGivenOther,
+          );
+        }
+
+        // Register the price pairs.
+        await Promise.all(
+          [
+            [fromCentral, centralBrand, brand],
+            [toCentral, brand, centralBrand],
+          ].map(async ([pa, fromBrand, toBrand]) => {
+            const paPresence = await pa;
+            if (!paPresence) {
+              return;
+            }
+            await E(priceAuthorityAdmin).registerPriceAuthority(
+              paPresence,
+              fromBrand,
+              toBrand,
+            );
+          }),
+        );
+      }),
+    );
 
     return Far('chainBundler', {
       async createUserBundle(_nickname, address, powerFlags = []) {
