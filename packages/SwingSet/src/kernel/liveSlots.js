@@ -234,6 +234,9 @@ function build(
   // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `liveSlots:${forVatID}`,
+    // TODO Temporary hack.
+    // See https://github.com/Agoric/agoric-sdk/issues/2780
+    errorIdNum: 70000,
     marshalSaveError: err =>
       // By sending this to `console.log`, under cosmic-swingset this is
       // controlled by the `console` option given to makeLiveSlots.  For Agoric,

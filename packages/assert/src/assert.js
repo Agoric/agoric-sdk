@@ -14,6 +14,10 @@
 // The assertions re-exported here are defined in
 // https://github.com/endojs/endo/blob/master/packages/ses/src/error/assert.js
 
+// At https://github.com/Agoric/agoric-sdk/issues/2774
+// is a record of a failed attempt to remove '.types'.
+// To satisfy CI, not only do we need to keep the file,
+// but we need to import it here as well.
 import './types';
 
 const { freeze } = Object;

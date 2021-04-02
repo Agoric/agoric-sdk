@@ -5,6 +5,8 @@
 // Based on
 // https://github.com/Agoric/SES-shim/blob/master/packages/ses/src/error/types.js
 // Coordinate edits until we refactor to avoid this duplication
+// At https://github.com/Agoric/agoric-sdk/issues/2774
+// is a record of a failed attempt to remove this duplication.
 
 /**
  * @callback BaseAssert
@@ -18,6 +20,11 @@
  */
 
 /**
+ * @typedef {Object} AssertMakeErrorOptions
+ * @property {string=} errorName
+ */
+
+/**
  * @callback AssertMakeError
  *
  * The `assert.error` method, recording details for the console.
@@ -26,6 +33,7 @@
  * @param {Details=} optDetails The details of what was asserted
  * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
  * constructor to use.
+ * @param {AssertMakeErrorOptions=} options
  * @returns {Error}
  */
 
@@ -182,10 +190,10 @@
  * );
  * ```
  *
- * The normal convention is to locally rename `details` to `X` and import `q`
- * and `assert` unmodified.
+ * The normal convention is to locally rename `quote` to `q` and
+ * `details` to `X`
  * ```js
- * import { assert, details as X, q } from \'@agoric/assert\';
+ * const { details: X, quote: q } = assert;
  * ```
  * so the above example would then be
  * ```js
@@ -198,6 +206,7 @@
  *
  * @callback AssertQuote
  * @param {*} payload What to declassify
+ * @param {(string|number)=} spaces
  * @returns {StringablePayload} The declassified payload
  */
 
@@ -231,6 +240,7 @@
  * `optRaise(reason)` would still happen.
  *
  * @param {Raise=} optRaise
+ * @param {boolean=} unredacted
  * @returns {Assert}
  */
 
