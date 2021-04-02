@@ -19,13 +19,14 @@ test('metering within a vat', async t => {
   // we'll give this bundle to the vat, which will import it under metering
   const bundle = await bundleSource(require.resolve('./metered-code.js'));
   const config = {
+    ...localOnlyForNow,
     vats: {
       within: {
         sourceSpec: require.resolve('./vat-within.js'),
       },
     },
   };
-  const c = await buildVatController(config, [], localOnlyForNow);
+  const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
 
   // 'start' will import the bundle
