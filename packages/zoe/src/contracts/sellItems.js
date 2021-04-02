@@ -49,6 +49,11 @@ const start = zcf => {
     return defaultAcceptanceMsg;
   };
 
+  const getAvailableItems = () => {
+    assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
+    return sellerSeat.getAmountAllocated('Items');
+  };
+
   const buy = buyerSeat => {
     assertProposalShape(buyerSeat, {
       want: { Items: null },
@@ -92,7 +97,7 @@ const start = zcf => {
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
-    if (amountMath.isEmpty(publicFacet.getAvailableItems())) {
+    if (amountMath.isEmpty(getAvailableItems())) {
       zcf.shutdown('All items sold.');
     }
     return defaultAcceptanceMsg;
@@ -109,10 +114,7 @@ const start = zcf => {
 
   /** @type {SellItemsPublicFacet} */
   const publicFacet = Far('SellItemsPublicFacet', {
-    getAvailableItems: () => {
-      assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
-      return sellerSeat.getAmountAllocated('Items');
-    },
+    getAvailableItems,
     getItemsIssuer: () => issuers.Items,
     makeBuyerInvitation,
   });
