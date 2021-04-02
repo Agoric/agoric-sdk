@@ -866,16 +866,12 @@ export function makeMarshal(
               X`invalid error message typeof ${q(typeof message)}`,
             );
             const EC = getErrorConstructor(`${name}`) || Error;
-            let error;
-            if (typeof errorId === 'string') {
-              const errorName = `Remote${EC.name}(${errorId})`;
-              error = assert.error(`${message}`, EC, { errorName });
-              assert.note(error, X`Received as ${errorId}`);
-            } else {
-              // errorId is a late addition so be tolerant of its absence.
-              const errorName = `Remote${EC.name}`;
-              error = assert.error(`${message}`, EC, { errorName });
-            }
+            // errorId is a late addition so be tolerant of its absence.
+            const errorName =
+              errorId === undefined
+                ? `Remote${EC.name}`
+                : `Remote${EC.name}(${errorId})`;
+            const error = assert.error(`${message}`, EC, { errorName });
             ibidTable.register(error);
             return error;
           }
