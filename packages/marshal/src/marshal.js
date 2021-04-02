@@ -523,8 +523,11 @@ export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
   {
-    marshalName = 'anon-marshal',
     errorTagging = 'on',
+    marshalName = 'anon-marshal',
+    // TODO Temporary hack.
+    // See https://github.com/Agoric/agoric-sdk/issues/2780
+    errorIdNum = 10000,
     // We prefer that the caller instead log to somewhere hidden
     // to be revealed when correlating with the received error.
     marshalSaveError = err =>
@@ -536,9 +539,6 @@ export function makeMarshal(
     errorTagging === 'on' || errorTagging === 'off',
     X`The errorTagging option can only be "on" or "off" ${errorTagging}`,
   );
-  // Ascending numbers identifying the sending of errors relative to this
-  // marshal instance.
-  let errorIdNum = 10000;
   const nextErrorId = () => {
     errorIdNum += 1;
     return `error:${marshalName}#${errorIdNum}`;

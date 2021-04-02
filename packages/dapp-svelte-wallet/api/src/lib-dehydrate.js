@@ -341,6 +341,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     convertNameToVal,
     {
       marshalName: 'hydration',
+      // TODO Temporary hack.
+      // See https://github.com/Agoric/agoric-sdk/issues/2780
+      errorIdNum: 30000,
     },
   );
   return harden({

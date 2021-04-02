@@ -557,7 +557,7 @@ test('liveslots vs symbols', async t => {
   const rp2 = 'p-2';
   const expErr = {
     '@qclass': 'error',
-    errorId: 'error:liveSlots:vatA#10001',
+    errorId: 'error:liveSlots:vatA#70001',
     message: 'arbitrary Symbols cannot be used as method names',
     name: 'Error',
   };
@@ -671,7 +671,7 @@ test('disavow', async t => {
     info: {
       body: JSON.stringify({
         '@qclass': 'error',
-        errorId: 'error:liveSlots:vatA#10001',
+        errorId: 'error:liveSlots:vatA#70001',
         message: 'this Presence has been disavowed',
         name: 'Error',
       }),

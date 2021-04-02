@@ -172,6 +172,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
     const m = makeMarshal(convertValToSlot, undefined, {
       marshalName: 'kernel:bootstrap',
+      // TODO Temporary hack.
+      // See https://github.com/Agoric/agoric-sdk/issues/2780
+      errorIdNum: 60000,
     });
     const args = harden([vatObj0s, deviceObj0s]);
     // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
