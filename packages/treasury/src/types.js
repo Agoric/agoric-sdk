@@ -110,7 +110,7 @@
 /**
  * @typedef {Object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, Run: Amount) => Proposal} makeProposal
+ * @property {(collateral: Amount, RUN: Amount) => Proposal} makeProposal
  * @property {() => Promise<Invitation>} makeInvitation
  */
 

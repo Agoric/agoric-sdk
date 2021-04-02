@@ -41,7 +41,7 @@ export async function liquidate(
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
 
   // Now we need to know how much was sold so we can pay off the debt
-  const runProceedsAmount = vaultSeat.getAmountAllocated('Run', runBrand);
+  const runProceedsAmount = vaultSeat.getAmountAllocated('RUN', runBrand);
 
   trace('RUN PROCEEDS', runProceedsAmount);
 
@@ -50,7 +50,7 @@ export async function liquidate(
 
   const isUnderwater = !amountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
-  burnLosses({ Run: runToBurn }, vaultSeat);
+  burnLosses({ RUN: runToBurn }, vaultSeat);
   vaultKit.liquidated(amountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
@@ -63,7 +63,7 @@ export function makeDefaultLiquidationStrategy(autoswap) {
   function keywordMapping() {
     return harden({
       Collateral: 'In',
-      Run: 'Out',
+      RUN: 'Out',
     });
   }
 

@@ -158,9 +158,9 @@ export function makeVaultManager(
         ),
       amountMath.makeEmpty(runBrand),
     );
-    runMint.mintGains({ Run: poolIncrement }, poolIncrementSeat);
+    runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
     const poolStage = poolIncrementSeat.stage({
-      Run: amountMath.makeEmpty(runBrand),
+      RUN: amountMath.makeEmpty(runBrand),
     });
     const poolSeatStaging = stageReward(poolIncrement);
     zcf.reallocate(poolStage, poolSeatStaging);
@@ -195,7 +195,7 @@ export function makeVaultManager(
   async function makeLoanKit(seat) {
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { Run: null },
+      want: { RUN: null },
     });
 
     const startTimeStamp = await E(timerService).getCurrentTimestamp();

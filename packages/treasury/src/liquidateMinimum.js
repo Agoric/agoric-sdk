@@ -104,7 +104,7 @@ export function makeLiquidationStrategy(creatorFacet) {
   function keywordMapping() {
     return harden({
       Collateral: 'In',
-      Run: 'Out',
+      RUN: 'Out',
     });
   }
 

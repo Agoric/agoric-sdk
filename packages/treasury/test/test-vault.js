@@ -59,7 +59,7 @@ async function launch(zoeP, sourceRoot) {
   const collateral50 = amountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Run: amountMath.make(70n, runBrand) },
+    want: { RUN: amountMath.make(70n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -105,7 +105,7 @@ test('first', async t => {
     invite,
     harden({
       give: { Collateral: collateralAmount },
-      want: {}, // Run: amountMath.make(2n, runBrand) },
+      want: {}, // RUN: amountMath.make(2n, runBrand) },
     }),
     harden({
       // TODO
@@ -128,10 +128,10 @@ test('first', async t => {
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
-      give: { Run: paybackAmount },
+      give: { RUN: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
-    harden({ Run: payback }),
+    harden({ RUN: payback }),
   );
   await E(paybackSeat).getOfferResult();
 

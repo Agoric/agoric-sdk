@@ -49,13 +49,13 @@ export async function start(zcf) {
     liquidationInstall,
   } = zcf.getTerms();
 
-  const [runMint, bldMint] = await Promise.all([
+  const [runMint, govMint] = await Promise.all([
     zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
-    zcf.makeZCFMint('BLD', undefined, harden({ decimalPlaces: 6 })),
+    zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
   ]);
   const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
 
-  const { brand: bldBrand } = bldMint.getIssuerRecord();
+  const { brand: govBrand } = govMint.getIssuerRecord();
 
   // This is a stand-in for a reward pool. For now, it's a place to squirrel
   // away fees so the tests show that the funds have been removed.
@@ -64,9 +64,9 @@ export async function start(zcf) {
   // We provide an easy way for the vaultManager and vaults to add rewards to
   // this seat, without directly exposing the seat to them.
   function stageReward(amount) {
-    const priorReward = rewardPoolSeat.getAmountAllocated('Run', runBrand);
+    const priorReward = rewardPoolSeat.getAmountAllocated('RUN', runBrand);
     return rewardPoolSeat.stage({
-      Run: amountMath.add(priorReward, amount, runBrand),
+      RUN: amountMath.add(priorReward, amount, runBrand),
     });
   }
 
@@ -102,46 +102,46 @@ export async function start(zcf) {
     async function addTypeHook(seat) {
       assertProposalShape(seat, {
         give: { Collateral: null },
-        want: { Bld: null },
+        want: { Governance: null },
       });
       const {
         give: { Collateral: collateralIn },
-        want: { Bld: _govOut }, // ownership of the whole stablecoin machine
+        want: { Governance: _govOut }, // ownership of the whole stablecoin machine
       } = seat.getProposal();
       assert(!collateralTypes.has(collateralBrand));
       const runAmount = multiplyBy(collateralIn, rates.initialPrice);
-      // arbitrarily, give BLD tokens equal to RUN tokens
-      const bldAmount = amountMath.make(runAmount.value, bldBrand);
+      // arbitrarily, give governance tokens equal to RUN tokens
+      const govAmount = amountMath.make(runAmount.value, govBrand);
 
-      // Create new BLD tokens, trade them with the incoming offer for
-      // collateral. The offer uses the keywords Collateral and Bld.
-      // bldSeat stores the collateral as Secondary. We then mint new RUN for
-      // bldSeat and store them as Central. bldSeat then creates a liquidity
-      // pool for autoswap, trading in Central and Secondary for BLD
-      // tokens as Liquidity. These BLD tokens are held by bldSeat
-      const { zcfSeat: bldSeat } = zcf.makeEmptySeatKit();
+      // Create new governance tokens, trade them with the incoming offer for
+      // collateral. The offer uses the keywords Collateral and Governance.
+      // govSeat stores the collateral as Secondary. We then mint new RUN for
+      // govSeat and store them as Central. govSeat then creates a liquidity
+      // pool for autoswap, trading in Central and Secondary for governance
+      // tokens as Liquidity. These governance tokens are held by govSeat
+      const { zcfSeat: govSeat } = zcf.makeEmptySeatKit();
       // TODO this should create the seat for us
-      bldMint.mintGains({ Bld: bldAmount }, bldSeat);
+      govMint.mintGains({ Governance: govAmount }, govSeat);
 
-      // trade the BLD tokens for collateral, putting the
+      // trade the governance tokens for collateral, putting the
       // collateral on Secondary to be positioned for Autoswap
       trade(
         zcf,
         {
           seat,
-          gains: { Bld: bldAmount },
+          gains: { Governance: govAmount },
           losses: { Collateral: collateralIn },
         },
-        { seat: bldSeat, gains: { Secondary: collateralIn } },
+        { seat: govSeat, gains: { Secondary: collateralIn } },
       );
       // the collateral is now on the temporary seat
 
       // once we've done that, we can put both the collateral and the minted
       // RUN into the autoswap, giving us liquidity tokens, which we store
 
-      // mint the new RUN to the Central position on the bldSeat
+      // mint the new RUN to the Central position on the govSeat
       // so we can setup the autoswap pool
-      runMint.mintGains({ Central: runAmount }, bldSeat);
+      runMint.mintGains({ Central: runAmount }, govSeat);
 
       // TODO: check for existing pool, use its price instead of the
       // user-provided 'rate'. Or throw an error if it already exists.
@@ -172,7 +172,7 @@ export async function start(zcf) {
         liqInvitation,
         undefined,
         liqProposal,
-        bldSeat,
+        govSeat,
       );
 
       const depositValue = await deposited;
@@ -183,7 +183,7 @@ export async function start(zcf) {
       const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
         liquidationInstall,
         {
-          Run: runIssuer,
+          RUN: runIssuer,
           Collateral: collateralIssuer,
         },
         { autoswap: autoswapAPI },
@@ -223,7 +223,7 @@ export async function start(zcf) {
     async function makeLoanHook(seat) {
       assertProposalShape(seat, {
         give: { Collateral: null },
-        want: { Run: null },
+        want: { RUN: null },
       });
       const {
         give: { Collateral: collateralAmount },
@@ -243,7 +243,7 @@ export async function start(zcf) {
 
   zcf.setTestJig(() => ({
     runIssuerRecord: runMint.getIssuerRecord(),
-    bldIssuerRecord: bldMint.getIssuerRecord(),
+    govIssuerRecord: govMint.getIssuerRecord(),
     autoswap: autoswapAPI,
   }));
 

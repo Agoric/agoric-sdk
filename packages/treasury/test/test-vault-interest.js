@@ -61,7 +61,7 @@ async function launch(zoeP, sourceRoot) {
   const collateral50 = amountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Run: amountMath.make(70n, runBrand) },
+    want: { RUN: amountMath.make(70n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -98,7 +98,7 @@ test('interest', async t => {
   t.deepEqual(
     vault.getDebtAmount(),
     amountMath.make(73n, runBrand),
-    'borrower owes 73 Run',
+    'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),

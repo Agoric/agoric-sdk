@@ -24,7 +24,7 @@ export async function start(zcf) {
   const { brand: collateralBrand } = collateralKit;
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
-  const runMint = await zcf.makeZCFMint('Run');
+  const runMint = await zcf.makeZCFMint('RUN');
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { zcfSeat: _collateralSt, userSeat: liqSeat } = zcf.makeEmptySeatKit();
@@ -39,9 +39,9 @@ export async function start(zcf) {
   };
 
   function stageReward(amount, _fromSeat) {
-    const priorReward = stableCoinSeat.getAmountAllocated('Run', runBrand);
+    const priorReward = stableCoinSeat.getAmountAllocated('RUN', runBrand);
     return stableCoinSeat.stage({
-      Run: amountMath.add(priorReward, amount),
+      RUN: amountMath.add(priorReward, amount),
     });
   }
 

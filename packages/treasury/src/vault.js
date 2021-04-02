@@ -66,7 +66,7 @@ export function makeVaultKit(
     return seat.getAmountAllocated('Collateral', collateralBrand);
   }
   function getRunAllocated(seat) {
-    return seat.getAmountAllocated('Run', runBrand);
+    return seat.getAmountAllocated('RUN', runBrand);
   }
 
   function assertVaultHoldsNoRun() {
@@ -148,11 +148,11 @@ export function makeVaultKit(
   async function closeHook(seat) {
     assertVaultIsOpen();
     assertProposalShape(seat, {
-      give: { Run: null },
+      give: { RUN: null },
       want: { Collateral: null },
     });
     const {
-      give: { Run: runReturned },
+      give: { RUN: runReturned },
       want: { Collateral: _collateralWanted },
     } = seat.getProposal();
 
@@ -168,7 +168,7 @@ export function makeVaultKit(
       zcf,
       {
         seat: vaultSeat,
-        gains: { Run: runDebt }, // return any overpayment
+        gains: { RUN: runDebt }, // return any overpayment
       },
       {
         seat,
@@ -180,7 +180,7 @@ export function makeVaultKit(
     active = false;
     updateUiState();
 
-    runMint.burnLosses({ Run: runDebt }, vaultSeat);
+    runMint.burnLosses({ RUN: runDebt }, vaultSeat);
     vaultSeat.exit();
 
     return 'your loan is closed, thank you for your business';
@@ -192,7 +192,7 @@ export function makeVaultKit(
   }
 
   // The proposal is not allowed to include any keys other than these,
-  // usually 'Collateral' and 'Run'.
+  // usually 'Collateral' and 'RUN'.
   function assertOnlyKeys(proposal, keys) {
     function onlyKeys(clause) {
       return Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
@@ -247,16 +247,16 @@ export function makeVaultKit(
   function targetRunLevels(seat) {
     const clientAllocation = getRunAllocated(seat);
     const proposal = seat.getProposal();
-    if (proposal.want.Run) {
+    if (proposal.want.RUN) {
       return {
         vault: amountMath.makeEmpty(runBrand),
-        client: amountMath.add(clientAllocation, proposal.want.Run),
+        client: amountMath.add(clientAllocation, proposal.want.RUN),
       };
-    } else if (proposal.give.Run) {
+    } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const acceptedRun = amountMath.isGTE(proposal.give.Run, runDebt)
+      const acceptedRun = amountMath.isGTE(proposal.give.RUN, runDebt)
         ? runDebt
-        : proposal.give.Run;
+        : proposal.give.RUN;
 
       return {
         vault: acceptedRun,
@@ -275,11 +275,11 @@ export function makeVaultKit(
     let newDebt;
     let toMint = amountMath.makeEmpty(runBrand);
     let fee = amountMath.makeEmpty(runBrand);
-    if (proposal.want.Run) {
-      fee = multiplyBy(proposal.want.Run, manager.getLoanFee());
-      toMint = amountMath.add(proposal.want.Run, fee);
+    if (proposal.want.RUN) {
+      fee = multiplyBy(proposal.want.RUN, manager.getLoanFee());
+      toMint = amountMath.add(proposal.want.RUN, fee);
       newDebt = amountMath.add(runDebt, toMint);
-    } else if (proposal.give.Run) {
+    } else if (proposal.give.RUN) {
       newDebt = amountMath.subtract(runDebt, runAfter.vault);
     } else {
       newDebt = runDebt;
@@ -292,7 +292,7 @@ export function makeVaultKit(
     assertVaultIsOpen();
     const proposal = clientSeat.getProposal();
 
-    assertOnlyKeys(proposal, ['Collateral', 'Run']);
+    assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
     const targetCollateralAmount = TargetCollateralLevels(clientSeat).vault;
     // max debt supported by current Collateral as modified by proposal
@@ -340,21 +340,21 @@ export function makeVaultKit(
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
-    runMint.mintGains({ Run: toMint }, vaultSeat);
+    runMint.mintGains({ RUN: toMint }, vaultSeat);
     zcf.reallocate(
       vaultSeat.stage({
         Collateral: collateralAfter.vault,
-        Run: runAfter.vault,
+        RUN: runAfter.vault,
       }),
       clientSeat.stage({
         Collateral: collateralAfter.client,
-        Run: runAfter.client,
+        RUN: runAfter.client,
       }),
       manager.stageReward(fee),
     );
 
     runDebt = newDebt;
-    runMint.burnLosses({ Run: runAfter.vault }, vaultSeat);
+    runMint.burnLosses({ RUN: runAfter.vault }, vaultSeat);
 
     assertVaultHoldsNoRun();
 
@@ -375,7 +375,7 @@ export function makeVaultKit(
     // contract abandons
     const {
       give: { Collateral: collateralAmount },
-      want: { Run: wantedRun },
+      want: { RUN: wantedRun },
     } = seat.getProposal();
 
     const collateralPayoutP = E(userSeat).getPayouts();
@@ -389,15 +389,15 @@ export function makeVaultKit(
     }
 
     runDebt = amountMath.add(wantedRun, fee);
-    runMint.mintGains({ Run: runDebt }, vaultSeat);
+    runMint.mintGains({ RUN: runDebt }, vaultSeat);
     const priorCollateral = getCollateralAllocated(vaultSeat);
 
     const collateralSeatStaging = vaultSeat.stage({
       Collateral: amountMath.add(priorCollateral, collateralAmount),
-      Run: amountMath.makeEmpty(runBrand),
+      RUN: amountMath.makeEmpty(runBrand),
     });
     const loanSeatStaging = seat.stage({
-      Run: wantedRun,
+      RUN: wantedRun,
       Collateral: amountMath.makeEmpty(collateralBrand),
     });
     const stageReward = manager.stageReward(fee);
