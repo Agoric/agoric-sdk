@@ -149,6 +149,9 @@ export function makeWallet({
   // @qclass is lost.
   const { unserialize: fillInSlots } = makeMarshal(noOp, identitySlotToValFn, {
     marshalName: 'wallet',
+    // TODO Temporary hack.
+    // See https://github.com/Agoric/agoric-sdk/issues/2780
+    errorIdNum: 40000,
   });
 
   /** @type {NotifierRecord<OfferState[]>} */
