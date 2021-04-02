@@ -10,6 +10,7 @@ import { makeOnewayPriceAuthorityKit } from '../../contractSupport';
 
 export const makePriceAuthority = (
   getOutputForGivenInput,
+  getInputForWantedOutput,
   actualBrandIn,
   actualBrandOut,
   timer,
@@ -30,7 +31,7 @@ export const makePriceAuthority = (
   const calcAmountOut = amountIn =>
     getOutputForGivenInput(amountIn, actualBrandOut).amountOut;
   const calcAmountIn = amountOut =>
-    getOutputForGivenInput(amountOut, actualBrandIn).amountIn;
+    getInputForWantedOutput(actualBrandIn, amountOut).amountIn;
 
   /**
    * @param {PriceQuery} priceQuery

@@ -84,7 +84,11 @@ export async function start(zcf) {
   /** @type {{ publicFacet: MultipoolAutoswapPublicFacet, instance: Instance}} */
   const { publicFacet: autoswapAPI, instance: autoswapInstance } = await E(
     zoe,
-  ).startInstance(autoswapInstall, { Central: sconeIssuer });
+  ).startInstance(
+    autoswapInstall,
+    { Central: sconeIssuer },
+    { timer: timerService },
+  );
 
   // We process only one offer per collateralType. They must tell us the
   // dollar value of their collateral, and we create that many Scones.
