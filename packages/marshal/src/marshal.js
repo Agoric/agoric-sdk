@@ -868,15 +868,13 @@ export function makeMarshal(
             const EC = getErrorConstructor(`${name}`) || Error;
             let error;
             if (typeof errorId === 'string') {
-              // errorId is a late addition so be tolerant of its absence.
-              error = assert.error(
-                `${message}`,
-                EC,
-                `Remote${EC.name}(${errorId})`,
-              );
+              const errorName = `Remote${EC.name}(${errorId})`;
+              error = assert.error(`${message}`, EC, { errorName });
               assert.note(error, X`Received as ${errorId}`);
             } else {
-              error = assert.error(`${message}`, EC, `Remote${EC.name}`);
+              // errorId is a late addition so be tolerant of its absence.
+              const errorName = `Remote${EC.name}`;
+              error = assert.error(`${message}`, EC, { errorName });
             }
             ibidTable.register(error);
             return error;
