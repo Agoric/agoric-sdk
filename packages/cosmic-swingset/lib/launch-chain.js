@@ -62,9 +62,13 @@ async function buildSwingset(
     timer: { ...timer.endowments },
   };
 
-  if (!swingsetIsInitialized(storage)) {
+  async function ensureSwingsetInitialized() {
+    if (swingsetIsInitialized(storage)) {
+      return;
+    }
     await initializeSwingset(config, argv, storage, { debugPrefix });
   }
+  await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(storage, deviceEndowments, {
     slogCallbacks,
   });
@@ -135,6 +139,8 @@ export async function launch(
     const blockStart = now;
     let stepsRemaining = FIXME_MAX_CRANKS_PER_BLOCK;
     let stepped = true;
+    // TODO: how to rewrite without an await in loop?
+    // (without blowing out the stack or promise chain)
     while (stepped && stepsRemaining > 0) {
       const crankStart = now;
       // eslint-disable-next-line no-await-in-loop
@@ -187,13 +193,22 @@ export async function launch(
   );
 
   let savedHeight = initSavedHeight;
-  if (savedHeight < 0) {
-    // We need to fully bootstrap the chain before we can be open to receive
-    // outside messages.
+
+  // We need to fully bootstrap the chain before we can be open to receive
+  // outside messages.
+  async function ensureBootstrapComplete() {
+    if (savedHeight >= 0) {
+      return;
+    }
+    // Run the kernel until there is no more progress possible without inbound
+    // messages.
     await controller.run();
+
+    // Commit the results, marking it so that we don't do it again.
     savedHeight = 0;
     await saveOutsideState(savedHeight, savedActions, savedChainSends);
   }
+  await ensureBootstrapComplete();
 
   return {
     deliverInbound,
