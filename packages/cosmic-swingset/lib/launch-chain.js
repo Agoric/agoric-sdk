@@ -69,8 +69,8 @@ async function buildSwingset(
     slogCallbacks,
   });
 
-  // We DON'T want to run the kernel yet, only when we're in the scheduler at
-  // endBlock!
+  // We DON'T want to run the kernel yet, only when the application decides
+  // (either on bootstrap block (-1) or in endBlock).
 
   const bridgeInbound = bd.deliverInbound;
   return { controller, mb, bridgeInbound, timer };
@@ -182,9 +182,19 @@ export async function launch(
     );
   }
 
-  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[0, [], []]',
+  const [initSavedHeight, savedActions, savedChainSends] = JSON.parse(
+    storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
   );
+
+  let savedHeight = initSavedHeight;
+  if (savedHeight < 0) {
+    // We need to fully bootstrap the chain before we can be open to receive
+    // outside messages.
+    await controller.run();
+    savedHeight = 0;
+    await saveOutsideState(savedHeight, savedActions, savedChainSends);
+  }
+
   return {
     deliverInbound,
     doBridgeInbound,
