@@ -92,13 +92,13 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
   const withBlockQueue = makeWithQueue();
-  const simulateBlock = withBlockQueue(async function unqueuedSimulateBlock() {
-    const actualStart = Date.now();
-    // Gather up the new messages into the latest block.
-    thisBlock.push(...intoChain);
-    intoChain = [];
+  const unhandledSimulateBlock = withBlockQueue(
+    async function unqueuedSimulateBlock() {
+      const actualStart = Date.now();
+      // Gather up the new messages into the latest block.
+      thisBlock.push(...intoChain);
+      intoChain = [];
 
-    try {
       blockTime += PRETEND_BLOCK_DELAY;
       blockHeight += 1;
 
@@ -132,18 +132,23 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       );
       thisBlock = [];
       blockTime += scaleBlockTime(Date.now() - actualStart);
-    } catch (e) {
-      console.error(`error fake processing`, e);
-    }
 
-    clearTimeout(nextBlockTimeout);
-    nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+      clearTimeout(nextBlockTimeout);
+      // eslint-disable-next-line no-use-before-define
+      nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
-    // TODO: maybe add latency to the inbound messages.
-    const mailbox = mailboxStorage.get(`${bootAddress}`);
-    const { outbox = [], ack = 0 } = mailbox ? exportMailbox(mailbox) : {};
-    inbound(GCI, outbox, ack);
-  });
+      // TODO: maybe add latency to the inbound messages.
+      const mailbox = mailboxStorage.get(`${bootAddress}`);
+      const { outbox = [], ack = 0 } = mailbox ? exportMailbox(mailbox) : {};
+      inbound(GCI, outbox, ack);
+    },
+  );
+
+  const simulateBlock = () =>
+    unhandledSimulateBlock().catch(e => {
+      console.error(e);
+      process.exit(1);
+    });
 
   let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
@@ -156,9 +161,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       await simulateBlock();
     }
   }
-
-  // We need to finish booting the kernel on the first block.
-  await simulateBlock();
 
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
