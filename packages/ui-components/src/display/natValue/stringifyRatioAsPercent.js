@@ -1,17 +1,21 @@
+// @ts-check
+
 import { assert, details } from '@agoric/assert';
+import '@agoric/zoe/exported';
+
 import { captureNum } from './helpers/captureNum';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
 
+const PERCENT_BASE = 100n;
 const PLACES_TO_SHOW = 2;
 
 /**
- *
  * @param {Ratio} ratio
- * @param {(brand: Brand) => number | undefined} getDecimalPlaces
+ * @param {(brand: Brand) => number | undefined } getDecimalPlaces
  * @param {number} [placesToShow]
  * @returns {string}
  */
-export const stringifyRatio = (
+export const stringifyRatioAsPercent = (
   ratio,
   getDecimalPlaces,
   placesToShow = PLACES_TO_SHOW,
@@ -37,7 +41,9 @@ export const stringifyRatio = (
   );
   const denomPower = 10n ** BigInt(denomDecimalPlaces);
   const numPower = 10n ** BigInt(numDecimalPlaces);
-  const numerator = ratio.numerator.value * denomPower;
+  // @ts-ignore value is BigInt
+  const numerator = ratio.numerator.value * denomPower * PERCENT_BASE;
+  // @ts-ignore value is BigInt
   const denominator = ratio.denominator.value * numPower;
   const str = `${Number(numerator) / Number(denominator)}`;
   const capturedNum = captureNum(str);
