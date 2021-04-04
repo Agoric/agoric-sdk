@@ -60,8 +60,8 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     ammInstance,
     invitationIssuer,
     {
-      issuers: { Governance: govIssuer, Scones: centralIssuer },
-      brands: { Governance: govBrand, Scones: centralBrand },
+      issuers: { Governance: govIssuer, RUN: centralIssuer },
+      brands: { Governance: govBrand, RUN: centralBrand },
     },
   ] = await Promise.all([E(creatorFacet).getAMM(), E(zoe).getInvitationIssuer(), E(zoe).getTerms(instance)]);
 
