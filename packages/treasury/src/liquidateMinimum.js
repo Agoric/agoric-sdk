@@ -45,7 +45,7 @@ export async function start(zcf) {
       const { deposited, userSeatPromise: liqSeat } = await offerTo(
         zcf,
         swapInvitation,
-        undefined,
+        undefined, // The keywords were mapped already
         liqProposal,
         debtorSeat,
       );
@@ -65,7 +65,7 @@ export async function start(zcf) {
         } = await offerTo(
           zcf,
           strategy.makeInvitation(),
-          strategy.keywordMapping(),
+          undefined, // The keywords were mapped already
           strategy.makeProposal(amountIn, amountMath.makeEmpty(runBrand)),
           debtorSeat,
         );
