@@ -25,8 +25,8 @@ const trace = makeTracer('LM');
 export async function start(zcf) {
   const { autoswap } = zcf.getTerms();
 
-  function makeDebtorHook(sconeDebt) {
-    const sconeBrand = sconeDebt.brand;
+  function makeDebtorHook(runDebt) {
+    const runBrand = runDebt.brand;
     return async function debtorHook(debtorSeat) {
       const {
         give: { In: amountIn },
@@ -38,9 +38,9 @@ export async function start(zcf) {
 
       const liqProposal = harden({
         give: { In: amountIn },
-        want: { Out: sconeDebt },
+        want: { Out: runDebt },
       });
-      trace(`OFFER TO DEBT: `, sconeDebt.value);
+      trace(`OFFER TO DEBT: `, runDebt.value);
 
       const { deposited, userSeatPromise: liqSeat } = await offerTo(
         zcf,
@@ -66,7 +66,7 @@ export async function start(zcf) {
           zcf,
           strategy.makeInvitation(),
           strategy.keywordMapping(),
-          strategy.makeProposal(amountIn, amountMath.makeEmpty(sconeBrand)),
+          strategy.makeProposal(amountIn, amountMath.makeEmpty(runBrand)),
           debtorSeat,
         );
         // await sellAllDeposited, but don't need the value
@@ -89,29 +89,29 @@ export async function start(zcf) {
   }
 
   const creatorFacet = {
-    makeDebtorInvitation: sconesDebt =>
-      zcf.makeInvitation(makeDebtorHook(sconesDebt), 'liquidate'),
+    makeDebtorInvitation: runDebt =>
+      zcf.makeInvitation(makeDebtorHook(runDebt), 'liquidate'),
   };
 
   return harden({ creatorFacet });
 }
 
 export function makeLiquidationStrategy(creatorFacet) {
-  async function makeInvitation(sconeDebt) {
-    return creatorFacet.makeDebtorInvitation(sconeDebt);
+  async function makeInvitation(runDebt) {
+    return creatorFacet.makeDebtorInvitation(runDebt);
   }
 
   function keywordMapping() {
     return harden({
       Collateral: 'In',
-      Scones: 'Out',
+      RUN: 'Out',
     });
   }
 
-  function makeProposal(collateral, scones) {
+  function makeProposal(collateral, run) {
     return harden({
       give: { In: collateral },
-      want: { Out: amountMath.makeEmptyFromAmount(scones) },
+      want: { Out: amountMath.makeEmptyFromAmount(run) },
     });
   }
 

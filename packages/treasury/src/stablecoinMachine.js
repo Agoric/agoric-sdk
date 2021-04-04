@@ -3,7 +3,7 @@ import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "Scone" stablecoin. This overarching SCM will hold ownershipTokens in the
+// "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
 // individual per-type vaultManagers.
 //
 // makeAddTypeInvitation is a closely held method that adds a brand new
@@ -49,14 +49,11 @@ export async function start(zcf) {
     liquidationInstall,
   } = zcf.getTerms();
 
-  const [sconeMint, govMint] = await Promise.all([
-    zcf.makeZCFMint('Scones', undefined, harden({ decimalPlaces: 6 })),
+  const [runMint, govMint] = await Promise.all([
+    zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
     zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
   ]);
-  const {
-    issuer: sconeIssuer,
-    brand: sconeBrand,
-  } = sconeMint.getIssuerRecord();
+  const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
 
   const { brand: govBrand } = govMint.getIssuerRecord();
 
@@ -67,9 +64,9 @@ export async function start(zcf) {
   // We provide an easy way for the vaultManager and vaults to add rewards to
   // this seat, without directly exposing the seat to them.
   function stageReward(amount) {
-    const priorReward = rewardPoolSeat.getAmountAllocated('Scones', sconeBrand);
+    const priorReward = rewardPoolSeat.getAmountAllocated('RUN', runBrand);
     return rewardPoolSeat.stage({
-      Scones: amountMath.add(priorReward, amount, sconeBrand),
+      RUN: amountMath.add(priorReward, amount, runBrand),
     });
   }
 
@@ -86,12 +83,12 @@ export async function start(zcf) {
     zoe,
   ).startInstance(
     autoswapInstall,
-    { Central: sconeIssuer },
+    { Central: runIssuer },
     { timer: timerService },
   );
 
   // We process only one offer per collateralType. They must tell us the
-  // dollar value of their collateral, and we create that many Scones.
+  // dollar value of their collateral, and we create that many RUN.
   // collateralKeyword = 'aEth'
   async function makeAddTypeInvitation(
     collateralIssuer,
@@ -112,13 +109,13 @@ export async function start(zcf) {
         want: { Governance: _govOut }, // ownership of the whole stablecoin machine
       } = seat.getProposal();
       assert(!collateralTypes.has(collateralBrand));
-      const sconesAmount = multiplyBy(collateralIn, rates.initialPrice);
-      // arbitrarily, give governance tokens equal to scones tokens
-      const govAmount = amountMath.make(sconesAmount.value, govBrand);
+      const runAmount = multiplyBy(collateralIn, rates.initialPrice);
+      // arbitrarily, give governance tokens equal to RUN tokens
+      const govAmount = amountMath.make(runAmount.value, govBrand);
 
       // Create new governance tokens, trade them with the incoming offer for
       // collateral. The offer uses the keywords Collateral and Governance.
-      // govSeat stores the collateral as Secondary. We then mint new Scones for
+      // govSeat stores the collateral as Secondary. We then mint new RUN for
       // govSeat and store them as Central. govSeat then creates a liquidity
       // pool for autoswap, trading in Central and Secondary for governance
       // tokens as Liquidity. These governance tokens are held by govSeat
@@ -140,11 +137,11 @@ export async function start(zcf) {
       // the collateral is now on the temporary seat
 
       // once we've done that, we can put both the collateral and the minted
-      // scones into the autoswap, giving us liquidity tokens, which we store
+      // RUN into the autoswap, giving us liquidity tokens, which we store
 
-      // mint the new scones to the Central position on the govSeat
+      // mint the new RUN to the Central position on the govSeat
       // so we can setup the autoswap pool
-      sconeMint.mintGains({ Central: sconesAmount }, govSeat);
+      runMint.mintGains({ Central: runAmount }, govSeat);
 
       // TODO: check for existing pool, use its price instead of the
       // user-provided 'rate'. Or throw an error if it already exists.
@@ -159,12 +156,12 @@ export async function start(zcf) {
         `${collateralKeyword}_Liquidity`,
       );
 
-      // inject both the collateral and the scones into the new autoswap, to
+      // inject both the collateral and the RUN into the new autoswap, to
       // provide the initial liquidity pool
       const liqProposal = harden({
         give: {
           Secondary: collateralIn,
-          Central: sconesAmount,
+          Central: runAmount,
         },
         want: { Liquidity: amountMath.makeEmpty(liquidityBrand) },
       });
@@ -186,7 +183,7 @@ export async function start(zcf) {
       const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
         liquidationInstall,
         {
-          Scone: sconeIssuer,
+          RUN: runIssuer,
           Collateral: collateralIssuer,
         },
         { autoswap: autoswapAPI },
@@ -197,7 +194,7 @@ export async function start(zcf) {
       const vm = makeVaultManager(
         zcf,
         autoswapAPI,
-        sconeMint,
+        runMint,
         collateralBrand,
         priceAuthority,
         rates,
@@ -226,7 +223,7 @@ export async function start(zcf) {
     async function makeLoanHook(seat) {
       assertProposalShape(seat, {
         give: { Collateral: null },
-        want: { Scones: null },
+        want: { RUN: null },
       });
       const {
         give: { Collateral: collateralAmount },
@@ -245,8 +242,8 @@ export async function start(zcf) {
   }
 
   zcf.setTestJig(() => ({
-    stablecoin: sconeMint.getIssuerRecord(),
-    governance: govMint.getIssuerRecord(),
+    runIssuerRecord: runMint.getIssuerRecord(),
+    govIssuerRecord: govMint.getIssuerRecord(),
     autoswap: autoswapAPI,
   }));
 
@@ -285,8 +282,8 @@ export async function start(zcf) {
     getCollaterals,
     // TODO this is in the terms, so could be retrieved from there.
     // This API is here to consider for usability/discoverability
-    getSconeIssuer() {
-      return sconeIssuer;
+    getRunIssuer() {
+      return runIssuer;
     },
   });
 

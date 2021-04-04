@@ -21,15 +21,15 @@ import { makeTracer } from './makeTracer';
 const trace = makeTracer(' VM ');
 
 // Each VaultManager manages a single collateralType. It owns an autoswap
-// instance which trades this collateralType against Scones. It also manages
+// instance which trades this collateralType against RUN. It also manages
 // some number of outstanding loans, each called a Vault, for which the
-// collateral is provided in exchange for borrowed Scones.
+// collateral is provided in exchange for borrowed RUN.
 
 /** @type {MakeVaultManager} */
 export function makeVaultManager(
   zcf,
   autoswap,
-  sconeMint,
+  runMint,
   collateralBrand,
   priceAuthority,
   rates,
@@ -38,7 +38,7 @@ export function makeVaultManager(
   loanParams,
   liquidationStrategy,
 ) {
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   const shared = {
     // loans below this margin may be liquidated
@@ -61,7 +61,7 @@ export function makeVaultManager(
       const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;
       return E(priceAuthority).quoteGiven(
         amountMath.make(10n ** Nat(decimalPlaces), collateralBrand),
-        sconeBrand,
+        runBrand,
       );
     },
     stageReward,
@@ -126,7 +126,7 @@ export function makeVaultManager(
       liquidate(
         zcf,
         vaultKit,
-        sconeMint.burnLosses,
+        runMint.burnLosses,
         liquidationStrategy,
         collateralBrand,
       );
@@ -141,7 +141,7 @@ export function makeVaultManager(
       liquidate(
         zcf,
         vaultKit,
-        sconeMint.burnLosses,
+        runMint.burnLosses,
         liquidationStrategy,
         collateralBrand,
       ),
@@ -156,11 +156,11 @@ export function makeVaultManager(
           total,
           vaultPair.vaultKit.accrueInterestAndAddToPool(updateTime),
         ),
-      amountMath.makeEmpty(sconeBrand),
+      amountMath.makeEmpty(runBrand),
     );
-    sconeMint.mintGains({ Scones: poolIncrement }, poolIncrementSeat);
+    runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
     const poolStage = poolIncrementSeat.stage({
-      Scones: amountMath.makeEmpty(sconeBrand),
+      RUN: amountMath.makeEmpty(runBrand),
     });
     const poolSeatStaging = stageReward(poolIncrement);
     zcf.reallocate(poolStage, poolSeatStaging);
@@ -195,14 +195,14 @@ export function makeVaultManager(
   async function makeLoanKit(seat) {
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { Scones: null },
+      want: { RUN: null },
     });
 
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
     const vaultKit = makeVaultKit(
       zcf,
       innerFacet,
-      sconeMint,
+      runMint,
       autoswap,
       priceAuthority,
       loanParams,

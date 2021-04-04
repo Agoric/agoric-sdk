@@ -21,7 +21,7 @@
  * required to open a loan
  * @property {Ratio} liquidationMargin margin below which collateral will be
  * liquidated to satisfy the debt.
- * @property {Ratio} initialPrice price ratio of collateral to stablecoin
+ * @property {Ratio} initialPrice price ratio of collateral to RUN
  * @property {Ratio} interestRate interest rate charged on loans
  * @property {Ratio} loanFee The fee (in BasisPoints) charged when opening
  * or increasing a loan.
@@ -110,7 +110,7 @@
 /**
  * @typedef {Object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, scones: Amount) => Proposal} makeProposal
+ * @property {(collateral: Amount, RUN: Amount) => Proposal} makeProposal
  * @property {() => Promise<Invitation>} makeInvitation
  */
 
@@ -118,7 +118,7 @@
  * @callback MakeVaultManager
  * @param {ContractFacet} zcf
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
- * @param {ZCFMint} sconeMint
+ * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {Rates} rates
@@ -133,7 +133,7 @@
  * @callback MakeVaultKit
  * @param {ContractFacet} zcf
  * @param {InnerVaultManager} manager
- * @param {ZCFMint} sconeMint
+ * @param {ZCFMint} runMint
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {LoanParams} loanParams
