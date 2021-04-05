@@ -1,4 +1,5 @@
 export {
+  sameValueZero,
   allComparable,
   sameStructure,
   mustBeSameStructure,
