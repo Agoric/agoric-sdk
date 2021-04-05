@@ -99,7 +99,7 @@ test('stringifyApproxRatio - marketPrice for ETH in RUN', t => {
 
   t.is(stringifyRatio(ethPrice, getDecimalPlaces, 4), '1909.1135');
 
-  t.is(stringifyRatioAsPercent(ethPrice, getDecimalPlaces), '190911.35');
+  t.is(stringifyRatioAsPercent(ethPrice, getDecimalPlaces), '190911');
 
   t.is(stringifyRatioAsPercent(ethPrice, getDecimalPlaces, 1), '190911.3');
 });
