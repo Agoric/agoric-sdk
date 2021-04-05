@@ -49,7 +49,7 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^4.18.0",
     "ava": "^3.12.1",
-    "eslint": "^7.22.0",
+    "eslint": "^7.23.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "^0.0.4",
     "eslint-config-prettier": "^6.9.0",
