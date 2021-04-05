@@ -38,7 +38,6 @@ export const makePriceAuthority = (
    * @returns {ERef<PriceQuote>=}
    */
   function createQuote(priceQuery) {
-    // calcAmountIn is not used, but required by typescript
     const quote = priceQuery(calcAmountOut, calcAmountIn);
     assert(quote, X`priceQuery must return a quote`);
 

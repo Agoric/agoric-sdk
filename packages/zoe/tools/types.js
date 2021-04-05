@@ -43,6 +43,13 @@
  */
 
 /**
+ * @typedef {Object} MutableQuote
+ * @property {() => void} cancel
+ * @property {() => void} updateLevel
+ * @property {() => ERef<PriceQuote>} getPromise
+ */
+
+/**
  * @typedef {Object} PriceAuthority An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *
@@ -81,6 +88,21 @@
  *
  * @property {(amountIn: Amount, amountOutLimit: Amount) => Promise<PriceQuote>}
  * quoteWhenLT Resolve when the price quote of `amountIn` drops below
+ * `amountOutLimit`
+ *
+ * @property {(amountIn: Amount, amountOutLimit: Amount) => ERef<MutableQuote>}
+ * mutableQuoteWhenGT Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
+ *
+ * @property {(amountIn: Amount, amountOutLimit: Amount) => ERef<MutableQuote>}
+ * mutableQuoteWhenGTE Resolve when a price quote of `amountIn` reaches or exceeds
+ * `amountOutLimit`
+ *
+ * @property {(amountIn: Amount, amountOutLimit: Amount) => ERef<MutableQuote>}
+ * mutableQuoteWhenLTE Resolve when a price quote of `amountIn` reaches or drops below
+ * `amountOutLimit`
+ *
+ * @property {(amountIn: Amount, amountOutLimit: Amount) => ERef<MutableQuote>}
+ * mutableQuoteWhenLT Resolve when the price quote of `amountIn` drops below
  * `amountOutLimit`
  */
 
