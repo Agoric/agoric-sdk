@@ -17,8 +17,8 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 import { makeTracer } from '../src/makeTracer';
-import { makeScriptedPriceAuthority } from '../../zoe/test/unitTests/contracts/scriptedPriceAuthority';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';

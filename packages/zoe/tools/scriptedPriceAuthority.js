@@ -7,7 +7,7 @@ import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../../../src/contractSupport';
+} from '../src/contractSupport';
 
 export function makeScriptedPriceAuthority(options) {
   const {
@@ -20,7 +20,7 @@ export function makeScriptedPriceAuthority(options) {
     quoteIssuerKit = makeIssuerKit('quote', MathKind.SET),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
-  let currentPrice;
+  let currentPrice = priceList[0];
 
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
@@ -83,7 +83,8 @@ export function makeScriptedPriceAuthority(options) {
 
   const priceObserver = Far('priceObserver', {
     updateState: t => {
-      currentPrice = priceList[t % (BigInt(priceList.length) * quoteInterval)];
+      currentPrice =
+        priceList[Number(t) % (priceList.length * Number(quoteInterval))];
 
       fireTriggers(createQuote);
     },
