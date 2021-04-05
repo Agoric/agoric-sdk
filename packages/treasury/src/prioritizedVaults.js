@@ -29,13 +29,20 @@ function ratioGTE(left, right) {
 }
 
 function calculateDebtToCollateral(debtAmount, collateralAmount) {
-  if (amountMath.isEmpty(debtAmount) && amountMath.isEmpty(collateralAmount)) {
+  if (amountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
       debtAmount,
       amountMath.make(1n, collateralAmount.brand),
     );
   }
   return makeRatioFromAmounts(debtAmount, collateralAmount);
+}
+
+function currentDebtToCollateral(vaultKit) {
+  return calculateDebtToCollateral(
+    vaultKit.vault.getDebtAmount(),
+    vaultKit.vault.getCollateralAmount(),
+  );
 }
 
 function compareVaultKits(leftVaultPair, rightVaultPair) {
@@ -105,13 +112,22 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
     });
   }
 
+  // called after charging interest, which changes debts without affecting sort
+  function updateAllDebts() {
+    vaultsWithDebtRatio.forEach((vaultPair, index) => {
+      const debtToCollateral = currentDebtToCollateral(vaultPair.vaultKit);
+      vaultsWithDebtRatio[index].debtToCollateral = debtToCollateral;
+    });
+    highestDebtToCollateral = highestRatio();
+  }
+
   function makeObserver(vaultKit) {
     return {
-      updateState: _ => {
-        const debtToCollateral = calculateDebtToCollateral(
-          vaultKit.vault.getDebtAmount(),
-          vaultKit.vault.getCollateralAmount(),
-        );
+      updateState: state => {
+        if (amountMath.isEmpty(state.locked)) {
+          return;
+        }
+        const debtToCollateral = currentDebtToCollateral(vaultKit);
         updateDebtRatio(vaultKit, debtToCollateral);
         vaultsWithDebtRatio.sort(compareVaultKits);
         rescheduleIfHighest(debtToCollateral);
@@ -126,10 +142,7 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
   }
 
   function addVaultKit(vaultKit, notifier) {
-    const debtToCollateral = calculateDebtToCollateral(
-      vaultKit.vault.getDebtAmount(),
-      vaultKit.vault.getCollateralAmount(),
-    );
+    const debtToCollateral = currentDebtToCollateral(vaultKit);
     vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
     vaultsWithDebtRatio.sort(compareVaultKits);
     observeNotifier(notifier, makeObserver(vaultKit));
@@ -175,5 +188,6 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
     reduce,
     forEachRatioGTE,
     highestRatio: () => highestDebtToCollateral,
+    updateAllDebts,
   });
 }

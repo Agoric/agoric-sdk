@@ -72,8 +72,7 @@ export function makeVaultManager(
   // better performance, use virtual objects.)
   // eslint-disable-next-line no-use-before-define
   const sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
-  // The highest debt ratio for which we have a request outstanding
-  let highestDebtRatio = sortedVaultKits.highestRatio();
+  let outstandingQuote;
 
   // When any Vault's debt ratio is higher than the current high-water level,
   // call reschedulePriceCheck() to request a fresh notification from the
@@ -84,41 +83,51 @@ export function makeVaultManager(
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
   async function reschedulePriceCheck() {
-    const highestRatioWhenScheduled = sortedVaultKits.highestRatio();
-    if (!highestRatioWhenScheduled) {
+    const highestDebtRatio = sortedVaultKits.highestRatio();
+    if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
       return;
     }
 
-    highestDebtRatio = highestRatioWhenScheduled;
     const liquidationMargin = shared.getLiquidationMargin();
 
-    // We ask to be alerted when the price level falls enough that the vault
+    // ask to be alerted when the price level falls enough that the vault
     // with the highest debt to collateral ratio will no longer be valued at the
     // liquidationMargin above its debt.
     const triggerPoint = multiplyBy(
-      highestRatioWhenScheduled.numerator,
+      highestDebtRatio.numerator,
       liquidationMargin,
     );
-    // Notice that this is scheduleing a callback for later (possibly much
-    // later). Callers shouldn't be expecting a response from this function.
-    const quote = await E(priceAuthority).quoteWhenLT(
-      highestRatioWhenScheduled.denominator,
+
+    // if there's an outstanding quote, reset the level. If there's no current
+    // quote (because this is the first loan, or because a quote just resolved)
+    // then make a new request to the priceAuthority, and when it resolves,
+    // liquidate anything that's above the price level.
+    if (outstandingQuote) {
+      E(outstandingQuote).updateLevel(
+        highestDebtRatio.denominator,
+        triggerPoint,
+      );
+      return;
+    }
+
+    outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+      highestDebtRatio.denominator,
       triggerPoint,
     );
 
+    // There are two awaits in a row here. The first gets a mutableQuote object
+    // relatively quickly from the PriceAuthority. The second schedules a
+    // callback that may not fire until much later.
+    // Callers shouldn't expect a response from this function.
+    const quote = await E(outstandingQuote).getPromise();
+    // When we receive a quote, we liquidate all the vaults that don't have
+    // sufficient collateral, (even if the trigger was set for a different
+    // level) because we use the actual price ratio plus margin here.
     const quoteRatioPlusMargin = makeRatioFromAmounts(
       divideBy(getAmountOut(quote), liquidationMargin),
       getAmountIn(quote),
     );
-
-    // Since we can't cancel outstanding quote requests when balances change,
-    // we may receive alerts that don't match the current high-water mark. When
-    // we receive a quote, we liquidate all the vaults that don't have
-    // sufficient collateral, (even if the trigger was set for a different
-    // level) because we use the actual price ratio plus margin here. We
-    // only reschedule if the high-water mark matches to prevent creating too
-    // many extra requests.
 
     sortedVaultKits.forEachRatioGTE(quoteRatioPlusMargin, ({ vaultKit }) => {
       trace('liquidating', vaultKit.vaultSeat.getProposal());
@@ -131,9 +140,8 @@ export function makeVaultManager(
         collateralBrand,
       );
     });
-    if (highestRatioWhenScheduled === highestDebtRatio) {
-      reschedulePriceCheck();
-    }
+    outstandingQuote = undefined;
+    reschedulePriceCheck();
   }
 
   function liquidateAll() {
@@ -158,6 +166,8 @@ export function makeVaultManager(
         ),
       amountMath.makeEmpty(runBrand),
     );
+    sortedVaultKits.updateAllDebts();
+    reschedulePriceCheck();
     runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
     const poolStage = poolIncrementSeat.stage({
       RUN: amountMath.makeEmpty(runBrand),

@@ -293,6 +293,18 @@ export async function makeFakePriceAuthority(options) {
       const compareLT = amount => !amountMath.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
     },
+    mutableQuoteWhenLT: () => {
+      throw Error('use ScriptedPriceAuthority');
+    },
+    mutableQuoteWhenLTE: () => {
+      throw Error('use ScriptedPriceAuthority');
+    },
+    mutableQuoteWhenGT: () => {
+      throw Error('use ScriptedPriceAuthority');
+    },
+    mutableQuoteWhenGTE: () => {
+      throw Error('use ScriptedPriceAuthority');
+    },
   };
   return priceAuthority;
 }
