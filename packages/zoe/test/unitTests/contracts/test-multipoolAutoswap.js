@@ -530,6 +530,11 @@ test('multipoolAutoSwap with valid offers', async t => {
     }),
     `liquidity is empty`,
   );
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [
+    moolaR.brand,
+    simoleanR.brand,
+  ]);
 });
 
 test('multipoolAutoSwap get detailed prices', async t => {
@@ -707,6 +712,11 @@ test('multipoolAutoSwap get detailed prices', async t => {
     { amountIn: simoleans(159), amountOut: moola(36) },
     `price is as expected for secondary token to secondary token`,
   );
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [
+    moolaR.brand,
+    simoleanR.brand,
+  ]);
 });
 
 test('multipoolAutoSwap with some invalid offers', async t => {
@@ -766,6 +776,8 @@ test('multipoolAutoSwap with some invalid offers', async t => {
     { message: 'pool not initialized' },
     'pool not initialized',
   );
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
 test('multipoolAutoSwap jig - addLiquidity', async t => {
@@ -898,6 +910,8 @@ test('multipoolAutoSwap jig - addLiquidity', async t => {
     { message: 'insufficient Secondary deposited' },
     `insufficient secondary is unsuccessful`,
   );
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
 test('multipoolAutoSwap jig - check liquidity', async t => {
@@ -1031,6 +1045,8 @@ test('multipoolAutoSwap jig - check liquidity', async t => {
   );
   t.is(newMoolaAllocations.Central.value, moolaPoolState.c);
   t.is(newMoolaAllocations.Secondary.value, moolaPoolState.s);
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
 test('multipoolAutoSwap jig - swapOut', async t => {
@@ -1062,10 +1078,12 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   const {
     /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
   } = startRecord;
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), []);
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
     'Moola',
   );
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
 
@@ -1236,6 +1254,11 @@ test('multipoolAutoSwap jig - swapOut', async t => {
     mIssuerKeywordRecord,
   );
   mPoolState = updatePoolState(mPoolState, expectedD);
+
+  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [
+    moolaR.brand,
+    simoleanR.brand,
+  ]);
 });
 
 test('multipoolAutoSwap jig - swapOut uneven', async t => {
