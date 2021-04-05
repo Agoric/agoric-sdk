@@ -72,6 +72,25 @@ export const makePriceAuthorityRegistry = () => {
     };
 
   /**
+   * Create a mutableQuoteWhen* method for the given condition.
+   *
+   * @param {'LT' | 'LTE' | 'GTE' | 'GT'} relation
+   */
+  const makeMutableQuoteWhen = relation =>
+    /**
+     * Return a mutable quote when relation is true of the arguments.
+     *
+     * @param {Amount} amountIn monitor the amountOut corresponding to this amountIn
+     * @param {Amount} amountOutLimit the value to compare with the monitored amountOut
+     * @returns {Promise<MutableQuote>} resolve with a quote when `amountOut
+     * relation amountOutLimit` is true
+     */
+    async function mutableQuoteWhenRelation(amountIn, amountOutLimit) {
+      const pa = paFor(amountIn.brand, amountOutLimit.brand);
+      return E(pa)[`mutableQuoteWhen${relation}`](amountIn, amountOutLimit);
+    };
+
+  /**
    * This PriceAuthority is just a wrapper for multiple registered
    * PriceAuthorities.
    *
@@ -107,6 +126,10 @@ export const makePriceAuthorityRegistry = () => {
     quoteWhenLTE: makeQuoteWhen('LTE'),
     quoteWhenGTE: makeQuoteWhen('GTE'),
     quoteWhenGT: makeQuoteWhen('GT'),
+    mutableQuoteWhenLT: makeMutableQuoteWhen('LT'),
+    mutableQuoteWhenLTE: makeMutableQuoteWhen('LTE'),
+    mutableQuoteWhenGTE: makeMutableQuoteWhen('GTE'),
+    mutableQuoteWhenGT: makeMutableQuoteWhen('GT'),
   };
 
   /** @type {PriceAuthorityRegistryAdmin} */
