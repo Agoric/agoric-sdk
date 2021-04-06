@@ -78,8 +78,8 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instance],
     ['INSTALLATION_BOARD_ID', stablecoinMachineInstall],
-    ['SCONE_ISSUER_BOARD_ID', centralIssuer],
-    ['SCONE_BRAND_BOARD_ID', centralBrand],
+    ['RUN_ISSUER_BOARD_ID', centralIssuer],
+    ['RUN_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', autoswapInstall],
     ['LIQ_INSTALLATION_BOARD_ID', liquidationInstall],
     ['AMM_INSTANCE_BOARD_ID', ammInstance],
