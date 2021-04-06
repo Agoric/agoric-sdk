@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.7](https://github.com/Agoric/agoric-sdk/compare/agoric@0.12.0...agoric@0.12.7) (2021-04-06)
+
+
+### Bug Fixes
+
+* bump max validators to 150 ([4abd700](https://github.com/Agoric/agoric-sdk/commit/4abd7008139b3d5bb1de3add5466a16953a156d9))
+
+
+
+
+
 # [0.12.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.11.3...agoric@0.12.0) (2021-03-24)
 
 

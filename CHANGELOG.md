@@ -3,6 +3,63 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.15.1...@agoric/sdk@2.16.0) (2021-04-06)
+
+
+### Bug Fixes
+
+* adjust collateral additions for more realism ([fcf5295](https://github.com/Agoric/agoric-sdk/commit/fcf5295280d7bcde49f5a4943cd324ac55c8e0ca))
+* allow liq margin plus fees for new loans ([#2813](https://github.com/Agoric/agoric-sdk/issues/2813)) ([5284548](https://github.com/Agoric/agoric-sdk/commit/52845480aa18dd76165b7997bcb2b4fad3e7c3be))
+* don't start the fakePriceAuthority ticker for constant prices ([90a28c9](https://github.com/Agoric/agoric-sdk/commit/90a28c9fe2fb2c6041b94b171ad32cae5a663749))
+* fully bootstrap the chain before allowing inbound messages ([ff7b8bf](https://github.com/Agoric/agoric-sdk/commit/ff7b8bf92b92729de1dd81d5a1d8618a6ac787df))
+* improve amount UI entry ([#2737](https://github.com/Agoric/agoric-sdk/issues/2737)) ([bc7e2ce](https://github.com/Agoric/agoric-sdk/commit/bc7e2ceaee05f3ab2eb362664722323bca62a4c9))
+* improve factoring and assertions ([e7b356d](https://github.com/Agoric/agoric-sdk/commit/e7b356d608e7a774fb326e0b8988c7c79b938e72))
+* Many more tests use ses-ava ([#2733](https://github.com/Agoric/agoric-sdk/issues/2733)) ([d1e0f0f](https://github.com/Agoric/agoric-sdk/commit/d1e0f0fef8251f014b96ca7f3975efd37e1925f8))
+* price requests for zero should get zero as an answer ([#2762](https://github.com/Agoric/agoric-sdk/issues/2762)) ([11285e7](https://github.com/Agoric/agoric-sdk/commit/11285e76044fec982f6657b21fcc3da9b5d263f9)), closes [#2760](https://github.com/Agoric/agoric-sdk/issues/2760)
+* properly handle empty priceList/tradeList ([a1a2075](https://github.com/Agoric/agoric-sdk/commit/a1a20753ac4d54c3e4e269021a1dbb9ef9b83e8f))
+* top README improvements ([#2773](https://github.com/Agoric/agoric-sdk/issues/2773)) ([d17a951](https://github.com/Agoric/agoric-sdk/commit/d17a95154a8ff6d195837e1de4390db5cd4220fb))
+* update eslint version ([#2804](https://github.com/Agoric/agoric-sdk/issues/2804)) ([3fc6c5e](https://github.com/Agoric/agoric-sdk/commit/3fc6c5e593f7cdcf5f908365c29cc469e309229d))
+* update install-on-chain to use RUN instead of SCONES ([#2815](https://github.com/Agoric/agoric-sdk/issues/2815)) ([6ba74e9](https://github.com/Agoric/agoric-sdk/commit/6ba74e98e6cea423098646426bb136780f6f8ff4))
+* update to depend on ses 0.12.5 ([#2718](https://github.com/Agoric/agoric-sdk/issues/2718)) ([08dbe0d](https://github.com/Agoric/agoric-sdk/commit/08dbe0db5ce06944dc92c710865e441a60b31b5b))
+* update to ses 0.12.7, ses-ava 0.1.1 ([#2820](https://github.com/Agoric/agoric-sdk/issues/2820)) ([6d81775](https://github.com/Agoric/agoric-sdk/commit/6d81775715bc80e6033d75cb65edbfb1452b1608))
+* use ses-ava in SwingSet where possible ([#2709](https://github.com/Agoric/agoric-sdk/issues/2709)) ([85b674e](https://github.com/Agoric/agoric-sdk/commit/85b674e7942443219fa9828841cc7bd8ef909b47))
+* use SWINGSET_WORKER_TYPE to avoid WORKER_TYPE ambiguity ([c4616f1](https://github.com/Agoric/agoric-sdk/commit/c4616f1db0f2668eef5dbb97e30800d4e9caf3a0))
+* **loan:** fix reallocate error in liquidation error recovery ([b50117f](https://github.com/Agoric/agoric-sdk/commit/b50117f0e300311fff24e13d66de0c92003e8ae7))
+* **swingset:** path -> paths typo in require.resolve options ([58a0d0a](https://github.com/Agoric/agoric-sdk/commit/58a0d0a822a2d370d0d93af49a3644855adda729))
+* update yarn.lock ([#2729](https://github.com/Agoric/agoric-sdk/issues/2729)) ([298edf9](https://github.com/Agoric/agoric-sdk/commit/298edf9e187c5b6b61b9901def0c502e5f6a1aa4))
+
+
+### Features
+
+* add a method to multipoolAutoSwap to return the pool brands ([#2810](https://github.com/Agoric/agoric-sdk/issues/2810)) ([16755d0](https://github.com/Agoric/agoric-sdk/commit/16755d0b42be185b63190a832b0414fbd0b53797))
+* add collateralConfig to issuer entries and enact ([8ce966b](https://github.com/Agoric/agoric-sdk/commit/8ce966bdb4f74960189b73d0721e92ae3c5912f0))
+* add home.agoricNames and home.agoricNamesAdmin ([04c5bdd](https://github.com/Agoric/agoric-sdk/commit/04c5bddaae2e482793c8cc584385a841dd9f4b17))
+* add more collateral types, pivot to BLD/RUN and decimals ([7cbce9f](https://github.com/Agoric/agoric-sdk/commit/7cbce9f53fc81d273d3ebd7c78d93caedbd23b2e))
+* add more issuers ([87d2fba](https://github.com/Agoric/agoric-sdk/commit/87d2fbacdb910527cca7b0669cc1a2123b31fd67))
+* add namesByAddress and myAddressNameAdmin ([945a6c3](https://github.com/Agoric/agoric-sdk/commit/945a6c3aa58146dc1909df3793d417b288c6e1de))
+* integrate the economy's central token in chain bootstrap ([2288e60](https://github.com/Agoric/agoric-sdk/commit/2288e60bf2d85e2c9c9b08c479dbaad41284f55d))
+* more logging for deploy helpers ([#2744](https://github.com/Agoric/agoric-sdk/issues/2744)) ([fe459fb](https://github.com/Agoric/agoric-sdk/commit/fe459fb6bd47638a2c3cb72c1150762fcce844c8))
+* separate purse filtering by brand ([#2798](https://github.com/Agoric/agoric-sdk/issues/2798)) ([a02585e](https://github.com/Agoric/agoric-sdk/commit/a02585e623da0b9404f4784969159400c873371c))
+* use multipoolAutoswap as the treasury priceAuthority ([a37c795](https://github.com/Agoric/agoric-sdk/commit/a37c795a98f38ac99581d441e00177364f404bd3))
+* use same (instrumented) kernel stepper for bootstrap ([33d42a8](https://github.com/Agoric/agoric-sdk/commit/33d42a8df1f0b7202b51dc552e48327abbb21ef0))
+* **bundle-source:** Apply evasive transforms to Endo archives ([#2768](https://github.com/Agoric/agoric-sdk/issues/2768)) ([e15cee8](https://github.com/Agoric/agoric-sdk/commit/e15cee88cf1f74e2debd4426dbc22a99b88fb1d6))
+* stop the fake-chain dead if the kernel fails ([fac485e](https://github.com/Agoric/agoric-sdk/commit/fac485ecdd6749eb1f81f0611d0faa927005ea94))
+* **bundle-source:** Specific ModuleFormat type ([#2767](https://github.com/Agoric/agoric-sdk/issues/2767)) ([6fe2ff7](https://github.com/Agoric/agoric-sdk/commit/6fe2ff7d535ef5749f4e9bf7056b5e7dab897a61))
+* **cosmic-swingset:** xs-worker option in ag-solo, chain ([cbf8e56](https://github.com/Agoric/agoric-sdk/commit/cbf8e56b63e32c2102be33fc434d46ee031ccebd))
+* **dapp-svelte-wallet:** add getAgoricNames and getNamesByAddress ([7c8f4d5](https://github.com/Agoric/agoric-sdk/commit/7c8f4d55cd3956267a72882303d4430a72a58e70))
+* **swingset:** boot xsnap workers from snapshot ([2476e6f](https://github.com/Agoric/agoric-sdk/commit/2476e6f0e65ef35917a2ee11603376887fc88ab3))
+* **swingset:** config for xs-worker vs. local default ([973b403](https://github.com/Agoric/agoric-sdk/commit/973b4039056a42fc1f5004b48af4e9fbcafb71aa))
+* **swingset:** provide name to xsnap via managerOptions ([78b428d](https://github.com/Agoric/agoric-sdk/commit/78b428df4984d855a6eb2e0007d5dd2a17839abf))
+* **xsnap:** show name on command line ([5b31c23](https://github.com/Agoric/agoric-sdk/commit/5b31c230f81f9e25a53a478de8a66a2f3acfa822))
+* **xsnap:** snapstore with compressed snapshots ([865ba54](https://github.com/Agoric/agoric-sdk/commit/865ba5472b5f43563948f7afe63e85bcc4014888))
+* better rendering for initial state ([#2745](https://github.com/Agoric/agoric-sdk/issues/2745)) ([f862428](https://github.com/Agoric/agoric-sdk/commit/f862428699fc754119e27f930dea91156068f02d))
+* implement and test makeNameHubKit as specified ([7deac62](https://github.com/Agoric/agoric-sdk/commit/7deac62b5921a2e71d602ec2201938de2625b7be))
+* introduce @agoric/treasury and pass tests ([6257231](https://github.com/Agoric/agoric-sdk/commit/6257231e23cd501e6e20ef16e4f4d569ff30b265))
+
+
+
+
+
 # [2.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.14.0...@agoric/sdk@2.15.0) (2021-03-24)
 
 
