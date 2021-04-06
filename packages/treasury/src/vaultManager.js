@@ -229,6 +229,10 @@ export function makeVaultManager(
     // the payout object
     return harden({
       uiNotifier: notifier,
+      invitationMakers: {
+        AdjustBalances: vault.makeAdjustBalancesInvitation,
+        CloseVault: vault.makeCloseInvitation,
+      },
       vault,
       liquidationPayout: collateralPayoutP,
     });
