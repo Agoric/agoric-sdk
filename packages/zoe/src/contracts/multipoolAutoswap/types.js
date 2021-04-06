@@ -23,6 +23,8 @@
  * using makeSwapOutInvitation at the current price
  * @property {() => Record<string, Amount>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool.
+ * @property {() => Array<Brand>} getAllPoolBrands get a list of all the brands
+ * that have associated pools.
  */
 
 /**

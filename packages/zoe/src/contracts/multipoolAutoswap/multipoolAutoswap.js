@@ -160,6 +160,8 @@ const start = zcf => {
     makeRemoveLiquidityInvitation,
     getQuoteIssuer: () => quoteIssuerKit.issuer,
     getPriceAuthorities,
+    getAllPoolBrands: () =>
+      Object.values(zcf.getTerms().brands).filter(isSecondary),
   });
 
   return harden({ publicFacet });
