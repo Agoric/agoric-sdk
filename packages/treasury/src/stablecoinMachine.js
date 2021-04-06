@@ -255,6 +255,7 @@ export async function start(zcf) {
           const priceQuote = await vm.getCollateralQuote();
           return {
             brand,
+            interestRate: vm.getInterestRate(),
             liquidationMargin: vm.getLiquidationMargin(),
             initialMargin: vm.getInitialMargin(),
             stabilityFee: vm.getLoanFee(),

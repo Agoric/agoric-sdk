@@ -671,6 +671,7 @@ test('stablecoin display collateral', async t => {
     initialMargin: makeRatio(120n, runBrand),
     stabilityFee: makeRatio(530n, runBrand, BASIS_POINTS),
     marketPrice: makeRatio(5n, runBrand, 1n, aethBrand),
+    interestRate: makeRatio(100n, runBrand, 10000n, runBrand),
   });
 });
 
