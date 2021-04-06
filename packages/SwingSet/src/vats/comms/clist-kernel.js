@@ -63,7 +63,7 @@ export function makeKernel(state, syscall, stateKit) {
 
   function provideKernelForLocalResult(lpid) {
     if (!lpid) {
-      return null;
+      return undefined;
     }
     const p = state.promiseTable.get(lpid);
     assert(!p.resolved, X`result ${lpid} is already resolved`);

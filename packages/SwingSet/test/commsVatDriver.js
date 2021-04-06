@@ -1,5 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms';
+import { debugState } from '../src/vats/comms/dispatch';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 
 // This module provides a power tool for testing the comms vat implementation.
@@ -58,7 +59,7 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 //
 // WHAT is a string of the form `${who}${dir}${op}`
 //   ${who} is the actor: 'k' (kernel) or 'a', 'b', or 'c' (remotes)
-//   ${dir} is the direction: '>' (inject) or '<' (observe)
+//   ${dir} is the direction: '>' (inject), '<' (observe), or ':' (control)
 //   ${op} is the operation: 'm' (message), 'r' (resolve), 's' (subscribe), or 'l' (lag)
 //
 // OTHERSTUFF depends on ${op}:
@@ -85,7 +86,7 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 //     acknowledged DELAY deliveries (messages or resolutions) behind messages
 //     sent to the remote.  The lag can be reduced to a lower value.  It can
 //     also be turned off again with a DELAY of 0.
-//   Lag is only allowed if ${who} is a remote and ${dir} is '>'
+//   Lag is only allowed if ${who} is a remote and ${dir} is ':'
 //
 // Any promise or object reference called for the in API above should be given
 // as a string of the form `@REF` or `@REF:IFACE`.  REF is a normal vat vref or
@@ -113,6 +114,10 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 //   it to the send, resolve, or notify syscall that the `r` parameters
 //   describe.  It will be a test failure if these do not match or if the log
 //   array is empty.
+//
+// A ':' (control) operation will alter the behavior of the simulation conducted
+//   by the vat driver framework.  Currently the only control operation is 'l',
+//   which manipulates the lag of remotes.
 //
 // The `done()` function should be called at the end of the test, and will fail
 // the test if the log array at that point is not empty.
@@ -168,7 +173,7 @@ function loggingSyscall(log) {
  *
  * @returns {string} the ref embedded within `scriptRef`
  */
-function refFromScriptRef(scriptRef) {
+function refOf(scriptRef) {
   assert(
     scriptRef[0] === '@',
     X`expected reference ${scriptRef} to start with '@'`,
@@ -183,6 +188,10 @@ function refFromScriptRef(scriptRef) {
   return ref;
 }
 
+function flipRefOf(scriptRef) {
+  return flipRemoteSlot(refOf(scriptRef));
+}
+
 /**
  * Extract the interface name embedded in a reference string as found in a test
  * script.  This will be a string of the form `@${ref}` or `@${ref}:${iface}`.
@@ -193,7 +202,7 @@ function refFromScriptRef(scriptRef) {
  *
  * @returns {string|undefined} the ref embedded within `scriptRef`
  */
-function ifaceFromScriptRef(scriptRef) {
+function ifaceOf(scriptRef) {
   const delim = scriptRef.indexOf(':');
   if (delim < 0) {
     return undefined;
@@ -227,13 +236,13 @@ function capdata(from) {
         }
       case 'string':
         if (value[0] === '@') {
-          const ref = refFromScriptRef(value);
+          const ref = refOf(value);
           let index = slots.findIndex(x => x === ref);
           if (index < 0) {
             index = slots.length;
             slots.push(ref);
           }
-          const iface = ifaceFromScriptRef(value);
+          const iface = ifaceOf(value);
           return { [QCLASS]: 'slot', iface, index };
         } else {
           return value;
@@ -330,6 +339,7 @@ export function commsVatDriver(t, verbose = false) {
   const log = [];
   const syscall = loggingSyscall(log);
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  const { state } = debugState.get(d);
 
   const remotes = new Map();
 
@@ -534,8 +544,8 @@ export function commsVatDriver(t, verbose = false) {
    */
   function makeNewRemote(name, transmitter, receiver) {
     remotes.set(name, {
-      transmitter: refFromScriptRef(transmitter),
-      receiver: refFromScriptRef(receiver),
+      transmitter: refOf(transmitter),
+      receiver: refOf(receiver),
       sendToSeqNum: 1,
       sendFromSeqNum: 1,
       lastToSeqNum: 0,
@@ -619,7 +629,7 @@ export function commsVatDriver(t, verbose = false) {
     }
   }
 
-  const exportObjectCounter = { k: 30, a: 20, b: 20, c: 20 };
+  const exportObjectCounter = { k: 30, a: 20, b: 1020, c: 2020 };
   /**
    * Allocate a new scriptref for an exported object.
    *
@@ -657,14 +667,15 @@ export function commsVatDriver(t, verbose = false) {
     }
     const [who, dir, op] = what;
     insistProperActor(who);
-    assert(dir === '>' || dir === '<');
+    assert(dir === '>' || dir === '<' || dir === ':');
     assert(op === 'm' || op === 'r' || op === 's' || op === 'l');
 
     switch (op) {
       case 'm': {
-        const target = refFromScriptRef(params[0]);
+        assert(dir === '<' || dir === '>');
+        const target = refOf(params[0]);
         const method = params[1];
-        const result = params[2] ? refFromScriptRef(params[2]) : undefined;
+        const result = params[2] ? refOf(params[2]) : undefined;
         const args = capdata(params.slice(3));
         if (dir === '>') {
           injectSend(who, target, method, args, result);
@@ -674,9 +685,10 @@ export function commsVatDriver(t, verbose = false) {
         break;
       }
       case 'r': {
+        assert(dir === '<' || dir === '>');
         const resolutions = [];
         for (const resolution of params) {
-          const target = refFromScriptRef(resolution[0]);
+          const target = refOf(resolution[0]);
           const status = resolution[1];
           const value = capdata(resolution[2]);
           resolutions.push([target, status, value]);
@@ -691,13 +703,13 @@ export function commsVatDriver(t, verbose = false) {
       case 's': {
         // The 's' (subscribe) op is only allowed as a kernal observation
         assert(who === 'k' && dir === '<');
-        const target = refFromScriptRef(params[0]);
+        const target = refOf(params[0]);
         observeSubscribe(target);
         break;
       }
       case 'l': {
-        // The 'l' (lag) op is only allowed as a remote injection
-        assert(who !== 'k' && dir === '>');
+        // The 'l' (lag) op is only allowed as a control operation
+        assert(who !== 'k' && dir === ':');
         injectLag(who, params[0]);
         break;
       }
@@ -769,6 +781,7 @@ export function commsVatDriver(t, verbose = false) {
 
   return {
     _,
+    state,
     done,
     setupRemote,
     importFromRemote,
@@ -777,5 +790,7 @@ export function commsVatDriver(t, verbose = false) {
     newExportObject,
     newImportPromise,
     newExportPromise,
+    refOf,
+    flipRefOf,
   };
 }

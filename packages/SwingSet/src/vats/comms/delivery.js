@@ -430,15 +430,31 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function handleResolutions(resolutions) {
+    // All promises listed as *targets* in `resolutions` are by definition
+    // unresolved when they arrive here: they are being decided by someone else
+    // (the kernel, or a remote).  They are either primary (previously known to
+    // us) or auxilliary (imported, in an unresolved state, as the resolution
+    // data of the batch was translated from whatever kernel/remote sent the
+    // batch into our local namespace).  The resolution data in `resolutions`
+    // may point to both resolved and unresolved promises, but any cycles
+    // (pointers into other targets of `resolutions`) will still point to
+    // unresolved promises, because we haven't marked them as resolved quite
+    // yet.
     const [[primaryLpid]] = resolutions;
     const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(
       primaryLpid,
     );
+
+    // Run the collector *before* we change the state of our promise table.
     const collector = resolutionCollector();
     for (const resolution of resolutions) {
       const [_lpid, _rejected, data] = resolution;
       collector.forSlots(data.slots);
     }
+
+    // The collector now knows about every previously-resolved promise cited by
+    // the resolution data of `resolutions`. This will never overlap with the
+    // targets of `resolutions`.
     for (const resolution of resolutions) {
       const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
@@ -451,9 +467,13 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // be handled properly
       markPromiseAsResolved(lpid, rejected, data);
     }
+    // At this point, both the primary and auxillary promises listed as
+    // targets in `resolutions` are marked as resolved.
+
     const auxResolutions = collector.getResolutions();
     if (auxResolutions.length > 0) {
       // console.log(`@@@ adding ${auxResolutions.length} aux resolutions`);
+      // Concat because `auxResolutions` and `resolutions` are strictly disjoint
       resolutions = resolutions.concat(auxResolutions);
     }
 
@@ -476,6 +496,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function resolveToRemote(remoteID, resolutions) {
     const msgs = [];
+    const retires = [];
     for (const resolution of resolutions) {
       const [lpid, rejected, data] = resolution;
 
@@ -495,6 +516,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const rejectedTag = rejected ? 'reject' : 'fulfill';
       // prettier-ignore
       msgs.push(`resolve:${rejectedTag}:${rpid}${mapSlots()};${data.body}`);
+      retires.push(rpid);
+    }
+    for (const rpid of retires) {
       beginRemotePromiseIDRetirement(remoteID, rpid);
     }
     transmit(remoteID, msgs.join('\n'));
