@@ -90,7 +90,7 @@ export async function start(zcf) {
 
   const creatorFacet = {
     makeDebtorInvitation: runDebt =>
-      zcf.makeInvitation(makeDebtorHook(runDebt), 'liquidate'),
+      zcf.makeInvitation(makeDebtorHook(runDebt), 'Liquidate'),
   };
 
   return harden({ creatorFacet });
