@@ -64,7 +64,7 @@ test('comment block closer', async t => {
   nestedEvaluate(srcMap1)();
 });
 
-test('comments not associated with a code point', async t => {
+test('comments not associated with a code AST node', async t => {
   t.plan(1);
   const { endoZipBase64 } = await bundleSource(
     `${__dirname}/../demo/comments/types.js`,
