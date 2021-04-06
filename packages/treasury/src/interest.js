@@ -2,19 +2,26 @@
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/callSpread/types';
 import './types';
-import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
+import { multiplyBy, makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { amountMath } from '@agoric/ertp';
 
 function makeResult(latestInterestUpdate, interest, newDebt) {
   return { latestInterestUpdate, interest, newDebt };
 }
 
+export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
+
 export function makeInterestCalculator(
   brand,
-  rate,
+  annualRate,
   chargingPeriod,
   recordingPeriod,
 ) {
+  const ratePerChargingPeriod = makeRatio(
+    annualRate.numerator.value * chargingPeriod,
+    annualRate.numerator.brand,
+    annualRate.denominator.value * SECONDS_PER_YEAR,
+  );
   // Calculate new debt for charging periods up to the present.
   function calculate(debtStatus, currentTime) {
     const { currentDebt, latestInterestUpdate } = debtStatus;
@@ -23,7 +30,7 @@ export function makeInterestCalculator(
     let growingDebt = currentDebt;
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;
-      const newInterest = multiplyBy(growingDebt, rate);
+      const newInterest = multiplyBy(growingDebt, ratePerChargingPeriod);
       growingInterest = amountMath.add(growingInterest, newInterest);
       growingDebt = amountMath.add(growingDebt, newInterest, brand);
     }

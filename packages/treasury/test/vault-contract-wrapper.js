@@ -13,6 +13,7 @@ import { Far } from '@agoric/marshal';
 
 import { makeVaultKit } from '../src/vault';
 import { paymentFromZCFMint } from '../src/burn';
+import { SECONDS_PER_YEAR } from '../src/interest';
 
 const BASIS_POINTS = 10000n;
 
@@ -57,7 +58,7 @@ export async function start(zcf) {
       return makeRatio(500n, runBrand, BASIS_POINTS);
     },
     getInterestRate() {
-      return makeRatio(200, runBrand, BASIS_POINTS);
+      return makeRatio((200n * SECONDS_PER_YEAR), runBrand, 3n * BASIS_POINTS);
     },
     collateralBrand,
     stageReward,

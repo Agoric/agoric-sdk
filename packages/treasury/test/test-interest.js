@@ -5,13 +5,13 @@ import '@agoric/zoe/exported';
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 
-import { makeInterestCalculator } from '../src/interest';
+import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest';
 
 test('too soon', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio(1n * SECONDS_PER_YEAR, brand),
     3n,
     6n,
   );
@@ -30,7 +30,7 @@ test('basic charge 1 period', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -49,7 +49,7 @@ test('basic 2 charge periods', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -68,7 +68,7 @@ test('partial periods', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -88,7 +88,7 @@ test('reportingPeriod: partial', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -108,7 +108,7 @@ test('reportingPeriod: longer', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -128,7 +128,7 @@ test('start charging later', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     6n,
   );
@@ -152,7 +152,7 @@ test('reportingPeriod: longer reporting', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 3n, brand),
     3n,
     12n,
   );
@@ -172,7 +172,7 @@ test('reportingPeriod shorter than charging', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 10n, brand),
     10n,
     5n,
   );
@@ -221,7 +221,7 @@ test('reportingPeriod shorter than charging; intermittent', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
     brand,
-    makeRatio(1n, brand),
+    makeRatio((1n * SECONDS_PER_YEAR) / 10n, brand),
     10n,
     5n,
   );
