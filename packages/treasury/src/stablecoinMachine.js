@@ -207,10 +207,7 @@ export async function start(zcf) {
       return vm;
     }
 
-    return zcf.makeInvitation(
-      addTypeHook,
-      'add a new kind of collateral to the machine',
-    );
+    return zcf.makeInvitation(addTypeHook, 'AddCollateralType');
   }
 
   /**
@@ -238,7 +235,7 @@ export async function start(zcf) {
       return mgr.makeLoanKit(seat);
     }
 
-    return zcf.makeInvitation(makeLoanHook, 'make a loan');
+    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
   }
 
   zcf.setTestJig(() => ({

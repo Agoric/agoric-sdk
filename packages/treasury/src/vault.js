@@ -188,7 +188,7 @@ export function makeVaultKit(
 
   function makeCloseInvitation() {
     assertVaultIsOpen();
-    return zcf.makeInvitation(closeHook, 'pay off entire loan and close Vault');
+    return zcf.makeInvitation(closeHook, 'CloseVault');
   }
 
   // The proposal is not allowed to include any keys other than these,
@@ -366,7 +366,7 @@ export function makeVaultKit(
 
   function makeAdjustBalancesInvitation() {
     assertVaultIsOpen();
-    return zcf.makeInvitation(adjustBalancesHook, 'adjustBalances');
+    return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   }
 
   async function openLoan(seat) {
