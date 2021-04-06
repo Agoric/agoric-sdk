@@ -13,12 +13,13 @@ const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
  * @param {Object} param0
  * @param {ERef<NameHub>} param0.agoricNames
  * @param {ERef<Board>} param0.board
+ * @param {string} param0.centralName
  * @param {ERef<TimerService>} param0.chainTimerService
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
  * @param {ERef<ZoeService>} param0.zoe
  */
-export async function installOnChain({ agoricNames, board, chainTimerService, nameAdmins, priceAuthority, zoe }) {
+export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe }) {
   // Fetch the nameAdmins we need.
   const [brandAdmin, installAdmin, instanceAdmin, issuerAdmin, uiConfigAdmin] = await Promise.all(
     ['brand', 'installation', 'instance', 'issuer', 'uiConfig'].map(async edge => {
@@ -59,8 +60,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
     ammInstance,
     invitationIssuer,
     {
-      issuers: { Governance: govIssuer, Scones: moeIssuer },
-      brands: { Governance: govBrand, Scones: moeBrand },
+      issuers: { Governance: govIssuer, RUN: centralIssuer },
+      brands: { Governance: govBrand, RUN: centralBrand },
     },
   ] = await Promise.all([E(creatorFacet).getAMM(), E(zoe).getInvitationIssuer(), E(zoe).getTerms(instance)]);
 
@@ -77,8 +78,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instance],
     ['INSTALLATION_BOARD_ID', stablecoinMachineInstall],
-    ['SCONE_ISSUER_BOARD_ID', moeIssuer],
-    ['SCONE_BRAND_BOARD_ID', moeBrand],
+    ['RUN_ISSUER_BOARD_ID', centralIssuer],
+    ['RUN_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', autoswapInstall],
     ['LIQ_INSTALLATION_BOARD_ID', liquidationInstall],
     ['AMM_INSTANCE_BOARD_ID', ammInstance],
@@ -100,8 +101,8 @@ export async function installOnChain({ agoricNames, board, chainTimerService, na
     [instanceAdmin, treasuryUiDefaults.AMM_NAME, ammInstance],
     [brandAdmin, 'TreasuryGovernance', govBrand],
     [issuerAdmin, 'TreasuryGovernance', govIssuer],
-    [brandAdmin, 'MOE', moeBrand],
-    [issuerAdmin, 'MOE', moeIssuer],
+    [brandAdmin, centralName, centralBrand],
+    [issuerAdmin, centralName, centralIssuer],
   ];
   await Promise.all(
     nameAdminUpdates.map(([nameAdmin, name, value]) => E(nameAdmin).update(name, value)),

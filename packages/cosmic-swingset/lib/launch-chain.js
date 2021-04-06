@@ -62,15 +62,19 @@ async function buildSwingset(
     timer: { ...timer.endowments },
   };
 
-  if (!swingsetIsInitialized(storage)) {
+  async function ensureSwingsetInitialized() {
+    if (swingsetIsInitialized(storage)) {
+      return;
+    }
     await initializeSwingset(config, argv, storage, { debugPrefix });
   }
+  await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(storage, deviceEndowments, {
     slogCallbacks,
   });
 
-  // We DON'T want to run the kernel yet, only when we're in the scheduler at
-  // endBlock!
+  // We DON'T want to run the kernel yet, only when the application decides
+  // (either on bootstrap block (-1) or in endBlock).
 
   const bridgeInbound = bd.deliverInbound;
   return { controller, mb, bridgeInbound, timer };
@@ -135,6 +139,8 @@ export async function launch(
     const blockStart = now;
     let stepsRemaining = FIXME_MAX_CRANKS_PER_BLOCK;
     let stepped = true;
+    // TODO: how to rewrite without an await in loop?
+    // (without blowing out the stack or promise chain)
     while (stepped && stepsRemaining > 0) {
       const crankStart = now;
       // eslint-disable-next-line no-await-in-loop
@@ -182,9 +188,28 @@ export async function launch(
     );
   }
 
-  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[0, [], []]',
+  const [initSavedHeight, savedActions, savedChainSends] = JSON.parse(
+    storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
   );
+
+  let savedHeight = initSavedHeight;
+
+  // We need to fully bootstrap the chain before we can be open to receive
+  // outside messages.
+  async function ensureBootstrapComplete() {
+    if (savedHeight >= 0) {
+      return;
+    }
+    // Run the kernel until there is no more progress possible without inbound
+    // messages.
+    await controller.run();
+
+    // Commit the results, marking it so that we don't do it again.
+    savedHeight = 0;
+    await saveOutsideState(savedHeight, savedActions, savedChainSends);
+  }
+  await ensureBootstrapComplete();
+
   return {
     deliverInbound,
     doBridgeInbound,

@@ -21,7 +21,7 @@ const trace = makeTracer('TestVault');
  *
  * @typedef {Object} TestContext
  * @property {ContractFacet} zcf
- * @property {ZCFMint} sconeMint
+ * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {TimerService} timer
@@ -53,15 +53,15 @@ async function launch(zoeP, sourceRoot) {
     zoeP,
   ).startInstance(installation);
   const {
-    sconeMint,
+    runMint,
     collateralKit: { mint: collateralMint, brand: collaterlBrand },
   } = testJig;
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   const collateral50 = amountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Scones: amountMath.make(70n, sconeBrand) },
+    want: { RUN: amountMath.make(70n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -79,26 +79,26 @@ test('interest', async t => {
   const { creatorSeat } = await helperContract;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // Scones (charging 3 scones fee), which uses an autoswap that presents a
-  // fixed price of 4 Scones per Collateral.
+  // RUN (charging 3 RUN fee), which uses an autoswap that presents a
+  // fixed price of 4 RUN per Collateral.
   const { notifier, actions } = await E(creatorSeat).getOfferResult();
   const {
-    sconeMint,
+    runMint,
     collateralKit: { brand: collateralBrand },
     vault,
     timer,
   } = testJig;
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { value: v1, updateCount: c1 } = await E(notifier).getUpdateSince();
-  t.deepEqual(v1.debt, amountMath.make(73n, sconeBrand));
+  t.deepEqual(v1.debt, amountMath.make(73n, runBrand));
   t.deepEqual(v1.locked, amountMath.make(50n, collateralBrand));
   t.is(c1, 2);
 
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, sconeBrand),
-    'borrower owes 73 Scones',
+    amountMath.make(73n, runBrand),
+    'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -108,7 +108,7 @@ test('interest', async t => {
 
   timer.tick();
   const noInterest = actions.accrueInterestAndAddToPool(1n);
-  t.truthy(amountMath.isEqual(noInterest, amountMath.makeEmpty(sconeBrand)));
+  t.truthy(amountMath.isEqual(noInterest, amountMath.makeEmpty(runBrand)));
 
   // { chargingPeriod: 3, recordingPeriod: 9 }  charge 2% 3 times
   for (let i = 0; i < 12; i += 1) {
@@ -117,13 +117,13 @@ test('interest', async t => {
 
   const nextInterest = actions.accrueInterestAndAddToPool(10n);
   t.truthy(
-    amountMath.isEqual(nextInterest, amountMath.make(3n, sconeBrand)),
+    amountMath.isEqual(nextInterest, amountMath.make(3n, runBrand)),
     `interest should be 3, was ${nextInterest.value}`,
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
-  t.deepEqual(v2.debt, amountMath.make(76n, sconeBrand));
-  t.deepEqual(v2.interestRate, makeRatio(200n, sconeBrand, 10000n));
-  t.deepEqual(v2.liquidationRatio, makeRatio(105n, sconeBrand));
+  t.deepEqual(v2.debt, amountMath.make(76n, runBrand));
+  t.deepEqual(v2.interestRate, makeRatio(200n, runBrand, 10000n));
+  t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
   const collateralization = v2.collateralizationRatio;
   t.truthy(
     collateralization.numerator.value > collateralization.denominator.value,

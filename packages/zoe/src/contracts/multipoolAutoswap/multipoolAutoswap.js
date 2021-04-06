@@ -4,6 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
+import { MathKind, makeIssuerKit } from '@agoric/ertp';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool';
 import { makeGetCurrentPrice } from './getCurrentPrice';
@@ -58,6 +59,7 @@ const start = zcf => {
   // IssuerKeywordRecord.
   const {
     brands: { Central: centralBrand },
+    timer,
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
@@ -69,13 +71,30 @@ const start = zcf => {
   const isSecondary = secondaryBrandToPool.has;
   const isCentral = brand => brand === centralBrand;
 
+  const quoteIssuerKit = makeIssuerKit('Quote', MathKind.SET);
+
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
-  const addPool = makeAddPool(zcf, isSecondary, initPool, centralBrand);
+  const addPool = makeAddPool(
+    zcf,
+    isSecondary,
+    initPool,
+    centralBrand,
+    timer,
+    quoteIssuerKit,
+  );
   const getPoolAllocation = brand => {
     return getPool(brand)
       .getPoolSeat()
       .getCurrentAllocation();
+  };
+
+  const getPriceAuthorities = brand => {
+    const pool = getPool(brand);
+    return {
+      toCentral: pool.getToCentralPriceAuthority(),
+      fromCentral: pool.getFromCentralPriceAuthority(),
+    };
   };
 
   const {
@@ -139,6 +158,8 @@ const start = zcf => {
     makeSwapOutInvitation,
     makeAddLiquidityInvitation,
     makeRemoveLiquidityInvitation,
+    getQuoteIssuer: () => quoteIssuerKit.issuer,
+    getPriceAuthorities,
   });
 
   return harden({ publicFacet });

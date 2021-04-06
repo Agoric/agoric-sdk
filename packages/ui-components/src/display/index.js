@@ -1,3 +1,4 @@
 export * from './display';
+export * from './natValue/stringifyRatioAsFraction';
 export * from './natValue/stringifyRatio';
-export * from './natValue/stringifyRatioNumerator';
+export * from './natValue/stringifyRatioAsPercent';

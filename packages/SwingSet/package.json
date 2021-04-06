@@ -16,7 +16,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:xs": "exit 0",
+    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xs vat manager'",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -53,6 +53,7 @@
     "@babel/core": "^7.5.0",
     "@babel/generator": "^7.6.4",
     "@endo/base64": "^0.1.0",
+    "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5",
     "re2": "^1.10.5",
@@ -60,6 +61,7 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
     "ses": "^0.12.6",
+    "tmp": "^0.2.1",
     "yargs": "^14.2.0"
   },
   "files": [

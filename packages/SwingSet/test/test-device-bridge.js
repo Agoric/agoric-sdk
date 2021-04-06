@@ -125,6 +125,7 @@ test('bridge device can return undefined', async t => {
   const storage = initSwingStore();
   const config = {
     bootstrap: 'bootstrap',
+    defaultManagerType: 'local',
     vats: {
       bootstrap: {
         sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
@@ -144,9 +145,7 @@ test('bridge device can return undefined', async t => {
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
   await initializeSwingset(config, argv, storage.storage);
-  const c = await makeSwingsetController(storage.storage, deviceEndowments, {
-    defaultManagerType: 'local',
-  });
+  const c = await makeSwingsetController(storage.storage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
 

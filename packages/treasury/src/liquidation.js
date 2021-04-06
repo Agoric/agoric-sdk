@@ -20,8 +20,8 @@ export async function liquidate(
   strategy,
   collateralBrand,
 ) {
-  const sconeDebt = vaultKit.vault.getDebtAmount();
-  const { sconeBrand } = sconeDebt.brand;
+  const runDebt = vaultKit.vault.getDebtAmount();
+  const { runBrand } = runDebt.brand;
 
   const vaultSeat = vaultKit.vaultSeat;
   const collateralToSell = vaultSeat.getAmountAllocated(
@@ -30,50 +30,47 @@ export async function liquidate(
   );
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
-    strategy.makeInvitation(sconeDebt),
+    strategy.makeInvitation(runDebt),
     strategy.keywordMapping(),
-    strategy.makeProposal(collateralToSell, sconeDebt),
+    strategy.makeProposal(collateralToSell, runDebt),
     vaultSeat,
   );
-  trace(` offeredTo`, sconeDebt);
+  trace(` offeredTo`, runDebt);
 
   // await deposited, but we don't need the value.
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
 
   // Now we need to know how much was sold so we can pay off the debt
-  const sconeProceedsAmount = vaultSeat.getAmountAllocated(
-    'Scones',
-    sconeBrand,
-  );
+  const runProceedsAmount = vaultSeat.getAmountAllocated('RUN', runBrand);
 
-  trace('scones PROCEEDS', sconeProceedsAmount);
+  trace('RUN PROCEEDS', runProceedsAmount);
 
-  const otherSconeProceedsAmount = await E(liqSeat).getCurrentAllocation();
-  trace('other proceeds', otherSconeProceedsAmount);
+  const otherRunProceedsAmount = await E(liqSeat).getCurrentAllocation();
+  trace('other proceeds', otherRunProceedsAmount);
 
-  const isUnderwater = !amountMath.isGTE(sconeProceedsAmount, sconeDebt);
-  const sconesToBurn = isUnderwater ? sconeProceedsAmount : sconeDebt;
-  burnLosses({ Scones: sconesToBurn }, vaultSeat);
-  vaultKit.liquidated(amountMath.subtract(sconeDebt, sconesToBurn));
+  const isUnderwater = !amountMath.isGTE(runProceedsAmount, runDebt);
+  const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
+  burnLosses({ RUN: runToBurn }, vaultSeat);
+  vaultKit.liquidated(amountMath.subtract(runDebt, runToBurn));
 
-  // any remaining scones plus anything else leftover from the sale are refunded
+  // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
 }
 
-// The default strategy converts of all the collateral to scones using autoswap,
-// and refunds any excess scones.
+// The default strategy converts of all the collateral to RUN using autoswap,
+// and refunds any excess RUN.
 export function makeDefaultLiquidationStrategy(autoswap) {
   function keywordMapping() {
     return harden({
       Collateral: 'In',
-      Scones: 'Out',
+      RUN: 'Out',
     });
   }
 
-  function makeProposal(collateral, scones) {
+  function makeProposal(collateral, run) {
     return harden({
       give: { In: collateral },
-      want: { Out: amountMath.makeEmptyFromAmount(scones) },
+      want: { Out: amountMath.makeEmptyFromAmount(run) },
     });
   }
 

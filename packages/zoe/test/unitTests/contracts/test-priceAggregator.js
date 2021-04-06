@@ -476,3 +476,234 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   t.is(belowIn.value, 29n);
   t.is(belowOut.value / 29n, 960n);
 });
+
+test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator(1n);
+
+  const {
+    timer: oracleTimer,
+    issuers: { Quote: quoteIssuer },
+    brands,
+  } = await E(zoe).getTerms(aggregator.instance);
+
+  const price1000 = await makeFakePriceOracle(t, 1000n);
+  const price1300 = await makeFakePriceOracle(t, 1300n);
+  const price800 = await makeFakePriceOracle(t, 800n);
+  const pa = E(aggregator.publicFacet).getPriceAuthority();
+
+  const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
+    amountMath.make(37n, brands.In),
+    amountMath.make(1183n * 37n, brands.Out),
+  );
+
+  /** @type {PriceQuote | undefined} */
+  let abovePriceQuote;
+  E(mutableQuoteWhenGTE)
+    .getPromise()
+    .then(
+      result => (abovePriceQuote = result),
+      reason =>
+        t.notThrows(() => {
+          throw reason;
+        }),
+    );
+
+  const mutableQuoteWhenLTE = E(pa).mutableQuoteWhenLTE(
+    amountMath.make(29n, brands.In),
+    amountMath.make(974n * 29n, brands.Out),
+  );
+
+  /** @type {PriceQuote | undefined} */
+  let belowPriceQuote;
+  E(mutableQuoteWhenLTE)
+    .getPromise()
+    .then(
+      result => (belowPriceQuote = result),
+      reason =>
+        t.notThrows(() => {
+          throw reason;
+        }),
+    );
+
+  await E(aggregator.creatorFacet).initOracle(price1000.instance, {
+    increment: 10n,
+  });
+
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+
+  const price1300Admin = await E(aggregator.creatorFacet).initOracle(
+    price1300.instance,
+    {
+      increment: 8n,
+    },
+  );
+
+  await E(oracleTimer).tick();
+  // Above trigger has not yet fired.
+  t.falsy(abovePriceQuote);
+  await E(oracleTimer).tick();
+
+  // The above trigger should fire here.
+  t.truthy(abovePriceQuote);
+  await E(mutableQuoteWhenGTE).getPromise();
+
+  assert(abovePriceQuote);
+  const aboveQuote = await E(quoteIssuer).getAmountOf(
+    abovePriceQuote.quotePayment,
+  );
+  t.deepEqual(aboveQuote, abovePriceQuote.quoteAmount);
+  const [
+    {
+      amountIn: aboveIn,
+      amountOut: aboveOut,
+      timer: aboveTimer,
+      timestamp: aboveTimestamp,
+    },
+  ] = aboveQuote.value;
+  t.is(aboveTimer, oracleTimer);
+  t.is(aboveTimestamp, 4n);
+  t.is(aboveIn.value, 37n);
+  t.is(aboveOut.value / 37n, 1183n);
+
+  await E(aggregator.creatorFacet).initOracle(price800.instance, {
+    increment: 17n,
+  });
+
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+
+  // Below trigger has not yet fired.
+  t.falsy(belowPriceQuote);
+  await E(price1300Admin).delete();
+
+  // The below trigger should fire here.
+  // TODO(hibbert): the delete() call above should cause belowPriceQuote to
+  //   trigger. It appears that updateState() has been called, but it hasn't
+  //   propagated yet
+  await E(mutableQuoteWhenLTE).getPromise();
+  t.truthy(belowPriceQuote);
+  assert(belowPriceQuote);
+  const belowQuote = await E(quoteIssuer).getAmountOf(
+    belowPriceQuote.quotePayment,
+  );
+  t.deepEqual(belowQuote, belowPriceQuote.quoteAmount);
+  const [
+    {
+      amountIn: belowIn,
+      amountOut: belowOut,
+      timer: belowTimer,
+      timestamp: belowTimestamp,
+    },
+  ] = belowQuote.value;
+  t.is(belowTimer, oracleTimer);
+  t.is(belowTimestamp, 6n);
+  t.is(belowIn.value, 29n);
+  t.is(belowOut.value / 29n, 960n);
+});
+
+test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator(1n);
+
+  const {
+    timer: oracleTimer,
+    issuers: { Quote: quoteIssuer },
+    brands,
+  } = await E(zoe).getTerms(aggregator.instance);
+
+  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const pa = E(aggregator.publicFacet).getPriceAuthority();
+
+  const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
+    amountMath.make(25n, brands.In),
+    amountMath.make(1240n * 25n, brands.Out),
+  );
+
+  /** @type {PriceQuote | undefined} */
+  let abovePriceQuote;
+  E(mutableQuoteWhenGTE)
+    .getPromise()
+    .then(
+      result => (abovePriceQuote = result),
+      reason =>
+        t.notThrows(() => {
+          throw reason;
+        }),
+    );
+
+  await E(aggregator.creatorFacet).initOracle(price1200.instance, {
+    increment: 10n,
+  });
+
+  await E(oracleTimer).tick();
+
+  await E(mutableQuoteWhenGTE).updateLevel(
+    amountMath.make(25n, brands.In),
+    amountMath.make(1245n * 25n, brands.Out),
+  );
+
+  await E(oracleTimer).tick();
+  // Above trigger has not yet fired.
+  t.falsy(abovePriceQuote);
+  await E(oracleTimer).tick();
+
+  // The above trigger would have fired here if not for updateLevel()
+  t.falsy(abovePriceQuote);
+  await E(oracleTimer).tick();
+
+  t.truthy(abovePriceQuote);
+  assert(abovePriceQuote);
+  const aboveQuote = await E(quoteIssuer).getAmountOf(
+    abovePriceQuote.quotePayment,
+  );
+  t.deepEqual(aboveQuote, abovePriceQuote.quoteAmount);
+  const [
+    {
+      amountIn: aboveIn,
+      amountOut: aboveOut,
+      timer: aboveTimer,
+      timestamp: aboveTimestamp,
+    },
+  ] = aboveQuote.value;
+  t.is(aboveTimer, oracleTimer);
+  t.is(aboveTimestamp, 4n);
+  t.is(aboveIn.value, 25n);
+  t.is(aboveOut.value / 25n, 1250n);
+});
+
+test('cancel mutableQuoteWhen', /** @param {ExecutionContext} t */ async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator(1n);
+
+  const { timer: oracleTimer, brands } = await E(zoe).getTerms(
+    aggregator.instance,
+  );
+
+  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const pa = E(aggregator.publicFacet).getPriceAuthority();
+
+  const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
+    amountMath.make(25n, brands.In),
+    amountMath.make(1240n * 25n, brands.Out),
+  );
+
+  /** @type {PriceQuote | undefined} */
+  E(mutableQuoteWhenGTE)
+    .getPromise()
+    .then(
+      result => t.fail(`Promise should throw, not return ${result}`),
+      reason => t.is(reason, 'unneeded'),
+    );
+
+  await E(aggregator.creatorFacet).initOracle(price1200.instance, {
+    increment: 10n,
+  });
+
+  await E(oracleTimer).tick();
+  await E(mutableQuoteWhenGTE).cancel('unneeded');
+});

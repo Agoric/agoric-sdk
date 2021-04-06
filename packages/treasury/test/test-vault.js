@@ -22,7 +22,7 @@ const trace = makeTracer('TestVault');
  *
  * @typedef {Object} TestContext
  * @property {ContractFacet} zcf
- * @property {ZCFMint} sconeMint
+ * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
  * @property {TimerService} timer
@@ -51,15 +51,15 @@ async function launch(zoeP, sourceRoot) {
     zoeP,
   ).startInstance(installation);
   const {
-    sconeMint,
+    runMint,
     collateralKit: { mint: collateralMint, brand: collaterlBrand },
   } = testJig;
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   const collateral50 = amountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { Scones: amountMath.make(70n, sconeBrand) },
+    want: { RUN: amountMath.make(70n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -77,18 +77,18 @@ test('first', async t => {
   const { creatorSeat, creatorFacet } = await helperContract;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // Scones (charging 3 scones fee), which uses an autoswap that presents a
-  // fixed price of 4 Scones per Collateral.
+  // RUN (charging 3 RUN fee), which uses an autoswap that presents a
+  // fixed price of 4 RUN per Collateral.
   await E(creatorSeat).getOfferResult();
-  const { sconeMint, collateralKit, vault } = testJig;
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { runMint, collateralKit, vault } = testJig;
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { issuer: cIssuer, mint: cMint, brand: cBrand } = collateralKit;
 
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, sconeBrand),
-    'borrower owes 73 Scones',
+    amountMath.make(73n, runBrand),
+    'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -105,7 +105,7 @@ test('first', async t => {
     invite,
     harden({
       give: { Collateral: collateralAmount },
-      want: {}, // Scones: sconeMath.make(2n) },
+      want: {}, // RUN: amountMath.make(2n, runBrand) },
     }),
     harden({
       // TODO
@@ -123,15 +123,15 @@ test('first', async t => {
 
   // partially payback
   const collateralWanted = amountMath.make(1n, cBrand);
-  const paybackAmount = amountMath.make(3n, sconeBrand);
-  const payback = await E(creatorFacet).mintScones(paybackAmount);
+  const paybackAmount = amountMath.make(3n, runBrand);
+  const payback = await E(creatorFacet).mintRun(paybackAmount);
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
-      give: { Scones: paybackAmount },
+      give: { RUN: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
-    harden({ Scones: payback }),
+    harden({ RUN: payback }),
   );
   await E(paybackSeat).getOfferResult();
 
@@ -140,8 +140,8 @@ test('first', async t => {
   const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(70n, sconeBrand),
-    'debt reduced to 70 scones',
+    amountMath.make(70n, runBrand),
+    'debt reduced to 70 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -159,14 +159,14 @@ test('first', async t => {
 test('bad collateral', async t => {
   const { creatorSeat: offerKit } = await helperContract;
 
-  const { sconeMint, collateralKit, vault } = testJig;
+  const { runMint, collateralKit, vault } = testJig;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // Scones (charging 3 scones fee), which uses an autoswap that presents a
-  // fixed price of 4 Scones per Collateral.
+  // RUN (charging 3 RUN fee), which uses an autoswap that presents a
+  // fixed price of 4 RUN per Collateral.
   await E(offerKit).getOfferResult();
   const { brand: collateralBrand } = collateralKit;
-  const { brand: sconeBrand } = sconeMint.getIssuerRecord();
+  const { brand: runBrand } = runMint.getIssuerRecord();
 
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -175,8 +175,8 @@ test('bad collateral', async t => {
   );
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, sconeBrand),
-    'borrower owes 73 Scones',
+    amountMath.make(73n, runBrand),
+    'borrower owes 73 RUN',
   );
 
   const collateralAmount = amountMath.make(2n, collateralBrand);

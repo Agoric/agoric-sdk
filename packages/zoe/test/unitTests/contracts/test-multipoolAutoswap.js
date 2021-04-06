@@ -19,6 +19,8 @@ import {
   priceFromTargetOutput,
 } from '../../autoswapJig';
 import { assertPayoutDeposit } from '../../zoeTestHelpers';
+import buildManualTimer from '../../../tools/manualTimer';
+import { getAmountOut } from '../../../src/contractSupport';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap/multipoolAutoswap`;
 
@@ -48,9 +50,12 @@ test('multipoolAutoSwap with valid offers', async t => {
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
   const installation = await zoe.install(bundle);
+  // This timer is only used to build quotes. Let's make it non-zero
+  const fakeTimer = buildManualTimer(console.log, 30);
   const { instance, publicFacet } = await zoe.startInstance(
     installation,
     harden({ Central: centralR.issuer }),
+    { timer: fakeTimer },
   );
   const aliceAddLiquidityInvitation = E(
     publicFacet,
@@ -90,6 +95,11 @@ test('multipoolAutoSwap with valid offers', async t => {
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
     amountMath.make(value, simoleanLiquidityBrand);
+
+  const quoteIssuer = await E(publicFacet).getQuoteIssuer();
+  const { toCentral: priceAuthority } = await E(
+    publicFacet,
+  ).getPriceAuthorities(moolaR.brand);
 
   const issuerKeywordRecord = zoe.getIssuers(instance);
   t.deepEqual(
@@ -154,6 +164,23 @@ test('multipoolAutoSwap with valid offers', async t => {
     `The poolAmounts record should contain the new liquidity`,
   );
 
+  const quotePostLiquidity = await E(priceAuthority).quoteGiven(
+    moola(50),
+    centralR.brand,
+  );
+  t.truthy(
+    amountMath.isEqual(
+      await quoteIssuer.getAmountOf(quotePostLiquidity.quotePayment),
+      quotePostLiquidity.quoteAmount,
+    ),
+  );
+  t.truthy(
+    amountMath.isEqual(
+      getAmountOut(quotePostLiquidity),
+      amountMath.make(16, centralR.brand),
+    ),
+  );
+
   // Bob creates a swap invitation for himself
   const bobSwapInvitation1 = await E(publicFacet).makeSwapInInvitation();
 
@@ -190,6 +217,16 @@ test('multipoolAutoSwap with valid offers', async t => {
     bobSwapInvitation1,
     bobMoolaForCentralProposal,
     bobMoolaForCentralPayments,
+  );
+  const quoteGivenBob = await E(priceAuthority).quoteGiven(
+    moola(50),
+    centralR.brand,
+  );
+  t.truthy(
+    amountMath.isEqual(
+      getAmountOut(quoteGivenBob),
+      amountMath.make(12, centralR.brand),
+    ),
   );
 
   t.is(await E(bobSeat).getOfferResult(), 'Swap successfully completed.');
@@ -253,6 +290,17 @@ test('multipoolAutoSwap with valid offers', async t => {
     `second swap successful`,
   );
 
+  const quoteBob2 = await E(priceAuthority).quoteGiven(
+    moola(50),
+    centralR.brand,
+  );
+  t.truthy(
+    amountMath.isEqual(
+      getAmountOut(quoteBob2),
+      amountMath.make(16, centralR.brand),
+    ),
+  );
+
   const bobMoolaPayout2 = await bobSeat2.getPayout('Out');
   const bobCentralPayout2 = await bobSeat2.getPayout('In');
 
@@ -301,6 +349,17 @@ test('multipoolAutoSwap with valid offers', async t => {
     aliceSimCentralPayments,
   );
 
+  const quoteLiquidation2 = await E(priceAuthority).quoteGiven(
+    moola(50),
+    centralR.brand,
+  );
+  // a simolean trade had no effect
+  t.truthy(
+    amountMath.isEqual(
+      getAmountOut(quoteLiquidation2),
+      amountMath.make(16, centralR.brand),
+    ),
+  );
   t.is(
     await aliceSeat2.getOfferResult(),
     'Added liquidity.',
@@ -379,6 +438,17 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   const bobSimsPayout3 = await bobSeat3.getPayout('In');
   const bobMoolaPayout3 = await bobSeat3.getPayout('Out');
+
+  const quotePostTrade = await E(priceAuthority).quoteGiven(
+    moola(50),
+    centralR.brand,
+  );
+  t.truthy(
+    amountMath.isEqual(
+      getAmountOut(quotePostTrade),
+      amountMath.make(19, centralR.brand),
+    ),
+  );
 
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout3),

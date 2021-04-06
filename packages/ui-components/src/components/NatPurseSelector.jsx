@@ -2,11 +2,31 @@ import { MathKind } from '@agoric/ertp';
 import clsx from 'clsx';
 import { stringifyValue } from '../display';
 
+/**
+ * Return `purses` filtered to just the fungible ones, and optionally just the ones for a
+ * supplied brand. The `purses` argument should be provided but may be falsy because UI
+ * components represent inital state as null/undefined.
+ * @param {Array<Purse> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
+ * @param {Brand} [optBrand] - optional brand to filter for
+ * @returns {Purse[]}
+ */
+export const filterPurses = (purses, optBrand) => {
+  if (!purses) {
+    // nothing to filter
+    return purses;
+  }
+  const filter = ({ brand, displayInfo: { amountMathKind } }) =>
+    amountMathKind === MathKind.NAT && (!optBrand || brand === optBrand);
+  return purses.filter(filter);
+};
+
+const isNatPurse = ({ displayInfo: { amountMathKind } }) =>
+  amountMathKind === MathKind.NAT;
+
 // Because we are importing the ui-components from the locally linked
 // version of agoric-sdk, we must make sure that we are not using
 // multiple instances of React and MaterialUI. Thus, we pass the
 // instances to the component.
-
 const makeNatPurseSelector = ({
   React,
   MenuItem,
@@ -21,8 +41,7 @@ const makeNatPurseSelector = ({
   onChange = () => {},
   disabled = false,
   error = false,
-  purses: pursesUnfiltered,
-  brandToFilter = null,
+  purses = [],
 }) => {
   const useStyles = makeStyles(theme => ({
     root: {
@@ -44,47 +63,31 @@ const makeNatPurseSelector = ({
 
   const classes = useStyles();
 
-  const noPurses = (
-    <MenuItem key={null} value={null}>
-      No purses
-    </MenuItem>
-  );
-
-  let items = noPurses;
-  if (pursesUnfiltered === null) {
-    pursesUnfiltered = [];
-  }
-
-  const isNatPurse = ({ displayInfo: { amountMathKind } }) =>
-    amountMathKind === MathKind.NAT;
-
-  const isSameBrand = ({ brand }) => brand === brandToFilter;
-
-  let purses = pursesUnfiltered.filter(isNatPurse);
-  if (brandToFilter) {
-    purses = purses.filter(isSameBrand);
-  }
-
-  if (purseSelected === null && purses.length) {
-    purseSelected = purses[0];
-  }
-
+  let items;
   if (purses && purses.length > 0) {
-    items = purses.map(({ pursePetname, displayInfo, brandPetname, value }) => (
-      <MenuItem key={pursePetname} value={pursePetname} divider>
-        <ListItemIcon className={classes.icon}>
-          <PurseIcon />
-        </ListItemIcon>
-        <ListItemText
-          primary={pursePetname}
-          secondary={`${stringifyValue(
-            value,
-            MathKind.NAT,
-            displayInfo && displayInfo.decimalPlaces,
-          )} ${brandPetname}`}
-        />
+    items = purses
+      .filter(isNatPurse)
+      .map(({ pursePetname, displayInfo, brandPetname, value }) => (
+        <MenuItem key={pursePetname} value={pursePetname} divider>
+          <ListItemIcon className={classes.icon}>
+            <PurseIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary={pursePetname}
+            secondary={`${stringifyValue(
+              value,
+              MathKind.NAT,
+              displayInfo && displayInfo.decimalPlaces,
+            )} ${brandPetname}`}
+          />
+        </MenuItem>
+      ));
+  } else {
+    items = (
+      <MenuItem key={null} value={null}>
+        No purses
       </MenuItem>
-    ));
+    );
   }
 
   const getPurse = event => {

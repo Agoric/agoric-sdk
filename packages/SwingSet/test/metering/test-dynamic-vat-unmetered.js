@@ -20,13 +20,14 @@ const localOnlyForNow = { defaultManagerType: 'local' };
 test('unmetered dynamic vat', async t => {
   const config = {
     bootstrap: 'bootstrap',
+    ...localOnlyForNow,
     vats: {
       bootstrap: {
         sourceSpec: require.resolve('./vat-load-dynamic.js'),
       },
     },
   };
-  const c = await buildVatController(config, [], localOnlyForNow);
+  const c = await buildVatController(config, []);
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats

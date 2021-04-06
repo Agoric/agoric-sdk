@@ -3,6 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import fs from 'fs';
+import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -12,7 +13,7 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../lib/helpers';
 
-const TIMEOUT_SECONDS = 8 * 60;
+const TIMEOUT_SECONDS = 10 * 60;
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
@@ -35,16 +36,11 @@ test('workflow', async t => {
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
   function pspawnStdout(...args) {
-    let output = '';
     const ps = pspawn(...args);
     ps.childProcess.stdout.on('data', chunk => {
-      output += chunk.toString('utf-8');
+      process.stdout.write(chunk);
     });
-    ps.then(ret => {
-      if (ret !== 0) {
-        process.stdout.write(output);
-      }
-    });
+    // ps.childProcess.unref();
     return ps;
   }
 
@@ -52,9 +48,10 @@ test('workflow', async t => {
   const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
     ? ['--sdk']
     : [];
+  const agoricCli = path.join(__dirname, '..', 'bin', 'agoric');
   function myMain(args) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(`agoric`, [...extraArgs, ...args], {
+    return pspawnStdout(agoricCli, [...extraArgs, ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,
@@ -85,6 +82,7 @@ test('workflow', async t => {
 
   try {
     process.on('SIGINT', runFinalizers);
+    process.on('exit', runFinalizers);
     process.chdir(name);
 
     // ==============
@@ -116,7 +114,7 @@ test('workflow', async t => {
     }
 
     let timeout = setTimeout(
-      startResult.resolve,
+      startResult.reject,
       TIMEOUT_SECONDS * 1000,
       'timeout',
     );
