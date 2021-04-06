@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.4.0...@agoric/xsnap@0.5.0) (2021-04-06)
+
+
+### Bug Fixes
+
+* update to depend on ses 0.12.5 ([#2718](https://github.com/Agoric/agoric-sdk/issues/2718)) ([08dbe0d](https://github.com/Agoric/agoric-sdk/commit/08dbe0db5ce06944dc92c710865e441a60b31b5b))
+* update to ses 0.12.7, ses-ava 0.1.1 ([#2820](https://github.com/Agoric/agoric-sdk/issues/2820)) ([6d81775](https://github.com/Agoric/agoric-sdk/commit/6d81775715bc80e6033d75cb65edbfb1452b1608))
+
+
+### Features
+
+* **xsnap:** show name on command line ([5b31c23](https://github.com/Agoric/agoric-sdk/commit/5b31c230f81f9e25a53a478de8a66a2f3acfa822))
+* **xsnap:** snapstore with compressed snapshots ([865ba54](https://github.com/Agoric/agoric-sdk/commit/865ba5472b5f43563948f7afe63e85bcc4014888))
+
+
+
+
+
 # [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.3.0...@agoric/xsnap@0.4.0) (2021-03-24)
 
 

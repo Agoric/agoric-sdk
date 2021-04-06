@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.27.0...@agoric/cosmic-swingset@0.28.0) (2021-04-06)
+
+
+### Bug Fixes
+
+* adjust collateral additions for more realism ([fcf5295](https://github.com/Agoric/agoric-sdk/commit/fcf5295280d7bcde49f5a4943cd324ac55c8e0ca))
+* fully bootstrap the chain before allowing inbound messages ([ff7b8bf](https://github.com/Agoric/agoric-sdk/commit/ff7b8bf92b92729de1dd81d5a1d8618a6ac787df))
+* improve factoring and assertions ([e7b356d](https://github.com/Agoric/agoric-sdk/commit/e7b356d608e7a774fb326e0b8988c7c79b938e72))
+* use SWINGSET_WORKER_TYPE to avoid WORKER_TYPE ambiguity ([c4616f1](https://github.com/Agoric/agoric-sdk/commit/c4616f1db0f2668eef5dbb97e30800d4e9caf3a0))
+
+
+### Features
+
+* add collateralConfig to issuer entries and enact ([8ce966b](https://github.com/Agoric/agoric-sdk/commit/8ce966bdb4f74960189b73d0721e92ae3c5912f0))
+* add home.agoricNames and home.agoricNamesAdmin ([04c5bdd](https://github.com/Agoric/agoric-sdk/commit/04c5bddaae2e482793c8cc584385a841dd9f4b17))
+* add more collateral types, pivot to BLD/RUN and decimals ([7cbce9f](https://github.com/Agoric/agoric-sdk/commit/7cbce9f53fc81d273d3ebd7c78d93caedbd23b2e))
+* add more issuers ([87d2fba](https://github.com/Agoric/agoric-sdk/commit/87d2fbacdb910527cca7b0669cc1a2123b31fd67))
+* add namesByAddress and myAddressNameAdmin ([945a6c3](https://github.com/Agoric/agoric-sdk/commit/945a6c3aa58146dc1909df3793d417b288c6e1de))
+* implement and test makeNameHubKit as specified ([7deac62](https://github.com/Agoric/agoric-sdk/commit/7deac62b5921a2e71d602ec2201938de2625b7be))
+* integrate the economy's central token in chain bootstrap ([2288e60](https://github.com/Agoric/agoric-sdk/commit/2288e60bf2d85e2c9c9b08c479dbaad41284f55d))
+* stop the fake-chain dead if the kernel fails ([fac485e](https://github.com/Agoric/agoric-sdk/commit/fac485ecdd6749eb1f81f0611d0faa927005ea94))
+* use multipoolAutoswap as the treasury priceAuthority ([a37c795](https://github.com/Agoric/agoric-sdk/commit/a37c795a98f38ac99581d441e00177364f404bd3))
+* use same (instrumented) kernel stepper for bootstrap ([33d42a8](https://github.com/Agoric/agoric-sdk/commit/33d42a8df1f0b7202b51dc552e48327abbb21ef0))
+* **cosmic-swingset:** xs-worker option in ag-solo, chain ([cbf8e56](https://github.com/Agoric/agoric-sdk/commit/cbf8e56b63e32c2102be33fc434d46ee031ccebd))
+
+
+
+
+
 # [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.26.0...@agoric/cosmic-swingset@0.27.0) (2021-03-24)
 
 

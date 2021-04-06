@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.4...@agoric/store@0.4.5) (2021-04-06)
+
+
+### Bug Fixes
+
+* update to depend on ses 0.12.5 ([#2718](https://github.com/Agoric/agoric-sdk/issues/2718)) ([08dbe0d](https://github.com/Agoric/agoric-sdk/commit/08dbe0db5ce06944dc92c710865e441a60b31b5b))
+
+
+
+
+
 ## [0.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.3...@agoric/store@0.4.4) (2021-03-24)
 
 **Note:** Version bump only for package @agoric/store
