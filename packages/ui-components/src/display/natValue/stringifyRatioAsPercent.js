@@ -7,7 +7,7 @@ import { captureNum } from './helpers/captureNum';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
 
 const PERCENT_BASE = 100n;
-const PLACES_TO_SHOW = 2;
+const PLACES_TO_SHOW = 0;
 
 /**
  * @param {Ratio} ratio
@@ -47,8 +47,9 @@ export const stringifyRatioAsPercent = (
   const denominator = ratio.denominator.value * numPower;
   const str = `${Number(numerator) / Number(denominator)}`;
   const capturedNum = captureNum(str);
-  return `${capturedNum.left}.${roundToDecimalPlaces(
-    capturedNum.right,
-    placesToShow,
-  )}`;
+  const right = roundToDecimalPlaces(capturedNum.right, placesToShow);
+  if (right === '') {
+    return `${capturedNum.left}`;
+  }
+  return `${capturedNum.left}.${right}`;
 };
