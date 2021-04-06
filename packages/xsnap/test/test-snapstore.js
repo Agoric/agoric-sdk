@@ -94,7 +94,7 @@ test('bootstrap, save, compress', async t => {
     Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
 
   const snapSize = {
-    raw: 857,
+    raw: 858,
     compression: 0.1,
   };
 
