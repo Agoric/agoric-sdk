@@ -264,3 +264,121 @@ test('reportingPeriod shorter than charging; intermittent', async t => {
     newDebt: amountMath.make(102010n, brand),
   });
 });
+
+// 2.5 % APR charged weekly, charged daily
+test('basic charge reasonable numbers', async t => {
+  const { brand } = makeIssuerKit('ducats');
+  const annualRate = makeRatio(250, brand, 10000n);
+  const ONE_DAY = 60n * 60n * 24n;
+  const ONE_MONTH = ONE_DAY * 30n;
+  const START_TIME = 1617734746n;
+  const calculator = makeInterestCalculator(
+    brand,
+    annualRate,
+    ONE_DAY,
+    ONE_MONTH,
+  );
+  const debtStatus = {
+    newDebt: amountMath.make(10000000n, brand),
+    interest: annualRate,
+    latestInterestUpdate: START_TIME,
+  };
+  t.deepEqual(calculator.calculate(debtStatus, START_TIME), {
+    latestInterestUpdate: START_TIME,
+    interest: amountMath.make(0n, brand),
+    newDebt: amountMath.make(10000000n, brand),
+  });
+  t.deepEqual(calculator.calculate(debtStatus, START_TIME + 1n), {
+    latestInterestUpdate: START_TIME,
+    interest: amountMath.make(0n, brand),
+    newDebt: amountMath.make(10000000n, brand),
+  });
+  t.deepEqual(calculator.calculate(debtStatus, START_TIME + ONE_DAY), {
+    latestInterestUpdate: START_TIME + ONE_DAY,
+    interest: amountMath.make(684n, brand),
+    newDebt: amountMath.make(10000684n, brand),
+  });
+  t.deepEqual(
+    calculator.calculate(debtStatus, START_TIME + ONE_DAY + ONE_DAY),
+    {
+      latestInterestUpdate: START_TIME + ONE_DAY + ONE_DAY,
+      interest: amountMath.make(1368n, brand),
+      newDebt: amountMath.make(10001368n, brand),
+    },
+  );
+  // Notice that interest is compounding: 30 * 684 = 20520
+  t.deepEqual(calculator.calculate(debtStatus, START_TIME + ONE_MONTH), {
+    latestInterestUpdate: START_TIME + ONE_MONTH,
+    interest: amountMath.make(20555n, brand),
+    newDebt: amountMath.make(10020555n, brand),
+  });
+});
+
+// 2.5 % APR charged weekly, charged monthly
+test('basic charge reasonable numbers monthly', async t => {
+  const { brand } = makeIssuerKit('ducats');
+  const annualRate = makeRatio(250, brand, 10000n);
+  const ONE_DAY = 60n * 60n * 24n;
+  const ONE_MONTH = ONE_DAY * 30n;
+  const START_TIME = 1617734746n;
+  const calculator = makeInterestCalculator(
+    brand,
+    annualRate,
+    ONE_DAY,
+    ONE_MONTH,
+  );
+  const debtStatus = {
+    newDebt: amountMath.make(10000000n, brand),
+    interest: annualRate,
+    latestInterestUpdate: START_TIME,
+  };
+  t.deepEqual(calculator.calculateReportingPeriod(debtStatus, START_TIME), {
+    latestInterestUpdate: START_TIME,
+    interest: amountMath.make(0n, brand),
+    newDebt: amountMath.make(10000000n, brand),
+  });
+  t.deepEqual(
+    calculator.calculateReportingPeriod(debtStatus, START_TIME + 1n),
+    {
+      latestInterestUpdate: START_TIME,
+      interest: amountMath.make(0n, brand),
+      newDebt: amountMath.make(10000000n, brand),
+    },
+  );
+  t.deepEqual(
+    calculator.calculateReportingPeriod(debtStatus, START_TIME + ONE_DAY),
+    {
+      latestInterestUpdate: START_TIME,
+      interest: amountMath.make(0n, brand),
+      newDebt: amountMath.make(10000000n, brand),
+    },
+  );
+  t.deepEqual(
+    calculator.calculateReportingPeriod(
+      debtStatus,
+      START_TIME + ONE_DAY + ONE_DAY,
+    ),
+    {
+      latestInterestUpdate: START_TIME,
+      interest: amountMath.make(0n, brand),
+      newDebt: amountMath.make(10000000n, brand),
+    },
+  );
+  t.deepEqual(
+    calculator.calculateReportingPeriod(debtStatus, START_TIME + ONE_MONTH),
+    {
+      latestInterestUpdate: START_TIME + ONE_MONTH,
+      interest: amountMath.make(20555n, brand),
+      newDebt: amountMath.make(10020555n, brand),
+    },
+  );
+  const HALF_YEAR = 6n * ONE_MONTH;
+  t.deepEqual(
+    calculator.calculateReportingPeriod(debtStatus, START_TIME + HALF_YEAR),
+    {
+      latestInterestUpdate: START_TIME + HALF_YEAR,
+      interest: amountMath.make(123957n, brand),
+      newDebt: amountMath.make(10123957n, brand),
+    },
+  );
+});
