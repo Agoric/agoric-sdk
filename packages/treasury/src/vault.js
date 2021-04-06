@@ -82,7 +82,7 @@ export function makeVaultKit(
       runBrand,
     );
 
-    return divideBy(getAmountOut(quoteAmount), manager.getInitialMargin());
+    return divideBy(getAmountOut(quoteAmount), manager.getLiquidationMargin());
   }
 
   async function assertSufficientCollateral(collateralAmount, wantedRun) {
@@ -379,7 +379,6 @@ export function makeVaultKit(
     } = seat.getProposal();
 
     const collateralPayoutP = E(userSeat).getPayouts();
-    await assertSufficientCollateral(collateralAmount, wantedRun);
 
     // todo trigger process() check right away, in case the price dropped while we ran
 
@@ -389,6 +388,8 @@ export function makeVaultKit(
     }
 
     runDebt = amountMath.add(wantedRun, fee);
+    await assertSufficientCollateral(collateralAmount, runDebt);
+
     runMint.mintGains({ RUN: runDebt }, vaultSeat);
     const priorCollateral = getCollateralAllocated(vaultSeat);
 
