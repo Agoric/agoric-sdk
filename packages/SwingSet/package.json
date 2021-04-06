@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.2.4",
-    "@agoric/ses-ava": "^0.1.0",
+    "@agoric/ses-ava": "^0.1.1",
     "ava": "^3.12.1",
     "nyc": "^15.1.0"
   },
@@ -60,7 +60,7 @@
     "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",
     "semver": "^6.3.0",
-    "ses": "^0.12.6",
+    "ses": "^0.12.7",
     "tmp": "^0.2.1",
     "yargs": "^14.2.0"
   },
