@@ -26,7 +26,7 @@ import {
 } from './issuers';
 
 const NUM_IBC_PORTS = 3;
-const QUOTE_INTERVAL = 30;
+const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
