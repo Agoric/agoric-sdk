@@ -16,7 +16,7 @@ test('too soon', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(1000n, brand),
+    newDebt: amountMath.make(1000n, brand),
     latestInterestUpdate: 10n,
   };
   t.deepEqual(calculator.calculate(debtStatus, 12n), {
@@ -35,7 +35,7 @@ test('basic charge 1 period', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   t.deepEqual(calculator.calculate(debtStatus, 13n), {
@@ -54,7 +54,7 @@ test('basic 2 charge periods', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   t.deepEqual(calculator.calculate(debtStatus, 16n), {
@@ -73,7 +73,7 @@ test('partial periods', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   // timestamp of 20 means that 10 has elapsed, charge for three periods
@@ -93,7 +93,7 @@ test('reportingPeriod: partial', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   // timestamp of 20 means that 10 has elapsed, charge for two periods
@@ -113,7 +113,7 @@ test('reportingPeriod: longer', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   // timestamp of 20 means that 10 has elapsed, charge for two periods
@@ -133,7 +133,7 @@ test('start charging later', async t => {
     6n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 16n,
   };
   t.deepEqual(calculator.calculate(debtStatus, 13n), {
@@ -157,7 +157,7 @@ test('reportingPeriod: longer reporting', async t => {
     12n,
   );
   const debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   // timestamp of 20 means that 10 has elapsed, charge for two periods
@@ -177,7 +177,7 @@ test('reportingPeriod shorter than charging', async t => {
     5n,
   );
   let debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   const after10 = {
@@ -197,7 +197,7 @@ test('reportingPeriod shorter than charging', async t => {
   });
 
   debtStatus = {
-    currentDebt: amountMath.make(101000n, brand),
+    newDebt: amountMath.make(101000n, brand),
     latestInterestUpdate: 20n,
   };
   const after20 = {
@@ -226,7 +226,7 @@ test('reportingPeriod shorter than charging; intermittent', async t => {
     5n,
   );
   let debtStatus = {
-    currentDebt: amountMath.make(100000n, brand),
+    newDebt: amountMath.make(100000n, brand),
     latestInterestUpdate: 10n,
   };
   const after10 = {
@@ -247,7 +247,7 @@ test('reportingPeriod shorter than charging; intermittent', async t => {
   };
   t.deepEqual(calculator.calculate(debtStatus, 23n), after23);
   debtStatus = {
-    currentDebt: amountMath.make(101000n, brand),
+    newDebt: amountMath.make(101000n, brand),
     latestInterestUpdate: 20n,
   };
 

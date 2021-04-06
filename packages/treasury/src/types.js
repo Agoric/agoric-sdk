@@ -143,7 +143,7 @@
 
 /**
  * @typedef {Object} DebtStatus
- * @property {Timestamp} updateTime
+ * @property {Timestamp} latestInterestUpdate
  * @property {Amount} interest
  * @property {Amount} newDebt
  */
@@ -156,7 +156,7 @@
  */
 
 /**
- * @typedef {Object} Calculator
+ * @typedef {Object} CalculatorKit
  * @property {Calculate} calculate calculate new debt for charging periods up to
  * the present.
  * @property {Calculate} calculateReportingPeriod calculate new debt for
@@ -171,5 +171,5 @@
  * @param {Ratio} rate
  * @param {RelativeTime} chargingPeriod
  * @param {RelativeTime} recordingPeriod
- * @returns {Calculator}
+ * @returns {CalculatorKit}
  */
