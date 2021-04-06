@@ -36,12 +36,12 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.0.0.tgz#330dcde37fcf8882dbc5012a3b2c4c135eee4930"
   integrity sha512-zlTe14g0PGfONO0+TdhLv8k4IZH040ojvBZuNrcQSV+l8HlFTZ/IKzI5HorlCVDDBU7riykAb/6MaTgMRbYp3w==
 
-"@agoric/ses-ava@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@agoric/ses-ava/-/ses-ava-0.1.0.tgz#e6e905167379b42ed6926b7f5bb9f64713c3a436"
-  integrity sha512-uQcXariKortUFD6AOb2LD5riJW2J1KLFuoIOtXgQcI4aVv33Q33WajNWr5HsY0stGvaqoDvfQ5heGjc3lovIbw==
+"@agoric/ses-ava@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@agoric/ses-ava/-/ses-ava-0.1.1.tgz#b288e9237130658f970cbfb942416e9240ffa78a"
+  integrity sha512-jJFdL9YorroklEnu29CQb1ED4UUlYnKnh8VxBwlvTzo4zJlr2H5fqzM4M20WWxo6cHnmwFv7Q9B/bQvC2q7rMQ==
   dependencies:
-    ses "^0.12.3"
+    ses "^0.12.7"
 
 "@agoric/transform-module@^0.4.1":
   version "0.4.1"
@@ -11613,19 +11613,19 @@ ses@^0.11.0:
     "@agoric/make-hardener" "^0.1.0"
     "@agoric/transform-module" "^0.4.1"
 
-ses@^0.12.3:
-  version "0.12.3"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.3.tgz#9092a1f54374d08571a62837954e3fa24fe31d0f"
-  integrity sha512-uDAUbVECNcgbl90ZwKCsmp5II/rgS1hiiB6KQMBU+GDvsUA+NFXdH76o3bTIk3ftPHqc4Vyk7vAU75pd+3Jy2Q==
+ses@^0.12.6:
+  version "0.12.6"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.6.tgz#397f2818ec2c8d33d61bb42aaaac3a9d8e7d9eae"
+  integrity sha512-NXV6K/6nxqnORv0/Kc+HtdIubdPZr6EXNUu/TMeNla69rSxhhAH7huKKaG8GBOhX87RyiDYz/31IlJR+1xUbdg==
   dependencies:
     "@agoric/babel-standalone" "^7.9.5"
     "@agoric/make-hardener" "^0.1.2"
     "@agoric/transform-module" "^0.4.1"
 
-ses@^0.12.6:
-  version "0.12.6"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.6.tgz#397f2818ec2c8d33d61bb42aaaac3a9d8e7d9eae"
-  integrity sha512-NXV6K/6nxqnORv0/Kc+HtdIubdPZr6EXNUu/TMeNla69rSxhhAH7huKKaG8GBOhX87RyiDYz/31IlJR+1xUbdg==
+ses@^0.12.7:
+  version "0.12.7"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.7.tgz#b795b76a8672fc12659c363dd777e06878394638"
+  integrity sha512-o6eTkzKNqfEtmNfA3j2F6xdL6W/f+HwtXiRWF7ebx4seQBn+3AnFnEIxQTvxShGTGvFH6sDl78YiJeT9N7e9UA==
   dependencies:
     "@agoric/babel-standalone" "^7.9.5"
     "@agoric/make-hardener" "^0.1.2"
