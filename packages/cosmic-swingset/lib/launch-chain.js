@@ -134,22 +134,27 @@ export async function launch(
 
   // ////////////////////////////
   // TODO: This is where we would add the scheduler.
-  async function endBlock(_blockHeight, _blockTime) {
+  //
+  // Note that the "bootstrap until no more progress" state will call this
+  // function without any arguments.
+  async function crankScheduler(maximumCranks = Infinity) {
     let now = Date.now();
     const blockStart = now;
-    let stepsRemaining = FIXME_MAX_CRANKS_PER_BLOCK;
     let stepped = true;
-    // TODO: how to rewrite without an await in loop?
-    // (without blowing out the stack or promise chain)
-    while (stepped && stepsRemaining > 0) {
+    let numCranks = 0;
+    while (stepped && numCranks < maximumCranks) {
       const crankStart = now;
       // eslint-disable-next-line no-await-in-loop
       stepped = await controller.step();
       now = Date.now();
       schedulerCrankTimeHistogram.record(now - crankStart);
-      stepsRemaining -= 1;
+      numCranks += 1;
     }
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
+  }
+
+  async function endBlock(_blockHeight, _blockTime) {
+    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
   }
 
   async function saveChainState() {
@@ -202,9 +207,11 @@ export async function launch(
     }
     // Run the kernel until there is no more progress possible without inbound
     // messages.
-    await controller.run();
+    await crankScheduler();
 
-    // Commit the results, marking it so that we don't do it again.
+    // Commit the results, with the savedHeight updated so that we don't do it
+    // again.  All future cranks will be with the scheduler in a normal block
+    // context.
     savedHeight = 0;
     await saveOutsideState(savedHeight, savedActions, savedChainSends);
   }
