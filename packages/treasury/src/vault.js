@@ -411,7 +411,11 @@ export function makeVaultKit(
 
   function accrueInterestAndAddToPool(currentTime) {
     const interestKit = interestCalculator.calculateReportingPeriod(
-      { latestInterestUpdate, currentDebt: runDebt },
+      {
+        latestInterestUpdate,
+        newDebt: runDebt,
+        interest: amountMath.makeEmpty(runBrand),
+      },
       currentTime,
     );
 

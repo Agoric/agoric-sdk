@@ -19,6 +19,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 import { makeTracer } from '../src/makeTracer';
+import { SECONDS_PER_YEAR } from '../src/interest';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';
@@ -730,7 +731,18 @@ test('interest on multiple vaults', async t => {
 
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = amountMath.make(900n, aethBrand);
-  const rates = makeRates(runBrand, aethBrand);
+  const interestRate = makeRatio(
+    100n * SECONDS_PER_YEAR,
+    runBrand,
+    BASIS_POINTS * 2n,
+  );
+  const rates = harden({
+    initialPrice: makeRatio(201n, runBrand, PERCENT, aethBrand),
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    interestRate,
+    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
+  });
   const aethVaultManagerSeat = await E(zoe).offer(
     E(stablecoinMachine).makeAddTypeInvitation(aethIssuer, 'AEth', rates),
     harden({
@@ -833,7 +845,7 @@ test('interest on multiple vaults', async t => {
     bobUpdate.value.debt,
     amountMath.make(3200n + bobAddedDebt, runBrand),
   );
-  t.deepEqual(bobUpdate.value.interestRate, makeRatio(100n, runBrand, 10000n));
+  t.deepEqual(bobUpdate.value.interestRate, interestRate);
   t.deepEqual(
     bobUpdate.value.liquidationRatio,
     makeRatio(105n, runBrand, 100n),
@@ -850,10 +862,7 @@ test('interest on multiple vaults', async t => {
     amountMath.make(4700n + aliceAddedDebt, runBrand),
     `should have collected ${aliceAddedDebt}`,
   );
-  t.deepEqual(
-    aliceUpdate.value.interestRate,
-    makeRatio(100n, runBrand, 10000n),
-  );
+  t.deepEqual(aliceUpdate.value.interestRate, interestRate);
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, runBrand));
   const aliceCollateralization = aliceUpdate.value.collateralizationRatio;
   t.truthy(
@@ -1417,7 +1426,7 @@ test('mutable liquidity triggers and interest', async t => {
     initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 20% interest
-    interestRate: makeRatio(20n, runBrand, 100n),
+    interestRate: makeRatio(20n * SECONDS_PER_YEAR, runBrand, 100n),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 

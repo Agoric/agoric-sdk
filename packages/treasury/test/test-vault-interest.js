@@ -12,6 +12,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { amountMath } from '@agoric/ertp';
 import { makeTracer } from '../src/makeTracer';
+import { SECONDS_PER_YEAR } from '../src/interest';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault');
@@ -122,7 +123,10 @@ test('interest', async t => {
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
   t.deepEqual(v2.debt, amountMath.make(76n, runBrand));
-  t.deepEqual(v2.interestRate, makeRatio(200n, runBrand, 10000n));
+  t.deepEqual(
+    v2.interestRate,
+    makeRatio(200n * SECONDS_PER_YEAR, runBrand, 3n * 10000n),
+  );
   t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
   const collateralization = v2.collateralizationRatio;
   t.truthy(

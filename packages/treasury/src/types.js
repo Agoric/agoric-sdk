@@ -22,7 +22,7 @@
  * @property {Ratio} liquidationMargin margin below which collateral will be
  * liquidated to satisfy the debt.
  * @property {Ratio} initialPrice price ratio of collateral to RUN
- * @property {Ratio} interestRate interest rate charged on loans
+ * @property {Ratio} interestRate - annual interest rate charged on loans
  * @property {Ratio} loanFee The fee (in BasisPoints) charged when opening
  * or increasing a loan.
  */
@@ -36,7 +36,7 @@
 
 /**
  * @typedef {Object} UIState
- * @property {Ratio} interestRate
+ * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
  * @property {Amount} locked Amount of Collateral locked
  * @property {Amount} debt Amount of Loan (including accrued interest)
@@ -58,7 +58,7 @@
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInitialMargin
- * @property {() => Ratio} getInterestRate
+ * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
  * @property {StageReward} stageReward
  */
 
@@ -143,7 +143,7 @@
 
 /**
  * @typedef {Object} DebtStatus
- * @property {Timestamp} updateTime
+ * @property {Timestamp} latestInterestUpdate
  * @property {Amount} interest
  * @property {Amount} newDebt
  */
@@ -156,7 +156,7 @@
  */
 
 /**
- * @typedef {Object} Calculator
+ * @typedef {Object} CalculatorKit
  * @property {Calculate} calculate calculate new debt for charging periods up to
  * the present.
  * @property {Calculate} calculateReportingPeriod calculate new debt for
@@ -171,5 +171,5 @@
  * @param {Ratio} rate
  * @param {RelativeTime} chargingPeriod
  * @param {RelativeTime} recordingPeriod
- * @returns {Calculator}
+ * @returns {CalculatorKit}
  */
