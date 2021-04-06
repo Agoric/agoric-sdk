@@ -18,6 +18,7 @@ const makeNatAmountInput = ({ React, TextField }) => ({
   onChange = () => {},
   required = false,
   helperText = null,
+  className = '',
 }) => {
   const step = 1;
   if (typeof placesToShow !== 'number') {
@@ -81,6 +82,8 @@ const makeNatAmountInput = ({ React, TextField }) => ({
       error={error}
       required={required}
       helperText={helperText}
+      fullWidth
+      className={className}
     />
   );
 };

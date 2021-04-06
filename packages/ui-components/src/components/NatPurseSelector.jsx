@@ -42,6 +42,7 @@ const makeNatPurseSelector = ({
   disabled = false,
   error = false,
   purses = [],
+  className = '',
 }) => {
   const useStyles = makeStyles(theme => ({
     root: {
@@ -110,7 +111,8 @@ const makeNatPurseSelector = ({
       inputProps={{
         className: clsx(purseSelected && classes.noPadding, classes.select),
       }}
-      className={classes.root}
+      className={`${className} ${classes.root}`}
+      fullWidth
     >
       {items}
     </TextField>
