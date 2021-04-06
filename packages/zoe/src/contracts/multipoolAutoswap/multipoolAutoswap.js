@@ -122,16 +122,6 @@ const start = zcf => {
     return { amountIn, amountOut };
   };
 
-  const getAllPoolBrands = () => {
-    const brands = [];
-    const allBrands = zcf.getTerms().brands;
-    for (const name of Object.getOwnPropertyNames(allBrands)) {
-      if (isSecondary(allBrands[name])) {
-        brands.push(allBrands[name]);
-      }
-    }
-    return brands;
-  };
   const {
     makeSwapInInvitation,
     makeSwapOutInvitation,
@@ -170,7 +160,8 @@ const start = zcf => {
     makeRemoveLiquidityInvitation,
     getQuoteIssuer: () => quoteIssuerKit.issuer,
     getPriceAuthorities,
-    getAllPoolBrands,
+    getAllPoolBrands: () =>
+      Object.values(zcf.getTerms().brands).filter(isSecondary),
   });
 
   return harden({ publicFacet });
