@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.14.0...@agoric/zoe@0.14.1) (2021-04-07)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
 # [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.13.1...@agoric/zoe@0.14.0) (2021-04-06)
 
 
