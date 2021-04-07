@@ -77,7 +77,7 @@ const fromCosmosIssuerEntries = [
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
-        loanFeeBasis: 50n,
+        loanFeeBasis: 1n,
       },
       tradesGivenCentral: [
         [scaleCentral(27.9, 1), scaleMicro(1)],
@@ -104,7 +104,7 @@ const fromPegasusIssuerEntries = [
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
-        loanFeeBasis: 50n,
+        loanFeeBasis: 1n,
       },
       tradesGivenCentral: [
         [scaleCentral(18.61, 2), scaleMicro(1)],
@@ -123,7 +123,7 @@ const fromPegasusIssuerEntries = [
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
-        loanFeeBasis: 50n,
+        loanFeeBasis: 1n,
       },
       tradesGivenCentral: [
         [scaleCentral(1914.86, 2), scaleEth(1)],
@@ -143,7 +143,7 @@ const fromPegasusIssuerEntries = [
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
-        loanFeeBasis: 50n,
+        loanFeeBasis: 1n,
       },
       tradesGivenCentral: [
         [scaleCentral(27.9, 2), scaleEth(1)],
@@ -163,7 +163,7 @@ const fromPegasusIssuerEntries = [
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
-        loanFeeBasis: 50n,
+        loanFeeBasis: 1n,
       },
       tradesGivenCentral: [[scaleCentral(1), scaleEth(1)]],
     },
