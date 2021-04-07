@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
 
@@ -17,7 +18,7 @@ import '@agoric/zoe/src/contracts/exported';
 // can't redeem them outright, that would drain the utility from the economy.
 
 import { E } from '@agoric/eventual-send';
-import { assert, details } from '@agoric/assert';
+import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import {
   trade,
@@ -48,6 +49,19 @@ export async function start(zcf) {
     timerService,
     liquidationInstall,
   } = zcf.getTerms();
+
+  assert.typeof(
+    loanParams.chargingPeriod,
+    'bigint',
+    details`chargingPeriod (${q(loanParams.chargingPeriod)}) must be a BigInt`,
+  );
+  assert.typeof(
+    loanParams.chargingPeriod,
+    'bigint',
+    details`recordingPeriod (${q(
+      loanParams.recordingPeriod,
+    )}) must be a BigInt`,
+  );
 
   const [runMint, govMint] = await Promise.all([
     zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),

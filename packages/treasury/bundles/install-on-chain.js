@@ -6,8 +6,8 @@ import liquidateBundle from './bundle-liquidateMinimum';
 import autoswapBundle from './bundle-multipoolAutoswap';
 import stablecoinBundle from './bundle-stablecoinMachine';
 
-const SECONDS_PER_HOUR = 60 * 60;
-const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
+const SECONDS_PER_HOUR = 60n * 60n;
+const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 /**
  * @param {Object} param0
