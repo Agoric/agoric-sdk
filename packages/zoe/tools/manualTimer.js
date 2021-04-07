@@ -15,9 +15,10 @@ import { makeNotifierKit } from '@agoric/notifier';
  *
  * @param {(...args: any[]) => void} log
  * @param {Timestamp} [startValue=0]
+ * @param {RelativeTime} [timeStep=0]
  * @returns {ManualTimer}
  */
-export default function buildManualTimer(log, startValue = 0n) {
+export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
   /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
@@ -25,7 +26,16 @@ export default function buildManualTimer(log, startValue = 0n) {
 
   const makeRepeater = (delaySecs, interval, timer) => {
     assert.typeof(delaySecs, 'bigint');
+    assert(
+      delaySecs % timeStep === 0n,
+      `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
+    );
     assert.typeof(interval, 'bigint');
+    assert(
+      interval % timeStep === 0n,
+      `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
+    );
+
     /** @type {Array<ERef<TimerWaker>> | null} */
     let wakers = [];
     let nextWakeup;
@@ -34,6 +44,10 @@ export default function buildManualTimer(log, startValue = 0n) {
     const repeaterWaker = {
       async wake(timestamp) {
         assert.typeof(timestamp, 'bigint');
+        assert(
+          timestamp % timeStep === 0n,
+          `timer has a resolution of ${timeStep}; ${timestamp} is not divisible`,
+        );
         if (!wakers) {
           return;
         }
@@ -64,7 +78,7 @@ export default function buildManualTimer(log, startValue = 0n) {
   const timer = Far('ManualTimer', {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
-      ticks += 1n;
+      ticks += timeStep;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);
@@ -82,6 +96,10 @@ export default function buildManualTimer(log, startValue = 0n) {
     },
     setWakeup(baseTime, waker) {
       assert.typeof(baseTime, 'bigint');
+      assert(
+        baseTime % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
+      );
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
         E(waker).wake(ticks);
@@ -121,7 +139,15 @@ export default function buildManualTimer(log, startValue = 0n) {
     },
     makeNotifier(delaySecs, interval) {
       assert.typeof(delaySecs, 'bigint');
+      assert(
+        (delaySecs % timeStep) === 0n,
+        `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
+      );
       assert.typeof(interval, 'bigint');
+      assert(
+        interval % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
+      );
       const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
       const repeaterWaker = {

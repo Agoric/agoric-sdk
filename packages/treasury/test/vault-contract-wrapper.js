@@ -58,19 +58,20 @@ export async function start(zcf) {
       return makeRatio(500n, runBrand, BASIS_POINTS);
     },
     getInterestRate() {
-      return makeRatio((200n * SECONDS_PER_YEAR), runBrand, 3n * BASIS_POINTS);
+      return makeRatio(5n, runBrand);
     },
     collateralBrand,
     stageReward,
   };
 
-  const timer = buildManualTimer(console.log);
+  const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;
+  const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: runBrand,
     priceList: [80],
     tradeList: undefined,
-    timer: buildManualTimer(console.log),
+    timer,
     quoteMint: makeIssuerKit('quote', MathKind.SET).mint,
   };
   const priceAuthority = makeFakePriceAuthority(options);
@@ -81,7 +82,10 @@ export async function start(zcf) {
     runMint,
     autoswapMock,
     priceAuthority,
-    { chargingPeriod: 3n, recordingPeriod: 9n },
+    {
+      chargingPeriod: SECONDS_PER_HOUR * 24n,
+      recordingPeriod: SECONDS_PER_HOUR * 24n * 7n,
+    },
     timer.getCurrentTimestamp(),
   );
 

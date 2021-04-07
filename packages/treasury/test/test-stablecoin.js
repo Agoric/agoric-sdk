@@ -91,6 +91,7 @@ const makePriceAuthority = (
   timer,
   quoteMint,
   unitAmountIn,
+  quoteInterval,
 ) => {
   const options = {
     actualBrandIn: brandIn,
@@ -100,6 +101,7 @@ const makePriceAuthority = (
     timer,
     quoteMint,
     unitAmountIn,
+    quoteInterval,
   };
   return makeScriptedPriceAuthority(options);
 };
@@ -694,11 +696,12 @@ test('interest on multiple vaults', async t => {
 
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
+  const secondsPerDay = SECONDS_PER_YEAR / 365n;
   const loanParams = {
-    chargingPeriod: 2n,
-    recordingPeriod: 6n,
+    chargingPeriod: secondsPerDay * 7n,
+    recordingPeriod: secondsPerDay * 7n,
   };
-  const manualTimer = buildManualTimer(console.log);
+  const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
     zoe,
   ).startInstance(
@@ -726,16 +729,13 @@ test('interest on multiple vaults', async t => {
     manualTimer,
     quoteMint,
     amountMath.make(90n, aethBrand),
+    secondsPerDay,
   );
   priceAuthorityPromiseKit.resolve(priceAuthority);
 
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = amountMath.make(900n, aethBrand);
-  const interestRate = makeRatio(
-    100n * SECONDS_PER_YEAR,
-    runBrand,
-    BASIS_POINTS * 2n,
-  );
+  const interestRate = makeRatio(5n, runBrand);
   const rates = harden({
     initialPrice: makeRatio(201n, runBrand, PERCENT, aethBrand),
     initialMargin: makeRatio(120n, runBrand),
@@ -830,17 +830,15 @@ test('interest on multiple vaults', async t => {
     ),
   );
 
-  // { chargingPeriod: 2, recordingPeriod: 6 }  charge 1% 3 times
-  for (let i = 0; i < 10; i += 1) {
+  // { chargingPeriod: daily, recordingPeriod: weekly }
+  for (let i = 0; i < 15; i += 1) {
     manualTimer.tick();
   }
+  await waitForPromisesToSettle();
 
-  await manualTimer.tick();
-  await manualTimer.tick();
-  await manualTimer.tick();
   const aliceUpdate = await aliceNotifier.getUpdateSince();
   const bobUpdate = await bobNotifier.getUpdateSince();
-  const bobAddedDebt = 160n + 33n + 33n + 34n;
+  const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     bobUpdate.value.debt,
     amountMath.make(3200n + bobAddedDebt, runBrand),
@@ -856,7 +854,7 @@ test('interest on multiple vaults', async t => {
       bobCollateralization.denominator.value,
   );
 
-  const aliceAddedDebt = 235n + 49n + 49n + 50n;
+  const aliceAddedDebt = 235n + 4n;
   t.deepEqual(
     aliceUpdate.value.debt,
     amountMath.make(4700n + aliceAddedDebt, runBrand),
@@ -1383,12 +1381,13 @@ test('mutable liquidity triggers and interest', async t => {
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
 
+  const secondsPerDay = SECONDS_PER_YEAR / 365n;
   // charge interest on every tick
   const loanParams = {
-    chargingPeriod: 1n,
-    recordingPeriod: 1n,
+    chargingPeriod: secondsPerDay * 7n,
+    recordingPeriod: secondsPerDay * 7n,
   };
-  const manualTimer = buildManualTimer(console.log);
+  const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
     zoe,
   ).startInstance(
@@ -1411,11 +1410,12 @@ test('mutable liquidity triggers and interest', async t => {
   const priceAuthority = makePriceAuthority(
     aethBrand,
     runBrand,
-    [10n, 7n],
+    [10n, 7n, 7n, 7n, 7n],
     null,
     manualTimer,
     quoteMint,
     amountMath.make(1n, aethBrand),
+    secondsPerDay * 7n,
   );
   priceAuthorityPromiseKit.resolve(priceAuthority);
 
@@ -1426,7 +1426,7 @@ test('mutable liquidity triggers and interest', async t => {
     initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 20% interest
-    interestRate: makeRatio(20n * SECONDS_PER_YEAR, runBrand, 100n),
+    interestRate: makeRatio(5n, runBrand),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 
@@ -1485,9 +1485,9 @@ test('mutable liquidity triggers and interest', async t => {
   let aliceUpdate = await aliceNotifier.getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
 
-  // Create a loan for Bob for 500 RUN with 100 Aeth collateral
+  // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = amountMath.make(100n, aethBrand);
-  const bobLoanAmount = amountMath.make(500n, runBrand);
+  const bobLoanAmount = amountMath.make(740n, runBrand);
   const bobLoanSeat = await E(zoe).offer(
     E(lender).makeLoanInvitation(),
     harden({
@@ -1515,7 +1515,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.truthy(
     amountMath.isEqual(
       await E(runIssuer).getAmountOf(bobRunLent),
-      amountMath.make(500n, runBrand),
+      amountMath.make(740n, runBrand),
     ),
   );
 
@@ -1570,19 +1570,24 @@ test('mutable liquidity triggers and interest', async t => {
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await aliceNotifier.getUpdateSince();
 
-  // Bob's loan is now 600 RUN (including interest) on 100 Aeth, with the price
-  // at 7. 100 * 7 > 1.05 * 600. When interest is charged again, Bob should get
+  // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
+  // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
 
-  await manualTimer.tick();
+  for (let i = 0; i < 8; i += 1) {
+    manualTimer.tick();
+  }
   await waitForPromisesToSettle();
   aliceUpdate = await aliceNotifier.getUpdateSince(aliceUpdate.updateCount);
   bobUpdate = await bobNotifier.getUpdateSince();
   t.truthy(aliceUpdate.value.liquidated);
 
-  await manualTimer.tick();
+  for (let i = 0; i < 5; i += 1) {
+    manualTimer.tick();
+  }
   await waitForPromisesToSettle();
   bobUpdate = await bobNotifier.getUpdateSince();
+
   t.truthy(bobUpdate.value.liquidated);
 });
 

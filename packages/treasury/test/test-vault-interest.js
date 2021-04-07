@@ -12,7 +12,6 @@ import bundleSource from '@agoric/bundle-source';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { amountMath } from '@agoric/ertp';
 import { makeTracer } from '../src/makeTracer';
-import { SECONDS_PER_YEAR } from '../src/interest';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault');
@@ -59,10 +58,10 @@ async function launch(zoeP, sourceRoot) {
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = amountMath.make(50n, collaterlBrand);
+  const collateral50 = amountMath.make(50000n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: amountMath.make(70n, runBrand) },
+    want: { RUN: amountMath.make(70000n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -92,18 +91,18 @@ test('interest', async t => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { value: v1, updateCount: c1 } = await E(notifier).getUpdateSince();
-  t.deepEqual(v1.debt, amountMath.make(73n, runBrand));
-  t.deepEqual(v1.locked, amountMath.make(50n, collateralBrand));
+  t.deepEqual(v1.debt, amountMath.make(73500n, runBrand));
+  t.deepEqual(v1.locked, amountMath.make(50000n, collateralBrand));
   t.is(c1, 2);
 
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, runBrand),
+    amountMath.make(73500n, runBrand),
     'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    amountMath.make(50n, collateralBrand),
+    amountMath.make(50000n, collateralBrand),
     'vault holds 50 Collateral',
   );
 
@@ -116,17 +115,16 @@ test('interest', async t => {
     timer.tick();
   }
 
-  const nextInterest = actions.accrueInterestAndAddToPool(10n);
+  const nextInterest = actions.accrueInterestAndAddToPool(
+    timer.getCurrentTimestamp(),
+  );
   t.truthy(
-    amountMath.isEqual(nextInterest, amountMath.make(3n, runBrand)),
+    amountMath.isEqual(nextInterest, amountMath.make(63n, runBrand)),
     `interest should be 3, was ${nextInterest.value}`,
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
-  t.deepEqual(v2.debt, amountMath.make(76n, runBrand));
-  t.deepEqual(
-    v2.interestRate,
-    makeRatio(200n * SECONDS_PER_YEAR, runBrand, 3n * 10000n),
-  );
+  t.deepEqual(v2.debt, amountMath.make(73500n + 63n, runBrand));
+  t.deepEqual(v2.interestRate, makeRatio(5, runBrand, 100n));
   t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
   const collateralization = v2.collateralizationRatio;
   t.truthy(
