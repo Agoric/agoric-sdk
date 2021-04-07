@@ -1585,3 +1585,38 @@ test('mutable liquidity triggers and interest', async t => {
   bobUpdate = await bobNotifier.getUpdateSince();
   t.truthy(bobUpdate.value.liquidated);
 });
+
+test('bad chargingPeriod', async t => {
+  /* @type {TestContext} */
+  const setJig = () => {};
+  /* @type {TestContext} */
+  const zoe = setUpZoeForTest(setJig);
+
+  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
+  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
+  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
+
+  const priceAuthorityPromiseKit = makePromiseKit();
+  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
+  const loanParams = {
+    chargingPeriod: 2,
+    recordingPeriod: 10n,
+  };
+  const manualTimer = buildManualTimer(console.log);
+
+  await t.throwsAsync(
+    () =>
+      E(zoe).startInstance(
+        stablecoinInstall,
+        {},
+        {
+          autoswapInstall,
+          priceAuthority: priceAuthorityPromise,
+          loanParams,
+          timerService: manualTimer,
+          liquidationInstall,
+        },
+      ),
+    { message: 'chargingPeriod (2) must be a BigInt' },
+  );
+});
