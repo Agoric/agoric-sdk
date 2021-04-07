@@ -56,7 +56,7 @@ export async function start(zcf) {
     details`chargingPeriod (${q(loanParams.chargingPeriod)}) must be a BigInt`,
   );
   assert.typeof(
-    loanParams.chargingPeriod,
+    loanParams.recordingPeriod,
     'bigint',
     details`recordingPeriod (${q(
       loanParams.recordingPeriod,
