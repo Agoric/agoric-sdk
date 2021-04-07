@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.16.0...@agoric/sdk@2.16.1) (2021-04-07)
+
+
+### Bug Fixes
+
+* change the fake quote timer to 5min ([#2828](https://github.com/Agoric/agoric-sdk/issues/2828)) ([66d22db](https://github.com/Agoric/agoric-sdk/commit/66d22dbf44c11ed21a85c5cfce6c531fd29e8052))
+
+
+
+
+
 # [2.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.15.1...@agoric/sdk@2.16.0) (2021-04-06)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-manager",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Share code across vat boundaries",
   "parsers": {
     "js": "mjs"
@@ -30,8 +30,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.5",
-    "@agoric/swingset-vat": "^0.15.0",
+    "@agoric/install-ses": "^0.5.6",
+    "@agoric/swingset-vat": "^0.15.1",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"

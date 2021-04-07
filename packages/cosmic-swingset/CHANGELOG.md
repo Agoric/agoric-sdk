@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.28.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.28.0...@agoric/cosmic-swingset@0.28.1) (2021-04-07)
+
+
+### Bug Fixes
+
+* change the fake quote timer to 5min ([#2828](https://github.com/Agoric/agoric-sdk/issues/2828)) ([66d22db](https://github.com/Agoric/agoric-sdk/commit/66d22dbf44c11ed21a85c5cfce6c531fd29e8052))
+
+
+
+
+
 # [0.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.27.0...@agoric/cosmic-swingset@0.28.0) (2021-04-06)
 
 
