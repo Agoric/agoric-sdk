@@ -49,40 +49,6 @@ function byName(a, b) {
   }
   return 0;
 }
-/**
- * @typedef {{
- *   sourceSpec: string // path to the source code
- * }} SourceSpec
- * @typedef {{
- *   bundleSpec: string
- * }} BundleSpec
- * @typedef {{
- *   bundle: unknown
- * }} BundleRef
- * @typedef {(SourceSpec | BundleSpec | BundleRef ) & {
- *   creationOptions?: Record<string, any>,
- *   parameters?: Record<string, any>,
- * }} SwingSetConfigProperties
- */
-
-/**
- * @typedef {Record<string, SwingSetConfigProperties>} SwingSetConfigDescriptor
- * Where the property name is the name of the vat.  Note that
- * the `bootstrap` property names the vat that should be used as the bootstrap vat.  Although a swingset
- * configuration can designate any vat as its bootstrap vat, `loadBasedir` will always look for a file named
- * 'bootstrap.js' and use that (note that if there is no 'bootstrap.js', there will be no bootstrap vat).
- */
-
-/**
- * @typedef {Object} SwingSetConfig a swingset config object
- * @property {string} [bootstrap]
- * @property { ManagerType } [defaultManagerType]
- * @property {SwingSetConfigDescriptor} [vats]
- * @property {SwingSetConfigDescriptor} [bundles]
- * @property {*} [devices]
- *
- * Swingsets defined by scanning a directory in this manner define no devices.
- */
 
 /**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
@@ -241,9 +207,9 @@ export function swingsetIsInitialized(storage) {
 /**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {*} hostStorage
+ * @param {SwingStore} hostStorage
  * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
- * @param {{ env?: Record<string, string> }} runtimeOptions
+ * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
