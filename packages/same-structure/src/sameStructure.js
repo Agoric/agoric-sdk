@@ -1,7 +1,14 @@
 // @ts-check
 
-import { sameValueZero, passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
+import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
 import { assert, details as X, q } from '@agoric/assert';
+
+const {
+  is,
+  defineProperty,
+  getOwnPropertyNames,
+  getOwnPropertyDescriptor,
+} = Object;
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -20,7 +27,7 @@ function objectFromEntries(iter) {
 
     const { '0': key, '1': val } = pair;
 
-    Object.defineProperty(obj, key, {
+    defineProperty(obj, key, {
       configurable: true,
       enumerable: true,
       writable: true,
@@ -30,6 +37,24 @@ function objectFromEntries(iter) {
 
   return obj;
 }
+
+/**
+ * This is the equality comparison used by JavaScript's Map and Set
+ * abstractions, where NaN is the same as NaN and -0 is the same as
+ * 0. Marshal serializes -0 as zero, so the semantics of our distributed
+ * object system does not distinguish 0 from -0.
+ *
+ * `sameValueZero` is the EcmaScript spec name for this equality comparison,
+ * but TODO we need a better name for the API.
+ *
+ * @param {any} x
+ * @param {any} y
+ * @returns {boolean}
+ */
+function sameValueZero(x, y) {
+  return x === y || is(x, y);
+}
+harden(sameValueZero);
 
 /**
  * A *passable* is something that may be marshalled. It consists of a
@@ -76,7 +101,7 @@ function allComparable(passable) {
       return Promise.all(valPs).then(vals => harden(vals));
     }
     case 'copyRecord': {
-      const names = Object.getOwnPropertyNames(passable);
+      const names = getOwnPropertyNames(passable);
       const valPs = names.map(name => allComparable(passable[name]));
       return Promise.all(valPs).then(vals =>
         harden(objectFromEntries(vals.map((val, i) => [names[i], val]))),
@@ -129,14 +154,14 @@ function sameStructure(left, right) {
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftNames = Object.getOwnPropertyNames(left);
-      const rightNames = Object.getOwnPropertyNames(right);
+      const leftNames = getOwnPropertyNames(left);
+      const rightNames = getOwnPropertyNames(right);
       if (leftNames.length !== rightNames.length) {
         return false;
       }
       for (const name of leftNames) {
         // TODO: Better hasOwnProperty check
-        if (!Object.getOwnPropertyDescriptor(right, name)) {
+        if (!getOwnPropertyDescriptor(right, name)) {
           return false;
         }
         // TODO: Make cycle tolerant
@@ -210,14 +235,14 @@ function mustBeSameStructureInternal(left, right, message, path) {
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftNames = Object.getOwnPropertyNames(left);
-      const rightNames = Object.getOwnPropertyNames(right);
+      const leftNames = getOwnPropertyNames(left);
+      const rightNames = getOwnPropertyNames(right);
       if (leftNames.length !== rightNames.length) {
         complain(`${leftNames.length} vs ${rightNames.length} own properties`);
       }
       for (const name of leftNames) {
         // TODO: Better hasOwnProperty check
-        if (!Object.getOwnPropertyDescriptor(right, name)) {
+        if (!getOwnPropertyDescriptor(right, name)) {
           complain(`${name} not found on right`);
         }
         // TODO: Make cycle tolerant
@@ -266,4 +291,10 @@ function mustBeComparable(val) {
   mustBeSameStructure(val, val, 'not comparable');
 }
 
-export { allComparable, sameStructure, mustBeSameStructure, mustBeComparable };
+export {
+  sameValueZero,
+  allComparable,
+  sameStructure,
+  mustBeSameStructure,
+  mustBeComparable,
+};
