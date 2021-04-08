@@ -1,4 +1,5 @@
 /* global require */
+// @ts-check
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
@@ -29,6 +30,7 @@ import {
   initializeSwingset,
 } from './initializeSwingset';
 
+/** @param {string} tag */
 function makeConsole(tag) {
   const log = anylogger(tag);
   const cons = {};
@@ -38,11 +40,17 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
+/** @param {Error} e */
 function unhandledRejectionHandler(e) {
   console.error('UnhandledPromiseRejectionWarning:', e);
 }
 
+/**
+ * @param {{ moduleFormat: string, source: string }[]} bundles
+ * @param {{ snapstorePath?: string, env: Record<string, string | undefined> }} opts
+ */
 export function makeStartXSnap(bundles, { snapstorePath, env }) {
+  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
     spawn,
@@ -51,6 +59,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
     debug: !!env.XSNAP_DEBUG,
   };
 
+  /** @type { ReturnType<typeof makeSnapstore> } */
   let snapStore;
 
   if (snapstorePath) {
@@ -68,7 +77,11 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
   }
 
   let supervisorHash = '';
-  return async function startXSnap(name, handleCommand) {
+  /**
+   * @param {string} name
+   * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
+   */
+  async function startXSnap(name, handleCommand) {
     if (supervisorHash) {
       return snapStore.load(supervisorHash, async snapshot => {
         const xs = xsnap({ snapshot, name, handleCommand, ...xsnapOpts });
@@ -90,9 +103,24 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
       supervisorHash = await snapStore.save(async fn => worker.snapshot(fn));
     }
     return worker;
-  };
+  }
+  return startXSnap;
 }
 
+/**
+ *
+ * @param {SwingStore} hostStorage
+ * @param {Record<string, unknown>} deviceEndowments
+ * @param {{
+ *   verbose?: boolean,
+ *   debugPrefix?: string,
+ *   slogCallbacks?: unknown,
+ *   slogFile?: string,
+ *   testTrackDecref?: unknown,
+ *   snapstorePath?: string,
+ *   env?: Record<string, string | undefined>
+ * }} runtimeOptions
+ */
 export async function makeSwingsetController(
   hostStorage = initSwingStore().storage,
   deviceEndowments = {},
@@ -167,6 +195,7 @@ export async function makeSwingsetController(
       assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
     }
   }
+  // @ts-ignore assume kernelBundle is set
   const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
@@ -238,7 +267,9 @@ export async function makeSwingsetController(
   }
 
   const bundles = [
+    // @ts-ignore assume lockdownBundle is set
     JSON.parse(hostStorage.get('lockdownBundle')),
+    // @ts-ignore assume supervisorBundle is set
     JSON.parse(hostStorage.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, { snapstorePath, env });
@@ -337,11 +368,26 @@ export async function makeSwingsetController(
   return controller;
 }
 
-// TODO: This is a shim provided strictly for backwards compatibility and should
-// be removed once API changes are propagated everywhere.  Note that this shim
-// will not work for use cases that need to configure devices.  It could be made
-// to, but I've already changed all the places that do that to use the new API
-// and I don't want to encourage people to use the old API.
+/**
+ * TODO: This is a shim provided strictly for backwards compatibility and should
+ * be removed once API changes are propagated everywhere.  Note that this shim
+ * will not work for use cases that need to configure devices.  It could be made
+ * to, but I've already changed all the places that do that to use the new API
+ * and I don't want to encourage people to use the old API. *
+ *
+ * @param {SwingSetConfig} config
+ * @param {string[]} argv
+ * @param {{
+ *   hostStorage?: SwingStore,
+ *   verbose?: boolean,
+ *   kernelBundles?: Record<string, string>,
+ *   debugPrefix?: string,
+ *   slogCallbacks?: unknown,
+ *   testTrackDecref?: unknown,
+ *   snapstorePath?: string,
+ * }} runtimeOptions
+ * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ */
 export async function buildVatController(
   config,
   argv = [],
