@@ -830,8 +830,8 @@ test('interest on multiple vaults', async t => {
     ),
   );
 
-  // { chargingPeriod: daily, recordingPeriod: weekly }
-  for (let i = 0; i < 15; i += 1) {
+  // { chargingPeriod: weekly, recordingPeriod: weekly }
+  for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
@@ -1410,7 +1410,7 @@ test('mutable liquidity triggers and interest', async t => {
   const priceAuthority = makePriceAuthority(
     aethBrand,
     runBrand,
-    [10n, 7n, 7n, 7n, 7n],
+    [10n, 7n],
     null,
     manualTimer,
     quoteMint,

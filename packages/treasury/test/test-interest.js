@@ -87,7 +87,7 @@ test('partial periods', async t => {
     latestInterestUpdate: 10n,
     interest: amountMath.make(0n, brand),
   };
-  // timestamp of 20 means that 10 has elapsed, charge for three periods
+  // just less than three days gets two days of interest (6n/day)
   t.deepEqual(calculator.calculate(debtStatus, ONE_DAY * 3n - 1n), {
     latestInterestUpdate: 10n + ONE_DAY * 2n,
     interest: amountMath.make(12n, brand),
@@ -109,7 +109,13 @@ test('reportingPeriod: partial', async t => {
     latestInterestUpdate: 10n,
     interest: amountMath.make(0n, brand),
   };
-  // timestamp of 20 means that 10 has elapsed, charge for two periods
+
+  t.deepEqual(calculator.calculateReportingPeriod(debtStatus, ONE_MONTH), {
+    latestInterestUpdate: 10n,
+    interest: amountMath.make(0n, brand),
+    newDebt: amountMath.make(100000n, brand),
+  });
+  // charge daily, record monthly. After a month, charge 30 * 6n
   t.deepEqual(
     calculator.calculateReportingPeriod(debtStatus, ONE_DAY + ONE_MONTH),
     {
@@ -134,7 +140,7 @@ test('reportingPeriod: longer', async t => {
     latestInterestUpdate: 10n,
     interest: amountMath.make(0n, brand),
   };
-  // timestamp of 20 means that 10 has elapsed, charge for two periods
+  // charge monthly, record daily. after a month charge 203n
   t.deepEqual(
     calculator.calculateReportingPeriod(debtStatus, ONE_MONTH + ONE_DAY),
     {
