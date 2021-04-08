@@ -1,3 +1,4 @@
+// @ts-check
 import fs from 'fs';
 import path from 'path';
 import Readlines from 'n-readlines';
@@ -144,16 +145,15 @@ function makeStorageInMemory() {
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept, or
+ * @param {string} [dirPath]  Path to a directory in which database files may be kept, or
  *   null.
  * @param {boolean} [forceReset]  If true, initialize the database to an empty state
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ * @returns {{
+ *   storage: SwingStore, // a storage API object to load and store data
+ *   commit: () => void,  // commit changes made since the last commit
+ *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ * }}
  */
 function makeSwingStore(dirPath, forceReset = false) {
   const { storage, state } = makeStorageInMemory();
@@ -178,6 +178,7 @@ function makeSwingStore(dirPath, forceReset = false) {
       if (lines) {
         let line = lines.next();
         while (line) {
+          // @ts-ignore JSON.parse can take a Buffer
           const [key, value] = JSON.parse(line);
           storage.set(key, value);
           line = lines.next();
@@ -274,12 +275,14 @@ export function openSwingStore(dirPath) {
  *
  * @param {SwingStore} storage  The swing storage whose state is to be extracted.
  *
- * @returns {Array<[string, string]>} an array representing all the current state in `storage`, one
+ * @returns {Record<string, string>} an array representing all the current state in `storage`, one
  *    element of the form [key, value] per key/value pair.
  */
 export function getAllState(storage) {
+  /** @type { Record<string, string> } */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
+    // @ts-ignore get(key) of key from getKeys() is not undefined
     stuff[key] = storage.get(key);
   }
   return stuff;
