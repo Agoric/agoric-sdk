@@ -40,18 +40,20 @@ function echoCommand(arg) {
 }
 
 /**
- * @param {Object} options
- * @param {string} options.os
- * @param {Spawn} options.spawn
- * @param {(request:Uint8Array) => Promise<Uint8Array>} [options.handleCommand]
- * @param {string=} [options.name]
- * @param {boolean=} [options.debug]
- * @param {number=} [options.parserBufferSize] in kB (must be an integer)
- * @param {string=} [options.snapshot]
- * @param {'ignore' | 'inherit'} [options.stdout]
- * @param {'ignore' | 'inherit'} [options.stderr]
- * @param {number} [options.meteringLimit]
- * @param {Record<string, string>} [options.env]
+ * @param {XSnapOptions} options
+ *
+ * @typedef {Object} XSnapOptions
+ * @property {string} os
+ * @property {Spawn} spawn
+ * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
+ * @property {string=} [name]
+ * @property {boolean=} [debug]
+ * @property {number=} [parserBufferSize] in kB (must be an integer)
+ * @property {string=} [snapshot]
+ * @property {'ignore' | 'inherit'} [stdout]
+ * @property {'ignore' | 'inherit'} [stderr]
+ * @property {number} [meteringLimit]
+ * @property {Record<string, string>} [env]
  */
 export function xsnap(options) {
   const {
