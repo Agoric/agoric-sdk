@@ -2,19 +2,17 @@ import { test } from '../tools/prepare-test-env-ava';
 
 import buildCommsDispatch from '../src/vats/comms';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
-import { makeState, makeStateKit } from '../src/vats/comms/state';
+import { makeState } from '../src/vats/comms/state';
 import { makeCListKit } from '../src/vats/comms/clist';
-import { addRemote } from '../src/vats/comms/remote';
 import { debugState } from '../src/vats/comms/dispatch';
 import { commsVatDriver } from './commsVatDriver';
 
 test('provideRemoteForLocal', t => {
   const s = makeState(0);
-  const stateKit = makeStateKit(s);
   const fakeSyscall = {};
-  const clistKit = makeCListKit(s, fakeSyscall, stateKit);
+  const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal } = clistKit;
-  const { remoteID } = addRemote(s, 'remote1', 'o-1');
+  const { remoteID } = s.addRemote('remote1', 'o-1');
 
   // n.b.: duplicated provideRemoteForLocal() call is not a cut-n-paste error
   // but a test that translation is stable
@@ -59,7 +57,7 @@ test('transmit', t => {
   const transmitterID = 'o-1';
   const aliceKernel = 'o-10';
   const aliceLocal = provideLocalForKernel(aliceKernel);
-  const { remoteID } = addRemote(state, 'remote1', transmitterID);
+  const { remoteID } = state.addRemote('remote1', transmitterID);
   const bobLocal = provideLocalForRemote(remoteID, 'ro-23');
   const bobKernel = provideKernelForLocal(bobLocal);
 
@@ -132,7 +130,7 @@ test('receive', t => {
   const transmitterID = 'o-1';
   const bobKernel = 'o-5';
   const bobLocal = provideLocalForKernel(bobKernel);
-  const { remoteID, receiverID } = addRemote(state, 'remote1', transmitterID);
+  const { remoteID, receiverID } = state.addRemote('remote1', transmitterID);
   const bobRemote = flipRemoteSlot(provideRemoteForLocal(remoteID, bobLocal));
   t.is(bobRemote, 'ro+20');
 
@@ -318,7 +316,7 @@ test('retire result promise on outbound message', t => {
   } = commsVatDriver(t);
 
   setupRemote('a');
-  const remoteA = state.remotes.get(state.names.get('a'));
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
   const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
 
   // Larry sends a message to Alice...
@@ -328,21 +326,21 @@ test('retire result promise on outbound message', t => {
   _('a<m', oaAlice, 'hello', paResult, 47);
 
   // There should be appropriate c-list entries for the result pathway
-  const plResult = state.fromKernel.get(refOf(pResult));
+  const plResult = state.mapFromKernel(refOf(pResult));
   t.truthy(plResult);
-  t.is(state.toKernel.get(plResult), refOf(pResult));
-  t.is(remoteA.toRemote.get(plResult), flipRefOf(paResult));
-  t.is(remoteA.fromRemote.get(refOf(paResult)), plResult);
+  t.is(state.mapToKernel(plResult), refOf(pResult));
+  t.is(remoteA.mapToRemote(plResult), flipRefOf(paResult));
+  t.is(remoteA.mapFromRemote(refOf(paResult)), plResult);
 
   // ...and then Alice resolves the answer
   _('a>r', [paResult, false, 42]);
   _('k<r', [pResult, false, 42]);
 
   // Now all those c-list entries should be gone
-  t.falsy(state.fromKernel.has(refOf(pResult)));
-  t.falsy(state.toKernel.has(plResult));
-  t.falsy(remoteA.toRemote.has(plResult));
-  t.falsy(remoteA.fromRemote.has(refOf(paResult)));
+  t.falsy(state.mapFromKernel(refOf(pResult)));
+  t.falsy(state.mapToKernel(plResult));
+  t.falsy(remoteA.mapToRemote(plResult));
+  t.falsy(remoteA.mapFromRemote(refOf(paResult)));
 
   done();
 });
@@ -362,7 +360,7 @@ test('retire result promise on inbound message', t => {
   } = commsVatDriver(t);
 
   setupRemote('a');
-  const remoteA = state.remotes.get(state.names.get('a'));
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
   const oLarry = newImportObject('k');
   const oaLarry = exportToRemote('a', 11, oLarry);
 
@@ -374,11 +372,11 @@ test('retire result promise on inbound message', t => {
   _('k<s', pResult);
 
   // There should be appropriate c-list entries for the result pathway
-  const plResult = state.fromKernel.get(refOf(pResult));
+  const plResult = state.mapFromKernel(refOf(pResult));
   t.truthy(plResult);
-  t.is(state.toKernel.get(plResult), refOf(pResult));
-  t.is(remoteA.toRemote.get(plResult), flipRefOf(paResult));
-  t.is(remoteA.fromRemote.get(refOf(paResult)), plResult);
+  t.is(state.mapToKernel(plResult), refOf(pResult));
+  t.is(remoteA.mapToRemote(plResult), flipRefOf(paResult));
+  t.is(remoteA.mapFromRemote(refOf(paResult)), plResult);
 
   // ...and then Larry resolves the answer
   _('k>r', [pResult, false, 42]);
@@ -386,17 +384,17 @@ test('retire result promise on inbound message', t => {
 
   // Now the kernel c-list entries and the outbound remote c-list entry should
   // be gone but the inbound remote c-list entry should still be there
-  t.falsy(state.fromKernel.has(refOf(pResult)));
-  t.falsy(state.toKernel.has(plResult));
-  t.falsy(remoteA.toRemote.has(plResult));
-  t.truthy(remoteA.fromRemote.has(refOf(paResult)));
+  t.falsy(state.mapFromKernel(refOf(pResult)));
+  t.falsy(state.mapToKernel(plResult));
+  t.falsy(remoteA.mapToRemote(plResult));
+  t.truthy(remoteA.mapFromRemote(refOf(paResult)));
 
   // Then the remote sends some traffic, which will contain an ack
   _('a>m', oaLarry, 'more', undefined);
   _('k<m', oLarry, 'more', undefined);
 
   // And now the inbound remote c-list entry should be gone too.
-  t.falsy(remoteA.fromRemote.has(refOf(paResult)));
+  t.falsy(remoteA.mapFromRemote(refOf(paResult)));
 
   done();
 });
@@ -417,7 +415,7 @@ test('retire inbound promises', t => {
   } = commsVatDriver(t);
 
   setupRemote('a');
-  const remoteA = state.remotes.get(state.names.get('a'));
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
   const oLarry = newImportObject('k');
   const oaLarry = exportToRemote('a', 11, oLarry);
 
@@ -430,32 +428,32 @@ test('retire inbound promises', t => {
   _('k<m', oLarry, 'hello', undefined, pPromise1, pPromise2);
 
   // There should be appropriate c-list entries for both promises
-  const plPromise1 = state.fromKernel.get(refOf(pPromise1));
+  const plPromise1 = state.mapFromKernel(refOf(pPromise1));
   t.truthy(plPromise1);
-  t.is(state.toKernel.get(plPromise1), refOf(pPromise1));
-  t.is(remoteA.toRemote.get(plPromise1), flipRefOf(paPromise1));
-  t.is(remoteA.fromRemote.get(refOf(paPromise1)), plPromise1);
+  t.is(state.mapToKernel(plPromise1), refOf(pPromise1));
+  t.is(remoteA.mapToRemote(plPromise1), flipRefOf(paPromise1));
+  t.is(remoteA.mapFromRemote(refOf(paPromise1)), plPromise1);
 
-  const plPromise2 = state.fromKernel.get(refOf(pPromise2));
+  const plPromise2 = state.mapFromKernel(refOf(pPromise2));
   t.truthy(plPromise2);
-  t.is(state.toKernel.get(plPromise2), refOf(pPromise2));
-  t.is(remoteA.toRemote.get(plPromise2), flipRefOf(paPromise2));
-  t.is(remoteA.fromRemote.get(refOf(paPromise2)), plPromise2);
+  t.is(state.mapToKernel(plPromise2), refOf(pPromise2));
+  t.is(remoteA.mapToRemote(plPromise2), flipRefOf(paPromise2));
+  t.is(remoteA.mapFromRemote(refOf(paPromise2)), plPromise2);
 
   // ...and then Alice resolves the promises, recursively referencing each other
   _('a>r', [paPromise1, false, [paPromise2]], [paPromise2, false, [paPromise1]]);
   _('k<r', [pPromise1, false, [pPromise2]], [pPromise2, false, [pPromise1]]);
 
   // Now all the c-list entries should be gone
-  t.falsy(state.fromKernel.has(refOf(pPromise1)));
-  t.falsy(state.toKernel.has(plPromise1));
-  t.falsy(remoteA.toRemote.has(plPromise1));
-  t.falsy(remoteA.fromRemote.has(refOf(paPromise1)));
+  t.falsy(state.mapFromKernel(refOf(pPromise1)));
+  t.falsy(state.mapToKernel(plPromise1));
+  t.falsy(remoteA.mapToRemote(plPromise1));
+  t.falsy(remoteA.mapFromRemote(refOf(paPromise1)));
 
-  t.falsy(state.fromKernel.has(refOf(pPromise2)));
-  t.falsy(state.toKernel.has(plPromise2));
-  t.falsy(remoteA.toRemote.has(plPromise2));
-  t.falsy(remoteA.fromRemote.has(refOf(paPromise2)));
+  t.falsy(state.mapFromKernel(refOf(pPromise2)));
+  t.falsy(state.mapToKernel(plPromise2));
+  t.falsy(remoteA.mapToRemote(plPromise2));
+  t.falsy(remoteA.mapFromRemote(refOf(paPromise2)));
 
   done();
 });
@@ -477,7 +475,7 @@ test('retire outbound promises', t => {
   } = commsVatDriver(t);
 
   setupRemote('a');
-  const remoteA = state.remotes.get(state.names.get('a'));
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
   const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
   const oLarry = newImportObject('k');
   const oaLarry = exportToRemote('a', 11, oLarry);
@@ -493,17 +491,17 @@ test('retire outbound promises', t => {
   _('a<m', oaAlice, 'hello', undefined, paPromise1, paPromise2);
 
   // There should be appropriate c-list entries for both promises
-  const plPromise1 = state.fromKernel.get(refOf(pPromise1));
+  const plPromise1 = state.mapFromKernel(refOf(pPromise1));
   t.truthy(plPromise1);
-  t.is(state.toKernel.get(plPromise1), refOf(pPromise1));
-  t.is(remoteA.toRemote.get(plPromise1), flipRefOf(paPromise1));
-  t.is(remoteA.fromRemote.get(refOf(paPromise1)), plPromise1);
+  t.is(state.mapToKernel(plPromise1), refOf(pPromise1));
+  t.is(remoteA.mapToRemote(plPromise1), flipRefOf(paPromise1));
+  t.is(remoteA.mapFromRemote(refOf(paPromise1)), plPromise1);
 
-  const plPromise2 = state.fromKernel.get(refOf(pPromise2));
+  const plPromise2 = state.mapFromKernel(refOf(pPromise2));
   t.truthy(plPromise2);
-  t.is(state.toKernel.get(plPromise2), refOf(pPromise2));
-  t.is(remoteA.toRemote.get(plPromise2), flipRefOf(paPromise2));
-  t.is(remoteA.fromRemote.get(refOf(paPromise2)), plPromise2);
+  t.is(state.mapToKernel(plPromise2), refOf(pPromise2));
+  t.is(remoteA.mapToRemote(plPromise2), flipRefOf(paPromise2));
+  t.is(remoteA.mapFromRemote(refOf(paPromise2)), plPromise2);
 
   // ...and then Larry resolves the promises, recursively referencing each other
   _('k>r', [pPromise1, false, [pPromise2]], [pPromise2, false, [pPromise1]]);
@@ -511,23 +509,23 @@ test('retire outbound promises', t => {
 
   // Now the kernel c-list entries and the outbound remote c-list entries should
   // be gone but the inbound remote c-list entries should still be there
-  t.falsy(state.fromKernel.has(refOf(pPromise1)));
-  t.falsy(state.toKernel.has(plPromise1));
-  t.falsy(remoteA.toRemote.has(plPromise1));
-  t.truthy(remoteA.fromRemote.has(refOf(paPromise1)));
+  t.falsy(state.mapFromKernel(refOf(pPromise1)));
+  t.falsy(state.mapToKernel(plPromise1));
+  t.falsy(remoteA.mapToRemote(plPromise1));
+  t.truthy(remoteA.mapFromRemote(refOf(paPromise1)));
 
-  t.falsy(state.fromKernel.has(refOf(pPromise2)));
-  t.falsy(state.toKernel.has(plPromise2));
-  t.falsy(remoteA.toRemote.has(plPromise2));
-  t.truthy(remoteA.fromRemote.has(refOf(paPromise2)));
+  t.falsy(state.mapFromKernel(refOf(pPromise2)));
+  t.falsy(state.mapToKernel(plPromise2));
+  t.falsy(remoteA.mapToRemote(plPromise2));
+  t.truthy(remoteA.mapFromRemote(refOf(paPromise2)));
 
   // Then the remote sends some traffic, which will contain an ack
   _('a>m', oaLarry, 'more', undefined);
   _('k<m', oLarry, 'more', undefined);
 
   // And now the inbound remote c-list entries should be gone too.
-  t.falsy(remoteA.fromRemote.has(refOf(paPromise1)));
-  t.falsy(remoteA.fromRemote.has(refOf(paPromise2)));
+  t.falsy(remoteA.mapFromRemote(refOf(paPromise1)));
+  t.falsy(remoteA.mapFromRemote(refOf(paPromise2)));
 
   done();
 });
@@ -578,7 +576,7 @@ test('outbound promise resolution and inbound message to it crossing in flight',
   _('a:l', 0); // lag ends, talking to the now retired promise should error
   t.throws(
     () => _('a>m', paPromise, 'talkback', undefined),
-    { message: `"${refOf(paPromise)}" must already be in "remote1 (a)"` },
+    { message: `"${refOf(paPromise)}" must already be in remote "r1 (a)"` },
   );
 
   done();
