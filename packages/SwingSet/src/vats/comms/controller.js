@@ -1,6 +1,5 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { addRemote } from './remote';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),
@@ -56,7 +55,7 @@ export function deliverToController(
     const transmitterID = slots[args[1].index];
     const setReceiverID = slots[args[2].index];
 
-    const { receiverID } = addRemote(state, name, transmitterID);
+    const { receiverID } = state.addRemote(name, transmitterID);
 
     const rxArg = { '@qclass': 'slot', index: 0 };
     const setReceiverArgs = harden({
@@ -76,9 +75,9 @@ export function deliverToController(
     const { slots } = controllerArgs;
 
     const remoteName = args[0];
-    assert(state.names.has(remoteName), X`unknown remote name ${remoteName}`);
-    const remoteID = state.names.get(remoteName);
-    const remoteRefID = Nat(args[1]);
+    const remoteID = state.getRemoteIDForName(remoteName);
+    assert(remoteID, X`unknown remote name ${remoteName}`);
+    const remoteRefID = args[1];
     assert(
       args[2]['@qclass'] === 'slot' && args[2].index === 0,
       X`unexpected args for addEgress(): ${controllerArgs}`,
@@ -93,8 +92,8 @@ export function deliverToController(
     const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
-    assert(state.names.has(remoteName), X`unknown remote name ${remoteName}`);
-    const remoteID = state.names.get(remoteName);
+    const remoteID = state.getRemoteIDForName(remoteName);
+    assert(remoteID, X`unknown remote name ${remoteName}`);
     const remoteRefID = Nat(args[1]);
     const iface = args[2];
     const localRef = addIngress(remoteID, remoteRefID);

@@ -1,7 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { makeVatSlot, insistVatType, parseVatSlot } from '../../parseVatSlots';
-import { getRemote } from './remote';
-import { makeState, makeStateKit } from './state';
+import { makeState } from './state';
 import { deliverToController } from './controller';
 import { insistCapData } from '../../capdata';
 
@@ -20,41 +19,34 @@ export function buildCommsDispatch(
 ) {
   const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
   const state = makeState(identifierBase);
-  const stateKit = makeStateKit(state);
-  const clistKit = makeCListKit(state, syscall, stateKit);
+  const clistKit = makeCListKit(state, syscall);
 
   function transmit(remoteID, msg) {
-    const remote = getRemote(state, remoteID);
+    const remote = state.getRemote(remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
-    const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum : '';
-    const ackSeqNum = remote.lastReceivedSeqNum;
+    const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum() : '';
+    remote.advanceSendSeqNum();
+    const ackSeqNum = remote.lastReceivedSeqNum();
     const args = harden({
       body: JSON.stringify([`${seqNum}:${ackSeqNum}:${msg}`]),
       slots: [],
     });
-    remote.nextSendSeqNum += 1;
     syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
   }
 
-  const deliveryKit = makeDeliveryKit(
-    state,
-    syscall,
-    transmit,
-    clistKit,
-    stateKit,
-  );
+  const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit);
 
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
-  state.metaObjects.add(controller);
+  state.addMetaObject(controller);
   cdebug(`comms controller is ${controller}`);
 
   function deliver(target, method, args, result) {
     // console.debug(`comms.deliver ${target} r=${result}`);
-    // dumpState(state);
+    // state.dump();
     insistCapData(args);
 
     if (target === controller) {
@@ -68,11 +60,11 @@ export function buildCommsDispatch(
       );
     }
 
-    if (state.remoteReceivers.has(target)) {
+    const remoteID = state.getRemoteReceiver(target);
+    if (remoteID) {
       assert(method === 'receive', X`unexpected method ${method}`);
       // the vat-tp integrity layer is a regular vat, so when they send the
       // received message to us, it will be embedded in a JSON array
-      const remoteID = state.remoteReceivers.get(target);
       const message = JSON.parse(args.body)[0];
       return messageFromRemote(remoteID, message, result);
     }
@@ -101,7 +93,7 @@ export function buildCommsDispatch(
 
     args.slots.map(s =>
       assert(
-        !state.metaObjects.has(s),
+        !state.hasMetaObject(s),
         X`comms meta-object ${s} not allowed in message args`,
       ),
     );

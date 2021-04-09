@@ -1,8 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
-import { makeVatSlot } from '../../parseVatSlots';
+import { makeVatSlot, insistVatType } from '../../parseVatSlots';
 import { makeLocalSlot } from './parseLocalSlots';
-import { insistRemoteID } from './remote';
+import { makeRemote, insistRemoteID } from './remote';
+import { cdebug } from './cdebug';
 
 const COMMS = 'comms';
 const KERNEL = 'kernel';
@@ -24,124 +25,122 @@ const KERNEL = 'kernel';
 // will continue on to the next higher NN.
 
 export function makeState(identifierBase = 0) {
-  const state = {
-    nextRemoteIndex: 1,
-    remotes: new Map(), // remoteNN -> { remoteID, name, fromRemote/toRemote, etc }
-    names: new Map(), // name -> remoteNN
+  // we allocate remote IDs `rNN` with this counter
+  let nextRemoteIndex = 1;
 
-    fromKernel: new Map(), // o+NN/o-NN/p+NN/p-NN -> loNN/lpNN
-    toKernel: new Map(), // loNN/lpNN -> o+NN/o-NN/p+NN/p-NN
+  // remoteNN -> { remoteID, name, fromRemote/toRemote, etc }
+  const remotes = new Map();
 
-    // o+NN/o-NN comms management meta-objects that shouldn't be in any clist
-    metaObjects: new Set(),
+  // remoteName -> remoteNN
+  const remoteNames = new Map();
 
-    // we allocate `o+NN` with this counter
-    nextKernelObjectIndex: identifierBase + 30,
+  // loNN -> remoteNN, for admin rx objects
+  const remoteReceivers = new Map();
 
-    // we allocate `p+NN` with this counter
-    nextKernelPromiseIndex: identifierBase + 40,
+  // we allocate `o+NN` with this counter
+  let nextKernelObjectIndex = identifierBase + 30;
 
-    // we allocate `loNN` with this counter
-    nextLocalObjectIndex: identifierBase + 10,
-    remoteReceivers: new Map(), // loNN -> remoteNN, for admin rx objects
-    objectTable: new Map(), // loNN -> owning remote for non-admin objects
+  // we allocate `p+NN` with this counter
+  let nextKernelPromiseIndex = identifierBase + 40;
 
-    // we allocate `lpNN` with this counter
-    nextLocalPromiseIndex: identifierBase + 20,
-    // lpNN -> { resolved, decider, subscribers, kernelIsSubscribed }
-    // decider is one of: remoteID, 'kernel', 'comms'
-    // once resolved, -> { resolved, resolution }
-    // where resolution takes the form: {rejected, data}
-    promiseTable: new Map(),
+  // we allocate `loNN` with this counter
+  let nextLocalObjectIndex = identifierBase + 10;
 
-    identifierBase,
-  };
+  // we allocate `lpNN` with this counter
+  let nextLocalPromiseIndex = identifierBase + 20;
 
-  return state; // mutable
-}
+  // loNN -> owning remote for non-admin objects
+  const objectTable = new Map();
 
-export function dumpState(state) {
-  console.log(`Object Table:`);
-  for (const id of state.objectTable.keys()) {
-    console.log(`${id} : owner=${state.objectTable.get(id)}`);
+  // lpNN -> { resolved, decider, subscribers, kernelIsSubscribed }
+  // decider is one of: remoteID, 'kernel', 'comms'
+  // once resolved, -> { resolved, resolution }
+  // where resolution takes the form: {rejected, data}
+  const promiseTable = new Map();
+
+  // o+NN/o-NN comms management meta-objects that shouldn't be in any clist
+  const metaObjects = new Set();
+
+  // o+NN/o-NN/p+NN/p-NN -> loNN/lpNN
+  const fromKernel = new Map();
+
+  // loNN/lpNN -> o+NN/o-NN/p+NN/p-NN
+  const toKernel = new Map();
+
+  function mapFromKernel(kfref) {
+    return fromKernel.get(kfref);
   }
-  console.log();
 
-  console.log(`Promise Table:`);
-  for (const id of state.promiseTable.keys()) {
-    const p = state.promiseTable.get(id);
-    const subscribers = Array.from(p.subscribers);
-    if (p.kernelIsSubscribed) {
-      subscribers.push('kernel');
-    }
-    const subs = subscribers.join(',');
-    console.log(
-      `${id} : owner=${p.owner}, resolved=${p.resolved}, decider=${p.decider}, sub=${subs}`,
-    );
+  function mapToKernel(lref) {
+    return toKernel.get(lref);
   }
-  console.log();
 
-  for (const remoteID of state.remotes.keys()) {
-    const r = state.remotes.get(remoteID);
-    console.log(`${remoteID} '${r.name}':`);
-    for (const inbound of r.fromRemote.keys()) {
-      const id = r.fromRemote.get(inbound);
-      const outbound = r.toRemote.get(id);
-      console.log(` ${inbound} -> ${id} -> ${outbound}`);
-    }
+  function addKernelMapping(kfref, lref) {
+    fromKernel.set(kfref, lref);
+    toKernel.set(lref, kfref);
   }
-}
 
-export function makeStateKit(state) {
-  function trackUnresolvedPromise(lpid) {
-    assert(!state.promiseTable.has(lpid), X`${lpid} already present`);
-    state.promiseTable.set(lpid, {
+  function deleteKernelMapping(kfref, lref) {
+    fromKernel.delete(kfref);
+    toKernel.delete(lref);
+  }
+
+  function hasMetaObject(oid) {
+    return metaObjects.has(oid);
+  }
+
+  function addMetaObject(oid) {
+    metaObjects.add(oid);
+  }
+
+  function allocateKernelObjectID() {
+    const index = nextKernelObjectIndex;
+    nextKernelObjectIndex += 1;
+    return makeVatSlot('object', true, index);
+  }
+
+  function allocateKernelPromiseID() {
+    const index = nextKernelPromiseIndex;
+    nextKernelPromiseIndex += 1;
+    return makeVatSlot('promise', true, index);
+  }
+
+  function getObject(loid) {
+    return objectTable.get(loid);
+  }
+
+  function allocateObject(owner) {
+    const loid = makeLocalSlot('object', nextLocalObjectIndex);
+    nextLocalObjectIndex += 1;
+    objectTable.set(loid, owner);
+    return loid;
+  }
+
+  function getPromise(lpid) {
+    return promiseTable.get(lpid);
+  }
+
+  function allocatePromise() {
+    const lpid = makeLocalSlot('promise', nextLocalPromiseIndex);
+    nextLocalPromiseIndex += 1;
+    promiseTable.set(lpid, {
       resolved: false,
       decider: COMMS,
       subscribers: [],
       kernelIsSubscribed: false,
     });
-  }
-
-  function allocateLocalPromiseID() {
-    const index = state.nextLocalPromiseIndex;
-    state.nextLocalPromiseIndex += 1;
-    return makeLocalSlot('promise', index);
-  }
-
-  function allocateLocalObjectID() {
-    const index = state.nextLocalObjectIndex;
-    state.nextLocalObjectIndex += 1;
-    return makeLocalSlot('object', index);
-  }
-
-  function allocateUnresolvedPromise() {
-    const lpid = allocateLocalPromiseID();
-    trackUnresolvedPromise(lpid);
     return lpid;
   }
 
-  function allocateKernelPromiseID() {
-    const index = state.nextKernelPromiseIndex;
-    state.nextKernelPromiseIndex += 1;
-    return makeVatSlot('promise', true, index);
-  }
-
-  function allocateKernelObjectID() {
-    const index = state.nextKernelObjectIndex;
-    state.nextKernelObjectIndex += 1;
-    return makeVatSlot('object', true, index);
-  }
-
   function deciderIsKernel(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { decider } = p;
     return decider === KERNEL;
   }
 
   function deciderIsRemote(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { decider } = p;
     if (decider === KERNEL || decider === COMMS) {
@@ -152,7 +151,7 @@ export function makeStateKit(state) {
   }
 
   function insistDeciderIsRemote(lpid, remoteID) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { decider } = p;
     assert.equal(
@@ -163,7 +162,7 @@ export function makeStateKit(state) {
   }
 
   function insistDeciderIsComms(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { decider } = p;
     assert.equal(
@@ -174,7 +173,7 @@ export function makeStateKit(state) {
   }
 
   function insistDeciderIsKernel(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { decider } = p;
     assert.equal(
@@ -190,7 +189,7 @@ export function makeStateKit(state) {
   function changeDeciderToRemote(lpid, newDecider) {
     // console.log(`changeDecider ${lpid}: COMMS->${newDecider}`);
     insistRemoteID(newDecider);
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert.equal(p.decider, COMMS);
     p.decider = newDecider;
@@ -199,7 +198,7 @@ export function makeStateKit(state) {
   function changeDeciderFromRemoteToComms(lpid, oldDecider) {
     // console.log(`changeDecider ${lpid}: ${oldDecider}->COMMS`);
     insistRemoteID(oldDecider);
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert.equal(p.decider, oldDecider);
     p.decider = COMMS;
@@ -207,7 +206,7 @@ export function makeStateKit(state) {
 
   function changeDeciderToKernel(lpid) {
     // console.log(`changeDecider ${lpid}: COMMS->KERNEL`);
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert.equal(p.decider, COMMS);
     p.decider = KERNEL;
@@ -215,35 +214,35 @@ export function makeStateKit(state) {
 
   function changeDeciderFromKernelToComms(lpid) {
     // console.log(`changeDecider ${lpid}: KERNEL->COMMS`);
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert.equal(p.decider, KERNEL);
     p.decider = COMMS;
   }
 
   function getPromiseSubscribers(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     const { subscribers, kernelIsSubscribed } = p;
     return { subscribers, kernelIsSubscribed };
   }
 
   function subscribeRemoteToPromise(lpid, subscriber) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved, X`${lpid} already resolved`);
     p.subscribers.push(subscriber);
   }
 
   function unsubscribeRemoteFromPromise(lpid, subscriber) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved, X`${lpid} already resolved`);
     p.subscribers = p.subscribers.filter(s => s !== subscriber);
   }
 
   function subscribeKernelToPromise(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     // console.log(`subscribeKernelToPromise ${lpid} d=${p.decider}`);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved, X`${lpid} already resolved`);
@@ -252,7 +251,7 @@ export function makeStateKit(state) {
   }
 
   function unsubscribeKernelFromPromise(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     // console.log(`unsubscribeKernelFromPromise ${lpid} d=${p.decider}`);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved, X`${lpid} already resolved`);
@@ -260,13 +259,13 @@ export function makeStateKit(state) {
   }
 
   function insistPromiseIsUnresolved(lpid) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved, X`${lpid} was already resolved`);
   }
 
   function markPromiseAsResolved(lpid, rejected, data) {
-    const p = state.promiseTable.get(lpid);
+    const p = promiseTable.get(lpid);
     assert(p, X`unknown ${lpid}`);
     assert(!p.resolved);
     assert.typeof(
@@ -283,13 +282,90 @@ export function makeStateKit(state) {
     p.kernelIsSubscribed = undefined;
   }
 
+  function getRemote(remoteID) {
+    insistRemoteID(remoteID);
+    const remote = remotes.get(remoteID);
+    assert(remote, X`missing ${remoteID}`);
+    return remote;
+  }
+  function addRemote(name, transmitterID) {
+    assert(!remoteNames.has(name), X`remote name ${name} already in use`);
+
+    insistVatType('object', transmitterID);
+    addMetaObject(transmitterID);
+
+    const remoteID = `r${nextRemoteIndex}`;
+    nextRemoteIndex += 1;
+    const remote = makeRemote(remoteID, identifierBase, name, transmitterID);
+    identifierBase += 1000;
+    remotes.set(remoteID, remote);
+    remoteNames.set(name, remoteID);
+
+    // inbound messages will be directed at this exported object
+    const receiverID = allocateKernelObjectID();
+    addMetaObject(receiverID);
+    // remoteReceivers are our vat objects to which the transport layer will
+    // send incoming messages. Each remote machine is assigned a separate
+    // receiver object.
+    remoteReceivers.set(receiverID, remoteID);
+    // prettier-ignore
+    cdebug(`comms add remote ${remoteID}/${name} xmit:${transmitterID} recv:${receiverID}`);
+    return { remoteID, receiverID };
+  }
+
+  function getRemoteIDForName(remoteName) {
+    return remoteNames.get(remoteName);
+  }
+
+  function getRemoteReceiver(receiverID) {
+    return remoteReceivers.get(receiverID);
+  }
+
+  function dump() {
+    console.log(`Object Table:`);
+    for (const id of objectTable.keys()) {
+      console.log(`${id} : owner=${objectTable.get(id)}`);
+    }
+    console.log();
+
+    console.log(`Promise Table:`);
+    for (const id of promiseTable.keys()) {
+      const p = promiseTable.get(id);
+      const subscribers = Array.from(p.subscribers);
+      if (p.kernelIsSubscribed) {
+        subscribers.push('kernel');
+      }
+      const subs = subscribers.join(',');
+      console.log(
+        `${id} : owner=${p.owner}, resolved=${p.resolved}, decider=${p.decider}, sub=${subs}`,
+      );
+    }
+    console.log();
+
+    for (const remoteID of remotes.keys()) {
+      const r = remotes.get(remoteID);
+      console.log(`${remoteID} '${r.name}':`);
+      r.dump();
+    }
+  }
+
   return harden({
-    trackUnresolvedPromise,
-    allocateUnresolvedPromise,
-    allocateLocalPromiseID,
-    allocateLocalObjectID,
-    allocateKernelPromiseID,
+    mapFromKernel,
+    mapToKernel,
+    addKernelMapping,
+    deleteKernelMapping,
+
+    hasMetaObject,
+    addMetaObject,
+
     allocateKernelObjectID,
+    allocateKernelPromiseID,
+
+    getObject,
+    allocateObject,
+
+    getPromise,
+    allocatePromise,
 
     deciderIsKernel,
     deciderIsRemote,
@@ -312,6 +388,11 @@ export function makeStateKit(state) {
     insistPromiseIsUnresolved,
     markPromiseAsResolved,
 
-    dumpState: () => dumpState(state),
+    getRemote,
+    addRemote,
+    getRemoteIDForName,
+    getRemoteReceiver,
+
+    dump,
   });
 }
