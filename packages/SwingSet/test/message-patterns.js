@@ -928,7 +928,6 @@ export function buildPatterns(log) {
         const pa3 = (await pa2)[0];
         const pb3 = (await pb2)[0];
         log(`${pb3 !== pa3}`);
-        log(`${pb3 === pa2}`);
         log(`${pa3 === pb2}`);
       } catch (e) {
         log(`a100 await failed with ${e}`);
@@ -947,7 +946,7 @@ export function buildPatterns(log) {
       p2.resolve(apa);
     };
   }
-  out.a100 = ['true', 'true', 'true'];
+  out.a100 = ['true', 'true'];
 
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again

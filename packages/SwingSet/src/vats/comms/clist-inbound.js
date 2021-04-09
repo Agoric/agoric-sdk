@@ -27,6 +27,44 @@ export function makeInbound(state, stateKit) {
 
   // *-LocalForRemote: receiving an object/promise from a remote machine
 
+  function retireRemotePromiseID(remoteID, rpid) {
+    insistRemoteType('promise', rpid);
+    const remote = getRemote(state, remoteID);
+    const lpid = remote.fromRemote.get(rpid);
+    assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
+    const p = state.promiseTable.get(lpid);
+    assert(
+      !p.subscribers || p.subscribers.indexOf(remoteID) === -1,
+      X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
+    );
+    remote.fromRemote.delete(rpid);
+    remote.toRemote.delete(lpid);
+    cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
+  }
+
+  function beginRemotePromiseIDRetirement(remoteID, rpid) {
+    insistRemoteType('promise', rpid);
+    const remote = getRemote(state, remoteID);
+    const lpid = remote.fromRemote.get(flipRemoteSlot(rpid));
+    remote.toRemote.delete(lpid);
+    remote.retirementQueue.push([remote.nextSendSeqNum, rpid]);
+    cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
+  }
+
+  function retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum) {
+    const remote = getRemote(state, remoteID);
+    while (remote.retirementQueue.length > 0) {
+      const [sentSeqNum, rpid] = remote.retirementQueue[0];
+      if (sentSeqNum <= ackSeqNum) {
+        retireRemotePromiseID(remoteID, flipRemoteSlot(rpid));
+        // XXX TODO?: consider implementing an actual queue, because shift()
+        remote.retirementQueue.shift();
+      } else {
+        break;
+      }
+    }
+  }
+
   function getLocalForRemote(remoteID, rref) {
     const remote = getRemote(state, remoteID);
     const lref = remote.fromRemote.get(rref);
@@ -105,5 +143,8 @@ export function makeInbound(state, stateKit) {
     provideLocalForRemote,
     getLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    beginRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
   });
 }
