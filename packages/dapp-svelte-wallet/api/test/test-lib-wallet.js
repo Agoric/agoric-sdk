@@ -15,11 +15,23 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeNameHubKit } from '@agoric/cosmic-swingset/lib/ag-solo/vats/nameHub';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
+
+function makeFakeMyAddressNameAdmin() {
+  const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
+  return {
+    ...rawMyAddressNameAdmin,
+    getMyAddress() {
+      return 'agoric1test1';
+    },
+  };
+}
 
 async function setupTest() {
   const pursesStateChangeLog = [];
@@ -74,6 +86,7 @@ async function setupTest() {
   const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
+    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -1197,6 +1210,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
+    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -1261,6 +1275,7 @@ test('getZoe, getBoard', async t => {
   const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
+    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
