@@ -18,7 +18,7 @@ export function buildCommsDispatch(
   vatParameters = {},
 ) {
   const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
-  const state = makeState(identifierBase);
+  const state = makeState(null, identifierBase);
   const clistKit = makeCListKit(state, syscall);
 
   function transmit(remoteID, msg) {
@@ -32,7 +32,7 @@ export function buildCommsDispatch(
       body: JSON.stringify([`${seqNum}:${ackSeqNum}:${msg}`]),
       slots: [],
     });
-    syscall.send(remote.transmitterID, 'transmit', args); // sendOnly
+    syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
   }
 
   const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit);
@@ -46,7 +46,6 @@ export function buildCommsDispatch(
 
   function deliver(target, method, args, result) {
     // console.debug(`comms.deliver ${target} r=${result}`);
-    // state.dump();
     insistCapData(args);
 
     if (target === controller) {

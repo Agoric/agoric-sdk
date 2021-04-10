@@ -4,7 +4,7 @@ import { flipRemoteSlot, insistRemoteType } from './parseRemoteSlot';
 import { cdebug } from './cdebug';
 
 function rname(remote) {
-  return `${remote.remoteID} (${remote.name})`;
+  return `${remote.remoteID()} (${remote.name()})`;
 }
 
 export function makeOutbound(state) {
@@ -26,20 +26,24 @@ export function makeOutbound(state) {
     const roid = remote.allocateRemoteObject();
     remote.addRemoteMapping(flipRemoteSlot(roid), loid);
     // but when they send it back, they'll send ro+NN
-    cdebug(`comms export ${remote.remoteID}/${remote.name} ${loid} ${roid}`);
+    cdebug(
+      `comms export ${remote.remoteID()}/${remote.name()} ${loid} ${roid}`,
+    );
   }
 
   function addRemotePromiseForLocal(remote, lpid) {
-    const p = state.getPromise(lpid);
-    assert(p, X`promise ${lpid} wasn't being tracked`);
+    const status = state.getPromiseStatus(lpid);
+    assert(status, X`promise ${lpid} wasn't being tracked`);
 
     const rpid = remote.allocateRemotePromise();
     remote.addRemoteMapping(flipRemoteSlot(rpid), lpid);
-    cdebug(`comms export ${remote.remoteID}/${remote.name} ${lpid} ${rpid}`);
+    cdebug(
+      `comms export ${remote.remoteID()}/${remote.name()} ${lpid} ${rpid}`,
+    );
 
-    if (!p.resolved) {
+    if (status === 'unresolved') {
       // arrange to send it later, once it resolves
-      state.subscribeRemoteToPromise(lpid, remote.remoteID);
+      state.subscribeRemoteToPromise(lpid, remote.remoteID());
     }
   }
 
