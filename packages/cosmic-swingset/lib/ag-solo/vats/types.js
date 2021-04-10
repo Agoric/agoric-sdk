@@ -28,6 +28,10 @@
  */
 
 /**
+ * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
+ */
+
+/**
  * @typedef {Object} NameHubKit A kit of a NameHub and its corresponding
  * NameAdmin.
  * @property {NameHub} nameHub
