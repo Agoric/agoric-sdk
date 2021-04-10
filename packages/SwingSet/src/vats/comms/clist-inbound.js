@@ -7,7 +7,7 @@ import {
 import { cdebug } from './cdebug';
 
 function rname(remote) {
-  return `${remote.remoteID} (${remote.name})`;
+  return `${remote.remoteID()} (${remote.name()})`;
 }
 
 export function makeInbound(state) {
@@ -22,9 +22,9 @@ export function makeInbound(state) {
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(rpid);
     assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
-    const p = state.getPromise(lpid);
+    const { subscribers } = state.getPromiseSubscribers(lpid);
     assert(
-      !p.subscribers || p.subscribers.indexOf(remoteID) === -1,
+      subscribers.indexOf(remoteID) === -1,
       X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
     );
     remote.deleteRemoteMapping(rpid, lpid);
@@ -36,7 +36,7 @@ export function makeInbound(state) {
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
     remote.deleteToRemoteMapping(lpid);
-    remote.enqueueRetirement([remote.nextSendSeqNum(), rpid]);
+    remote.enqueueRetirement(remote.nextSendSeqNum(), rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }
 
@@ -71,10 +71,12 @@ export function makeInbound(state) {
     // So this must be a new import. Allocate a new vat object for it, which
     // will be the local machine's proxy for use by all other local vats, as
     // well as third party machines.
-    const loid = state.allocateObject(remote.remoteID);
+    const loid = state.allocateObject(remote.remoteID());
 
     remote.addRemoteMapping(roid, loid);
-    cdebug(`comms import ${remote.remoteID}/${remote.name} ${loid} ${roid}`);
+    cdebug(
+      `comms import ${remote.remoteID()}/${remote.name()} ${loid} ${roid}`,
+    );
   }
 
   function addLocalPromiseForRemote(remote, rpid) {
@@ -84,9 +86,11 @@ export function makeInbound(state) {
     );
     // allocate a new lpNN, remember them as the decider, add to clist
     const lpid = state.allocatePromise();
-    state.changeDeciderToRemote(lpid, remote.remoteID);
+    state.changeDeciderToRemote(lpid, remote.remoteID());
     remote.addRemoteMapping(rpid, lpid);
-    cdebug(`comms import ${remote.remoteID}/${remote.name} ${lpid} ${rpid}`);
+    cdebug(
+      `comms import ${remote.remoteID()}/${remote.name()} ${lpid} ${rpid}`,
+    );
   }
 
   function provideLocalForRemote(remoteID, rref) {

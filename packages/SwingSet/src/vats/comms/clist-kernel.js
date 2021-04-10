@@ -29,13 +29,13 @@ export function makeKernel(state, syscall) {
       if (type === 'object') {
         kfref = state.allocateKernelObjectID();
       } else if (type === 'promise') {
-        const p = state.getPromise(lref);
+        const status = state.getPromiseStatus(lref);
         // We should always know about this lref. It is allocated upon
         // receipt.  We retain the promiseTable entry even after the
         // promise is resolved (to remember the resolution).
-        assert(p, X`how did I forget about ${lref}`);
+        assert(status, X`how did I forget about ${lref}`);
         kfref = state.allocateKernelPromiseID();
-        if (!p.resolved && !state.deciderIsKernel(lref)) {
+        if (status === 'unresolved' && !state.deciderIsKernel(lref)) {
           state.subscribeKernelToPromise(lref);
         }
       } else {
@@ -51,8 +51,8 @@ export function makeKernel(state, syscall) {
     if (!lpid) {
       return undefined;
     }
-    const p = state.getPromise(lpid);
-    assert(!p.resolved, X`result ${lpid} is already resolved`);
+    const status = state.getPromiseStatus(lpid);
+    assert(status === 'unresolved', X`result ${lpid} is already resolved`);
     // TODO: reject somehow rather than crashing weirdly if we are not
     // already the decider, but I'm not sure how we could hit that case.
     state.changeDeciderToKernel(lpid);
@@ -67,9 +67,9 @@ export function makeKernel(state, syscall) {
     const lpid = state.mapFromKernel(kfpid);
     assert(lpid, X`unknown kernel promise ${kfpid}`);
     assert(state.mapToKernel(lpid), X`unmapped local promise ${lpid}`);
-    const p = state.getPromise(lpid);
+    const { kernelIsSubscribed } = state.getPromiseSubscribers(lpid);
     assert(
-      !p.kernelIsSubscribed,
+      !kernelIsSubscribed,
       X`attempt to retire subscribed promise ${kfpid}`,
     );
     state.deleteKernelMapping(kfpid, lpid);

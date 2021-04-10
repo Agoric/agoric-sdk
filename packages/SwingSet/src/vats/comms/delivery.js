@@ -56,7 +56,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
     const target = getLocalForKernel(ktarget);
     const args = mapDataFromKernel(kargs, null);
     assert(
-      state.getObject(target) || state.getPromise(target),
+      state.getObject(target) || state.getPromiseStatus(target),
       X`unknown message target ${target}/${ktarget}`,
     );
     assert(
@@ -283,14 +283,15 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
 
     assert(type === 'promise');
     // the promise might be resolved already
-    const p = state.getPromise(target);
-    assert(p);
+    const status = state.getPromiseStatus(target);
+    assert(status);
 
-    if (p.resolved) {
-      if (p.rejected) {
-        return { reject: p.data };
+    if (status !== 'unresolved') {
+      const data = state.getPromiseData(target);
+      if (status === 'rejected') {
+        return { reject: data };
       }
-      const targetPresence = extractPresenceIfPresent(p.data);
+      const targetPresence = extractPresenceIfPresent(data);
       if (targetPresence) {
         return resolveTarget(targetPresence, method);
       } else {
@@ -316,9 +317,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
       for (const slot of slots) {
         const { type } = parseLocalSlot(slot);
         if (type === 'promise') {
-          const p = state.getPromise(slot);
-          assert(p, X`should have a value for ${slot} but didn't`);
-          if (p.resolved && !doneResolutions.has(slot)) {
+          const status = state.getPromiseStatus(slot);
+          assert(status, X`should have a value for ${slot} but didn't`);
+          if (status !== 'unresolved' && !doneResolutions.has(slot)) {
             collect(slot);
           }
         }
@@ -327,9 +328,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
 
     function collect(lpid) {
       doneResolutions.add(lpid);
-      const p = state.getPromise(lpid);
-      resolutions.push([lpid, p.rejected, p.data]);
-      scanSlots(p.data.slots);
+      const status = state.getPromiseStatus(lpid);
+      const data = state.getPromiseData(lpid);
+      resolutions.push([lpid, status === 'rejected', data]);
+      scanSlots(data.slots);
     }
 
     return {

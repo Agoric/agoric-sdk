@@ -8,7 +8,7 @@ import { debugState } from '../src/vats/comms/dispatch';
 import { commsVatDriver } from './commsVatDriver';
 
 test('provideRemoteForLocal', t => {
-  const s = makeState(0);
+  const s = makeState(null, 0);
   const fakeSyscall = {};
   const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal } = clistKit;

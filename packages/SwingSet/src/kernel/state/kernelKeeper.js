@@ -18,13 +18,7 @@ import {
 
 const enableKernelPromiseGC = true;
 
-// This holds all the kernel state, including that of each Vat and Device, in
-// a single JSON-serializable object. At any moment (well, really only
-// between turns) we might be asked for it as a string. This same string may
-// be used as the 'initialState' argument of some future makeKernelKeeper()
-// call, and that future instance should behave identically to this one.
-
-// kernel state lives in a key-value store. All keys and values are strings.
+// Kernel state lives in a key-value store. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
 // want to delete a subtree, we tell the DB to delete everything between
 // "prefix." and "prefix/", which avoids including anything using an
@@ -78,9 +72,6 @@ const enableKernelPromiseGC = true;
 // // if fulfilled or rejected:
 // kp$NN.data.body = missing | JSON
 // kp$NN.data.slots = '' | $vatID[,$vatID..]
-
-// for now we hold this in a plain object, but soon it will move to a
-// host-side database
 
 export function commaSplit(s) {
   if (s === '') {
