@@ -21,11 +21,11 @@ const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {NatValue} inputValue - the value of the asset sent
+ * @param {any} inputValue - the value of the asset sent
  * in to be swapped
- * @param {NatValue} inputReserve - the value in the liquidity
+ * @param {any} inputReserve - the value in the liquidity
  * pool of the kind of asset sent in
- * @param {NatValue} outputReserve - the value in the liquidity
+ * @param {any} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
  * @param {bigint} [feeBasisPoints=30n] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee
@@ -63,11 +63,11 @@ export const getInputPrice = (
  * request, and to do the actual reallocation after an offer has
  * been made.
  *
- * @param {NatValue} outputValue - the value of the asset the user wants
+ * @param {any} outputValue - the value of the asset the user wants
  * to get
- * @param {NatValue} inputReserve - the value in the liquidity
+ * @param {any} inputReserve - the value in the liquidity
  * pool of the asset being spent
- * @param {NatValue} outputReserve - the value in the liquidity
+ * @param {any} outputReserve - the value in the liquidity
  * pool of the kind of asset to be sent out
  * @param {bigint} [feeBasisPoints=30n] - the fee taken in
  * basis points. The default is 0.3% or 30 basis points. The fee is taken from
@@ -128,10 +128,10 @@ export const calcLiqValueToMint = (
  * adding liquidity. We require that the deposited ratio of central to secondary
  * match the current ratio of holdings in the pool.
  *
- * @param {NatValue} centralIn - The value of central assets being deposited
- * @param {NatValue} centralPool - The value of central assets in the pool
- * @param {NatValue} secondaryPool - The value of secondary assets in the pool
- * @param {NatValue} secondaryIn - The value of secondary assets provided. If
+ * @param {any} centralIn - The value of central assets being deposited
+ * @param {any} centralPool - The value of central assets in the pool
+ * @param {any} secondaryPool - The value of secondary assets in the pool
+ * @param {any} secondaryIn - The value of secondary assets provided. If
  * the pool is empty, the entire amount will be accepted
  * @returns {NatValue} - the amount of secondary required
  */
