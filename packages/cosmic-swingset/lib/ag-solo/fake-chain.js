@@ -162,6 +162,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     }
   }
 
+  // The first block is special... do it now.
+  await simulateBlock();
+
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 

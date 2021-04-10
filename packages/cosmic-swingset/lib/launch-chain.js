@@ -137,7 +137,7 @@ export async function launch(
   //
   // Note that the "bootstrap until no more progress" state will call this
   // function without any arguments.
-  async function crankScheduler(maximumCranks = Infinity) {
+  async function crankScheduler(maximumCranks) {
     let now = Date.now();
     const blockStart = now;
     let stepped = true;
@@ -153,8 +153,16 @@ export async function launch(
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
+  let firstBlock;
   async function endBlock(_blockHeight, _blockTime) {
-    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
+    let numCranks = FIXME_MAX_CRANKS_PER_BLOCK;
+    if (firstBlock) {
+      // This is the initial block, we need to finish processing the entire
+      // bootstrap before opening for business.
+      numCranks = Infinity;
+      firstBlock = false;
+    }
+    await crankScheduler(numCranks);
   }
 
   async function saveChainState() {
@@ -193,29 +201,10 @@ export async function launch(
     );
   }
 
-  const [initSavedHeight, savedActions, savedChainSends] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
+  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
+    storage.get(SWING_STORE_META_KEY) || '[0, [], []]',
   );
-
-  let savedHeight = initSavedHeight;
-
-  // We need to fully bootstrap the chain before we can be open to receive
-  // outside messages.
-  async function ensureBootstrapComplete() {
-    if (savedHeight >= 0) {
-      return;
-    }
-    // Run the kernel until there is no more progress possible without inbound
-    // messages.
-    await crankScheduler();
-
-    // Commit the results, with the savedHeight updated so that we don't do it
-    // again.  All future cranks will be with the scheduler in a normal block
-    // context.
-    savedHeight = 0;
-    await saveOutsideState(savedHeight, savedActions, savedChainSends);
-  }
-  await ensureBootstrapComplete();
+  firstBlock = savedHeight === 0;
 
   return {
     deliverInbound,
