@@ -7,7 +7,8 @@ import {
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeStore } from '@agoric/store';
-import { installOnChain as installEconomyOnChain } from '@agoric/treasury/bundles/install-on-chain';
+import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain';
+import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
 
 // this will return { undefined } until `ag-solo set-gci-ingress`
 // has been run to update gci.js
@@ -105,16 +106,26 @@ export function buildRootObject(vatPowers, vatParameters) {
         ),
       );
 
-      // Install the economy, giving it access to the name admins we made.
-      return installEconomyOnChain({
-        agoricNames,
-        board,
-        centralName: CENTRAL_ISSUER_NAME,
-        chainTimerService,
-        nameAdmins,
-        priceAuthority,
-        zoe,
-      });
+      // Install the economy, giving the components access to the name admins we made.
+      const [treasuryCreator] = await Promise.all([
+        installTreasuryOnChain({
+          agoricNames,
+          board,
+          centralName: CENTRAL_ISSUER_NAME,
+          chainTimerService,
+          nameAdmins,
+          priceAuthority,
+          zoe,
+        }),
+        installPegasusOnChain({
+          agoricNames,
+          board,
+          nameAdmins,
+          namesByAddress,
+          zoe,
+        }),
+      ]);
+      return treasuryCreator;
     }
 
     // Now we can bootstrap the economy!

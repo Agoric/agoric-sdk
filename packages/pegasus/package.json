@@ -1,11 +1,11 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.2.1",
-  "description": "Core cryptoeconomy contracts",
+  "version": "0.1.0",
+  "description": "Peg-as-us contract",
   "parsers": {
     "js": "mjs"
   },
-  "main": "src/stablecoinMachine.js",
+  "main": "src/pegasus.js",
   "engines": {
     "node": ">=11.0"
   },
