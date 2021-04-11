@@ -404,10 +404,18 @@ export function buildRootObject(vatPowers, vatParameters) {
         // Create a name hub for this address.
         const {
           nameHub: myAddressNameHub,
-          nameAdmin: myAddressNameAdmin,
+          nameAdmin: rawMyAddressNameAdmin,
         } = makeNameHubKit();
         // Register it with the namesByAddress hub.
         namesByAddressAdmin.update(address, myAddressNameHub);
+
+        /** @type {MyAddressNameAdmin} */
+        const myAddressNameAdmin = {
+          ...rawMyAddressNameAdmin,
+          getMyAddress() {
+            return address;
+          },
+        };
 
         const bundle = harden({
           ...additionalPowers,
@@ -417,12 +425,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           contractHost,
           faucet,
           ibcport,
-          myAddressNameAdmin: {
-            ...myAddressNameAdmin,
-            getMyAddress() {
-              return address;
-            },
-          },
+          myAddressNameAdmin,
           namesByAddress,
           priceAuthority,
           registrar: registry,
@@ -666,21 +669,30 @@ export function buildRootObject(vatPowers, vatParameters) {
           // Allow some hardcoded client address connections into the chain.
           // This is necessary for fake-chain, which does not have Cosmos SDK
           // transactions to provision its client.
+          let nonce = 0;
           const demoProvider = Far('demoProvider', {
             // build a chain-side bundle for a client.
             async getDemoBundle(nickname) {
+              nonce += 1;
               if (giveMeAllTheAgoricPowers) {
                 // NOTE: This is a special exception to the security model,
                 // to give capabilities to all clients (since we are running
                 // locally with the `--give-me-all-the-agoric-powers` flag).
-                return chainBundler.createUserBundle(nickname, 'demo', [
-                  'agoric.agoricNamesAdmin',
-                  'agoric.priceAuthorityAdmin',
-                  'agoric.treasuryCreator',
-                  'agoric.vattp',
-                ]);
+                return chainBundler.createUserBundle(
+                  nickname,
+                  `agoric1admin${nonce}`,
+                  [
+                    'agoric.agoricNamesAdmin',
+                    'agoric.priceAuthorityAdmin',
+                    'agoric.treasuryCreator',
+                    'agoric.vattp',
+                  ],
+                );
               }
-              return chainBundler.createUserBundle(nickname, 'demo');
+              return chainBundler.createUserBundle(
+                nickname,
+                `agoric1user${nonce}`,
+              );
             },
           });
           await Promise.all(

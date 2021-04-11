@@ -13,7 +13,14 @@ export default async function deployWallet(
   const home = await homePromise;
   // console.log('have home', home);
   const {
-    agoric: { agoricNames, namesByAddress, board, faucet, zoe },
+    agoric: {
+      agoricNames,
+      namesByAddress,
+      myAddressNameAdmin,
+      board,
+      faucet,
+      zoe,
+    },
     local: { http, spawner, wallet: oldWallet },
   } = home;
 
@@ -27,6 +34,7 @@ export default async function deployWallet(
   const walletVat = await E(walletInstall).spawn({
     agoricNames,
     namesByAddress,
+    myAddressNameAdmin,
     zoe,
     board,
     faucet,

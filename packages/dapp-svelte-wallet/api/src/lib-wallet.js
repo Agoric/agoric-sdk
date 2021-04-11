@@ -55,6 +55,7 @@ const cmp = (a, b) => {
  * @property {Board} board
  * @property {NameHub} [agoricNames]
  * @property {NameHub} [namesByAddress]
+ * @property {MyAddressNameAdmin} myAddressNameAdmin
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
  * @param {MakeWalletParams} param0
@@ -64,6 +65,7 @@ export function makeWallet({
   board,
   agoricNames,
   namesByAddress,
+  myAddressNameAdmin,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
@@ -586,7 +588,7 @@ export function makeWallet({
     [],
   ));
 
-  const addContact = async (petname, actions) => {
+  const addContact = async (petname, actions, address = undefined) => {
     const already = await E(board).has(actions);
     let depositFacet;
     if (already) {
@@ -612,6 +614,7 @@ export function makeWallet({
 
     const contact = harden({
       actions,
+      address,
       depositBoardId,
     });
 
@@ -1156,18 +1159,10 @@ export function makeWallet({
     await paymentRecord.actions.deposit(depositTo);
   };
 
-  // Allow people to send us payments.
-  const selfContact = addContact(
-    'Self',
-    Far('contact', {
-      receive(payment) {
-        return addPayment(payment);
-      },
-    }),
-  );
+  let selfContactP;
   async function getDepositFacetId(_brandBoardId) {
     // Always return the generic deposit facet.
-    return E.get(selfContact).depositBoardId;
+    return E.get(selfContactP).depositBoardId;
   }
 
   async function disableAutoDeposit(pursePetname) {
@@ -1205,7 +1200,7 @@ export function makeWallet({
       return pendingP;
     }
 
-    const boardIdP = E.get(selfContact).depositBoardId;
+    const boardIdP = E.get(selfContactP).depositBoardId;
     pendingEnableAutoDeposits.init(brand, boardIdP);
     const boardId = await boardIdP;
     brandToDepositFacetId.init(brand, boardId);
@@ -1302,7 +1297,7 @@ export function makeWallet({
   }
 
   function getSelfContact() {
-    return selfContact;
+    return selfContactP;
   }
 
   const makeManager = (petnameMapping, managerType) => {
@@ -1496,6 +1491,19 @@ export function makeWallet({
   });
 
   const initialize = async () => {
+    // Allow people to send us payments.
+    const selfDepositFacet = Far('contact', {
+      receive(payment) {
+        return addPayment(payment);
+      },
+    });
+    const [address] = await Promise.all([
+      E(myAddressNameAdmin).getMyAddress(),
+      E(myAddressNameAdmin).update('depositFacet', selfDepositFacet),
+    ]);
+    // We need to do this before we can enable auto deposit.
+    selfContactP = addContact('Self', selfDepositFacet, address);
+
     // Make Zoe invite purse
     const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
     const inviteIssuerP = E(zoe).getInvitationIssuer();
