@@ -21,7 +21,7 @@
 /**
  * @typedef {Object} FungibleTransferPacket
  * @property {string} amount The extent of the amount
- * @property {Denom} denomination The denomination of the amount
+ * @property {Denom} denom The denomination of the amount
  * @property {string} [sender] The sender address
  * @property {DepositAddress} receiver The receiver deposit address
  */

@@ -82,7 +82,7 @@ async function testRemotePeg(t) {
             packet,
             {
               amount: '100000000000000000001',
-              denomination: 'portdef/chanabc/uatom',
+              denom: 'uatom',
               receiver: 'markaccount',
             },
             'expected transfer packet',
@@ -107,7 +107,7 @@ async function testRemotePeg(t) {
   // Get some local Atoms.
   const sendPacket = {
     amount: '100000000000000000001',
-    denomination: 'portdef/chanabc/uatom',
+    denom: 'uatom',
     receiver: '0x1234',
     sender: 'FIXME:sender',
   };
@@ -128,7 +128,7 @@ async function testRemotePeg(t) {
 
   const sendPacket2 = {
     amount: '170',
-    denomination: 'portdef/chanabc/uatom',
+    denom: 'uatom',
     receiver: 'agoric1234567',
     sender: 'FIXME:sender2',
   };

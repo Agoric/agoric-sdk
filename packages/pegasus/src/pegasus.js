@@ -26,7 +26,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
 /**
  * Get the denomination combined with the network address.
  *
- * @param {ERef<Endpoint>} endpointP network connection address
+ * @param {ERef<Endpoint | undefined>} endpointP network connection address
  * @param {Denom} denom denomination
  * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL] the protocol to use
  * @returns {Promise<string>} denomination URI scoped to endpoint
@@ -35,6 +35,11 @@ async function makeDenomUri(endpointP, denom, protocol = DEFAULT_PROTOCOL) {
   switch (protocol) {
     case 'ics20-1': {
       return E.when(endpointP, endpoint => {
+        if (!endpoint) {
+          // Unqualified remote denomination.
+          return `${protocol}:${denom}`;
+        }
+
         // Deconstruct IBC endpoints to use ICS-20 conventions.
         // IBC endpoint: `/ibc-hop/gaia/ibc-port/transfer/ordered/ics20-1/ibc-channel/chtedite`
         const pairs = parseMultiaddr(endpoint);
@@ -103,7 +108,7 @@ function makeICS20Converter(localBrand, prefixedDenom) {
     // Generate the ics20-1 packet.
     return harden({
       amount: stringValue,
-      denomination: prefixedDenom,
+      denom: prefixedDenom,
       receiver: depositAddress,
     });
   }
@@ -334,7 +339,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
            * @type {FungibleTransferPacket}
            */
           const packet = JSON.parse(packetBytes);
-          const denomUri = `ics20-1:${packet.denomination}`;
+          const denomUri = `ics20-1:${packet.denom}`;
           const { receive } = denomUriToCourier.get(denomUri);
           return receive(packet)
             .then(_ => {
@@ -395,12 +400,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       );
 
       // Find our data elements.
-      const allegedLocalAddress = await E(c).getLocalAddress();
-      const denomUri = await makeDenomUri(
-        allegedLocalAddress,
-        remoteDenom,
-        protocol,
-      );
+      const denomUri = await makeDenomUri(undefined, remoteDenom, protocol);
 
       // Create the issuer for the local erights corresponding to the remote values.
       const localKeyword = createLocalIssuerKeyword();
