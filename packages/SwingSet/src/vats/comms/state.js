@@ -9,25 +9,34 @@ import { cdebug } from './cdebug';
 const COMMS = 'comms';
 const KERNEL = 'kernel';
 
-function makeEphemeralVatstore() {
-  const store = new Map();
+function makeEphemeralSyscallVatstore() {
+  console.log('making fake vatstore');
+  const map = new Map();
+  return harden({
+    vatstoreGet: key => map.get(key),
+    vatstoreSet: (key, value) => map.set(key, value),
+    vatstoreDelete: key => map.delete(key),
+  });
+}
+
+function makeSyscallStore(syscall) {
   return harden({
     get(key) {
       assert.typeof(key, 'string');
-      return store.get(key);
+      return syscall.vatstoreGet(key);
     },
     set(key, value) {
       assert.typeof(key, 'string');
       assert.typeof(value, 'string');
-      store.set(key, value);
+      syscall.vatstoreSet(key, value);
     },
     delete(key) {
       assert.typeof(key, 'string');
-      return store.delete(key);
+      return syscall.vatstoreDelete(key);
     },
     getRequired(key) {
       assert.typeof(key, 'string');
-      const result = store.get(key);
+      const result = syscall.vatstoreGet(key);
       assert(result !== undefined, X`store lacks required key ${key}`);
       return result;
     },
@@ -57,7 +66,7 @@ function commaSplit(s) {
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState(store, identifierBase = 0) {
+export function makeState(syscall, identifierBase = 0) {
   // Comms vat state is kept in the vatstore, which is managed by the kernel and
   // accessed as part of the syscall interface.  The schema used here is very
   // similar to (in fact, modelled upon) the schema the kernel uses for its own
@@ -90,7 +99,9 @@ export function makeState(store, identifierBase = 0) {
   // r.nextID = $NN  // remote connection identifier allocation counter (rNN)
   // r.$loid = r$NN  // mapping receiver objects to remotes they receive from
   // rname.$name = r$NN // mapping from remote names to remote IDs
+  //   (remote name strings are limited to sequences of [A-Za-z0-9.+-] )
   // r$NN.initialized = true // present if this remote has had its storage initialized
+  // r$NN.name = name // name for this remote
   // r$NN.transmitterID = $kfref // transmitter object for sending to remote
   // r$NN.c.$rref = $lref // r$NN inbound c-list (ro+NN/ro-NN/rp+NN/rp-NN -> loNN/lpNN)
   // r$NN.c.$lref = $rref // r$NN outbound c-list (loNN/lpNN -> ro+NN/ro-NN/rp+NN/rp-NN)
@@ -100,18 +111,21 @@ export function makeState(store, identifierBase = 0) {
   // r$NN.p.nextID = $NN // r$NN promise identifier allocation counter (rp-NN)
   // r$NN.rq = [[$seqnum,$rpid],[$seqnum,$rpid]...] // r$NN promise retirement queue
 
-  if (!store) {
-    store = makeEphemeralVatstore();
+  if (!syscall) {
+    syscall = makeEphemeralSyscallVatstore();
   }
+  const store = makeSyscallStore(syscall);
 
-  function createStartingCommsVatState() {
-    store.set('identifierBase', `${identifierBase}`);
-    store.set('lo.nextID', `${identifierBase + 10}`);
-    store.set('lp.nextID', `${identifierBase + 20}`);
-    store.set('o.nextID', `${identifierBase + 30}`);
-    store.set('p.nextID', `${identifierBase + 40}`);
-    store.set('r.nextID', '1');
-    store.set('initialized', 'true');
+  function initialize() {
+    if (!store.get('initialized')) {
+      store.set('identifierBase', `${identifierBase}`);
+      store.set('lo.nextID', `${identifierBase + 10}`);
+      store.set('lp.nextID', `${identifierBase + 20}`);
+      store.set('o.nextID', `${identifierBase + 30}`);
+      store.set('p.nextID', `${identifierBase + 40}`);
+      store.set('r.nextID', '1');
+      store.set('initialized', 'true');
+    }
   }
 
   function mapFromKernel(kfref) {
@@ -320,7 +334,7 @@ export function makeState(store, identifierBase = 0) {
   }
 
   function addRemote(name, transmitterID) {
-    assert(/^\w+$/.test(name), X`not a valid remote name: ${name}`);
+    assert(/^[-\w.+]+$/.test(name), `not a valid remote name: ${name}`);
     const nameKey = `rname.${name}`;
     assert(!store.get(nameKey), X`remote name ${name} already in use`);
 
@@ -354,11 +368,9 @@ export function makeState(store, identifierBase = 0) {
     return store.get(`r.${receiverID}`);
   }
 
-  if (!store.get('initialized')) {
-    createStartingCommsVatState();
-  }
-
   return harden({
+    initialize,
+
     mapFromKernel,
     mapToKernel,
     addKernelMapping,

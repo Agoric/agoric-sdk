@@ -36,19 +36,15 @@ export function makeInbound(state) {
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
     remote.deleteToRemoteMapping(lpid);
-    remote.enqueueRetirement(remote.nextSendSeqNum(), rpid);
+    remote.enqueueRetirement(rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }
 
   function retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum) {
     const remote = state.getRemote(remoteID);
-    for (;;) {
-      const rpid = remote.nextReadyRetirement(ackSeqNum);
-      if (rpid) {
-        retireRemotePromiseID(remoteID, flipRemoteSlot(rpid));
-      } else {
-        break;
-      }
+    const readyToRetire = remote.getReadyRetirements(ackSeqNum);
+    for (const rpid of readyToRetire) {
+      retireRemotePromiseID(remoteID, flipRemoteSlot(rpid));
     }
   }
 
