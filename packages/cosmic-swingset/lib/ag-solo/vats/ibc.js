@@ -266,13 +266,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
       };
       return callIBCDevice('bindPort', { packet });
     },
-    async onInbound(
-      _port,
-      _listenAddr,
-      remoteAddr,
-      _lhandler,
-      _protocolHandler,
-    ) {
+    async onInstantiate(_port, _localAddr, remoteAddr, _protocolHandler) {
       // we can take advantage of the fact that remoteAddrs are unique (they
       // have their own channelID).
       return remoteAddrToLocalSuffix.get(remoteAddr);

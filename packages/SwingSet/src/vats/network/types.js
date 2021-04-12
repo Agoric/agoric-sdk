@@ -60,8 +60,8 @@
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
- * @property {(port: Port, listenAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler, p: ProtocolHandler) => Promise<Endpoint>} [onInbound] Return suffix for
- * inbound connection attempt
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<Endpoint>} [onInstantiate] Return unique suffix for
+ * local address
  * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<[Endpoint, ConnectionHandler]>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *

@@ -387,17 +387,11 @@ export function makeNetworkProtocol(protocolHandler) {
         try {
           // See if our protocol is willing to receive this connection.
           // eslint-disable-next-line no-await-in-loop
-          const localSuffix = await E(protocolHandler)
-            .onInbound(
-              port,
-              listenPrefix,
-              remoteAddr,
-              listener,
-              protocolHandler,
-            )
+          const localInstance = await E(protocolHandler)
+            .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
             .catch(rethrowUnlessMissing);
-          localAddr = localSuffix
-            ? `${listenPrefix}/${localSuffix}`
+          localAddr = localInstance
+            ? `${listenPrefix}/${localInstance}`
             : listenAddr;
         } catch (e) {
           lastFailure = e;
@@ -456,10 +450,16 @@ export function makeNetworkProtocol(protocolHandler) {
         /** @type {string} */
         (await E(port).getLocalAddress());
 
+      // Allocate a local address.
+      const localInstance = await E(protocolHandler)
+        .onInstantiate(port, localAddr, remoteAddr, protocolHandler)
+        .catch(rethrowUnlessMissing);
+      const la = localInstance ? `${localAddr}/${localInstance}` : localAddr;
+
       let lastFailure;
       try {
         // Attempt the loopback connection.
-        const attempt = await protocolImpl.inbound(remoteAddr, localAddr);
+        const attempt = await protocolImpl.inbound(remoteAddr, la);
         return attempt.accept(lchandler);
       } catch (e) {
         lastFailure = e;
@@ -469,7 +469,7 @@ export function makeNetworkProtocol(protocolHandler) {
         /** @type {[Endpoint, ConnectionHandler]} */
         (await E(protocolHandler).onConnect(
           port,
-          localAddr,
+          la,
           remoteAddr,
           lchandler,
           protocolHandler,
@@ -482,7 +482,7 @@ export function makeNetworkProtocol(protocolHandler) {
       const current = currentConnections.get(port);
       return crossoverConnection(
         lchandler,
-        localAddr,
+        la,
         rchandler,
         connectedAddress,
         current,
@@ -534,11 +534,11 @@ export function makeNonceMaker(prefix = '', suffix = '') {
 /**
  * Create a protocol handler that just connects to itself.
  *
- * @param {ProtocolHandler['onInbound']} [onInbound]
+ * @param {ProtocolHandler['onInstantiate']} [onInstantiate]
  * @returns {ProtocolHandler} The localhost handler
  */
 export function makeLoopbackProtocolHandler(
-  onInbound = makeNonceMaker('nonce/'),
+  onInstantiate = makeNonceMaker('nonce/'),
 ) {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
@@ -564,13 +564,15 @@ export function makeLoopbackProtocolHandler(
         /** @type {ConnectionHandler} */
         (await E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler));
       // console.log(`rchandler is`, rchandler);
-      const remoteSuffix = await E(protocolHandler)
-        .onInbound(lport, remoteAddr, localAddr, lhandler, protocolHandler)
+      const remoteInstance = await E(protocolHandler)
+        .onInstantiate(lport, remoteAddr, localAddr, protocolHandler)
         .catch(rethrowUnlessMissing);
-      const ra = remoteSuffix ? `${remoteAddr}/${remoteSuffix}` : remoteAddr;
+      const ra = remoteInstance
+        ? `${remoteAddr}/${remoteInstance}`
+        : remoteAddr;
       return [ra, rchandler];
     },
-    onInbound,
+    onInstantiate,
     async onListen(port, localAddr, listenHandler, _protocolHandler) {
       // TODO: Implement other listener replacement policies.
       if (listeners.has(localAddr)) {
