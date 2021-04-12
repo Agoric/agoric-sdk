@@ -59,7 +59,7 @@ async function testRemotePeg(t) {
    * @type {import('../src/pegasus').Pegasus}
    */
   const pegasus = publicAPI;
-  const network = makeNetworkProtocol(makeLoopbackProtocolHandler(E));
+  const network = makeNetworkProtocol(makeLoopbackProtocolHandler());
 
   const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
   const portName = await E(portP).getLocalAddress();
