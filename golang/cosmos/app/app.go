@@ -534,11 +534,33 @@ func (app *GaiaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.R
 	return app.mm.EndBlock(ctx, req)
 }
 
+func updateTransferPort(gs GenesisState, reservedPort, newPort string) error {
+	var transferGenesis ibctransfertypes.GenesisState
+	if err := json.Unmarshal(gs[ibctransfertypes.ModuleName], &transferGenesis); err != nil {
+		return err
+	}
+	if len(transferGenesis.PortId) > 0 && transferGenesis.PortId != reservedPort {
+		// Already not the reserved port name.
+		return nil
+	}
+	// Change the listening IBC port to avoid conflict.
+	transferGenesis.PortId = newPort
+	transferGenesisBytes, err := json.Marshal(transferGenesis)
+	if err != nil {
+		return err
+	}
+	gs[ibctransfertypes.ModuleName] = transferGenesisBytes
+	return nil
+}
+
 // InitChainer application update at chain initialization
 func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	app.MustInitController(ctx)
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		panic(err)
+	}
+	if err := updateTransferPort(genesisState, "transfer", "cosmos-transfer"); err != nil {
 		panic(err)
 	}
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
