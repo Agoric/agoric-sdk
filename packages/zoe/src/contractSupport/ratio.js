@@ -44,9 +44,9 @@ export const assertIsRatio = ratio => {
 };
 
 /**
- * @param {NatValue} numerator
+ * @param {bigint | number} numerator
  * @param {Brand} numeratorBrand
- * @param {NatValue} denominator
+ * @param {bigint | number} denominator
  * @param {Brand} denominatorBrand
  * @returns {Ratio}
  */

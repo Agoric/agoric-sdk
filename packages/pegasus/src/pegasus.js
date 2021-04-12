@@ -42,11 +42,7 @@ async function makeDenomUri(endpointP, denom, protocol = DEFAULT_PROTOCOL) {
         const protoPort = pairs.find(([proto]) => proto === 'ibc-port');
         assert(protoPort, details`Cannot find IBC port in ${endpoint}`);
 
-        // FIXME: We really should get this from the actual endpoint.
-        const FIXME_FAKE_CHANNEL = ['ibc-channel', 'transfer'];
-        const protoChannel =
-          pairs.find(([proto]) => proto === 'ibc-channel') ||
-          FIXME_FAKE_CHANNEL;
+        const protoChannel = pairs.find(([proto]) => proto === 'ibc-channel');
         assert(protoChannel, details`Cannot find IBC channel in ${endpoint}`);
 
         const port = protoPort[1];
@@ -370,6 +366,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {Denom} remoteDenom Remote denomination
      * @param {string} [amountMathKind=DEFAULT_AMOUNT_MATH_KIND] The kind of
      * amount math for the pegged values
+     * @param {DisplayInfo} [displayInfo]
      * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL]
      * @returns {Promise<Peg>}
      */
@@ -378,16 +375,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
       connectionP,
       remoteDenom,
       amountMathKind = DEFAULT_AMOUNT_MATH_KIND,
+      displayInfo = undefined,
       protocol = DEFAULT_PROTOCOL,
     ) {
       // Assertions
-      assert(
-        // TODO: Find the exact restrictions on Cosmos denoms.
-        remoteDenom.match(/^[a-z][a-z0-9]*$/),
-        details`Invalid ics20-1 remoteDenom ${q(
-          remoteDenom,
-        )}; need Cosmos denomination format`,
-      );
       assert(
         amountMathKind === 'nat',
         details`Unimplemented amountMathKind ${q(amountMathKind)}; need "nat"`,
@@ -400,7 +391,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const c = await connectionP;
       assert(
         connectionToLocalDenomState.has(c),
-        details`The connection must use .createPegConnectionHandler()`,
+        details`The connection must use .makePegConnectionHandler()`,
       );
 
       // Find our data elements.
@@ -413,7 +404,11 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
       // Create the issuer for the local erights corresponding to the remote values.
       const localKeyword = createLocalIssuerKeyword();
-      const zcfMint = await zcf.makeZCFMint(localKeyword, amountMathKind);
+      const zcfMint = await zcf.makeZCFMint(
+        localKeyword,
+        amountMathKind,
+        displayInfo,
+      );
       const { brand: localBrand } = zcfMint.getIssuerRecord();
 
       // Describe how to retain/redeem pegged shadow erights.
@@ -463,7 +458,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const c = await connectionP;
       assert(
         connectionToLocalDenomState.has(c),
-        details`The connection must use .createPegConnectionHandler()`,
+        details`The connection must use .makePegConnectionHandler()`,
       );
 
       // We need the last nonce for our denom name.

@@ -1,8 +1,9 @@
-// @ts-nocheck
+// @ts-check
 import { allComparable } from '@agoric/same-structure';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
+  makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
@@ -55,6 +56,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   // Make services that are provided on the real or virtual chain side
   async function makeChainBundler(
     vats,
+    bridgeManager,
     timerDevice,
     vatAdminSvc,
     noFakeCurrencies,
@@ -73,7 +75,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
-      /** @type {ZoeService} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
+      /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
       E(vats.host).makeHost(),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
@@ -85,6 +87,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     const {
       nameHub: namesByAddress,
       nameAdmin: namesByAddressAdmin,
+    } = makeNameHubKit();
+    const {
+      nameHub: pegasusConnections,
+      nameAdmin: pegasusConnectionsAdmin,
     } = makeNameHubKit();
 
     async function installEconomy() {
@@ -130,14 +136,19 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     const treasuryCreator = await installEconomy();
-    const [centralIssuer, centralBrand, ammInstance] = await Promise.all([
-      ...['issuer', 'brand'].map(hub =>
-        E(agoricNames).lookup(hub, CENTRAL_ISSUER_NAME),
-      ),
+    const [
+      centralIssuer,
+      centralBrand,
+      ammInstance,
+      pegasusInstance,
+    ] = await Promise.all([
+      E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
+      E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
       E(agoricNames).lookup('instance', 'autoswap'),
+      E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
 
-    // [string, import('./issuers').IssuerInitializationRecord]
+    /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,
       {
@@ -232,6 +243,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           );
           const payment = E.get(payments)[0];
 
+          assert(record.issuer);
           const amount = await E(record.issuer).getAmountOf(payment);
           const proposal = harden({
             give: {
@@ -255,14 +267,13 @@ export function buildRootObject(vatPowers, vatParameters) {
         }),
       );
     }
-    // await addAllCollateral();
 
     /**
      * @param {ERef<Issuer>} issuerIn
      * @param {ERef<Issuer>} issuerOut
      * @param {ERef<Brand>} brandIn
      * @param {ERef<Brand>} brandOut
-     * @param {Array<[number, number]>} tradeList
+     * @param {Array<[bigint | number, bigint | number]>} tradeList
      */
     const makeFakePriceAuthority = (
       issuerIn,
@@ -281,7 +292,11 @@ export function buildRootObject(vatPowers, vatParameters) {
         quoteInterval: QUOTE_INTERVAL,
       });
 
-    const ammPublicFacet = E(zoe).getPublicFacet(ammInstance);
+    const [ammPublicFacet, pegasus] = await Promise.all(
+      [ammInstance, pegasusInstance].map(instance =>
+        E(zoe).getPublicFacet(instance),
+      ),
+    );
     await addAllCollateral();
 
     await Promise.all(
@@ -293,6 +308,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         assert(record);
         const { tradesGivenCentral, issuer } = record;
 
+        assert(issuer);
         const brand = await E(issuer).getBrand();
         let { toCentral, fromCentral } = await E(ammPublicFacet)
           .getPriceAuthorities(brand)
@@ -322,6 +338,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           console.log(
             `Making fake price authority for ${issuerName}-${CENTRAL_ISSUER_NAME}`,
           );
+          /** @type {Array<[bigint | number, bigint | number]>} */
           const tradesGivenOther = tradesGivenCentral.map(
             ([valueCentral, valueOther]) => [valueOther, valueCentral],
           );
@@ -354,6 +371,17 @@ export function buildRootObject(vatPowers, vatParameters) {
       }),
     );
 
+    // This needs to happen after creating all the services.
+    // eslint-disable-next-line no-use-before-define
+    await registerNetworkProtocols(
+      vats,
+      bridgeManager,
+      pegasus,
+      pegasusConnectionsAdmin,
+    );
+
+    /** @type {ERef<Protocol>} */
+    const network = vats.network;
     return Far('chainBundler', {
       async createUserBundle(_nickname, address, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
@@ -361,22 +389,26 @@ export function buildRootObject(vatPowers, vatParameters) {
         const ibcport = [];
         for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
           // eslint-disable-next-line no-await-in-loop
-          ibcport.push(await E(vats.network).bind('/ibc-port/'));
+          const port = await E(network).bind('/ibc-port/');
+          ibcport.push(port);
         }
 
         const additionalPowers = {};
-        if (powerFlags && powerFlags.includes('agoric.vattp')) {
-          // Give the authority to create a new host for vattp to share objects with.
-          additionalPowers.vattp = makeVattpFrom(vats);
+        if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
+          additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
+        }
+        if (powerFlags && powerFlags.includes('agoric.pegasusConnections')) {
+          additionalPowers.pegasusConnections = pegasusConnections;
         }
         if (powerFlags && powerFlags.includes('agoric.priceAuthorityAdmin')) {
           additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
         }
-        if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
-          additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
-        }
         if (powerFlags && powerFlags.includes('agoric.treasuryCreator')) {
           additionalPowers.treasuryCreator = treasuryCreator;
+        }
+        if (powerFlags && powerFlags.includes('agoric.vattp')) {
+          // Give the authority to create a new host for vattp to share objects with.
+          additionalPowers.vattp = makeVattpFrom(vats);
         }
 
         const mintIssuerNames = [];
@@ -450,7 +482,14 @@ export function buildRootObject(vatPowers, vatParameters) {
     });
   }
 
-  async function registerNetworkProtocols(vats, bridgeMgr) {
+  async function registerNetworkProtocols(
+    vats,
+    bridgeMgr,
+    pegasus,
+    pegasusConnectionsAdmin,
+  ) {
+    /** @type {ERef<Protocol>} */
+    const network = vats.network;
     const ps = [];
     // Every vat has a loopback device.
     ps.push(
@@ -479,20 +518,57 @@ export function buildRootObject(vatPowers, vatParameters) {
         ),
       );
     } else {
-      const loHandler = makeLoopbackProtocolHandler(E);
+      const loHandler = makeLoopbackProtocolHandler(
+        makeNonceMaker('ibc-channel/channel-'),
+      );
       ps.push(
         E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler),
       );
     }
     await Promise.all(ps);
 
-    if (bridgeMgr) {
-      // Add an echo listener on our ibc-port network.
-      const port = await E(vats.network).bind('/ibc-port/echo');
+    // Add an echo listener on our ibc-port network (whether real or virtual).
+    const echoPort = await E(network).bind('/ibc-port/echo');
+    E(echoPort).addListener(
+      Far('listener', {
+        async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+          return harden(makeEchoConnectionHandler());
+        },
+      }),
+    );
+
+    if (pegasus) {
+      // Add the Pegasus transfer port.
+      const port = await E(network).bind('/ibc-port/pegasus');
       E(port).addListener(
         Far('listener', {
           async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-            return harden(makeEchoConnectionHandler());
+            const chandlerP = E(pegasus).makePegConnectionHandler();
+            const proxyMethod = name => (...args) =>
+              E(chandlerP)[name](...args);
+            const onOpen = proxyMethod('onOpen');
+            const onClose = proxyMethod('onClose');
+
+            let localAddr;
+            return Far('pegasusConnectionHandler', {
+              onOpen(c, actualLocalAddr, ...args) {
+                localAddr = actualLocalAddr;
+                if (pegasusConnectionsAdmin) {
+                  pegasusConnectionsAdmin.update(localAddr, c);
+                }
+                return onOpen(c, ...args);
+              },
+              onReceive: proxyMethod('onReceive'),
+              onClose(c, ...args) {
+                try {
+                  return onClose(c, ...args);
+                } finally {
+                  if (pegasusConnectionsAdmin) {
+                    pegasusConnectionsAdmin.delete(localAddr, c);
+                  }
+                }
+              },
+            });
           },
         }),
       );
@@ -616,19 +692,18 @@ export function buildRootObject(vatPowers, vatParameters) {
         case 'chain': {
           // provisioning vat can ask the demo server for bundles, and can
           // register client pubkeys with comms
+          const chainBundler = await makeChainBundler(
+            vats,
+            bridgeManager,
+            devices.timer,
+            vatAdminSvc,
+            noFakeCurrencies,
+          );
           await E(vats.provisioning).register(
-            await makeChainBundler(
-              vats,
-              devices.timer,
-              vatAdminSvc,
-              noFakeCurrencies,
-            ),
+            chainBundler,
             vats.comms,
             vats.vattp,
           );
-
-          // Must occur after makeChainBundler.
-          await registerNetworkProtocols(vats, bridgeManager);
           break;
         }
 
@@ -639,7 +714,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           const localTimerService = await E(vats.timer).createTimerService(
             devices.timer,
           );
-          await registerNetworkProtocols(vats, bridgeManager);
+          await registerNetworkProtocols(vats, bridgeManager, null);
 
           await setupCommandDevice(vats.http, devices.command, {
             client: true,
@@ -663,6 +738,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         case 'sim-chain': {
           const chainBundler = await makeChainBundler(
             vats,
+            bridgeManager,
             devices.timer,
             vatAdminSvc,
             noFakeCurrencies,
@@ -674,8 +750,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             vats.comms,
             vats.vattp,
           );
-
-          await registerNetworkProtocols(vats, bridgeManager);
 
           // Allow some hardcoded client address connections into the chain.
           // This is necessary for fake-chain, which does not have Cosmos SDK
@@ -694,6 +768,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                   `agoric1admin${nonce}`,
                   [
                     'agoric.agoricNamesAdmin',
+                    'agoric.pegasusConnections',
                     'agoric.priceAuthorityAdmin',
                     'agoric.treasuryCreator',
                     'agoric.vattp',
