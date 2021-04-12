@@ -18,7 +18,7 @@ export function buildCommsDispatch(
   vatParameters = {},
 ) {
   const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
-  const state = makeState(null, identifierBase);
+  const state = makeState(syscall, identifierBase);
   const clistKit = makeCListKit(state, syscall);
 
   function transmit(remoteID, msg) {
@@ -41,10 +41,20 @@ export function buildCommsDispatch(
 
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
-  state.addMetaObject(controller);
-  cdebug(`comms controller is ${controller}`);
+
+  let needToInitializeState = true;
+
+  function initializeState() {
+    state.initialize();
+    state.addMetaObject(controller);
+    cdebug(`comms controller is ${controller}`);
+    needToInitializeState = false;
+  }
 
   function deliver(target, method, args, result) {
+    if (needToInitializeState) {
+      initializeState();
+    }
     // console.debug(`comms.deliver ${target} r=${result}`);
     insistCapData(args);
 

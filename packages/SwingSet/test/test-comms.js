@@ -9,6 +9,7 @@ import { commsVatDriver } from './commsVatDriver';
 
 test('provideRemoteForLocal', t => {
   const s = makeState(null, 0);
+  s.initialize();
   const fakeSyscall = {};
   const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal } = clistKit;
@@ -23,12 +24,22 @@ test('provideRemoteForLocal', t => {
 
 function mockSyscall() {
   const sends = [];
+  const fakestore = new Map();
   const syscall = harden({
     send(targetSlot, method, args) {
       sends.push([targetSlot, method, args]);
       return 'r-1';
     },
     subscribe(_targetSlot) {},
+    vatstoreGet(key) {
+      return fakestore.get(key);
+    },
+    vatstoreSet(key, value) {
+      fakestore.set(key, value);
+    },
+    vatstoreDelete(key) {
+      fakestore.delete(key);
+    },
   });
   return { syscall, sends };
 }
@@ -47,6 +58,7 @@ test('transmit', t => {
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
+  state.initialize();
   const {
     provideKernelForLocal,
     provideLocalForKernel,
@@ -118,6 +130,7 @@ test('receive', t => {
   const { syscall, sends } = mockSyscall();
   const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(d);
+  state.initialize();
   const {
     provideLocalForKernel,
     getKernelForLocal,

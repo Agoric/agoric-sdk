@@ -136,9 +136,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
     assert(delim1 >= 0, X`received message ${message} lacks seqNum delimiter`);
     const seqNum = message.substring(0, delim1);
     const remote = state.getRemote(remoteID);
-    remote.advanceReceivedSeqNum();
+    const recvSeqNum = remote.advanceReceivedSeqNum();
     assert(
-      seqNum === '' || seqNum === `${remote.lastReceivedSeqNum()}`,
+      seqNum === '' || seqNum === `${recvSeqNum}`,
       X`unexpected recv seqNum ${seqNum}`,
     );
 

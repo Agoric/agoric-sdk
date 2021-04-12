@@ -148,6 +148,7 @@ const oCommsRoot = '@o+0'; // Always the root of the comms vat
  * @returns {unknown} a syscall object
  */
 function loggingSyscall(log) {
+  const fakestore = new Map();
   return harden({
     send(target, method, args, result) {
       // console.log(`<< send ${target}, ${method}, ${JSON.stringify(args)}, ${result}`);
@@ -160,6 +161,15 @@ function loggingSyscall(log) {
     subscribe(slot) {
       // console.log(`<< subscribe ${slot}`);
       log.push(slot);
+    },
+    vatstoreGet(key) {
+      return fakestore.get(key);
+    },
+    vatstoreSet(key, value) {
+      fakestore.set(key, value);
+    },
+    vatstoreDelete(key) {
+      fakestore.delete(key);
     },
   });
 }

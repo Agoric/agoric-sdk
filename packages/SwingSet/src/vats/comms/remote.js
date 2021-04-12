@@ -85,8 +85,10 @@ export function makeRemote(store, remoteID) {
 
   function advanceReceivedSeqNum() {
     const key = `${remoteID}.recvSeq`;
-    const seqNum = Number(store.getRequired(key));
-    store.set(key, `${seqNum + 1}`);
+    let seqNum = Number(store.getRequired(key));
+    seqNum += 1;
+    store.set(key, `${seqNum}`);
+    return seqNum;
   }
 
   function allocateRemoteObject() {
@@ -113,25 +115,30 @@ export function makeRemote(store, remoteID) {
     return makeRemoteSlot('promise', false, index);
   }
 
-  function enqueueRetirement(seqNum, rpid) {
-    const key = `${remoteID}.rq`;
-    const retirementQueue = JSON.parse(store.getRequired(key));
+  function enqueueRetirement(rpid) {
+    const seqNum = nextSendSeqNum();
+    const queueKey = `${remoteID}.rq`;
+    const retirementQueue = JSON.parse(store.getRequired(queueKey));
     retirementQueue.push([seqNum, rpid]);
-    store.set(key, JSON.stringify(retirementQueue));
+    store.set(queueKey, JSON.stringify(retirementQueue));
   }
 
-  function nextReadyRetirement(ackSeqNum) {
+  function getReadyRetirements(ackSeqNum) {
     const key = `${remoteID}.rq`;
     const retirementQueue = JSON.parse(store.getRequired(key));
-    if (retirementQueue.length > 0) {
+    const ready = [];
+    while (retirementQueue.length > 0) {
       const [sentSeqNum, rpid] = retirementQueue[0];
-      if (sentSeqNum <= ackSeqNum) {
-        retirementQueue.shift();
-        store.set(key, JSON.stringify(retirementQueue));
-        return rpid;
+      if (sentSeqNum > ackSeqNum) {
+        break;
       }
+      ready.push(rpid);
+      retirementQueue.shift();
     }
-    return undefined;
+    if (ready.length > 0) {
+      store.set(key, JSON.stringify(retirementQueue));
+    }
+    return ready;
   }
 
   return harden({
@@ -151,6 +158,6 @@ export function makeRemote(store, remoteID) {
     lastReceivedSeqNum,
     advanceReceivedSeqNum,
     enqueueRetirement,
-    nextReadyRetirement,
+    getReadyRetirements,
   });
 }
