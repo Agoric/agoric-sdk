@@ -58,10 +58,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  function doOutboundBridge(dstID, _obj) {
-    // console.error('received', dstID, obj);
-    return `Bridge device (${dstID}) not implemented for fake-chain`;
-  }
   function flushChainSends(replay) {
     assert(!replay, X`Replay not implemented`);
   }
@@ -70,7 +66,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const s = await launch(
     stateDBdir,
     mailboxStorage,
-    doOutboundBridge,
+    undefined,
     vatsdir,
     argv,
     GCI, // debugName
