@@ -1,4 +1,4 @@
-export default function(E) {
+export default function makePubsub(E) {
   let lastPublished;
   const subscribers = [];
 

@@ -44,11 +44,7 @@ async function buildSwingset(
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
-  const bd = buildBridge(bridgeOutbound);
   config.devices = {
-    bridge: {
-      sourceSpec: bd.srcPath,
-    },
     mailbox: {
       sourceSpec: mb.srcPath,
     },
@@ -57,10 +53,19 @@ async function buildSwingset(
     },
   };
   const deviceEndowments = {
-    bridge: { ...bd.endowments },
     mailbox: { ...mb.endowments },
     timer: { ...timer.endowments },
   };
+
+  let bridgeInbound;
+  if (bridgeOutbound) {
+    const bd = buildBridge(bridgeOutbound);
+    config.devices.bridge = {
+      sourceSpec: bd.srcPath,
+    };
+    deviceEndowments.bridge = { ...bd.endowments };
+    bridgeInbound = bd.deliverInbound;
+  }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(storage)) {
@@ -76,14 +81,13 @@ async function buildSwingset(
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (-1) or in endBlock).
 
-  const bridgeInbound = bd.deliverInbound;
   return { controller, mb, bridgeInbound, timer };
 }
 
 export async function launch(
   kernelStateDBDir,
   mailboxStorage,
-  doOutboundBridge,
+  bridgeOutbound,
   vatsDir,
   argv,
   debugName = undefined,
@@ -94,11 +98,6 @@ export async function launch(
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
-
-  function bridgeOutbound(dstID, obj) {
-    // console.error('would outbound bridge', dstID, obj);
-    return doOutboundBridge(dstID, obj);
-  }
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
