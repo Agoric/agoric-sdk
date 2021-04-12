@@ -30,7 +30,6 @@
 /**
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
- * @property {(port: Port, listenAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<Endpoint>} [onInbound] Return metadata for inbound connection attempt
  * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
  * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<void>} onReject The connection was rejected
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
@@ -61,6 +60,8 @@
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onBind A port will be bound
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListen A port was listening
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
+ * @property {(port: Port, listenAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler, p: ProtocolHandler) => Promise<Endpoint>} [onInbound] Return suffix for
+ * inbound connection attempt
  * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<[Endpoint, ConnectionHandler]>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *

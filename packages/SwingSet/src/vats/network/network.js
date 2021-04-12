@@ -385,10 +385,16 @@ export function makeNetworkProtocol(protocolHandler) {
         const [port, listener] = listening.get(listenPrefix);
         let localAddr;
         try {
-          // See if we have a listener that's willing to receive this connection.
+          // See if our protocol is willing to receive this connection.
           // eslint-disable-next-line no-await-in-loop
-          const localSuffix = await E(listener)
-            .onInbound(port, listenPrefix, remoteAddr, listener)
+          const localSuffix = await E(protocolHandler)
+            .onInbound(
+              port,
+              listenPrefix,
+              remoteAddr,
+              listener,
+              protocolHandler,
+            )
             .catch(rethrowUnlessMissing);
           localAddr = localSuffix
             ? `${listenPrefix}/${localSuffix}`
@@ -508,7 +514,7 @@ export function makeEchoConnectionHandler() {
       }
       return bytes;
     },
-    async onClose(_connection, _connectionHandler) {
+    async onClose(_connection, _reason, _connectionHandler) {
       if (closed) {
         throw closed;
       }
@@ -517,18 +523,29 @@ export function makeEchoConnectionHandler() {
   });
 }
 
+export function makeNonceMaker(prefix = '', suffix = '') {
+  let nonce = 0;
+  return async () => {
+    nonce += 1;
+    return `${prefix}${nonce}${suffix}`;
+  };
+}
+
 /**
  * Create a protocol handler that just connects to itself.
  *
+ * @param {ProtocolHandler['onInbound']} [onInbound]
  * @returns {ProtocolHandler} The localhost handler
  */
-export function makeLoopbackProtocolHandler() {
+export function makeLoopbackProtocolHandler(
+  onInbound = makeNonceMaker('nonce/'),
+) {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
   const listeners = makeStore('localAddr');
 
-  let nonce = 0;
+  const makePortID = makeNonceMaker('port');
 
   return Far('ProtocolHandler', {
     // eslint-disable-next-line no-empty-function
@@ -536,31 +553,24 @@ export function makeLoopbackProtocolHandler() {
       // TODO
     },
     async generatePortID(_protocolHandler) {
-      nonce += 1;
-      return `port${nonce}`;
+      return makePortID();
     },
     async onBind(_port, _localAddr, _protocolHandler) {
       // TODO: Maybe handle a bind?
     },
-    async onConnect(_port, localAddr, remoteAddr, _chandler, _protocolHandler) {
+    async onConnect(_port, localAddr, remoteAddr, _chandler, protocolHandler) {
       const [lport, lhandler] = listeners.get(remoteAddr);
-      // console.log(`looking up onAccept in`, lhandler);
-      const remoteSuffix =
-        /** @type {Endpoint} */
-        (await E(lhandler)
-          .onInbound(lport, remoteAddr, localAddr, lhandler)
-          .catch(e => rethrowUnlessMissing(e)));
-
-      if (remoteSuffix) {
-        remoteAddr = `${remoteAddr}/${remoteSuffix}`;
-      }
-
       const rchandler =
         /** @type {ConnectionHandler} */
         (await E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler));
       // console.log(`rchandler is`, rchandler);
-      return [remoteAddr, rchandler];
+      const remoteSuffix = await E(protocolHandler)
+        .onInbound(lport, remoteAddr, localAddr, lhandler, protocolHandler)
+        .catch(rethrowUnlessMissing);
+      const ra = remoteSuffix ? `${remoteAddr}/${remoteSuffix}` : remoteAddr;
+      return [ra, rchandler];
     },
+    onInbound,
     async onListen(port, localAddr, listenHandler, _protocolHandler) {
       // TODO: Implement other listener replacement policies.
       if (listeners.has(localAddr)) {
