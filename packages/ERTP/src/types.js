@@ -310,7 +310,6 @@
  * @property {Issuer} issuer
  * @property {DeprecatedAmountMath} amountMath
  * @property {Brand} brand
- * @property {AmountMathKind} amountMathKind
  */
 
 /**

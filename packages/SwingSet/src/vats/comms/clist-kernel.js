@@ -63,7 +63,7 @@ export function makeKernel(state, syscall, stateKit) {
 
   function provideKernelForLocalResult(lpid) {
     if (!lpid) {
-      return null;
+      return undefined;
     }
     const p = state.promiseTable.get(lpid);
     assert(!p.resolved, X`result ${lpid} is already resolved`);
@@ -158,7 +158,9 @@ export function makeKernel(state, syscall, stateKit) {
       return null;
     }
     insistVatType('promise', kfpid);
-    const lpid = provideLocalForKernel(kfpid);
+    const doNotSubscribeSet = new Set();
+    doNotSubscribeSet.add(kfpid);
+    const lpid = provideLocalForKernel(kfpid, doNotSubscribeSet);
     insistPromiseIsUnresolved(lpid);
     changeDeciderFromKernelToComms(lpid);
     subscribeKernelToPromise(lpid);

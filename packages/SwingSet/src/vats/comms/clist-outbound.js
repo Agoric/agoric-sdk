@@ -24,6 +24,7 @@ export function makeOutbound(state, stateKit) {
     const remote = getRemote(state, remoteID);
     const rref = remote.toRemote.get(lref);
     assert(rref, X`${lref} must already be in ${rname(remote)}`);
+    remote.lastMentioned.set(rref, remote.nextSendSeqNum);
     return rref;
   }
 
@@ -75,7 +76,9 @@ export function makeOutbound(state, stateKit) {
         assert.fail(X`cannot send type ${type} to remote`);
       }
     }
-    return remote.toRemote.get(lref);
+    const rref = remote.toRemote.get(lref);
+    remote.lastMentioned.set(rref, remote.nextSendSeqNum);
+    return rref;
   }
 
   function provideRemoteForLocalResult(remoteID, lpid) {

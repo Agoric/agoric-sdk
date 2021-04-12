@@ -285,7 +285,6 @@ function makeIssuerKit(
     issuer,
     amountMath: makeAmountMath(brand, amountMathKind),
     brand,
-    amountMathKind,
   });
 }
 
