@@ -133,7 +133,9 @@ async function testRemotePeg(t) {
     sender: 'FIXME:sender2',
   };
 
-  const sendAckData2 = await E(gaiaConnection).send(JSON.stringify(sendPacket2));
+  const sendAckData2 = await E(gaiaConnection).send(
+    JSON.stringify(sendPacket2),
+  );
   const sendAck2 = JSON.parse(sendAckData2);
   t.deepEqual(sendAck2, { success: true }, 'Gaia sent more atoms');
   if (!sendAck2.success) {
