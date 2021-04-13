@@ -1,0 +1,83 @@
+// @ts-check
+
+import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+
+const ONE_DAY = 24n * 60n * 60n;
+
+const setupBasicMints = () => {
+  const all = [makeIssuerKit('moola')];
+  const mints = all.map(objs => objs.mint);
+  const issuers = all.map(objs => objs.issuer);
+  const brands = all.map(objs => objs.brand);
+
+  return harden({
+    mints,
+    issuers,
+    brands,
+  });
+};
+
+const makeVats = (log, vats, zoe, installations, startingValues) => {
+  const timer = buildManualTimer(console.log, 0n, ONE_DAY);
+  const { mints, issuers, brands } = setupBasicMints();
+  const makePayments = values =>
+    mints.map((mint, i) =>
+      mint.mintPayment(amountMath.make(values[i], brands[i])),
+    );
+  const [aliceValues, ownerValues] = startingValues;
+
+  // Setup Alice
+  const aliceP = E(vats.alice).build(
+    zoe,
+    brands,
+    makePayments(aliceValues),
+    timer,
+  );
+
+  // Setup Owner
+  const treasuryPublicFacet = E(vats.owner).build(
+    zoe,
+    issuers,
+    brands,
+    makePayments(ownerValues),
+    installations,
+    timer,
+    vats.priceAuthority,
+  );
+
+  const result = { aliceP, treasuryPublicFacet };
+
+  log(`=> alice and the treasury are set up`);
+  return harden(result);
+};
+
+export function buildRootObject(vatPowers, vatParameters) {
+  const { argv, contractBundles: cb } = vatParameters;
+  return Far('root', {
+    async bootstrap(vats, devices) {
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      const installations = {
+        liquidateMinimum: await E(zoe).install(cb.liquidateMinimum),
+        autoswap: await E(zoe).install(cb.autoswap),
+        treasury: await E(zoe).install(cb.treasury),
+      };
+
+      const [testName, startingValues] = argv;
+      const { aliceP, treasuryPublicFacet } = makeVats(
+        vatPowers.testLog,
+        vats,
+        zoe,
+        installations,
+        startingValues,
+      );
+
+      await E(aliceP).startTest(testName, treasuryPublicFacet);
+    },
+  });
+}

@@ -31,7 +31,7 @@ const isGT = (amount, amountLimit) => !amountMath.isGTE(amountLimit, amount);
 /**
  * @typedef {Object} OnewayPriceAuthorityOptions
  * @property {Issuer} quoteIssuer
- * @property {Notifier<PriceQuote>} notifier
+ * @property {ERef<Notifier<Timestamp>>} notifier
  * @property {TimerService} timer
  * @property {PriceQuoteCreate} createQuote
  * @property {Brand} actualBrandIn
@@ -59,7 +59,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
   } = opts;
 
   let haveFirstQuote = false;
-  notifier.getUpdateSince().then(_ => (haveFirstQuote = true));
+
+  E(notifier)
+    .getUpdateSince()
+    .then(_ => (haveFirstQuote = true));
 
   /** @type {Set<Trigger>} */
   const triggers = new Set();
@@ -241,7 +244,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       amountMath.coerce(amountIn, actualBrandIn);
       assertBrands(amountIn.brand, brandOut);
 
-      await notifier.getUpdateSince();
+      await E(notifier).getUpdateSince();
       return createQuote(calcAmountOut => ({
         amountIn,
         amountOut: calcAmountOut(amountIn),
@@ -251,7 +254,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       amountMath.coerce(amountOut, actualBrandOut);
       assertBrands(brandIn, amountOut.brand);
 
-      await notifier.getUpdateSince();
+      await E(notifier).getUpdateSince();
       return createQuote((calcAmountOut, calcAmountIn) => {
         // We need to determine an amountIn that guarantees at least the amountOut.
         const amountIn = calcAmountIn(amountOut);
@@ -269,7 +272,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       amountMath.coerce(amountIn, actualBrandIn);
       assertBrands(amountIn.brand, brandOut);
 
-      await notifier.getUpdateSince();
+      await E(notifier).getUpdateSince();
       const quotePK = makePromiseKit();
       await E(timer).setWakeup(
         deadline,
