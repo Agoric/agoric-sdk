@@ -123,15 +123,30 @@ export function makeDeliver(tools, dispatch) {
   }
 
   async function replayTranscript() {
+    const total = vatKeeper.vatStats().transcriptCount;
+    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
     transcriptManager.startReplay();
+    let deliveryNum = 0;
     for (const t of vatKeeper.getTranscript()) {
+      deliveryNum += 1; // TODO probably off by one
+      // if (deliveryNum % 100 === 0) {
+      //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
+      // }
       transcriptManager.checkReplayError();
       transcriptManager.startReplayDelivery(t.syscalls);
+      kernelSlog.write({
+        type: 'start-replay-delivery',
+        vatID,
+        delivery: t.d,
+        deliveryNum,
+      });
       // eslint-disable-next-line no-await-in-loop
       await doProcess(t.d, null);
+      kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
     }
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
+    kernelSlog.write({ type: 'finish-replay', vatID });
   }
 
   return harden({ deliver, replayTranscript });
