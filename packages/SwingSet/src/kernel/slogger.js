@@ -85,10 +85,12 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
     addVat: reg('addVat', () => 0),
     vatConsole: reg('vatConsole', () => makeConsole('disabled slogger')),
     startup: reg('startup', () => () => 0), // returns nop finish() function
+    replayVatTranscript: reg('replayVatTranscript', () => () => 0),
     delivery: reg('delivery', () => () => 0),
     syscall: reg('syscall', () => () => 0),
     changeCList: reg('changeCList', () => () => 0),
     terminateVat: reg('terminateVat', () => () => 0),
+    write: () => 0,
   });
   doneRegistering(`Unrecognized makeDummySlogger slogCallbacks names:`);
   return dummySlogger;
@@ -125,9 +127,11 @@ export function makeSlogger(slogCallbacks, writeObj) {
       // provide a context for console calls during startup
       assertOldState(IDLE, 'did startup get called twice?');
       state = STARTUP;
+      write({ type: 'vat-startup-start', vatID });
       function finish() {
         assertOldState(STARTUP, 'startup-finish called twice?');
         state = IDLE;
+        write({ type: 'vat-startup-finish', vatID });
       }
       return harden(finish);
     }
@@ -200,6 +204,14 @@ export function makeSlogger(slogCallbacks, writeObj) {
     return vatSlog;
   }
 
+  function replayVatTranscript(vatID) {
+    write({ type: 'replay-transcript-start', vatID });
+    function finish() {
+      write({ type: 'replay-transcript-finish', vatID });
+    }
+    return harden(finish);
+  }
+
   // function annotateVat(vatID, data) {
   //   write({ type: 'annotate-vat', vatID, data });
   // }
@@ -215,6 +227,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     startup: reg('startup', (vatID, ...args) =>
       vatSlogs.get(vatID).startup(...args),
     ),
+    replayVatTranscript,
     delivery: reg('delivery', (vatID, ...args) =>
       vatSlogs.get(vatID).delivery(...args),
     ),
@@ -227,6 +240,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     terminateVat: reg('terminateVat', (vatID, ...args) =>
       vatSlogs.get(vatID).terminateVat(...args),
     ),
+    write,
   });
   doneRegistering(`Unrecognized makeSlogger slogCallbacks names:`);
   return slogger;
