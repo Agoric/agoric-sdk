@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.8.1...@agoric/dapp-svelte-wallet@0.9.0) (2021-04-13)
+
+
+### Features
+
+* add contact address property and register depositFacet name ([feae632](https://github.com/Agoric/agoric-sdk/commit/feae6321259e29539ab637956e801d1321ba9a8e))
+* display wallet depositFacet's bech32 address in the UI ([4c61fe6](https://github.com/Agoric/agoric-sdk/commit/4c61fe6fc695a4d1b9d7a0e0caed5d30d0166a1a))
+
+
+
+
+
 ## [0.8.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.8.0...@agoric/dapp-svelte-wallet@0.8.1) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

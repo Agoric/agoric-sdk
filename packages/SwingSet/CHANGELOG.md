@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.15.1...@agoric/swingset-vat@0.16.0) (2021-04-13)
+
+
+### Bug Fixes
+
+* **network:** append the connection instance to the full localAddr ([ebd5963](https://github.com/Agoric/agoric-sdk/commit/ebd5963a2550907ea3966239327f02fb67ee5095))
+* fully implement onInbound for unique connection ID ([421b9d4](https://github.com/Agoric/agoric-sdk/commit/421b9d432e26670f223518acbaf7d9bd55d63ca3))
+* honour logging sent exceptions with DEBUG=SwingSet:ls ([db9b46a](https://github.com/Agoric/agoric-sdk/commit/db9b46af0a01eac00941f8c902ceedfb3a9938f6))
+
+
+### Features
+
+* **network:** allow onInstantiate to augment localAddress ([9cfc2fd](https://github.com/Agoric/agoric-sdk/commit/9cfc2fd58e9bd9076d4dc91af46b65e4c5729e54))
+
+
+
+
+
 ## [0.15.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.15.0...@agoric/swingset-vat@0.15.1) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/swingset-vat
