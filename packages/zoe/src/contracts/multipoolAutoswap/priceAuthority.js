@@ -4,7 +4,6 @@ import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
-import { assert, details as X } from '@agoric/assert';
 
 import { makeOnewayPriceAuthorityKit } from '../../contractSupport';
 
@@ -39,7 +38,9 @@ export const makePriceAuthority = (
    */
   function createQuote(priceQuery) {
     const quote = priceQuery(calcAmountOut, calcAmountIn);
-    assert(quote, X`priceQuery must return a quote`);
+    if (!quote) {
+      return undefined;
+    }
 
     const { amountIn, amountOut } = quote;
     return E(timer)

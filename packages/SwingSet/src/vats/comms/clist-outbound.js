@@ -1,62 +1,49 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
-import {
-  flipRemoteSlot,
-  insistRemoteType,
-  makeRemoteSlot,
-} from './parseRemoteSlot';
-import { getRemote } from './remote';
+import { flipRemoteSlot, insistRemoteType } from './parseRemoteSlot';
 import { cdebug } from './cdebug';
 
 function rname(remote) {
-  return `${remote.remoteID} (${remote.name})`;
+  return `${remote.remoteID()} (${remote.name()})`;
 }
 
-export function makeOutbound(state, stateKit) {
-  const {
-    insistPromiseIsUnresolved,
-    subscribeRemoteToPromise,
-    unsubscribeRemoteFromPromise,
-    changeDeciderToRemote,
-  } = stateKit;
-
+export function makeOutbound(state) {
   function getRemoteForLocal(remoteID, lref) {
-    const remote = getRemote(state, remoteID);
-    const rref = remote.toRemote.get(lref);
-    assert(rref, X`${lref} must already be in ${rname(remote)}`);
+    const remote = state.getRemote(remoteID);
+    const rref = remote.mapToRemote(lref);
+    assert(rref, X`${lref} must already be in remote ${rname(remote)}`);
     return rref;
   }
 
   function addRemoteObjectForLocal(remote, loid) {
-    const owner = state.objectTable.get(loid);
-    assert(owner !== remote, `hey ${loid} already came from ${rname(remote)}`);
+    const owner = state.getObject(loid);
+    assert(
+      owner !== remote,
+      `${loid} already came from remote ${rname(remote)}`,
+    );
 
-    // allocate a clist entry for it
-    const index = remote.nextObjectIndex;
-    remote.nextObjectIndex += 1;
     // The recipient will receive ro-NN
-    const roid = makeRemoteSlot('object', false, index);
-    remote.toRemote.set(loid, roid);
+    const roid = remote.allocateRemoteObject();
+    remote.addRemoteMapping(flipRemoteSlot(roid), loid);
     // but when they send it back, they'll send ro+NN
-    remote.fromRemote.set(flipRemoteSlot(roid), loid);
-    cdebug(`comms export ${remote.remoteID}/${remote.name} ${loid} ${roid}`);
+    cdebug(
+      `comms export ${remote.remoteID()}/${remote.name()} ${loid} ${roid}`,
+    );
   }
 
   function addRemotePromiseForLocal(remote, lpid) {
-    const p = state.promiseTable.get(lpid);
-    assert(p, X`promise ${lpid} wasn't being tracked`);
+    const status = state.getPromiseStatus(lpid);
+    assert(status, X`promise ${lpid} wasn't being tracked`);
 
-    const index = remote.nextPromiseIndex;
-    remote.nextPromiseIndex += 1;
-    // the recipient receives rp-NN
-    const rpid = makeRemoteSlot('promise', false, index);
-    remote.toRemote.set(lpid, rpid);
-    remote.fromRemote.set(flipRemoteSlot(rpid), lpid);
-    cdebug(`comms export ${remote.remoteID}/${remote.name} ${lpid} ${rpid}`);
+    const rpid = remote.allocateRemotePromise();
+    remote.addRemoteMapping(flipRemoteSlot(rpid), lpid);
+    cdebug(
+      `comms export ${remote.remoteID()}/${remote.name()} ${lpid} ${rpid}`,
+    );
 
-    if (!p.resolved) {
+    if (status === 'unresolved') {
       // arrange to send it later, once it resolves
-      subscribeRemoteToPromise(lpid, remote.remoteID);
+      state.subscribeRemoteToPromise(lpid, remote.remoteID());
     }
   }
 
@@ -64,8 +51,8 @@ export function makeOutbound(state, stateKit) {
     // We're sending a slot to a remote system. If we've ever sent it before,
     // or if they're the ones who sent it to us in the first place, it will be
     // in the outbound table already.
-    const remote = getRemote(state, remoteID);
-    if (!remote.toRemote.has(lref)) {
+    const remote = state.getRemote(remoteID);
+    if (!remote.mapToRemote(lref)) {
       const { type } = parseLocalSlot(lref);
       if (type === 'object') {
         addRemoteObjectForLocal(remote, lref);
@@ -75,7 +62,8 @@ export function makeOutbound(state, stateKit) {
         assert.fail(X`cannot send type ${type} to remote`);
       }
     }
-    return remote.toRemote.get(lref);
+    const rref = remote.mapToRemote(lref);
+    return rref;
   }
 
   function provideRemoteForLocalResult(remoteID, lpid) {
@@ -87,13 +75,13 @@ export function makeOutbound(state, stateKit) {
     // prevent other vats from trying to do. But I don't think we need one
     // here.
     insistLocalType('promise', lpid);
-    insistPromiseIsUnresolved(lpid);
+    state.insistPromiseIsUnresolved(lpid);
 
     const rpid = provideRemoteForLocal(remoteID, lpid);
     insistRemoteType('promise', rpid);
 
-    changeDeciderToRemote(lpid, remoteID);
-    unsubscribeRemoteFromPromise(lpid, remoteID);
+    state.changeDeciderToRemote(lpid, remoteID);
+    state.unsubscribeRemoteFromPromise(lpid, remoteID);
 
     // TODO: think about this todo, it might still be a concern
     // todo: if we previously held resolution authority for this promise, then

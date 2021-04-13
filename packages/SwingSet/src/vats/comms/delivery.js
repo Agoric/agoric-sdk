@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X } from '@agoric/assert';
@@ -5,14 +6,14 @@ import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
 import { makeUndeliverableError } from '../../makeUndeliverableError';
 import { insistCapData } from '../../capdata';
 import { insistRemoteType } from './parseRemoteSlot';
-import { insistRemoteID, getRemote } from './remote';
+import { insistRemoteID } from './remote';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),
   slots: [],
 });
 
-export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
+export function makeDeliveryKit(state, syscall, transmit, clistKit) {
   const {
     getRemoteForLocal,
     provideRemoteForLocal,
@@ -21,6 +22,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     getLocalForRemote,
     provideLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    beginRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
 
     getKernelForLocal,
     provideKernelForLocal,
@@ -30,18 +34,6 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     provideLocalForKernelResult,
     retireKernelPromiseID,
   } = clistKit;
-
-  const {
-    deciderIsRemote,
-    insistDeciderIsRemote,
-    insistDeciderIsComms,
-    insistDeciderIsKernel,
-    insistPromiseIsUnresolved,
-    changeDeciderFromKernelToComms,
-    changeDeciderFromRemoteToComms,
-    getPromiseSubscribers,
-    markPromiseAsResolved,
-  } = stateKit;
 
   function mapDataToKernel(data) {
     insistCapData(data);
@@ -64,7 +56,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const target = getLocalForKernel(ktarget);
     const args = mapDataFromKernel(kargs, null);
     assert(
-      state.objectTable.has(target) || state.promiseTable.has(target),
+      state.getObject(target) || state.getPromiseStatus(target),
       X`unknown message target ${target}/${ktarget}`,
     );
     assert(
@@ -105,9 +97,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // get a bogus dispatch.notify. Currently we throw an error, which is
       // currently ignored but might prompt a vat shutdown in the future.
 
-      insistPromiseIsUnresolved(lpid);
-      insistDeciderIsKernel(lpid);
-      changeDeciderFromKernelToComms(lpid);
+      state.insistPromiseIsUnresolved(lpid);
+      state.insistDeciderIsKernel(lpid);
+      state.changeDeciderFromKernelToComms(lpid);
       localResolutions.push([
         lpid,
         rejected,
@@ -118,13 +110,17 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       retireKernelPromiseID(kfpid);
     }
     handleResolutions(localResolutions);
-    // XXX question: do we need to call retirePromiseIDIfEasy (or some special
-    // comms vat version of it) here?
+  }
+
+  /** @type { (remoteID: string, ackSeqNum: number) => void } */
+  function handleAckFromRemote(remoteID, ackSeqNum) {
+    retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum);
   }
 
   // dispatch.deliver with msg from vattp lands here, containing a message
   // from some remote machine. figure out whether it's a deliver or a
   // resolve, parse, merge with handleSend/handleResolutions
+  /** @type { (remoteID: string, message: string, result?: string) => void} */
   function messageFromRemote(remoteID, message, result) {
     if (result) {
       // TODO: eventually, the vattp vat will be changed to send the 'receive'
@@ -132,19 +128,32 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       // changed to assert here that the result parameter is null or undefined.
       syscall.resolve([[result, false, UNDEFINED]]);
     }
-    // The message is preceded by an optional sequence number:
-    // `$seqnum:$actualMessage` or `:actualMessage`
-    const colon = message.indexOf(':');
-    assert(colon >= 0, X`received message ${message} lacks seqNum delimiter`);
-    const seqNum = message.substring(0, colon);
-    const remote = getRemote(state, remoteID);
+    // The message is preceded by an optional sequence number followed by the
+    // sequence number that the remote end had most recently received from us as
+    // of sending the message:
+    // `$seqnum:$ackSeqNum:$actualMessage` or `:$ackSeqNum:$actualMessage`
+    const delim1 = message.indexOf(':');
+    assert(delim1 >= 0, X`received message ${message} lacks seqNum delimiter`);
+    const seqNum = message.substring(0, delim1);
+    const remote = state.getRemote(remoteID);
+    const recvSeqNum = remote.advanceReceivedSeqNum();
     assert(
-      seqNum === '' || seqNum === `${remote.nextExpectedRecvSeqNum}`,
+      seqNum === '' || seqNum === `${recvSeqNum}`,
       X`unexpected recv seqNum ${seqNum}`,
     );
-    remote.nextExpectedRecvSeqNum += 1;
 
-    const msgBody = message.substring(colon + 1);
+    const delim2 = message.indexOf(':', delim1 + 1);
+    assert(
+      delim2 >= 0,
+      X`received message ${message} lacks ackSeqNum delimiter`,
+    );
+    const ackSeqNum = Number.parseInt(
+      message.substring(delim1 + 1, delim2),
+      10,
+    );
+    handleAckFromRemote(remoteID, ackSeqNum);
+
+    const msgBody = message.substring(delim2 + 1);
     const command = msgBody.split(':', 1)[0];
     if (command === 'deliver') {
       return sendFromRemote(remoteID, msgBody);
@@ -153,6 +162,14 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       return resolveFromRemote(remoteID, msgBody);
     }
     assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
+  }
+
+  function mapDataFromRemote(remoteID, rdata) {
+    insistCapData(rdata);
+    const slots = rdata.slots.map(slot =>
+      provideLocalForRemote(remoteID, slot),
+    );
+    return harden({ ...rdata, slots });
   }
 
   function sendFromRemote(remoteID, message) {
@@ -179,7 +196,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     handleSend(localDelivery);
   }
 
-  function resolveFromRemote(remoteID, message) {
+  function parseResolveMessage(message) {
     // message is created by resolveToRemote.  It consists of 1 or more
     // resolutions, separated by newlines, each taking the form of either:
     // `resolve:fulfill:${target}${rmss};${resolution.body}`
@@ -190,27 +207,40 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     for (const submsg of subMessages) {
       const sci = submsg.indexOf(';');
       assert(sci !== -1, X`missing semicolon in resolve ${submsg}`);
-
       const pieces = submsg.slice(0, sci).split(':');
       assert(pieces[0] === 'resolve');
       const rejected = pieces[1] === 'reject';
       assert(rejected || pieces[1] === 'fulfill');
-      const remoteTarget = pieces[2];
-      const remoteSlots = pieces.slice(3);
-      insistRemoteType('promise', remoteTarget); // slots[0] is 'rp+NN`.
-      const lpid = getLocalForRemote(remoteID, remoteTarget);
-      // rp+NN maps to target=p-+NN and we look at the promiseTable to make
-      // sure it's in the right state.
-      insistPromiseIsUnresolved(lpid);
-      insistDeciderIsRemote(lpid, remoteID);
-
-      const slots = remoteSlots.map(s => provideLocalForRemote(remoteID, s));
+      const rpid = pieces[2];
+      const slots = pieces.slice(3);
       const body = submsg.slice(sci + 1);
       const data = harden({ body, slots });
-      changeDeciderFromRemoteToComms(lpid, remoteID);
-      resolutions.push([lpid, rejected, data]);
+      resolutions.push([rpid, rejected, data]);
     }
-    handleResolutions(harden(resolutions));
+    return resolutions;
+  }
+
+  function resolveFromRemote(remoteID, message) {
+    const resolutions = parseResolveMessage(message);
+    const localResolutions = [];
+    for (const resolution of resolutions) {
+      const [rpid, rejected, data] = resolution;
+      insistCapData(data);
+      insistRemoteType('promise', rpid);
+      const lpid = getLocalForRemote(remoteID, rpid);
+      state.insistPromiseIsUnresolved(lpid);
+      state.insistDeciderIsRemote(lpid, remoteID);
+      state.changeDeciderFromRemoteToComms(lpid, remoteID);
+      localResolutions.push([
+        lpid,
+        rejected,
+        mapDataFromRemote(remoteID, data),
+      ]);
+    }
+    for (const resolution of resolutions) {
+      retireRemotePromiseID(remoteID, resolution[0]);
+    }
+    handleResolutions(localResolutions);
   }
 
   function extractPresenceIfPresent(data) {
@@ -241,7 +271,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     const { type } = parseLocalSlot(target);
 
     if (type === 'object') {
-      const remoteID = state.objectTable.get(target);
+      const remoteID = state.getObject(target);
       if (remoteID === 'kernel') {
         // target lives in some other vat on this machine, send into the kernel
         return { send: target, kernel: true };
@@ -253,14 +283,15 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
     assert(type === 'promise');
     // the promise might be resolved already
-    const p = state.promiseTable.get(target);
-    assert(p);
+    const status = state.getPromiseStatus(target);
+    assert(status);
 
-    if (p.resolved) {
-      if (p.rejected) {
-        return { reject: p.data };
+    if (status !== 'unresolved') {
+      const data = state.getPromiseData(target);
+      if (status === 'rejected') {
+        return { reject: data };
       }
-      const targetPresence = extractPresenceIfPresent(p.data);
+      const targetPresence = extractPresenceIfPresent(data);
       if (targetPresence) {
         return resolveTarget(targetPresence, method);
       } else {
@@ -269,12 +300,12 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
     }
 
     // unresolved
-    const remoteID = deciderIsRemote(target);
+    const remoteID = state.deciderIsRemote(target);
     if (remoteID) {
       return { send: target, kernel: false, remoteID };
     }
 
-    insistDeciderIsKernel(target);
+    state.insistDeciderIsKernel(target);
     return { send: target, kernel: true };
   }
 
@@ -286,9 +317,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       for (const slot of slots) {
         const { type } = parseLocalSlot(slot);
         if (type === 'promise') {
-          const p = state.promiseTable.get(slot);
-          assert(p, X`should have a value for ${slot} but didn't`);
-          if (p.resolved && !doneResolutions.has(slot)) {
+          const status = state.getPromiseStatus(slot);
+          assert(status, X`should have a value for ${slot} but didn't`);
+          if (status !== 'unresolved' && !doneResolutions.has(slot)) {
             collect(slot);
           }
         }
@@ -297,24 +328,20 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
     function collect(lpid) {
       doneResolutions.add(lpid);
-      const p = state.promiseTable.get(lpid);
-      resolutions.push([lpid, p.rejected, p.data]);
-      scanSlots(p.data.slots);
-    }
-
-    function forPromise(lpid) {
-      collect(lpid);
-      return resolutions;
-    }
-
-    function forSlots(slots) {
-      scanSlots(slots);
-      return resolutions;
+      const status = state.getPromiseStatus(lpid);
+      const data = state.getPromiseData(lpid);
+      resolutions.push([lpid, status === 'rejected', data]);
+      scanSlots(data.slots);
     }
 
     return {
-      forPromise,
-      forSlots,
+      forSlots(slots) {
+        scanSlots(slots);
+        return resolutions;
+      },
+      getResolutions() {
+        return resolutions;
+      },
     };
   }
 
@@ -393,21 +420,51 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
   }
 
   function handleResolutions(resolutions) {
+    // All promises listed as *targets* in `resolutions` are by definition
+    // unresolved when they arrive here: they are being decided by someone else
+    // (the kernel, or a remote).  They are either primary (previously known to
+    // us) or auxilliary (imported, in an unresolved state, as the resolution
+    // data of the batch was translated from whatever kernel/remote sent the
+    // batch into our local namespace).  The resolution data in `resolutions`
+    // may point to both resolved and unresolved promises, but any cycles
+    // (pointers into other targets of `resolutions`) will still point to
+    // unresolved promises, because we haven't marked them as resolved quite
+    // yet.
     const [[primaryLpid]] = resolutions;
-    const { subscribers, kernelIsSubscribed } = getPromiseSubscribers(
+    const { subscribers, kernelIsSubscribed } = state.getPromiseSubscribers(
       primaryLpid,
     );
+
+    // Run the collector *before* we change the state of our promise table.
+    const collector = resolutionCollector();
+    for (const resolution of resolutions) {
+      const [_lpid, _rejected, data] = resolution;
+      collector.forSlots(data.slots);
+    }
+
+    // The collector now knows about every previously-resolved promise cited by
+    // the resolution data of `resolutions`. This will never overlap with the
+    // targets of `resolutions`.
     for (const resolution of resolutions) {
       const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
       insistCapData(data);
       insistLocalType('promise', lpid);
-      insistPromiseIsUnresolved(lpid);
-      insistDeciderIsComms(lpid);
+      state.insistPromiseIsUnresolved(lpid);
+      state.insistDeciderIsComms(lpid);
 
       // mark it as resolved in the promise table, so later messages to it will
       // be handled properly
-      markPromiseAsResolved(lpid, rejected, data);
+      state.markPromiseAsResolved(lpid, rejected, data);
+    }
+    // At this point, both the primary and auxillary promises listed as
+    // targets in `resolutions` are marked as resolved.
+
+    const auxResolutions = collector.getResolutions();
+    if (auxResolutions.length > 0) {
+      // console.log(`@@@ adding ${auxResolutions.length} aux resolutions`);
+      // Concat because `auxResolutions` and `resolutions` are strictly disjoint
+      resolutions = resolutions.concat(auxResolutions);
     }
 
     // what remotes need to know?
@@ -429,6 +486,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
 
   function resolveToRemote(remoteID, resolutions) {
     const msgs = [];
+    const retires = [];
     for (const resolution of resolutions) {
       const [lpid, rejected, data] = resolution;
 
@@ -448,6 +506,10 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const rejectedTag = rejected ? 'reject' : 'fulfill';
       // prettier-ignore
       msgs.push(`resolve:${rejectedTag}:${rpid}${mapSlots()};${data.body}`);
+      retires.push(rpid);
+    }
+    for (const rpid of retires) {
+      beginRemotePromiseIDRetirement(remoteID, rpid);
     }
     transmit(remoteID, msgs.join('\n'));
   }
@@ -458,6 +520,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit, stateKit) {
       const [lpid, rejected, data] = localResolution;
       const kfpid = getKernelForLocal(lpid);
       resolutions.push([kfpid, rejected, mapDataToKernel(data)]);
+    }
+    for (const resolution of resolutions) {
+      retireKernelPromiseID(resolution[0]);
     }
     syscall.resolve(resolutions);
   }

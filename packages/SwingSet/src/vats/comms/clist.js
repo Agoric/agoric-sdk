@@ -48,22 +48,25 @@ import { makeIngressEgress } from './clist-xgress';
 // the Promises). If the message is headed to a remote machine, translate it
 // into the destination remote's slotspace.
 
-export function makeCListKit(state, syscall, stateKit) {
+export function makeCListKit(state, syscall) {
   const {
     provideLocalForRemote,
     getLocalForRemote,
     provideLocalForRemoteResult,
-  } = makeInbound(state, stateKit);
+    retireRemotePromiseID,
+    beginRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
+  } = makeInbound(state);
 
   // *-RemoteForLocal: sending a local object/promise to a remote machine
-  const outbound = makeOutbound(state, stateKit);
+  const outbound = makeOutbound(state);
   const {
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,
   } = outbound;
 
-  const kernel = makeKernel(state, syscall, stateKit);
+  const kernel = makeKernel(state, syscall);
   const {
     getKernelForLocal,
     provideKernelForLocal,
@@ -83,6 +86,9 @@ export function makeCListKit(state, syscall, stateKit) {
     provideLocalForRemote,
     getLocalForRemote,
     provideLocalForRemoteResult,
+    retireRemotePromiseID,
+    beginRemotePromiseIDRetirement,
+    retireAcknowledgedRemotePromiseIDs,
 
     getRemoteForLocal,
     provideRemoteForLocal,
