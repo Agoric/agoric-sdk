@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import re2 from 're2';
+import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
@@ -116,6 +117,23 @@ export async function makeSwingsetController(
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
+  }
+
+  const slogF =
+    slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
+
+  function writeSlogObject(obj) {
+    // TODO sqlite
+    if (slogF) {
+      const timeMS = performance.timeOrigin + performance.now();
+      const time = timeMS / 1000;
+      slogF.write(
+        JSON.stringify({ time, ...obj }, (_, arg) =>
+          typeof arg === 'bigint' ? Number(arg) : arg,
+        ),
+      );
+      slogF.write('\n');
+    }
   }
 
   // eslint-disable-next-line no-shadow
@@ -236,22 +254,6 @@ export async function makeSwingsetController(
     JSON.parse(hostStorage.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, { snapstorePath, env });
-
-  const slogF =
-    slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
-
-  function writeSlogObject(obj) {
-    // TODO sqlite
-    // console.log(`--slog ${JSON.stringify(obj)}`);
-    if (slogF) {
-      slogF.write(
-        JSON.stringify(obj, (_, arg) =>
-          typeof arg === 'bigint' ? Number(arg) : arg,
-        ),
-      );
-      slogF.write('\n');
-    }
-  }
 
   const kernelEndowments = {
     waitUntilQuiescent,
