@@ -14,6 +14,9 @@
   <Petname name={item.contactPetname} />
   {/if}
   {#if details}
-  <BoardId id={item.depositBoardId} />
+    {#if item.address}
+    <span>{item.address}</span>
+    {/if}
+    <BoardId id={item.depositBoardId} />
   {/if}
 </section>

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -534,11 +535,33 @@ func (app *GaiaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.R
 	return app.mm.EndBlock(ctx, req)
 }
 
+func updateTransferPort(gs GenesisState, reservedPort, newPort string) error {
+	var transferGenesis ibctransfertypes.GenesisState
+	if err := tmjson.Unmarshal(gs[ibctransfertypes.ModuleName], &transferGenesis); err != nil {
+		return err
+	}
+	if len(transferGenesis.PortId) > 0 && transferGenesis.PortId != reservedPort {
+		// Already not the reserved port name.
+		return nil
+	}
+	// Change the listening IBC port to avoid conflict.
+	transferGenesis.PortId = newPort
+	transferGenesisBytes, err := tmjson.Marshal(transferGenesis)
+	if err != nil {
+		return err
+	}
+	gs[ibctransfertypes.ModuleName] = transferGenesisBytes
+	return nil
+}
+
 // InitChainer application update at chain initialization
 func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	app.MustInitController(ctx)
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		panic(err)
+	}
+	if err := updateTransferPort(genesisState, "transfer", "cosmos-transfer"); err != nil {
 		panic(err)
 	}
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
@@ -548,6 +571,14 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	stakingParams := app.StakingKeeper.GetParams(ctx)
 	stakingParams.HistoricalEntries = 10000
 	app.StakingKeeper.SetParams(ctx, stakingParams)
+
+	// Agoric tweak: wait until the genesis time has happened.
+	genTime := req.GetTime()
+	if genTime.After(time.Now()) {
+		d := time.Until(genTime)
+		stdlog.Printf("Sleeping %s until genesis time %s\n", d, genTime)
+		time.Sleep(d)
+	}
 
 	return res
 }

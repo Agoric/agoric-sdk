@@ -50,7 +50,7 @@ scenario2-setup-nobuild:
 	rm -rf t1
 	mkdir -p t1/bootstrap
 	# Init the chain node.
-	$(AGC) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
+	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos.
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
 		bin/ag-solo init t1/$$port --webport=$$port; \
@@ -58,29 +58,31 @@ scenario2-setup-nobuild:
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
-	$(AGC) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
+	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGC) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000uagstake --chain-id=$(CHAIN_ID)
-	$(AGC) --home=t1/n0 collect-gentxs
-	$(AGC) --home=t1/n0 validate-genesis
+	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000uagstake --chain-id=$(CHAIN_ID)
+	$(AGCH) --home=t1/n0 collect-gentxs
+	$(AGCH) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
 	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
+AGORIC_POWERS = agoric.agoricNamesAdmin,agoric.pegasusConnections,agoric.priceAuthorityAdmin,agoric.treasuryCreator,agoric.vattp
 t1-provision-one-with-powers:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr agoric.vattp | tee /dev/stderr | grep -q '"code":0'
+		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'
 
 t1-provision-one:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \

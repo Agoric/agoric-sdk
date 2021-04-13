@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.6.3...@agoric/dapp-svelte-wallet-ui@1.7.0) (2021-04-13)
+
+
+### Features
+
+* display wallet depositFacet's bech32 address in the UI ([4c61fe6](https://github.com/Agoric/agoric-sdk/commit/4c61fe6fc695a4d1b9d7a0e0caed5d30d0166a1a))
+
+
+
+
+
 ## [1.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.6.2...@agoric/dapp-svelte-wallet-ui@1.6.3) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui

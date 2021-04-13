@@ -44,11 +44,7 @@ async function buildSwingset(
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
-  const bd = buildBridge(bridgeOutbound);
   config.devices = {
-    bridge: {
-      sourceSpec: bd.srcPath,
-    },
     mailbox: {
       sourceSpec: mb.srcPath,
     },
@@ -57,10 +53,19 @@ async function buildSwingset(
     },
   };
   const deviceEndowments = {
-    bridge: { ...bd.endowments },
     mailbox: { ...mb.endowments },
     timer: { ...timer.endowments },
   };
+
+  let bridgeInbound;
+  if (bridgeOutbound) {
+    const bd = buildBridge(bridgeOutbound);
+    config.devices.bridge = {
+      sourceSpec: bd.srcPath,
+    };
+    deviceEndowments.bridge = { ...bd.endowments };
+    bridgeInbound = bd.deliverInbound;
+  }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(storage)) {
@@ -76,14 +81,13 @@ async function buildSwingset(
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (-1) or in endBlock).
 
-  const bridgeInbound = bd.deliverInbound;
   return { controller, mb, bridgeInbound, timer };
 }
 
 export async function launch(
   kernelStateDBDir,
   mailboxStorage,
-  doOutboundBridge,
+  bridgeOutbound,
   vatsDir,
   argv,
   debugName = undefined,
@@ -94,11 +98,6 @@ export async function launch(
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
   const { storage, commit } = openSwingStore(kernelStateDBDir);
-
-  function bridgeOutbound(dstID, obj) {
-    // console.error('would outbound bridge', dstID, obj);
-    return doOutboundBridge(dstID, obj);
-  }
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
@@ -137,7 +136,7 @@ export async function launch(
   //
   // Note that the "bootstrap until no more progress" state will call this
   // function without any arguments.
-  async function crankScheduler(maximumCranks = Infinity) {
+  async function crankScheduler(maximumCranks) {
     let now = Date.now();
     const blockStart = now;
     let stepped = true;
@@ -153,8 +152,16 @@ export async function launch(
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
+  let firstBlock;
   async function endBlock(_blockHeight, _blockTime) {
-    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
+    let numCranks = FIXME_MAX_CRANKS_PER_BLOCK;
+    if (firstBlock) {
+      // This is the initial block, we need to finish processing the entire
+      // bootstrap before opening for business.
+      numCranks = Infinity;
+      firstBlock = false;
+    }
+    await crankScheduler(numCranks);
   }
 
   async function saveChainState() {
@@ -193,29 +200,10 @@ export async function launch(
     );
   }
 
-  const [initSavedHeight, savedActions, savedChainSends] = JSON.parse(
+  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
     storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
   );
-
-  let savedHeight = initSavedHeight;
-
-  // We need to fully bootstrap the chain before we can be open to receive
-  // outside messages.
-  async function ensureBootstrapComplete() {
-    if (savedHeight >= 0) {
-      return;
-    }
-    // Run the kernel until there is no more progress possible without inbound
-    // messages.
-    await crankScheduler();
-
-    // Commit the results, with the savedHeight updated so that we don't do it
-    // again.  All future cranks will be with the scheduler in a normal block
-    // context.
-    savedHeight = 0;
-    await saveOutsideState(savedHeight, savedActions, savedChainSends);
-  }
-  await ensureBootstrapComplete();
+  firstBlock = savedHeight < 0;
 
   return {
     deliverInbound,

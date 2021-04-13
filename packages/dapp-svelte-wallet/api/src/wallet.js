@@ -75,16 +75,25 @@ export function buildRootObject(_vatPowers) {
     },
   });
 
-  async function startup({ zoe, board, agoricNames, namesByAddress }) {
+  async function startup({
+    zoe,
+    board,
+    agoricNames,
+    namesByAddress,
+    myAddressNameAdmin,
+  }) {
     const w = makeWallet({
       agoricNames,
       namesByAddress,
+      myAddressNameAdmin,
       zoe,
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
     });
+    console.error('waiting for wallet to initialize');
     await w.initialized;
+    console.error('wallet initialized');
     walletAdmin = w.admin;
   }
 

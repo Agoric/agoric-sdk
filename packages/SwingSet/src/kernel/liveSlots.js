@@ -238,11 +238,9 @@ function build(
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 70000,
     marshalSaveError: err =>
-      // By sending this to `console.log`, under cosmic-swingset this is
-      // controlled by the `console` option given to makeLiveSlots.  For Agoric,
-      // this output is enabled by `agoric start -v` and not enabled without the
-      // `-v` flag.
-      console.log('Logging sent error stack', err),
+      // By sending this to `console.info`, under cosmic-swingset this is
+      // controlled by the `console` option given to makeLiveSlots.
+      console.info('Logging sent error stack', err),
   });
 
   const {

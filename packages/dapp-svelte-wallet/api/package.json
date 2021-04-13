@@ -1,7 +1,7 @@
 {
   "name": "@agoric/dapp-svelte-wallet-api",
   "private": true,
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Wallet web server handler",
   "scripts": {
     "build": "exit 0",
@@ -15,21 +15,21 @@
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.3.1",
-    "@agoric/cosmic-swingset": "^0.28.1",
+    "@agoric/cosmic-swingset": "^0.29.0",
     "@agoric/eslint-config": "^0.3.3",
     "@agoric/install-ses": "^0.5.6",
-    "@agoric/registrar": "^0.2.6",
+    "@agoric/registrar": "^0.2.7",
     "ava": "^3.12.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.2.6",
-    "@agoric/ertp": "^0.10.3",
-    "@agoric/eventual-send": "^0.13.6",
-    "@agoric/marshal": "^0.4.3",
-    "@agoric/notifier": "^0.3.6",
+    "@agoric/ertp": "^0.10.4",
+    "@agoric/eventual-send": "^0.13.7",
+    "@agoric/marshal": "^0.4.4",
+    "@agoric/notifier": "^0.3.7",
     "@agoric/promise-kit": "^0.2.6",
-    "@agoric/store": "^0.4.6",
-    "@agoric/zoe": "^0.14.1",
+    "@agoric/store": "^0.4.7",
+    "@agoric/zoe": "^0.15.0",
     "esm": "^3.2.5"
   },
   "eslintConfig": {
