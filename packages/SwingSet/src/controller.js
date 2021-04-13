@@ -172,6 +172,7 @@ export async function makeSwingsetController(
     }
   }
   const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));
+  writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel/...',
     endowments: {
@@ -181,6 +182,7 @@ export async function makeSwingsetController(
     },
   });
   const buildKernel = kernelNS.default;
+  writeSlogObject({ type: 'import-kernel-finish' });
 
   // transformMetering() requires Babel, which imports 'fs' and 'path', so it
   // cannot be implemented within a non-start-Compartment. We build it out
