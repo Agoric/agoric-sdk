@@ -112,6 +112,7 @@ export async function connectToChain(
     stdin,
     throwIfCancelled = () => undefined,
     defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
+    updateTempfile,
   ) {
     return retryRpcAddr(async rpcAddr => {
       await throwIfCancelled();
@@ -125,6 +126,9 @@ export async function connectToChain(
       log.debug(HELPER, ...fullArgs);
       let ret;
       try {
+        if (updateTempfile) {
+          updateTempfile();
+        }
         ret = await new Promise((resolve, reject) => {
           const proc = execFile(
             HELPER,
@@ -176,6 +180,7 @@ export async function connectToChain(
     parseReturn,
     stdin,
     defaultIfCancelled,
+    updateTempfile,
   ) {
     const queue = queued[name] || [];
     queued[name] = queue;
@@ -226,6 +231,7 @@ export async function connectToChain(
           }
         },
         defaultIfCancelled,
+        updateTempfile,
       );
     } finally {
       // Remove us from the queue.
@@ -415,7 +421,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
   recurseEachNewBlock();
 
   let totalDeliveries = 0;
-  async function deliver(newMessages, acknum) {
+  async function deliver(newMessages, acknum, getAllMessages) {
     let tmpInfo;
     try {
       totalDeliveries += 1;
@@ -464,6 +470,11 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
         });
       }
 
+      function updateTempfile() {
+        const data = JSON.stringify(getAllMessages());
+        fs.writeFileSync(tmpInfo.path, data);
+      }
+
       const args = [
         'tx',
         'swingset',
@@ -502,6 +513,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
         },
         undefined,
         {}, // defaultIfCancelled
+        updateTempfile,
       );
       return qret;
     } finally {

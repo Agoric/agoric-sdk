@@ -17,6 +17,13 @@ const log = anylogger('outbound');
  */
 const knownTargets = new Map();
 
+function getAllMessages(mbs, target) {
+  const { outbox, inboundAck } = mbs.exportToData()[target];
+  const messages = Array.from(outbox);
+  messages.sort((a, b) => a[0] - b[0]);
+  return [messages, inboundAck];
+}
+
 export function deliver(mbs) {
   const data = mbs.exportToData();
   log.debug(`deliver`, data);
@@ -42,7 +49,7 @@ export function deliver(mbs) {
       log(
         `invoking deliverator; ${newMessages.length} new messages for ${target}`,
       );
-      t.deliverator(newMessages, acknum);
+      t.deliverator(newMessages, acknum, () => getAllMessages(mbs, target));
       if (newMessages.length) {
         [t.highestSent] = newMessages[newMessages.length - 1];
       }
