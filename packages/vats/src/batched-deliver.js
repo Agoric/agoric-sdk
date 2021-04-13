@@ -9,7 +9,7 @@ export function makeBatchedDeliver(
   let latestAckNum = 0;
   let deliverTimeout;
 
-  async function batchedDeliver(newMessages, ackNum) {
+  async function batchedDeliver(newMessages, ackNum, getAllMessages) {
     // If we have no existing messages, reset the deliver timeout.
     //
     // This defers sending an ack until the timeout expires or we have new
@@ -20,7 +20,7 @@ export function makeBatchedDeliver(
         // Transfer the batched messages to the deliver function.
         const msgs = batchedMessages;
         batchedMessages = [];
-        deliver(msgs, latestAckNum);
+        deliver(msgs, latestAckNum, getAllMessages);
       }, batchTimeoutMs);
     }
 
