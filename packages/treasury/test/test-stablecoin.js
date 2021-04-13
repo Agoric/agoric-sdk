@@ -223,7 +223,6 @@ test('first', async t => {
   const { RUN: lentAmount } = await E(loanSeat).getCurrentAllocation();
   const loanProceeds = await E(loanSeat).getPayouts();
   const runLent = await loanProceeds.RUN;
-  // const lentAmount = await runIssuer.getAmountOf(runLent);
   t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -303,16 +302,15 @@ test('price drop', async t => {
 
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
-  // When the price falls to 160, the loan will get liquidated. 160 for 900
-  // Aeth is 5.6 each. The loan is 470 RUN, the collateral is worth 160.
-  // The margin is 1.2, so at 160, the collateral could support a loan of 192.
+  // When the price falls to 636, the loan will get liquidated. 636 for 900
+  // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
+  // Aeth collateral could support a loan of 268.
 
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
   const manualTimer = buildManualTimer(console.log);
-
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
     zoe,
   ).startInstance(
@@ -328,7 +326,6 @@ test('price drop', async t => {
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
-
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
 
@@ -363,7 +360,7 @@ test('price drop', async t => {
 
   await E(aethVaultSeat).getOfferResult();
 
-  // Create a loan for 270 RUN with 40 aeth collateral
+  // Create a loan for 270 RUN with 400 aeth collateral
   const collateralAmount = amountMath.make(400n, aethBrand);
   const loanAmount = amountMath.make(270n, runBrand);
   const loanSeat = await E(zoe).offer(
@@ -418,7 +415,6 @@ test('price drop', async t => {
   t.falsy(notification4.updateCount);
   t.truthy(notification4.value.liquidated);
 
-  // 38 Aeth will be sold for 283, so the borrower will get 232 Aeth back
   const runPayout = await E.G(liquidationPayout).RUN;
   const runAmount = await E(runIssuer).getAmountOf(runPayout);
   t.deepEqual(runAmount, amountMath.makeEmpty(runBrand));
@@ -678,6 +674,7 @@ test('stablecoin display collateral', async t => {
   });
 });
 
+// charging period is 1 week. Clock ticks by days
 test('interest on multiple vaults', async t => {
   /* @type {TestContext} */
   let testJig;
@@ -701,6 +698,7 @@ test('interest on multiple vaults', async t => {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
   };
+  // Clock ticks by days
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
     zoe,
@@ -838,6 +836,7 @@ test('interest on multiple vaults', async t => {
 
   const aliceUpdate = await aliceNotifier.getUpdateSince();
   const bobUpdate = await bobNotifier.getUpdateSince();
+  // 160 is initial fee. interest is 3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     bobUpdate.value.debt,
@@ -854,6 +853,7 @@ test('interest on multiple vaults', async t => {
       bobCollateralization.denominator.value,
   );
 
+  // 235 is the initial fee. Interest is 4n/week
   const aliceAddedDebt = 235n + 4n;
   t.deepEqual(
     aliceUpdate.value.debt,
@@ -1419,13 +1419,13 @@ test('mutable liquidity triggers and interest', async t => {
   );
   priceAuthorityPromiseKit.resolve(priceAuthority);
 
-  // Add a vaultManager with 10000 aeth collateral at a 201 aeth/RUN rate
+  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const capitalAmount = amountMath.make(10000n, aethBrand);
   const rates = harden({
     initialPrice: makeRatio(200n, runBrand, PERCENT, aethBrand),
     initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
-    // charge 20% interest
+    // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });

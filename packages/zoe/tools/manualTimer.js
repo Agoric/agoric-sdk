@@ -14,8 +14,8 @@ import { makeNotifierKit } from '@agoric/notifier';
  * A fake clock that also logs progress.
  *
  * @param {(...args: any[]) => void} log
- * @param {Timestamp} [startValue=0]
- * @param {RelativeTime} [timeStep=0]
+ * @param {Timestamp} [startValue=0n]
+ * @param {RelativeTime} [timeStep=1n]
  * @returns {ManualTimer}
  */
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
