@@ -242,6 +242,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    */
   const portToPendingConns = makeStore('Port');
 
+  /** @type {Store<Endpoint, Endpoint>} */
+  const remoteAddrToLocalSuffix = makeStore();
+
   /**
    * @type {ProtocolHandler}
    */
@@ -262,6 +265,11 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         source_port: portID,
       };
       return callIBCDevice('bindPort', { packet });
+    },
+    async onInstantiate(_port, _localAddr, remoteAddr, _protocolHandler) {
+      // we can take advantage of the fact that remoteAddrs are unique (they
+      // have their own channelID).
+      return remoteAddrToLocalSuffix.get(remoteAddr);
     },
     async onConnect(port, localAddr, remoteAddr, chandler, _protocolHandler) {
       console.debug('IBC onConnect', localAddr, remoteAddr);
@@ -451,11 +459,18 @@ EOF
           const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
 
-          // See if we allow an inbound attempt for this address pair (without rejecting).
+          // See if we allow an inbound attempt for this address pair (without
+          // rejecting).
+          remoteAddrToLocalSuffix.init(remoteAddr, `ibc-channel/${channelID}`);
           const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
-          const attemptedLocal = await E(attemptP).getLocalAddress();
+          const attemptedLocal = await E(attemptP)
+            .getLocalAddress()
+            .finally(() => {
+              // No matter what, delete the temporary mapping.
+              remoteAddrToLocalSuffix.delete(remoteAddr);
+            });
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
             new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),

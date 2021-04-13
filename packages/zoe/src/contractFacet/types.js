@@ -13,7 +13,7 @@
 /**
  * @callback ZCFMakeEmptySeatKit
  * @param {ExitRule=} exit
- * @returns {ZCFSeatKit}
+ * @returns {ZcfSeatKit}
  */
 
 /**

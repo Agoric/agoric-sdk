@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.16.1...@agoric/sdk@2.17.0) (2021-04-13)
+
+
+### Bug Fixes
+
+* adjust Pegasus to actually work correctly with pegRemote ([8cd8c72](https://github.com/Agoric/agoric-sdk/commit/8cd8c72bc5fa207471ac2fdd9ac750dbdda7c39f))
+* don't invoke kernel before first actual chain block ([a27393f](https://github.com/Agoric/agoric-sdk/commit/a27393f212e9b28f519347ce98be0f4e428ebed1))
+* ensure unique (but fake) addresses for sim-chain ([1a5f5c0](https://github.com/Agoric/agoric-sdk/commit/1a5f5c0eaf2964764ec755afd86c9dc1ba56c8d7))
+* fully implement onInbound for unique connection ID ([421b9d4](https://github.com/Agoric/agoric-sdk/commit/421b9d432e26670f223518acbaf7d9bd55d63ca3))
+* genesis has height 0, so properly detect the first block ([5b524da](https://github.com/Agoric/agoric-sdk/commit/5b524da80be6becbf6d4da7992c3be3e551431a6))
+* honour logging sent exceptions with DEBUG=SwingSet:ls ([db9b46a](https://github.com/Agoric/agoric-sdk/commit/db9b46af0a01eac00941f8c902ceedfb3a9938f6))
+* optimise the scenario2 setup by preferring ag-cosmos-helper ([24f0a59](https://github.com/Agoric/agoric-sdk/commit/24f0a59c5dcc1784517cb5209779c7d95f56d63d))
+* run swingset on genesis init before opening for business ([7e228d4](https://github.com/Agoric/agoric-sdk/commit/7e228d40d8d435727863c72c1ba19ca7267476ce))
+* **network:** append the connection instance to the full localAddr ([ebd5963](https://github.com/Agoric/agoric-sdk/commit/ebd5963a2550907ea3966239327f02fb67ee5095))
+* properly disable devices.bridge for the sim-chain ([20d61cc](https://github.com/Agoric/agoric-sdk/commit/20d61cce9a15d473fce7c6f904cfefaf8dfca657))
+
+
+### Features
+
+* add contact address property and register depositFacet name ([feae632](https://github.com/Agoric/agoric-sdk/commit/feae6321259e29539ab637956e801d1321ba9a8e))
+* display wallet depositFacet's bech32 address in the UI ([4c61fe6](https://github.com/Agoric/agoric-sdk/commit/4c61fe6fc695a4d1b9d7a0e0caed5d30d0166a1a))
+* install Pegasus on "transfer" IBC port ([a257216](https://github.com/Agoric/agoric-sdk/commit/a2572163878bad9c6ba11914e02b8aacfefedeba))
+* install Pegasus on chain bootstrap ([7615292](https://github.com/Agoric/agoric-sdk/commit/76152926942f9c0610ab3d08a45c464856779643))
+* integrate pegasus in chain bootstrap ([5c7ecba](https://github.com/Agoric/agoric-sdk/commit/5c7ecba05d0e6ec7ef9fe127ee89e0c79d3e6511))
+* make nameHub entries, keys, and values available ([933c599](https://github.com/Agoric/agoric-sdk/commit/933c5993ca3d305572d720b4947715a9d6b9bede))
+* wait until genesis time has passed before continuing ([4d13843](https://github.com/Agoric/agoric-sdk/commit/4d13843db58fa1f7037386d54db13cbf786cd1d3))
+* **network:** allow onInstantiate to augment localAddress ([9cfc2fd](https://github.com/Agoric/agoric-sdk/commit/9cfc2fd58e9bd9076d4dc91af46b65e4c5729e54))
+* move Pegasus contract to SDK ([d0ca2cc](https://github.com/Agoric/agoric-sdk/commit/d0ca2cc155953c63eef5f56f236fa9280984730a))
+
+
+
+
+
 ## [2.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.16.0...@agoric/sdk@2.16.1) (2021-04-07)
 
 

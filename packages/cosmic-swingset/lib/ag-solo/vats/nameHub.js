@@ -1,5 +1,6 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -12,7 +13,7 @@ import './types.js';
  */
 export const makeNameHubKit = () => {
   /** @typedef {Partial<PromiseRecord<unknown> & { value: unknown }>} NameRecord */
-  /** @type {Store<unknown, NameRecord>} */
+  /** @type {Store<string, NameRecord>} */
   const keyToRecord = makeStore('nameKey');
 
   /** @type {NameHub} */
@@ -30,11 +31,23 @@ export const makeNameHubKit = () => {
       }
       return E(firstValue).lookup(...remaining);
     },
+    entries() {
+      return keyToRecord
+        .entries()
+        .map(([key, record]) => [key, record.promise || record.value]);
+    },
+    values() {
+      return keyToRecord.values().map(record => record.promise || record.value);
+    },
+    keys() {
+      return keyToRecord.keys();
+    },
   };
 
   /** @type {NameAdmin} */
   const nameAdmin = {
     reserve(key) {
+      assert.typeof(key, 'string');
       if (keyToRecord.has(key)) {
         // If we already have a promise, don't use a new one.
         if (keyToRecord.get(key).promise) {
@@ -46,6 +59,7 @@ export const makeNameHubKit = () => {
       }
     },
     update(key, newValue) {
+      assert.typeof(key, 'string');
       const record = harden({ value: newValue });
       if (keyToRecord.has(key)) {
         const old = keyToRecord.get(key);

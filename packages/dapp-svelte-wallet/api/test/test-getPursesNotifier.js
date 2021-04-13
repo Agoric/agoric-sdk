@@ -6,9 +6,21 @@ import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeNameHubKit } from '@agoric/cosmic-swingset/lib/ag-solo/vats/nameHub';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
+
+function makeFakeMyAddressNameAdmin() {
+  const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
+  return {
+    ...rawMyAddressNameAdmin,
+    getMyAddress() {
+      return 'agoric1test1';
+    },
+  };
+}
 
 const setup = async () => {
   const zoe = makeZoe(fakeVatAdmin);
@@ -20,6 +32,7 @@ const setup = async () => {
   const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
+    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });

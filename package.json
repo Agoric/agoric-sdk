@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sdk",
-  "version": "2.16.1",
+  "version": "2.17.0",
   "private": true,
   "useWorkspaces": true,
   "workspaces": [
@@ -38,6 +38,7 @@
     "packages/dapp-svelte-wallet/api",
     "packages/dapp-svelte-wallet",
     "packages/treasury",
+    "packages/pegasus",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
     "packages/deployment",

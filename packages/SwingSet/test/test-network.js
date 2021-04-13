@@ -81,7 +81,9 @@ test('handled protocol', async t => {
   await port.connect(
     '/ibc/*/ordered/echo',
     harden({
-      async onOpen(connection, _localAddr, _remoteAddr) {
+      async onOpen(connection, localAddr, remoteAddr) {
+        t.is(localAddr, '/ibc/*/ordered');
+        t.is(remoteAddr, '/ibc/*/ordered/echo');
         const ack = await connection.send('ping');
         // log(ack);
         t.is(`${ack}`, 'ping', 'received pong');
@@ -213,8 +215,11 @@ test('loopback protocol', async t => {
   await port2.connect(
     port.getLocalAddress(),
     harden({
-      async onOpen(c, _localAddr, _remoteAddr, _connectionHandler) {
-        t.is(`${await c.send('ping')}`, 'pingack', 'expected pingack');
+      async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
+        t.is(localAddr, '/loopback/bar/nonce/1');
+        t.is(remoteAddr, '/loopback/foo/nonce/2');
+        const pingack = await c.send('ping');
+        t.is(pingack, 'pingack', 'expected pingack');
         closed.resolve();
       },
     }),

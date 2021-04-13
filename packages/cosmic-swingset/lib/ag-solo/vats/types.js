@@ -10,21 +10,31 @@
 
 /**
  * @typedef {Object} NameHub
- * @property {(...path: Array<unknown>) => Promise<unknown>} lookup Look up a
+ * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
+ * @property {() => Array<[string, unknown]>} entries get all the entries
+ * available in the current NameHub
+ * @property {() => Array<string>} keys get all names available in the current
+ * NameHub
+ * @property {() => Array<unknown>} values get all values available in the
+ * current NameHub
  */
 
 /**
  * @typedef {Object} NameAdmin
- * @property {(key: unknown) => void} reserve Mark a key as reserved; will
+ * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
- * @property {(key: unknown, newValue: unknown) => void} update Fulfill an
+ * @property {(key: string, newValue: unknown) => void} update Fulfill an
  * outstanding reserved promise (if any) to the newValue and set the key to the
  * newValue.
- * @property {(key: unknown) => void} delete Delete a value and reject an
+ * @property {(key: string) => void} delete Delete a value and reject an
  * outstanding reserved promise (if any).
+ */
+
+/**
+ * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
  */
 
 /**
