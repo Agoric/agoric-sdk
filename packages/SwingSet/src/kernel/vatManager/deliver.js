@@ -10,6 +10,7 @@ export function makeDeliver(tools, dispatch) {
     vatID,
     vatKeeper,
     waitUntilQuiescent,
+    kernelSlog,
   } = tools;
 
   /**

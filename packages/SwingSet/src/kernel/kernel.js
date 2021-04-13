@@ -601,6 +601,7 @@ export default function buildKernel(
     startXSnap,
     gcTools,
     defaultManagerType,
+    kernelSlog,
   });
 
   function buildVatSyscallHandler(vatID, translators) {

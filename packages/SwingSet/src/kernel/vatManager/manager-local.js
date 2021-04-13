@@ -14,6 +14,7 @@ export function makeLocalVatManagerFactory(tools) {
     transformMetering,
     waitUntilQuiescent,
     gcTools,
+    kernelSlog,
   } = tools;
 
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
@@ -45,6 +46,7 @@ export function makeLocalVatManagerFactory(tools) {
           transcriptManager,
           vatKeeper,
           waitUntilQuiescent,
+          kernelSlog,
         },
         dispatch,
       );
