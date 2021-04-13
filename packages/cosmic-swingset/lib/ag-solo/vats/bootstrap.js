@@ -539,7 +539,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     if (pegasus) {
       // Add the Pegasus transfer port.
-      const port = await E(network).bind('/ibc-port/pegasus');
+      const port = await E(network).bind('/ibc-port/transfer');
       E(port).addListener(
         Far('listener', {
           async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {

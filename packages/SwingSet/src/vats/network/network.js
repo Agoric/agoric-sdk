@@ -391,7 +391,7 @@ export function makeNetworkProtocol(protocolHandler) {
             .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
             .catch(rethrowUnlessMissing);
           localAddr = localInstance
-            ? `${listenPrefix}/${localInstance}`
+            ? `${listenAddr}/${localInstance}`
             : listenAddr;
         } catch (e) {
           lastFailure = e;

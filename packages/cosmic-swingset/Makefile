@@ -69,6 +69,7 @@ scenario2-setup-nobuild:
 
 scenario2-run-chain:
 	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
 # Provision and start a client.
