@@ -8,6 +8,22 @@
 # error "You must define XSNAP_VERSION in the right Makefile"
 #endif
 
+#ifndef XSNAP_TEST_RECORD
+#define XSNAP_TEST_RECORD 0
+#endif
+
+#if XSNAP_TEST_RECORD
+enum {
+	mxTestRecordJS = 0,
+	mxTestRecordJSON = 1,
+	mxTestRecordParam = 2,
+	mxTestRecordReply = 4,
+};
+int gxTestRecordParamIndex = 0;
+int gxTestRecordReplyIndex = 0;
+static void fxTestRecord(int flags, void* buffer, size_t length);
+#endif
+
 extern txScript* fxLoadScript(txMachine* the, txString path, txUnsigned flags);
 
 typedef struct sxAliasIDLink txAliasIDLink;
@@ -357,7 +373,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			char command = *nsbuf;
-			// fprintf(stderr, "command: len %d %c arg: %s\n", nslen, command, nsbuf + 1);
+// 			fprintf(stderr, "command: len %d %c arg: %s\n", nslen, command, nsbuf + 1);
 			switch(command) {
 			case '?':
 			case 'e':
@@ -368,9 +384,15 @@ int main(int argc, char* argv[])
 					xsVars(3);
 					xsTry {
 						if (command == '?') {
+							#if XSNAP_TEST_RECORD
+								fxTestRecord(mxTestRecordJSON | mxTestRecordParam, nsbuf + 1, nslen - 1);
+							#endif
 							xsVar(0) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 							xsVar(1) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
 						} else {
+							#if XSNAP_TEST_RECORD
+								fxTestRecord(mxTestRecordJS | mxTestRecordParam, nsbuf + 1, nslen - 1);
+							#endif
 							xsVar(0) = xsStringBuffer(nsbuf + 1, nslen - 1);
 							xsVar(1) = xsCall1(xsGlobal, xsID("eval"), xsVar(0));
 						}
@@ -1426,9 +1448,38 @@ static void fx_issueCommand(xsMachine *the)
 	if (readError != 0) {
 		xsUnknownError(fxReadNetStringError(readError));
 	}
+#if XSNAP_TEST_RECORD
+	fxTestRecord(mxTestRecordJSON | mxTestRecordReply, buf, len);
+#endif
 
 	xsResult = xsArrayBuffer(buf, len);
 }
+
+#if XSNAP_TEST_RECORD
+void fxTestRecord(int flags, void* buffer, size_t length)
+{
+	char path[PATH_MAX];
+	FILE* file;
+	mkdir("xsnap-test", 0755);
+	if (flags & mxTestRecordParam) {
+		sprintf(path, "xsnap-test/param-%d", gxTestRecordReplyIndex);
+		gxTestRecordReplyIndex++;
+	}
+	else {
+		sprintf(path, "xsnap-test/reply-%d", gxTestRecordParamIndex);
+		gxTestRecordParamIndex++;
+	}
+	if (flags & mxTestRecordJSON)
+		strcat(path, ".json");
+	else
+		strcat(path, ".js");
+	file = fopen(path, "wb");
+	if (file) {
+		fwrite(buffer, 1, length, file);		
+		fclose(file);
+	}
+}
+#endif
 
 // Local Variables:
 // tab-width: 4
