@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.14.1...@agoric/zoe@0.15.0) (2021-04-13)
+
+
+### Features
+
+* integrate pegasus in chain bootstrap ([5c7ecba](https://github.com/Agoric/agoric-sdk/commit/5c7ecba05d0e6ec7ef9fe127ee89e0c79d3e6511))
+
+
+
+
+
 ## [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.14.0...@agoric/zoe@0.14.1) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/zoe

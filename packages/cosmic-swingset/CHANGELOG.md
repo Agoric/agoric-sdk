@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.28.1...@agoric/cosmic-swingset@0.29.0) (2021-04-13)
+
+
+### Bug Fixes
+
+* don't invoke kernel before first actual chain block ([a27393f](https://github.com/Agoric/agoric-sdk/commit/a27393f212e9b28f519347ce98be0f4e428ebed1))
+* ensure unique (but fake) addresses for sim-chain ([1a5f5c0](https://github.com/Agoric/agoric-sdk/commit/1a5f5c0eaf2964764ec755afd86c9dc1ba56c8d7))
+* fully implement onInbound for unique connection ID ([421b9d4](https://github.com/Agoric/agoric-sdk/commit/421b9d432e26670f223518acbaf7d9bd55d63ca3))
+* genesis has height 0, so properly detect the first block ([5b524da](https://github.com/Agoric/agoric-sdk/commit/5b524da80be6becbf6d4da7992c3be3e551431a6))
+* honour logging sent exceptions with DEBUG=SwingSet:ls ([db9b46a](https://github.com/Agoric/agoric-sdk/commit/db9b46af0a01eac00941f8c902ceedfb3a9938f6))
+* optimise the scenario2 setup by preferring ag-cosmos-helper ([24f0a59](https://github.com/Agoric/agoric-sdk/commit/24f0a59c5dcc1784517cb5209779c7d95f56d63d))
+* properly disable devices.bridge for the sim-chain ([20d61cc](https://github.com/Agoric/agoric-sdk/commit/20d61cce9a15d473fce7c6f904cfefaf8dfca657))
+
+
+### Features
+
+* install Pegasus on "transfer" IBC port ([a257216](https://github.com/Agoric/agoric-sdk/commit/a2572163878bad9c6ba11914e02b8aacfefedeba))
+* **network:** allow onInstantiate to augment localAddress ([9cfc2fd](https://github.com/Agoric/agoric-sdk/commit/9cfc2fd58e9bd9076d4dc91af46b65e4c5729e54))
+* install Pegasus on chain bootstrap ([7615292](https://github.com/Agoric/agoric-sdk/commit/76152926942f9c0610ab3d08a45c464856779643))
+* integrate pegasus in chain bootstrap ([5c7ecba](https://github.com/Agoric/agoric-sdk/commit/5c7ecba05d0e6ec7ef9fe127ee89e0c79d3e6511))
+* make nameHub entries, keys, and values available ([933c599](https://github.com/Agoric/agoric-sdk/commit/933c5993ca3d305572d720b4947715a9d6b9bede))
+
+
+
+
+
 ## [0.28.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.28.0...@agoric/cosmic-swingset@0.28.1) (2021-04-07)
 
 
