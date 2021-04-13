@@ -35,15 +35,27 @@ E(home.zoe).getPublicFacet(history[1])
 history[2]
 [Alleged: presence o-61]{}
 command[3]
-E(history[2]).pegRemote('Muon', history[1][0][1], 'umuon', 'nat', { decimalPlaces: 6 })
+E(history[2]).pegRemote('Muon', history[0][0][1], 'umuon', 'nat', { decimalPlaces: 6 })
 history[3]
 [Alleged: presence o-158]{}
+command[4]
+E(history[3]).getLocalBrand()
+history[4]
+[Alleged: Local1 Brand ...]
+command[5]
+E(history[2]).getLocalIssuer(history[4])
+history[5]
+[issuer]
+command[6]
+E(home.board).getId(history[5])
 ```
+
+Go to Agoric Wallet Setup page, import muon issuer from above board ID.
 
 Go to Agoric Wallet Transfer page, look for bech32 for Self.
 
 Transfer muon from stargate-final (the following connection) to agoric-local
 (`agoric1...`):
 ```
-rly paths show transfer6 --json | jq '.chains.src."connection-id"'
+rly paths show transfer7 --json | jq '.chains.src."channel-id"'
 ```
