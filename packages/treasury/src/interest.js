@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/callSpread/types';
 import './types';
@@ -10,6 +11,9 @@ function makeResult(latestInterestUpdate, interest, newDebt) {
 }
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
+const BASIS_POINTS = 10000;
+// single digit APR is less than a basis point per day.
+const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
 
 /** @type {MakeInterestCalculator} */
 export function makeInterestCalculator(
@@ -18,19 +22,26 @@ export function makeInterestCalculator(
   chargingPeriod,
   recordingPeriod,
 ) {
-  const numeratorValue = BigInt(annualRate.numerator.value);
-  const denominatorValue = BigInt(annualRate.denominator.value);
+  // see https://en.wikipedia.org/wiki/Compound_interest#Compounding_basis
+  const numeratorValue = Number(annualRate.numerator.value);
+  const denominatorValue = Number(annualRate.denominator.value);
+
+  const rawAnnualRate = numeratorValue / denominatorValue;
+  const chargingFrequency = Number(chargingPeriod) / Number(SECONDS_PER_YEAR);
+  const periodicRate = (1 + rawAnnualRate) ** chargingFrequency - 1;
+
   const ratePerChargingPeriod = makeRatio(
-    chargingPeriod * numeratorValue,
+    BigInt(Math.floor(periodicRate * LARGE_DENOMINATOR)),
     annualRate.numerator.brand,
-    SECONDS_PER_YEAR * denominatorValue,
+    BigInt(LARGE_DENOMINATOR),
   );
+
   // Calculate new debt for charging periods up to the present.
   /** @type {Calculate} */
   function calculate(debtStatus, currentTime) {
     const { newDebt, latestInterestUpdate } = debtStatus;
     let newRecent = latestInterestUpdate;
-    let growingInterest = amountMath.makeEmpty(brand);
+    let growingInterest = debtStatus.interest;
     let growingDebt = newDebt;
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;

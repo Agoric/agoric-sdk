@@ -65,7 +65,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  const notifier = timer.makeNotifier(0n, 1n);
+  const notifier = timer.makeNotifier(0n, quoteInterval);
 
   const priceAuthorityOptions = harden({
     timer,
@@ -84,7 +84,7 @@ export function makeScriptedPriceAuthority(options) {
   const priceObserver = Far('priceObserver', {
     updateState: t => {
       currentPrice =
-        priceList[Number(t) % (priceList.length * Number(quoteInterval))];
+        priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
       fireTriggers(createQuote);
     },
