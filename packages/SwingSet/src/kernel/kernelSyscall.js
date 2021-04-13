@@ -38,6 +38,8 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   function exit(vatID, isFailure, info) {
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallExit');
     setTerminationTrigger(vatID, false, !!isFailure, info);
     return OKNULL;
   }
@@ -48,18 +50,24 @@ export function makeKernelSyscallHandler(tools) {
 
   function vatstoreGet(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallVatstoreGet');
     const value = storage.get(actualKey);
     return harden(['ok', value || null]);
   }
 
   function vatstoreSet(vatID, key, value) {
     const actualKey = vatstoreKeyKey(vatID, key);
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallVatstoreSet');
     storage.set(actualKey, value);
     return OKNULL;
   }
 
   function vatstoreDelete(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallVatstoreDelete');
     storage.delete(actualKey);
     return OKNULL;
   }

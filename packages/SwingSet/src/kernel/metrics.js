@@ -26,6 +26,31 @@ export const KERNEL_STATS_SUM_METRICS = [
     description: 'Total number of SwingSet promise resolution kernel calls',
   },
   {
+    key: 'syscallExit',
+    name: 'swingset_syscall_exit_total',
+    description: 'Total number of SwingSet vat exit kernel calls',
+  },
+  {
+    key: 'syscallVatstoreGet',
+    name: 'swingset_syscall_vatstore_get_total',
+    description: 'Total number of SwingSet vatstore get kernel calls',
+  },
+  {
+    key: 'syscallVatstoreSet',
+    name: 'swingset_syscall_vatstore_set_total',
+    description: 'Total number of SwingSet vatstore set kernel calls',
+  },
+  {
+    key: 'syscallVatstoreDelete',
+    name: 'swingset_syscall_vatstore_delete_total',
+    description: 'Total number of SwingSet vatstore delete kernel calls',
+  },
+  {
+    key: 'syscallDropImports',
+    name: 'swingset_syscall_drop_imports_total',
+    description: 'Total number of SwingSet drop imports kernel calls',
+  },
+  {
     key: 'dispatches',
     name: 'swingset_dispatch_total',
     description: 'Total number of SwingSet vat calls',
