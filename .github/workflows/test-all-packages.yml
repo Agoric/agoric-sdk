@@ -452,7 +452,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (xs)
-      timeout-minutes: 20
+      timeout-minutes: 30
       run: yarn test:xs
       env:
         ESM_DISABLE_CACHE: true
