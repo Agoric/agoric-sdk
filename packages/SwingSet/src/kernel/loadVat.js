@@ -55,13 +55,11 @@ export function makeVatLoader(stuff) {
    * @param {*} source  The source object implementing the vat
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
-   * @returns {string}  The vatID of the vat
+   * @returns {Promise<void>} fires when the vat is ready for messages
    */
   function recreateDynamicVat(vatID, source, dynamicOptions) {
     // eslint-disable-next-line no-use-before-define
-    create(vatID, source, dynamicOptions, false, true);
-    // again we ignore create()'s Promise
-    return vatID;
+    return create(vatID, source, dynamicOptions, false, true);
   }
 
   /**
