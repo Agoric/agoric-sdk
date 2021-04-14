@@ -230,6 +230,7 @@ export default async function main(
       noFakeCurrencies: env.NO_FAKE_CURRENCIES,
     };
     const meterProvider = getMeterProvider(console, env);
+    const slogFile = env.SLOGFILE;
     const s = await launch(
       stateDBDir,
       mailboxStorage,
@@ -238,6 +239,7 @@ export default async function main(
       argv,
       undefined,
       meterProvider,
+      slogFile,
     );
     return s;
   }

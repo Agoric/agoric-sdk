@@ -34,7 +34,7 @@ async function buildSwingset(
   storage,
   vatsDir,
   argv,
-  { debugName = undefined, slogCallbacks },
+  { debugName = undefined, slogCallbacks, slogFile },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = loadSwingsetConfigFile(`${vatsDir}/chain-config.json`);
@@ -76,6 +76,7 @@ async function buildSwingset(
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(storage, deviceEndowments, {
     slogCallbacks,
+    slogFile,
   });
 
   // We DON'T want to run the kernel yet, only when the application decides
@@ -92,6 +93,7 @@ export async function launch(
   argv,
   debugName = undefined,
   meterProvider = DEFAULT_METER_PROVIDER,
+  slogFile = undefined,
 ) {
   console.info('Launching SwingSet kernel');
 
@@ -118,6 +120,7 @@ export async function launch(
     {
       debugName,
       slogCallbacks,
+      slogFile,
     },
   );
 
