@@ -17,6 +17,7 @@ export function makeVatManagerFactory({
   startXSnap,
   gcTools,
   defaultManagerType,
+  kernelSlog,
 }) {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
@@ -26,6 +27,7 @@ export function makeVatManagerFactory({
     transformMetering,
     waitUntilQuiescent,
     gcTools,
+    kernelSlog,
   });
 
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({

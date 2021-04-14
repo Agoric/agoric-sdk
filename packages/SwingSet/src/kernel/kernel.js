@@ -601,6 +601,7 @@ export default function buildKernel(
     startXSnap,
     gcTools,
     defaultManagerType,
+    kernelSlog,
   });
 
   function buildVatSyscallHandler(vatID, translators) {
@@ -882,8 +883,10 @@ export default function buildKernel(
       if (!vat) {
         logStartup(`skipping reload of dead vat ${vatID}`);
       } else {
+        const slogDone = kernelSlog.replayVatTranscript(vatID);
         // eslint-disable-next-line no-await-in-loop
         await vat.manager.replayTranscript();
+        slogDone();
         logStartup(`finished replaying vatID ${vatID} transcript `);
         const newLength = kernelKeeper.getRunQueueLength();
         if (newLength !== oldLength) {
