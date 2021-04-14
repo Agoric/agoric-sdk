@@ -31,6 +31,7 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../makeHandle';
+import { makeInstallationStorage } from './installationStorage';
 
 /**
  * Create an instance of Zoe.
@@ -45,8 +46,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   // Zoe state shared among functions
   const issuerTable = makeIssuerTable();
-  /** @type {WeakSet<Installation>} */
-  const installations = new WeakSet();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
@@ -60,20 +59,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   /** @type {GetMathKindByBrand} */
   const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
 
-  /**
-   * Create an installation by permanently storing the bundle. It will be
-   * evaluated each time it is used to make a new instance of a contract.
-   */
-  /** @type {Install} */
-  const install = async bundle => {
-    assert(bundle, X`a bundle must be provided`);
-    /** @type {Installation} */
-    const installation = Far('Installation', {
-      getBundle: () => bundle,
-    });
-    installations.add(installation);
-    return installation;
-  };
+  const { install, unwrapInstallation } = makeInstallationStorage();
 
   /** @type {GetAmountOfInvitationThen} */
   const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
@@ -114,11 +100,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const initIssuers = issuers =>
         Promise.all(issuers.map(issuerTable.initIssuer));
 
-      const installation = await Promise.resolve(installationP);
-      assert(
-        installations.has(installation),
-        X`${installation} was not a valid installation`,
-      );
+      const { installation, bundle } = await unwrapInstallation(installationP);
 
       const instance = makeHandle('Instance');
 
@@ -229,7 +211,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         return zoeMint;
       };
 
-      const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
