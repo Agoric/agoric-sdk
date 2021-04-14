@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.0...@agoric/cosmic-swingset@0.29.1) (2021-04-14)
+
+
+### Bug Fixes
+
+* small tweaks needed for agorictest-8 ([b8d2ec0](https://github.com/Agoric/agoric-sdk/commit/b8d2ec008b59f0de68602a4338ceafa6a3a92e2d))
+
+
+
+
+
 # [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.28.1...@agoric/cosmic-swingset@0.29.0) (2021-04-13)
 
 

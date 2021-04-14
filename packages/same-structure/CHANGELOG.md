@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.6...@agoric/same-structure@0.1.7) (2021-04-14)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
 ## [0.1.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.5...@agoric/same-structure@0.1.6) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/same-structure

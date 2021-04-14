@@ -108,6 +108,7 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   // TODO: This needs much more support to preserve contract state
   // between exports in order to be able to carry forward IBC conns.
   genesis.app_state.ibc = initState.ibc;
+  genesis.app_state.capability = initState.capability;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;

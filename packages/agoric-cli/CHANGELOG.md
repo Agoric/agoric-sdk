@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.10](https://github.com/Agoric/agoric-sdk/compare/agoric@0.12.9...agoric@0.12.10) (2021-04-14)
+
+
+### Bug Fixes
+
+* small tweaks needed for agorictest-8 ([b8d2ec0](https://github.com/Agoric/agoric-sdk/commit/b8d2ec008b59f0de68602a4338ceafa6a3a92e2d))
+
+
+
+
+
 ## [0.12.9](https://github.com/Agoric/agoric-sdk/compare/agoric@0.12.8...agoric@0.12.9) (2021-04-13)
 
 **Note:** Version bump only for package agoric

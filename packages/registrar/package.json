@@ -1,6 +1,6 @@
 {
   "name": "@agoric/registrar",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Register objects for public use",
   "parsers": {
     "js": "mjs"
@@ -33,8 +33,8 @@
     "@agoric/sparse-ints": "^0.1.6"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.6",
-    "@agoric/swingset-vat": "^0.16.0",
+    "@agoric/install-ses": "^0.5.7",
+    "@agoric/swingset-vat": "^0.16.1",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
