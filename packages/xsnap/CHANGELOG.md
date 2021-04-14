@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.5.1...@agoric/xsnap@0.5.2) (2021-04-14)
+
+**Note:** Version bump only for package @agoric/xsnap
+
+
+
+
+
 ## [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.5.0...@agoric/xsnap@0.5.1) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/xsnap

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "parsers": {
     "js": "mjs"
@@ -35,13 +35,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.2.6",
-    "@agoric/eventual-send": "^0.13.7",
-    "@agoric/marshal": "^0.4.4",
-    "@agoric/promise-kit": "^0.2.6"
+    "@agoric/eventual-send": "^0.13.8",
+    "@agoric/marshal": "^0.4.5",
+    "@agoric/promise-kit": "^0.2.7"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.6",
-    "@agoric/swingset-vat": "^0.16.0",
+    "@agoric/install-ses": "^0.5.7",
+    "@agoric/swingset-vat": "^0.16.1",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
