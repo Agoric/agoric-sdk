@@ -14,7 +14,7 @@ export const makeInstallationStorage = () => {
    */
   /** @type {Install} */
   const install = bundle => {
-    assert(bundle, X`a bundle must be provided`);
+    assert.typeof(bundle, 'object', X`a bundle must be provided`);
     /** @type {Installation} */
     const installation = Far('Installation', {
       getBundle: () => bundle,
