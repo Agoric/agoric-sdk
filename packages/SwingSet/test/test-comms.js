@@ -344,16 +344,18 @@ test('retire result promise on outbound message', t => {
   t.is(state.mapToKernel(plResult), refOf(pResult));
   t.is(remoteA.mapToRemote(plResult), flipRefOf(paResult));
   t.is(remoteA.mapFromRemote(refOf(paResult)), plResult);
+  t.is(state.getPromiseStatus(plResult), 'unresolved');
 
   // ...and then Alice resolves the answer
   _('a>r', [paResult, false, 42]);
   _('k<r', [pResult, false, 42]);
 
-  // Now all those c-list entries should be gone
+  // Now all those c-list entries and the local promise itself should be gone
   t.falsy(state.mapFromKernel(refOf(pResult)));
   t.falsy(state.mapToKernel(plResult));
   t.falsy(remoteA.mapToRemote(plResult));
   t.falsy(remoteA.mapFromRemote(refOf(paResult)));
+  t.is(state.getPromiseStatus(plResult), undefined);
 
   done();
 });
@@ -390,24 +392,29 @@ test('retire result promise on inbound message', t => {
   t.is(state.mapToKernel(plResult), refOf(pResult));
   t.is(remoteA.mapToRemote(plResult), flipRefOf(paResult));
   t.is(remoteA.mapFromRemote(refOf(paResult)), plResult);
+  t.is(state.getPromiseStatus(plResult), 'unresolved');
 
   // ...and then Larry resolves the answer
   _('k>r', [pResult, false, 42]);
   _('a<r', [paResult, false, 42]);
 
   // Now the kernel c-list entries and the outbound remote c-list entry should
-  // be gone but the inbound remote c-list entry should still be there
+  // be gone but the inbound remote c-list entry should still be there.  The
+  // result promise should also still be there, but be in a resolved state.
   t.falsy(state.mapFromKernel(refOf(pResult)));
   t.falsy(state.mapToKernel(plResult));
   t.falsy(remoteA.mapToRemote(plResult));
   t.truthy(remoteA.mapFromRemote(refOf(paResult)));
+  t.is(state.getPromiseStatus(plResult), 'fulfilled');
 
   // Then the remote sends some traffic, which will contain an ack
   _('a>m', oaLarry, 'more', undefined);
   _('k<m', oLarry, 'more', undefined);
 
-  // And now the inbound remote c-list entry should be gone too.
+  // And now the inbound remote c-list entry and the promise itself should be
+  // gone too.
   t.falsy(remoteA.mapFromRemote(refOf(paResult)));
+  t.is(state.getPromiseStatus(plResult), undefined);
 
   done();
 });
@@ -554,6 +561,7 @@ test('outbound promise resolution and inbound message to it crossing in flight',
   const {
     _,
     done,
+    state,
     setupRemote,
     importFromRemote,
     newImportObject,
@@ -574,6 +582,10 @@ test('outbound promise resolution and inbound message to it crossing in flight',
   const paPromise = newExportPromise('a');
   _('a<m', oaAlice, 'hello', undefined, paPromise);
 
+  // Promise should now exist in the comms vat in an unresolved state
+  const plPromise = state.mapFromKernel(refOf(pPromise));
+  t.is(state.getPromiseStatus(plPromise), 'unresolved');
+
   // ...and then Larry resolves the promise to Lisa
   const oLisa = newImportObject('k');
   const oaLisa = newExportObject('a');
@@ -581,16 +593,27 @@ test('outbound promise resolution and inbound message to it crossing in flight',
   _('a:l', 1); // lag Alice so she acks resolve after she sends 'talkback'
   _('a<r', [paPromise, false, oaLisa]);
 
+  // Promise should now be fulfilled in the comms vat
+  t.is(state.getPromiseStatus(plPromise), 'fulfilled');
+
   // Meanwhile, Alice sends a message to the promise without having seen the
   // resolution, so comms vat sends it to Lisa itself.
   _('a>m', paPromise, 'talkback', undefined);
   _('k<m', oLisa, 'talkback', undefined);
+
+  // Promise should still be in the comms vat, because no ack yet
+  t.is(state.getPromiseStatus(plPromise), 'fulfilled');
 
   _('a:l', 0); // lag ends, talking to the now retired promise should error
   t.throws(
     () => _('a>m', paPromise, 'talkback', undefined),
     { message: `"${refOf(paPromise)}" must already be in remote "r1 (a)"` },
   );
+
+  // Alice should be able to address Lisa directly & the promise should be gone
+  _('a>m', oaLisa, 'moretalk', undefined);
+  _('k<m', oLisa, 'moretalk', undefined);
+  t.is(state.getPromiseStatus(plPromise), undefined);
 
   done();
 });
@@ -599,6 +622,7 @@ test('outbound promise resolution and inbound message containing it crossing in 
   const {
     _,
     done,
+    state,
     setupRemote,
     importFromRemote,
     exportToRemote,
@@ -606,9 +630,11 @@ test('outbound promise resolution and inbound message containing it crossing in 
     newExportObject,
     newImportPromise,
     newExportPromise,
+    refOf,
   } = commsVatDriver(t);
 
   setupRemote('a');
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
   const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
   const oLarry = newImportObject('k');
   const oaLarry = exportToRemote('a', 11, oLarry);
@@ -621,6 +647,10 @@ test('outbound promise resolution and inbound message containing it crossing in 
   const paPromise = newExportPromise('a');
   _('a<m', oaAlice, 'hello', undefined, paPromise);
 
+  // Promise should now exist in the comms vat in an unresolved state
+  const plPromise = remoteA.mapFromRemote(refOf(paPromise));
+  t.is(state.getPromiseStatus(plPromise), 'unresolved');
+
   // ...and then Larry resolves the promise to Lisa
   const oLisa = newImportObject('k');
   const oaLisa = newExportObject('a');
@@ -628,12 +658,21 @@ test('outbound promise resolution and inbound message containing it crossing in 
   _('a:l', 1); // lag Alice so she acks resolve after she sends 'talkback'
   _('a<r', [paPromise, false, oaLisa]);
 
+  // Promise should now be fulfilled in the comms vat
+  t.is(state.getPromiseStatus(plPromise), 'fulfilled');
+
   // Meanwhile, Alice sends a message containing the promise as an arg without
   // having seen the resolution, so comms vat sends it to Lisa itself.
   _('a>m', oaLarry, 'talkback', undefined, paPromise);
   const pPromise2 = newExportPromise('k');
   _('k<m', oLarry, 'talkback', undefined, pPromise2);
   _('k<r', [pPromise2, false, oLisa]);
+  _('a:l', 0); // get rid of the lag so next message catches up the acks
+
+  // Alice should be able to address Lisa directly & the promise should be gone
+  _('a>m', oaLisa, 'moretalk', undefined);
+  _('k<m', oLisa, 'moretalk', undefined);
+  t.is(state.getPromiseStatus(plPromise), undefined);
 
   done();
 });
@@ -642,16 +681,21 @@ test('resolutions crossing in flight', t => {
   const {
     _,
     done,
+    state,
     setupRemote,
     importFromRemote,
+    exportToRemote,
     newImportObject,
     newExportObject,
     newImportPromise,
     newExportPromise,
+    refOf,
   } = commsVatDriver(t);
 
   setupRemote('a');
   const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
 
   // Larry sends a message to Alice expecting a result Y and containing a
   // promise X as an argument.
@@ -663,12 +707,22 @@ test('resolutions crossing in flight', t => {
   const paPromiseX = newExportPromise('a');
   _('a<m', oaAlice, 'hello', paPromiseY, paPromiseX);
 
+  // Both X and Y should now exist in the comms vat in an unresolved state
+  const plPromiseX = state.mapFromKernel(refOf(pPromiseX));
+  t.is(state.getPromiseStatus(plPromiseX), 'unresolved');
+  const plPromiseY = state.mapFromKernel(refOf(pPromiseY));
+  t.is(state.getPromiseStatus(plPromiseY), 'unresolved');
+
   // Larry resolves X to Lisa
   const oLisa = newImportObject('k');
   const oaLisa = newExportObject('a');
   _('k>r', [pPromiseX, false, oLisa]);
   _('a:l', 1); // lag Alice so she acks resolve after she sends resolve of Y
   _('a<r', [paPromiseX, false, oaLisa]);
+
+  // X should be fulfilled but Y still unresolved
+  t.is(state.getPromiseStatus(plPromiseX), 'fulfilled');
+  t.is(state.getPromiseStatus(plPromiseY), 'unresolved');
 
   // Meanwhile, Alice resolves Y to a value containing X.
   _('a>r', [paPromiseY, false, [paPromiseX]]);
@@ -681,6 +735,18 @@ test('resolutions crossing in flight', t => {
   // and a resolve of X' to Lisa.
   const pPromiseX2 = newExportPromise('k');
   _('k<r', [pPromiseY, false, [pPromiseX2]], [pPromiseX2, false, oLisa]);
+  _('a:l', 0); // get rid of the lag so next message catches up the acks
+
+  // X should still be fulfilled awaiting ack from Alice, but Y is now gone
+  // since the resolve went from Alice into the kernel
+  t.is(state.getPromiseStatus(plPromiseX), 'fulfilled');
+  t.is(state.getPromiseStatus(plPromiseY), undefined);
+
+  // Another message from Alice should bring the acks up to date, which will
+  // make X disappear
+  _('a>m', oaLarry, 'moretalk', undefined);
+  _('k<m', oLarry, 'moretalk', undefined);
+  t.is(state.getPromiseStatus(plPromiseX), undefined);
 
   done();
 });
@@ -722,4 +788,297 @@ test('intra comms vat message routing', t => {
   _('a<m', oaAmy, 'meetBert', undefined, oaBert);
 
   done();
+});
+
+test('return promise sent to third party', t => {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    importFromRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
+  const oLarry = newImportObject('k');
+  /* const oaLarry = */ exportToRemote('a', 11, oLarry);
+
+  setupRemote('b');
+  const [oBob, obBob] = importFromRemote('b', 31, 'bob');
+  const obLarry = exportToRemote('b', 11, oLarry);
+
+  // Larry sends a request to Alice expecting a result
+  const pResult = newImportPromise('k');
+  _('k>m', oAlice, 'doSomething', pResult);
+  const paResult = newExportPromise('a');
+  _('a<m', oaAlice, 'doSomething', paResult);
+  const plResult = state.mapFromKernel(refOf(pResult));
+
+  // Larry sends the result promise to Bob
+  _('k>m', oBob, 'considerThis', undefined, pResult);
+  _('k<s', pResult);
+  const pbResult = newExportPromise('b');
+  _('b<m', obBob, 'considerThis', undefined, pbResult);
+
+  // Alice resolves the result, notifying both Larry and Bob
+  _('a>r', [paResult, false, 42]);
+  _('b<r', [pbResult, false, 42]);
+  _('k<r', [pResult, false, 42]);
+
+  // Promise is still there until Bob acks the resolve, then it goes away
+  t.is(state.getPromiseStatus(plResult), 'fulfilled');
+  _('b>m', obLarry, 'hi', undefined);
+  _('k<m', oLarry, 'hi', undefined);
+  t.is(state.getPromiseStatus(plResult), undefined);
+
+  done();
+});
+
+function twoAcksTest(t, aliceFirst) {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    importFromRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
+
+  setupRemote('b');
+  const [oBob, obBob] = importFromRemote('b', 31, 'bob');
+  const obLarry = exportToRemote('b', 11, oLarry);
+
+  // Larry sends a message to Alice containing a promise
+  const pPromise = newImportPromise('k');
+  _('k>m', oAlice, 'hello', undefined, pPromise);
+  _('k<s', pPromise);
+  const paPromise = newExportPromise('a');
+  _('a<m', oaAlice, 'hello', undefined, paPromise);
+  const plPromise = state.mapFromKernel(refOf(pPromise));
+
+  // Larry sends a message to Bob containing the same promise
+  _('k>m', oBob, 'hello', undefined, pPromise);
+  _('k<s', pPromise);
+  const pbPromise = newExportPromise('b');
+  _('b<m', obBob, 'hello', undefined, pbPromise);
+
+  // Larry resolves the promise, notifying both Alice and Bob
+  _('k>r', [pPromise, false, 42]);
+  _('a<r', [paPromise, false, 42]);
+  _('b<r', [pbPromise, false, 42]);
+
+  // Promise is still there before any acks
+  t.is(state.getPromiseStatus(plPromise), 'fulfilled');
+
+  // First remote acks, but it's still there
+  if (aliceFirst) {
+    _('a>m', oaLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  } else {
+    _('b>m', obLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  }
+  t.is(state.getPromiseStatus(plPromise), 'fulfilled');
+
+  // Second remote acks and promise goes away
+  if (aliceFirst) {
+    _('b>m', obLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  } else {
+    _('a>m', oaLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  }
+  t.is(state.getPromiseStatus(plPromise), undefined);
+
+  done();
+}
+
+test('promise sent to two remotes, Alice acks before Bob', t => {
+  twoAcksTest(t, true);
+});
+
+test('promise sent to two remotes, Bob acks before Alice', t => {
+  twoAcksTest(t, false);
+});
+
+function nestedPromisesTestLarryOuter(t, larryInner) {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    importFromRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
+
+  let pPromiseInner;
+  let paPromiseInner;
+  if (!larryInner) {
+    // Alice sends a message to Larry containing the inner promise
+    paPromiseInner = newImportPromise('a');
+    _('a>m', oaLarry, 'hello', undefined, paPromiseInner);
+    pPromiseInner = newExportPromise('k');
+    _('k<m', oLarry, 'hello', undefined, pPromiseInner);
+  }
+
+  // Larry sends a message to Alice containing the outer promise
+  const pPromiseOuter = newImportPromise('k');
+  _('k>m', oAlice, 'hello', undefined, pPromiseOuter);
+  _('k<s', pPromiseOuter);
+  const paPromiseOuter = newExportPromise('a');
+  _('a<m', oaAlice, 'hello', undefined, paPromiseOuter);
+  const plPromiseOuter = state.mapFromKernel(refOf(pPromiseOuter));
+
+  // Larry resolves the outer promise to a value containing the inner promise
+  if (larryInner) {
+    pPromiseInner = newImportPromise('k');
+  }
+  _('k>r', [pPromiseOuter, false, pPromiseInner]);
+  if (larryInner) {
+    _('k<s', pPromiseInner);
+    paPromiseInner = newExportPromise('a');
+  }
+  _('a<r', [paPromiseOuter, false, paPromiseInner]);
+  const plPromiseInner = state.mapFromKernel(refOf(pPromiseInner));
+
+  // Outer promise is fulfilled, inner is still unresolved
+  t.is(state.getPromiseStatus(plPromiseOuter), 'fulfilled');
+  t.is(state.getPromiseStatus(plPromiseInner), 'unresolved');
+
+  // Somebody resolves the inner promise
+  if (larryInner) {
+    _('k>r', [pPromiseInner, false, 42]);
+    _('a<r', [paPromiseInner, false, 42]);
+  } else {
+    _('a>r', [paPromiseInner, false, 42]);
+    _('k<r', [pPromiseInner, false, 42]);
+  }
+
+  if (larryInner) {
+    // Both promises are still there, fulfilled before any acks
+    t.is(state.getPromiseStatus(plPromiseOuter), 'fulfilled');
+    t.is(state.getPromiseStatus(plPromiseInner), 'fulfilled');
+
+    // Alice acks, both promises disappear
+    _('a>m', oaLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  }
+  t.is(state.getPromiseStatus(plPromiseOuter), undefined);
+  t.is(state.getPromiseStatus(plPromiseInner), undefined);
+
+  done();
+}
+
+test('Nested promises, Larry outer, Larry inner', t => {
+  nestedPromisesTestLarryOuter(t, true);
+});
+
+test('Nested promises, Larry outer, Alice inner', t => {
+  nestedPromisesTestLarryOuter(t, false);
+});
+
+function nestedPromisesTestAliceOuter(t, larryInner) {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    importFromRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const [oAlice, oaAlice] = importFromRemote('a', 21, 'alice');
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
+
+  let pPromiseInner;
+  let paPromiseInner;
+  if (larryInner) {
+    // Larry sends a message to Alice containing the inner promise
+    pPromiseInner = newImportPromise('k');
+    _('k>m', oAlice, 'hello', undefined, pPromiseInner);
+    paPromiseInner = newExportPromise('a');
+    _('k<s', pPromiseInner);
+    _('a<m', oaAlice, 'hello', undefined, paPromiseInner);
+  }
+
+  // Alice sends a message to Larry containing the outer promise
+  const paPromiseOuter = newImportPromise('a');
+  _('a>m', oaLarry, 'hello', undefined, paPromiseOuter);
+  const pPromiseOuter = newExportPromise('k');
+  _('k<m', oLarry, 'hello', undefined, pPromiseOuter);
+  const plPromiseOuter = state.mapFromKernel(refOf(pPromiseOuter));
+
+  // Alice resolves the outer promise to a value containing the inner promise
+  if (!larryInner) {
+    paPromiseInner = newImportPromise('a');
+  }
+  _('a>r', [paPromiseOuter, false, paPromiseInner]);
+  if (!larryInner) {
+    pPromiseInner = newExportPromise('k');
+  }
+  _('k<r', [pPromiseOuter, false, pPromiseInner]);
+  const plPromiseInner = state.mapFromKernel(refOf(pPromiseInner));
+
+  // Outer promise is gone, inner is still unresolved
+  t.is(state.getPromiseStatus(plPromiseOuter), undefined);
+  t.is(state.getPromiseStatus(plPromiseInner), 'unresolved');
+
+  // Somebody resolves the inner promise
+  if (larryInner) {
+    _('k>r', [pPromiseInner, false, 42]);
+    _('a<r', [paPromiseInner, false, 42]);
+  } else {
+    _('a>r', [paPromiseInner, false, 42]);
+    _('k<r', [pPromiseInner, false, 42]);
+  }
+
+  if (larryInner) {
+    // Inner promise is still there, fulfilled before any acks
+    t.is(state.getPromiseStatus(plPromiseInner), 'fulfilled');
+
+    // Alice acks, inner promise disappears
+    _('a>m', oaLarry, 'hi', undefined);
+    _('k<m', oLarry, 'hi', undefined);
+  }
+  t.is(state.getPromiseStatus(plPromiseInner), undefined);
+
+  done();
+}
+
+test('Nested promises, Alice outer, Larry inner', t => {
+  nestedPromisesTestAliceOuter(t, true);
+});
+
+test('Nested promises, Alice outer, Alice inner', t => {
+  nestedPromisesTestAliceOuter(t, false);
 });

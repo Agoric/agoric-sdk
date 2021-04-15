@@ -27,7 +27,7 @@ export function initializeRemoteState(
   store.set(`${remoteID}.initialized`, 'true');
 }
 
-export function makeRemote(store, remoteID) {
+export function makeRemote(state, store, remoteID) {
   insistRemoteID(remoteID);
   assert(store.get(`${remoteID}.initialized`), X`missing ${remoteID}`);
 
@@ -58,11 +58,13 @@ export function makeRemote(store, remoteID) {
     assert(!store.get(toKey), X`already have ${lref}`);
     store.set(fromKey, lref);
     store.set(toKey, flipRemoteSlot(rref));
+    state.incrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
   function deleteRemoteMapping(rref, lref) {
     store.delete(`${remoteID}.c.${rref}`);
     store.delete(`${remoteID}.c.${lref}`);
+    state.decrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
   function deleteToRemoteMapping(lref) {

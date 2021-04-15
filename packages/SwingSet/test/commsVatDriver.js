@@ -593,7 +593,7 @@ export function commsVatDriver(t, verbose = false) {
     }
   }
 
-  const exportPromiseCounter = { k: 40, a: 40, b: 40, c: 40 };
+  const exportPromiseCounter = { k: 40, a: 40, b: 1040, c: 2040 };
   /**
    * Allocate a new scriptref for an exported promise.
    *

@@ -63,6 +63,7 @@ const enableKernelPromiseGC = true;
 // kd$NN.owner = $vatID
 // kp.nextID = $NN
 // kp$NN.state = unresolved | fulfilled | rejected
+// kp$NN.refCount = $NN
 // // if unresolved:
 // kp$NN.decider = missing | '' | $vatID
 // kp$NN.policy = missing (=ignore) | ignore | logAlways | logFailure | panic
@@ -600,8 +601,8 @@ export default function makeKernelKeeper(storage, kernelSlog) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param {*} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {*} _tag
+   * @param {string} kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {string} _tag
    */
   function incrementRefCount(kernelSlot, _tag) {
     if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
@@ -617,7 +618,7 @@ export default function makeKernelKeeper(storage, kernelSlog) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param {*} kernelSlot  The kernel slot whose refcount is to be decremented.
+   * @param {string} kernelSlot  The kernel slot whose refcount is to be decremented.
    * @param {string} tag
    * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
