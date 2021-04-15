@@ -108,7 +108,7 @@ export const makeEscrowStorage = () => {
   };
 
   return {
-    createPurse, // create does not return
+    createPurse, // createPurse does not return a purse
     makeLocalPurse,
     withdrawPayments,
     depositPayments,
