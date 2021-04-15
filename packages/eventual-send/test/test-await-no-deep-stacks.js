@@ -5,17 +5,19 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { E } from './get-hp';
-
-test('deep-stacks when', t => {
+test('no-deep-stacks then', t => {
   let r;
   const p = new Promise(res => (r = res));
-  const q = E.when(p, v1 => E.when(v1 + 1, v2 => assert.equal(v2, 22)));
+  const q = (async () => assert.equal(await ((await p) + 1), 22))();
   r(33);
-  return q.catch(reason => {
-    t.assert(reason instanceof Error);
-    console.log('expected failure', reason);
-  });
+  return (async () => {
+    try {
+      await q;
+    } catch (reason) {
+      t.assert(reason instanceof Error);
+      console.log('expected failure', reason);
+    }
+  })();
 });
 
 /*
@@ -28,26 +30,18 @@ paths. See
 https://github.com/endojs/endo/blob/master/packages/ses/lockdown-options.md
 
 ```
-$ ava test/test-deep-stacks.js
+$ ava test/test-await-no-deep-stacks.js
 
 expected failure (RangeError#1)
 RangeError#1: Expected 34 is same as 22
-  at packages/eventual-send/test/test-deep-stacks.js:13:57
-
-RangeError#1 ERROR_NOTE: Thrown from: (Error#2) : 2 . 0
-RangeError#1 ERROR_NOTE: Rejection from: (Error#3) : 1 . 1
-Nested 2 errors under RangeError#1
-  Error#2: Event: 1.1
-    at packages/eventual-send/test/test-deep-stacks.js:13:31
-
-  Error#2 ERROR_NOTE: Caused by: (Error#3)
-  Nested error under Error#2
-    Error#3: Event: 0.1
-      at packages/eventual-send/test/test-deep-stacks.js:13:15
-      at async Promise.all (index 0)
+  at packages/eventual-send/test/test-await-no-deep-stacks.js:11:33
+  at async packages/eventual-send/test/test-await-no-deep-stacks.js:15:7
 ```
 
 If you're in a shell or IDE that supports it, try clicking (or command-clicking
-or something) on the file paths for test-deep-stacks.js You should see that there
-are three invocations that were spread over three turns.
+or something) on the file paths for test-await-no-deep-stacks.js You should see
+one invocation and one await together in one stack as if they occurred in the
+same turn. No other turns are visible. Compare with
+test-deep-send.js or test-deep-stacks.js to see the debugging advantage of using
+eventual-send (`E`) or `E.when` instead.
 */
