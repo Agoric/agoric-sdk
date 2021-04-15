@@ -5,7 +5,6 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { objectMap } from '../objArrayConversion';
 
 import '../types';
 import '../internal-types';
@@ -27,7 +26,7 @@ export const makeZoeSeatAdminKit = (
   initialAllocation,
   instanceAdmin,
   proposal,
-  brandToPurse,
+  withdrawPayments,
   exitObj,
   offerResult,
 ) => {
@@ -43,13 +42,7 @@ export const makeZoeSeatAdminKit = (
     instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
 
     /** @type {PaymentPKeywordRecord} */
-    const payout = objectMap(currentAllocation, ([keyword, payoutAmount]) => {
-      const purse = brandToPurse.get(payoutAmount.brand);
-      // TODO: fix types of ObjectMap
-      // @ts-ignore
-      return [keyword, E(purse).withdraw(payoutAmount)];
-    });
-    harden(payout);
+    const payout = withdrawPayments(currentAllocation);
     payoutPromiseKit.resolve(payout);
   };
 

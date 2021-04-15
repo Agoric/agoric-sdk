@@ -91,7 +91,8 @@ test(`depositToSeat - mismatched keywords`, async t => {
   await t.throwsAsync(
     () => depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { D: newBucks }),
     {
-      message: /payment not found for .*/,
+      message:
+        'The "D" keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ["C"]',
     },
     'mismatched keywords',
   );
