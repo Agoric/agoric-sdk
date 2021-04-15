@@ -462,7 +462,6 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
 
     const auxResolutions = collector.getResolutions();
     if (auxResolutions.length > 0) {
-      // console.log(`@@@ adding ${auxResolutions.length} aux resolutions`);
       // Concat because `auxResolutions` and `resolutions` are strictly disjoint
       resolutions = resolutions.concat(auxResolutions);
     }

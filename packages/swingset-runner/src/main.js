@@ -12,6 +12,8 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
+import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
+
 import {
   initSwingStore as initSimpleSwingStore,
   openSwingStore as openSimpleSwingStore,
@@ -77,6 +79,7 @@ FLAGS may be:
   --globalmetering - install metering on global objects
   --meter          - run metered vats (implies --globalmetering and --indirect)
   --config FILE    - read swingset config from FILE instead of inferring it
+  --loopbox        - make the loopbox device available to the bootstrap vat
 
 CMD is one of:
   help   - print this helpful usage information
@@ -183,6 +186,7 @@ export async function main() {
   let statsFile = null;
   let dbDir = null;
   let initOnly = false;
+  let loopbox = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -279,6 +283,9 @@ export async function main() {
       case '--lmdb':
         dbMode = flag;
         break;
+      case '--loopbox':
+        loopbox = true;
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -332,6 +339,16 @@ export async function main() {
     basedir = path.dirname(configPath);
   } else {
     config = loadBasedir(basedir);
+  }
+  const deviceEndowments = {};
+  if (loopbox) {
+    const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
+    config.devices = {
+      loopbox: {
+        sourceSpec: loopboxSrcPath,
+      },
+    };
+    deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -398,7 +415,7 @@ export async function main() {
   }
   const controller = await makeSwingsetController(
     store.storage,
-    {},
+    deviceEndowments,
     runtimeOptions,
   );
 
