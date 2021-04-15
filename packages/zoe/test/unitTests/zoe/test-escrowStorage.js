@@ -5,16 +5,16 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { amountMath, makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
-import { makePurseStorage } from '../../../src/zoeService/purseStorage';
+import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage';
 import { assertAmountsEqual, assertPayoutAmount } from '../../zoeTestHelpers';
 
-test('makePurseStorage', async t => {
+test('makeEscrowStorage', async t => {
   const {
     createPurse,
-    createLocalPurse,
+    makeLocalPurse,
     withdrawPayments,
     depositPayments,
-  } = makePurseStorage();
+  } = makeEscrowStorage();
 
   const currencyKit = makeIssuerKit(
     'currency',
@@ -27,6 +27,7 @@ test('makePurseStorage', async t => {
     issuer: currencyKit.issuer,
     mathKind: MathKind.NAT,
     brand: currencyKit.brand,
+    amountMath: currencyKit.amountMath,
   };
 
   const ticketKit = makeIssuerKit('tickets', MathKind.SET);
@@ -35,12 +36,13 @@ test('makePurseStorage', async t => {
     issuer: ticketKit.issuer,
     mathKind: MathKind.SET,
     brand: ticketKit.brand,
+    amountMath: ticketKit.amountMath,
   };
 
   createPurse(currencyIssuerRecord);
 
   // Normally only used for ZCFMint issuers
-  createLocalPurse(ticketIssuerRecord);
+  makeLocalPurse(ticketIssuerRecord);
 
   const gameTicketAmount = amountMath.make(ticketKit.brand, [
     { show: 'superbowl' },

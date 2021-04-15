@@ -32,7 +32,7 @@ import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
-import { makePurseStorage } from './purseStorage';
+import { makeEscrowStorage } from './escrowStorage';
 
 /**
  * Create an instance of Zoe.
@@ -56,10 +56,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   const {
     createPurse,
-    createLocalPurse,
+    makeLocalPurse,
     withdrawPayments,
     depositPayments,
-  } = makePurseStorage();
+  } = makeEscrowStorage();
 
   /** @type {GetMathKindByBrand} */
   const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
@@ -192,7 +192,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         });
         issuerTable.initIssuerByRecord(localIssuerRecord);
         registerIssuerByKeyword(keyword, localIssuerRecord);
-        const localPooledPurse = createLocalPurse(localIssuerRecord);
+        const localPooledPurse = makeLocalPurse(localIssuerRecord);
 
         /** @type {ZoeMint} */
         const zoeMint = Far('ZoeMint', {

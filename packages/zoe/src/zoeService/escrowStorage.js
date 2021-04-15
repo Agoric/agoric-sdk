@@ -4,9 +4,15 @@ import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 
+import './types';
+
 import { arrayToObj, objectMap } from '../objArrayConversion';
 
-export const makePurseStorage = () => {
+/**
+ * Store the pool purses whose purpose is to escrow assets, with one
+ * purse per brand.
+ */
+export const makeEscrowStorage = () => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeNonVOWeakStore('brand');
 
@@ -23,12 +29,12 @@ export const makePurseStorage = () => {
   };
 
   /**
-   * Create a purse for a new, local issuer. Used only for ZCFMint issuers.
+   * Make a purse for a new, local issuer. Used only for ZCFMint issuers.
    *
    * @param {IssuerRecord} record
    * @returns {Purse}
    */
-  const createLocalPurse = record => {
+  const makeLocalPurse = record => {
     const localPurse = record.issuer.makeEmptyPurse();
     brandToPurse.init(record.brand, localPurse);
     return localPurse;
@@ -75,19 +81,26 @@ export const makePurseStorage = () => {
     const wantKeywords = Object.keys(want);
     const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
 
+    // If any of these deposits hang or fail, then depositPayments
+    // hangs or fails, the offer does not succeed, and any funds that
+    // were deposited into the pool purses are lost. We have a ticket
+    // for giving the user a refund of what was already deposited, and
+    // offer safety and payout liveness are still meaningful as long
+    // as issuers are well-behaved. For more, see
+    // https://github.com/Agoric/agoric-sdk/issues/1271
     const amountsDeposited = await Promise.all(
       giveKeywords.map(keyword =>
         doDepositPayments(payments[keyword], give[keyword]),
       ),
     );
 
-    const amountsWanted = wantKeywords.map(keyword =>
+    const emptyAmountsForWantKeywords = wantKeywords.map(keyword =>
       amountMath.makeEmptyFromAmount(want[keyword]),
     );
 
     // Note: payments without a matching `give` keyword are ignored.
     const initialAllocation = arrayToObj(
-      [...amountsDeposited, ...amountsWanted],
+      [...amountsDeposited, ...emptyAmountsForWantKeywords],
       proposalKeywords,
     );
 
@@ -95,8 +108,8 @@ export const makePurseStorage = () => {
   };
 
   return {
-    createPurse,
-    createLocalPurse,
+    createPurse, // create does not return
+    makeLocalPurse,
     withdrawPayments,
     depositPayments,
   };
