@@ -3,9 +3,11 @@
 import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { assert, details as X, q } from '@agoric/assert';
 
 import './types';
 
+import { cleanKeywords } from '../cleanProposal';
 import { arrayToObj, objectMap } from '../objArrayConversion';
 
 /**
@@ -79,6 +81,23 @@ export const makeEscrowStorage = () => {
     const { give, want } = proposal;
     const giveKeywords = Object.keys(give);
     const wantKeywords = Object.keys(want);
+    const paymentKeywords = cleanKeywords(payments);
+
+    // Assert that all of the payment keywords are present in the give
+    // keywords. Proposal.give keywords that do not have matching payments will
+    // be caught in the deposit step.
+    paymentKeywords.forEach(keyword => {
+      assert.typeof(keyword, 'string');
+      assert(
+        giveKeywords.includes(keyword),
+        X`The ${q(
+          keyword,
+        )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
+          giveKeywords,
+        )}`,
+      );
+    });
+
     const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
 
     // If any of these deposits hang or fail, then depositPayments
@@ -89,16 +108,23 @@ export const makeEscrowStorage = () => {
     // as issuers are well-behaved. For more, see
     // https://github.com/Agoric/agoric-sdk/issues/1271
     const amountsDeposited = await Promise.all(
-      giveKeywords.map(keyword =>
-        doDepositPayments(payments[keyword], give[keyword]),
-      ),
+      giveKeywords.map(keyword => {
+        assert(
+          payments[keyword] !== undefined,
+          X`The ${q(
+            keyword,
+          )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
+            paymentKeywords,
+          )}`,
+        );
+        return doDepositPayments(payments[keyword], give[keyword]);
+      }),
     );
 
     const emptyAmountsForWantKeywords = wantKeywords.map(keyword =>
       amountMath.makeEmptyFromAmount(want[keyword]),
     );
 
-    // Note: payments without a matching `give` keyword are ignored.
     const initialAllocation = arrayToObj(
       [...amountsDeposited, ...emptyAmountsForWantKeywords],
       proposalKeywords,
