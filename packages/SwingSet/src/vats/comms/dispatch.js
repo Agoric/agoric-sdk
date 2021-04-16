@@ -51,7 +51,7 @@ export function buildCommsDispatch(
     needToInitializeState = false;
   }
 
-  function deliver(target, method, args, result) {
+  function doDeliver(target, method, args, result) {
     if (needToInitializeState) {
       initializeState();
     }
@@ -109,8 +109,15 @@ export function buildCommsDispatch(
     return sendFromKernel(target, method, args, result);
   }
 
+  function deliver(target, method, args, resultP) {
+    const result = doDeliver(target, method, args, resultP);
+    state.purgeDeadLocalPromises();
+    return result;
+  }
+
   function notify(resolutions) {
     resolveFromKernel(resolutions);
+    state.purgeDeadLocalPromises();
   }
 
   function dropExports(vrefs) {

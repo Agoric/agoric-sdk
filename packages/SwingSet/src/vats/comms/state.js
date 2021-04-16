@@ -2,12 +2,14 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from '../../capdata';
 import { makeVatSlot, insistVatType } from '../../parseVatSlots';
-import { makeLocalSlot } from './parseLocalSlots';
+import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots';
 import { initializeRemoteState, makeRemote, insistRemoteID } from './remote';
 import { cdebug } from './cdebug';
 
 const COMMS = 'comms';
 const KERNEL = 'kernel';
+
+const enableLocalPromiseGC = true;
 
 function makeEphemeralSyscallVatstore() {
   console.log('making fake vatstore');
@@ -87,7 +89,8 @@ export function makeState(syscall, identifierBase = 0) {
   // lo$NN.owner = r$NN | kernel // owners of local objects (loNN -> rNN)
   //
   // lp.nextID = $NN // local promise identifier allocation counter (lpNN)
-  // lp$NN.state = unresolved | fulfilled | rejected
+  // lp$NN.status = unresolved | fulfilled | rejected
+  // lp$NN.refCount = $NN
   // // if unresolved:
   // lp$NN.decider = r$NN | comms | kernel
   // lp$NN.kernelSubscribed = true // present if kernel is subscribed
@@ -128,6 +131,100 @@ export function makeState(syscall, identifierBase = 0) {
     }
   }
 
+  function deleteLocalPromiseState(lpid) {
+    store.delete(`${lpid}.status`);
+    store.delete(`${lpid}.decider`);
+    store.delete(`${lpid}.kernelSubscribed`);
+    store.delete(`${lpid}.subscribers`);
+    store.delete(`${lpid}.data.body`);
+    store.delete(`${lpid}.data.slots`);
+    store.delete(`${lpid}.refCount`);
+  }
+
+  function deleteLocalPromise(lpid) {
+    const status = store.getRequired(`${lpid}.status`);
+    switch (status) {
+      case 'unresolved':
+        break;
+      case 'fulfilled':
+        break;
+      case 'rejected':
+        break;
+      default:
+        assert.fail(X`unknown status for ${lpid}: ${status}`);
+    }
+    deleteLocalPromiseState(lpid);
+  }
+
+  const deadLocalPromises = new Set();
+
+  /**
+   * Increment the reference count associated with some local object.
+   *
+   * Note that currently we are only reference counting promises, but ultimately
+   * we intend to keep track of all local objects.
+   *
+   * @param {string} lref  Ref of the local object whose refcount is to be incremented.
+   * @param {string} _tag  Descriptive label for use in diagnostics
+   */
+  function incrementRefCount(lref, _tag) {
+    if (lref && parseLocalSlot(lref).type === 'promise') {
+      const refCount = Number(store.get(`${lref}.refCount`)) + 1;
+      // cdebug(`++ ${lref}  ${tag} ${refCount}`);
+      store.set(`${lref}.refCount`, `${refCount}`);
+    }
+  }
+
+  /**
+   * Decrement the reference count associated with some local object.
+   *
+   * Note that currently we are only reference counting promises, but ultimately
+   * we intend to keep track of all local objects.
+   *
+   * @param {string} lref  Ref of the local object whose refcount is to be decremented.
+   * @param {string} tag  Descriptive label for use in diagnostics
+   * @returns {boolean} true if the reference count has been decremented to
+   *    zero, false if it is still non-zero
+   * @throws if this tries to decrement the reference count below zero.
+   */
+  function decrementRefCount(lref, tag) {
+    if (lref && parseLocalSlot(lref).type === 'promise') {
+      let refCount = Number(store.get(`${lref}.refCount`));
+      assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
+      refCount -= 1;
+      // cdebug(`-- ${lref}  ${tag} ${refCount}`);
+      store.set(`${lref}.refCount`, `${refCount}`);
+      if (refCount === 0) {
+        deadLocalPromises.add(lref);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function purgeDeadLocalPromises() {
+    if (enableLocalPromiseGC) {
+      for (const lpid of deadLocalPromises.values()) {
+        const refCount = Number(store.get(`${lpid}.refCount`));
+        assert(
+          refCount === 0,
+          X`promise ${lpid} in deadLocalPromises with non-zero refcount`,
+        );
+        let idx = 0;
+        const slots = commaSplit(store.get(`${lpid}.data.slots`));
+        for (const slot of slots) {
+          // Note: the following decrement can result in an addition to the
+          // deadLocalPromises set, which we are in the midst of iterating.
+          // TC39 went to a lot of trouble to ensure that this is kosher.
+          decrementRefCount(slot, `gc|${lpid}|s${idx}`);
+          idx += 1;
+        }
+        deleteLocalPromise(lpid);
+      }
+    }
+    deadLocalPromises.clear();
+  }
+
   function mapFromKernel(kfref) {
     // o+NN/o-NN/p+NN/p-NN -> loNN/lpNN
     return store.get(`c.${kfref}`);
@@ -141,11 +238,13 @@ export function makeState(syscall, identifierBase = 0) {
   function addKernelMapping(kfref, lref) {
     store.set(`c.${kfref}`, lref);
     store.set(`c.${lref}`, kfref);
+    incrementRefCount(lref, `{kfref}|k|clist`);
   }
 
   function deleteKernelMapping(kfref, lref) {
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
+    decrementRefCount(lref, `{kfref}|k|clist`);
   }
 
   function hasMetaObject(kfref) {
@@ -187,6 +286,7 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${lpid}.status`, 'unresolved');
     store.set(`${lpid}.decider`, COMMS);
     store.set(`${lpid}.subscribers`, '');
+    store.set(`${lpid}.refCount`, '0');
     return lpid;
   }
 
@@ -235,7 +335,7 @@ export function makeState(syscall, identifierBase = 0) {
   // legal transitions are remote <-> comms <-> kernel.
 
   function changeDeciderToRemote(lpid, newDecider) {
-    // console.log(`changeDecider ${lpid}: COMMS->${newDecider}`);
+    // cdebug(`changeDecider ${lpid}: COMMS->${newDecider}`);
     insistRemoteID(newDecider);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, COMMS);
@@ -243,7 +343,7 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   function changeDeciderFromRemoteToComms(lpid, oldDecider) {
-    // console.log(`changeDecider ${lpid}: ${oldDecider}->COMMS`);
+    // cdebug(`changeDecider ${lpid}: ${oldDecider}->COMMS`);
     insistRemoteID(oldDecider);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, oldDecider);
@@ -251,14 +351,14 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   function changeDeciderToKernel(lpid) {
-    // console.log(`changeDecider ${lpid}: COMMS->KERNEL`);
+    // cdebug(`changeDecider ${lpid}: COMMS->KERNEL`);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, COMMS);
     store.set(`${lpid}.decider`, KERNEL);
   }
 
   function changeDeciderFromKernelToComms(lpid) {
-    // console.log(`changeDecider ${lpid}: KERNEL->COMMS`);
+    // cdebug(`changeDecider ${lpid}: KERNEL->COMMS`);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, KERNEL);
     store.set(`${lpid}.decider`, COMMS);
@@ -308,13 +408,13 @@ export function makeState(syscall, identifierBase = 0) {
     insistPromiseIsUnresolved(lpid);
     const decider = store.getRequired(`${lpid}.decider`);
     assert(decider !== KERNEL, X`kernel is decider for ${lpid}, hush`);
-    // console.log(`subscribeKernelToPromise ${lpid} d=${decider}`);
+    // cdebug(`subscribeKernelToPromise ${lpid} d=${decider}`);
     store.set(`${lpid}.kernelSubscribed`, 'true');
   }
 
   function unsubscribeKernelFromPromise(lpid) {
     insistPromiseIsUnresolved(lpid);
-    // console.log(`unsubscribeKernelFromPromise ${lpid} d=${decider}`);
+    // cdebug(`unsubscribeKernelFromPromise ${lpid} d=${decider}`);
     store.delete(`${lpid}.kernelSubscribed`);
   }
 
@@ -324,13 +424,14 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${lpid}.status`, rejected ? 'rejected' : 'fulfilled');
     store.set(`${lpid}.data.body`, data.body);
     store.set(`${lpid}.data.slots`, data.slots.join(','));
+    let idx = 0;
+    for (const slot of data.slots) {
+      incrementRefCount(slot, `resolve|s${idx}`);
+      idx += 1;
+    }
     store.delete(`${lpid}.decider`);
     store.delete(`${lpid}.subscribers`);
     store.delete(`${lpid}.kernelSubscribed`);
-  }
-
-  function getRemote(remoteID) {
-    return makeRemote(store, remoteID);
   }
 
   function addRemote(name, transmitterID) {
@@ -368,7 +469,7 @@ export function makeState(syscall, identifierBase = 0) {
     return store.get(`r.${receiverID}`);
   }
 
-  return harden({
+  const state = harden({
     initialize,
 
     mapFromKernel,
@@ -388,6 +489,10 @@ export function makeState(syscall, identifierBase = 0) {
     getPromiseStatus,
     getPromiseData,
     allocatePromise,
+
+    incrementRefCount,
+    decrementRefCount,
+    purgeDeadLocalPromises,
 
     deciderIsKernel,
     deciderIsRemote,
@@ -410,9 +515,16 @@ export function makeState(syscall, identifierBase = 0) {
     insistPromiseIsUnresolved,
     markPromiseAsResolved,
 
+    // eslint-disable-next-line no-use-before-define
     getRemote,
     addRemote,
     getRemoteIDForName,
     getRemoteReceiver,
   });
+
+  function getRemote(remoteID) {
+    return makeRemote(state, store, remoteID);
+  }
+
+  return state;
 }

@@ -1,0 +1,40 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "commsvat": {
+      "sourceSpec": "vat-comms.js"
+    },
+    "vattpvat": {
+      "sourceSpec": "vat-vattp.js"
+    }
+  },
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    },
+    "bot": {
+      "sourceSpec": "vat-bot.js"
+    },
+    "botcomms": {
+      "bundleName": "commsvat",
+      "creationOptions": {
+        "enableSetup": true
+      }
+    },
+    "botvattp": {
+      "bundleName": "vattpvat"
+    },
+    "user": {
+      "sourceSpec": "vat-user.js"
+    },
+    "usercomms": {
+      "bundleName": "commsvat",
+      "creationOptions": {
+        "enableSetup": true
+      }
+    },
+    "uservattp": {
+      "bundleName": "vattpvat"
+    }
+  }
+}
