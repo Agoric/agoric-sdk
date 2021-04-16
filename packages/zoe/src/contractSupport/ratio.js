@@ -5,7 +5,7 @@ import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
-const { multiply, floorDivide, subtract } = natSafeMath;
+const { multiply, floorDivide, add, subtract } = natSafeMath;
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -153,8 +153,10 @@ export const addRatios = (left, right) => {
   );
 
   return makeRatio(
-    multiply(left.numerator.value, right.denominator.value) +
+    add(
+      multiply(left.numerator.value, right.denominator.value),
       multiply(left.denominator.value, right.numerator.value),
+    ),
     left.numerator.brand,
     multiply(left.denominator.value, right.denominator.value),
   );
