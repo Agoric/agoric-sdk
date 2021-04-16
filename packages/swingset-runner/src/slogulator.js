@@ -244,9 +244,6 @@ export function main() {
           case 'error':
             result = `new ${val.name}('${val.message}')`;
             break;
-          case 'ibid':
-            result = `ibid(${val.index})`;
-            break;
           default:
             assert.fail(X`unknown qClass ${qClass} in legibilizeValue`);
         }
