@@ -65,6 +65,8 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
+	jq '. + { initial_height: "17" }' t1/n0/config/genesis.json > t1/n0/config/genesis2.json
+	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
