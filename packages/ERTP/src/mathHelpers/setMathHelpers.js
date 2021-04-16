@@ -29,7 +29,7 @@ const hashBadly = thing => {
   if (allowableNonObjectValues.includes(type)) {
     return thing;
   }
-  if (passStyleOf(thing) === 'presence') {
+  if (passStyleOf(thing) === 'remotable') {
     return thing;
   }
   if (passStyleOf(thing) === 'copyRecord') {

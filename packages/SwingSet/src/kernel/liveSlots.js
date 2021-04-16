@@ -1,11 +1,6 @@
 /* global HandledPromise */
 
-import {
-  Remotable,
-  passStyleOf,
-  REMOTE_STYLE,
-  makeMarshal,
-} from '@agoric/marshal';
+import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
@@ -379,7 +374,7 @@ function build(
           exitVatWithFailure(disavowalError);
           throw disavowalError; // cannot reference a disavowed object
         }
-        assert.equal(passStyleOf(val), REMOTE_STYLE);
+        assert.equal(passStyleOf(val), 'remotable');
         slot = exportPassByPresence();
       }
       parseVatSlot(slot); // assertion
@@ -798,7 +793,7 @@ function build(
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
-    assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
+    assert.equal(passStyleOf(rootObject), 'remotable');
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
