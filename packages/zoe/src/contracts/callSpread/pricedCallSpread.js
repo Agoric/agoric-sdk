@@ -15,11 +15,10 @@ import {
   assertUsesNatMath,
   makeRatio,
   multiplyBy,
+  oneMinus,
 } from '../../contractSupport';
 import { makePayoffHandler } from './payoffHandler';
 import { Position } from './position';
-
-import { oneMinus } from './percent';
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;

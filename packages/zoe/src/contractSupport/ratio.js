@@ -5,7 +5,7 @@ import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
-const { multiply, floorDivide } = natSafeMath;
+const { multiply, floorDivide, subtract } = natSafeMath;
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -174,5 +174,24 @@ export const multiplyRatios = (left, right) => {
     multiply(left.numerator.value, right.numerator.value),
     left.numerator.brand,
     multiply(left.denominator.value, right.denominator.value),
+  );
+};
+
+// If ratio is between 0 and 1, subtract from 1.
+export const oneMinus = ratio => {
+  assertIsRatio(ratio);
+  assert(
+    ratio.numerator.brand === ratio.denominator.brand,
+    X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
+  );
+  assert(
+    ratio.numerator.value <= ratio.denominator.value,
+    X`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`,
+  );
+  return makeRatio(
+    subtract(ratio.denominator.value, ratio.numerator.value),
+    ratio.numerator.brand,
+    ratio.denominator.value,
+    ratio.numerator.brand,
   );
 };

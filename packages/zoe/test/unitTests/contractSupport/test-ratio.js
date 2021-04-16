@@ -11,6 +11,7 @@ import {
   multiplyBy,
   divideBy,
   invertRatio,
+  oneMinus,
 } from '../../../src/contractSupport';
 import { multiplyRatios, addRatios } from '../../../src/contractSupport/ratio';
 
@@ -254,4 +255,24 @@ test('add ratios', t => {
     makeRatio(37n, brand, 30n, brand),
     addRatios(fiveSixths, twoFifths),
   );
+});
+
+test('ratio - complement', t => {
+  const { brand } = makeIssuerKit('moe');
+  const moe = value => amountMath.make(value, brand);
+
+  const oneThird = makeRatioFromAmounts(moe(1), moe(3));
+  const twoThirds = oneMinus(oneThird);
+
+  t.deepEqual(twoThirds, makeRatio(2, brand, 3));
+  amountsEqual(t, multiplyBy(moe(100000), oneThird), moe(33333), brand);
+  amountsEqual(t, multiplyBy(moe(100000), twoThirds), moe(66666), brand);
+
+  t.throws(() => oneMinus(moe(3)), {
+    message:
+      'Parameter must be a Ratio record, but {"brand":"[Alleged: moe brand]","value":"[3n]"} has "brand"',
+  });
+  t.throws(() => oneMinus(makeRatioFromAmounts(moe(30), moe(20))), {
+    message: /Parameter must be less than or equal to 1: .*/,
+  });
 });

@@ -164,6 +164,12 @@
  */
 
 /**
+ * @callback oneMinus
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
+
+/**
  * @callback addRatios
  * @param {Ratio} left
  * @param {Ratio} right
