@@ -152,14 +152,14 @@ export async function launch(
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
-  let firstBlock;
+  let bootstrapBlock;
   async function endBlock(_blockHeight, _blockTime) {
     let numCranks = FIXME_MAX_CRANKS_PER_BLOCK;
-    if (firstBlock) {
+    if (bootstrapBlock) {
       // This is the initial block, we need to finish processing the entire
       // bootstrap before opening for business.
       numCranks = Infinity;
-      firstBlock = false;
+      bootstrapBlock = false;
     }
     await crankScheduler(numCranks);
   }
@@ -201,9 +201,9 @@ export async function launch(
   }
 
   const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[0, [], []]',
+    storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
   );
-  firstBlock = savedHeight === 0;
+  bootstrapBlock = savedHeight < 0;
 
   return {
     deliverInbound,
@@ -214,6 +214,7 @@ export async function launch(
     saveChainState,
     saveOutsideState,
     savedHeight,
+    bootstrapBlock,
     savedActions,
     savedChainSends,
   };
