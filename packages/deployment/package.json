@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "1.26.2",
+  "version": "1.26.3",
   "description": "Set up Agoric public chain nodes",
   "parsers": {
     "js": "mjs"
@@ -18,8 +18,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.2.6",
-    "@agoric/install-ses": "^0.5.6",
+    "@agoric/assert": "^0.2.7",
+    "@agoric/install-ses": "^0.5.8",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "esm": "^3.2.25",

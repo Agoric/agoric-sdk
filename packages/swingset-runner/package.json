@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.12.10",
+  "version": "0.12.11",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "parsers": {
@@ -20,19 +20,19 @@
     "ci:autobench": "./autobench"
   },
   "dependencies": {
-    "@agoric/assert": "^0.2.6",
-    "@agoric/bundle-source": "^1.3.1",
-    "@agoric/ertp": "^0.10.5",
-    "@agoric/eventual-send": "^0.13.8",
-    "@agoric/install-ses": "^0.5.7",
-    "@agoric/marshal": "^0.4.5",
-    "@agoric/same-structure": "^0.1.7",
+    "@agoric/assert": "^0.2.7",
+    "@agoric/bundle-source": "^1.3.2",
+    "@agoric/ertp": "^0.10.6",
+    "@agoric/eventual-send": "^0.13.9",
+    "@agoric/install-ses": "^0.5.8",
+    "@agoric/marshal": "^0.4.6",
+    "@agoric/same-structure": "^0.1.8",
     "@agoric/stat-logger": "^0.4.6",
-    "@agoric/swing-store-lmdb": "^0.4.6",
+    "@agoric/swing-store-lmdb": "^0.4.7",
     "@agoric/swing-store-simple": "^0.3.6",
-    "@agoric/swingset-vat": "^0.16.1",
+    "@agoric/swingset-vat": "^0.16.2",
     "@agoric/tame-metering": "^1.3.6",
-    "@agoric/zoe": "^0.15.1",
+    "@agoric/zoe": "^0.15.2",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
   },
