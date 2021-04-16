@@ -23,7 +23,7 @@ export default function makeBlockManager({
   savedHeight,
   verboseBlocks = false,
 }) {
-  let computedHeight = savedHeight;
+  let computedHeight = savedHeight === 0 ? undefined : savedHeight;
   let runTime = 0;
 
   async function kernelPerformAction(action) {
@@ -84,7 +84,10 @@ export default function makeBlockManager({
     switch (action.type) {
       case COMMIT_BLOCK: {
         verboseBlocks && log.info('block', action.blockHeight, 'commit');
-        if (action.blockHeight !== computedHeight) {
+        if (
+          computedHeight !== undefined &&
+          action.blockHeight !== computedHeight
+        ) {
           throw Error(
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
@@ -124,7 +127,10 @@ export default function makeBlockManager({
           const restoreHeight = action.blockHeight - 1;
           // We can reset from -1 or 0 to anything, since that's what happens
           // when genesis.initial_height !== "1".
-          if (computedHeight > 0 && restoreHeight !== computedHeight) {
+          if (
+            computedHeight !== undefined &&
+            restoreHeight !== computedHeight
+          ) {
             // Keep throwing forever.
             decohered = Error(
               // TODO unimplemented
@@ -166,13 +172,18 @@ export default function makeBlockManager({
 
           // Advance our saved state variables.
           savedActions = currentActions;
-          computedHeight = action.blockHeight;
+          if (computedHeight === undefined) {
+            // Genesis height is the same as the first block, so we
+            // need to adjust.
+            computedHeight = action.blockHeight - 1;
+          } else {
+            computedHeight = action.blockHeight;
+          }
 
           // Save the kernel's computed state so that we can recover if we ever
           // reset before Cosmos SDK commit.
           const start2 = Date.now();
           await saveOutsideState(computedHeight, savedActions, savedChainSends);
-          savedHeight = computedHeight;
 
           const saveTime = Date.now() - start2;
 
