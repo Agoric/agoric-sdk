@@ -20,7 +20,7 @@ async function prep() {
 
 test('serialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
-  const ser = val => m.serialize(val);
+  const ser = m.serialize;
   const o1 = Far('o1', {});
   const o2 = Far('o2', {
     meth1() {
@@ -33,6 +33,11 @@ test('serialize exports', t => {
   });
   // m now remembers that o1 is exported as 1
   t.deepEqual(ser(harden([o1, o1])), {
+    body:
+      '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"slot","index":0}]',
+    slots: ['o+1'],
+  });
+  t.deepEqual(ser(harden([o1, o1]), 'forbidCycles'), {
     body:
       '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"ibid","index":1}]',
     slots: ['o+1'],

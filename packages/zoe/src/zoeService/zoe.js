@@ -31,6 +31,8 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { arrayToObj } from '../objArrayConversion';
 import { cleanKeywords, cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../makeHandle';
+import { makeInstallationStorage } from './installationStorage';
+import { makeEscrowStorage } from './escrowStorage';
 
 /**
  * Create an instance of Zoe.
@@ -45,35 +47,24 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   // Zoe state shared among functions
   const issuerTable = makeIssuerTable();
-  /** @type {WeakSet<Installation>} */
-  const installations = new WeakSet();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
 
-  /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeNonVOWeakStore('brand');
-
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
+
+  const {
+    createPurse,
+    makeLocalPurse,
+    withdrawPayments,
+    depositPayments,
+  } = makeEscrowStorage();
 
   /** @type {GetMathKindByBrand} */
   const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
 
-  /**
-   * Create an installation by permanently storing the bundle. It will be
-   * evaluated each time it is used to make a new instance of a contract.
-   */
-  /** @type {Install} */
-  const install = async bundle => {
-    assert(bundle, X`a bundle must be provided`);
-    /** @type {Installation} */
-    const installation = Far('Installation', {
-      getBundle: () => bundle,
-    });
-    installations.add(installation);
-    return installation;
-  };
+  const { install, unwrapInstallation } = makeInstallationStorage();
 
   /** @type {GetAmountOfInvitationThen} */
   const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
@@ -114,11 +105,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const initIssuers = issuers =>
         Promise.all(issuers.map(issuerTable.initIssuer));
 
-      const installation = await Promise.resolve(installationP);
-      assert(
-        installations.has(installation),
-        X`${installation} was not a valid installation`,
-      );
+      const { installation, bundle } = await unwrapInstallation(installationP);
 
       const instance = makeHandle('Instance');
 
@@ -131,11 +118,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       // The issuers may not have been seen before, so we must wait for the
       // issuer records to be available synchronously
       const issuerRecords = await initIssuers(issuerPs);
-      issuerRecords.forEach(record => {
-        if (!brandToPurse.has(record.brand)) {
-          brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
-        }
-      });
+      issuerRecords.forEach(record => createPurse(record));
 
       const issuers = arrayToObj(
         issuerRecords.map(record => record.issuer),
@@ -209,8 +192,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         });
         issuerTable.initIssuerByRecord(localIssuerRecord);
         registerIssuerByKeyword(keyword, localIssuerRecord);
-        const localPooledPurse = localIssuer.makeEmptyPurse();
-        brandToPurse.init(localBrand, localPooledPurse);
+        const localPooledPurse = makeLocalPurse(localIssuerRecord);
 
         /** @type {ZoeMint} */
         const zoeMint = Far('ZoeMint', {
@@ -229,7 +211,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         return zoeMint;
       };
 
-      const bundle = installation.getBundle();
       const addSeatObjPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
@@ -318,10 +299,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         saveIssuer: (issuerP, keyword) =>
           (issuerTable.initIssuer(issuerP).then(issuerRecord => {
             registerIssuerByKeyword(keyword, issuerRecord);
-            const { issuer, brand } = issuerRecord;
-            if (!brandToPurse.has(brand)) {
-              brandToPurse.init(brand, E(issuer).makeEmptyPurse());
-            }
+            createPurse(issuerRecord);
             return undefined;
           })),
         // A Seat requested by the contract without any payments to escrow
@@ -335,7 +313,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             initialAllocation,
             instanceAdmin,
             proposal,
-            brandToPurse,
+            withdrawPayments,
             exitObj,
           );
           instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
@@ -410,7 +388,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       paymentKeywordRecord = harden({}),
     ) => {
       return invitationKit.issuer.burn(invitation).then(
-        invitationAmount => {
+        async invitationAmount => {
           const invitationValue = invitationAmount.value;
           assert(Array.isArray(invitationValue));
           assert(
@@ -425,74 +403,52 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           );
 
           const proposal = cleanProposal(uncleanProposal, getMathKindByBrand);
-          const { give, want } = proposal;
-          const giveKeywords = Object.keys(give);
-          const wantKeywords = Object.keys(want);
-          const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
+          const initialAllocation = await depositPayments(
+            proposal,
+            paymentKeywordRecord,
+          );
+          // AWAIT ///
 
-          const paymentDepositedPs = proposalKeywords.map(keyword => {
-            if (giveKeywords.includes(keyword)) {
-              // We cannot trust the amount in the proposal, so we use our
-              // cleaned proposal's amount that should be the same.
-              const giveAmount = proposal.give[keyword];
-              const purse = brandToPurse.get(giveAmount.brand);
-              return E.when(paymentKeywordRecord[keyword], payment =>
-                E(purse).deposit(payment, giveAmount),
-              );
-              // eslint-disable-next-line no-else-return
-            } else {
-              // payments outside the give: clause are ignored.
-              return amountMath.makeEmptyFromAmount(proposal.want[keyword]);
-            }
-          });
+          const offerResultPromiseKit = makePromiseKit();
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+          // This does not suppress any error messages.
+          offerResultPromiseKit.promise.catch(_ => {});
+          const exitObjPromiseKit = makePromiseKit();
+          // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+          // This does not suppress any error messages.
+          exitObjPromiseKit.promise.catch(_ => {});
+          const seatHandle = makeHandle('SeatHandle');
 
-          return Promise.all(paymentDepositedPs).then(amountsArray => {
-            const initialAllocation = arrayToObj(
-              amountsArray,
-              proposalKeywords,
-            );
+          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+            initialAllocation,
+            instanceAdmin,
+            proposal,
+            withdrawPayments,
+            exitObjPromiseKit.promise,
+            offerResultPromiseKit.promise,
+          );
 
-            const offerResultPromiseKit = makePromiseKit();
+          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+
+          const seatData = harden({ proposal, initialAllocation, notifier });
+
+          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
+          instanceAdmin
+            .tellZCFToMakeSeat(
+              invitationHandle,
+              zoeSeatAdmin,
+              seatData,
+              seatHandle,
+            )
+            .then(({ offerResultP, exitObj }) => {
+              offerResultPromiseKit.resolve(offerResultP);
+              exitObjPromiseKit.resolve(exitObj);
+            })
             // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
             // This does not suppress any error messages.
-            offerResultPromiseKit.promise.catch(_ => {});
-            const exitObjPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            exitObjPromiseKit.promise.catch(_ => {});
-            const seatHandle = makeHandle('SeatHandle');
+            .catch(() => {});
 
-            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-              initialAllocation,
-              instanceAdmin,
-              proposal,
-              brandToPurse,
-              exitObjPromiseKit.promise,
-              offerResultPromiseKit.promise,
-            );
-
-            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
-            const seatData = harden({ proposal, initialAllocation, notifier });
-
-            instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-            instanceAdmin
-              .tellZCFToMakeSeat(
-                invitationHandle,
-                zoeSeatAdmin,
-                seatData,
-                seatHandle,
-              )
-              .then(({ offerResultP, exitObj }) => {
-                offerResultPromiseKit.resolve(offerResultP);
-                exitObjPromiseKit.resolve(exitObj);
-              })
-              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-              // This does not suppress any error messages.
-              .catch(() => {});
-
-            return userSeat;
-          });
+          return userSeat;
         },
         () => {
           assert.fail(X`A Zoe invitation is required, not ${invitation}`);

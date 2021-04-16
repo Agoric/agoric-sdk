@@ -47,7 +47,7 @@
  * registering it with Zoe. Returns an installation.
  *
  * @param {SourceBundle} bundle
- * @returns {Promise<Installation>}
+ * @returns {Installation}
  */
 
 /**

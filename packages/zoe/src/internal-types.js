@@ -16,6 +16,14 @@
  */
 
 /**
+ * Given an allocation, withdraw payments to create a payout
+ *
+ * @callback WithdrawPayments
+ * @param {Allocation} allocation
+ * @returns {PaymentPKeywordRecord}
+ */
+
+/**
  * @typedef {Object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
@@ -26,7 +34,7 @@
  * @param {Allocation} initialAllocation
  * @param {InstanceAdmin} instanceAdmin
  * @param {ProposalRecord} proposal
- * @param {WeakStore<Brand, ERef<Purse>>} brandToPurse
+ * @param {WithdrawPayments} withdrawPayments
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<OfferResult>=} offerResult
  * @returns {ZoeSeatAdminKit}

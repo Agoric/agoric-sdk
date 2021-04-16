@@ -36,15 +36,18 @@ which delivers the messages produced by some other vat when it does
 `syscall.send()`. The arguments to `deliver` are also pure data, and are
 recorded in a transcript to enable replay-based orthogonal persistence.
 
-To enable transactional commitments, the syscalls do not return any data.
-During the turn, the kernel records the syscall name and arguments in a
-queue, but does not execute them (no kernel state is modified during a turn).
-Turns might fail because of a fatal error (e.g. addressing a non-existent
-object or promise, or resolving a promise that is supposed to be decided by
-some other vat), or the turn might be interrupted by an out-of-gas error (in
-which case it could be replayed or restarted after a Keeper supplies more
-funds). If/when the turn completes successfully, the queued syscalls are
-executed and committed as an atomic set.
+To enable transactional commitments, all state changes that might be made by
+syscalls are held in a transaction buffer (the "crank buffer") until the
+delivery is deemed to complete succesfully. The delivery might fail because
+of a fatal error (e.g. addressing a non-existent object or promise, or
+resolving a promise that is supposed to be decided by some other vat), or it
+might be interrupted by an out-of-gas error (in which case it could be
+replayed or restarted after a Keeper supplies more funds). If the delivery is
+interrupted, or fails, the buffer is discarded. (Note that these per-crank DB
+transactions are independent of any blockchain transactions that might have
+initiated the delivery). Syscalls which return data will read it from the
+crank buffer (if recently modified, or fall through to the persistent store
+below.
 
 All `dispatch` functions can schedule near-term work by using
 `Promise.resolve()` to append something to the promise queue. This work will
@@ -333,6 +336,12 @@ the Promise that came back from the transmission of an earlier message. It is
 a vital latency-reduction tool for sending multiple messages to a distant
 machine.
 
+```js
+const recordPromise = E(table).getRecord(identifier);
+const balancePromise = E(recordPromise).getBalance();
+balancePromise.then(balance => console.log(`balance: ${balance}`);
+```
+
 In SwingSet, pipelining is most (only?) useful on the Comms Vat. The local
 kernel shares a host with the local vats, so the latency is minimal. However
 two messages aimed at the same remote machine, through the Comms Vat, would
@@ -373,13 +382,13 @@ the behavior depends upon the type of resolution; see the discussion of
 
 When the initial pair of messages are submitted with `syscall.send()`, the
 run-queue will have two pending deliveries: the first is targeting an object
-in some Vat, and the second targets a Promise. Until the first message is
-delivered, the result Promise has no Decider, so the second message cannot be
-delivered. But that's ok, because by the time the second message gets to the
-front of the run queue, the first will have been delivered, setting the
-Decider of the result Promise to some vat, providing a place to deliver the
-second one (or the knowledge that the vat wants the kernel to queue it
-instead).
+in some Vat, and the second targets a Promise (the `result` promise-ID of the
+first message). Until the first message is delivered, the result Promise has
+no Decider, so the second message cannot be delivered. But that's ok, because
+by the time the second message gets to the front of the run queue, the first
+will have been delivered, setting the Decider of the result Promise to some
+vat, providing a place to deliver the second one (or the knowledge that the
+vat wants the kernel to queue it instead).
 
 When we implement Flows or escalators or some other priority mechanism, we
 must ensure that we don't try to deliver any message until all its
@@ -419,7 +428,10 @@ printed as `target=ko6, msg={name: foo, slots:[ko2], result=kp8}`.
 
 The Comms Vat creates inter-machine messages that refer to Objects and
 Promises in per-remote-machine C-List tables that live inside each Comms Vat.
-These identifiers use `ro` and `rp` as prefixes.
+These identifiers use `ro` and `rp` as prefixes. The Comms Vat has a local
+namespace which uses `lo` and `lp` as prefixes. It maintains one C-List
+facing the kernel (mapping `lo/lp` to `o/p`), and another one for each remote
+machine (mapping `lo/lp` to `ro/rp`).
 
 The Javascript SwingSet implementation uses these actual strings as keys in
 the arguments and the C-list tables. In other languages, they could be
@@ -459,13 +471,20 @@ The full API (using Rust syntax to capture the types correctly) is:
 ```
 trait Syscall {
     fn send(target: CapSlot, msg: Message);
+    fn callNow(target: CapSlot, msg: Message) -> CapData;
     fn subscribe(id: PromiseID);
     fn resolve(subject: PromiseID, to: Resolution);
+    fn exit(isFailure: bool, info: CapData);
+    fn vatstoreGet(key: String) -> String;
+    fn vatstoreSet(key: String, value: String);
+    fn vatstoreDelete(key: String);
+    fn dropImports(refs: &CapSlot[]);
 }
  
 trait Dispatch {
     fn deliver(target: CapSlot, msg: Message);
     fn notify(subject: PromiseID, to: Resolution);
+    fn dropExports(refs: &CapSlot[]);
 }
 ```
 
@@ -489,6 +508,8 @@ Some invocation patterns are legal, but unlikely to be useful:
   the kernel's run-queue. On the other hand, this may achieve certain
   ordering properties better.
 
+In some places, `dispatch.deliver()` is named `message`: we're still in the
+process of refactoring and unifying the codebase.
 
 ## Outbound (Vat->Kernel) translation
 
@@ -575,6 +596,11 @@ hear about their own Promises, but it is legal.
 
 ### syscall.resolve()
 
+`syscall.resolve` is used to resolve one or more Promises (usually just one,
+but occasionally a batch of mutually-referencing Promises must be resolved in
+a single syscall because their identifiers are aggressively retired
+immediately after translation).
+
 The subject of a `syscall.resolve` must either be a new Promise ID, or a
 pre-existing one for which the calling Vat is the Decider. The
 `KernelPromise` must be in the `Unresolved` state. If any of these conditions
@@ -630,12 +656,14 @@ these must be dispatched according to the resolution type:
 * `Reject`: the queued Messages are discarded, but a copy of the rejection
   data is used to Reject any `result` promises they included
 
+Finally, the kernel returns control to the Vat.
+
 (todo: think about the ordering properties of the potential approaches)
 
-TODO: As an important performance optimization, the old now-Resolved Promise
-is now removed from the resolving Vat's C-List table. The Vat knows what it
-was resolved to, so it should never need to refer to it again in the future.
-If the higher-layer vat code still retains the original native Promise and
+As an important performance optimization, the old now-Resolved Promise is
+removed from the resolving Vat's C-List table. The Vat knows what it was
+resolved to, so it should never need to refer to it again in the future. If
+the higher-layer vat code still retains the original native Promise and
 includes it in an argument, the lower-level translation layer can create a
 new promptly-resolved Promise for it.
 
@@ -647,7 +675,40 @@ just re-`send` everything in the queue in all resolution cases. If it
 fulfills to an Export, would the extra queue delay violate our ordering
 goals?)
 
-Finally, the kernel returns control to the Vat.
+Note: we no longer have distinct syscalls or states for the different flavors
+of resolved promises. Instead, each resolved promise is recorded with a
+boolean `isRejected` flag, and a `CapData` to hold the resolution data. The
+`Fulfill` and `Data` flavors both set `isRejected = false`, and only differ
+by the contents of the resolution data. If `!isRejected` and the data holds a
+single Object, then messages can be sent to the promise, and they will be
+passed along to the Object. Otherwise messages sent to the promise will
+result in a rejection of some form.
+
+### syscall.exit(isFailure, info)
+
+This syscall allows a vat to self-terminate. The arguments are used to
+resolve (or reject, if `isFailure`) the `donePromise` originally returned to
+whoever asked for the vat to be created. If `isFailure` is true, the crank
+will be aborted: all state changes (other than the vat being terminated) will
+be abandoned by deleting the contents of the crank buffer, rather than
+committing them.
+
+### syscall.vatstoreGet/vatstoreSet/vatstoreDelete
+
+These three syscalls provide an (offline) secondary storage key-value store
+to the vat, so it can store data on disk instead of consuming RAM. This is
+important for high-cardinality tables like Purses, of which there might be
+millions, but only a few are active during any single delivery. Both keys and
+values are limited to strings at this time.
+
+Changes to this table are held in the crank buffer, just like any other state
+changes, and are not flushed until the turn completes successfully.
+
+### syscall.dropImports
+
+This syscall will be part of the distributed GC system. We will probably
+introduce more in the future. See
+https://github.com/Agoric/agoric-sdk/issues/2724 for details.
 
 ## Kernel Run-Queue
 
@@ -1227,12 +1288,13 @@ gets special access to VatTP and can exchange data with other machines.
 The kernel routes messages between multiple vats. The Comms Vat routes
 messages between the local kernel and (potentially) multiple external
 machines. In this way, the Comms Vat is like the kernel: it must maintain
-Object and Promise tables, and a C-List for each remote machine. It does not
-need to manage a run-queue (`dispatch()` causes an immediate external
-message), nor does it have a kernel-facing C-List (its Object/Promise tables
-are indexed by the same `ObjectID`/`PromiseID` Vat types that appear in the
-`syscall/dispatch` API. But it does have some routing tables to figure out
-where each message needs to go.
+Object and Promise tables, and a C-List for each remote machine. To some
+excent, the kernel is treated like just another remote machine: there is also
+a kernel-facing C-List (however kernel "messages", really syscalls, are
+delivered immediately, whereas messages to remote machines are asynchronous).
+The Comms Vat does not need to manage a run-queue (`dispatch()` causes an
+immediate external message), nor does each unresolved promise have a queue of
+messages (these are pipelined immediately).
 
 The one wrinkle is that Vat-Vat connections are symmetric, which impacts the
 way these types are represented. The Vat-Kernel interface is conveniently
@@ -1248,6 +1310,14 @@ the sender. Both Vats use this same "receiver-centric" convention for the
 externally-facing side of their per-machine C-Lists. As a result, the IDs
 inside inbound messages can be looked up in the C-List directly, but when
 sending outbound messages, all the IDs must have their signs flipped.
+
+(The mnemonic philosophy is: vats are ego-centric, vat exports are the most
+important thing in their self-centered world, so vat exports get the positive
+number (`o+1`). Comms vats, being more worldly, are obsequiously polite, so
+they always deliver a remote message in the form that will most please the
+recipient, so when a machine's export is sent back to them, the
+exporter+recipient will receive a positive number (`ro+2`), even though the
+exporter would *send* that object as `ro-2` to please the importer).
 
 The message names are also different. In the local-machine Vat-Kernel-Vat
 flow, the first Vat's outbound message has a different name than the inbound
