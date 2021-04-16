@@ -141,3 +141,38 @@ export const invertRatio = ratio => {
     ratio.numerator.brand,
   );
 };
+
+export const addRatios = (left, right) => {
+  assertIsRatio(right);
+  assertIsRatio(left);
+  assert(
+    left.numerator.brand === left.denominator.brand &&
+      left.numerator.brand === right.numerator.brand &&
+      left.numerator.brand === right.denominator.brand,
+    X`all brands must match:  ${q(left)} ${q(right)}`,
+  );
+
+  return makeRatio(
+    multiply(left.numerator.value, right.denominator.value) +
+      multiply(left.denominator.value, right.numerator.value),
+    left.numerator.brand,
+    multiply(left.denominator.value, right.denominator.value),
+  );
+};
+
+export const multiplyRatios = (left, right) => {
+  assertIsRatio(right);
+  assertIsRatio(left);
+  assert(
+    left.numerator.brand === left.denominator.brand &&
+      left.numerator.brand === right.numerator.brand &&
+      left.numerator.brand === right.denominator.brand,
+    X`all brands must match:  ${q(left)} ${q(right)}`,
+  );
+
+  return makeRatio(
+    multiply(left.numerator.value, right.numerator.value),
+    left.numerator.brand,
+    multiply(left.denominator.value, right.denominator.value),
+  );
+};

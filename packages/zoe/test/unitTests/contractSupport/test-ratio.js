@@ -12,6 +12,7 @@ import {
   divideBy,
   invertRatio,
 } from '../../../src/contractSupport';
+import { multiplyRatios, addRatios } from '../../../src/contractSupport/ratio';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;
@@ -225,4 +226,32 @@ test.failing('ratio bad inputs w/brand names', t => {
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
     message: 'No infinite ratios! Denonimator was 0/"moe"',
   });
+});
+
+test('multiply ratios', t => {
+  const { brand } = makeIssuerKit('moe');
+
+  /** @param {bigint} value */
+  const moe = value => amountMath.make(value, brand);
+
+  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
+  const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
+  t.deepEqual(
+    makeRatio(10n, brand, 30n, brand),
+    multiplyRatios(fiveSixths, twoFifths),
+  );
+});
+
+test('add ratios', t => {
+  const { brand } = makeIssuerKit('moe');
+
+  /** @param {bigint} value */
+  const moe = value => amountMath.make(value, brand);
+
+  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
+  const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
+  t.deepEqual(
+    makeRatio(37n, brand, 30n, brand),
+    addRatios(fiveSixths, twoFifths),
+  );
 });
