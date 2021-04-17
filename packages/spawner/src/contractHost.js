@@ -5,7 +5,7 @@ import { makeWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { allComparable } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
 
 export { makeCollect } from './makeCollect';
 
@@ -31,13 +31,13 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
   const {
     mint: inviteMint,
     issuer: inviteIssuer,
-    amountMath: inviteAmountMath,
-  } = makeIssuerKit('contract host', 'set');
+    brand: inviteBrand,
+  } = makeIssuerKit('contract host', MathKind.SET);
 
   function redeem(allegedInvitePayment) {
     return inviteIssuer.getAmountOf(allegedInvitePayment).then(inviteAmount => {
-      assert(!inviteAmountMath.isEmpty(inviteAmount), X`No invites left`);
-      const [{ seatIdentity }] = inviteAmountMath.getValue(inviteAmount);
+      assert(!amountMath.isEmpty(inviteAmount), X`No invites left`);
+      const [{ seatIdentity }] = amountMath.getValue(inviteBrand, inviteAmount);
       return Promise.resolve(
         inviteIssuer.burn(allegedInvitePayment, inviteAmount),
       ).then(_ => seats.get(seatIdentity));
@@ -158,7 +158,10 @@ function makeContractHost(vatPowers, additionalEndowments = {}) {
               ]);
               seats.init(seatIdentity, seat);
               seatDescriptions.init(seatIdentity, seatDescription);
-              const inviteAmount = inviteAmountMath.make(seatDescription);
+              const inviteAmount = amountMath.make(
+                inviteBrand,
+                seatDescription,
+              );
               // This should be the only use of the invite mint, to
               // make an invite payment whose value describes this
               // seat.

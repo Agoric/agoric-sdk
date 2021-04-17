@@ -70,7 +70,7 @@ const coerceAmountKeywordRecord = (
 
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the amountMath
-  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
+  // indicated by brand. `amountMath.coerce` throws if coercion fails.
   const coercedAmounts = amounts.map(amount => {
     const brandMathKind = getMathKindByBrand(amount.brand);
     const amountMathKind = getMathKind(amount);

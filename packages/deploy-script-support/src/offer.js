@@ -15,7 +15,6 @@ export const makeOfferAndFindInvitationAmount = (
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
 
-    // TODO: use a new AmountMath method instead to improve efficiency
     // For every key and value in invitationDetailsCriteria, return an amount
     // with any matches for those exact keys and values. Keys not in
     // invitationDetails count as a match
