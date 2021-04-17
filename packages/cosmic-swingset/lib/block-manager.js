@@ -21,9 +21,10 @@ export default function makeBlockManager({
   saveOutsideState,
   savedActions,
   savedHeight,
+  bootstrapBlock,
   verboseBlocks = false,
 }) {
-  let computedHeight = savedHeight === 0 ? undefined : savedHeight;
+  let computedHeight = bootstrapBlock ? undefined : savedHeight;
   let runTime = 0;
 
   async function kernelPerformAction(action) {
@@ -172,7 +173,7 @@ export default function makeBlockManager({
 
           // Advance our saved state variables.
           savedActions = currentActions;
-          if (computedHeight === undefined) {
+          if (computedHeight === undefined && action.blockHeight > 1) {
             // Genesis height is the same as the first block, so we
             // need to adjust.
             computedHeight = action.blockHeight - 1;

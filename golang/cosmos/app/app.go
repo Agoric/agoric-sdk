@@ -572,12 +572,11 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 	stakingParams.HistoricalEntries = 10000
 	app.StakingKeeper.SetParams(ctx, stakingParams)
 
-	// Agoric tweak: wait until the genesis time has happened.
+	// Agoric: report the genesis time explicitly.
 	genTime := req.GetTime()
 	if genTime.After(time.Now()) {
 		d := time.Until(genTime)
-		stdlog.Printf("Sleeping %s until genesis time %s\n", d, genTime)
-		time.Sleep(d)
+		stdlog.Printf("Genesis time %s is in %s\n", genTime, d)
 	}
 
 	return res

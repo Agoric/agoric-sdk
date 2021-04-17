@@ -15,6 +15,7 @@ test
 .circleci
 ve[0-9]
 t[0-9]
+t[0-9].*
 build
 
 *.egg-info

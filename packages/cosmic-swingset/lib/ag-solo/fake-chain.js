@@ -45,6 +45,7 @@ async function makeMapStorage(file) {
 }
 
 export async function connectToFakeChain(basedir, GCI, delay, inbound) {
+  const initialHeight = 1;
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
@@ -95,6 +96,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       thisBlock.push(...intoChain);
       intoChain = [];
 
+      blockTime += PRETEND_BLOCK_DELAY;
+      blockHeight += 1;
+
       await blockManager(
         { type: 'BEGIN_BLOCK', blockHeight, blockTime },
         savedChainSends,
@@ -126,9 +130,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
       // We now advance to the next block.
       thisBlock = [];
-      blockTime +=
-        scaleBlockTime(Date.now() - actualStart) + PRETEND_BLOCK_DELAY;
-      blockHeight += 1;
+      blockTime += scaleBlockTime(Date.now() - actualStart);
 
       clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define
@@ -159,11 +161,19 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     }
   }
 
-  // The first block is special... do it now.
-  await blockManager(
-    { type: 'END_BLOCK', blockHeight, blockTime },
-    savedChainSends,
-  );
+  let genesisBlockP;
+  if (blockHeight < 0) {
+    // The before-first-block is special... do it now.
+    // This emulates what x/swingset does to run an END_BLOCK
+    // with block 1 and genesis transactions before continuing with the real
+    // block 1.
+    blockHeight = initialHeight;
+    genesisBlockP = blockManager(
+      { type: 'END_BLOCK', blockHeight, blockTime },
+      savedChainSends,
+    );
+  }
+  await genesisBlockP;
 
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
