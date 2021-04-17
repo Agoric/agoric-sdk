@@ -162,3 +162,23 @@
  * @param {Ratio} ratio
  * @returns {Ratio}
  */
+
+/**
+ * @callback oneMinus
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback addRatios
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
+
+/**
+ * @callback multiplyRatios
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
