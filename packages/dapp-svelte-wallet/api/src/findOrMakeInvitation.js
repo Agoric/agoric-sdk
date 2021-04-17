@@ -46,8 +46,6 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
  * @param {Record<string, any>} kvs
  */
 const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
-  // TODO: use an AmountMath method instead to improve efficiency
-
   // For every key and value in `query`, return an amount
   // with any matches for those exact keys and values. Keys not in
   // `query` count as a match
