@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -23,7 +23,9 @@ test('offer', async t => {
   const moolaPurse = moolaKit.issuer.makeEmptyPurse();
   const usdPurse = usdKit.issuer.makeEmptyPurse();
 
-  moolaPurse.deposit(moolaKit.mint.mintPayment(moolaKit.amountMath.make(5)));
+  moolaPurse.deposit(
+    moolaKit.mint.mintPayment(amountMath.make(moolaKit.brand, 5n)),
+  );
 
   const walletAdmin = {
     getPurse: petname => {
@@ -55,27 +57,15 @@ test('offer', async t => {
 
   const zoeInvitationIssuer = E(zoe).getInvitationIssuer();
   const zoeInvitationPurse = E(zoeInvitationIssuer).makeEmptyPurse();
+  const invitationBrand = await E(zoeInvitationIssuer).getBrand();
 
   await E(zoeInvitationPurse).deposit(creatorInvitation);
-
-  const invitationMath = await makeLocalAmountMath(zoeInvitationIssuer);
-
-  const getLocalAmountMath = petname => {
-    if (petname === MOOLA_BRAND_PETNAME) {
-      return moolaKit.amountMath;
-    }
-    if (petname === USD_BRAND_PETNAME) {
-      return usdKit.amountMath;
-    }
-    throw Error('not found');
-  };
 
   const { offer } = makeOfferAndFindInvitationAmount(
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    getLocalAmountMath,
-    invitationMath,
+    invitationBrand,
   );
 
   const offerConfig = {
@@ -104,7 +94,7 @@ test('offer', async t => {
 
   t.deepEqual(
     await E(moolaPurse).getCurrentAmount(),
-    moolaKit.amountMath.make(5),
+    amountMath.make(moolaKit.brand, 5n),
   );
 
   t.is(invitationDetails.description, 'getRefund');

@@ -3,7 +3,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 import { allComparable } from '@agoric/same-structure';
 
 import { makeCollect } from '../../../src/makeCollect';
@@ -31,12 +31,13 @@ function makeFredMaker(host, log) {
       await E(myStockPurseP).deposit(myStockPaymentP);
       await E(myFinPaymentP).deposit(myFinPaymentP);
 
-      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
-      const stockMath = await makeLocalAmountMath(stockIssuerP);
-      const finMath = await makeLocalAmountMath(finIssuerP);
-      const dough10 = moneyMath.make(10);
-      const wonka7 = stockMath.make(7);
-      const fin55 = finMath.make(55);
+      const stockBrand = await E(stockIssuerP).getBrand();
+      const moneyBrand = await E(moneyIssuerP).getBrand();
+      const finBrand = await E(finIssuerP).getBrand();
+
+      const dough10 = amountMath.make(moneyBrand, 10n);
+      const wonka7 = amountMath.make(stockBrand, 7n);
+      const fin55 = amountMath.make(finBrand, 55n);
 
       const fred = Far('fred', {
         acceptOptionOffer(allegedSaleInvitePaymentP) {

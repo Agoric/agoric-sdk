@@ -4,7 +4,6 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import { makeWeakStore } from '@agoric/store';
-import { makeAmountMath } from '@agoric/ertp';
 
 import '../exported';
 import './internal-types';
@@ -63,11 +62,9 @@ const makeIssuerTable = () => {
         brandIssuerMatch,
         `issuer was using a brand which was not its own`,
       );
-      const amountMath = makeAmountMath(brand, amountMathKind);
       issuerTable.initIssuerByRecord({
         brand,
         issuer,
-        amountMath,
         mathKind: amountMathKind,
         displayInfo: { ...displayInfo, amountMathKind },
       });

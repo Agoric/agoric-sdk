@@ -22,13 +22,6 @@
  */
 
 /**
- * @callback MakeLocalAmountMathManager
- * @param {ERef<IssuerManager>} issuerManager
- * @returns {{ saveLocalAmountMaths: SaveLocalAmountMaths,
-    getLocalAmountMath: GetLocalAmountMath }}
- */
-
-/**
  * @callback MakeStartInstanceAndSave
  * @param {ERef<IssuerManager>} issuerManager
  * @param {ERef<InstanceManager>} instanceManager
@@ -43,8 +36,6 @@
  * wallet, not defined here
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Purse>} zoeInvitationPurse
- * @param {GetLocalAmountMath} getLocalAmountMath
- * @param {DeprecatedAmountMath} invitationMath
  * @returns {{ offer: OfferHelper, findInvitationAmount: FindInvitationAmount }}
  */
 
@@ -52,7 +43,6 @@
  * @callback MakeSaveIssuerHelper
  * @param {ERef<WalletAdminFacet>} walletAdmin - an internal type of the
  * wallet, not defined here
- * @param {SaveLocalAmountMath} saveLocalAmountMath
  * @param {ERef<IssuerManager>} issuerManager
  * @returns {SaveIssuerHelper}
  */

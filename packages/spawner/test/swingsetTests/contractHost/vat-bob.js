@@ -3,7 +3,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeCollect } from '../../../src/makeCollect';
@@ -21,11 +21,11 @@ function makeBobMaker(host, log) {
       myMoneyPurseP,
       myStockPurseP,
     ) {
-      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
-      const stockMath = await makeLocalAmountMath(stockIssuerP);
+      const stockBrand = await E(stockIssuerP).getBrand();
+      const moneyBrand = await E(moneyIssuerP).getBrand();
 
-      const moneyNeeded = moneyMath.make(10);
-      const stockNeeded = stockMath.make(7);
+      const moneyNeeded = amountMath.make(moneyBrand, 10n);
+      const stockNeeded = amountMath.make(stockBrand, 7n);
 
       const bob = Far('bob', {
         /*
@@ -40,7 +40,7 @@ function makeBobMaker(host, log) {
           desc = `${desc}`;
           switch (desc) {
             case 'shoe': {
-              amount = moneyMath.make(10);
+              amount = amountMath.make(moneyBrand, 10n);
               good = 'If it fits, ware it.';
               break;
             }
@@ -75,7 +75,9 @@ function makeBobMaker(host, log) {
 
         acceptInvite(inviteP) {
           const seatP = E(host).redeem(inviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
+          const stockPaymentP = E(myStockPurseP).withdraw(
+            amountMath.make(stockBrand, 7n),
+          );
           E(seatP).offer(stockPaymentP);
           return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
         },
@@ -91,7 +93,9 @@ function makeBobMaker(host, log) {
           });
           const bobInviteP = E(coveredCallInstallationP).spawn(terms);
           const bobSeatP = E(host).redeem(bobInviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(stockMath.make(7));
+          const stockPaymentP = E(myStockPurseP).withdraw(
+            amountMath.make(stockBrand, 7n),
+          );
           const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
           const doneP = Promise.all([
             E(alice).acceptOption(aliceInviteP),

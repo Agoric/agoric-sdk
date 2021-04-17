@@ -1,20 +1,13 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
-  const {
-    moola,
-    simoleans,
-    bucks,
-    purses,
-    moolaAmountMath,
-    simoleanAmountMath,
-  } = await setupIssuers(zoe, issuers);
+  const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP, bucksPurseP] = purses;
   const [moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
@@ -95,13 +88,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
       );
       assert(
-        simoleanAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -161,14 +154,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        moolaAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
         X`wrong underlying asset`,
       );
       assert(
-        simoleanAmountMath.isEqual(
+        amountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -506,8 +499,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doBuyTickets: async (instance, invitation) => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
       const terms = await E(zoe).getTerms(instance);
-      const ticketIssuer = await E(publicFacet).getItemsIssuer();
-      const ticketAmountMath = await makeLocalAmountMath(ticketIssuer);
+      const ticketIssuer = E(publicFacet).getItemsIssuer();
+      const ticketBrand = await E(ticketIssuer).getBrand();
 
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);
@@ -516,7 +509,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
-      const ticket1Amount = ticketAmountMath.make(harden([ticket1Value]));
+      const ticket1Amount = amountMath.make(ticketBrand, [ticket1Value]);
       const proposal = harden({
         give: { Money: terms.pricePerItem },
         want: { Items: ticket1Amount },

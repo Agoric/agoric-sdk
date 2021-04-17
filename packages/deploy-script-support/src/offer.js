@@ -2,14 +2,14 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
 
 /** @type {MakeOfferAndFindInvitationAmount} */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,
   zoeInvitationPurse,
-  getLocalAmountMath,
-  invitationMath,
+  invitationBrand,
 ) => {
   /** @type {FindInvitationAmount} */
   const findInvitationAmount = async invitationDetailsCriteria => {
@@ -29,7 +29,7 @@ export const makeOfferAndFindInvitationAmount = (
     const matchingValue = invitationValue.find(matches);
     const value =
       matchingValue === undefined ? harden([]) : harden([matchingValue]);
-    return invitationMath.make(value);
+    return amountMath.make(invitationBrand, value);
   };
 
   const withdrawPayments = (proposal, paymentsWithPursePetnames) => {
@@ -53,8 +53,7 @@ export const makeOfferAndFindInvitationAmount = (
 
   const makeAmount = amountWithPetnames => {
     const { brand: brandPetname, value } = amountWithPetnames;
-    const math = getLocalAmountMath(brandPetname);
-    return math.make(value);
+    return amountMath.make(brand, value);
   };
 
   const makeProposalPart = giveOrWant => {

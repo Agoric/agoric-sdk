@@ -3,11 +3,7 @@
 import { E } from '@agoric/eventual-send';
 
 /** @type {MakeSaveIssuerHelper} */
-export const makeSaveIssuer = (
-  walletAdmin,
-  saveLocalAmountMaths,
-  issuerManager,
-) => {
+export const makeSaveIssuer = (walletAdmin, issuerManager) => {
   /** @type {SaveIssuerHelper} */
   const saveIssuer = async (issuerP, brandPetname, pursePetname) => {
     console.log(`-- Installing issuer for: ${brandPetname}`);
@@ -18,9 +14,8 @@ export const makeSaveIssuer = (
       brandPetname,
       pursePetname,
     );
-    const localAmountMathSavedP = saveLocalAmountMaths([brandPetname]);
 
-    const result = await Promise.all([emptyPurseMadeP, localAmountMathSavedP]);
+    const result = await emptyPurseMadeP;
     console.log(`-- Installed issuer for: ${brandPetname}`);
     return result;
   };

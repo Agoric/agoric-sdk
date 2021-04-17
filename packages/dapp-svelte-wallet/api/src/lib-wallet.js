@@ -746,12 +746,12 @@ export function makeWallet({
 
     // eslint-disable-next-line no-use-before-define
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
-    const { amountMath: invitationMath } = brandTable.getByIssuer(zoeIssuer);
+    const { brand: invitationBrand } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
       idToOfferResultPromiseKit,
       board,
       zoeInvitePurse,
-      invitationMath,
+      invitationBrand,
       offer,
     );
 

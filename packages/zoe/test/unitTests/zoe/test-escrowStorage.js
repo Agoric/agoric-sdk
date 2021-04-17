@@ -27,7 +27,6 @@ test('makeEscrowStorage', async t => {
     issuer: currencyKit.issuer,
     mathKind: MathKind.NAT,
     brand: currencyKit.brand,
-    amountMath: currencyKit.amountMath,
   };
 
   const ticketKit = makeIssuerKit('tickets', MathKind.SET);
@@ -36,7 +35,6 @@ test('makeEscrowStorage', async t => {
     issuer: ticketKit.issuer,
     mathKind: MathKind.SET,
     brand: ticketKit.brand,
-    amountMath: ticketKit.amountMath,
   };
 
   createPurse(currencyIssuerRecord);
@@ -131,7 +129,6 @@ const setupPurses = createPurse => {
     issuer: currencyKit.issuer,
     mathKind: MathKind.NAT,
     brand: currencyKit.brand,
-    amountMath: currencyKit.amountMath,
   };
 
   const ticketKit = makeIssuerKit('tickets', MathKind.SET);
@@ -140,7 +137,6 @@ const setupPurses = createPurse => {
     issuer: ticketKit.issuer,
     mathKind: MathKind.SET,
     brand: ticketKit.brand,
-    amountMath: ticketKit.amountMath,
   };
   createPurse(currencyIssuerRecord);
   createPurse(ticketIssuerRecord);
