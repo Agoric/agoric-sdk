@@ -6,7 +6,6 @@ import { mustBeComparable } from '@agoric/same-structure';
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
 import setMathHelpers from './mathHelpers/setMathHelpers';
-import { makeAmountMath } from './deprecatedAmountMath';
 import {
   looksLikeSetValue,
   looksLikeNatValue,
@@ -249,4 +248,4 @@ const amountMath = {
 };
 harden(amountMath);
 
-export { amountMath, MathKind, getMathKind, makeAmountMath };
+export { amountMath, MathKind, getMathKind };

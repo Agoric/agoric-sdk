@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from './helpers';
 
@@ -312,9 +312,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       installations.autoswap,
       issuerKeywordRecord,
     );
-    const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
-    const liquidityAmountMath = await makeLocalAmountMath(liquidityIssuer);
-    const liquidity = liquidityAmountMath.make;
+    const liquidityIssuer = E(publicFacet).getLiquidityIssuer();
+    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const liquidity = value => amountMath.make(liquidityBrand, value);
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -488,10 +488,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
-          return doAutomaticRefund(bobP, carolP, daveP);
+          return doAutomaticRefund(bobP);
         }
         case 'coveredCallOk': {
-          return doCoveredCall(bobP, carolP, daveP);
+          return doCoveredCall(bobP);
         }
         case 'swapForOptionOk': {
           return doSwapForOption(bobP, carolP, daveP);
@@ -500,19 +500,19 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doSecondPriceAuction(bobP, carolP, daveP);
         }
         case 'atomicSwapOk': {
-          return doAtomicSwap(bobP, carolP, daveP);
+          return doAtomicSwap(bobP);
         }
         case 'simpleExchangeOk': {
-          return doSimpleExchange(bobP, carolP, daveP);
+          return doSimpleExchange(bobP);
         }
         case 'simpleExchangeNotifier': {
-          return doSimpleExchangeWithNotification(bobP, carolP, daveP);
+          return doSimpleExchangeWithNotification(bobP);
         }
         case 'autoswapOk': {
-          return doAutoswap(bobP, carolP, daveP);
+          return doAutoswap(bobP);
         }
         case 'sellTicketsOk': {
-          return doSellTickets(bobP, carolP, daveP);
+          return doSellTickets(bobP);
         }
         case 'otcDeskOk': {
           return doOTCDesk(bobP);

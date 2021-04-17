@@ -17,12 +17,6 @@
  */
 
 /**
- * @callback GetAmountMath
- * @param {Brand} brand
- * @returns {DeprecatedAmountMath}
- */
-
-/**
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -47,7 +41,6 @@
  * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
- * @property {GetAmountMath} getAmountMath
  * @property {(brand: Brand) => AmountMathKind} getMathKind
  * @property {MakeZCFMint} makeZCFMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit

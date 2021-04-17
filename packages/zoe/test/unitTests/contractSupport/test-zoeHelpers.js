@@ -111,7 +111,7 @@ test('ZoeHelpers satisfies() with give', t => {
   );
 });
 
-const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
+const makeMockZcfSeatAdmin = (proposal, initialAllocation, getMathKind) => {
   const allSeatStagings = new WeakSet();
   const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
   const notifier = makeNotifier();
@@ -119,7 +119,7 @@ const makeMockZcfSeatAdmin = (proposal, initialAllocation, getAmountMath) => {
     allSeatStagings,
     mockZoeSeatAdmin,
     { proposal, initialAllocation, notifier },
-    getAmountMath,
+    getMathKind,
   );
   let hasExited = false;
   const mockSeat = Far('mockSeat', {

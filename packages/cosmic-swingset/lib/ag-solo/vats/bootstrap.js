@@ -251,7 +251,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             },
             want: {
               // We just throw away our governance tokens.
-              Governance: amountMath.make(0n, govBrand),
+              Governance: amountMath.make(govBrand, 0n),
             },
           });
           const paymentKeywords = harden({

@@ -14,12 +14,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';
-import {
-  makeIssuerKit,
-  MathKind,
-  amountMath,
-  makeAmountMath,
-} from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -128,10 +123,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         issuerRecords.map(record => record.brand),
         keywords,
       );
-      const maths = arrayToObj(
-        issuerRecords.map(record => record.amountMath),
-        keywords,
-      );
 
       let instanceRecord = {
         installation,
@@ -139,7 +130,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           ...customTerms,
           issuers,
           brands,
-          maths,
         },
       };
 
@@ -163,10 +153,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
               ...instanceRecord.terms.brands,
               [keyword]: issuerRecord.brand,
             },
-            maths: {
-              ...instanceRecord.terms.maths,
-              [keyword]: issuerRecord.amountMath,
-            },
           },
         };
       };
@@ -188,7 +174,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           brand: localBrand,
           issuer: localIssuer,
           mathKind: amountMathKind,
-          amountMath: makeAmountMath(localBrand, amountMathKind),
         });
         issuerTable.initIssuerByRecord(localIssuerRecord);
         registerIssuerByKeyword(keyword, localIssuerRecord);

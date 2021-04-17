@@ -14,7 +14,7 @@ import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
-import { MathKind, amountMath, makeAmountMath } from '@agoric/ertp';
+import { MathKind, amountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
@@ -44,8 +44,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
   ) => {
     /** @type {IssuerTable} */
     const issuerTable = makeIssuerTable();
-    const getAmountMath = brand => issuerTable.getByBrand(brand).amountMath;
-
     const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
@@ -75,10 +73,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           brands: {
             ...instanceRecord.terms.brands,
             [keyword]: issuerRecord.brand,
-          },
-          maths: {
-            ...instanceRecord.terms.maths,
-            [keyword]: issuerRecord.amountMath,
           },
         },
       };
@@ -217,11 +211,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zoeMintP,
       ).getIssuerRecord();
       // AWAIT
-      const mintyAmountMath = makeAmountMath(mintyBrand, amountMathKind);
       const mintyIssuerRecord = harden({
         brand: mintyBrand,
         issuer: mintyIssuer,
-        amountMath: mintyAmountMath,
         mathKind: amountMathKind,
       });
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
@@ -413,7 +405,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getTerms: () => instanceRecord.terms,
       getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
       getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
-      getAmountMath,
       getMathKind: brand => issuerTable.getByBrand(brand).mathKind,
       /**
        * Provide a jig object for testing purposes only.

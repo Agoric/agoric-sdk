@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
@@ -7,12 +7,12 @@ import makeStore from '@agoric/store';
 // simoleanMint.
 
 export function buildRootObject(_vatPowers) {
-  const mintsAndMath = makeStore('issuerName');
+  const mintsAndBrands = makeStore('issuerName');
 
   const api = Far('api', {
-    getAllIssuerNames: () => mintsAndMath.keys(),
+    getAllIssuerNames: () => mintsAndBrands.keys(),
     getIssuer: issuerName => {
-      const mint = mintsAndMath.get(issuerName);
+      const mint = mintsAndBrands.get(issuerName);
       return mint.getIssuer();
     },
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
@@ -20,23 +20,23 @@ export function buildRootObject(_vatPowers) {
     // NOTE: having a reference to a mint object gives the ability to mint
     // new digital assets, a very powerful authority. This authority
     // should be closely held.
-    getMint: name => mintsAndMath.get(name).mint,
+    getMint: name => mintsAndBrands.get(name).mint,
     getMints: issuerNames => issuerNames.map(api.getMint),
     // For example, issuerNameSingular might be 'moola', or 'simolean'
     makeMintAndIssuer: (issuerNameSingular, ...issuerArgs) => {
-      const { mint, issuer, amountMath } = makeIssuerKit(
+      const { mint, issuer, brand } = makeIssuerKit(
         issuerNameSingular,
         ...issuerArgs,
       );
-      mintsAndMath.init(issuerNameSingular, { mint, amountMath });
+      mintsAndBrands.init(issuerNameSingular, { mint, brand });
       return issuer;
     },
     mintInitialPayment: (issuerName, value) => {
-      if (!mintsAndMath.has(issuerName)) {
+      if (!mintsAndBrands.has(issuerName)) {
         return undefined;
       }
-      const { mint, amountMath } = mintsAndMath.get(issuerName);
-      const amount = amountMath.make(value);
+      const { mint, brand } = mintsAndBrands.get(issuerName);
+      const amount = amountMath.make(brand, value);
       return mint.mintPayment(amount);
     },
     mintInitialPayments: (issuerNames, values) =>

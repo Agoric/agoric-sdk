@@ -18,18 +18,6 @@
  */
 
 /**
- * @callback SaveLocalAmountMaths
- * @param {Array<Petname>} petnames
- * @returns {Promise<void[]>}
- */
-
-/**
- * @callback GetLocalAmountMath
- * @param {Petname} petname
- * @returns {DeprecatedAmountMath}
- */
-
-/**
  * @typedef {Object} StartInstanceAndSaveConfig
  * @property {Petname} instancePetname
  * @property {ERef<Installation>} installation

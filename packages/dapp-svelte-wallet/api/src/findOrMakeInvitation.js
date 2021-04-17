@@ -1,6 +1,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { passStyleOf } from '@agoric/marshal';
+import { amountMath } from '@agoric/ertp';
 
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
 
@@ -60,11 +61,11 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
   return harden([matchingValue]);
 };
 
-const makeFindInvitation = (invitationPurse, invitationMath) => {
+const makeFindInvitation = (invitationPurse, invitationBrand) => {
   const findInvitation = async (queryFn, queryParams) => {
     const purseBalance = await E(invitationPurse).getCurrentAmount();
     const value = await queryFn(purseBalance, queryParams);
-    const invitationAmount = invitationMath.make(value);
+    const invitationAmount = amountMath.make(invitationBrand, value);
     const invitationP = E(invitationPurse).withdraw(invitationAmount);
     return invitationP;
   };
@@ -97,7 +98,7 @@ export const findOrMakeInvitation = async (
   idToOfferResultPromiseKit,
   board,
   invitationPurse,
-  invitationMath,
+  invitationBrand,
   offer,
 ) => {
   if (offer.invitation) {
@@ -105,7 +106,7 @@ export const findOrMakeInvitation = async (
     return offer.invitation;
   }
 
-  const findInvitation = makeFindInvitation(invitationPurse, invitationMath);
+  const findInvitation = makeFindInvitation(invitationPurse, invitationBrand);
 
   // Deprecated
   if (offer.inviteHandleBoardId) {

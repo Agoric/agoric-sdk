@@ -1,4 +1,4 @@
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePrintLog } from './printLog';
 
@@ -15,20 +15,20 @@ function setupBasicMints() {
   ];
   const mints = all.map(objs => objs.mint);
   const issuers = all.map(objs => objs.issuer);
-  const amountMaths = all.map(objs => objs.amountMath);
+  const brands = all.map(objs => objs.brand);
 
   return harden({
     mints,
     issuers,
-    amountMaths,
+    brands,
   });
 }
 
 function makeVats(vats, zoe, installations, startingValues) {
-  const { mints, issuers, amountMaths } = setupBasicMints();
+  const { mints, issuers, brands } = setupBasicMints();
   // prettier-ignore
   function makePayments(values) {
-    return mints.map((mint, i) => mint.mintPayment(amountMaths[i].make(values[i])));
+    return mints.map((mint, i) => mint.mintPayment(amountMath.make(brands[i], values[i])));
   }
   const [aliceValues, bobValues] = startingValues;
 
