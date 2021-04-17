@@ -18,7 +18,6 @@ import { MathKind, amountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
-import { makeIssuerTable } from '../issuerTable';
 import {
   assertKeywordName,
   getKeywords,
@@ -29,6 +28,7 @@ import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
+import { makeIssuerStorage } from '../issuerStorage';
 
 import '../../exported';
 import '../internal-types';
@@ -42,9 +42,14 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     zoeInstanceAdmin,
     instanceRecord,
   ) => {
-    /** @type {IssuerTable} */
-    const issuerTable = makeIssuerTable();
-    const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
+    const {
+      storeIssuerKeywordRecord,
+      storeIssuer,
+      storeLocalIssuerRecord,
+      getMathKind,
+      getBrandForIssuer,
+      getIssuerForBrand,
+    } = makeIssuerStorage();
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
@@ -53,12 +58,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const zcfSeatToZCFSeatAdmin = makeStore('zcfSeat');
     /** @type {WeakStore<ZCFSeat,SeatHandle>} */
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
-
-    const keywords = Object.keys(instanceRecord.terms.issuers);
-    const issuers = Object.values(instanceRecord.terms.issuers);
-
-    const initIssuers = issuersP =>
-      Promise.all(issuersP.map(issuerTable.initIssuer));
 
     /** @type {RegisterIssuerRecord} */
     const registerIssuerRecord = (keyword, issuerRecord) => {
@@ -90,10 +89,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return registerIssuerRecord(keyword, issuerRecord);
     };
 
-    const issuerRecords = await initIssuers(issuers);
-    issuerRecords.forEach((issuerRecord, i) => {
-      registerIssuerRecord(keywords[i], issuerRecord);
-    });
+    await storeIssuerKeywordRecord(instanceRecord.terms.issuers);
 
     const allSeatStagings = new WeakSet();
 
@@ -147,7 +143,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
+      const proposal = cleanProposal(harden({ exit }), getMathKind);
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -169,7 +165,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         allSeatStagings,
         zoeSeatAdminPromiseKit.promise,
         seatData,
-        getMathKindByBrand,
+        getMathKind,
       );
       zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
@@ -215,9 +211,13 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         brand: mintyBrand,
         issuer: mintyIssuer,
         mathKind: amountMathKind,
+        displayInfo: {
+          ...displayInfo,
+          amountMathKind,
+        },
       });
       registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
-      issuerTable.initIssuerByRecord(mintyIssuerRecord);
+      storeLocalIssuerRecord(mintyIssuerRecord);
 
       /** @type {ZCFMint} */
       const zcfMint = Far('zcfMint', {
@@ -358,7 +358,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zcf.assertUniqueKeyword(keyword);
         await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
         // AWAIT ///
-        const record = await issuerTable.initIssuer(issuerP);
+        const record = await storeIssuer(issuerP);
         // AWAIT ///
         return registerIssuerRecordWithKeyword(keyword, record);
       },
@@ -403,9 +403,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
       getTerms: () => instanceRecord.terms,
-      getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
-      getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
-      getMathKind: brand => issuerTable.getByBrand(brand).mathKind,
+      getBrandForIssuer,
+      getIssuerForBrand,
+      getMathKind,
       /**
        * Provide a jig object for testing purposes only.
        *
@@ -439,7 +439,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
-          getMathKindByBrand,
+          getMathKind,
         );
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);

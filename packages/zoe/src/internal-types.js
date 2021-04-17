@@ -221,16 +221,6 @@
  */
 
 /**
- * @typedef {Object} IssuerTable
- * @property {(brand: Brand) => boolean} hasByBrand
- * @property {(brand: Brand) => IssuerRecord} getByBrand
- * @property {(issuer: Issuer) => boolean} hasByIssuer
- * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
- * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
- * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
- */
-
-/**
  * @typedef {Handle<'SeatHandle'>} SeatHandle
  */
 
@@ -281,7 +271,7 @@
  */
 
 /**
- * @callback GetMathKindByBrand
+ * @callback GetMathKind
  * Get the mathKind for a brand known by Zoe
  *
  * To be deleted when brands have a property for mathKind

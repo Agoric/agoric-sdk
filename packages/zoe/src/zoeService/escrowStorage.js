@@ -18,27 +18,19 @@ export const makeEscrowStorage = () => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeNonVOWeakStore('brand');
 
-  /**
-   * Create a purse for a new issuer
-   *
-   * @param {IssuerRecord} record
-   * @returns {void}
-   */
-  const createPurse = record => {
-    if (!brandToPurse.has(record.brand)) {
-      brandToPurse.init(record.brand, E(record.issuer).makeEmptyPurse());
+  /** @type {CreatePurse} */
+  const createPurse = (issuer, brand) => {
+    if (!brandToPurse.has(brand)) {
+      brandToPurse.init(brand, E(issuer).makeEmptyPurse());
     }
   };
 
   /**
-   * Make a purse for a new, local issuer. Used only for ZCFMint issuers.
-   *
-   * @param {IssuerRecord} record
-   * @returns {Purse}
+   * @type {MakeLocalPurse}
    */
-  const makeLocalPurse = record => {
-    const localPurse = record.issuer.makeEmptyPurse();
-    brandToPurse.init(record.brand, localPurse);
+  const makeLocalPurse = (issuer, brand) => {
+    const localPurse = issuer.makeEmptyPurse();
+    brandToPurse.init(brand, localPurse);
     return localPurse;
   };
 
