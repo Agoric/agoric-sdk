@@ -85,12 +85,6 @@
  */
 
 /**
- * @callback oneMinus
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
  * @callback Make100Percent
  * @param {Brand} brand
  * @returns {Ratio}

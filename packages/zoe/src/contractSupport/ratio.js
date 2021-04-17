@@ -5,7 +5,7 @@ import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 
-const { multiply, floorDivide } = natSafeMath;
+const { multiply, floorDivide, add, subtract } = natSafeMath;
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -138,6 +138,62 @@ export const invertRatio = ratio => {
     ratio.denominator.value,
     ratio.denominator.brand,
     ratio.numerator.value,
+    ratio.numerator.brand,
+  );
+};
+
+export const addRatios = (left, right) => {
+  assertIsRatio(right);
+  assertIsRatio(left);
+  assert(
+    left.numerator.brand === left.denominator.brand &&
+      left.numerator.brand === right.numerator.brand &&
+      left.numerator.brand === right.denominator.brand,
+    X`all brands must match:  ${q(left)} ${q(right)}`,
+  );
+
+  return makeRatio(
+    add(
+      multiply(left.numerator.value, right.denominator.value),
+      multiply(left.denominator.value, right.numerator.value),
+    ),
+    left.numerator.brand,
+    multiply(left.denominator.value, right.denominator.value),
+  );
+};
+
+export const multiplyRatios = (left, right) => {
+  assertIsRatio(right);
+  assertIsRatio(left);
+  assert(
+    left.numerator.brand === left.denominator.brand &&
+      left.numerator.brand === right.numerator.brand &&
+      left.numerator.brand === right.denominator.brand,
+    X`all brands must match:  ${q(left)} ${q(right)}`,
+  );
+
+  return makeRatio(
+    multiply(left.numerator.value, right.numerator.value),
+    left.numerator.brand,
+    multiply(left.denominator.value, right.denominator.value),
+  );
+};
+
+// If ratio is between 0 and 1, subtract from 1.
+export const oneMinus = ratio => {
+  assertIsRatio(ratio);
+  assert(
+    ratio.numerator.brand === ratio.denominator.brand,
+    X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
+  );
+  assert(
+    ratio.numerator.value <= ratio.denominator.value,
+    X`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`,
+  );
+  return makeRatio(
+    subtract(ratio.denominator.value, ratio.numerator.value),
+    ratio.numerator.brand,
+    ratio.denominator.value,
     ratio.numerator.brand,
   );
 };
