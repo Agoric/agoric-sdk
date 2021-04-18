@@ -17,7 +17,7 @@ export { E };
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').ERef<T>} ERef
+ * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
  */
 
 /**

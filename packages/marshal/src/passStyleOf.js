@@ -347,7 +347,8 @@ harden(assertCanBeRemotable);
 export { assertCanBeRemotable };
 
 /**
- * @param {Remotable} val
+ * @template T
+ * @param {Remotable<T>} val
  * @param {Checker} [check]
  * @returns {boolean}
  */
@@ -368,7 +369,8 @@ function checkRemotable(val, check = x => x) {
 }
 
 /**
- * @param {Remotable} val
+ * @template T
+ * @param {Remotable<T>} val
  */
 const assertRemotable = val => {
   checkRemotable(val, assertChecker);
