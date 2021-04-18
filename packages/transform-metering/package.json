@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-metering",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "description": "transform-metering",
   "parsers": {
     "js": "mjs"
@@ -15,7 +15,7 @@
     "build": "exit 0"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.8",
+    "@agoric/install-ses": "^0.5.9",
     "@babel/core": "^7.5.0",
     "ava": "^3.12.1",
     "esm": "^3.2.5",

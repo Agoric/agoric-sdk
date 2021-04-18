@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.17.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.2...@agoric/sdk@2.17.3) (2021-04-18)
+
+
+### Bug Fixes
+
+* accommodate initial_height == "1" as well as > "1" ([65a1c62](https://github.com/Agoric/agoric-sdk/commit/65a1c62999cf59300dd552047fc02ee13c0af288))
+* again harmonise fake-chain with Cosmos genesis behaviour ([69782b8](https://github.com/Agoric/agoric-sdk/commit/69782b860047f7f7a0fd23f2e554890dd4e1949b))
+
+
+
+
+
 ## [2.17.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.1...@agoric/sdk@2.17.2) (2021-04-16)
 
 
