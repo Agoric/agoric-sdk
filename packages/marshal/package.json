@@ -20,7 +20,8 @@
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint:types": "tsc -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint '**/*.js'",
+    "jsdoc": "jsdoc -c conf.json src/types.js"
   },
   "repository": {
     "type": "git",
@@ -46,6 +47,7 @@
     "@agoric/swingset-vat": "^0.16.4",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
+    "jsdoc": "^3.6.6",
     "nyc": "^15.1.0"
   },
   "files": [
