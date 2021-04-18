@@ -13,7 +13,7 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../lib/helpers';
 
-const TIMEOUT_SECONDS = 10 * 60;
+const TIMEOUT_SECONDS = 20 * 60;
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 

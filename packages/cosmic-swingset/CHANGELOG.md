@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.2...@agoric/cosmic-swingset@0.29.3) (2021-04-18)
+
+
+### Bug Fixes
+
+* accommodate initial_height == "1" as well as > "1" ([65a1c62](https://github.com/Agoric/agoric-sdk/commit/65a1c62999cf59300dd552047fc02ee13c0af288))
+* again harmonise fake-chain with Cosmos genesis behaviour ([69782b8](https://github.com/Agoric/agoric-sdk/commit/69782b860047f7f7a0fd23f2e554890dd4e1949b))
+
+
+
+
+
+## [0.29.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.1...@agoric/cosmic-swingset@0.29.2) (2021-04-16)
+
+
+### Bug Fixes
+
+* harmonise fake-chain and actual chain genesis block height ([8903f3b](https://github.com/Agoric/agoric-sdk/commit/8903f3b861b9c1bb92e551875ff2ae020c11b00f))
+
+
+
+
+
+## [0.29.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.0...@agoric/cosmic-swingset@0.29.1) (2021-04-14)
+
+
+### Bug Fixes
+
+* small tweaks needed for agorictest-8 ([b8d2ec0](https://github.com/Agoric/agoric-sdk/commit/b8d2ec008b59f0de68602a4338ceafa6a3a92e2d))
+
+
+
+
+
 # [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.28.1...@agoric/cosmic-swingset@0.29.0) (2021-04-13)
 
 
