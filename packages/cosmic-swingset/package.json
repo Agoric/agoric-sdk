@@ -99,6 +99,6 @@
     "require": [
       "esm"
     ],
-    "timeout": "10m"
+    "timeout": "20m"
   }
 }
