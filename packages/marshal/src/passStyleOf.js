@@ -266,7 +266,7 @@ export function assertCanBeRemotable(val) {
 }
 
 /**
- * @param {Remotable} val
+ * @param {Remotable<*>} val
  */
 function assertRemotable(val) {
   assert(isFrozen(val), X`cannot serialize non-frozen objects like ${val}`);
