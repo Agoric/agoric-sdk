@@ -15,6 +15,7 @@ build
 *.iml
 node_modules
 t[0-9]/
+t[0-9].*/
 
 ve[0-9]/
 ve[0-9]-client/

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.26.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.3...@agoric/deployment@1.26.4) (2021-04-18)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
+## [1.26.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.2...@agoric/deployment@1.26.3) (2021-04-16)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
 ## [1.26.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.1...@agoric/deployment@1.26.2) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/deployment

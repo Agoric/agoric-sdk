@@ -41,6 +41,15 @@ REFERENCES TO YOUR TAGS.
 ./scripts/get-released-tags git push origin
 ```
 
+To make validators' lives easier, create a tag for the chain-id:
+
+```sh
+SDK_VERSION=2.17.0 # Set this as necessary
+CHAIN_ID=agoricstage-4 # Also change this
+git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDK_VERSION^{}
+git push origin $CHAIN_ID
+```
+
 ## More subtlety
 
 To get help for the command-line options that will affect these commands, use:

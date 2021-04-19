@@ -1,6 +1,8 @@
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_TOKENS = 1000000000000uag
+INITIAL_HEIGHT = 17
+GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
 GOSRC = ../../golang/cosmos
 
@@ -65,6 +67,8 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
+	jq '. + { genesis_time: "$(GENESIS_TIME)", initial_height: "$(INITIAL_HEIGHT)" }' t1/n0/config/genesis.json > t1/n0/config/genesis2.json
+	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
