@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -16,16 +18,23 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	vestTypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
 const (
-	flagVestingStart = "vesting-start-time"
-	flagVestingEnd   = "vesting-end-time"
-	flagVestingAmt   = "vesting-amount"
+	flagVestingStart   = "vesting-start-time"
+	flagVestingEnd     = "vesting-end-time"
+	flagVestingAmt     = "vesting-amount"
+	flagVestingPeriods = "vesting-period"
 )
+
+type PeriodicVesting struct {
+	Coins sdk.Coins `json:"coins"`
+	Time  int64     `json:"time"`
+}
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
 func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
@@ -93,32 +102,66 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
 			}
 
+			vestingPeriodsFile, err := cmd.Flags().GetString(flagVestingPeriods)
+			if err != nil {
+				return err
+			}
+
 			// create concrete account type based on input parameters
 			var genAccount authtypes.GenesisAccount
 
 			balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
 			baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
 
-			if !vestingAmt.IsZero() {
-				baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
+			if vestingPeriodsFile != "" {
 
-				if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
-					baseVestingAccount.OriginalVesting.IsAnyGT(balances.Coins) {
-					return errors.New("vesting amount cannot be greater than total amount")
+				// Read vesting Json file
+				vestingJson, err := os.Open(vestingPeriodsFile)
+				if err != nil {
+					return err
+				}
+				defer vestingJson.Close()
+
+				vestingBytes, _ := ioutil.ReadAll(vestingJson)
+				var vestingData []PeriodicVesting
+				err = json.Unmarshal(vestingBytes, &vestingData)
+				if err != nil {
+					return err
+				}
+				var vestingPeriods authvesting.Periods
+
+				var totalCoins sdk.Coins
+
+				for _, period := range vestingData {
+
+					vestingPeriods = append(vestingPeriods, authvesting.Period{Length: period.Time, Amount: period.Coins})
+					totalCoins.Add(period.Coins...)
 				}
 
-				switch {
-				case vestingStart != 0 && vestingEnd != 0:
-					genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
-
-				case vestingEnd != 0:
-					genAccount = authvesting.NewDelayedVestingAccountRaw(baseVestingAccount)
-
-				default:
-					return errors.New("invalid vesting parameters; must supply start and end time or end time")
-				}
+				genAccount = vestTypes.NewPeriodicVestingAccount(baseAccount, totalCoins.Sort(), vestingStart, vestingPeriods)
 			} else {
-				genAccount = baseAccount
+
+				if !vestingAmt.IsZero() {
+					baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
+
+					if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
+						baseVestingAccount.OriginalVesting.IsAnyGT(balances.Coins) {
+						return errors.New("vesting amount cannot be greater than total amount")
+					}
+
+					switch {
+					case vestingStart != 0 && vestingEnd != 0:
+						genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
+
+					case vestingEnd != 0:
+						genAccount = authvesting.NewDelayedVestingAccountRaw(baseVestingAccount)
+
+					default:
+						return errors.New("invalid vesting parameters; must supply start and end time or end time")
+					}
+				} else {
+					genAccount = baseAccount
+				}
 			}
 
 			if err := genAccount.Validate(); err != nil {
@@ -163,6 +206,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			bankGenState := banktypes.GetGenesisStateFromAppState(depCdc, appState)
 			bankGenState.Balances = append(bankGenState.Balances, balances)
 			bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+			bankGenState.Supply = bankGenState.Supply.Add(balances.Coins...)
 
 			bankGenStateBz, err := cdc.MarshalJSON(bankGenState)
 			if err != nil {
