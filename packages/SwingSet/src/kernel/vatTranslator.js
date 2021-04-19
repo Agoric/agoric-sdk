@@ -108,8 +108,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.getVatKeeper(vatID);
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
-  function translateSend(targetSlot, method, args, resultSlot) {
+  function translateSend(targetSlot, msg) {
     assert.typeof(targetSlot, 'string', 'non-string targetSlot');
+    insistMessage(msg);
+    const { method, args, result: resultSlot } = msg;
     insistCapData(args);
     // TODO: disable send-to-self for now, qv issue #43
     const target = mapVatSlotToKernelSlot(targetSlot);
@@ -140,13 +142,13 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // resolution authority now held by run-queue
     }
 
-    const msg = harden({
+    const kmsg = harden({
       method,
       args: kernelArgs,
       result,
     });
-    insistMessage(msg);
-    const ks = harden(['send', target, msg]);
+    insistMessage(kmsg);
+    const ks = harden(['send', target, kmsg]);
     return ks;
   }
 

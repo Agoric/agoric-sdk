@@ -1,9 +1,13 @@
+// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeLiveSlots } from '../liveSlots';
-import { createSyscall } from './syscall';
-import { makeDeliver } from './deliver';
-import { makeTranscriptManager } from './transcript';
+import { makeManagerKit } from './manager-helper';
+import {
+  makeSupervisorDispatch,
+  makeMeteredDispatch,
+  makeSupervisorSyscall,
+} from './supervisor-helper';
 
 export function makeLocalVatManagerFactory(tools) {
   const {
@@ -12,11 +16,11 @@ export function makeLocalVatManagerFactory(tools) {
     vatEndowments,
     meterManager,
     transformMetering,
-    waitUntilQuiescent,
     gcTools,
     kernelSlog,
   } = tools;
 
+  const { waitUntilQuiescent } = gcTools;
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
@@ -28,62 +32,57 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID) {
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
-    const { syscall, setVatSyscallHandler } = createSyscall(transcriptManager);
-    function finish(dispatch, meterRecord) {
-      assert(
-        dispatch && dispatch.deliver,
-        `vat failed to return a 'dispatch' with .deliver: ${dispatch}`,
+  function prepare(vatID, vatSyscallHandler, meterRecord) {
+    const mtools = harden({ stopGlobalMeter, meterRecord, refillAllMeters });
+    const mk = makeManagerKit(
+      vatID,
+      kernelSlog,
+      kernelKeeper,
+      vatSyscallHandler,
+      true,
+    );
+
+    function finish(dispatch) {
+      assert.typeof(dispatch, 'function');
+      // this 'deliverToWorker' never throws, even if liveslots has an internal error
+      const deliverToWorker = makeMeteredDispatch(
+        makeSupervisorDispatch(dispatch, waitUntilQuiescent),
+        mtools,
       );
-      const { deliver, replayTranscript } = makeDeliver(
-        {
-          vatID,
-          stopGlobalMeter,
-          meterRecord,
-          refillAllMeters,
-          transcriptManager,
-          vatKeeper,
-          waitUntilQuiescent,
-          kernelSlog,
-        },
-        dispatch,
-      );
+      mk.setDeliverToWorker(deliverToWorker);
 
       async function shutdown() {
         // local workers don't need anything special to shut down between turns
       }
 
-      const manager = harden({
-        replayTranscript,
-        setVatSyscallHandler,
-        deliver,
-        shutdown,
-      });
-      return manager;
+      return mk.getManager(shutdown);
     }
+    const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
     return { syscall, finish };
   }
 
-  function createFromSetup(vatID, setup, managerOptions) {
+  function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
     assert(!managerOptions.metered, X`unsupported`);
     assert(!managerOptions.enableInternalMetering, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
-    const { syscall, finish } = prepare(vatID, managerOptions);
 
+    const { syscall, finish } = prepare(vatID, vatSyscallHandler, null);
     const { vatParameters } = managerOptions;
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
     const vatPowers = harden({ ...baseVP, testLog });
+
     const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
-    const meterRecord = null;
-    const manager = finish(dispatch, meterRecord);
-    return manager;
+    return finish(dispatch);
   }
 
-  async function createFromBundle(vatID, bundle, managerOptions) {
+  async function createFromBundle(
+    vatID,
+    bundle,
+    managerOptions,
+    vatSyscallHandler,
+  ) {
     const {
       metered = false,
       enableDisavow = false,
@@ -96,7 +95,21 @@ export function makeLocalVatManagerFactory(tools) {
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
-    const { syscall, finish } = prepare(vatID, managerOptions);
+    let meterRecord = null;
+    if (metered) {
+      // fail-stop: we refill the meter after each crank (in vatManager
+      // doProcess()), but if the vat exhausts its meter within a single
+      // crank, it will never run again. We set refillEachCrank:false because
+      // we want doProcess to do the refilling itself, so it can count the
+      // usage
+      meterRecord = makeGetMeter({
+        refillEachCrank: false,
+        refillIfExhausted: false,
+      });
+    }
+
+    const { syscall, finish } = prepare(vatID, vatSyscallHandler, meterRecord);
+
     const imVP = enableInternalMetering ? internalMeteringVP : {};
     const vatPowers = harden({
       ...baseVP,
@@ -117,19 +130,6 @@ export function makeLocalVatManagerFactory(tools) {
       gcTools,
       liveSlotsConsole,
     );
-
-    let meterRecord = null;
-    if (metered) {
-      // fail-stop: we refill the meter after each crank (in vatManager
-      // doProcess()), but if the vat exhausts its meter within a single
-      // crank, it will never run again. We set refillEachCrank:false because
-      // we want doProcess to do the refilling itself, so it can count the
-      // usage
-      meterRecord = makeGetMeter({
-        refillEachCrank: false,
-        refillIfExhausted: false,
-      });
-    }
 
     const endowments = harden({
       ...vatEndowments,
@@ -160,10 +160,7 @@ export function makeLocalVatManagerFactory(tools) {
     } else if (enableSetup) {
       const setup = vatNS.default;
       assert(setup, X`vat source bundle lacks (default) setup() function`);
-      assert(
-        setup instanceof Function,
-        `vat source bundle default export is not a function`,
-      );
+      assert.typeof(setup, 'function');
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       const state = null; // TODO remove from setup()
       dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
@@ -171,8 +168,7 @@ export function makeLocalVatManagerFactory(tools) {
       assert.fail(X`vat source bundle lacks buildRootObject() function`);
     }
 
-    const manager = finish(dispatch, meterRecord);
-    return manager;
+    return finish(dispatch);
   }
 
   const localVatManagerFactory = harden({

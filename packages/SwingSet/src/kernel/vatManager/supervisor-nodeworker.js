@@ -1,15 +1,23 @@
+// @ts-check
 // this file is loaded at the start of a new Worker, which makes it a new JS
 // environment (with it's own Realm), so we must install-ses too.
 import '@agoric/install-ses';
 import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
+import '../../types';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
+import {
+  makeSupervisorDispatch,
+  makeSupervisorSyscall,
+} from './supervisor-helper';
+
+assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -27,47 +35,13 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
-function runAndWait(f, errmsg) {
-  Promise.resolve()
-    .then(f)
-    .then(undefined, err => workerLog(`doProcess: ${errmsg}:`, err));
-  return waitUntilQuiescent();
-}
-
 function sendUplink(msg) {
   assert(msg instanceof Array, X`msg must be an Array`);
+  assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
   parentPort.postMessage(msg);
 }
 
 let dispatch;
-
-async function doProcess(dispatchRecord, errmsg) {
-  const dispatchOp = dispatchRecord[0];
-  const dispatchArgs = dispatchRecord.slice(1);
-  workerLog(`runAndWait`);
-  await runAndWait(() => dispatch[dispatchOp](...dispatchArgs), errmsg);
-  workerLog(`doProcess done`);
-  const vatDeliveryResults = harden(['ok']);
-  return vatDeliveryResults;
-}
-
-function doMessage(targetSlot, msg) {
-  const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-  return doProcess(
-    ['deliver', targetSlot, msg.method, msg.args, msg.result],
-    errmsg,
-  );
-}
-
-function doNotify(resolutions) {
-  const errmsg = `vat.notify failed`;
-  return doProcess(['notify', resolutions], errmsg);
-}
-
-function doDropExports(vrefs) {
-  const errmsg = `vat.doDropExport failed`;
-  return doProcess(['dropExports', vrefs], errmsg);
-}
 
 parentPort.on('message', ([type, ...margs]) => {
   workerLog(`received`, type);
@@ -87,23 +61,14 @@ parentPort.on('message', ([type, ...margs]) => {
       sendUplink(['testLog', ...args]);
     }
 
-    function doSyscall(vatSyscallObject) {
-      sendUplink(['syscall', ...vatSyscallObject]);
+    /** @type VatSyscaller */
+    function syscallToManager(vatSyscallObject) {
+      sendUplink(['syscall', vatSyscallObject]);
+      // we can't block for a result, so we always tell the vat that the
+      // syscall was successful, and never has any result data
+      return ['ok', null];
     }
-    const syscall = harden({
-      send: (...args) => doSyscall(['send', ...args]),
-      callNow: (..._args) => {
-        assert.fail(X`nodeWorker cannot syscall.callNow`);
-      },
-      subscribe: (...args) => doSyscall(['subscribe', ...args]),
-      resolve: (...args) => doSyscall(['resolve', ...args]),
-      exit: (...args) => doSyscall(['exit', ...args]),
-      vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
-      vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
-      vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
-      dropImports: (...args) => doSyscall(['dropImports', ...args]),
-    });
-
+    const syscall = makeSupervisorSyscall(syscallToManager, false);
     const vatID = 'demo-vatID';
     // todo: maybe add transformTildot, makeGetMeter/transformMetering to
     // vatPowers, but only if options tell us they're wanted. Maybe
@@ -113,7 +78,11 @@ parentPort.on('message', ([type, ...margs]) => {
       makeMarshal,
       testLog,
     };
-    const gcTools = harden({ WeakRef, FinalizationRegistry });
+    const gcTools = harden({
+      WeakRef,
+      FinalizationRegistry,
+      waitUntilQuiescent,
+    });
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -134,7 +103,7 @@ parentPort.on('message', ([type, ...margs]) => {
       workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
       sendUplink(['gotBundle']);
       ls.setBuildRootObject(vatNS.buildRootObject);
-      dispatch = ls.dispatch;
+      dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
       workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
       sendUplink(['dispatchReady']);
     });
@@ -143,16 +112,10 @@ parentPort.on('message', ([type, ...margs]) => {
       workerLog(`error: deliver before dispatchReady`);
       return;
     }
-    const [dtype, ...dargs] = margs;
-    if (dtype === 'message') {
-      doMessage(...dargs).then(res => sendUplink(['deliverDone', ...res]));
-    } else if (dtype === 'notify') {
-      doNotify(...dargs).then(res => sendUplink(['deliverDone', ...res]));
-    } else if (dtype === 'dropExports') {
-      doDropExports(...dargs).then(res => sendUplink(['deliverDone', ...res]));
-    } else {
-      assert.fail(X`bad delivery type ${dtype}`);
-    }
+    const [vatDeliveryObject] = margs;
+    dispatch(vatDeliveryObject).then(vatDeliveryResults =>
+      sendUplink(['deliverDone', vatDeliveryResults]),
+    );
   } else {
     workerLog(`unrecognized downlink message ${type}`);
   }

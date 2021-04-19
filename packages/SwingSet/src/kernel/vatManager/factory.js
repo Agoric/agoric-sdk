@@ -11,7 +11,6 @@ export function makeVatManagerFactory({
   vatEndowments,
   meterManager,
   transformMetering,
-  waitUntilQuiescent,
   makeNodeWorker,
   startSubprocessWorkerNode,
   startXSnap,
@@ -25,7 +24,6 @@ export function makeVatManagerFactory({
     vatEndowments,
     meterManager,
     transformMetering,
-    waitUntilQuiescent,
     gcTools,
     kernelSlog,
   });
@@ -33,18 +31,21 @@ export function makeVatManagerFactory({
   const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
     makeNodeWorker,
     kernelKeeper,
+    kernelSlog,
     testLog: allVatPowers.testLog,
   });
 
   const nodeSubprocessFactory = makeNodeSubprocessFactory({
     startSubprocessWorker: startSubprocessWorkerNode,
     kernelKeeper,
+    kernelSlog,
     testLog: allVatPowers.testLog,
   });
 
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
+    kernelSlog,
     allVatPowers,
     testLog: allVatPowers.testLog,
   });
@@ -77,7 +78,7 @@ export function makeVatManagerFactory({
   }
 
   // returns promise for new vatManager
-  function vatManagerFactory(vatID, managerOptions) {
+  function vatManagerFactory(vatID, managerOptions, vatSyscallHandler) {
     validateManagerOptions(managerOptions);
     const {
       managerType = defaultManagerType,
@@ -99,13 +100,28 @@ export function makeVatManagerFactory({
     }
     if (managerType === 'local' || metered || enableSetup) {
       if (setup) {
-        return localFactory.createFromSetup(vatID, setup, managerOptions);
+        return localFactory.createFromSetup(
+          vatID,
+          setup,
+          managerOptions,
+          vatSyscallHandler,
+        );
       }
-      return localFactory.createFromBundle(vatID, bundle, managerOptions);
+      return localFactory.createFromBundle(
+        vatID,
+        bundle,
+        managerOptions,
+        vatSyscallHandler,
+      );
     }
 
     if (managerType === 'nodeWorker') {
-      return nodeWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
+      return nodeWorkerFactory.createFromBundle(
+        vatID,
+        bundle,
+        managerOptions,
+        vatSyscallHandler,
+      );
     }
 
     if (managerType === 'node-subprocess') {
@@ -113,11 +129,17 @@ export function makeVatManagerFactory({
         vatID,
         bundle,
         managerOptions,
+        vatSyscallHandler,
       );
     }
 
     if (managerType === 'xs-worker') {
-      return xsWorkerFactory.createFromBundle(vatID, bundle, managerOptions);
+      return xsWorkerFactory.createFromBundle(
+        vatID,
+        bundle,
+        managerOptions,
+        vatSyscallHandler,
+      );
     }
 
     throw Error(

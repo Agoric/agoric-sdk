@@ -10,7 +10,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
 import { parseVatSlot } from '../parseVatSlots';
 import { insistStorageAPI } from '../storageAPI';
 import { insistCapData } from '../capdata';
-import { insistMessage } from '../message';
+import { insistMessage, insistVatDeliveryResult } from '../message';
 import { insistDeviceID, insistVatID } from './id';
 import { makeMeterManager } from './metering';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall';
@@ -18,7 +18,6 @@ import { makeSlogger, makeDummySlogger } from './slogger';
 import { getKpidsToRetire } from './cleanup';
 
 import { makeVatLoader } from './loadVat';
-import { makeVatTranslators } from './vatTranslator';
 import { makeDeviceTranslators } from './deviceTranslator';
 
 function abbreviateReplacer(_, arg) {
@@ -33,6 +32,7 @@ function abbreviateReplacer(_, arg) {
 }
 
 function makeError(message, name = 'Error') {
+  assert.typeof(message, 'string');
   const err = { '@qclass': 'error', name, message };
   return harden({ body: JSON.stringify(err), slots: [] });
 }
@@ -369,6 +369,7 @@ export default function buildKernel(
     );
     try {
       const deliveryResult = await vat.manager.deliver(vatDelivery);
+      insistVatDeliveryResult(deliveryResult);
       finish(deliveryResult);
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
@@ -572,7 +573,7 @@ export default function buildKernel(
     }
   }
 
-  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  const gcTools = harden({ WeakRef, FinalizationRegistry, waitUntilQuiescent });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
@@ -580,7 +581,6 @@ export default function buildKernel(
     meterManager,
     testLog,
     transformMetering,
-    waitUntilQuiescent,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,
@@ -656,18 +656,16 @@ export default function buildKernel(
    * might tell the manager to replay the transcript later, if it notices
    * we're reloading a saved state vector.
    */
-  function addVatManager(vatID, manager, managerOptions) {
+  function addVatManager(vatID, manager, translators, managerOptions) {
     // addVatManager takes a manager, not a promise for one
     assert(
-      manager.deliver && manager.setVatSyscallHandler,
+      manager.deliver,
       `manager lacks .deliver, isPromise=${manager instanceof Promise}`,
     );
     const {
       enablePipelining = false,
       notifyTermination = () => {},
     } = managerOptions;
-    kernelKeeper.getVatKeeper(vatID);
-    const translators = makeVatTranslators(vatID, kernelKeeper);
 
     ephemeral.vats.set(
       vatID,
@@ -678,9 +676,6 @@ export default function buildKernel(
         enablePipelining: Boolean(enablePipelining),
       }),
     );
-
-    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
-    manager.setVatSyscallHandler(vatSyscallHandler);
   }
 
   const {
@@ -699,6 +694,7 @@ export default function buildKernel(
     queueToExport,
     kernelKeeper,
     panic,
+    buildVatSyscallHandler,
   });
 
   /**

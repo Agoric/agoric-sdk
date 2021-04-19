@@ -1,9 +1,8 @@
+// @ts-check
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeTranscriptManager } from './transcript';
-
-import { createSyscall } from './syscall';
+import { makeManagerKit } from './manager-helper';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
@@ -22,10 +21,21 @@ function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
 }
 
-export function makeNodeWorkerVatManagerFactory(tools) {
-  const { makeNodeWorker, kernelKeeper, testLog } = tools;
+/** @typedef { import ('worker_threads').Worker } Worker */
 
-  function createFromBundle(vatID, bundle, managerOptions) {
+/**
+ * @param {{
+ *   makeNodeWorker: () => Worker,
+ *   kernelKeeper: KernelKeeper,
+ *   kernelSlog: KernelSlog,
+ *   testLog: (...args: unknown[]) => void,
+ * }} tools
+ * @returns { VatManagerFactory }
+ */
+export function makeNodeWorkerVatManagerFactory(tools) {
+  const { makeNodeWorker, kernelKeeper, kernelSlog, testLog } = tools;
+
+  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
       vatParameters,
       virtualObjectCacheSize,
@@ -41,35 +51,17 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         `node-worker does not support enableInternalMetering, ignoring`,
       );
     }
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
 
-    // prepare to accept syscalls from the worker
-
-    // TODO: make the worker responsible for checking themselves: we send
-    // both the delivery and the expected syscalls, and the supervisor
-    // compares what the bundle does with what it was told to expect.
-    // Modulo flow control, we just stream transcript entries at the
-    // worker and eventually get back an "ok" or an error. When we do
-    // that, doSyscall won't even see replayed syscalls from the worker.
-
-    const { doSyscall, setVatSyscallHandler } = createSyscall(
-      transcriptManager,
+    // We use workerCanBlock=false because we get syscalls via an async
+    // postMessage from the worker thread, whose vat code has moved on (it
+    // really wants a synchronous/immediate syscall)
+    const mk = makeManagerKit(
+      vatID,
+      kernelSlog,
+      kernelKeeper,
+      vatSyscallHandler,
+      false,
     );
-    function handleSyscall(vatSyscallObject) {
-      // we are invoked by an async postMessage from the worker thread, whose
-      // vat code has moved on (it really wants a synchronous/immediate
-      // syscall)
-      const type = vatSyscallObject[0];
-      assert(
-        type !== 'callNow',
-        X`nodeWorker cannot block, cannot use syscall.callNow`,
-      );
-      // This might throw an Error if the syscall was faulty, in which case
-      // the vat will be terminated soon. It returns a vatSyscallResults,
-      // which we discard because there is nobody to send it to.
-      doSyscall(vatSyscallObject);
-    }
 
     // start the worker and establish a connection
 
@@ -95,11 +87,11 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       } else if (type === 'dispatchReady') {
         parentLog(`dispatch() ready`);
         // wait10ms().then(dispatchIsReady); // stall to let logs get printed
-        dispatchIsReady();
+        dispatchIsReady(undefined);
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
-        const vatSyscallObject = args;
-        handleSyscall(vatSyscallObject);
+        const [vatSyscallObject] = args;
+        mk.syscallFromWorker(vatSyscallObject);
       } else if (type === 'testLog') {
         testLog(...args);
       } else if (type === 'deliverDone') {
@@ -107,8 +99,8 @@ export function makeNodeWorkerVatManagerFactory(tools) {
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          const deliveryResult = args;
-          resolve(deliveryResult);
+          const [vatDeliveryResults] = args;
+          resolve(vatDeliveryResults);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);
@@ -128,41 +120,23 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       enableDisavow,
     ]);
 
-    function deliver(delivery) {
+    function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);
       assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
       waiting = pr.resolve;
-      sendToWorker(['deliver', ...delivery]);
+      sendToWorker(['deliver', delivery]);
       return pr.promise;
     }
-
-    async function replayTranscript() {
-      transcriptManager.startReplay();
-      for (const t of vatKeeper.getTranscript()) {
-        transcriptManager.checkReplayError();
-        transcriptManager.startReplayDelivery(t.syscalls);
-        // eslint-disable-next-line no-await-in-loop
-        await deliver(t.d);
-      }
-      transcriptManager.checkReplayError();
-      transcriptManager.finishReplay();
-    }
+    mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
       // this returns a Promise that fulfills with 1 if we used
       // worker.terminate(), otherwise with the `exitCode` passed to
       // `process.exit(exitCode)` within the worker.
-      return worker.terminate();
+      return worker.terminate().then(_ => undefined);
     }
-
-    const manager = harden({
-      replayTranscript,
-      setVatSyscallHandler,
-      deliver,
-      shutdown,
-    });
-
+    const manager = mk.getManager(shutdown);
     return dispatchReadyP.then(() => manager);
   }
 

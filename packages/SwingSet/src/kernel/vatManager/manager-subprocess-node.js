@@ -2,21 +2,10 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeTranscriptManager } from './transcript';
-
-import { createSyscall } from './syscall';
+import { makeManagerKit } from './manager-helper';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
-
-/*
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-function wait10ms() {
-  const { promise: queueEmptyP, resolve } = makePromiseKit();
-  setTimeout(() => resolve(), 10);
-  return queueEmptyP;
-}
-*/
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -24,9 +13,9 @@ function parentLog(first, ...args) {
 }
 
 export function makeNodeSubprocessFactory(tools) {
-  const { startSubprocessWorker, kernelKeeper, testLog } = tools;
+  const { startSubprocessWorker, kernelKeeper, kernelSlog, testLog } = tools;
 
-  function createFromBundle(vatID, bundle, managerOptions) {
+  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
       vatParameters,
       virtualObjectCacheSize,
@@ -42,37 +31,14 @@ export function makeNodeSubprocessFactory(tools) {
         `node-worker does not support enableInternalMetering, ignoring`,
       );
     }
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
 
-    // prepare to accept syscalls from the worker
-
-    // TODO: make the worker responsible for checking themselves: we send
-    // both the delivery and the expected syscalls, and the supervisor
-    // compares what the bundle does with what it was told to expect.
-    // Modulo flow control, we just stream transcript entries at the
-    // worker and eventually get back an "ok" or an error. When we do
-    // that, doSyscall won't even see replayed syscalls from the worker.
-
-    const { doSyscall, setVatSyscallHandler } = createSyscall(
-      transcriptManager,
+    const mk = makeManagerKit(
+      vatID,
+      kernelSlog,
+      kernelKeeper,
+      vatSyscallHandler,
+      false,
     );
-    function handleSyscall(vatSyscallObject) {
-      // We are currently invoked by an async piped from the worker thread,
-      // whose vat code has moved on (it really wants a synchronous/immediate
-      // syscall). TODO: unlike threads, subprocesses could be made to wait
-      // by doing a blocking read from the pipe, so we could fix this, and
-      // re-enable syscall.callNow
-      const type = vatSyscallObject[0];
-      assert(
-        type !== 'callNow',
-        X`nodeWorker cannot block, cannot use syscall.callNow`,
-      );
-      // This might throw an Error if the syscall was faulty, in which case
-      // the vat will be terminated soon. It returns a vatSyscallResults,
-      // which we discard because there is currently nobody to send it to.
-      doSyscall(vatSyscallObject);
-    }
 
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
@@ -82,11 +48,32 @@ export function makeNodeSubprocessFactory(tools) {
       toChild.write(msg);
     }
 
+    // TODO: make the worker responsible for checking themselves: we send
+    // both the delivery and the expected syscalls, and the supervisor
+    // compares what the bundle does with what it was told to expect.
+    // Modulo flow control, we just stream transcript entries at the
+    // worker and eventually get back an "ok" or an error. When we do
+    // that, doSyscall won't even see replayed syscalls from the worker.
+
     const {
       promise: dispatchReadyP,
       resolve: dispatchIsReady,
     } = makePromiseKit();
     let waiting;
+
+    /**
+     * @param { VatDeliveryObject } delivery
+     * @returns { Promise<VatDeliveryResult> }
+     */
+    function deliverToWorker(delivery) {
+      parentLog(`sending delivery`, delivery);
+      assert(!waiting, X`already waiting for delivery`);
+      const pr = makePromiseKit();
+      waiting = pr.resolve;
+      sendToWorker(['deliver', delivery]);
+      return pr.promise;
+    }
+    mk.setDeliverToWorker(deliverToWorker);
 
     function handleUpstream([type, ...args]) {
       parentLog(`received`, type);
@@ -100,8 +87,8 @@ export function makeNodeSubprocessFactory(tools) {
         dispatchIsReady();
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
-        const vatSyscallObject = args;
-        handleSyscall(vatSyscallObject);
+        const [vatSyscallObject] = args;
+        mk.syscallFromWorker(vatSyscallObject);
       } else if (type === 'testLog') {
         testLog(...args);
       } else if (type === 'deliverDone') {
@@ -109,8 +96,8 @@ export function makeNodeSubprocessFactory(tools) {
         if (waiting) {
           const resolve = waiting;
           waiting = null;
-          const deliveryResult = args;
-          resolve(deliveryResult);
+          const [vatDeliveryResults] = args;
+          resolve(vatDeliveryResults);
         }
       } else {
         parentLog(`unrecognized uplink message ${type}`);
@@ -128,39 +115,11 @@ export function makeNodeSubprocessFactory(tools) {
       enableDisavow,
     ]);
 
-    function deliver(delivery) {
-      parentLog(`sending delivery`, delivery);
-      assert(!waiting, X`already waiting for delivery`);
-      const pr = makePromiseKit();
-      waiting = pr.resolve;
-      sendToWorker(['deliver', ...delivery]);
-      return pr.promise;
-    }
-
-    async function replayTranscript() {
-      transcriptManager.startReplay();
-      for (const t of vatKeeper.getTranscript()) {
-        transcriptManager.checkReplayError();
-        transcriptManager.startReplayDelivery(t.syscalls);
-        // eslint-disable-next-line no-await-in-loop
-        await deliver(t.d);
-      }
-      transcriptManager.checkReplayError();
-      transcriptManager.finishReplay();
-    }
-
     function shutdown() {
       terminate();
-      return done;
+      return done.then(_ => undefined);
     }
-
-    const manager = harden({
-      replayTranscript,
-      setVatSyscallHandler,
-      deliver,
-      shutdown,
-    });
-
+    const manager = mk.getManager(shutdown);
     return dispatchReadyP.then(() => manager);
   }
 
