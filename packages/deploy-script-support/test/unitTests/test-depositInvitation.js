@@ -1,19 +1,16 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
 import { makeDepositInvitation } from '../../src/depositInvitation';
 
 test('depositInvitation', async t => {
-  const { mint, issuer, amountMath } = makeIssuerKit(
-    'invitations',
-    MathKind.SET,
-  );
+  const { mint, issuer, brand } = makeIssuerKit('invitations', MathKind.SET);
   const purse = issuer.makeEmptyPurse();
-  const paymentAmount = amountMath.make(harden([{ instance: {} }]));
+  const paymentAmount = amountMath.make(brand, [{ instance: {} }]);
   const payment = mint.mintPayment(paymentAmount);
   const depositInvitation = makeDepositInvitation(purse);
   const result = await depositInvitation(payment);
