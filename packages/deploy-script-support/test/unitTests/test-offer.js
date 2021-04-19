@@ -13,8 +13,6 @@ import { E } from '@agoric/eventual-send';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer';
 
 test('offer', async t => {
-  const MOOLA_BRAND_PETNAME = 'moola';
-  const USD_BRAND_PETNAME = 'usd';
   const MOOLA_PURSE_PETNAME = 'moola purse';
   const USD_PURSE_PETNAME = 'usd purse';
 
@@ -68,13 +66,13 @@ test('offer', async t => {
     invitationBrand,
   );
 
-  const offerConfig = {
+  const offerConfig = harden({
     partialInvitationDetails: { description: 'getRefund' },
-    proposalWithBrandPetnames: {
+    proposal: {
       give: {
-        Collateral: { brand: MOOLA_BRAND_PETNAME, value: 1 },
+        Collateral: amountMath.make(moolaKit.brand, 1n),
       },
-      want: { Loan: { brand: USD_BRAND_PETNAME, value: 1 } },
+      want: { Loan: amountMath.make(usdKit.brand, 1n) },
     },
     paymentsWithPursePetnames: {
       Collateral: MOOLA_PURSE_PETNAME,
@@ -83,7 +81,7 @@ test('offer', async t => {
       Collateral: MOOLA_PURSE_PETNAME,
       Loan: USD_PURSE_PETNAME,
     },
-  };
+  });
 
   const { seat, deposited, invitationDetails } = await offer(offerConfig);
 
