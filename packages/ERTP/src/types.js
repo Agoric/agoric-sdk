@@ -88,7 +88,7 @@
  * @callback AmountGetValueBrandAmount
  * @param {Brand} brand
  * @param {Amount} allegedAmount
- * @returns {Amount}
+ * @returns {Value}
  *
  * TODO find out how to get this "deprecated" marking recognized,
  * or remove it.
@@ -98,7 +98,7 @@
  * is deprecated and will go way.
  * @param {Amount} brand
  * @param {Brand} allegedAmount
- * @returns {Amount}
+ * @returns {Value}
  *
  * @typedef {AmountGetValueBrandAmount & AmountGetValueAmountBrand} AmountGetValue
  */

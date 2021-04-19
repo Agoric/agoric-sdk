@@ -20,7 +20,6 @@ const decoder = new TextDecoder();
  *   kernelKeeper: KernelKeeper,
  *   startXSnap: (name: string, handleCommand: SyncHandler) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
- *   decref: (vatID: unknown, vref: unknown, count: number) => void,
  * }} tools
  * @returns { VatManagerFactory }
  *
@@ -35,7 +34,6 @@ export function makeXsSubprocessFactory({
   kernelKeeper,
   startXSnap,
   testLog,
-  decref,
 }) {
   /**
    * @param { unknown } vatID
@@ -73,11 +71,6 @@ export function makeXsSubprocessFactory({
       return doSyscall(vatSyscallObject);
     }
 
-    /** @type { (vref: unknown, count: number) => void } */
-    function vatDecref(vref, count) {
-      decref(vatID, vref, count);
-    }
-
     /** @type { (item: Tagged) => unknown } */
     function handleUpstream([type, ...args]) {
       parentLog(vatID, `handleUpstream`, type, args.length);
@@ -99,12 +92,6 @@ export function makeXsSubprocessFactory({
         case 'testLog':
           testLog(...args);
           return ['OK'];
-        case 'decref': {
-          const [vref, count] = args;
-          assert(typeof count === 'number');
-          vatDecref(vref, count);
-          return ['OK'];
-        }
         case 'transformTildot': {
           const [extjs] = args;
           try {

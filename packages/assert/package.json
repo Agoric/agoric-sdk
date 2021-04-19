@@ -1,6 +1,6 @@
 {
   "name": "@agoric/assert",
-  "version": "0.2.6",
+  "version": "0.2.8",
   "description": "Assert expression support that protects sensitive data",
   "parsers": {
     "js": "mjs"
@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.6",
+    "@agoric/install-ses": "^0.5.9",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"
