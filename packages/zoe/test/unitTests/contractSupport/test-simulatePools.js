@@ -5,7 +5,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '../../../exported';
 
 import { setup } from '../setupBasicMints';
-import { makeSimpleFeePool, makePoolChargeFeeInX } from './pools';
+import {
+  makeSimpleFeePool,
+  makePoolChargeFeeInX,
+  makePoolExractPartialFee,
+} from './pools';
 
 function formatTrade(trade) {
   return `${trade.deltaX}, ${trade.deltaY}, ${trade.k}`;
@@ -33,7 +37,7 @@ function applyTrades(t, pool, moola, bucks, firstResult) {
   pool.tradeIn(bucks(8209749));
   pool.tradeOut(bucks(4459230));
   pool.tradeIn(moola(7816406));
-  pool.tradeOut(moola(2862089));
+  pool.tradeIn(moola(2862089));
 }
 
 // With no fee, K grows consistently because the pool benefits from roundoff
@@ -48,6 +52,7 @@ test('no fee', t => {
     k: 2400009612n,
     x: 30107n,
     y: 79716n,
+    specifyX: true,
   });
 
   for (const trade of pool.getTrades()) {
@@ -67,6 +72,7 @@ test('simple fee', t => {
     k: 2400039719n,
     x: 30107n,
     y: 79717n,
+    specifyX: true,
   });
 
   for (const trade of pool.getTrades()) {
@@ -75,7 +81,9 @@ test('simple fee', t => {
 });
 
 function formatComplexTrade(trade) {
-  return `${trade.deltaX}, ${trade.deltaY}, ${trade.pay}, ${trade.get}, ${trade.k}, ${trade.protocol}`;
+  return `${trade.deltaX}, ${trade.deltaY}, ${trade.pay}, ${trade.get}, ${
+    trade.k
+  }, ${trade.protocol}, ${trade.specifyX ? 'X' : 'Y'}`;
 }
 
 // Charge a portion of the fee in moola, paid on every trade
@@ -93,6 +101,30 @@ test.only('charge fee in moola', t => {
     pay: -107n,
     get: 283n,
     protocol: 0n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatComplexTrade(trade));
+  }
+});
+
+// Charge a portion of the fee in moola, paid on every trade
+test.only('convert fee to moola', t => {
+  const { moola, bucks } = setup();
+  console.log(`EXTRACT FEE`);
+
+  const pool = makePoolExractPartialFee(moola(30000n), bucks(80000n), 30n, 6n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    pay: -107n,
+    get: 283n,
+    protocol: 0n,
+    specifyX: true,
   });
 
   for (const trade of pool.getTrades()) {

@@ -19,13 +19,14 @@ export function makeSimpleFeePool(initX, initY, fee = 0n) {
   let x = initX;
   let y = initY;
   const trades = [];
-  function logTrade(deltaX, deltaY, increaseX) {
+  function logTrade(deltaX, deltaY, increaseX, specifyX) {
     trades.push({
       deltaX: increaseX ? deltaX.value : -deltaX.value,
       deltaY: increaseX ? -deltaY.value : deltaY.value,
       x: x.value,
       y: y.value,
       k: multiply(x.value, y.value),
+      specifyX,
     });
   }
 
@@ -37,7 +38,7 @@ export function makeSimpleFeePool(initX, initY, fee = 0n) {
       );
       x = amountMath.add(x, changeAmount);
       y = amountMath.subtract(y, deltaY);
-      logTrade(changeAmount, deltaY, true);
+      logTrade(changeAmount, deltaY, true, true);
       return deltaY;
     } else {
       const deltaX = amountMath.make(
@@ -46,7 +47,7 @@ export function makeSimpleFeePool(initX, initY, fee = 0n) {
       );
       x = amountMath.subtract(x, deltaX);
       y = amountMath.add(y, changeAmount);
-      logTrade(deltaX, changeAmount, false);
+      logTrade(deltaX, changeAmount, false, false);
       return deltaX;
     }
   }
@@ -59,7 +60,7 @@ export function makeSimpleFeePool(initX, initY, fee = 0n) {
       );
       x = amountMath.subtract(x, changeAmount);
       y = amountMath.add(y, deltaY);
-      logTrade(changeAmount, deltaY, false);
+      logTrade(changeAmount, deltaY, false, true);
       return deltaY;
     } else {
       const deltaX = amountMath.make(
@@ -68,7 +69,7 @@ export function makeSimpleFeePool(initX, initY, fee = 0n) {
       );
       x = amountMath.add(x, deltaX);
       y = amountMath.subtract(y, changeAmount);
-      logTrade(deltaX, changeAmount, true);
+      logTrade(deltaX, changeAmount, true, false);
       return deltaX;
     }
   }
@@ -89,7 +90,15 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
   const protocolShare = makeRatio(shareBP, x.brand, BASIS_POINTS);
 
   const trades = [];
-  function logTrade(deltaX, deltaY, pay, get, protocolFee, increaseX) {
+  function logTradeDetails(
+    deltaX,
+    deltaY,
+    pay,
+    get,
+    protocolFee,
+    increaseX,
+    specifyX,
+  ) {
     protocolPool = amountMath.add(protocolFee, protocolPool);
     trades.push({
       deltaX: increaseX ? deltaX.value : -deltaX.value,
@@ -99,7 +108,8 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
       k: multiply(x.value, y.value),
       pay: increaseX ? -pay.value : pay.value,
       get: increaseX ? get.value : -get.value,
-      protocol: protocolPool.value,
+      protocol: protocolFee.value,
+      specifyX,
     });
   }
 
@@ -116,7 +126,15 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
       y = amountMath.subtract(y, deltaY);
       // trader pays changeAmount, gains deltaY. Pool pays deltaY, gains
       // changeAmount - protocol fee
-      logTrade(poolChange, deltaY, changeAmount, deltaY, protocolFee, true);
+      logTradeDetails(
+        poolChange,
+        deltaY,
+        changeAmount,
+        deltaY,
+        protocolFee,
+        true,
+        true,
+      );
       return deltaY;
     } else {
       const deltaX = amountMath.make(
@@ -125,17 +143,18 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
       );
       const protocolFee = multiplyBy(deltaX, protocolShare);
 
-      // deltaX was reduced by the total fee. trader pays changeAmount to the pool
-      // trader gets deltaX, pool pays out deltaX + protocolFee
+      // deltaX was reduced by the total fee. trader pays changeAmount to the
+      // pool and gets deltaX; pool pays out deltaX + protocolFee
       const poolChange = amountMath.add(deltaX, protocolFee);
       x = amountMath.subtract(x, poolChange);
       y = amountMath.add(y, changeAmount);
-      logTrade(
+      logTradeDetails(
         poolChange,
         changeAmount,
         deltaX,
         changeAmount,
         protocolFee,
+        false,
         false,
       );
       return deltaX;
@@ -154,7 +173,15 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
       const poolChange = amountMath.add(changeAmount, protocolFee);
       x = amountMath.subtract(x, poolChange);
       y = amountMath.add(y, deltaY);
-      logTrade(poolChange, deltaY, changeAmount, deltaY, protocolFee, false);
+      logTradeDetails(
+        poolChange,
+        deltaY,
+        changeAmount,
+        deltaY,
+        protocolFee,
+        false,
+        true,
+      );
       return deltaY;
     } else {
       const deltaX = amountMath.make(
@@ -167,7 +194,164 @@ export function makePoolChargeFeeInX(initX, initY, fee = 0n, shareBP) {
       const poolChange = amountMath.subtract(deltaX, protocolFee);
       x = amountMath.add(x, poolChange);
       y = amountMath.subtract(y, changeAmount);
-      logTrade(deltaX, changeAmount, deltaX, changeAmount, protocolFee, true);
+      logTradeDetails(
+        poolChange,
+        changeAmount,
+        deltaX,
+        changeAmount,
+        protocolFee,
+        true,
+        false,
+      );
+      return deltaX;
+    }
+  }
+
+  return {
+    tradeIn,
+    tradeOut,
+    getTrades: () => trades,
+  };
+}
+
+export function makePoolExractPartialFee(initX, initY, fee = 0n, shareBP) {
+  assert(shareBP < fee, X`shareBP ${shareBP} must be smaller than fee ${fee}`);
+  let x = initX;
+  let y = initY;
+  const trades = [];
+  let protocolPool = amountMath.makeEmpty(initX.brand);
+  const protocolShareX = makeRatio(shareBP, x.brand, BASIS_POINTS);
+  const protocolShareY = makeRatio(shareBP, y.brand, BASIS_POINTS);
+
+  function logTradeDetails(
+    deltaX,
+    deltaY,
+    pay,
+    get,
+    protocolFee,
+    increaseX,
+    specifyX,
+  ) {
+    protocolPool = amountMath.add(protocolFee, protocolPool);
+    trades.push({
+      deltaX: increaseX ? deltaX.value : -deltaX.value,
+      deltaY: increaseX ? -deltaY.value : deltaY.value,
+      x: x.value,
+      y: y.value,
+      k: multiply(x.value, y.value),
+      pay: increaseX ? -pay.value : pay.value,
+      get: increaseX ? get.value : -get.value,
+      protocol: protocolFee.value,
+      specifyX,
+    });
+  }
+
+  function tradeIn(changeAmount) {
+    if (changeAmount.brand === x.brand) {
+      const deltaY = amountMath.make(
+        y.brand,
+        getInputPrice(changeAmount.value, x.value, y.value, fee),
+      );
+      x = amountMath.add(x, changeAmount);
+      y = amountMath.subtract(y, deltaY);
+      // trader pays changeAmount, gains deltaY. Pool pays deltaY, gains
+      // changeAmount. We then extract protocolFeeInY and convert it (sans fee)
+      // to pay the protocol pool
+      const protocolFeeInY = multiplyBy(deltaY, protocolShareY);
+      let protocolFeeInX = amountMath.makeEmpty(initX.brand);
+      if (!amountMath.isEmpty(protocolFeeInY)) {
+        protocolFeeInX = amountMath.make(
+          initX.brand,
+          getInputPrice(protocolFeeInY.value, y.value, x.value, 0n),
+        );
+        x = amountMath.subtract(x, protocolFeeInX);
+        y = amountMath.add(y, protocolFeeInY);
+      }
+      logTradeDetails(
+        amountMath.subtract(changeAmount, protocolFeeInX),
+        amountMath.subtract(deltaY, protocolFeeInY),
+        changeAmount,
+        deltaY,
+        protocolFeeInX,
+        true,
+        true,
+      );
+      return deltaY;
+    } else {
+      const deltaX = amountMath.make(
+        x.brand,
+        getInputPrice(changeAmount.value, y.value, x.value, fee),
+      );
+      const protocolFee = multiplyBy(deltaX, protocolShareX);
+      // deltaX was reduced by the total fee. trader pays changeAmount to the
+      // pool and gets deltaX. pool pays out deltaX + protocolFee
+      const poolChange = amountMath.add(deltaX, protocolFee);
+      x = amountMath.subtract(x, poolChange);
+      y = amountMath.add(y, changeAmount);
+      logTradeDetails(
+        poolChange,
+        changeAmount,
+        deltaX,
+        changeAmount,
+        protocolFee,
+        false,
+        false,
+      );
+      return deltaX;
+    }
+  }
+
+  function tradeOut(changeAmount) {
+    if (changeAmount.brand === x.brand) {
+      // trader gets changeAmount, pays deltaY. pool gains deltaY, pays
+      // changeAmount. We then extract protocolFeeInY from the pool and convert
+      // it to protocolFeeInX to pay the trader.
+      const deltaY = amountMath.make(
+        y.brand,
+        getOutputPrice(changeAmount.value, y.value, x.value, fee),
+      );
+      x = amountMath.subtract(x, changeAmount);
+      y = amountMath.add(y, deltaY);
+      const protocolFeeInY = multiplyBy(deltaY, protocolShareY);
+      let protocolFeeInX = amountMath.makeEmpty(initX.brand);
+      if (!amountMath.isEmpty(protocolFeeInY)) {
+        protocolFeeInX = amountMath.make(
+          initX.brand,
+          getInputPrice(protocolFeeInY.value, y.value, x.value, 0n),
+        );
+        x = amountMath.subtract(x, protocolFeeInX);
+        y = amountMath.add(y, protocolFeeInY);
+      }
+      logTradeDetails(
+        amountMath.add(changeAmount, protocolFeeInX),
+        amountMath.add(deltaY, protocolFeeInY),
+        changeAmount,
+        deltaY,
+        protocolFeeInX,
+        false,
+        true,
+      );
+      return deltaY;
+    } else {
+      const deltaX = amountMath.make(
+        x.brand,
+        getOutputPrice(changeAmount.value, x.value, y.value, fee),
+      );
+      const protocolFee = multiplyBy(deltaX, protocolShareX);
+      // trader gains changeAmount, pays deltaX. Pool pays changeAmount, gains
+      // deltaX minus protocolFee
+      const poolChange = amountMath.subtract(deltaX, protocolFee);
+      x = amountMath.add(x, poolChange);
+      y = amountMath.subtract(y, changeAmount);
+      logTradeDetails(
+        poolChange,
+        changeAmount,
+        deltaX,
+        changeAmount,
+        protocolFee,
+        true,
+        false,
+      );
       return deltaX;
     }
   }
