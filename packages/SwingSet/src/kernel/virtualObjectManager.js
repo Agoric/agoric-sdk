@@ -1,5 +1,6 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots';
+// import { kdebug } from './kdebug';
 
 const initializationsInProgress = new WeakSet();
 
@@ -37,6 +38,7 @@ export function makeCache(size, fetch, store) {
             refreshCount += 1;
           }
         }
+        // kdebug(`### vo LRU evict ${lruTail.vobjID} (dirty=${lruTail.dirty})`);
         liveTable.delete(lruTail.vobjID);
         if (lruTail.dirty) {
           store(lruTail.vobjID, lruTail.rawData);
@@ -72,6 +74,7 @@ export function makeCache(size, fetch, store) {
       if (!lruTail) {
         lruTail = innerObj;
       }
+      // kdebug(`### vo LRU remember ${lruHead.vobjID}`);
     },
     refresh(innerObj) {
       if (innerObj !== lruHead) {
@@ -91,15 +94,19 @@ export function makeCache(size, fetch, store) {
         innerObj.next = lruHead;
         lruHead.prev = innerObj;
         lruHead = innerObj;
+        // kdebug(`### vo LRU refresh ${lruHead.vobjID}`);
       }
     },
-    lookup(vobjID) {
+    lookup(vobjID, load) {
       let innerObj = liveTable.get(vobjID);
       if (innerObj) {
         cache.refresh(innerObj);
       } else {
-        innerObj = { vobjID, rawData: fetch(vobjID) };
+        innerObj = { vobjID, rawData: null };
         cache.remember(innerObj);
+      }
+      if (load && !innerObj.rawData) {
+        innerObj.rawData = fetch(vobjID);
       }
       return innerObj;
     },
@@ -321,8 +328,9 @@ export function makeVirtualObjectManager(
    *    representative.
    *
    * @returns {*} a maker function that can be called to manufacture new
-   *    instance of this kind of object.  The parameters of the maker function
-   *    are those of the `init` method provided by the `instanceKitMaker` function.
+   *    instances of this kind of object.  The parameters of the maker function
+   *    are those of the `init` method provided by the `instanceKitMaker`
+   *    function.
    *
    * Notes on theory of operation:
    *
@@ -372,8 +380,8 @@ export function makeVirtualObjectManager(
    * memory.  If it is not, it is loaded from persistent storage, the
    * corresponding inner self is made to point at it, and then the inner self is
    * placed at the head of the LRU cache (causing the least recently used inner
-   * self to fall off the end of the cache).  If it *is* memory, it is promoted
-   * to the head of the LRU cache but the contents of the cache remains
+   * self to fall off the end of the cache).  If it *is* in memory, it is
+   * promoted to the head of the LRU cache but the contents of the cache remains
    * unchanged.  When an inner self falls off the end of the LRU, its reference
    * to the state is nulled out and the object holding the state becomes garbage
    * collectable.
@@ -381,11 +389,12 @@ export function makeVirtualObjectManager(
   function makeKind(instanceKitMaker) {
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
+    const propertyNames = new Set();
 
     function makeRepresentative(innerSelf, initializing) {
       function ensureState() {
         if (!innerSelf.rawData) {
-          innerSelf = cache.lookup(innerSelf.vobjID);
+          innerSelf = cache.lookup(innerSelf.vobjID, true);
         }
       }
 
@@ -394,7 +403,7 @@ export function makeVirtualObjectManager(
           !initializationsInProgress.has(target),
           `object is still being initialized`,
         );
-        for (const prop of Object.getOwnPropertyNames(innerSelf.rawData)) {
+        for (const prop of propertyNames) {
           Object.defineProperty(target, prop, {
             get: () => {
               ensureState();
@@ -427,7 +436,8 @@ export function makeVirtualObjectManager(
     }
 
     function reanimate(vobjID) {
-      return makeRepresentative(cache.lookup(vobjID), false).self;
+      // kdebug(`vo reanimate ${vobjID}`);
+      return makeRepresentative(cache.lookup(vobjID, false), false).self;
     }
     kindTable.set(kindID, reanimate);
 
@@ -438,6 +448,7 @@ export function makeVirtualObjectManager(
       const initialData = {};
       initializationsInProgress.add(initialData);
       const innerSelf = { vobjID, rawData: initialData };
+      // kdebug(`vo make ${vobjID}`);
       // prettier-ignore
       const { self: initialRepresentative, init } =
         makeRepresentative(innerSelf, true);
@@ -455,6 +466,9 @@ export function makeVirtualObjectManager(
         }
       }
       innerSelf.rawData = rawData;
+      for (const prop of Object.getOwnPropertyNames(initialData)) {
+        propertyNames.add(prop);
+      }
       innerSelf.wrapData(initialData);
       innerSelf.dirty = true;
       return initialRepresentative;

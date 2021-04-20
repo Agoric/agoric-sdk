@@ -7,7 +7,6 @@ import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManag
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
-const s = JSON.stringify;
 
 function makeThingInstance(state) {
   return {
@@ -39,6 +38,14 @@ function makeThingInstance(state) {
   };
 }
 
+function thingVal(counter, label, resetCounter) {
+  return JSON.stringify({
+    counter: capdata(JSON.stringify(counter)),
+    label: capdata(JSON.stringify(label)),
+    resetCounter: capdata(JSON.stringify(resetCounter)),
+  });
+}
+
 function makeZotInstance(state) {
   return {
     init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
@@ -65,6 +72,15 @@ function makeZotInstance(state) {
   };
 }
 
+function zotVal(arbitrary, name, tag, count) {
+  return JSON.stringify({
+    arbitrary: capdata(JSON.stringify(arbitrary)),
+    name: capdata(JSON.stringify(name)),
+    tag: capdata(JSON.stringify(tag)),
+    count: capdata(JSON.stringify(count)),
+  });
+}
+
 test('virtual object operations', t => {
   const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager(3);
 
@@ -85,12 +101,11 @@ test('virtual object operations', t => {
   const zot3 = zotMaker(47, 'Carol', 'as if...');
   const zot4 = zotMaker(66, 'Dave', 'you and what army?');
 
-  // prettier-ignore
   t.deepEqual(dumpStore(), [
-    ['o+1/1', s({counter:capdata('0'),label:capdata('"thing-1"'),resetCounter:capdata('0')})],
-    ['o+1/2', s({counter:capdata('100'),label:capdata('"thing-2"'),resetCounter:capdata('0')})],
-    ['o+1/3', s({counter:capdata('200'),label:capdata('"thing-3"'),resetCounter:capdata('0')})],
-    ['o+1/4', s({counter:capdata('300'),label:capdata('"thing-4"'),resetCounter:capdata('0')})],
+    ['o+1/1', thingVal(0, 'thing-1', 0)],
+    ['o+1/2', thingVal(100, 'thing-2', 0)],
+    ['o+1/3', thingVal(200, 'thing-3', 0)],
+    ['o+1/4', thingVal(300, 'thing-4', 0)],
   ]);
 
   // phase 2: first batch-o-stuff
@@ -106,16 +121,15 @@ test('virtual object operations', t => {
     thing2.describe(),
     'thing-2 counter has been reset 0 times and is now 100',
   );
-  // prettier-ignore
   t.deepEqual(dumpStore(), [
-    ['o+1/1', s({counter:capdata('3'),label:capdata('"thing-1"'),resetCounter:capdata('0')})],
-    ['o+1/2', s({counter:capdata('100'),label:capdata('"thing-2"'),resetCounter:capdata('0')})],
-    ['o+1/3', s({counter:capdata('200'),label:capdata('"thing-3"'),resetCounter:capdata('0')})],
-    ['o+1/4', s({counter:capdata('300'),label:capdata('"thing-4"'),resetCounter:capdata('0')})],
-    ['o+2/1', s({arbitrary:capdata('23'),name:capdata('"Alice"'),tag:capdata('"is this on?"'),count:capdata('2')})],
-    ['o+2/2', s({arbitrary:capdata('29'),name:capdata('"Bob"'),tag:capdata('"what are you saying?"'),count:capdata('0')})],
-    ['o+2/3', s({arbitrary:capdata('47'),name:capdata('"Carol"'),tag:capdata('"as if..."'),count:capdata('0')})],
-    ['o+2/4', s({arbitrary:capdata('66'),name:capdata('"Dave"'),tag:capdata('"you and what army?"'),count:capdata('0')})],
+    ['o+1/1', thingVal(3, 'thing-1', 0)],
+    ['o+1/2', thingVal(100, 'thing-2', 0)],
+    ['o+1/3', thingVal(200, 'thing-3', 0)],
+    ['o+1/4', thingVal(300, 'thing-4', 0)],
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 2)],
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 0)],
+    ['o+2/3', zotVal(47, 'Carol', 'as if...', 0)],
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 0)],
   ]);
 
   // phase 3: second batch-o-stuff
@@ -136,31 +150,29 @@ test('virtual object operations', t => {
     thing4.describe(),
     'thing-4 counter has been reset 1 times and is now 1000',
   );
-  // prettier-ignore
   t.deepEqual(dumpStore(), [
-    ['o+1/1', s({counter:capdata('4'),label:capdata('"thing-1"'),resetCounter:capdata('0')})],
-    ['o+1/2', s({counter:capdata('100'),label:capdata('"thing-2"'),resetCounter:capdata('0')})],
-    ['o+1/3', s({counter:capdata('200'),label:capdata('"thing-3"'),resetCounter:capdata('0')})],
-    ['o+1/4', s({counter:capdata('1000'),label:capdata('"thing-4"'),resetCounter:capdata('1')})],
-    ['o+2/1', s({arbitrary:capdata('23'),name:capdata('"Alice"'),tag:capdata('"is this on?"'),count:capdata('3')})],
-    ['o+2/2', s({arbitrary:capdata('29'),name:capdata('"Bob"'),tag:capdata('"what are you saying?"'),count:capdata('2')})],
-    ['o+2/3', s({arbitrary:capdata('47'),name:capdata('"Chester"'),tag:capdata('"as if..."'),count:capdata('3')})],
-    ['o+2/4', s({arbitrary:capdata('66'),name:capdata('"Dave"'),tag:capdata('"you and what army?"'),count:capdata('1')})],
+    ['o+1/1', thingVal(4, 'thing-1', 0)],
+    ['o+1/2', thingVal(100, 'thing-2', 0)],
+    ['o+1/3', thingVal(200, 'thing-3', 0)],
+    ['o+1/4', thingVal(1000, 'thing-4', 1)],
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)],
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)],
+    ['o+2/3', zotVal(47, 'Chester', 'as if...', 3)],
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 1)],
   ]);
 
   // phase 4: flush test
   t.is(thing1.inc(), 5);
   flushCache();
-  // prettier-ignore
   t.deepEqual(dumpStore(), [
-    ['o+1/1', s({counter:capdata('5'),label:capdata('"thing-1"'),resetCounter:capdata('0')})],
-    ['o+1/2', s({counter:capdata('100'),label:capdata('"thing-2"'),resetCounter:capdata('0')})],
-    ['o+1/3', s({counter:capdata('201'),label:capdata('"thing-3"'),resetCounter:capdata('0')})],
-    ['o+1/4', s({counter:capdata('1000'),label:capdata('"thing-4"'),resetCounter:capdata('1')})],
-    ['o+2/1', s({arbitrary:capdata('23'),name:capdata('"Alice"'),tag:capdata('"is this on?"'),count:capdata('3')})],
-    ['o+2/2', s({arbitrary:capdata('29'),name:capdata('"Bob"'),tag:capdata('"what are you saying?"'),count:capdata('2')})],
-    ['o+2/3', s({arbitrary:capdata('47'),name:capdata('"Chester"'),tag:capdata('"as if..."'),count:capdata('3')})],
-    ['o+2/4', s({arbitrary:capdata('66'),name:capdata('"Dave"'),tag:capdata('"you and what army?"'),count:capdata('2')})],
+    ['o+1/1', thingVal(5, 'thing-1', 0)],
+    ['o+1/2', thingVal(100, 'thing-2', 0)],
+    ['o+1/3', thingVal(201, 'thing-3', 0)],
+    ['o+1/4', thingVal(1000, 'thing-4', 1)],
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)],
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)],
+    ['o+2/3', zotVal(47, 'Chester', 'as if...', 3)],
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 2)],
   ]);
 });
 
