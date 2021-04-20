@@ -54,30 +54,34 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   return harden(result);
 };
 
+function makeBootstrap(argv, cb, vatPowers) {
+  return async (vats, devices) => {
+    const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+      devices.vatAdmin,
+    );
+    const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
+    const [liquidateMinimum, autoswap, treasury] = await Promise.all([
+      E(zoe).install(cb.liquidateMinimum),
+      E(zoe).install(cb.autoswap),
+      E(zoe).install(cb.treasury),
+    ]);
+
+    const installations = { liquidateMinimum, autoswap, treasury };
+
+    const [testName, startingValues] = argv;
+    const { aliceP, treasuryPublicFacet } = makeVats(
+      vatPowers.testLog,
+      vats,
+      zoe,
+      installations,
+      startingValues,
+    );
+
+    await E(aliceP).startTest(testName, treasuryPublicFacet);
+  };
+}
+
 export function buildRootObject(vatPowers, vatParameters) {
   const { argv, contractBundles: cb } = vatParameters;
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
-      const installations = {
-        liquidateMinimum: await E(zoe).install(cb.liquidateMinimum),
-        autoswap: await E(zoe).install(cb.autoswap),
-        treasury: await E(zoe).install(cb.treasury),
-      };
-
-      const [testName, startingValues] = argv;
-      const { aliceP, treasuryPublicFacet } = makeVats(
-        vatPowers.testLog,
-        vats,
-        zoe,
-        installations,
-        startingValues,
-      );
-
-      await E(aliceP).startTest(testName, treasuryPublicFacet);
-    },
-  });
+  return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });
 }

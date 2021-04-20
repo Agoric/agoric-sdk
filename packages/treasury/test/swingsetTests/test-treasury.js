@@ -8,6 +8,7 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
 import liquidateBundle from '../../bundles/bundle-liquidateMinimum';
 import autoswapBundle from '../../bundles/bundle-multipoolAutoswap';
@@ -16,32 +17,34 @@ import stablecoinBundle from '../../bundles/bundle-stablecoinMachine';
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
 
-  const vats = {};
-  await Promise.all(
-    ['alice', 'zoe', 'priceAuthority', 'owner'].map(async name => {
-      const source = `${__dirname}/vat-${name}.js`;
-      const bundle = await bundleSource(source);
-      vats[name] = { bundle };
-    }),
-  );
-
   const nameToBundle = [
     ['liquidateMinimum', liquidateBundle],
     ['autoswap', autoswapBundle],
     ['treasury', stablecoinBundle],
   ];
   const contractBundles = {};
-  await Promise.all(
-    nameToBundle.map(async ([name, bundle]) => {
-      contractBundles[name] = bundle;
-    }),
+  nameToBundle.forEach(([name, bundle]) => {
+    contractBundles[name] = bundle;
+  });
+
+  const vatNames = ['alice', 'zoe', 'priceAuthority', 'owner'];
+  const vatNameToSource = vatNames.map(name => {
+    const source = `${__dirname}/vat-${name}.js`;
+    return [name, source];
+  });
+  const bootstrapSource = `${__dirname}/bootstrap.js`;
+  vatNameToSource.push(['bootstrap', bootstrapSource]);
+
+  const bundles = await Promise.all(
+    vatNameToSource.map(([_, source]) => bundleSource(source)),
+  );
+  const vats = {};
+  [...vatNames, 'bootstrap'].forEach(
+    (name, index) => (vats[name] = { bundle: bundles[index] }),
   );
 
-  const bootstrapSource = `${__dirname}/bootstrap.js`;
-  vats.bootstrap = {
-    bundle: await bundleSource(bootstrapSource),
-    parameters: { contractBundles }, // argv will be added to this
-  };
+  vats.bootstrap.parameters = { contractBundles };
+
   const config = { bootstrap: 'bootstrap', vats };
 
   t.context.data = { kernelBundles, config };
@@ -49,9 +52,9 @@ test.before(async t => {
 
 async function main(t, argv) {
   const { kernelBundles, config } = t.context.data;
-  const controller = await buildVatController(config, argv, { kernelBundles });
-  await controller.run();
-  return controller.dump();
+  const controller = buildVatController(config, argv, { kernelBundles });
+  await E(controller).run();
+  return E(controller).dump();
 }
 
 const expectedTreasuryLog = [

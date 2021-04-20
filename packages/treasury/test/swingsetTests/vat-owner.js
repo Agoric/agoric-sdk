@@ -79,7 +79,7 @@ const build = async (
 
   const QUOTE_INTERVAL = 24n * 60n * 60n;
   const moolaPriceAuthority = await E(priceAuthorityVat).makeFakePriceAuthority(
-    {
+    harden({
       issuerIn: moolaIssuer,
       issuerOut: runIssuer,
       actualBrandIn: moolaBrand,
@@ -87,8 +87,7 @@ const build = async (
       priceList: [100000n, 120000n, 110000n, 80000n],
       timer,
       quoteInterval: QUOTE_INTERVAL,
-      // unitAmountIn: amountMath.make(moolaBrand, 1),
-    },
+    }),
   );
 
   await E(priceAuthorityKit.adminFacet).registerPriceAuthority(
