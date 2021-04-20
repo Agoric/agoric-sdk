@@ -6,6 +6,7 @@ import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 import './types';
+import './internal-types';
 
 import { cleanKeywords } from '../cleanProposal';
 import { arrayToObj, objectMap } from '../objArrayConversion';
