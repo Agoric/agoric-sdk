@@ -72,23 +72,18 @@ test('cache overflow and refresh', t => {
 
   // lookup that has no effect
   things[0] = cache.lookup('t0'); // cache: t0, t2, t5, t4
+  things[0].rawData = 'changed thing #0';
   things[0].dirty = true; // pretend we changed it
-  t.is(things[0].rawData, 'thing #0');
+  t.is(things[0].rawData, 'changed thing #0');
   t.is(things[3].rawData, null);
-  t.deepEqual(store.getLog(), [
-    ['fetch', 't0', 'thing #0'],
-    ['store', 't3', 'thing #3'],
-  ]);
+  t.deepEqual(store.getLog(), [['store', 't3', 'thing #3']]);
 
   // verify refresh
   cache.refresh(things[4]); // cache: t4, t0, t2, t5
   things[1] = cache.lookup('t1'); // cache: t1, t4, t0, t2
-  t.is(things[1].rawData, 'thing #1');
+  t.is(things[1].rawData, null);
   t.is(things[5].rawData, null);
-  t.deepEqual(store.getLog(), [
-    ['fetch', 't1', 'thing #1'],
-    ['store', 't5', 'thing #5'],
-  ]);
+  t.deepEqual(store.getLog(), [['store', 't5', 'thing #5']]);
 
   // verify that everything is there
   cache.flush(); // cache: empty
@@ -100,11 +95,11 @@ test('cache overflow and refresh', t => {
   t.is(things[5].rawData, null);
   t.deepEqual(store.getLog(), [
     ['store', 't2', 'thing #2'],
-    ['store', 't0', 'thing #0'],
+    ['store', 't0', 'changed thing #0'],
     ['store', 't4', 'thing #4'],
   ]);
   t.deepEqual(store.dump(), [
-    ['t0', 'thing #0'],
+    ['t0', 'changed thing #0'],
     ['t1', 'thing #1'],
     ['t2', 'thing #2'],
     ['t3', 'thing #3'],
@@ -134,13 +129,7 @@ test('cache overflow and refresh', t => {
   t.is(things[0].rawData, null);
   t.is(things[5].rawData, 'new thing #5');
   t.deepEqual(store.getLog(), [
-    ['fetch', 't0', 'thing #0'],
-    ['fetch', 't1', 'thing #1'],
-    ['fetch', 't2', 'thing #2'],
-    ['fetch', 't3', 'thing #3'],
-    ['fetch', 't4', 'thing #4'],
     ['store', 't0', 'new thing #0'],
-    ['fetch', 't5', 'thing #5'],
     ['store', 't1', 'new thing #1'],
   ]);
   t.deepEqual(store.dump(), [
