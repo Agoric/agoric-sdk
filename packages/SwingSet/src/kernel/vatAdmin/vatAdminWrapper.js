@@ -68,6 +68,13 @@ export function buildRootObject(vatPowers) {
 
   // the kernel sends this when the vat halts
   function vatTerminated(vatID, shouldReject, info) {
+    if (!running.has(vatID)) {
+      // a static vat terminated, so we have nobody to notify
+      console.log(`DANGER: static vat ${vatID} terminated`);
+      // TODO: consider halting the kernel if this happens, static vats
+      // aren't supposed to just keel over and die
+      return;
+    }
     const { resolve, reject } = running.get(vatID);
     running.delete(vatID);
     if (shouldReject) {
