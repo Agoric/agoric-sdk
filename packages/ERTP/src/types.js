@@ -37,7 +37,7 @@
  */
 
 /**
- * @typedef {'nat' | 'set' | 'strSet'} AmountMathKind
+ * @typedef {'nat' | 'set' } AmountMathKind
  */
 
 /**

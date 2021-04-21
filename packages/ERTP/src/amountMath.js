@@ -17,13 +17,11 @@ import {
 /**
  * Constants for the kinds of amountMath we support.
  *
- * @type {{ NAT: 'nat', SET: 'set', STRING_SET: 'strSet' }}
+ * @type {{ NAT: 'nat', SET: 'set' }}
  */
 const MathKind = {
   NAT: 'nat',
   SET: 'set',
-  // Deprecated, to be removed in Beta
-  STRING_SET: 'strSet',
 };
 harden(MathKind);
 
@@ -64,11 +62,10 @@ harden(MathKind);
  * brand. The issuer and the brand mutually validate each other.
  */
 
-/** @type {{ nat: NatMathHelpers, set: SetMathHelpers, strSet: SetMathHelpers }} */
+/** @type {{ nat: NatMathHelpers, set: SetMathHelpers }} */
 const helpers = {
   nat: natMathHelpers,
   set: setMathHelpers,
-  strSet: setMathHelpers,
 };
 
 /**
@@ -205,7 +202,7 @@ const amountMath = {
   makeEmpty: (brand, mathKind = MathKind.NAT) => {
     assert(
       helpers[mathKind],
-      X`${mathKind} must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated`,
+      X`${mathKind} must be MathKind.NAT or MathKind.SET`,
     );
     assertLooksLikeBrand(brand);
     return noCoerceMake(helpers[mathKind].doMakeEmpty(), brand);

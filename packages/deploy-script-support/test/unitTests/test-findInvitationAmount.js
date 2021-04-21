@@ -30,7 +30,7 @@ test('findInvitationAmount', async t => {
   const notFoundResult = await findInvitationAmount({
     description: 'not found',
   });
-  t.deepEqual(notFoundResult, amountMath.make(brand, []));
+  t.deepEqual(notFoundResult, amountMath.makeEmpty(brand, MathKind.SET));
 
   const foundResult = await findInvitationAmount({ description: 'found' });
   t.deepEqual(foundResult, paymentAmount);

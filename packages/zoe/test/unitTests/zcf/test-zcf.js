@@ -364,7 +364,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: /.* must be MathKind.NAT or MathKind.SET. MathKind.STRING_SET is accepted but deprecated/,
+    message: /.* must be MathKind.NAT or MathKind.SET./,
   });
 });
 
@@ -379,17 +379,6 @@ test(`zcf.makeZCFMint - NAT`, async t => {
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.mathKind, MathKind.NAT);
   t.is(issuerRecord.brand.getDisplayInfo(), undefined);
-});
-
-test(`zcf.makeZCFMint - STRING_SET`, async t => {
-  const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.STRING_SET);
-  const issuerRecord = zcfMint.getIssuerRecord();
-  const expected = {
-    issuers: { A: issuerRecord.issuer },
-    brands: { A: issuerRecord.brand },
-  };
-  await testTerms(t, zcf, expected);
 });
 
 test(`zcf.makeZCFMint - SET`, async t => {
