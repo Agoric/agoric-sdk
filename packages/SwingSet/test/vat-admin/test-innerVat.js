@@ -3,42 +3,47 @@ import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
-import { buildVatController, loadBasedir } from '../../src';
+import { buildKernelBundles, buildVatController, loadBasedir } from '../../src';
 
 function nonBundleFunction(_E) {
   return {};
 }
 
-async function doTestSetup(mode) {
-  const config = await loadBasedir(__dirname);
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
   const newVatBundle = await bundleSource(path.join(__dirname, 'new-vat.js'));
   const brokenVatBundle = await bundleSource(
     path.join(__dirname, 'broken-vat.js'),
   );
   const nonBundle = `${nonBundleFunction}`;
   const bundles = { newVatBundle, brokenVatBundle, nonBundle };
-  const c = await buildVatController(config, [mode, bundles]);
+  t.context.data = { kernelBundles, bundles };
+});
+
+async function doTestSetup(t, mode) {
+  const config = await loadBasedir(__dirname);
+  const { bundles, kernelBundles } = t.context.data;
+  const c = await buildVatController(config, [mode, bundles], {
+    kernelBundles,
+  });
   return c;
 }
 
 test('VatAdmin inner vat creation', async t => {
-  const c = await doTestSetup('newVat');
-  for (let i = 0; i < 9; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step();
-  }
+  const c = await doTestSetup(t, 'newVat');
+  await c.run();
   t.deepEqual(c.dump().log, ['starting newVat test', '13']);
 });
 
 test('VatAdmin counter test', async t => {
-  const c = await doTestSetup('counters');
+  const c = await doTestSetup(t, 'counters');
   await c.run();
   await c.run();
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
 });
 
 test('VatAdmin broken vat creation', async t => {
-  const c = await doTestSetup('brokenVat');
+  const c = await doTestSetup(t, 'brokenVat');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting brokenVat test',
@@ -47,7 +52,7 @@ test('VatAdmin broken vat creation', async t => {
 });
 
 test('error creating vat from non-bundle', async t => {
-  const c = await doTestSetup('non-bundle');
+  const c = await doTestSetup(t, 'non-bundle');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting non-bundle test',
@@ -57,7 +62,7 @@ test('error creating vat from non-bundle', async t => {
 });
 
 test('VatAdmin get vat stats', async t => {
-  const c = await doTestSetup('vatStats');
+  const c = await doTestSetup(t, 'vatStats');
   await c.run();
   t.deepEqual(c.dump().log, [
     'starting stats test',
