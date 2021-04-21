@@ -444,6 +444,12 @@ function build(
         assert.fail(X`unrecognized slot type '${type}'`);
       }
       slotToVal.set(slot, new WeakRef(val));
+      // TODO: until #2724 is implemented, we cannot actually release
+      // Presences, else WeakMaps would forget their entries. We disable GC
+      // by stashing everything in the (strong) `exported` Set. Note that
+      // test-liveslots.js test('dropImports') passes despite this, because
+      // it uses a fake WeakRef that doesn't care about the strong reference.
+      exported.add(val);
       if (type === 'object' || type === 'device') {
         // we don't dropImports on promises, to avoid interaction with retire
         droppedRegistry.register(val, slot);
