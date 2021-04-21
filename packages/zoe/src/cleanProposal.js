@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { amountMath, getMathKind, MathKind } from '@agoric/ertp';
+import { amountMath, getMathKind } from '@agoric/ertp';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
