@@ -18,7 +18,6 @@ ARG MODDABLE_COMMIT_HASH
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
-RUN ln -s agoric-sdk/packages/cosmic-swingset ../app
 
 RUN yarn install --frozen-lockfile --ignore-scripts
 
@@ -46,10 +45,8 @@ RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y
 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
-RUN ln -s agoric-sdk/packages/cosmic-swingset app
-
 COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
-RUN ln -s /usr/src/app/bin/ag-chain-cosmos /usr/local/bin/
+RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root
