@@ -21,7 +21,7 @@ import { Far } from '@agoric/marshal';
 
 export function buildRootDeviceNode({ endowments, serialize }) {
   const {
-    create: kernelVatCreationFn,
+    pushCreateVatEvent,
     stats: kernelVatStatsFn,
     terminate: kernelTerminateVatFn,
   } = endowments;
@@ -31,12 +31,12 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     // Called by the wrapper vat to create a new vat. Gets a new ID from the
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
-    create(bundle, options) {
-      const vatID = kernelVatCreationFn({ bundle }, options);
+    create(bundle, options = {}) {
+      const vatID = pushCreateVatEvent({ bundle }, options);
       return vatID;
     },
-    createByName(bundleName, options) {
-      const vatID = kernelVatCreationFn({ bundleName }, options);
+    createByName(bundleName, options = {}) {
+      const vatID = pushCreateVatEvent({ bundleName }, options);
       return vatID;
     },
     terminateWithFailure(vatID, reason) {
