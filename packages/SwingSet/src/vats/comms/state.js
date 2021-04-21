@@ -171,6 +171,10 @@ export function makeState(syscall, identifierBase = 0) {
     if (lref && parseLocalSlot(lref).type === 'promise') {
       const refCount = Number(store.get(`${lref}.refCount`)) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
+      if (refCount === 1 && deadLocalPromises.has(lref)) {
+        // Oops, turns out the zero refCount was a transient
+        deadLocalPromises.delete(lref);
+      }
       store.set(`${lref}.refCount`, `${refCount}`);
     }
   }
@@ -195,6 +199,16 @@ export function makeState(syscall, identifierBase = 0) {
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
       store.set(`${lref}.refCount`, `${refCount}`);
       if (refCount === 0) {
+        // If we are still in the middle of a resolve operation, and this lref
+        // is an ancillary promise that was briefly added to the decider's
+        // clist, we'll reach here when we retire that short-lived
+        // identifier. However the lref is still in play: the resolution
+        // function hasn't finished running, and we'll add the lref to the
+        // subscriber's clist momentarily, where it will live until we get an
+        // ack and can retire it from that clist too. We add the lref to the
+        // maybe-dead set, but we do not trigger GC until the entire comms
+        // dispatch is complete and any ancillary promises are safely referenced
+        // by their subscribers clists.
         deadLocalPromises.add(lref);
         return true;
       }
@@ -202,6 +216,12 @@ export function makeState(syscall, identifierBase = 0) {
     return false;
   }
 
+  /**
+   * Delete any local promises that have zero references.
+   *
+   * Note that this should only be called *after* all work for a crank is done,
+   * because transient zero refCounts are possible during the middle of a crank.
+   */
   function purgeDeadLocalPromises() {
     if (enableLocalPromiseGC) {
       for (const lpid of deadLocalPromises.values()) {
