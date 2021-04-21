@@ -113,6 +113,12 @@ export async function start(zcf) {
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     assert(!collateralTypes.has(collateralBrand));
 
+    const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
+      liquidationInstall,
+      { RUN: runIssuer },
+      { autoswap: autoswapAPI },
+    );
+
     async function addTypeHook(seat) {
       assertProposalShape(seat, {
         give: { Collateral: null },
@@ -194,14 +200,6 @@ export async function start(zcf) {
       // TODO(hibbert): make use of these assets (Liquidity: 19899 Aeth)
       trace('depositValue', depositValue);
 
-      const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
-        liquidationInstall,
-        {
-          RUN: runIssuer,
-          Collateral: collateralIssuer,
-        },
-        { autoswap: autoswapAPI },
-      );
       const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
       // do something with the liquidity we just bought
