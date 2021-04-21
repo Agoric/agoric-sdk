@@ -20,14 +20,14 @@ import '../../exported';
 import '../internal-types';
 
 import { Far } from '@agoric/marshal';
-import { makeIssuerTable } from '../issuerTable';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
-import { arrayToObj } from '../objArrayConversion';
-import { cleanKeywords, cleanProposal } from '../cleanProposal';
+import { cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
 import { makeEscrowStorage } from './escrowStorage';
+import { makeIssuerStorage } from '../issuerStorage';
+import { makeInstanceRecordAndStore } from '../instanceRecordStorage';
 
 /**
  * Create an instance of Zoe.
@@ -39,9 +39,6 @@ import { makeEscrowStorage } from './escrowStorage';
  */
 function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
-
-  // Zoe state shared among functions
-  const issuerTable = makeIssuerTable();
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
@@ -56,8 +53,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     depositPayments,
   } = makeEscrowStorage();
 
-  /** @type {GetMathKindByBrand} */
-  const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
+  const {
+    storeIssuerKeywordRecord,
+    storeIssuer,
+    storeIssuerRecord,
+    getMathKind,
+    exportIssuerStorage,
+  } = makeIssuerStorage();
 
   const { install, unwrapInstallation } = makeInstallationStorage();
 
@@ -96,42 +98,31 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       uncleanIssuerKeywordRecord = harden({}),
       customTerms = harden({}),
     ) => {
-      /** @param {Issuer[]} issuers */
-      const initIssuers = issuers =>
-        Promise.all(issuers.map(issuerTable.initIssuer));
-
       const { installation, bundle } = await unwrapInstallation(installationP);
 
       const instance = makeHandle('Instance');
 
-      const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
+      const { issuers, brands } = await storeIssuerKeywordRecord(
+        uncleanIssuerKeywordRecord,
+      );
+      // AWAIT ///
 
-      const issuerPs = keywords.map(
-        keyword => uncleanIssuerKeywordRecord[keyword],
+      Object.entries(issuers).forEach(([keyword, issuer]) =>
+        createPurse(issuer, brands[keyword]),
       );
 
-      // The issuers may not have been seen before, so we must wait for the
-      // issuer records to be available synchronously
-      const issuerRecords = await initIssuers(issuerPs);
-      issuerRecords.forEach(record => createPurse(record));
-
-      const issuers = arrayToObj(
-        issuerRecords.map(record => record.issuer),
-        keywords,
-      );
-      const brands = arrayToObj(
-        issuerRecords.map(record => record.brand),
-        keywords,
-      );
-
-      let instanceRecord = {
+      const {
+        addIssuerToInstanceRecord,
+        getInstanceRecord,
+        getTerms,
+        getIssuers,
+        getBrands,
+      } = makeInstanceRecordAndStore(
         installation,
-        terms: {
-          ...customTerms,
-          issuers,
-          brands,
-        },
-      };
+        customTerms,
+        issuers,
+        brands,
+      );
 
       const createVatResultP = zcfBundleName
         ? E(vatAdminSvc).createVatByName(zcfBundleName)
@@ -139,23 +130,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const { adminNode, root } = await createVatResultP;
       /** @type {ZCFRoot} */
       const zcfRoot = root;
-
-      const registerIssuerByKeyword = (keyword, issuerRecord) => {
-        instanceRecord = {
-          ...instanceRecord,
-          terms: {
-            ...instanceRecord.terms,
-            issuers: {
-              ...instanceRecord.terms.issuers,
-              [keyword]: issuerRecord.issuer,
-            },
-            brands: {
-              ...instanceRecord.terms.brands,
-              [keyword]: issuerRecord.brand,
-            },
-          },
-        };
-      };
 
       /** @type {MakeZoeMint} */
       const makeZoeMint = (
@@ -174,11 +148,14 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           brand: localBrand,
           issuer: localIssuer,
           mathKind: amountMathKind,
+          displayInfo: {
+            ...displayInfo,
+            amountMathKind,
+          },
         });
-        issuerTable.initIssuerByRecord(localIssuerRecord);
-        registerIssuerByKeyword(keyword, localIssuerRecord);
-        const localPooledPurse = makeLocalPurse(localIssuerRecord);
-
+        storeIssuerRecord(localIssuerRecord);
+        const localPooledPurse = makeLocalPurse(localIssuer, localBrand);
+        addIssuerToInstanceRecord(keyword, localIssuerRecord);
         /** @type {ZoeMint} */
         const zoeMint = Far('ZoeMint', {
           getIssuerRecord: () => {
@@ -227,9 +204,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           removeZoeSeatAdmin: zoeSeatAdmin =>
             zoeSeatAdmins.delete(zoeSeatAdmin),
           getPublicFacet: () => publicFacetPromiseKit.promise,
-          getTerms: () => instanceRecord.terms,
-          getIssuers: () => instanceRecord.terms.issuers,
-          getBrands: () => instanceRecord.terms.brands,
+          getTerms,
+          getIssuers,
+          getBrands,
           getInstance: () => instance,
           acceptingOffers: () => acceptingOffers,
           exitAllSeats: completion => {
@@ -281,12 +258,13 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           return invitationMint.mintPayment(invitationAmount);
         },
         // checks of keyword done on zcf side
-        saveIssuer: (issuerP, keyword) =>
-          (issuerTable.initIssuer(issuerP).then(issuerRecord => {
-            registerIssuerByKeyword(keyword, issuerRecord);
-            createPurse(issuerRecord);
-            return undefined;
-          })),
+        saveIssuer: async (issuerP, keyword) => {
+          const issuerRecord = await storeIssuer(issuerP);
+          // AWAIT ///
+          createPurse(issuerRecord.issuer, issuerRecord.brand);
+          addIssuerToInstanceRecord(keyword, issuerRecord);
+          return issuerRecord;
+        },
         // A Seat requested by the contract without any payments to escrow
         makeNoEscrowSeat: (
           initialAllocation,
@@ -320,6 +298,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       // At this point, the contract will start executing. All must be
       // ready
 
+      const instanceRecord = getInstanceRecord();
+
       const {
         creatorFacet = Far('emptyCreatorFacet', {}),
         publicFacet = Far('emptyPublicFacet', {}),
@@ -330,7 +310,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        harden({ ...instanceRecord }),
+        instanceRecord,
+        exportIssuerStorage(Object.values(instanceRecord.terms.issuers)),
       );
 
       addSeatObjPromiseKit.resolve(addSeatObj);
@@ -387,7 +368,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             `No further offers are accepted`,
           );
 
-          const proposal = cleanProposal(uncleanProposal, getMathKindByBrand);
+          const proposal = cleanProposal(uncleanProposal, getMathKind);
           const initialAllocation = await depositPayments(
             proposal,
             paymentKeywordRecord,

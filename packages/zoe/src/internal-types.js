@@ -138,7 +138,7 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
- *            ) => Promise<void>} saveIssuer
+ *            ) => Promise<IssuerRecord>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
@@ -203,6 +203,7 @@
  * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
+ * @param {ExportedIssuerStorage} issuerStorageFromZoe
  * @returns {Promise<ExecuteContractResult>}
  *
  */
@@ -218,16 +219,6 @@
 /**
  * @typedef {Object} ExitObj
  * @property {() => void} exit
- */
-
-/**
- * @typedef {Object} IssuerTable
- * @property {(brand: Brand) => boolean} hasByBrand
- * @property {(brand: Brand) => IssuerRecord} getByBrand
- * @property {(issuer: Issuer) => boolean} hasByIssuer
- * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
- * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
- * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
  */
 
 /**
@@ -257,20 +248,6 @@
  */
 
 /**
- * @callback RegisterIssuerRecord
- * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
- * @returns {IssuerRecord}
- */
-
-/**
- * @callback RegisterIssuerRecordWithKeyword
- * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
- * @returns {IssuerRecord}
- */
-
-/**
  * @callback GetAmountOfInvitationThen
  * Get the amount of an invitation and then call the `onFulfilled`
  * function. If the invitation is not a Zoe invitation, the promise
@@ -281,11 +258,15 @@
  */
 
 /**
- * @callback GetMathKindByBrand
+ * @callback GetMathKind
  * Get the mathKind for a brand known by Zoe
  *
  * To be deleted when brands have a property for mathKind
  *
  * @param {Brand} brand
  * @returns {AmountMathKind}
+ */
+
+/**
+ * @typedef {Array<IssuerRecord>} ExportedIssuerStorage
  */
