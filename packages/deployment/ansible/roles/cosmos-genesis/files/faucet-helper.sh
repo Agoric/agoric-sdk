@@ -5,7 +5,7 @@ thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
-STAKE=50000000uagstake
+STAKE=50000000ubld
 
 OP=$1
 shift

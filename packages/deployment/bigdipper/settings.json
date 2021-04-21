@@ -13,17 +13,17 @@
       "bech32PrefixValPub": "agoricvaloperpub",
       "bech32PrefixConsAddr": "agoricvalcons",
       "bech32PrefixConsPub": "agoricvalconspub",
-      "bondDenom": "uagstake",
+      "bondDenom": "ubld",
       "powerReduction": 1000000,
       "coins": [
           {
-              "denom": "uagstake",
+              "denom": "ubld",
               "displayName": "AGSTAKE",
               "displayNamePlural": "AGSTAKES",
               "fraction": 1000000
           },
      {
-   "denom": "uag",
+   "denom": "urun",
    "displayName": "AG",
    "displayNamePlural": "AGS",
    "fraction": 1000000

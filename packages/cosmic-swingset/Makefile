@@ -1,6 +1,6 @@
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
-INITIAL_TOKENS = 1000000000000uag
+INITIAL_TOKENS = 1000000000000urun
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
@@ -60,9 +60,9 @@ scenario2-setup-nobuild:
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
-	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000uagstake,100provisionpass,100sendpacketpass
+	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000ubld,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000uagstake --chain-id=$(CHAIN_ID)
+	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
 	$(AGCH) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
