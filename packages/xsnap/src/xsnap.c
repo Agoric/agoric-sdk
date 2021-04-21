@@ -212,6 +212,7 @@ static xsBooleanValue gxMeteringPrint = 0;
 
 static FILE *fromParent;
 static FILE *toParent;
+static char *name = "xsnap-test";
 
 int main(int argc, char* argv[])
 {
@@ -241,8 +242,10 @@ int main(int argc, char* argv[])
 	char* dot;
 
 	for (argi = 1; argi < argc; argi++) {
-		if (argv[argi][0] != '-')
+		if (argv[argi][0] != '-') {
+			name = argv[argi];
 			continue;
+		}
 		if (!strcmp(argv[argi], "-f")) {
 			freeze = 1;
 		}
@@ -1460,13 +1463,13 @@ void fxTestRecord(int flags, void* buffer, size_t length)
 {
 	char path[PATH_MAX];
 	FILE* file;
-	mkdir("xsnap-test", 0755);
+	mkdir(name, 0755);
 	if (flags & mxTestRecordParam) {
-		sprintf(path, "xsnap-test/param-%d", gxTestRecordReplyIndex);
+		sprintf(path, "%s/param-%d", name, gxTestRecordReplyIndex);
 		gxTestRecordReplyIndex++;
 	}
 	else {
-		sprintf(path, "xsnap-test/reply-%d", gxTestRecordParamIndex);
+		sprintf(path, "%s/reply-%d", name, gxTestRecordParamIndex);
 		gxTestRecordParamIndex++;
 	}
 	if (flags & mxTestRecordJSON)
