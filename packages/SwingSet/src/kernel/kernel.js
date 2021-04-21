@@ -17,7 +17,7 @@ import { makeKernelSyscallHandler, doSend } from './kernelSyscall';
 import { makeSlogger, makeDummySlogger } from './slogger';
 import { getKpidsToRetire } from './cleanup';
 
-import { makeVatLoader } from './loadVat';
+import { makeVatRootObjectSlot, makeVatLoader } from './loadVat';
 import { makeDeviceTranslators } from './deviceTranslator';
 
 function abbreviateReplacer(_, arg) {
@@ -507,6 +507,57 @@ export default function buildKernel(
     }
   }
 
+  async function processCreateVat(message) {
+    const { vatID, source, dynamicOptions } = message;
+    kernelKeeper.addDynamicVatID(vatID);
+    const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
+    const options = { ...dynamicOptions };
+    if (!dynamicOptions.managerType) {
+      options.managerType = kernelKeeper.getDefaultManagerType();
+    }
+    vatKeeper.setSourceAndOptions(source, options);
+
+    function makeSuccessResponse() {
+      // build success message, giving admin vat access to the new vat's root
+      // object
+      const kernelRootObjSlot = addExport(vatID, makeVatRootObjectSlot());
+      return {
+        body: JSON.stringify([
+          vatID,
+          { rootObject: { '@qclass': 'slot', index: 0 } },
+        ]),
+        slots: [kernelRootObjSlot],
+      };
+    }
+
+    function makeErrorResponse(error) {
+      // delete partial vat state
+      kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      return {
+        body: JSON.stringify([vatID, { error: `${error}` }]),
+        slots: [],
+      };
+    }
+
+    function sendResponse(args) {
+      const vatAdminVatId = vatNameToID('vatAdmin');
+      const vatAdminRootObjectSlot = makeVatRootObjectSlot();
+      queueToExport(
+        vatAdminVatId,
+        vatAdminRootObjectSlot,
+        'newVatCallback',
+        args,
+        'logFailure',
+      );
+    }
+
+    // eslint-disable-next-line no-use-before-define
+    return createVatDynamically(vatID, source, dynamicOptions)
+      .then(makeSuccessResponse, makeErrorResponse)
+      .then(sendResponse)
+      .catch(err => console.error(`error in vat creation`, err));
+  }
+
   function legibilizeMessage(message) {
     if (message.type === 'send') {
       const msg = message.msg;
@@ -543,6 +594,8 @@ export default function buildKernel(
       } else if (message.type === 'notify') {
         kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
         await processNotify(message);
+      } else if (message.type === 'create-vat') {
+        await processCreateVat(message);
       } else {
         assert.fail(X`unable to process message.type ${message.type}`);
       }
@@ -684,13 +737,11 @@ export default function buildKernel(
     recreateStaticVat,
     loadTestVat,
   } = makeVatLoader({
-    allocateUnusedVatID: kernelKeeper.allocateUnusedVatID,
     vatNameToID,
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
     addVatManager,
-    addExport,
     queueToExport,
     kernelKeeper,
     panic,
@@ -821,7 +872,14 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
-      create: createVatDynamically,
+      pushCreateVatEvent(source, dynamicOptions) {
+        const vatID = kernelKeeper.allocateUnusedVatID();
+        const event = { type: 'create-vat', vatID, source, dynamicOptions };
+        kernelKeeper.addToRunQueue(harden(event));
+        // the device gets the new vatID immediately, and will be notified
+        // later when it is created and a root object is available
+        return vatID;
+      },
       stats: collectVatStats,
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
     };
