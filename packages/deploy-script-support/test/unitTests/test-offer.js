@@ -55,7 +55,6 @@ test('offer', async t => {
 
   const zoeInvitationIssuer = E(zoe).getInvitationIssuer();
   const zoeInvitationPurse = E(zoeInvitationIssuer).makeEmptyPurse();
-  const invitationBrand = await E(zoeInvitationIssuer).getBrand();
 
   await E(zoeInvitationPurse).deposit(creatorInvitation);
 
@@ -63,7 +62,6 @@ test('offer', async t => {
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    invitationBrand,
   );
 
   const offerConfig = harden({

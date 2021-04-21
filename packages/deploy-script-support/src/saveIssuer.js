@@ -10,14 +10,13 @@ export const makeSaveIssuer = (walletAdmin, issuerManager) => {
 
     const issuer = await Promise.resolve(issuerP);
     await E(issuerManager).add(brandPetname, issuer);
-    const emptyPurseMadeP = E(walletAdmin).makeEmptyPurse(
+    const emptyPurseMade = await E(walletAdmin).makeEmptyPurse(
       brandPetname,
       pursePetname,
     );
 
-    const result = await emptyPurseMadeP;
     console.log(`-- Installed issuer for: ${brandPetname}`);
-    return result;
+    return emptyPurseMade;
   };
 
   return saveIssuer;
