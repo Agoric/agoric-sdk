@@ -9,6 +9,7 @@ import {
   makeSimpleFeePool,
   makePoolChargeFeeInX,
   makePoolExractPartialFee,
+  makeStrategicFeePool,
 } from './pools';
 
 function formatTrade(trade) {
@@ -37,7 +38,7 @@ function applyTrades(t, pool, moola, bucks, firstResult) {
   pool.tradeIn(bucks(8209749));
   pool.tradeOut(bucks(4459230));
   pool.tradeIn(moola(7816406));
-  pool.tradeIn(moola(2862089));
+  pool.tradeOut(moola(2862089));
 }
 
 // With no fee, K grows consistently because the pool benefits from roundoff
@@ -87,7 +88,7 @@ function formatComplexTrade(trade) {
 }
 
 // Charge a portion of the fee in moola, paid on every trade
-test.only('charge fee in moola', t => {
+test('charge fee in moola', t => {
   const { moola, bucks } = setup();
   console.log(`MOOLA FEE`);
 
@@ -110,7 +111,7 @@ test.only('charge fee in moola', t => {
 });
 
 // Charge a portion of the fee in moola, paid on every trade
-test.only('convert fee to moola', t => {
+test.skip('convert fee to moola', t => {
   const { moola, bucks } = setup();
   console.log(`EXTRACT FEE`);
 
@@ -132,5 +133,24 @@ test.only('convert fee to moola', t => {
   }
 });
 
-// 986280348253421170679
-// 82148086513282306647093844609550582231725359408128
+test('new strategy', t => {
+  const { moola, bucks } = setup();
+  console.log(`new charging Strategy`);
+
+  const pool = makeStrategicFeePool(moola(30000n), bucks(80000n), 30n, 6n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    pay: -107n,
+    get: 283n,
+    protocol: 0n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatComplexTrade(trade));
+  }
+});

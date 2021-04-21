@@ -13,7 +13,6 @@ import {
 
 const { multiply, subtract } = natSafeMath;
 const BASIS_POINTS = 10000;
-const PERCENT_BASE = 100;
 
 export function makeSimpleFeePool(initX, initY, fee = 0n) {
   let x = initX;
@@ -347,6 +346,137 @@ export function makePoolExractPartialFee(initX, initY, fee = 0n, shareBP) {
         poolChange,
         changeAmount,
         deltaX,
+        changeAmount,
+        protocolFee,
+        true,
+        false,
+      );
+      return deltaX;
+    }
+  }
+
+  return {
+    tradeIn,
+    tradeOut,
+    getTrades: () => trades,
+  };
+}
+
+export function makeStrategicFeePool(initX, initY, fee = 0n, shareBP) {
+  assert(shareBP < fee, X`shareBP ${shareBP} must be smaller than fee ${fee}`);
+  let x = initX;
+  let y = initY;
+  let protocolPool = amountMath.makeEmpty(initX.brand);
+  const protocolShare = makeRatio(shareBP, x.brand, BASIS_POINTS);
+  const poolOnlyFeeBP = subtract(fee, shareBP);
+
+  const trades = [];
+  function logTradeDetails(
+    deltaX,
+    deltaY,
+    pay,
+    get,
+    protocolFee,
+    increaseX,
+    specifyX,
+  ) {
+    protocolPool = amountMath.add(protocolFee, protocolPool);
+    trades.push({
+      deltaX: increaseX ? deltaX.value : -deltaX.value,
+      deltaY: increaseX ? -deltaY.value : deltaY.value,
+      x: x.value,
+      y: y.value,
+      k: multiply(x.value, y.value),
+      pay: increaseX ? -pay.value : pay.value,
+      get: increaseX ? get.value : -get.value,
+      protocol: protocolFee.value,
+      specifyX,
+    });
+  }
+
+  function tradeIn(changeAmount) {
+    if (changeAmount.brand === x.brand) {
+      // protocol fee is subtracted from changeAmount before calculating deltaY.
+      const protocolFee = multiplyBy(changeAmount, protocolShare);
+      const deltaX = amountMath.subtract(changeAmount, protocolFee);
+      // deltaX reduced by protocol Fee. deltaY includes remainder of Fee
+      const deltaY = amountMath.make(
+        y.brand,
+        getInputPrice(deltaX.value, x.value, y.value, poolOnlyFeeBP),
+      );
+      x = amountMath.add(x, deltaX);
+      y = amountMath.subtract(y, deltaY);
+      // trader pays changeAmount, gains deltaY. Pool pays deltaY, gains
+      // changeAmount - protocol fee
+      logTradeDetails(
+        deltaX,
+        deltaY,
+        changeAmount,
+        deltaY,
+        protocolFee,
+        true,
+        true,
+      );
+      return deltaY;
+    } else {
+      // changeAmount is deltaY. The pool gives up deltaX.
+      // The trader receives deltaX - protocolFee
+      const deltaX = amountMath.make(
+        x.brand,
+        getInputPrice(changeAmount.value, y.value, x.value, poolOnlyFeeBP),
+      );
+      const protocolFee = multiplyBy(deltaX, protocolShare);
+      x = amountMath.subtract(x, deltaX);
+      y = amountMath.add(y, changeAmount);
+      logTradeDetails(
+        deltaX,
+        changeAmount,
+        amountMath.subtract(deltaX, protocolFee),
+        changeAmount,
+        protocolFee,
+        false,
+        false,
+      );
+      return deltaX;
+    }
+  }
+
+  function tradeOut(changeAmount) {
+    if (changeAmount.brand === x.brand) {
+      const protocolFee = multiplyBy(changeAmount, protocolShare);
+      // trader gets changeAmount, pays deltaY. pool gains deltaY, pays
+      // changeAmount plus the protocolFee
+      const poolChange = amountMath.add(changeAmount, protocolFee);
+      const deltaY = amountMath.make(
+        y.brand,
+        getOutputPrice(poolChange.value, y.value, x.value, poolOnlyFeeBP),
+      );
+      x = amountMath.subtract(x, poolChange);
+      y = amountMath.add(y, deltaY);
+      logTradeDetails(
+        poolChange,
+        deltaY,
+        changeAmount,
+        deltaY,
+        protocolFee,
+        false,
+        true,
+      );
+      return deltaY;
+    } else {
+      const deltaX = amountMath.make(
+        x.brand,
+        getOutputPrice(changeAmount.value, x.value, y.value, poolOnlyFeeBP),
+      );
+      const protocolFee = multiplyBy(deltaX, protocolShare);
+      // trader gains changeAmount, pays deltaX. Pool pays changeAmount, gains
+      // deltaX. Trader pays deltaX + protocolFee
+      x = amountMath.add(x, deltaX);
+      y = amountMath.subtract(y, changeAmount);
+      logTradeDetails(
+        deltaX,
+        changeAmount,
+        amountMath.add(deltaX, protocolFee),
         changeAmount,
         protocolFee,
         true,
