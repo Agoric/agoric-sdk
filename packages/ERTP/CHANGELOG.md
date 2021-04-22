@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.10.7...@agoric/ertp@0.10.8) (2021-04-22)
+
+
+### Bug Fixes
+
+* **ERTP:** avoid jessie warning ([fe9319b](https://github.com/Agoric/agoric-sdk/commit/fe9319b40fe0c1e440db62f4200ffd2598a419d6)), closes [#2704](https://github.com/Agoric/agoric-sdk/issues/2704)
+
+
+
+
+
 ## [0.10.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.10.6...@agoric/ertp@0.10.7) (2021-04-18)
 
 **Note:** Version bump only for package @agoric/ertp
