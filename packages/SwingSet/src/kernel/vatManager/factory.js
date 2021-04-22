@@ -89,12 +89,14 @@ export function makeVatManagerFactory({
 
     if (metered && managerType !== 'local') {
       console.warn(
-        `TODO: support metered with ${managerType}; using local as work-around`,
+        `TODO: support metered with ${managerType}; ${vatID}${managerOptions.name ||
+          ''} using local as work-around`,
       );
     }
     if (setup && managerType !== 'local') {
       console.warn(
-        `TODO: stop using setup() with ${managerType}; using local as work-around`,
+        `TODO: stop using setup() with ${managerType}; ${vatID}${managerOptions.name ||
+          ''} using local as work-around`,
       );
     }
     if (managerType === 'local' || metered || enableSetup) {

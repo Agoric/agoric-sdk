@@ -59,7 +59,6 @@ export function xsnap(options) {
     spawn,
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
-    debug = false,
     parserBufferSize = undefined,
     snapshot = undefined,
     stdout = 'ignore',
@@ -67,6 +66,7 @@ export function xsnap(options) {
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
     env = process.env,
   } = options;
+  const debug = 'debug' in options ? options.debug : !!env.XSNAP_DEBUG;
 
   const platform = {
     Linux: 'lin',
@@ -95,6 +95,10 @@ export function xsnap(options) {
   }
   if (parserBufferSize) {
     args.push('-s', `${parserBufferSize}`);
+  }
+  console.log('@@ xsnap debug?', debug);
+  if (debug) {
+    args.push('DEBUG');
   }
 
   if (env.XSNAP_DEBUG_RR) {

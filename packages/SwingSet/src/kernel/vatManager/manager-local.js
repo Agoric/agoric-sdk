@@ -150,6 +150,8 @@ export function makeLocalVatManagerFactory(tools) {
       endowments,
       inescapableTransforms,
       inescapableGlobalLexicals,
+    }).finally(() => {
+      stopGlobalMeter();
     });
 
     let dispatch;

@@ -126,7 +126,10 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
       }
 
       if (allocateCounter(-cost, throwForever) <= 0) {
-        throw maybeAbort(RangeError(`Allocate meter exceeded`), throwForever);
+        const err = RangeError(`Allocate meter exceeded`);
+        console.info('@@meter!', err);
+        debugger;
+        throw maybeAbort(err, throwForever);
       }
       return value;
     } finally {

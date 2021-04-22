@@ -165,7 +165,7 @@ function makeWorker(port) {
    */
   function makeConsole(tag) {
     const log = level => (...args) =>
-      port.send(['console', level, tag, ...args]);
+      port.send(['console', level, tag, '@@...args']);
     const cons = {
       debug: log('debug'),
       log: log('log'),

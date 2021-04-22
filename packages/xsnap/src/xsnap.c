@@ -9,7 +9,7 @@
 #endif
 
 #ifndef XSNAP_TEST_RECORD
-#define XSNAP_TEST_RECORD 0
+#define XSNAP_TEST_RECORD 1
 #endif
 
 #if XSNAP_TEST_RECORD

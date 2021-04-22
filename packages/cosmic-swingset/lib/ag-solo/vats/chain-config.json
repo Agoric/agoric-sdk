@@ -40,6 +40,9 @@
       }
     },
     "bootstrap": {
+      "creationOptions": {
+        "managerType": "xs-worker"
+      },
       "sourceSpec": "bootstrap.js"
     }
   }

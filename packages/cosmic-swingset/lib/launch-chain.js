@@ -41,6 +41,7 @@ async function buildSwingset(
   if (config === null) {
     config = loadBasedir(vatsDir);
   }
+  console.info('@@bootstrap config', config.vats.bootstrap);
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);
