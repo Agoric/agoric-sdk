@@ -15,3 +15,15 @@
  * @param {Brand} brand
  * @returns {Purse}
  */
+
+/**
+ * Deposits payments or promises for payments according to the
+ * `give` property of the proposal. Using the proposal, creates an
+ * initial allocation including the amount deposited for `give`
+ * keywords and an empty amount for `want` keywords.
+ *
+ * @callback DepositPayments
+ * @param {ProposalRecord} proposal
+ * @param {PaymentPKeywordRecord} payments
+ * @returns {Promise<Allocation>}
+ */

@@ -24,7 +24,8 @@ import '../internal-types';
 /** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
   initialAllocation,
-  instanceAdmin,
+  exitZoeSeatAdmin,
+  hasExited,
   proposal,
   withdrawPayments,
   exitObj,
@@ -39,7 +40,7 @@ export const makeZoeSeatAdminKit = (
   let currentAllocation = initialAllocation;
 
   const doExit = zoeSeatAdmin => {
-    instanceAdmin.removeZoeSeatAdmin(zoeSeatAdmin);
+    exitZoeSeatAdmin(zoeSeatAdmin);
 
     /** @type {PaymentPKeywordRecord} */
     const payout = withdrawPayments(currentAllocation);
@@ -50,7 +51,7 @@ export const makeZoeSeatAdminKit = (
   const zoeSeatAdmin = Far('zoeSeatAdmin', {
     replaceAllocation: replacementAllocation => {
       assert(
-        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+        !hasExited(zoeSeatAdmin),
         `Cannot replace allocation. Seat has already exited`,
       );
       harden(replacementAllocation);
@@ -61,7 +62,7 @@ export const makeZoeSeatAdminKit = (
     },
     exit: reason => {
       assert(
-        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+        !hasExited(zoeSeatAdmin),
         `Cannot exit seat. Seat has already exited`,
       );
       updater.finish(reason);
@@ -69,7 +70,7 @@ export const makeZoeSeatAdminKit = (
     },
     fail: reason => {
       assert(
-        instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+        !hasExited(zoeSeatAdmin),
         `Cannot fail seat. Seat has already exited`,
       );
       updater.fail(reason);
@@ -88,7 +89,7 @@ export const makeZoeSeatAdminKit = (
       return E.get(payoutPromiseKit.promise)[keyword];
     },
     getOfferResult: async () => offerResult,
-    hasExited: async () => !instanceAdmin.hasZoeSeatAdmin(zoeSeatAdmin),
+    hasExited: async () => hasExited(zoeSeatAdmin),
     tryExit: async () => E(exitObj).exit(),
     getNotifier: async () => notifier,
   });

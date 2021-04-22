@@ -32,7 +32,8 @@
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {InstanceAdmin} instanceAdmin
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
  * @param {ProposalRecord} proposal
  * @param {WithdrawPayments} withdrawPayments
  * @param {ERef<ExitObj>} exitObj
@@ -93,14 +94,10 @@
  * request by the contract for an "empty" seat.
  *
  * @typedef {Object} InstanceAdmin
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => Set<ZoeSeatAdmin>} addZoeSeatAdmin
+ * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
- *             seatData: SeatData,
- *             seatHandle: SeatHandle,
- *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
+      initialAllocation: Allocation,
+      proposal: ProposalRecord) => UserSeat } makeUserSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers

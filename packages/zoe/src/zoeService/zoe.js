@@ -22,13 +22,13 @@ import '../internal-types';
 import { Far } from '@agoric/marshal';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
-import { cleanProposal } from '../cleanProposal';
 import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
 import { makeEscrowStorage } from './escrowStorage';
 import { makeIssuerStorage } from '../issuerStorage';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
+import { makeOffer } from './offer/offer';
 
 /**
  * Create an instance of Zoe.
@@ -63,6 +63,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   } = makeIssuerStorage();
 
   const { install, unwrapInstallation } = makeInstallationStorage();
+  const offer = makeOffer(
+    invitationKit.issuer,
+    instanceToInstanceAdmin,
+    depositPayments,
+    getMathKind,
+  );
 
   /** @type {GetAmountOfInvitationThen} */
   const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
@@ -186,28 +192,20 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         const zoeSeatAdmins = new Set();
         let acceptingOffers = true;
 
+        const exitZoeSeatAdmin = zoeSeatAdmin =>
+          zoeSeatAdmins.delete(zoeSeatAdmin);
+        const hasExited = zoeSeatAdmin => !zoeSeatAdmins.has(zoeSeatAdmin);
+
         /** @type {InstanceAdmin} */
         return Far('instanceAdmin', {
-          addZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.add(zoeSeatAdmin),
-          tellZCFToMakeSeat: (
-            invitationHandle,
-            zoeSeatAdmin,
-            seatData,
-            seatHandle,
-          ) => {
-            return E(
-              /** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise),
-            ).addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle);
-          },
-          hasZoeSeatAdmin: zoeSeatAdmin => zoeSeatAdmins.has(zoeSeatAdmin),
-          removeZoeSeatAdmin: zoeSeatAdmin =>
-            zoeSeatAdmins.delete(zoeSeatAdmin),
           getPublicFacet: () => publicFacetPromiseKit.promise,
           getTerms,
           getIssuers,
           getBrands,
           getInstance: () => instance,
-          acceptingOffers: () => acceptingOffers,
+          assertAcceptingOffers: () => {
+            assert(acceptingOffers, `No further offers are accepted`);
+          },
           exitAllSeats: completion => {
             acceptingOffers = false;
             zoeSeatAdmins.forEach(zoeSeatAdmin =>
@@ -219,6 +217,68 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
           stopAcceptingOffers: () => (acceptingOffers = false),
+          makeUserSeat: async (
+            invitationHandle,
+            initialAllocation,
+            proposal,
+          ) => {
+            const offerResultPromiseKit = makePromiseKit();
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
+            offerResultPromiseKit.promise.catch(_ => {});
+            const exitObjPromiseKit = makePromiseKit();
+            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+            // This does not suppress any error messages.
+            exitObjPromiseKit.promise.catch(_ => {});
+            const seatHandle = makeHandle('SeatHandle');
+
+            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+              initialAllocation,
+              exitZoeSeatAdmin,
+              hasExited,
+              proposal,
+              withdrawPayments,
+              exitObjPromiseKit.promise,
+              offerResultPromiseKit.promise,
+            );
+
+            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+
+            const seatData = harden({ proposal, initialAllocation, notifier });
+
+            zoeSeatAdmins.add(zoeSeatAdmin);
+
+            E(/** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise))
+              .addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle)
+              .then(({ offerResultP, exitObj }) => {
+                offerResultPromiseKit.resolve(offerResultP);
+                exitObjPromiseKit.resolve(exitObj);
+              })
+              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
+              // This does not suppress any error messages.
+              .catch(() => {});
+
+            // return the userSeat before the offerHandler is called
+            return userSeat;
+          },
+          makeNoEscrowSeat: (
+            initialAllocation,
+            proposal,
+            exitObj,
+            seatHandle,
+          ) => {
+            const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+              initialAllocation,
+              exitZoeSeatAdmin,
+              hasExited,
+              proposal,
+              withdrawPayments,
+              exitObj,
+            );
+            zoeSeatAdmins.add(zoeSeatAdmin);
+            seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
+            return { userSeat, notifier, zoeSeatAdmin };
+          },
         });
       };
 
@@ -265,23 +325,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           return issuerRecord;
         },
         // A Seat requested by the contract without any payments to escrow
-        makeNoEscrowSeat: (
-          initialAllocation,
-          proposal,
-          exitObj,
-          seatHandle,
-        ) => {
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            instanceAdmin,
-            proposal,
-            withdrawPayments,
-            exitObj,
-          );
-          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier, zoeSeatAdmin };
-        },
+        makeNoEscrowSeat: instanceAdmin.makeNoEscrowSeat,
         exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
         failAllSeats: reason => instanceAdmin.failAllSeats(reason),
         makeZoeMint,
@@ -347,79 +391,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         };
       });
     },
-    offer: async (
-      invitation,
-      uncleanProposal = harden({}),
-      paymentKeywordRecord = harden({}),
-    ) => {
-      return invitationKit.issuer.burn(invitation).then(
-        async invitationAmount => {
-          const invitationValue = invitationAmount.value;
-          assert(Array.isArray(invitationValue));
-          assert(
-            invitationValue.length === 1,
-            'Only one invitation can be redeemed at a time',
-          );
-          const [{ instance, handle: invitationHandle }] = invitationValue;
-          const instanceAdmin = instanceToInstanceAdmin.get(instance);
-          assert(
-            instanceAdmin.acceptingOffers(),
-            `No further offers are accepted`,
-          );
-
-          const proposal = cleanProposal(uncleanProposal, getMathKind);
-          const initialAllocation = await depositPayments(
-            proposal,
-            paymentKeywordRecord,
-          );
-          // AWAIT ///
-
-          const offerResultPromiseKit = makePromiseKit();
-          // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-          // This does not suppress any error messages.
-          offerResultPromiseKit.promise.catch(_ => {});
-          const exitObjPromiseKit = makePromiseKit();
-          // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-          // This does not suppress any error messages.
-          exitObjPromiseKit.promise.catch(_ => {});
-          const seatHandle = makeHandle('SeatHandle');
-
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            instanceAdmin,
-            proposal,
-            withdrawPayments,
-            exitObjPromiseKit.promise,
-            offerResultPromiseKit.promise,
-          );
-
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
-          const seatData = harden({ proposal, initialAllocation, notifier });
-
-          instanceAdmin.addZoeSeatAdmin(zoeSeatAdmin);
-          instanceAdmin
-            .tellZCFToMakeSeat(
-              invitationHandle,
-              zoeSeatAdmin,
-              seatData,
-              seatHandle,
-            )
-            .then(({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
-              exitObjPromiseKit.resolve(exitObj);
-            })
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            .catch(() => {});
-
-          return userSeat;
-        },
-        () => {
-          assert.fail(X`A Zoe invitation is required, not ${invitation}`);
-        },
-      );
-    },
+    offer,
   });
 
   return zoeService;
