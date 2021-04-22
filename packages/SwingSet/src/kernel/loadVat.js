@@ -195,7 +195,14 @@ export function makeVatLoader(stuff) {
       );
     }
 
-    kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
+    kernelSlog.addVat(
+      vatID,
+      isDynamic,
+      description,
+      name,
+      vatSourceBundle,
+      managerType,
+    );
     const managerOptions = {
       managerType,
       bundle: vatSourceBundle,
