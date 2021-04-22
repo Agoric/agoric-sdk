@@ -189,7 +189,14 @@ export function makeSlogger(slogCallbacks, writeObj) {
     });
   }
 
-  function addVat(vatID, dynamic, description, name, vatSourceBundle) {
+  function addVat(
+    vatID,
+    dynamic,
+    description,
+    name,
+    vatSourceBundle,
+    managerType,
+  ) {
     assert(!vatSlogs.has(vatID), X`already have slog for ${vatID}`);
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
@@ -200,6 +207,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
       description,
       name,
       vatSourceBundle,
+      managerType,
     });
     return vatSlog;
   }
