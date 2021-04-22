@@ -1,8 +1,6 @@
 // @ts-check
+// @jessie-check
 /* global makeWeakStore */
-
-// Let's hold off on this until agoric-sdk/issues/2704 is addressed.
-// 'use jessie';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeExternalStore } from '@agoric/store';
