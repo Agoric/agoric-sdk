@@ -108,6 +108,13 @@ function abbreviateReplacer(_, arg) {
   return arg;
 }
 
+function bigIntReplacer(_, arg) {
+  if (typeof arg === 'bigint') {
+    return Number(arg);
+  }
+  return arg;
+}
+
 /**
  * @param { ReturnType<typeof managerPort> } port
  */
@@ -122,8 +129,10 @@ function makeWorker(port) {
    * @param { string } tag
    */
   function makeConsole(tag) {
-    const log = level => (...args) =>
-      port.send(['console', level, tag, ...args]);
+    const log = level => (...args) => {
+      const jsonSafeArgs = JSON.parse(JSON.stringify(args, bigIntReplacer));
+      port.send(['console', level, tag, ...jsonSafeArgs]);
+    };
     const cons = {
       debug: log('debug'),
       log: log('log'),

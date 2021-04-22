@@ -15,6 +15,7 @@ function ignore(p) {
 
 export function buildRootObject(vatPowers, vatParameters) {
   console.log(`vat does buildRootObject`); // make sure console works
+  console.log(BigInt(0)); // make sure BigInt is tolerated: #2936
   // note: XS doesn't appear to print console.log unless an exception happens
   vatPowers.testLog('testLog works');
 
