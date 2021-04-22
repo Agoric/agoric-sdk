@@ -53,12 +53,12 @@
     {{ service }} add-genesis-account \
       {{ faucet }} {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
 
-- name: "Add {{ STAKER_AMOUNT }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
+- name: "Add {{ STAKER_INIT_COINS }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
   become: yes
   become_user: "{{ service }}"
   shell: "{{ service }} add-genesis-account \
     $(ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
-    {{ STAKER_AMOUNT }}"
+    {{ STAKER_INIT_COINS }}"
 
 - set_fact:
     delegates: "{{ lookup('file', SETUP_HOME + '/cosmos-delegates.txt', errors='ignore') }}"
@@ -92,7 +92,7 @@
       --keyring-backend=test \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \
-      {{ STAKER }}-{{ STAKER_NODE }} {{ STAKER_AMOUNT }} \
+      {{ STAKER }}-{{ STAKER_NODE }} {{ STAKER_SELF_DELEGATION }} \
       --chain-id={{ CHAIN_NAME }} --output-document={{ json }}"
   vars:
     json: "/home/{{ service }}/.{{ service }}/config/gentx/{{ STAKER_NODE }}.json"

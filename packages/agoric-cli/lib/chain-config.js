@@ -1,8 +1,8 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-export const MINT_DENOM = 'uag';
-export const STAKING_DENOM = 'uagstake';
+export const MINT_DENOM = 'urun';
+export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 
 export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
