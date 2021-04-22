@@ -154,27 +154,31 @@ export function makeLocalVatManagerFactory(tools) {
       stopGlobalMeter();
     });
 
-    let dispatch;
-    if (typeof vatNS.buildRootObject === 'function') {
-      const { buildRootObject } = vatNS;
-      ls.setBuildRootObject(buildRootObject);
-      dispatch = ls.dispatch;
-    } else if (enableSetup) {
-      const setup = vatNS.default;
-      assert(setup, X`vat source bundle lacks (default) setup() function`);
-      assert(
-        setup instanceof Function,
-        `vat source bundle default export is not a function`,
-      );
-      const helpers = harden({}); // DEPRECATED, todo remove from setup()
-      const state = null; // TODO remove from setup()
-      dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
-    } else {
-      assert.fail(X`vat source bundle lacks buildRootObject() function`);
-    }
+    try {
+      let dispatch;
+      if (typeof vatNS.buildRootObject === 'function') {
+        const { buildRootObject } = vatNS;
+        ls.setBuildRootObject(buildRootObject);
+        dispatch = ls.dispatch;
+      } else if (enableSetup) {
+        const setup = vatNS.default;
+        assert(setup, X`vat source bundle lacks (default) setup() function`);
+        assert(
+          setup instanceof Function,
+          `vat source bundle default export is not a function`,
+        );
+        const helpers = harden({}); // DEPRECATED, todo remove from setup()
+        const state = null; // TODO remove from setup()
+        dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
+      } else {
+        assert.fail(X`vat source bundle lacks buildRootObject() function`);
+      }
 
-    const manager = finish(dispatch, meterRecord);
-    return manager;
+      const manager = finish(dispatch, meterRecord);
+      return manager;
+    } finally {
+      stopGlobalMeter();
+    }
   }
 
   const localVatManagerFactory = harden({
