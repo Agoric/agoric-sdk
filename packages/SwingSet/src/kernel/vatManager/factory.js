@@ -87,7 +87,7 @@ export function makeVatManagerFactory({
       enableSetup,
     } = managerOptions;
 
-    if (metered && managerType !== 'local') {
+    if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
       console.warn(
         `TODO: support metered with ${managerType}; using local as work-around`,
       );
@@ -97,7 +97,7 @@ export function makeVatManagerFactory({
         `TODO: stop using setup() with ${managerType}; using local as work-around`,
       );
     }
-    if (managerType === 'local' || metered || enableSetup) {
+    if (managerType === 'local' || enableSetup) {
       if (setup) {
         return localFactory.createFromSetup(
           vatID,

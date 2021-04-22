@@ -53,7 +53,6 @@ export function makeXsSubprocessFactory({
       enableDisavow,
       name,
     } = managerOptions;
-    assert(!managerOptions.metered, 'xs-worker: metered not supported yet');
     assert(
       !managerOptions.enableSetup,
       'xs-worker: enableSetup not supported at all',
