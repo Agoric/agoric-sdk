@@ -2,20 +2,18 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
 
 /** @type {MakeOfferAndFindInvitationAmount} */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,
   zoeInvitationPurse,
-  getLocalAmountMath,
-  invitationMath,
 ) => {
   /** @type {FindInvitationAmount} */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
 
-    // TODO: use a new AmountMath method instead to improve efficiency
     // For every key and value in invitationDetailsCriteria, return an amount
     // with any matches for those exact keys and values. Keys not in
     // invitationDetails count as a match
@@ -29,7 +27,7 @@ export const makeOfferAndFindInvitationAmount = (
     const matchingValue = invitationValue.find(matches);
     const value =
       matchingValue === undefined ? harden([]) : harden([matchingValue]);
-    return invitationMath.make(value);
+    return amountMath.make(invitationAmount.brand, value);
   };
 
   const withdrawPayments = (proposal, paymentsWithPursePetnames) => {
@@ -49,31 +47,6 @@ export const makeOfferAndFindInvitationAmount = (
     // Let's go with the first one that fits our requirements
     const invitationAmount = await findInvitationAmount(invitationDetails);
     return E(zoeInvitationPurse).withdraw(invitationAmount);
-  };
-
-  const makeAmount = amountWithPetnames => {
-    const { brand: brandPetname, value } = amountWithPetnames;
-    const math = getLocalAmountMath(brandPetname);
-    return math.make(value);
-  };
-
-  const makeProposalPart = giveOrWant => {
-    return Object.fromEntries(
-      Object.entries(giveOrWant).map(([keyword, amountWithPetnames]) => {
-        const amount = makeAmount(amountWithPetnames);
-        return [keyword, amount];
-      }),
-    );
-  };
-
-  const makeProposal = proposalWithPetnames => {
-    const { want, give } = proposalWithPetnames;
-
-    return harden({
-      want: makeProposalPart(want || {}),
-      give: makeProposalPart(give || {}),
-      exit: proposalWithPetnames.exit,
-    });
   };
 
   const getInvitation = (invitation, invitationDetails) => {
@@ -114,7 +87,7 @@ export const makeOfferAndFindInvitationAmount = (
     const {
       invitation,
       partialInvitationDetails,
-      proposalWithBrandPetnames,
+      proposal,
       paymentsWithPursePetnames,
       payoutPursePetnames,
     } = config;
@@ -123,7 +96,6 @@ export const makeOfferAndFindInvitationAmount = (
     const invitationDetails = await E(zoe).getInvitationDetails(
       invitationToUse,
     );
-    const proposal = makeProposal(proposalWithBrandPetnames);
     const payments = withdrawPayments(proposal, paymentsWithPursePetnames);
 
     const seat = E(zoe).offer(invitationToUse, proposal, payments);

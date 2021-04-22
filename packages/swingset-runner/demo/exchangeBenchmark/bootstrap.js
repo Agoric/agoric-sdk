@@ -1,4 +1,4 @@
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -36,11 +36,11 @@ export function buildRootObject(_vatPowers, vatParameters) {
       const all = [makeIssuerKit('moola'), makeIssuerKit('simoleans')];
       const mints = all.map(objs => objs.mint);
       const issuers = all.map(objs => objs.issuer);
-      const amountMaths = all.map(objs => objs.amountMath);
+      const brands = all.map(objs => objs.brand);
 
       function makePayments(values) {
         return mints.map((mint, i) =>
-          mint.mintPayment(amountMaths[i].make(values[i])),
+          mint.mintPayment(amountMath.make(brands[i], values[i])),
         );
       }
 

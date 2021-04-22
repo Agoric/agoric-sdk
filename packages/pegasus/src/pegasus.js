@@ -7,6 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
+import { amountMath } from '@agoric/ertp';
 
 import '@agoric/notifier/exported';
 import '@agoric/cosmic-swingset/exported';
@@ -475,13 +476,13 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
       // Ensure the issuer can be used in Zoe offers.
       const localKeyword = createLocalIssuerKeyword();
-      const {
-        brand: localBrand,
-        amountMath: localAmountMath,
-      } = await zcf.saveIssuer(localIssuer, localKeyword);
+      const { brand: localBrand } = await zcf.saveIssuer(
+        localIssuer,
+        localKeyword,
+      );
 
       /**
-       * Transfer amount (of localBrand and localAmountMath) from loser to winner seats.
+       * Transfer amount (of localBrand) from loser to winner seats.
        *
        * @param {Amount} amount amount to transfer
        * @param {Keyword} loserKeyword the keyword to take from the loser
@@ -502,8 +503,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
           winnerKeyword,
           localBrand,
         );
-        const newLoser = localAmountMath.subtract(currentLoser, amount);
-        const newWinner = localAmountMath.add(currentWinner, amount);
+        const newLoser = amountMath.subtract(currentLoser, amount);
+        const newWinner = amountMath.add(currentWinner, amount);
         const loserStage = loser.stage({ [loserKeyword]: newLoser });
         const winnerStage = winner.stage({ [winnerKeyword]: newWinner });
         zcf.reallocate(loserStage, winnerStage);

@@ -18,18 +18,6 @@
  */
 
 /**
- * @callback SaveLocalAmountMaths
- * @param {Array<Petname>} petnames
- * @returns {Promise<void[]>}
- */
-
-/**
- * @callback GetLocalAmountMath
- * @param {Petname} petname
- * @returns {DeprecatedAmountMath}
- */
-
-/**
  * @typedef {Object} StartInstanceAndSaveConfig
  * @property {Petname} instancePetname
  * @property {ERef<Installation>} installation
@@ -54,19 +42,10 @@
  */
 
 /**
- * @typedef {Partial<ProposalRecordWithBrandPetnames>} ProposalWithBrandPetnames
- *
- * @typedef {{give: Record<Keyword, { brand: Petname, value: any}>,
- *            want: Record<Keyword, { brand: Petname, value: any}>,
- *            exit: ExitRule
- *           }} ProposalRecordWithBrandPetnames
- */
-
-/**
  * @typedef {Object} OfferHelperConfig
  * @property {ERef<Invitation>=} invitation
  * @property {Partial<InvitationDetails>=} partialInvitationDetails
- * @property {ProposalWithBrandPetnames} proposalWithBrandPetnames
+ * @property {Proposal} proposal
  * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
  * @property {Record<Keyword, Petname>} payoutPursePetnames
  */

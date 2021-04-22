@@ -33,7 +33,7 @@ Zoe has a single  table of instances. This is used to track the public and priva
 
 Zoe keeps all deposited funds in unsegregated purses. The amount associated with each offer is recorded in an offerTable, which is kept in sync with parallel tables in each instance of zcf. There is an updater/notifier pair in the Zoe version of those tables, which can be obtained directly from Zoe. Zoe also holds onto payout promises for each offer, which it resolves when completing the offers.
 
-Both Zoe and Zcf keep tables of Issuer, Brands, and AmountMaths for convenience.
+Both Zoe and Zcf keep tables of Issuer and Brands for convenience.
 
 ### Security Claims
 

@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { amountMath, getMathKind, MathKind } from '@agoric/ertp';
+import { amountMath, getMathKind } from '@agoric/ertp';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
@@ -70,17 +70,14 @@ const coerceAmountKeywordRecord = (
 
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the amountMath
-  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
+  // indicated by brand. `amountMath.coerce` throws if coercion fails.
   const coercedAmounts = amounts.map(amount => {
     const brandMathKind = getMathKindByBrand(amount.brand);
     const amountMathKind = getMathKind(amount);
     // TODO: replace this assertion with a check of the mathKind
-    // property on the brand, when that exists. Additionally, remove
-    // the deprecated STRING_SET
+    // property on the brand, when that exists.
     assert(
-      amountMathKind === brandMathKind ||
-        (brandMathKind === MathKind.STRING_SET &&
-          amountMathKind === MathKind.SET),
+      amountMathKind === brandMathKind,
       X`The amount ${amount} did not have the mathKind of the brand ${brandMathKind}`,
     );
     return amountMath.coerce(amount, amount.brand);

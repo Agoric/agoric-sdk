@@ -14,6 +14,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
+import { amountMath } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
 
@@ -270,8 +271,7 @@ export function makeWallet({
         actions: Far('purse.actions', {
           // Send a value from this purse.
           async send(receiverP, sendValue) {
-            const { amountMath } = brandTable.getByBrand(brand);
-            const amount = amountMath.make(sendValue);
+            const amount = amountMath.make(brand, sendValue);
             const payment = await E(purse).withdraw(amount);
             try {
               await E(receiverP).receive(payment);
@@ -746,12 +746,12 @@ export function makeWallet({
 
     // eslint-disable-next-line no-use-before-define
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
-    const { amountMath: invitationMath } = brandTable.getByIssuer(zoeIssuer);
+    const { brand: invitationBrand } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
       idToOfferResultPromiseKit,
       board,
       zoeInvitePurse,
-      invitationMath,
+      invitationBrand,
       offer,
     );
 

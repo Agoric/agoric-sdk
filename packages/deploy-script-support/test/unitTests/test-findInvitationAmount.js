@@ -1,26 +1,22 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
 import { makeOfferAndFindInvitationAmount } from '../../src/offer';
 
 test('findInvitationAmount', async t => {
-  const { mint, issuer, amountMath: invitationMath } = makeIssuerKit(
-    'invitations',
-    MathKind.SET,
-  );
+  const { mint, issuer, brand } = makeIssuerKit('invitations', MathKind.SET);
   const zoeInvitationPurse = issuer.makeEmptyPurse();
 
   const walletAdmin = {};
   const zoe = {};
-  const getLocalAmountMath = {};
 
-  const paymentAmount = invitationMath.make(
-    harden([{ description: 'found', instance: {} }]),
-  );
+  const paymentAmount = amountMath.make(brand, [
+    { description: 'found', instance: {} },
+  ]);
   const payment = mint.mintPayment(paymentAmount);
   zoeInvitationPurse.deposit(payment);
 
@@ -28,14 +24,13 @@ test('findInvitationAmount', async t => {
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    getLocalAmountMath,
-    invitationMath,
+    brand,
   );
 
   const notFoundResult = await findInvitationAmount({
     description: 'not found',
   });
-  t.deepEqual(notFoundResult, invitationMath.make(harden([])));
+  t.deepEqual(notFoundResult, amountMath.makeEmpty(brand, MathKind.SET));
 
   const foundResult = await findInvitationAmount({ description: 'found' });
   t.deepEqual(foundResult, paymentAmount);

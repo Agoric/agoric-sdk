@@ -6,7 +6,6 @@ import { E } from '@agoric/eventual-send';
 import { makeInstall } from './install';
 import { makeResolvePaths } from './resolvePath';
 import { makeOfferAndFindInvitationAmount } from './offer';
-import { makeLocalAmountManager } from './saveLocalAmountMath';
 import { makeStartInstance } from './startInstance';
 import { makeDepositInvitation } from './depositInvitation';
 import { makeSaveIssuer } from './saveIssuer';
@@ -15,7 +14,6 @@ import { assertOfferResult } from './assertOfferResult';
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
 // on this end.
-const ZOE_INVITE_BRAND_PETNAME = 'zoe invite';
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 export const makeHelpers = async (homePromise, endowments) => {
@@ -44,10 +42,6 @@ export const makeHelpers = async (homePromise, endowments) => {
     board,
   );
 
-  const { saveLocalAmountMaths, getLocalAmountMath } = makeLocalAmountManager(
-    issuerManager,
-  );
-
   const startInstance = makeStartInstance(
     issuerManager,
     instanceManager,
@@ -55,23 +49,13 @@ export const makeHelpers = async (homePromise, endowments) => {
     zoeInvitationPurse,
   );
 
-  // Save the Zoe invitation amountMath locally
-  await saveLocalAmountMaths([ZOE_INVITE_BRAND_PETNAME]);
-  const invitationMath = getLocalAmountMath(ZOE_INVITE_BRAND_PETNAME);
-
   const { offer, findInvitationAmount } = makeOfferAndFindInvitationAmount(
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    getLocalAmountMath,
-    invitationMath,
   );
 
-  const saveIssuer = makeSaveIssuer(
-    walletAdmin,
-    saveLocalAmountMaths,
-    issuerManager,
-  );
+  const saveIssuer = makeSaveIssuer(walletAdmin, issuerManager);
 
   const depositInvitation = makeDepositInvitation(zoeInvitationPurse);
 
@@ -79,7 +63,6 @@ export const makeHelpers = async (homePromise, endowments) => {
     resolvePathForLocalContract,
     resolvePathForPackagedContract,
     install,
-    saveLocalAmountMaths,
     startInstance,
     offer,
     findInvitationAmount,

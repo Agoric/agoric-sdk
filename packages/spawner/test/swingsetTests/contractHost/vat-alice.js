@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { allComparable } from '@agoric/same-structure';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 
 import { makeCollect } from '../../../src/makeCollect';
 
@@ -36,21 +36,23 @@ function makeAliceMaker(host, log) {
     ) {
       const inviteIssuerP = E(host).getInvitationIssuer();
 
-      const moneyMath = await makeLocalAmountMath(moneyIssuerP);
-      const stockMath = await makeLocalAmountMath(stockIssuerP);
+      const stockBrand = await E(stockIssuerP).getBrand();
+      const moneyBrand = await E(moneyIssuerP).getBrand();
 
       const alice = Far('alice', {
         payBobWell(bob) {
           log('++ alice.payBobWell starting');
-          const paymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
+          const paymentP = E(myMoneyPurseP).withdraw(
+            amountMath.make(moneyBrand, 10n),
+          );
           return E(bob).buy('shoe', paymentP);
         },
 
         acceptInvite(allegedInvitePaymentP) {
           log('++ alice.acceptInvite starting');
           showPaymentBalance('alice invite', allegedInvitePaymentP);
-          const clams10 = moneyMath.make(10);
-          const fudco7 = stockMath.make(7);
+          const clams10 = amountMath.make(moneyBrand, 10n);
+          const fudco7 = amountMath.make(stockBrand, 7n);
           const verifiedInvitePaymentP = E(inviteIssuerP)
             .getAmountOf(allegedInvitePaymentP)
             .then(inviteAmount => {
@@ -76,7 +78,9 @@ function makeAliceMaker(host, log) {
             ),
           ).then(_ => {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
-            const moneyPaymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
+            const moneyPaymentP = E(myMoneyPurseP).withdraw(
+              amountMath.make(moneyBrand, 10),
+            );
             E(seatP).offer(moneyPaymentP);
             return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
           });
@@ -103,8 +107,8 @@ function makeAliceMaker(host, log) {
 
           const verifiedInvitePaymentP = Promise.resolve(inviteAmountP).then(
             inviteAmount => {
-              const smackers10 = moneyMath.make(10);
-              const yoyodyne7 = stockMath.make(7);
+              const smackers10 = amountMath.make(moneyBrand, 10n);
+              const yoyodyne7 = amountMath.make(stockBrand, 7n);
               const coveredCallTermsP = harden([
                 smackers10,
                 yoyodyne7,
@@ -134,7 +138,9 @@ function makeAliceMaker(host, log) {
             ),
           ).then(_ => {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
-            const moneyPaymentP = E(myMoneyPurseP).withdraw(moneyMath.make(10));
+            const moneyPaymentP = E(myMoneyPurseP).withdraw(
+              amountMath.make(moneyBrand, 10n),
+            );
             E(seatP).offer(moneyPaymentP);
             return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
           });
@@ -142,7 +148,7 @@ function makeAliceMaker(host, log) {
 
         acceptOptionForFred(allegedInvitePaymentP) {
           log('++ alice.acceptOptionForFred starting');
-          const finNeeded = moneyMath.make(55);
+          const finNeeded = amountMath.make(moneyBrand, 55n);
           const inviteNeededP = E(inviteIssuerP).getAmountOf(
             allegedInvitePaymentP,
           );

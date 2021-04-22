@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { bundleFunction } from '../../make-function-bundle';
@@ -128,19 +128,17 @@ export function buildRootObject(vatPowers, vatParameters) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const { mint: moneyMint, issuer: moneyIssuer } = await E(
+    const { mint: moneyMint, issuer: moneyIssuer, brand: moneyBrand } = await E(
       mint,
     ).makeIssuerKit('moola');
-    const moolaAmountMath = await makeLocalAmountMath(moneyIssuer);
-    const moola = moolaAmountMath.make;
+    const moola = value => amountMath.make(moneyBrand, value);
     const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
     const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
 
-    const { mint: stockMint, issuer: stockIssuer } = await E(
+    const { mint: stockMint, issuer: stockIssuer, brand: stockBrand } = await E(
       mint,
     ).makeIssuerKit('Tyrell');
-    const stockAmountMath = await makeLocalAmountMath(stockIssuer);
-    const stocks = stockAmountMath.make;
+    const stocks = value => amountMath.make(stockBrand, value);
     const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
     const bobStockPaymentP = E(stockMint).mintPayment(stocks(2003));
 
@@ -179,19 +177,17 @@ export function buildRootObject(vatPowers, vatParameters) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
     const coveredCallInstallationP = E(host).install(coveredCallSrcs);
 
-    const { mint: moneyMint, issuer: moneyIssuer } = await E(
+    const { mint: moneyMint, issuer: moneyIssuer, brand: moneyBrand } = await E(
       mint,
     ).makeIssuerKit('clams');
-    const moneyAmountMath = await makeLocalAmountMath(moneyIssuer);
-    const money = moneyAmountMath.make;
+    const money = value => amountMath.make(moneyBrand, value);
     const aliceMoneyPayment = await E(moneyMint).mintPayment(money(1000));
     const bobMoneyPayment = await E(moneyMint).mintPayment(money(1001));
 
-    const { mint: stockMint, issuer: stockIssuer } = await E(
+    const { mint: stockMint, issuer: stockIssuer, brand: stockBrand } = await E(
       mint,
     ).makeIssuerKit('fudco');
-    const stockAmountMath = await makeLocalAmountMath(stockIssuer);
-    const stocks = stockAmountMath.make;
+    const stocks = value => amountMath.make(stockBrand, value);
     const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));
     const bobStockPayment = await E(stockMint).mintPayment(stocks(2003));
 

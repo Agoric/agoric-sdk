@@ -1,8 +1,9 @@
 import { E } from '@agoric/eventual-send';
+import { amountMath } from '../../../src';
 
 function makeAliceMaker(log) {
   return harden({
-    make(issuer, amountMath, oldPaymentP) {
+    make(issuer, brand, oldPaymentP) {
       const alice = harden({
         async testBasicFunctionality() {
           // isLive
@@ -28,7 +29,7 @@ function makeAliceMaker(log) {
           log('newPayment amount: ', newAmount);
 
           // splitMany
-          const moola200 = await E(amountMath).make(200);
+          const moola200 = amountMath.make(brand, 200n);
           const [paymentToBurn, paymentToClaim, ...payments] = await E(
             issuer,
           ).splitMany(

@@ -37,7 +37,7 @@
  */
 
 /**
- * @typedef {'nat' | 'set' | 'strSet'} AmountMathKind
+ * @typedef {'nat' | 'set' } AmountMathKind
  */
 
 /**
@@ -308,7 +308,6 @@
  *
  * @property {Mint} mint
  * @property {Issuer} issuer
- * @property {DeprecatedAmountMath} amountMath
  * @property {Brand} brand
  */
 
@@ -487,22 +486,4 @@
  *  `makeIssuerKit`
  * @param {string} kind The ERTPKind
  * @returns {string}
- */
-
-/**
- * @typedef {Object} DeprecatedAmountMath
- * This version of amountMath is deprecated. Please use `amountMath` directly
- * as exported by `@agoric/ertp`.
- *
- * @property {() => Brand} getBrand Deprecated
- * @property {() => AmountMathKind} getAmountMathKind  Deprecated
- * @property {(allegedValue: Value) => Amount} make Deprecated
- * @property {(allegedAmount: Amount) => Amount} coerce Deprecated
- * @property {(amount: Amount) => Value} getValue Deprecated
- * @property {() => Amount} getEmpty Deprecated
- * @property {(amount: Amount) => boolean} isEmpty Deprecated
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isGTE Deprecated
- * @property {(leftAmount: Amount, rightAmount: Amount) => boolean} isEqual Deprecated
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} add Deprecated
- * @property {(leftAmount: Amount, rightAmount: Amount) => Amount} subtract Deprecated
  */

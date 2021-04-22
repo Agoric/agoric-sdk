@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, makeLocalAmountMath } from '@agoric/ertp';
+import { makeIssuerKit, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -13,8 +13,6 @@ import { E } from '@agoric/eventual-send';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer';
 
 test('offer', async t => {
-  const MOOLA_BRAND_PETNAME = 'moola';
-  const USD_BRAND_PETNAME = 'usd';
   const MOOLA_PURSE_PETNAME = 'moola purse';
   const USD_PURSE_PETNAME = 'usd purse';
 
@@ -23,7 +21,9 @@ test('offer', async t => {
   const moolaPurse = moolaKit.issuer.makeEmptyPurse();
   const usdPurse = usdKit.issuer.makeEmptyPurse();
 
-  moolaPurse.deposit(moolaKit.mint.mintPayment(moolaKit.amountMath.make(5)));
+  moolaPurse.deposit(
+    moolaKit.mint.mintPayment(amountMath.make(moolaKit.brand, 5n)),
+  );
 
   const walletAdmin = {
     getPurse: petname => {
@@ -58,33 +58,19 @@ test('offer', async t => {
 
   await E(zoeInvitationPurse).deposit(creatorInvitation);
 
-  const invitationMath = await makeLocalAmountMath(zoeInvitationIssuer);
-
-  const getLocalAmountMath = petname => {
-    if (petname === MOOLA_BRAND_PETNAME) {
-      return moolaKit.amountMath;
-    }
-    if (petname === USD_BRAND_PETNAME) {
-      return usdKit.amountMath;
-    }
-    throw Error('not found');
-  };
-
   const { offer } = makeOfferAndFindInvitationAmount(
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    getLocalAmountMath,
-    invitationMath,
   );
 
-  const offerConfig = {
+  const offerConfig = harden({
     partialInvitationDetails: { description: 'getRefund' },
-    proposalWithBrandPetnames: {
+    proposal: {
       give: {
-        Collateral: { brand: MOOLA_BRAND_PETNAME, value: 1 },
+        Collateral: amountMath.make(moolaKit.brand, 1n),
       },
-      want: { Loan: { brand: USD_BRAND_PETNAME, value: 1 } },
+      want: { Loan: amountMath.make(usdKit.brand, 1n) },
     },
     paymentsWithPursePetnames: {
       Collateral: MOOLA_PURSE_PETNAME,
@@ -93,7 +79,7 @@ test('offer', async t => {
       Collateral: MOOLA_PURSE_PETNAME,
       Loan: USD_PURSE_PETNAME,
     },
-  };
+  });
 
   const { seat, deposited, invitationDetails } = await offer(offerConfig);
 
@@ -104,7 +90,7 @@ test('offer', async t => {
 
   t.deepEqual(
     await E(moolaPurse).getCurrentAmount(),
-    moolaKit.amountMath.make(5),
+    amountMath.make(moolaKit.brand, 5n),
   );
 
   t.is(invitationDetails.description, 'getRefund');
