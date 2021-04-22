@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.16.3...@agoric/swingset-vat@0.16.4) (2021-04-22)
+
+**Note:** Version bump only for package @agoric/swingset-vat
+
+
+
+
+
 ## [0.16.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.16.2...@agoric/swingset-vat@0.16.3) (2021-04-18)
 
 **Note:** Version bump only for package @agoric/swingset-vat

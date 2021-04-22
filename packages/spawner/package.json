@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "Wrapper for JavaScript map",
   "parsers": {
     "js": "mjs"
@@ -31,21 +31,21 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.8",
-    "@agoric/ertp": "^0.10.7",
-    "@agoric/eventual-send": "^0.13.10",
-    "@agoric/import-bundle": "^0.2.10",
-    "@agoric/marshal": "^0.4.7",
+    "@agoric/assert": "^0.2.9",
+    "@agoric/ertp": "^0.10.8",
+    "@agoric/eventual-send": "^0.13.11",
+    "@agoric/import-bundle": "^0.2.11",
+    "@agoric/marshal": "^0.4.8",
     "@agoric/nat": "^4.0.0",
-    "@agoric/promise-kit": "^0.2.9",
-    "@agoric/same-structure": "^0.1.9",
-    "@agoric/store": "^0.4.10",
-    "@agoric/transform-metering": "^1.4.8"
+    "@agoric/promise-kit": "^0.2.10",
+    "@agoric/same-structure": "^0.1.10",
+    "@agoric/store": "^0.4.11",
+    "@agoric/transform-metering": "^1.4.9"
   },
   "devDependencies": {
-    "@agoric/install-metering-and-ses": "^0.2.9",
-    "@agoric/install-ses": "^0.5.9",
-    "@agoric/swingset-vat": "^0.16.3",
+    "@agoric/install-metering-and-ses": "^0.2.10",
+    "@agoric/install-ses": "^0.5.10",
+    "@agoric/swingset-vat": "^0.16.4",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
     "nyc": "^15.1.0"

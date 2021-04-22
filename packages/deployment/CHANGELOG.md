@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.26.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.4...@agoric/deployment@1.26.5) (2021-04-22)
+
+
+### Bug Fixes
+
+* faucet delegate gives 62BLD, 93RUN ([4b80400](https://github.com/Agoric/agoric-sdk/commit/4b804005d2e58acf8cc86cca5312b9312fe9b77d))
+* rename cosmos-level tokens uagstake/uag to ubld/urun ([0557983](https://github.com/Agoric/agoric-sdk/commit/0557983210571c9c2ba801d68644d71641a3f790))
+* reorganise deployment ([5e7f537](https://github.com/Agoric/agoric-sdk/commit/5e7f537021f747327673b6f5819324eb048a3d96))
+
+
+
+
+
 ## [1.26.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.3...@agoric/deployment@1.26.4) (2021-04-18)
 
 **Note:** Version bump only for package @agoric/deployment
