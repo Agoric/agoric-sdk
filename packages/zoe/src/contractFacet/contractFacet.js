@@ -9,7 +9,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { assert, details as X, q, makeAssert } from '@agoric/assert';
+import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
@@ -18,20 +18,18 @@ import { MathKind, amountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertRightsConserved } from './rightsConservation';
-import { makeIssuerTable } from '../issuerTable';
-import {
-  assertKeywordName,
-  getKeywords,
-  cleanProposal,
-} from '../cleanProposal';
+import { cleanProposal } from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
+import { makeIssuerStorage } from '../issuerStorage';
+import { makeIssuerRecord } from '../issuerRecord';
 
 import '../../exported';
 import '../internal-types';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage';
 
 export function buildRootObject(powers, _params, testJigSetter = undefined) {
   /** @type {ExecuteContract} */
@@ -40,11 +38,15 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     zoeService,
     invitationIssuer,
     zoeInstanceAdmin,
-    instanceRecord,
+    instanceRecordFromZoe,
+    issuerStorageFromZoe,
   ) => {
-    /** @type {IssuerTable} */
-    const issuerTable = makeIssuerTable();
-    const getMathKindByBrand = brand => issuerTable.getByBrand(brand).mathKind;
+    const {
+      storeIssuerRecord,
+      getMathKind,
+      getBrandForIssuer,
+      getIssuerForBrand,
+    } = makeIssuerStorage(issuerStorageFromZoe);
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeWeakStore('invitationHandle');
@@ -54,46 +56,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {WeakStore<ZCFSeat,SeatHandle>} */
     const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
-    const keywords = Object.keys(instanceRecord.terms.issuers);
-    const issuers = Object.values(instanceRecord.terms.issuers);
-
-    const initIssuers = issuersP =>
-      Promise.all(issuersP.map(issuerTable.initIssuer));
-
-    /** @type {RegisterIssuerRecord} */
-    const registerIssuerRecord = (keyword, issuerRecord) => {
-      instanceRecord = {
-        ...instanceRecord,
-        terms: {
-          ...instanceRecord.terms,
-          issuers: {
-            ...instanceRecord.terms.issuers,
-            [keyword]: issuerRecord.issuer,
-          },
-          brands: {
-            ...instanceRecord.terms.brands,
-            [keyword]: issuerRecord.brand,
-          },
-        },
-      };
-
-      return issuerRecord;
-    };
-
-    /** @type {RegisterIssuerRecordWithKeyword} */
-    const registerIssuerRecordWithKeyword = (keyword, issuerRecord) => {
-      assertKeywordName(keyword);
-      assert(
-        !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-        X`keyword ${q(keyword)} must be unique`,
-      );
-      return registerIssuerRecord(keyword, issuerRecord);
-    };
-
-    const issuerRecords = await initIssuers(issuers);
-    issuerRecords.forEach((issuerRecord, i) => {
-      registerIssuerRecord(keywords[i], issuerRecord);
-    });
+    // Make the instanceRecord
+    const {
+      addIssuerToInstanceRecord,
+      getTerms,
+      assertUniqueKeyword,
+    } = makeInstanceRecordStorage(instanceRecordFromZoe);
 
     const allSeatStagings = new WeakSet();
 
@@ -147,7 +115,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
+      const proposal = cleanProposal(harden({ exit }), getMathKind);
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -169,7 +137,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         allSeatStagings,
         zoeSeatAdminPromiseKit.promise,
         seatData,
-        getMathKindByBrand,
+        getMathKind,
       );
       zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
@@ -197,10 +165,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       amountMathKind = MathKind.NAT,
       displayInfo,
     ) => {
-      assert(
-        !(keyword in instanceRecord.terms.issuers),
-        X`Keyword ${keyword} already registered`,
-      );
+      assertUniqueKeyword(keyword);
 
       const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
         keyword,
@@ -211,13 +176,14 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zoeMintP,
       ).getIssuerRecord();
       // AWAIT
-      const mintyIssuerRecord = harden({
-        brand: mintyBrand,
-        issuer: mintyIssuer,
-        mathKind: amountMathKind,
-      });
-      registerIssuerRecordWithKeyword(keyword, mintyIssuerRecord);
-      issuerTable.initIssuerByRecord(mintyIssuerRecord);
+      const mintyIssuerRecord = makeIssuerRecord(
+        mintyBrand,
+        mintyIssuer,
+        amountMathKind,
+        displayInfo,
+      );
+      addIssuerToInstanceRecord(keyword, mintyIssuerRecord);
+      storeIssuerRecord(mintyIssuerRecord);
 
       /** @type {ZCFMint} */
       const zcfMint = Far('zcfMint', {
@@ -344,23 +310,17 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
         reallocateInternal(seatStagings);
       },
-      assertUniqueKeyword: keyword => {
-        assertKeywordName(keyword);
-        assert(
-          !getKeywords(instanceRecord.terms.issuers).includes(keyword),
-          X`keyword ${q(keyword)} must be unique`,
-        );
-      },
+      assertUniqueKeyword,
       saveIssuer: async (issuerP, keyword) => {
         // TODO: The checks of the keyword for uniqueness are
         // duplicated. Assess how waiting on promises to resolve might
         // affect those checks and see if one can be removed.
-        zcf.assertUniqueKeyword(keyword);
-        await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
+        assertUniqueKeyword(keyword);
+        const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
         // AWAIT ///
-        const record = await issuerTable.initIssuer(issuerP);
-        // AWAIT ///
-        return registerIssuerRecordWithKeyword(keyword, record);
+        storeIssuerRecord(record);
+        addIssuerToInstanceRecord(keyword, record);
+        return record;
       },
       makeInvitation: (
         offerHandler = () => {},
@@ -402,10 +362,10 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       // The methods below are pure and have no side-effects //
       getZoeService: () => zoeService,
       getInvitationIssuer: () => invitationIssuer,
-      getTerms: () => instanceRecord.terms,
-      getBrandForIssuer: issuer => issuerTable.getByIssuer(issuer).brand,
-      getIssuerForBrand: brand => issuerTable.getByBrand(brand).issuer,
-      getMathKind: brand => issuerTable.getByBrand(brand).mathKind,
+      getTerms,
+      getBrandForIssuer,
+      getIssuerForBrand,
+      getMathKind,
       /**
        * Provide a jig object for testing purposes only.
        *
@@ -439,7 +399,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
-          getMathKindByBrand,
+          getMathKind,
         );
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);

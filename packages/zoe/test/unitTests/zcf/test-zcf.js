@@ -343,7 +343,7 @@ test(`zcf.makeZCFMint - keyword already in use`, async t => {
   const { moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ A: moolaIssuer });
   await t.throwsAsync(() => zcf.makeZCFMint('A'), {
-    message: /Keyword .* already registered/,
+    message: 'keyword "A" must be unique',
   });
 });
 

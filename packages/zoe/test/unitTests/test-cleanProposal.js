@@ -21,9 +21,9 @@ test('cleanProposal test', t => {
     exit: { onDemand: null },
   });
 
-  const getMathKindByBrand = _brand => MathKind.NAT;
+  const getMathKind = _brand => MathKind.NAT;
 
-  const actual = cleanProposal(proposal, getMathKindByBrand);
+  const actual = cleanProposal(proposal, getMathKind);
 
   t.deepEqual(actual, expected);
 });
@@ -41,10 +41,10 @@ test('cleanProposal - all empty', t => {
     exit: { waived: null },
   });
 
-  const getMathKindByBrand = _brand => MathKind.NAT;
+  const getMathKind = _brand => MathKind.NAT;
 
   // cleanProposal no longer fills in empty keywords
-  t.deepEqual(cleanProposal(proposal, getMathKindByBrand), expected);
+  t.deepEqual(cleanProposal(proposal, getMathKind), expected);
 });
 
 test('cleanProposal - repeated brands', t => {
@@ -66,10 +66,10 @@ test('cleanProposal - repeated brands', t => {
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
-  const getMathKindByBrand = _brand => MathKind.NAT;
+  const getMathKind = _brand => MathKind.NAT;
 
   // cleanProposal no longer fills in empty keywords
-  const actual = cleanProposal(proposal, getMathKindByBrand);
+  const actual = cleanProposal(proposal, getMathKind);
   t.deepEqual(actual.want, expected.want);
   t.deepEqual(actual.give, expected.give);
   t.deepEqual(actual.exit, expected.exit);
@@ -85,9 +85,9 @@ test('cleanProposal - wrong mathKind', t => {
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
-  const getMathKindByBrand = _brand => MathKind.SET;
+  const getMathKind = _brand => MathKind.SET;
 
-  t.throws(() => cleanProposal(proposal, getMathKindByBrand), {
+  t.throws(() => cleanProposal(proposal, getMathKind), {
     message: /The amount .* did not have the mathKind of the brand .*/,
   });
 });
