@@ -22,10 +22,11 @@ import { assertKeywordName, getKeywords } from './cleanProposal';
 /**
  *
  * @typedef {{ addIssuerToInstanceRecord: AddIssuerToInstanceRecord,
- * getInstanceRecord: GetInstanceRecord, getTerms: () => Terms,
+ * getInstanceRecord: GetInstanceRecord,
+ * getTerms: () => Terms,
  * getIssuers: () => IssuerKeywordRecord,
- * getBrands: () => BrandKeywordRecord, assertUniqueKeyword: (keyword:
- * Keyword) => void }} InstanceRecordManager
+ * getBrands: () => BrandKeywordRecord,
+ * assertUniqueKeyword: (keyword: Keyword) => void }} InstanceRecordManager
  */
 
 /**
@@ -64,14 +65,14 @@ export const makeInstanceRecordStorage = instanceRecord => {
     );
   };
 
-  return {
+  return harden({
     addIssuerToInstanceRecord,
     getInstanceRecord,
     getTerms,
     getIssuers,
     getBrands,
     assertUniqueKeyword,
-  };
+  });
 };
 
 /**
@@ -83,7 +84,7 @@ export const makeInstanceRecordStorage = instanceRecord => {
  * @param {BrandKeywordRecord} brands
  * @returns {InstanceRecordManager}
  */
-export const makeInstanceRecordAndStore = (
+export const makeAndStoreInstanceRecord = (
   installation,
   customTerms,
   issuers,

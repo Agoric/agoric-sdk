@@ -5,6 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeIssuerKit, MathKind } from '@agoric/ertp';
 
 import { makeIssuerStorage } from '../../src/issuerStorage';
+import { makeIssuerRecord } from '../../src/issuerRecord';
 
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(
@@ -109,15 +110,14 @@ test(`storeIssuerRecord`, async t => {
   const { storeIssuerRecord, getMathKind } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
 
-  const issuerRecord = harden({
-    issuer: currencyKit.issuer,
-    brand: currencyKit.brand,
-    mathKind: MathKind.NAT,
-    displayInfo: {
-      amountMathKind: MathKind.NAT,
+  const issuerRecord = makeIssuerRecord(
+    currencyKit.brand,
+    currencyKit.issuer,
+    MathKind.NAT,
+    {
       decimalPlaces: 18,
     },
-  });
+  );
 
   const returnedIssuerRecord = await storeIssuerRecord(issuerRecord);
 

@@ -7,9 +7,10 @@ import { makeIssuerKit, MathKind } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 
 import {
-  makeInstanceRecordAndStore,
+  makeAndStoreInstanceRecord,
   makeInstanceRecordStorage,
 } from '../../src/instanceRecordStorage';
+import { makeIssuerRecord } from '../../src/issuerRecord';
 
 const root = `${__dirname}/bounty`;
 
@@ -25,7 +26,7 @@ const setupIssuersForTest = () => {
   return { currencyKit, ticketKit };
 };
 
-test('makeInstanceRecordAndStore', async t => {
+test('makeAndStoreInstanceRecord', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
   const fakeInstallation = { getBundle: () => bundle };
@@ -45,7 +46,7 @@ test('makeInstanceRecordAndStore', async t => {
     getIssuers,
     getBrands,
     assertUniqueKeyword,
-  } = makeInstanceRecordAndStore(
+  } = makeAndStoreInstanceRecord(
     fakeInstallation,
     customTerms,
     issuers,
@@ -67,15 +68,12 @@ test('makeInstanceRecordAndStore', async t => {
   t.notThrows(() => assertUniqueKeyword('Something'));
 
   // Add currency again, but call it "money"
-  addIssuerToInstanceRecord('Money', {
-    issuer: currencyKit.issuer,
-    brand: currencyKit.brand,
-    mathKind: MathKind.NAT,
-    displayInfo: {
+  addIssuerToInstanceRecord(
+    'Money',
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, MathKind.NAT, {
       decimalPlaces: 18,
-      amountMathKind: MathKind.NAT,
-    },
-  });
+    }),
+  );
 
   t.deepEqual(getIssuers(), { ...issuers, Money: currencyKit.issuer });
 });
@@ -119,15 +117,12 @@ test('makeInstanceRecordStorage', async t => {
   t.notThrows(() => assertUniqueKeyword('Something'));
 
   // Add currency again, but call it "money"
-  addIssuerToInstanceRecord('Money', {
-    issuer: currencyKit.issuer,
-    brand: currencyKit.brand,
-    mathKind: MathKind.NAT,
-    displayInfo: {
+  addIssuerToInstanceRecord(
+    'Money',
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, MathKind.NAT, {
       decimalPlaces: 18,
-      amountMathKind: MathKind.NAT,
-    },
-  });
+    }),
+  );
 
   t.deepEqual(getIssuers(), { ...issuers, Money: currencyKit.issuer });
 });

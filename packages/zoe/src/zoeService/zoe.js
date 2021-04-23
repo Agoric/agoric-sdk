@@ -27,7 +27,8 @@ import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
 import { makeEscrowStorage } from './escrowStorage';
 import { makeIssuerStorage } from '../issuerStorage';
-import { makeInstanceRecordAndStore } from '../instanceRecordStorage';
+import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
+import { makeIssuerRecord } from '../issuerRecord';
 
 /**
  * Create an instance of Zoe.
@@ -99,6 +100,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       customTerms = harden({}),
     ) => {
       const { installation, bundle } = await unwrapInstallation(installationP);
+      // AWAIT ///
 
       const instance = makeHandle('Instance');
 
@@ -117,7 +119,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         getTerms,
         getIssuers,
         getBrands,
-      } = makeInstanceRecordAndStore(
+      } = makeAndStoreInstanceRecord(
         installation,
         customTerms,
         issuers,
@@ -144,15 +146,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           issuer: localIssuer,
           brand: localBrand,
         } = makeIssuerKit(keyword, amountMathKind, displayInfo);
-        const localIssuerRecord = harden({
-          brand: localBrand,
-          issuer: localIssuer,
-          mathKind: amountMathKind,
-          displayInfo: {
-            ...displayInfo,
-            amountMathKind,
-          },
-        });
+        const localIssuerRecord = makeIssuerRecord(
+          localBrand,
+          localIssuer,
+          amountMathKind,
+          displayInfo,
+        );
         storeIssuerRecord(localIssuerRecord);
         const localPooledPurse = makeLocalPurse(localIssuer, localBrand);
         addIssuerToInstanceRecord(keyword, localIssuerRecord);

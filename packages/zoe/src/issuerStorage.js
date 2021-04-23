@@ -6,6 +6,7 @@ import { E } from '@agoric/eventual-send';
 
 import { arrayToObj } from './objArrayConversion';
 import { cleanKeywords } from './cleanProposal';
+import { makeIssuerRecord } from './issuerRecord';
 
 /**
  *  Make the Issuer Storage. If `exportedIssuerStorage` is defined,
@@ -77,14 +78,13 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     }
 
     assert(brandIssuerMatch, `issuer was using a brand which was not its own`);
-    const issuerRecord = harden({
+    const issuerRecord = makeIssuerRecord(
       brand,
       issuer,
-      mathKind: amountMathKind,
-      displayInfo: { ...displayInfo, amountMathKind },
-    });
+      amountMathKind,
+      displayInfo,
+    );
     storeIssuerRecord(issuerRecord);
-    // AWAIT /////
     return getByBrand(brand);
   };
 
@@ -96,8 +96,8 @@ export const makeIssuerStorage = exportedIssuerStorage => {
   /**
    *
    * @param {IssuerPKeywordRecord} uncleanIssuerKeywordRecord
-   * @returns {Promise<{ issuers: IssuerKeywordRecord, brands:
-   * BrandKeywordRecord }>}
+   * @returns {Promise<{ issuers: IssuerKeywordRecord,
+   *                     brands: BrandKeywordRecord }>}
    */
   const storeIssuerKeywordRecord = async uncleanIssuerKeywordRecord => {
     const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
@@ -107,6 +107,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     // The issuers may not have been seen before, so we must wait for the
     // issuer records to be available synchronously
     const issuerRecords = await storeIssuers(issuerPs);
+    // AWAIT ///
 
     const issuers = arrayToObj(
       issuerRecords.map(record => record.issuer),

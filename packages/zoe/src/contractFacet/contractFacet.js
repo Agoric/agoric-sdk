@@ -25,6 +25,7 @@ import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
 import { makeIssuerStorage } from '../issuerStorage';
+import { makeIssuerRecord } from '../issuerRecord';
 
 import '../../exported';
 import '../internal-types';
@@ -175,15 +176,12 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         zoeMintP,
       ).getIssuerRecord();
       // AWAIT
-      const mintyIssuerRecord = harden({
-        brand: mintyBrand,
-        issuer: mintyIssuer,
-        mathKind: amountMathKind,
-        displayInfo: {
-          ...displayInfo,
-          amountMathKind,
-        },
-      });
+      const mintyIssuerRecord = makeIssuerRecord(
+        mintyBrand,
+        mintyIssuer,
+        amountMathKind,
+        displayInfo,
+      );
       addIssuerToInstanceRecord(keyword, mintyIssuerRecord);
       storeIssuerRecord(mintyIssuerRecord);
 
