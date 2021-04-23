@@ -580,11 +580,19 @@ export function buildRootObject(_vatPowers) {
 
   startSubscriptions();
 
+  function getCommandHandler(...params) {
+    console.debug(
+      'getCommandHandler called in wallet, but does not exist',
+      params,
+    );
+  }
+
   return harden({
     startup,
     getWallet,
     setHTTPObject,
     getBridgeURLHandler,
+    getCommandHandler,
   });
 }
 

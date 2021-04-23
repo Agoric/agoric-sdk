@@ -299,6 +299,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
     await addAllCollateral();
 
+    const brandsWithPriceAuthorities = await E(
+      ammPublicFacet,
+    ).getAllPoolBrands();
+
     await Promise.all(
       issuerNames.map(async issuerName => {
         // Create priceAuthority pairs for centralIssuer based on the
@@ -310,12 +314,17 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         assert(issuer);
         const brand = await E(issuer).getBrand();
-        let { toCentral, fromCentral } = await E(ammPublicFacet)
-          .getPriceAuthorities(brand)
-          .catch(_e => {
-            // console.warn('could not get AMM priceAuthorities', _e);
-            return {};
-          });
+        let toCentral;
+        let fromCentral;
+
+        if (brandsWithPriceAuthorities.includes(brand)) {
+          ({ toCentral, fromCentral } = await E(ammPublicFacet)
+            .getPriceAuthorities(brand)
+            .catch(_e => {
+              // console.warn('could not get AMM priceAuthorities', _e);
+              return {};
+            }));
+        }
 
         if (!fromCentral && tradesGivenCentral) {
           // We have no amm from-central price authority, make one from trades.
@@ -534,6 +543,9 @@ export function buildRootObject(vatPowers, vatParameters) {
         async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
           return harden(makeEchoConnectionHandler());
         },
+        async onListen(port, _listenHandler) {
+          console.debug(`listening on port: ${port}`);
+        },
       }),
     );
 
@@ -569,6 +581,9 @@ export function buildRootObject(vatPowers, vatParameters) {
                 }
               },
             });
+          },
+          async onListen(p, _listenHandler) {
+            console.debug(`Listening on Pegasus transfer port: ${p}`);
           },
         }),
       );
