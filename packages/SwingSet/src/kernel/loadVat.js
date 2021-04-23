@@ -10,13 +10,11 @@ export function makeVatRootObjectSlot() {
 
 export function makeVatLoader(stuff) {
   const {
-    allocateUnusedVatID,
     vatNameToID,
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
     addVatManager,
-    addExport,
     queueToExport,
     kernelKeeper,
     panic,
@@ -24,30 +22,18 @@ export function makeVatLoader(stuff) {
   } = stuff;
 
   /**
-   * Create a new vat at runtime (called from the vatAdmin device).
+   * Create a new vat at runtime (called when a 'create-vat' event reaches
+   * the top of the run-queue).
    *
+   * @param { string } vatID  The pre-allocated vatID
    * @param {*} source  The source object implementing the vat
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
-   * @returns {string}  The vatID of the newly created vat
+   * @returns {Promise<void>}  The vatID of the newly created vat
    */
-  function createVatDynamically(source, dynamicOptions = {}) {
-    const vatID = allocateUnusedVatID();
-    kernelKeeper.addDynamicVatID(vatID);
-    const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
-    if (!dynamicOptions.managerType) {
-      dynamicOptions = {
-        ...dynamicOptions,
-        managerType: kernelKeeper.getDefaultManagerType(),
-      };
-    }
-    vatKeeper.setSourceAndOptions(source, dynamicOptions);
+  function createVatDynamically(vatID, source, dynamicOptions = {}) {
     // eslint-disable-next-line no-use-before-define
-    create(vatID, source, dynamicOptions, true, true);
-    // we ignore the Promise create() returns: the invoking vat will be
-    // notified via makeSuccessResponse rather than via the return value of
-    // this function
-    return vatID;
+    return create(vatID, source, dynamicOptions, true);
   }
 
   /**
@@ -61,7 +47,11 @@ export function makeVatLoader(stuff) {
    */
   function recreateDynamicVat(vatID, source, dynamicOptions) {
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, dynamicOptions, false, true);
+    return create(vatID, source, dynamicOptions, true).catch(err =>
+      panic(`unable to re-create vat ${vatID}`, err),
+    );
+    // if we fail to recreate the vat during replay, crash the kernel,
+    // because we no longer have any way to inform the original caller
   }
 
   /**
@@ -76,7 +66,9 @@ export function makeVatLoader(stuff) {
    */
   function recreateStaticVat(vatID, source, staticOptions) {
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, staticOptions, false, false);
+    return create(vatID, source, staticOptions, false).catch(err =>
+      panic(`unable to re-create vat ${vatID}`, err),
+    );
   }
 
   const allowedDynamicOptions = [
@@ -137,9 +129,6 @@ export function makeVatLoader(stuff) {
    *        without waiting for the promises to be resolved.  If false, such
    *        messages will be queued inside the kernel.  Defaults to false.
    *
-   * @param {boolean} notifyNewVat  If true, the success or failure of the
-   *    operation will be reported in a message to the admin vat, citing the
-   *    vatID
    * @param {boolean} isDynamic  If true, the vat being created is a dynamic vat;
    *    if false, it's a static vat (these have differences in their allowed
    *    options and some of their option defaults).
@@ -147,11 +136,16 @@ export function makeVatLoader(stuff) {
    * @returns {Promise<void>} A Promise which fires (with undefined) when the
    * vat is ready for messages.
    */
-  function create(vatID, source, options, notifyNewVat, isDynamic) {
+  async function create(vatID, source, options, isDynamic) {
     assert(source.bundle || source.bundleName, 'broken source');
     const vatSourceBundle =
       source.bundle || kernelKeeper.getBundle(source.bundleName);
     assert(vatSourceBundle, X`Bundle ${source.bundleName} not found`);
+    assert.typeof(
+      vatSourceBundle,
+      'object',
+      X`vat creation requires a bundle, not a plain string`,
+    );
 
     assertKnownOptions(
       options,
@@ -201,108 +195,42 @@ export function makeVatLoader(stuff) {
       );
     }
 
-    async function build() {
-      assert.typeof(
-        vatSourceBundle,
-        'object',
-        X`vat creation requires a bundle, not a plain string`,
-      );
+    kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
+    const managerOptions = {
+      managerType,
+      bundle: vatSourceBundle,
+      metered,
+      enableDisavow,
+      enableSetup,
+      enablePipelining,
+      enableInternalMetering: !isDynamic,
+      notifyTermination,
+      vatConsole: makeVatConsole('vat', vatID),
+      liveSlotsConsole: makeVatConsole('ls', vatID),
+      vatParameters,
+      virtualObjectCacheSize,
+      name,
+    };
 
-      kernelSlog.addVat(vatID, isDynamic, description, name, vatSourceBundle);
-      const managerOptions = {
-        managerType,
-        bundle: vatSourceBundle,
-        metered,
-        enableDisavow,
-        enableSetup,
-        enablePipelining,
-        enableInternalMetering: !isDynamic,
-        notifyTermination,
-        vatConsole: makeVatConsole('vat', vatID),
-        liveSlotsConsole: makeVatConsole('ls', vatID),
-        vatParameters,
-        virtualObjectCacheSize,
-        name,
-      };
-      // TODO: We need to support within-vat metering (for the Spawner) until
-      // #1343 is fixed, after which we can remove
-      // managerOptions.enableInternalMetering.  For now, it needs to be enabled
-      // for our internal unit test (which could easily add this to its config
-      // object) and for the spawner vat (not so easy). To avoid deeper changes,
-      // we enable it for *all* static vats here. Once #1343 is fixed, remove
-      // this addition and all support for internal metering.
-      const translators = makeVatTranslators(vatID, kernelKeeper);
-      const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
+    // TODO: We need to support within-vat metering (for the Spawner) until
+    // #1343 is fixed, after which we can remove
+    // managerOptions.enableInternalMetering.  For now, it needs to be enabled
+    // for our internal unit test (which could easily add this to its config
+    // object) and for the spawner vat (not so easy). To avoid deeper changes,
+    // we enable it for *all* static vats here. Once #1343 is fixed, remove
+    // this addition and all support for internal metering.
 
-      const finish = kernelSlog.startup(vatID);
-      const manager = await vatManagerFactory(
-        vatID,
-        managerOptions,
-        vatSyscallHandler,
-      );
-      finish();
-      addVatManager(vatID, manager, translators, managerOptions);
-    }
+    const translators = makeVatTranslators(vatID, kernelKeeper);
+    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
 
-    function makeSuccessResponse() {
-      // build success message, giving admin vat access to the new vat's root
-      // object
-      const kernelRootObjSlot = addExport(vatID, makeVatRootObjectSlot());
-
-      return {
-        body: JSON.stringify([
-          vatID,
-          { rootObject: { '@qclass': 'slot', index: 0 } },
-        ]),
-        slots: [kernelRootObjSlot],
-      };
-    }
-
-    function makeErrorResponse(error) {
-      return {
-        body: JSON.stringify([vatID, { error: `${error}` }]),
-        slots: [],
-      };
-    }
-
-    function errorDuringReplay(error) {
-      // if we fail to recreate the vat during replay, crash the kernel,
-      // because we no longer have any way to inform the original caller
-      panic(`unable to re-create vat ${vatID}`, error);
-    }
-
-    function sendResponse(args) {
-      const vatAdminVatId = vatNameToID('vatAdmin');
-      const vatAdminRootObjectSlot = makeVatRootObjectSlot();
-      queueToExport(
-        vatAdminVatId,
-        vatAdminRootObjectSlot,
-        'newVatCallback',
-        args,
-        'logFailure',
-      );
-    }
-
-    // vatManagerFactory is async, so we prepare a callback chain to execute
-    // the resulting setup function, create the new vat around the resulting
-    // dispatch object, and notify the admin vat of our success (or failure).
-    // We presume that importBundle's Promise will fire promptly (before
-    // setImmediate does, i.e. importBundle is async but doesn't do any IO,
-    // so it doesn't really need to be async), because otherwise the
-    // queueToExport might fire (and insert messages into the kernel run
-    // queue) in the middle of some other vat's crank. TODO: find a safer
-    // way, maybe the response should go out to the controller's "queue
-    // things single file into the kernel" queue, once such a thing exists.
-    const p = Promise.resolve().then(build);
-    if (notifyNewVat) {
-      p.then(makeSuccessResponse, makeErrorResponse)
-        .then(sendResponse)
-        .catch(err => console.error(`error in vat creation`, err));
-    } else {
-      p.catch(errorDuringReplay);
-    }
-
-    return p;
+    const finish = kernelSlog.startup(vatID);
+    const manager = await vatManagerFactory(
+      vatID,
+      managerOptions,
+      vatSyscallHandler,
+    );
+    finish();
+    addVatManager(vatID, manager, translators, managerOptions);
   }
 
   async function loadTestVat(vatID, setup, creationOptions) {
