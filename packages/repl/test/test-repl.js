@@ -3,7 +3,7 @@ import { makeTransform } from '@agoric/transform-eventual-send';
 import * as babelParser from '@agoric/babel-parser';
 import babelGenerate from '@babel/generator';
 import test from 'ava';
-import { getReplHandler } from '../../lib/ag-solo/vats/repl';
+import { getReplHandler } from '../src/repl';
 
 function make() {
   const homeObjects = { base: 1, fries: 2, cooking: 3 };
