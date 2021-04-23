@@ -6,6 +6,7 @@ import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
+import { replExpress } from '@agoric/repl/src/express';
 
 import { getAccessToken } from './access-token';
 
@@ -89,6 +90,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
+  replExpress(express, app);
 
   // The rules for validation:
   //

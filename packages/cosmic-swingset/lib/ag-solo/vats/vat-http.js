@@ -2,7 +2,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { getReplHandler } from './repl';
+import { getReplHandler } from '@agoric/repl';
 import { getCapTPHandler } from './captp';
 
 // This vat contains the HTTP request handler.
