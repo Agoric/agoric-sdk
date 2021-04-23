@@ -130,3 +130,13 @@
 /**
  * @typedef {PetnameManager<Issuer>} IssuerManager
  */
+
+/**
+ * @typedef {Object} IssuerTable
+ * @property {(brand: Brand) => boolean} hasByBrand
+ * @property {(brand: Brand) => IssuerRecord} getByBrand
+ * @property {(issuer: Issuer) => boolean} hasByIssuer
+ * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
+ * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
+ * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
+ */

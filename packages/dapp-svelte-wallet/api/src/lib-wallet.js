@@ -13,15 +13,15 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
-import { makeIssuerTable } from '@agoric/zoe/src/issuerTable';
-import { amountMath } from '@agoric/ertp';
 
+import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
+import { makeIssuerTable } from './issuerTable';
 import { makeDehydrator } from './lib-dehydrate';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
 import { bigintStringify } from './bigintStringify';

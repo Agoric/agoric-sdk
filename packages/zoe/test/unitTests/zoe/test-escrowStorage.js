@@ -22,25 +22,12 @@ test('makeEscrowStorage', async t => {
     harden({ decimalPlaces: 18 }),
   );
 
-  /** @type {IssuerRecord} */
-  const currencyIssuerRecord = {
-    issuer: currencyKit.issuer,
-    mathKind: MathKind.NAT,
-    brand: currencyKit.brand,
-  };
-
   const ticketKit = makeIssuerKit('tickets', MathKind.SET);
 
-  const ticketIssuerRecord = {
-    issuer: ticketKit.issuer,
-    mathKind: MathKind.SET,
-    brand: ticketKit.brand,
-  };
-
-  createPurse(currencyIssuerRecord);
+  createPurse(currencyKit.issuer, currencyKit.brand);
 
   // Normally only used for ZCFMint issuers
-  makeLocalPurse(ticketIssuerRecord);
+  makeLocalPurse(ticketKit.issuer, ticketKit.brand);
 
   const gameTicketAmount = amountMath.make(ticketKit.brand, [
     { show: 'superbowl' },
@@ -138,8 +125,8 @@ const setupPurses = createPurse => {
     mathKind: MathKind.SET,
     brand: ticketKit.brand,
   };
-  createPurse(currencyIssuerRecord);
-  createPurse(ticketIssuerRecord);
+  createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);
+  createPurse(ticketIssuerRecord.issuer, ticketIssuerRecord.brand);
   return harden({ ticketKit, currencyKit });
 };
 
