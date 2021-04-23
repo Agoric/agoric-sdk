@@ -1,414 +1,63 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { bundleFunction } from '../../make-function-bundle';
-
-import { escrowExchangeSrcs } from '../../../src/escrow';
-import { coveredCallSrcs } from '../../../src/coveredCall';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
 
-  // TODO BUG: All callers should wait until settled before doing
-  // anything that would change the balance before show*Balance* reads
-  // it.
-  function showPaymentBalance(name, issuer, paymentP) {
-    return paymentP.then(payment => {
-      return E(issuer)
-        .getAmountOf(payment)
-        .then(amount => log(name, ' balance ', amount))
-        .catch(err => console.log(err));
-    });
-  }
-  // TODO BUG: All callers should wait until settled before doing
-  // anything that would change the balance before show*Balance* reads
-  // it.
-  function showPurseBalances(name, purseP) {
-    return Promise.all([
-      E(purseP)
-        .getCurrentAmount()
-        .then(amount => log(name, ' balance ', amount))
-        .catch(err => console.log(err)),
-    ]);
-  }
-
-  const fakeNeverTimer = Far('fakeNeverTimer', {
-    setWakeup(deadline, _resolution = undefined) {
-      log(`Pretend ${deadline} never happens`);
-      return deadline;
-    },
-  });
-
-  function trivialContractTest(host, oldformat) {
+  async function trivialContractTest(spawner, trivialBundle) {
     log('starting trivialContractTest');
-
-    function trivContractStart(terms, inviteMaker) {
-      return inviteMaker.make('foo', 8);
-    }
-    const contractBundle = bundleFunction(trivContractStart);
-    let installationP;
-    if (oldformat) {
-      installationP = E(host).install(
-        contractBundle.source,
-        contractBundle.moduleFormat,
-      );
-    } else {
-      installationP = E(host).install(contractBundle);
-    }
-
-    return E(host)
-      .getInstallationSourceBundle(installationP)
-      .then(bundle => {
-        // the contents of a bundle are generally opaque to us: that's
-        // between bundle-source and import-bundle . But we happen to know
-        // that these contain a .source property, which is a string that
-        // includes the contents of the function we bundled, which we can
-        // compare.
-        log('Does source match? ', bundle.source === contractBundle.source);
-
-        const fooInviteP = E(installationP).spawn('foo terms');
-
-        const inviteIssuerP = E(host).getInvitationIssuer();
-        return Promise.resolve(
-          showPaymentBalance('foo', inviteIssuerP, fooInviteP),
-        ).then(_ => {
-          const eightP = E(host).redeem(fooInviteP);
-
-          eightP.then(res => {
-            log('++ eightP resolved to ', res, ' (should be 8)');
-            assert(res === 8, X`eightP resolved to ${res}, not 8`);
-            log('++ DONE');
-          });
-          return eightP;
-        });
-      });
+    const installationP = E(spawner).install(trivialBundle);
+    const trivial = await E(installationP).spawn('terms are provided');
+    const terms = await E(trivial).getTerms();
+    log(`terms are: ${terms}`);
+    const eight = await E(trivial).bar(7);
+    log(`eight is: ${eight}`);
+    log(`++ DONE`);
   }
 
-  function exhaustedContractTest(host) {
+  async function exhaustedContractTest(spawner, trivialBundle) {
     log('starting exhaustedContractTest');
+    const installationP = E(spawner).install(trivialBundle);
 
-    function exhContractStart(terms, _inviteMaker) {
-      if (terms === 'loop forever') {
-        for (;;) {
-          // Do nothing.
-        }
-      } else {
-        return 123;
-      }
-    }
-    const contractBundle = bundleFunction(exhContractStart);
-
-    const installationP = E(host).install(contractBundle);
-
-    return E(host)
-      .getInstallationSourceBundle(installationP)
-      .then(bundle => {
-        log('Does source match? ', bundle.source === contractBundle.source);
-
-        return E(installationP)
-          .spawn('loop forever')
-          .catch(e => log('spawn rejected: ', e.message));
-      })
-      .then(_ => E(installationP).spawn('just return'))
+    await E(installationP)
+      .spawn('loop immediately')
       .then(
-        ret => log('got return: ', ret),
-        err => log('error! ', err.message),
+        () => log(`wrong: loop1 spawned without error`),
+        err => log(`loop1 failed: ${err}`),
       );
-  }
 
-  async function betterContractTestAliceFirst(
-    host,
-    mint,
-    aliceMaker,
-    bobMaker,
-  ) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
-
-    const { mint: moneyMint, issuer: moneyIssuer, brand: moneyBrand } = await E(
-      mint,
-    ).makeIssuerKit('moola');
-    const moola = value => amountMath.make(moneyBrand, value);
-    const aliceMoneyPaymentP = E(moneyMint).mintPayment(moola(1000));
-    const bobMoneyPaymentP = E(moneyMint).mintPayment(moola(1001));
-
-    const { mint: stockMint, issuer: stockIssuer, brand: stockBrand } = await E(
-      mint,
-    ).makeIssuerKit('Tyrell');
-    const stocks = value => amountMath.make(stockBrand, value);
-    const aliceStockPaymentP = E(stockMint).mintPayment(stocks(2002));
-    const bobStockPaymentP = E(stockMint).mintPayment(stocks(2003));
-
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      moneyIssuer,
-      stockIssuer,
-      aliceMoneyPaymentP,
-      aliceStockPaymentP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      moneyIssuer,
-      stockIssuer,
-      bobMoneyPaymentP,
-      bobStockPaymentP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      const ifItFitsP = E(aliceP).payBobWell(bobP);
-      ifItFitsP.then(
-        res => {
-          log('++ ifItFitsP done:', res);
-          log('++ DONE');
-        },
-        rej => log('++ ifItFitsP failed', rej),
+    const loop2 = await E(installationP).spawn();
+    log('loop2: spawned without error');
+    // This will kill the vat.
+    E(loop2).loopForever();
+    // We sense the vat being terminated by trying to send a second message.
+    await E(loop2)
+      .areYouOk()
+      .then(
+        () => log(`wrong: loop2 still responding`),
+        err => log(`loop2 dead: ${err}`),
       );
-      return ifItFitsP;
-    });
-  }
-
-  async function betterContractTestBobFirst(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
-
-    const { mint: moneyMint, issuer: moneyIssuer, brand: moneyBrand } = await E(
-      mint,
-    ).makeIssuerKit('clams');
-    const money = value => amountMath.make(moneyBrand, value);
-    const aliceMoneyPayment = await E(moneyMint).mintPayment(money(1000));
-    const bobMoneyPayment = await E(moneyMint).mintPayment(money(1001));
-
-    const { mint: stockMint, issuer: stockIssuer, brand: stockBrand } = await E(
-      mint,
-    ).makeIssuerKit('fudco');
-    const stocks = value => amountMath.make(stockBrand, value);
-    const aliceStockPayment = await E(stockMint).mintPayment(stocks(2002));
-    const bobStockPayment = await E(stockMint).mintPayment(stocks(2003));
-
-    const aliceMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
-    const bobMoneyPurseP = E(moneyIssuer).makeEmptyPurse();
-    const aliceStockPurseP = E(stockIssuer).makeEmptyPurse();
-    const bobStockPurseP = E(stockIssuer).makeEmptyPurse();
-
-    await E(aliceMoneyPurseP).deposit(aliceMoneyPayment);
-    await E(aliceStockPurseP).deposit(aliceStockPayment);
-    await E(bobMoneyPurseP).deposit(bobMoneyPayment);
-    await E(bobStockPurseP).deposit(bobStockPayment);
-
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      moneyIssuer,
-      stockIssuer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      moneyIssuer,
-      stockIssuer,
-      bobMoneyPurseP,
-      bobStockPurseP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .tradeWell(aliceP, false)
-        .then(
-          res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.tradeWell done:', res);
-            log('++ DONE');
-          },
-          rej => {
-            log('++ bobP.tradeWell error:', rej);
-          },
-        );
-    });
-  }
-
-  function coveredCallTest(host, mint, aliceMaker, bobMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
-
-    const moneyMintP = E(mint).makeMint('smackers');
-    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
-    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
-
-    const stockMintP = E(mint).makeMint('yoyodyne');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
-
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .offerAliceOption(aliceP, false)
-        .then(
-          res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.offerAliceOption done:', res);
-            log('++ DONE');
-          },
-          rej => {
-            log('++ bobP.offerAliceOption error:', rej);
-          },
-        );
-    });
-  }
-
-  function coveredCallSaleTest(host, mint, aliceMaker, bobMaker, fredMaker) {
-    const escrowExchangeInstallationP = E(host).install(escrowExchangeSrcs);
-    const coveredCallInstallationP = E(host).install(coveredCallSrcs);
-
-    const doughMintP = E(mint).makeMint('dough');
-    const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
-    const bobDoughPurseP = E(doughMintP).mint(1001, 'bobDough');
-    const fredDoughPurseP = E(doughMintP).mint(1002, 'fredDough');
-
-    const stockMintP = E(mint).makeMint('wonka');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
-    const fredStockPurseP = E(stockMintP).mint(2004, 'fredMainStock');
-
-    const finMintP = E(mint).makeMint('fins');
-    const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
-    const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
-
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      bobDoughPurseP,
-      bobStockPurseP,
-    );
-    const fredP = E(fredMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      fredDoughPurseP,
-      fredStockPurseP,
-      fredFinPurseP,
-    );
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceDoughPurseP,
-      aliceStockPurseP,
-      aliceFinPurseP,
-      fredP,
-    );
-    return Promise.all([aliceP, bobP, fredP]).then(_ => {
-      E(bobP)
-        .offerAliceOption(aliceP)
-        .then(
-          res => {
-            showPurseBalances('alice dough', aliceDoughPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('alice fins', aliceFinPurseP);
-
-            showPurseBalances('bob dough', bobDoughPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-
-            showPurseBalances('fred dough', fredDoughPurseP);
-            showPurseBalances('fred stock', fredStockPurseP);
-            showPurseBalances('fred fins', fredFinPurseP);
-
-            log('++ bobP.offerAliceOption done:', res);
-            log('++ DONE');
-          },
-          rej => {
-            log('++ bobP.offerAliceOption error:', rej);
-          },
-        );
-    });
   }
 
   return Far('root', {
-    async bootstrap(vats) {
-      switch (vatParameters.argv[0]) {
-        case 'trivial-oldformat': {
-          const host = await E(vats.host).makeHost();
-          return trivialContractTest(host, 'oldformat');
-        }
+    async bootstrap(vats, devices) {
+      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      const spawner = await E(vats.spawner).buildSpawner(vatAdminSvc);
+      const [mode, trivialBundle] = vatParameters.argv;
+      switch (mode) {
         case 'trivial': {
-          const host = await E(vats.host).makeHost();
-          return trivialContractTest(host);
+          return trivialContractTest(spawner, trivialBundle);
         }
         case 'exhaust': {
-          const host = await E(vats.host).makeHost();
-          return exhaustedContractTest(host);
-        }
-        case 'alice-first': {
-          const host = await E(vats.host).makeHost();
-          const aliceMaker = await E(vats.alice).makeAliceMaker(host);
-          const bobMaker = await E(vats.bob).makeBobMaker(host);
-          return betterContractTestAliceFirst(
-            host,
-            vats.mint,
-            aliceMaker,
-            bobMaker,
-          );
-        }
-        case 'bob-first': {
-          const host = await E(vats.host).makeHost();
-          const aliceMaker = await E(vats.alice).makeAliceMaker(host);
-          const bobMaker = await E(vats.bob).makeBobMaker(host);
-          return betterContractTestBobFirst(
-            host,
-            vats.mint,
-            aliceMaker,
-            bobMaker,
-          );
-        }
-        case 'covered-call': {
-          const host = await E(vats.host).makeHost();
-          const aliceMaker = await E(vats.alice).makeAliceMaker(host);
-          const bobMaker = await E(vats.bob).makeBobMaker(host);
-          return coveredCallTest(host, vats.mint, aliceMaker, bobMaker);
-        }
-        case 'covered-call-sale': {
-          const host = await E(vats.host).makeHost();
-          const aliceMaker = await E(vats.alice).makeAliceMaker(host);
-          const bobMaker = await E(vats.bob).makeBobMaker(host);
-          const fredMaker = await E(vats.fred).makeFredMaker(host);
-          return coveredCallSaleTest(
-            host,
-            vats.mint,
-            aliceMaker,
-            bobMaker,
-            fredMaker,
-          );
+          return exhaustedContractTest(spawner, trivialBundle);
         }
         default: {
-          assert.fail(X`unrecognized argument value ${vatParameters.argv[0]}`);
+          assert.fail(X`unrecognized argument value ${mode}`);
         }
       }
     },

@@ -76,7 +76,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
       /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
-      E(vats.host).makeHost(),
+      E(vats.spawner).buildSpawner(vatAdminSvc),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
@@ -617,10 +617,10 @@ export function buildRootObject(vatPowers, vatParameters) {
   // objects that live in the client's solo vat. Some services should only
   // be in the DApp environment (or only in end-user), but we're not yet
   // making a distinction, so the user also gets them.
-  async function createLocalBundle(vats, devices) {
+  async function createLocalBundle(vats, devices, vatAdminSvc) {
     // This will eventually be a vat spawning service. Only needed by dev
     // environments.
-    const spawner = E(vats.host).makeHost();
+    const spawner = E(vats.spawner).buildSpawner(vatAdminSvc);
 
     // Needed for DApps, maybe for user clients.
     const uploads = E(vats.uploads).getUploads();
@@ -740,7 +740,11 @@ export function buildRootObject(vatPowers, vatParameters) {
             GCI,
             PROVISIONER_INDEX,
           );
-          const localBundle = await createLocalBundle(vats, devices);
+          const localBundle = await createLocalBundle(
+            vats,
+            devices,
+            vatAdminSvc,
+          );
           await E(vats.http).setPresences(localBundle);
           const bundle = await E(demoProvider).getDemoBundle();
           await E(vats.http).setPresences(localBundle, bundle, {
