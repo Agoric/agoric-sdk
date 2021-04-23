@@ -8,7 +8,7 @@ import {
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
-import { buildVatController } from '../../src';
+import { buildKernelBundles, buildVatController } from '../../src';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -22,15 +22,20 @@ function copy(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
-test('replay bundleSource-based dynamic vat', async t => {
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
   const dynamicBundle = await bundleSource(
     path.join(__dirname, 'replay-dynamic.js'),
   );
+  t.context.data = { kernelBundles, dynamicBundle };
+});
+
+test('replay bundleSource-based dynamic vat', async t => {
   const config = {
     vats: {
       bootstrap: {
         sourceSpec: path.join(__dirname, 'replay-bootstrap.js'),
-        parameters: { dynamicBundle },
+        parameters: { dynamicBundle: t.context.data.dynamicBundle },
       },
     },
     bootstrap: 'bootstrap',
@@ -40,6 +45,7 @@ test('replay bundleSource-based dynamic vat', async t => {
   {
     const c1 = await buildVatController(copy(config), [], {
       hostStorage: storage1,
+      kernelBundles: t.context.data.kernelBundles,
     });
     const r1 = c1.queueToVatExport(
       'bootstrap',
@@ -90,6 +96,7 @@ test('replay bundleName-based dynamic vat', async t => {
   {
     const c1 = await buildVatController(copy(config), [], {
       hostStorage: storage1,
+      kernelBundles: t.context.data.kernelBundles,
     });
     const r1 = c1.queueToVatExport(
       'bootstrap',
