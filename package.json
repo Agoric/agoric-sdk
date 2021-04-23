@@ -31,6 +31,7 @@
     "packages/SwingSet",
     "packages/swingset-runner",
     "packages/ERTP",
+    "packages/repl",
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
