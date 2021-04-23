@@ -4,6 +4,16 @@ import { assert, details as X, q } from '@agoric/assert';
 import { assertKeywordName, getKeywords } from './cleanProposal';
 
 /**
+ * The InstanceRecord stores the installation, customTerms, issuers,
+ * and brands for a particular Zoe contract instance. The installation
+ * and customTerms are never changed, but new issuers (and their
+ * matching brands) may be added by the contract code. Thus, an
+ * InstanceRecord may be outdated at any particular point. This file
+ * manages the creation and updating of an InstanceRecord and returns
+ * functions for getting the latest data.
+ */
+
+/**
  * @callback AddIssuerToInstanceRecord
  *
  * Add an issuer and its keyword to the instanceRecord for the
