@@ -5,6 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { makeLiveSlots } from '../src/kernel/liveSlots';
 import { buildSyscall, makeDispatch } from './liveslots-helpers';
 import {
   capargs,
@@ -661,4 +662,242 @@ test('dropExports', async t => {
   // now tell the vat to drop that export
   dispatch(makeDropExports(ex1));
   // for now, all that we care about is that liveslots doesn't crash
+});
+
+// Create a WeakRef/FinalizationRegistry pair that can be manipulated for
+// tests. Limitations:
+// * only one WeakRef per object
+// * no deregister
+// * extra debugging properties like FR.countCallbacks and FR.runOneCallback
+// * nothing is hardened
+
+function makeMockGC() {
+  const weakRefToVal = new Map();
+  const valToWeakRef = new Map();
+  const allFRs = [];
+  // eslint-disable-next-line no-unused-vars
+  function log(...args) {
+    // console.log(...args);
+  }
+
+  const mockWeakRefProto = {
+    deref() {
+      return weakRefToVal.get(this);
+    },
+  };
+  function mockWeakRef(val) {
+    assert(!valToWeakRef.has(val));
+    weakRefToVal.set(this, val);
+    valToWeakRef.set(val, this);
+  }
+  mockWeakRef.prototype = mockWeakRefProto;
+
+  function kill(val) {
+    log(`kill`, val);
+    if (valToWeakRef.has(val)) {
+      log(` killing weakref`);
+      const wr = valToWeakRef.get(val);
+      valToWeakRef.delete(val);
+      weakRefToVal.delete(wr);
+    }
+    for (const fr of allFRs) {
+      if (fr.registry.has(val)) {
+        log(` pushed on FR queue, context=`, fr.registry.get(val));
+        fr.ready.push(val);
+      }
+    }
+    log(` kill done`);
+  }
+
+  const mockFinalizationRegistryProto = {
+    register(val, context) {
+      log(`FR.register(context=${context})`);
+      this.registry.set(val, context);
+    },
+    countCallbacks() {
+      log(`countCallbacks:`);
+      log(` ready:`, this.ready);
+      log(` registry:`, this.registry);
+      return this.ready.length;
+    },
+    runOneCallback() {
+      log(`runOneCallback`);
+      const val = this.ready.shift();
+      log(` val:`, val);
+      assert(this.registry.has(val));
+      const context = this.registry.get(val);
+      log(` context:`, context);
+      this.registry.delete(val);
+      this.callback(context);
+    },
+  };
+
+  function mockFinalizationRegistry(callback) {
+    this.registry = new Map();
+    this.callback = callback;
+    this.ready = [];
+    allFRs.push(this);
+  }
+  mockFinalizationRegistry.prototype = mockFinalizationRegistryProto;
+
+  function getAllFRs() {
+    return allFRs;
+  }
+
+  return harden({
+    WeakRef: mockWeakRef,
+    FinalizationRegistry: mockFinalizationRegistry,
+    kill,
+    getAllFRs,
+  });
+}
+
+test('dropImports', async t => {
+  const { syscall } = buildSyscall();
+  const imports = [];
+  const gcTools = makeMockGC();
+
+  function build(_vatPowers) {
+    const root = Far('root', {
+      hold(imp) {
+        imports.push(imp);
+      },
+      free() {
+        gcTools.kill(imports.pop());
+      },
+      ignore(imp) {
+        gcTools.kill(imp);
+      },
+    });
+    return root;
+  }
+
+  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, undefined, false, gcTools);
+  const { setBuildRootObject, dispatch, deadSet } = ls;
+  setBuildRootObject(build);
+  const allFRs = gcTools.getAllFRs();
+  t.is(allFRs.length, 1);
+  const FR = allFRs[0];
+
+  const rootA = 'o+0';
+
+  // immediate drop should push import to deadSet after finalizer runs
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-1')));
+  await waitUntilQuiescent();
+  // the immediate gcTools.kill() means that the import should now be in the
+  // "COLLECTED" state
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+  FR.runOneCallback(); // moves to FINALIZED
+  t.deepEqual(deadSet, new Set(['o-1']));
+  deadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
+
+  // separate hold and free should do the same
+  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-2')));
+  await waitUntilQuiescent();
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 0);
+  dispatch(makeMessage(rootA, 'free', capargs([])));
+  await waitUntilQuiescent();
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+  FR.runOneCallback(); // moves to FINALIZED
+  t.deepEqual(deadSet, new Set(['o-2']));
+  deadSet.delete('o-2'); // pretend liveslots did syscall.dropImport
+
+  // re-introduction during COLLECTED should return to REACHABLE
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-3')));
+  await waitUntilQuiescent();
+  // now COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-3')));
+  await waitUntilQuiescent();
+  // back to REACHABLE
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  FR.runOneCallback(); // stays at REACHABLE
+  t.deepEqual(deadSet, new Set());
+
+  dispatch(makeMessage(rootA, 'free', capargs([])));
+  await waitUntilQuiescent();
+  // now COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  FR.runOneCallback(); // moves to FINALIZED
+  t.deepEqual(deadSet, new Set(['o-3']));
+  deadSet.delete('o-3'); // pretend liveslots did syscall.dropImport
+
+  // multiple queued finalizers are idempotent, remains REACHABLE
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
+  await waitUntilQuiescent();
+  // now COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
+  await waitUntilQuiescent();
+  // moves to REACHABLE and then back to COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 2);
+
+  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-4')));
+  await waitUntilQuiescent();
+  // back to REACHABLE
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 2);
+
+  FR.runOneCallback(); // stays at REACHABLE
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  FR.runOneCallback(); // stays at REACHABLE
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 0);
+
+  // multiple queued finalizers are idempotent, remains FINALIZED
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
+  await waitUntilQuiescent();
+  // now COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
+  await waitUntilQuiescent();
+  // moves to REACHABLE and then back to COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 2);
+
+  FR.runOneCallback(); // moves to FINALIZED
+  t.deepEqual(deadSet, new Set(['o-5']));
+  t.is(FR.countCallbacks(), 1);
+
+  FR.runOneCallback(); // stays at FINALIZED
+  t.deepEqual(deadSet, new Set(['o-5']));
+  t.is(FR.countCallbacks(), 0);
+  deadSet.delete('o-5'); // pretend liveslots did syscall.dropImport
+
+  // re-introduction during FINALIZED moves back to REACHABLE
+
+  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-6')));
+  await waitUntilQuiescent();
+  // moves to REACHABLE and then back to COLLECTED
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 1);
+
+  FR.runOneCallback(); // moves to FINALIZED
+  t.deepEqual(deadSet, new Set(['o-6']));
+  t.is(FR.countCallbacks(), 0);
+
+  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
+  await waitUntilQuiescent();
+  // back to REACHABLE, removed from deadSet
+  t.deepEqual(deadSet, new Set());
+  t.is(FR.countCallbacks(), 0);
 });
