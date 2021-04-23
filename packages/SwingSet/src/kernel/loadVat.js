@@ -2,6 +2,7 @@ import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../assertOptions';
 import { makeVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
+import { makeVatTranslators } from './vatTranslator';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);
@@ -19,6 +20,7 @@ export function makeVatLoader(stuff) {
     queueToExport,
     kernelKeeper,
     panic,
+    buildVatSyscallHandler,
   } = stuff;
 
   /**
@@ -229,11 +231,17 @@ export function makeVatLoader(stuff) {
       // object) and for the spawner vat (not so easy). To avoid deeper changes,
       // we enable it for *all* static vats here. Once #1343 is fixed, remove
       // this addition and all support for internal metering.
+      const translators = makeVatTranslators(vatID, kernelKeeper);
+      const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
 
       const finish = kernelSlog.startup(vatID);
-      const manager = await vatManagerFactory(vatID, managerOptions);
+      const manager = await vatManagerFactory(
+        vatID,
+        managerOptions,
+        vatSyscallHandler,
+      );
       finish();
-      addVatManager(vatID, manager, managerOptions);
+      addVatManager(vatID, manager, translators, managerOptions);
     }
 
     function makeSuccessResponse() {
@@ -304,8 +312,14 @@ export function makeVatLoader(stuff) {
       enableSetup: true,
       managerType: 'local',
     };
-    const manager = await vatManagerFactory(vatID, managerOptions);
-    addVatManager(vatID, manager, managerOptions);
+    const translators = makeVatTranslators(vatID, kernelKeeper);
+    const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
+    const manager = await vatManagerFactory(
+      vatID,
+      managerOptions,
+      vatSyscallHandler,
+    );
+    addVatManager(vatID, manager, translators, managerOptions);
   }
 
   return harden({

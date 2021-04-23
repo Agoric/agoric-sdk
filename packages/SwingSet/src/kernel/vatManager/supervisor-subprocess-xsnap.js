@@ -1,12 +1,18 @@
-/* global globalThis */
+/* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
+import '../../types';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
+import { insistVatDeliveryObject, insistVatSyscallResult } from '../../message';
 
 import { makeLiveSlots } from '../liveSlots';
+import {
+  makeSupervisorDispatch,
+  makeSupervisorSyscall,
+} from './supervisor-helper';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -103,59 +109,11 @@ function abbreviateReplacer(_, arg) {
 }
 
 /**
- * @param { (value: void) => void } f
- * @param { string } errmsg
- */
-function runAndWait(f, errmsg) {
-  Promise.resolve()
-    .then(f)
-    .catch(err => {
-      workerLog(`doProcess: ${errmsg}:`, err.message);
-    });
-  return waitUntilQuiescent();
-}
-
-/**
  * @param { ReturnType<typeof managerPort> } port
  */
 function makeWorker(port) {
-  /** @type { Record<string, (...args: unknown[]) => void> | null } */
+  /** @type { ((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>) | null } */
   let dispatch = null;
-
-  /** @type { (dr: Tagged, errmsg: string) => Promise<Tagged> } */
-  async function doProcess(dispatchRecord, errmsg) {
-    assert(dispatch);
-    const theDispatch = dispatch;
-    const [dispatchOp, ...dispatchArgs] = dispatchRecord;
-    assert(typeof dispatchOp === 'string');
-    workerLog(`runAndWait`);
-    await runAndWait(() => theDispatch[dispatchOp](...dispatchArgs), errmsg);
-    workerLog(`doProcess done`);
-    /** @type { Tagged } */
-    const vatDeliveryResults = harden(['ok']);
-    return vatDeliveryResults;
-  }
-
-  /** @type { (ts: unknown, msg: any) => Promise<Tagged> } */
-  function doMessage(targetSlot, msg) {
-    const errmsg = `vat[${targetSlot}].${msg.method} dispatch failed`;
-    return doProcess(
-      ['deliver', targetSlot, msg.method, msg.args, msg.result],
-      errmsg,
-    );
-  }
-
-  /** @type { (rs: unknown) => Promise<Tagged> } */
-  function doNotify(resolutions) {
-    const errmsg = `vat.notify failed`;
-    return doProcess(['notify', resolutions], errmsg);
-  }
-
-  /** @type { (rs: unknown) => Promise<Tagged> } */
-  function doDropExports(vrefs) {
-    const errmsg = `vat.dropExports failed`;
-    return doProcess(['dropExports', vrefs], errmsg);
-  }
 
   /**
    * TODO: consider other methods per SES VirtualConsole.
@@ -199,25 +157,16 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
   ) {
-    /** @type { (item: Tagged) => unknown } */
-    function doSyscall(vatSyscallObject) {
+    /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
+    function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
-      const result = port.call(['syscall', ...vatSyscallObject]);
+      const result = port.call(['syscall', vatSyscallObject]);
       workerLog(' ... syscall result:', result);
+      insistVatSyscallResult(result);
       return result;
     }
 
-    const syscall = harden({
-      send: (...args) => doSyscall(['send', ...args]),
-      callNow: (...args) => doSyscall(['callNow', ...args]),
-      subscribe: (...args) => doSyscall(['subscribe', ...args]),
-      resolve: (...args) => doSyscall(['resolve', ...args]),
-      exit: (...args) => doSyscall(['exit', ...args]),
-      vatstoreGet: (...args) => doSyscall(['vatstoreGet', ...args]),
-      vatstoreSet: (...args) => doSyscall(['vatstoreSet', ...args]),
-      vatstoreDelete: (...args) => doSyscall(['vatstoreDelete', ...args]),
-      dropImports: (...args) => doSyscall(['dropImports', ...args]),
-    });
+    const syscall = makeSupervisorSyscall(syscallToManager, true);
 
     const vatPowers = {
       makeMarshal,
@@ -238,7 +187,11 @@ function makeWorker(port) {
         ? virtualObjectCacheSize
         : undefined;
 
-    const gcTools = {}; // future expansion
+    const gcTools = harden({
+      WeakRef,
+      FinalizationRegistry,
+      waitUntilQuiescent,
+    });
 
     const ls = makeLiveSlots(
       syscall,
@@ -260,9 +213,9 @@ function makeWorker(port) {
     const vatNS = await importBundle(bundle, { endowments });
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
     ls.setBuildRootObject(vatNS.buildRootObject);
-    dispatch = ls.dispatch;
-    assert(dispatch);
-    workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
+    assert(ls.dispatch);
+    dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
+    workerLog(`got dispatch`);
     return ['dispatchReady'];
   }
 
@@ -277,17 +230,9 @@ function makeWorker(port) {
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        const [dtype, ...dargs] = args;
-        switch (dtype) {
-          case 'message':
-            return doMessage(dargs[0], dargs[1]);
-          case 'notify':
-            return doNotify(dargs[0]);
-          case 'dropExports':
-            return doDropExports(dargs[0]);
-          default:
-            assert.fail(X`bad delivery type ${dtype}`);
-        }
+        const [vatDeliveryObject] = args;
+        insistVatDeliveryObject(vatDeliveryObject);
+        return dispatch(vatDeliveryObject);
       }
       default:
         workerLog('handleItem: bad tag', tag, args.length);

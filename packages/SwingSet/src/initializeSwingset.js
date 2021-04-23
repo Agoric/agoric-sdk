@@ -7,6 +7,7 @@ import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
 
+import './types';
 import { insistStorageAPI } from './storageAPI';
 import { initializeKernel } from './kernel/initializeKernel';
 

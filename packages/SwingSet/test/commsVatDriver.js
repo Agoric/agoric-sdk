@@ -2,6 +2,7 @@ import { assert, details as X } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms';
 import { debugState } from '../src/vats/comms/dispatch';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
+import { makeMessage, makeResolutions } from './util';
 
 // This module provides a power tool for testing the comms vat implementation.
 // It provides support for injecting events into the comms vat and observing
@@ -348,8 +349,8 @@ function remoteResolutions(doFlip, resolutions) {
 export function commsVatDriver(t, verbose = false) {
   const log = [];
   const syscall = loggingSyscall(log);
-  const d = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  const { state } = debugState.get(d);
+  const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  const { state } = debugState.get(dispatch);
 
   const remotes = new Map();
 
@@ -423,14 +424,14 @@ export function commsVatDriver(t, verbose = false) {
   function injectSend(who, target, method, args, result) {
     t.deepEqual(log, []);
     if (who === 'k') {
-      d.deliver(target, method, args, result);
+      dispatch(makeMessage(target, method, args, result));
     } else {
       const remote = remotes.get(who);
       const msg = prepareReceive(
         remote,
         remoteMessage(false, target, method, args, result),
       );
-      d.deliver(remote.receiver, 'receive', msg);
+      dispatch(makeMessage(remote.receiver, 'receive', msg));
     }
   }
 
@@ -476,11 +477,11 @@ export function commsVatDriver(t, verbose = false) {
   function injectResolutions(who, resolutions) {
     t.deepEqual(log, []);
     if (who === 'k') {
-      d.notify(resolutions);
+      dispatch(makeResolutions(resolutions));
     } else {
       const remote = remotes.get(who);
       const msg = prepareReceive(remote, remoteResolutions(false, resolutions));
-      d.deliver(remote.receiver, 'receive', msg);
+      dispatch(makeMessage(remote.receiver, 'receive', msg));
     }
   }
 

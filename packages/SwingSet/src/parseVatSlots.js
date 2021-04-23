@@ -80,7 +80,7 @@ export function parseVatSlot(s) {
  *
  * @param {'object'|'device'|'promise'} type The type
  * @param {boolean} allocatedByVat  Flag: true=>vat allocated, false=>kernel allocated
- * @param {number} id    The id, a Nat.
+ * @param {number | bigint} id    The id, a Nat.
  *
  * @returns {string} the corresponding vat slot reference string.
  *

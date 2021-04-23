@@ -1,8 +1,8 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { makeTranscriptManager } from './transcript';
-import { createSyscall } from './syscall';
+import { makeManagerKit } from './manager-helper';
 
+import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
 import '../../types';
 import './types';
 
@@ -18,6 +18,7 @@ const decoder = new TextDecoder();
  * @param {{
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
+ *   kernelSlog: KernelSlog,
  *   startXSnap: (name: string, handleCommand: SyncHandler) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
@@ -26,21 +27,26 @@ const decoder = new TextDecoder();
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
  * @typedef { (msg: Uint8Array) => Uint8Array } SyncHandler
  * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
- * @typedef { ReturnType<typeof import('../state/kernelKeeper').default> } KernelKeeper
- * @typedef { ReturnType<typeof import('./manager-nodeworker').makeNodeWorkerVatManagerFactory> } VatManagerFactory
  */
 export function makeXsSubprocessFactory({
   allVatPowers: { transformTildot },
   kernelKeeper,
+  kernelSlog,
   startXSnap,
   testLog,
 }) {
   /**
-   * @param { unknown } vatID
+   * @param { string } vatID
    * @param { unknown } bundle
    * @param { ManagerOptions } managerOptions
+   * @param { (vso: VatSyscallObject) => VatSyscallResult } vatSyscallHandler
    */
-  async function createFromBundle(vatID, bundle, managerOptions) {
+  async function createFromBundle(
+    vatID,
+    bundle,
+    managerOptions,
+    vatSyscallHandler,
+  ) {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
       vatParameters,
@@ -59,17 +65,13 @@ export function makeXsSubprocessFactory({
       // stops doing that, turn this into a regular assert
       console.log(`xsnap worker does not support enableInternalMetering`);
     }
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
-
-    const { doSyscall, setVatSyscallHandler } = createSyscall(
-      transcriptManager,
+    const mk = makeManagerKit(
+      vatID,
+      kernelSlog,
+      kernelKeeper,
+      vatSyscallHandler,
+      true,
     );
-
-    /** @type { (vatSyscallObject: Tagged) => unknown } */
-    function handleSyscall(vatSyscallObject) {
-      return doSyscall(vatSyscallObject);
-    }
 
     /** @type { (item: Tagged) => unknown } */
     function handleUpstream([type, ...args]) {
@@ -77,8 +79,9 @@ export function makeXsSubprocessFactory({
       switch (type) {
         case 'syscall': {
           parentLog(vatID, `syscall`, args[0], args.length);
-          const [scTag, ...vatSyscallArgs] = args;
-          return handleSyscall([scTag, ...vatSyscallArgs]);
+          const vso = args[0];
+          insistVatSyscallObject(vso);
+          return mk.syscallFromWorker(vso);
         }
         case 'console': {
           const [level, tag, ...rest] = args;
@@ -142,49 +145,29 @@ export function makeXsSubprocessFactory({
       assert.fail(X`failed to setBundle: ${bundleReply}`);
     }
 
-    /** @type { (item: Tagged) => Promise<Tagged> } */
-    async function deliver(delivery) {
+    /**
+     * @param { VatDeliveryObject} delivery
+     * @returns { Promise<VatDeliveryResult> }
+     */
+    async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
-      transcriptManager.startDispatch(delivery);
-      const result = await issueTagged(['deliver', ...delivery]);
+      const result = await issueTagged(['deliver', delivery]);
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
-      transcriptManager.finishDispatch();
-
       // Attach the meterUsage to the deliver result.
-      /** @type {Tagged} */
-      const deliverResult = [
+      const deliverResult = harden([
         result.reply[0], // 'ok' or 'error'
         result.reply[1] || null, // problem or null
         result.meterUsage || null, // meter usage statistics or null
-      ];
-      return harden(deliverResult);
+      ]);
+      insistVatDeliveryResult(deliverResult);
+      return deliverResult;
     }
-
-    async function replayTranscript() {
-      transcriptManager.startReplay();
-      for (const t of vatKeeper.getTranscript()) {
-        transcriptManager.checkReplayError();
-        transcriptManager.startReplayDelivery(t.syscalls);
-        // eslint-disable-next-line no-await-in-loop
-        await deliver(t.d);
-      }
-      transcriptManager.checkReplayError();
-      transcriptManager.finishReplay();
-    }
+    mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
-      return worker.close();
+      return worker.close().then(_ => undefined);
     }
-
-    const manager = harden({
-      replayTranscript,
-      setVatSyscallHandler,
-      deliver,
-      shutdown,
-    });
-
-    parentLog(vatID, 'manager', Object.keys(manager));
-    return manager;
+    return mk.getManager(shutdown);
   }
 
   return harden({ createFromBundle });
