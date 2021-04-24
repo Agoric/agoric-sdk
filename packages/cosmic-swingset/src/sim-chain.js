@@ -1,4 +1,4 @@
-/* global process setTimeout clearTimeout */
+/* global require process setTimeout clearTimeout */
 /* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
@@ -11,11 +11,11 @@ import {
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { launch } from '../launch-chain';
-import makeBlockManager from '../block-manager';
-import { makeWithQueue } from './vats/queue';
-import { makeBatchedDeliver } from './batched-deliver';
-import { getMeterProvider } from '../kernel-stats';
+import { makeWithQueue } from '@agoric/vats/src/queue';
+import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
+import { launch } from './launch-chain';
+import makeBlockManager from './block-manager';
+import { getMeterProvider } from './kernel-stats';
 
 const console = anylogger('fake-chain');
 
@@ -51,7 +51,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
-  const vatsdir = path.join(basedir, 'vats');
+  const vatconfig = require.resolve('@agoric/vats/decentral-config.json');
   const argv = {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
@@ -68,7 +68,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     stateDBdir,
     mailboxStorage,
     undefined,
-    vatsdir,
+    vatconfig,
     argv,
     GCI, // debugName
     meterProvider,

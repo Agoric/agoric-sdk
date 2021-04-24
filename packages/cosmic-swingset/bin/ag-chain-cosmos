@@ -10,4 +10,4 @@ while test $# -gt 0; do
   shift
 done
 
-exec node ${nodeFlags[@]} "$thisdir/../lib/chain-entrypoint.js" ${1+"$@"}
+exec node ${nodeFlags[@]} "$thisdir/../src/chain-entrypoint.cjs" ${1+"$@"}

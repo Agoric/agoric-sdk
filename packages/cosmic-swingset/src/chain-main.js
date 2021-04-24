@@ -1,4 +1,4 @@
-/* global __dirname setInterval */
+/* global require setInterval */
 import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
 import {
   importMailbox,
@@ -77,11 +77,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   return storage;
 };
 
-export default async function main(
-  progname,
-  args,
-  { path, env, homedir, agcc },
-) {
+export default async function main(progname, args, { env, homedir, agcc }) {
   const portNums = {};
 
   // TODO: use the 'basedir' pattern
@@ -224,7 +220,7 @@ export default async function main(
       }
     }
 
-    const vatsdir = path.resolve(__dirname, '../lib/ag-solo/vats');
+    const vatconfig = require.resolve('@agoric/vats/decentral-config.json');
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: env.NO_FAKE_CURRENCIES,
@@ -235,7 +231,7 @@ export default async function main(
       stateDBDir,
       mailboxStorage,
       doOutboundBridge,
-      vatsdir,
+      vatconfig,
       argv,
       undefined,
       meterProvider,

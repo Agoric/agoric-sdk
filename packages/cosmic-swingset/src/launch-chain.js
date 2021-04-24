@@ -13,7 +13,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { getBestSwingStore } from './check-lmdb';
+import { getBestSwingStore } from '@agoric/swing-store-lmdb/check-lmdb';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -32,14 +32,14 @@ async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
   storage,
-  vatsDir,
+  vatconfig,
   argv,
   { debugName = undefined, slogCallbacks, slogFile },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  let config = loadSwingsetConfigFile(`${vatsDir}/chain-config.json`);
+  let config = loadSwingsetConfigFile(vatconfig);
   if (config === null) {
-    config = loadBasedir(vatsDir);
+    config = loadBasedir(vatconfig);
   }
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
@@ -89,7 +89,7 @@ export async function launch(
   kernelStateDBDir,
   mailboxStorage,
   bridgeOutbound,
-  vatsDir,
+  vatconfig,
   argv,
   debugName = undefined,
   meterProvider = DEFAULT_METER_PROVIDER,
@@ -115,7 +115,7 @@ export async function launch(
     mailboxStorage,
     bridgeOutbound,
     storage,
-    vatsDir,
+    vatconfig,
     argv,
     {
       debugName,
