@@ -132,7 +132,7 @@ test('workflow', async t => {
     ]);
     finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
 
-    timeout = setTimeout(deployResult.resolve, 60000, 'timeout');
+    timeout = setTimeout(deployResult.resolve, 120 * 1000, 'timeout');
     const done = await Promise.race([deployResult.promise, deployP]);
     t.is(done, 0, `deploy successful before timeout`);
     clearTimeout(timeout);

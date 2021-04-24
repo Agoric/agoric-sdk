@@ -1,8 +1,8 @@
 {
   "bootstrap": "bootstrap",
   "vats": {
-    "host": {
-      "sourceSpec": "vat-host.js"
+    "spawner": {
+      "sourceSpec": "vat-spawner.js"
     },
     "http": {
       "sourceSpec": "vat-http.js"

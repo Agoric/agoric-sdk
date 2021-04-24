@@ -9,8 +9,8 @@
     "board": {
       "sourceSpec": "vat-board.js"
     },
-    "host": {
-      "sourceSpec": "vat-host.js"
+    "spawner": {
+      "sourceSpec": "vat-spawner.js"
     },
     "ibc": {
       "sourceSpec": "vat-ibc.js"
