@@ -154,3 +154,137 @@ test('new strategy', t => {
     console.log(formatComplexTrade(trade));
   }
 });
+
+function logSimpleTrade(label, trade) {
+  console.log(
+    `${label},${-trade.deltaX}, ${-trade.deltaY}, ${trade.deltaX}, ${
+      trade.deltaY
+    }, ${trade.x}, ${trade.y}`,
+  );
+}
+
+function logStrategicTrade(trade) {
+  console.log(
+    `Strategic,${trade.pay}, ${trade.get}, ${trade.deltaX}, ${trade.deltaY}, ${trade.x}, ${trade.y}, ${trade.protocol}`,
+  );
+}
+
+test('compare Strategies tradeOut Bucks', t => {
+  const { moola, bucks } = setup();
+  console.log(`  tradeOut BUCKS`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeOut(bucks(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeOut(bucks(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeOut(bucks(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeOut Moola ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeOut MOOLA`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeOut(moola(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeOut(moola(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeOut(moola(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeIn Moola ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeIn MOOLA`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeIn(moola(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeIn(moola(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeIn(moola(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeIn Bucks ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeIn BUCKS`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeIn(bucks(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeIn(bucks(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeIn(bucks(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
