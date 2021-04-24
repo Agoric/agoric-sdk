@@ -38,8 +38,6 @@ export function legibilizeValue(val, slots) {
           return `@${slots[val.index]}`;
         case 'error':
           return `new ${val.name}('${val.message}')`;
-        case 'ibid':
-          return `ibid(${val.index})`;
         default:
           assert.fail(X`unknown qClass ${qClass} in legibilizeValue`);
       }
