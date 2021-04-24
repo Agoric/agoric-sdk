@@ -5,7 +5,7 @@ thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
-STAKE=50000000uagstake
+DELEGATE_COINS=62000000ubld,93000000urun
 
 OP=$1
 shift
@@ -67,10 +67,10 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         tx bank send \
         --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
         --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=block \
-        -- faucet "$ADDR" "$STAKE"; then
+        -- faucet "$ADDR" "$DELEGATE_COINS"; then
         # Record the information before exiting.
         sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
-        echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
+        echo "$ADDR:$DELEGATE_COINS:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0
       fi
       ;;

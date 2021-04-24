@@ -391,7 +391,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
             `--rm`,
             // `-it`,
-            `--entrypoint=/usr/src/app/bin/ag-solo`,
+            `--entrypoint=ag-solo`,
             ...dockerArgs,
             SOLO_IMAGE,
             ...args,
