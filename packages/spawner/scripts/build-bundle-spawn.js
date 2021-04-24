@@ -8,11 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 
 async function writeSourceBundle(contractFilename, outputPath) {
   await bundleSource(contractFilename).then(bundle => {
-    // TODO: fix
-    // @ts-ignore mkdirSync believes it only accepts 2 arguments.
-    fs.mkdirSync(`${__dirname}/../bundles`, { recursive: true }, err => {
-      if (err) throw err;
-    });
+    fs.mkdirSync(`${__dirname}/../bundles`, { recursive: true });
     fs.writeFileSync(outputPath, `export default ${JSON.stringify(bundle)};`);
   });
 }
