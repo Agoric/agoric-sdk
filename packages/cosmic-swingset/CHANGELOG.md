@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.3...@agoric/cosmic-swingset@0.29.4) (2021-04-22)
+
+
+### Bug Fixes
+
+* rename cosmos-level tokens uagstake/uag to ubld/urun ([0557983](https://github.com/Agoric/agoric-sdk/commit/0557983210571c9c2ba801d68644d71641a3f790))
+* reorganise deployment ([5e7f537](https://github.com/Agoric/agoric-sdk/commit/5e7f537021f747327673b6f5819324eb048a3d96))
+
+
+
+
+
 ## [0.29.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.2...@agoric/cosmic-swingset@0.29.3) (2021-04-18)
 
 

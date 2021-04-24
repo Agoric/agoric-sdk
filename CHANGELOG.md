@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.17.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.3...@agoric/sdk@2.17.4) (2021-04-22)
+
+
+### Bug Fixes
+
+* **ERTP:** avoid jessie warning ([fe9319b](https://github.com/Agoric/agoric-sdk/commit/fe9319b40fe0c1e440db62f4200ffd2598a419d6)), closes [#2704](https://github.com/Agoric/agoric-sdk/issues/2704)
+* faucet delegate gives 62BLD, 93RUN ([4b80400](https://github.com/Agoric/agoric-sdk/commit/4b804005d2e58acf8cc86cca5312b9312fe9b77d))
+* rename cosmos-level tokens uagstake/uag to ubld/urun ([0557983](https://github.com/Agoric/agoric-sdk/commit/0557983210571c9c2ba801d68644d71641a3f790))
+* reorganise deployment ([5e7f537](https://github.com/Agoric/agoric-sdk/commit/5e7f537021f747327673b6f5819324eb048a3d96))
+* use Tendermint v0.34.10 for better network stability ([963a7ef](https://github.com/Agoric/agoric-sdk/commit/963a7effc09eb7df132945476474699c3cd38fff))
+
+
+
+
+
 ## [2.17.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.2...@agoric/sdk@2.17.3) (2021-04-18)
 
 
