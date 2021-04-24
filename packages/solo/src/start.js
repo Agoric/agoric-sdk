@@ -1,4 +1,4 @@
-/* global require process setTimeout */
+/* global __dirname require process setTimeout */
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
@@ -13,7 +13,6 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 import {
-  loadBasedir,
   loadSwingsetConfigFile,
   buildCommand,
   swingsetIsInitialized,
@@ -24,14 +23,14 @@ import {
   buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
-import { getBestSwingStore } from '../check-lmdb';
+import { getBestSwingStore } from '@agoric/swing-store-lmdb/check-lmdb';
+import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
+import { makeWithQueue } from '@agoric/vats/src/queue';
 
 import { deliver, addDeliveryTarget } from './outbound';
 import { makeHTTPListener } from './web';
-import { makeWithQueue } from './vats/queue';
 
 import { connectToChain } from './chain-cosmos-sdk';
-import { connectToFakeChain } from './fake-chain';
 
 const log = anylogger('start');
 
@@ -78,7 +77,6 @@ async function atomicReplaceFile(filename, contents) {
 async function buildSwingset(
   kernelStateDBDir,
   mailboxStateFile,
-  vatsDir,
   argv,
   broadcast,
   defaultManagerType,
@@ -114,10 +112,7 @@ async function buildSwingset(
 
   const plugin = buildPlugin(pluginDir, pluginRequire, queueThunkForKernel);
 
-  let config = loadSwingsetConfigFile(`${vatsDir}/solo-config.json`);
-  if (config === null) {
-    config = loadBasedir(vatsDir);
-  }
+  const config = loadSwingsetConfigFile(`${__dirname}/../solo-config.json`);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -285,7 +280,6 @@ export default async function start(basedir, argv) {
     fs.readFileSync('options.json', 'utf-8'),
   );
 
-  const vatsDir = path.join(basedir, 'vats');
   const stateDBDir = path.join(basedir, 'swingset-kernel-state');
 
   // FIXME: Replace this functionality with per-connection bootstrap code.
@@ -304,7 +298,6 @@ export default async function start(basedir, argv) {
   const d = await buildSwingset(
     stateDBDir,
     mailboxStateFile,
-    vatsDir,
     { ...getLegacyGCI(), ...argv },
     broadcast,
     defaultManagerType,

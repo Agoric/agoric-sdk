@@ -13,7 +13,7 @@ esmRequire('@agoric/install-metering-and-ses');
 const process = require('process');
 
 // Configure logs.
-esmRequire('../anylogger-agoric.js');
+esmRequire('@agoric/cosmic-swingset/src/anylogger-agoric.js');
 const solo = esmRequire('./main.js').default;
 
 solo(process.argv[1], process.argv.splice(2)).then(

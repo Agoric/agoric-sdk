@@ -1,9 +1,9 @@
-/* global __dirname process setTimeout */
+/* global process setTimeout */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@agoric/captp';
 
-import { getAccessToken } from '../lib/ag-solo/access-token';
+import { getAccessToken } from '../src/access-token';
 
 const PORT = 7999;
 
@@ -18,16 +18,12 @@ export async function makeFixture(noisy = false) {
   const stdio = noisy
     ? ['ignore', 'inherit', 'inherit']
     : ['ignore', 'pipe', 'pipe'];
-  const cp = spawn(
-    'make',
-    ['scenario3-setup', 'scenario3-run', `BASE_PORT=${PORT}`],
-    {
-      cwd: `${__dirname}/..`,
-      env: { ...process.env, PORT },
-      stdio,
-      detached: true,
-    },
-  );
+  // TODO: Remove dependency on cosmic-swingset.
+  const cp = spawn('./startsolo.sh', {
+    env: { ...process.env, PORT },
+    stdio,
+    detached: true,
+  });
 
   if (!noisy) {
     cp.stdout.on('data', chunk => (buf += chunk.toString('utf-8')));

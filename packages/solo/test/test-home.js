@@ -10,9 +10,9 @@ import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
+import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers';
 
 import { makeFixture, E } from './captp-fixture';
-import { CENTRAL_ISSUER_NAME } from '../lib/ag-solo/vats/issuers';
 
 // This runs before all the tests.
 let home;

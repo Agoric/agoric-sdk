@@ -42,21 +42,15 @@ export default function initBasedir(
     path.join(basedir, 'connections.json'),
     `${JSON.stringify(connections)}\n`,
   );
-  const srcHtmldir = path.join(here, 'html');
   const dstHtmldir = path.join(basedir, 'html');
   fs.mkdirSync(dstHtmldir);
-  fs.readdirSync(srcHtmldir)
-    .filter(name => name.match(/^[^.]/))
-    .forEach(name => {
-      fs.copyFileSync(path.join(srcHtmldir, name), path.join(dstHtmldir, name));
-    });
 
   // Save the configuration options.
   fs.writeFileSync(path.join(basedir, 'options.json'), JSON.stringify(options));
 
   // Save our version codes.
   const pj = 'package.json';
-  fs.copyFileSync(path.join(`${here}/../..`, pj), path.join(dstHtmldir, pj));
+  fs.copyFileSync(path.join(`${here}/..`, pj), path.join(dstHtmldir, pj));
   const gr = 'git-revision.txt';
   try {
     fs.copyFileSync(path.join(`${here}/..`, gr), path.join(dstHtmldir, gr));
@@ -70,29 +64,6 @@ export default function initBasedir(
     }
     fs.writeFileSync(path.join(dstHtmldir, gr), revision);
   }
-
-  const srcVatdir = subdir
-    ? path.join(here, 'vats', subdir)
-    : path.join(here, 'vats');
-  const dstVatdir = path.join(basedir, 'vats');
-  fs.mkdirSync(dstVatdir);
-  fs.readdirSync(srcVatdir)
-    .filter(name => name.match(/\.(js|json)$/))
-    .forEach(name => {
-      fs.copyFileSync(path.join(srcVatdir, name), path.join(dstVatdir, name));
-    });
-
-  // Enable our node_modules to be found.
-  let dots = '';
-  let nm = path.resolve(here, dots, 'node_modules');
-  while (
-    !nm.startsWith('/node_modules/') &&
-    !fs.existsSync(path.join(nm, '@agoric'))
-  ) {
-    dots += '../';
-    nm = path.resolve(here, dots, 'node_modules');
-  }
-  fs.symlinkSync(nm, path.join(basedir, 'node_modules'), 'junction');
 
   // cosmos-sdk keypair
   if (egresses.includes('cosmos')) {
@@ -144,7 +115,7 @@ export default function initBasedir(
 
   // this marker file is how we recognize ag-solo basedirs
   fs.copyFileSync(
-    path.join(here, 'solo-README-to-install.md'),
+    path.join(here, '..', 'solo-README-to-install.md'),
     path.join(basedir, 'solo-README.md'),
   );
 

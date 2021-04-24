@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
-import { getBestSwingStore } from '../check-lmdb';
+import { getBestSwingStore } from '@agoric/swing-store-lmdb/check-lmdb';
 
 export default async function resetState(basedir) {
   const mailboxStateFile = path.resolve(

@@ -1,4 +1,4 @@
-/* global require setTimeout clearTimeout setInterval clearInterval */
+/* global __dirname require setTimeout clearTimeout setInterval clearInterval */
 // Start a network service
 import path from 'path';
 import http from 'http';
@@ -89,6 +89,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
+  app.use(express.static(`${__dirname}/../public`));
 
   // The rules for validation:
   //
