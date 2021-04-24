@@ -52,11 +52,3 @@ test('run encouragementBotComms Demo', async t => {
   );
   t.deepEqual(dump.log, encouragementBotCommsGolden);
 });
-
-test('run encouragementBotCommsWavyDot Demo', async t => {
-  const dump = await main(
-    path.resolve(__dirname, '../demo/encouragementBotCommsWavyDot'),
-    [],
-  );
-  t.deepEqual(dump.log, encouragementBotCommsGolden);
-});

@@ -31,13 +31,6 @@ test('create with setup and buildRootObject', async t => {
   r = c.queueToVatExport('setup', 'o+0', 'read', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(1), 'setup read');
-  r = c.queueToVatExport('setup', 'o+0', 'tildot', capargs([]), 'panic');
-  await c.run();
-  t.deepEqual(
-    c.kpResolution(r),
-    capargs('HandledPromise.applyMethod(x, "foo", [arg1]);'),
-    'setup tildot',
-  );
   r = c.queueToVatExport('setup', 'o+0', 'remotable', capargs([]), 'panic');
   await c.run();
   t.deepEqual(
@@ -52,13 +45,6 @@ test('create with setup and buildRootObject', async t => {
   r = c.queueToVatExport('liveslots', 'o+0', 'read', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(1), 'ls read');
-  r = c.queueToVatExport('liveslots', 'o+0', 'tildot', capargs([]), 'panic');
-  await c.run();
-  t.deepEqual(
-    c.kpResolution(r),
-    capargs('HandledPromise.applyMethod(x, "foo", [arg1]);'),
-    'ls tildot',
-  );
   r = c.queueToVatExport('liveslots', 'o+0', 'remotable', capargs([]), 'panic');
   await c.run();
   t.deepEqual(

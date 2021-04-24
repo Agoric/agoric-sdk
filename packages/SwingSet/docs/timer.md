@@ -37,25 +37,25 @@ In `bootstrap()` for a particular SwingSet, we create a timerService, and
 make it accessible to the user in `home`
 
 ```
-const timerService = vats.timerWrapper~.createTimerService(devices.timer);
+const timerService = E(vats.timerWrapper).createTimerService(devices.timer);
 ```
 
 Then users in the REPL can use the timerService to schedule wakeups.
 
 ```
-const timestampP = timerService~.getCurrentTimestamp();
+const timestampP = E(timerService).getCurrentTimestamp();
 
 const handler = harden({wake(now) { console.log(`woke up ${now}`); }});
-const willWakeAt = timerService~.setWakeup(60, handler);
+const willWakeAt = E(timerService).setWakeup(60, handler);
 ```
 
 The handler will fire somewhat after 60 seconds from now.
 
 ```
-const repeater = timerService~.makeRepeater(20, 60);
-repeater~.schedule(handler);
+const repeater = E(timerService).makeRepeater(20, 60);
+E(repeater).schedule(handler);
 ```
 
 The handler will fire in somewhat after 80 seconds from now, and every 60
-seconds thereafter. Calling `repeater~.disable()` will cancel prevent the repeater
+seconds thereafter. Calling `E(repeater).disable()` will cancel prevent the repeater
 from scheduling future activations

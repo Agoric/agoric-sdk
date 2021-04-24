@@ -29,7 +29,6 @@ const decoder = new TextDecoder();
  * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
  */
 export function makeXsSubprocessFactory({
-  allVatPowers: { transformTildot },
   kernelKeeper,
   kernelSlog,
   startXSnap,
@@ -89,16 +88,6 @@ export function makeXsSubprocessFactory({
         case 'testLog':
           testLog(...args);
           return ['OK'];
-        case 'transformTildot': {
-          const [extjs] = args;
-          try {
-            const stdjs = transformTildot(extjs);
-            // console.log({ extjs, stdjs });
-            return ['ok', stdjs];
-          } catch (err) {
-            return ['err', err.message];
-          }
-        }
         default:
           assert.fail(X`unrecognized uplink message ${type}`);
       }

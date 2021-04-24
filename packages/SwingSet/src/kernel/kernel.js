@@ -98,7 +98,6 @@ export default function buildKernel(
     makeConsole,
     replaceGlobalMeter,
     transformMetering,
-    transformTildot,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,
@@ -174,12 +173,10 @@ export default function buildKernel(
 
   // These will eventually be provided by the in-worker supervisor instead.
 
-  // TODO: ideally the powerless ones (maybe transformTildot) are imported by
-  // the vat, not passed in an argument.
+  // TODO: ideally the powerless ones are imported by the vat, not passed in
+  // an argument.
 
   const allVatPowers = harden({
-    transformTildot: (...args) =>
-      meterManager.runWithoutGlobalMeter(transformTildot, ...args),
     testLog,
   });
 

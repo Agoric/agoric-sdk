@@ -33,7 +33,7 @@
 /**
  * See ../docs/static-vats.md#vatpowers
  *
- * @typedef { MarshallingVatPowers & EventualSyntaxVatPowers & TerminationVatPowers } VatPowers
+ * @typedef { MarshallingVatPowers & TerminationVatPowers } VatPowers
  *
  * @typedef { (VatPowers & MeteringVatPowers) } StaticVatPowers
  *
@@ -46,10 +46,6 @@
  *   makeGetMeter: unknown,
  *   transformMetering: unknown,
  * }} MeteringVatPowers
- *
- * @typedef {{
- *   transformTildot: ReturnType<typeof import('@agoric/transform-eventual-send').makeTransform>,
- * }} EventualSyntaxVatPowers
  *
  * @typedef {{
  *   exitVat: unknown,
