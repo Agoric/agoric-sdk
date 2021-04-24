@@ -1,14 +1,14 @@
 import fs from 'fs';
-import {
-  openSwingStore as openSwingStoreLMDB,
-  initSwingStore as initSwingStoreLMDB,
-} from '@agoric/swing-store-lmdb';
+import { assert, details as X } from '@agoric/assert';
+
 import {
   openSwingStore as openSwingStoreSimple,
   initSwingStore as initSwingStoreSimple,
 } from '@agoric/swing-store-simple';
-
-import { assert, details as X } from '@agoric/assert';
+import {
+  openSwingStore as openSwingStoreLMDB,
+  initSwingStore as initSwingStoreLMDB,
+} from '.';
 
 /*
  * Return an 'openSwingStore' function for the best kind of DB that works on

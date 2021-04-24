@@ -44,6 +44,7 @@
     "@agoric/promise-kit": "^0.2.10",
     "@agoric/store": "^0.4.11",
     "@agoric/swingset-vat": "^0.16.4",
+    "@agoric/vats": "^0.1.0",
     "@agoric/zoe": "^0.15.4"
   },
   "devDependencies": {

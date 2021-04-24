@@ -114,7 +114,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   if (opts.sdk) {
     agSolo = path.resolve(__dirname, '../../solo/src/entrypoint.cjs');
   } else {
-    agSolo = `/usr/src/dapp/node_modules/.bin/ag-solo`;
+    agSolo = `/usr/src/dapp/node_modules/@agoric/solo/src/entrypoint.cjs`;
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
