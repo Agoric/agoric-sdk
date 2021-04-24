@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
+import { passStyleOf } from '@agoric/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -60,7 +60,7 @@ test(`zoe.startInstance bad installation`, async t => {
 });
 
 function isEmptyFacet(t, facet) {
-  t.is(passStyleOf(facet), REMOTE_STYLE);
+  t.is(passStyleOf(facet), 'remotable');
   t.deepEqual(Object.getOwnPropertyNames(facet), []);
 }
 

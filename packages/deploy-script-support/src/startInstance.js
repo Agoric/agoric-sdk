@@ -65,7 +65,7 @@ export const makeStartInstance = (
     console.log(`-- Registering Contract Instance: ${instancePetname}`);
     await E(instanceManager).add(instancePetname, instance);
 
-    if (passStyleOf(creatorInvitation) === 'presence') {
+    if (passStyleOf(creatorInvitation) === 'remotable') {
       assert(
         creatorInvitation,
         `creatorInvitation must be defined to be deposited`,

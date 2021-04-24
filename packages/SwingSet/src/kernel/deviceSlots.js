@@ -1,9 +1,4 @@
-import {
-  Remotable,
-  passStyleOf,
-  REMOTE_STYLE,
-  makeMarshal,
-} from '@agoric/marshal';
+import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
 import { insistCapData } from '../capdata';
@@ -72,7 +67,7 @@ export function makeDeviceSlots(
     if (!valToSlot.has(val)) {
       // must be a new export
       // lsdebug('must be a new export', JSON.stringify(val));
-      assert.equal(passStyleOf(val), REMOTE_STYLE);
+      assert.equal(passStyleOf(val), 'remotable');
       const slot = exportPassByPresence();
       parseVatSlot(slot); // assertion
       valToSlot.set(val, slot);
@@ -175,7 +170,7 @@ export function makeDeviceSlots(
     deviceParameters,
     serialize: m.serialize, // We deliberately do not provide m.deserialize
   });
-  assert.equal(passStyleOf(rootObject), REMOTE_STYLE);
+  assert.equal(passStyleOf(rootObject), 'remotable');
 
   const rootSlot = makeVatSlot('device', true, 0n);
   valToSlot.set(rootObject, rootSlot);

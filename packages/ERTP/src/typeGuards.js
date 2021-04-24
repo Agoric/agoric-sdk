@@ -1,5 +1,5 @@
 import { isNat } from '@agoric/nat';
-import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
+import { passStyleOf } from '@agoric/marshal';
 
 const { isFrozen } = Object;
 
@@ -61,4 +61,4 @@ export const looksLikeValue = value =>
  * @returns {brand is Brand}
  */
 export const looksLikeBrand = brand =>
-  isFrozen(brand) && passStyleOf(brand) === REMOTE_STYLE;
+  isFrozen(brand) && passStyleOf(brand) === 'remotable';

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { passStyleOf, REMOTE_STYLE } from '@agoric/marshal';
+import { passStyleOf } from '@agoric/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 
 const {
@@ -89,7 +89,7 @@ function allComparable(passable) {
     case 'boolean':
     case 'number':
     case 'bigint':
-    case REMOTE_STYLE:
+    case 'remotable':
     case 'copyError': {
       return passable;
     }
@@ -149,7 +149,7 @@ function sameStructure(left, right) {
     case 'boolean':
     case 'number':
     case 'bigint':
-    case REMOTE_STYLE: {
+    case 'remotable': {
       return sameValueZero(left, right);
     }
     case 'copyRecord':
@@ -227,7 +227,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
     case 'boolean':
     case 'number':
     case 'bigint':
-    case REMOTE_STYLE: {
+    case 'remotable': {
       if (!sameValueZero(left, right)) {
         complain('different');
       }
