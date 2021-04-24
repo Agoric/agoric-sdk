@@ -7,40 +7,37 @@
   },
   "vats": {
     "board": {
-      "sourceSpec": "vat-board.js"
-    },
-    "spawner": {
-      "sourceSpec": "vat-spawner.js"
+      "sourceSpec": "./src/vat-board.js"
     },
     "ibc": {
-      "sourceSpec": "vat-ibc.js"
+      "sourceSpec": "./src/vat-ibc.js"
     },
     "mints": {
-      "sourceSpec": "vat-mints.js"
+      "sourceSpec": "./src/vat-mints.js"
     },
     "network": {
-      "sourceSpec": "vat-network.js"
+      "sourceSpec": "./src/vat-network.js"
     },
     "priceAuthority": {
-      "sourceSpec": "vat-priceAuthority.js"
+      "sourceSpec": "./src/vat-priceAuthority.js"
     },
     "provisioning": {
-      "sourceSpec": "vat-provisioning.js"
+      "sourceSpec": "./src/vat-provisioning.js"
     },
     "registrar": {
-      "sourceSpec": "vat-registrar.js"
+      "sourceSpec": "./src/vat-registrar.js"
     },
     "sharing": {
-      "sourceSpec": "vat-sharing.js"
+      "sourceSpec": "./src/vat-sharing.js"
     },
     "zoe": {
-      "sourceSpec": "vat-zoe.js",
+      "sourceSpec": "./src/vat-zoe.js",
       "parameters": {
         "zcfBundleName": "zcf"
       }
     },
     "bootstrap": {
-      "sourceSpec": "bootstrap.js"
+      "sourceSpec": "./src/bootstrap.js"
     }
   }
 }

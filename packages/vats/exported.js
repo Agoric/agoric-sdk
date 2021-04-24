@@ -1,1 +1,1 @@
-import './lib/ag-solo/vats/types';
+import './src/types';

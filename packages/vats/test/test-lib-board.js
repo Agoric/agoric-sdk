@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
-import { makeBoard } from '../../lib/ag-solo/vats/lib-board';
+import { makeBoard } from '../src/lib-board';
 
 test('makeBoard', async t => {
   const board = makeBoard();

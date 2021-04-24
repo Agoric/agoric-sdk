@@ -65,7 +65,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       board,
       chainTimerService,
       zoe,
-      contractHost,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
       E(vats.sharing).getSharingService(),
@@ -73,7 +72,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
       /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
-      E(vats.spawner).buildSpawner(vatAdminSvc),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
@@ -471,7 +469,6 @@ export function buildRootObject(vatPowers, vatParameters) {
           agoricNames,
           chainTimerService,
           sharingService,
-          contractHost,
           faucet,
           ibcport,
           myAddressNameAdmin,
