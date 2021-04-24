@@ -11,13 +11,10 @@ import { makeStore } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
 
-// this will return { undefined } until `ag-solo set-gci-ingress`
-// has been run to update gci.js
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { assert, details as X } from '@agoric/assert';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { amountMath, MathKind } from '@agoric/ertp';
-import { GCI } from './gci';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
 import {
@@ -678,6 +675,13 @@ export function buildRootObject(vatPowers, vatParameters) {
         devices.bridge && makeBridgeManager(E, D, devices.bridge);
       const {
         ROLE,
+        // TODO: Don't make client bootstrap dependent on having just zero or
+        // one chains.  Instead, supply all the connections as input to the
+        // bootstrap (or have other ways of initializing per-connection
+        // bootstrap code).  Also use an abstract name for the connection
+        // instead of GCI so that a given chain can be followed across a GCI
+        // change such as in a hard-fork.
+        FIXME_GCI,
         giveMeAllTheAgoricPowers,
         noFakeCurrencies,
         hardcodedClientAddresses,
@@ -724,7 +728,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         // ag-setup-solo runs this.
         case 'client': {
-          assert(GCI, X`client must be given GCI`);
+          assert(FIXME_GCI, X`client must be given GCI`);
 
           const localTimerService = await E(vats.timer).createTimerService(
             devices.timer,
@@ -734,10 +738,10 @@ export function buildRootObject(vatPowers, vatParameters) {
           await setupCommandDevice(vats.http, devices.command, {
             client: true,
           });
-          await addRemote(GCI);
+          await addRemote(FIXME_GCI);
           // addEgress(..., index, ...) is called in vat-provisioning.
           const demoProvider = await E(vats.comms).addIngress(
-            GCI,
+            FIXME_GCI,
             PROVISIONER_INDEX,
           );
           const localBundle = await createLocalBundle(

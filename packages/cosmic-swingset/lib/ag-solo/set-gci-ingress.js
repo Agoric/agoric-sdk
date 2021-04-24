@@ -76,10 +76,4 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
     connections.push(...conns),
   );
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);
-
-  const gciFileContents = `\
-export const GCI = ${JSON.stringify(GCI)};
-`;
-  const bfn = path.join(basedir, 'vats', 'gci.js');
-  fs.writeFileSync(bfn, gciFileContents);
 }

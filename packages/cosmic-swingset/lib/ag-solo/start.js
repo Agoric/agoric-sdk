@@ -287,11 +287,25 @@ export default async function start(basedir, argv) {
 
   const vatsDir = path.join(basedir, 'vats');
   const stateDBDir = path.join(basedir, 'swingset-kernel-state');
+
+  // FIXME: Replace this functionality with per-connection bootstrap code.
+  const getLegacyGCI = () => {
+    for (const c of connections) {
+      switch (c.type) {
+        case 'chain-cosmos-sdk':
+        case 'fake-chain':
+          return { FIXME_GCI: c.GCI };
+        default:
+      }
+    }
+    return undefined;
+  };
+
   const d = await buildSwingset(
     stateDBDir,
     mailboxStateFile,
     vatsDir,
-    argv,
+    { ...getLegacyGCI(), ...argv },
     broadcast,
     defaultManagerType,
   );
