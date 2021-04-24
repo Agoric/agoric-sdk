@@ -54,12 +54,6 @@
     state: link
   when: ws.stat.exists
 
-- name: "Symlink /usr/src/app"
-  file:
-    src: "/usr/src/cosmic-swingset"
-    dest: /usr/src/app
-    state: link
-
 - name: "Symlink ag-chain-cosmos"
   file:
     src: "/usr/src/cosmic-swingset/bin/ag-chain-cosmos"

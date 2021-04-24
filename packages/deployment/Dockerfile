@@ -26,15 +26,15 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
 # # Copy journalbeat for logging support
 # COPY --from=go-build /go/bin/journalbeat /usr/local/bin/
 
-WORKDIR /usr/src/app
-RUN ln -sf $PWD/setup/ag-setup-cosmos /usr/local/bin/
-COPY package*.json setup/
-RUN cd setup && npm install --production
+WORKDIR /usr/src/agoric-sdk/packages/deployment
+RUN ln -sf $PWD/ag-setup-cosmos /usr/local/bin/
+COPY package*.json .
+RUN npm install --production
 
 # Add the ag-solo, so we can deploy it via Ansible.
-COPY --from=agoric/cosmic-swingset-solo /usr/src/app/lib/ag-solo/ /usr/src/app/lib/ag-solo/
+COPY --from=agoric/cosmic-swingset-solo /usr/src/agoric-sdk/packages/cosmic-swingset/lib/ag-solo/ /usr/src/agoric-sdk/packages/cosmic-swingset/lib/ag-solo/
 
-COPY . setup/
-WORKDIR /usr/src/app/chains
+COPY . .
+WORKDIR /agoric/chains
 
 ENTRYPOINT [ "ag-setup-cosmos" ]

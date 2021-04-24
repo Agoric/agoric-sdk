@@ -370,11 +370,7 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
         await needReMain(['play', 'cosmos-clone-config']);
 
-        const agoricCli = rd
-          .resolve(__dirname, `../agoric-cli/bin/agoric`)
-          .replace('/cosmic-swingset/', '/');
-        // FIXME: The above .replace hacks around legacy /usr/src/agoric-sdk/packages/cosmic-swingset/setup location.
-        // TODO: Should change the Dockerfiles to use /usr/src/agoric-sdk/packages/deployment instead.
+        const agoricCli = rd.resolve(__dirname, `../agoric-cli/bin/agoric`);
 
         // Apply the Agoric set-defaults to all the .dst dirs.
         const files = await rd.readdir(`${COSMOS_DIR}/data`);

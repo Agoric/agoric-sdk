@@ -9,7 +9,7 @@ make scenario2-setup-nobuild scenario2-run-chain
 After producing blocks:
 
 ```
-ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test tx bank send $(ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test keys show -a bootstrap) agoric189hehmq5mz5zp7mel9u8ellc37pvvr9veyje7a 1000000uagstake --from=bootstrap --chain-id=agoric --yes
+ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test tx bank send $(ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test keys show -a bootstrap) agoric189hehmq5mz5zp7mel9u8ellc37pvvr9veyje7a 1000000ubld --from=bootstrap --chain-id=agoric --yes
 make scenario2-run-client
 ```
 
