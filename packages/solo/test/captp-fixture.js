@@ -1,4 +1,4 @@
-/* global process setTimeout */
+/* global __dirname process setTimeout */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@agoric/captp';
@@ -18,9 +18,9 @@ export async function makeFixture(noisy = false) {
   const stdio = noisy
     ? ['ignore', 'inherit', 'inherit']
     : ['ignore', 'pipe', 'pipe'];
-  // TODO: Remove dependency on cosmic-swingset.
   const cp = spawn('./startsolo.sh', {
     env: { ...process.env, PORT },
+    cwd: __dirname,
     stdio,
     detached: true,
   });
