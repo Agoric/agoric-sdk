@@ -5,9 +5,9 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeBoard } from '@agoric/cosmic-swingset/lib/ag-solo/vats/lib-board';
+import { makeBoard } from '@agoric/vats/src/lib-board';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeNameHubKit } from '@agoric/cosmic-swingset/lib/ag-solo/vats/nameHub';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';

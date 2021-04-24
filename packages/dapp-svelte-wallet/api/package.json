@@ -15,10 +15,10 @@
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.3.4",
-    "@agoric/cosmic-swingset": "^0.29.4",
     "@agoric/eslint-config": "^0.3.3",
     "@agoric/install-ses": "^0.5.10",
     "@agoric/registrar": "^0.2.11",
+    "@agoric/vats": "^0.1.0",
     "ava": "^3.12.1"
   },
   "dependencies": {
