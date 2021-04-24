@@ -96,6 +96,7 @@ export const makeGetCurrentPrice = (
         halfPoolFeeBP,
       );
 
+      // firstDraftFee will be replaced by actualFee (from final central amount)
       const firstDraftFee = multiplyBy(centralAmount, protocolFeeRatio);
       const centralAmountLessFee = amountMath.subtract(
         centralAmount,
@@ -183,6 +184,7 @@ export const makeGetCurrentPrice = (
       const brandInPool = getPool(brandIn);
       const brandOutPool = getPool(brandOut);
 
+      // firstCentralAmount will be replaced by finalCentralAmount
       const {
         amountIn: firstCentralAmount,
       } = brandOutPool.getPriceGivenRequiredOutput(
