@@ -60,16 +60,7 @@ export const makeEscrowStorage = () => {
 
   // Proposal is cleaned, but payments are not
 
-  /**
-   * Deposits payments or promises for payments according to the
-   * `give` property of the proposal. Using the proposal, creates an
-   * initial allocation including the amount deposited for `give`
-   * keywords and an empty amount for `want` keywords.
-   *
-   * @param {ProposalRecord} proposal
-   * @param {PaymentPKeywordRecord} payments
-   * @returns {Promise<Allocation>}
-   */
+  /** @type {DepositPayments} */
   const depositPayments = async (proposal, payments) => {
     const { give, want } = proposal;
     const giveKeywords = Object.keys(give);

@@ -32,7 +32,8 @@
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {InstanceAdmin} instanceAdmin
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
  * @param {ProposalRecord} proposal
  * @param {WithdrawPayments} withdrawPayments
  * @param {ERef<ExitObj>} exitObj
@@ -68,7 +69,7 @@
  * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
- * @param {GetMathKind} getMathKind - get the mathKind given the brand
+ * @param {GetMathKindByBrand} getMathKindByBrand - get the mathKind given the brand
  * @returns {ZcfSeatAdminKit}
  */
 
@@ -93,14 +94,10 @@
  * request by the contract for an "empty" seat.
  *
  * @typedef {Object} InstanceAdmin
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => Set<ZoeSeatAdmin>} addZoeSeatAdmin
+ * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
- *             seatData: SeatData,
- *             seatHandle: SeatHandle,
- *            ) => Promise<AddSeatResult>} tellZCFToMakeSeat
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasZoeSeatAdmin
- * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} removeZoeSeatAdmin
+      initialAllocation: Allocation,
+      proposal: ProposalRecord) => UserSeat } makeUserSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
@@ -258,7 +255,7 @@
  */
 
 /**
- * @callback GetMathKind
+ * @callback GetMathKindByBrand
  * Get the mathKind for a brand known by Zoe
  *
  * To be deleted when brands have a property for mathKind

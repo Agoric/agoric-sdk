@@ -43,7 +43,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
   ) => {
     const {
       storeIssuerRecord,
-      getMathKind,
+      getMathKindByBrand,
       getBrandForIssuer,
       getIssuerForBrand,
     } = makeIssuerStorage(issuerStorageFromZoe);
@@ -115,7 +115,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(harden({ exit }), getMathKind);
+      const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -137,7 +137,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         allSeatStagings,
         zoeSeatAdminPromiseKit.promise,
         seatData,
-        getMathKind,
+        getMathKindByBrand,
       );
       zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
       zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
@@ -365,7 +365,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getTerms,
       getBrandForIssuer,
       getIssuerForBrand,
-      getMathKind,
+      getMathKind: getMathKindByBrand,
       /**
        * Provide a jig object for testing purposes only.
        *
@@ -399,7 +399,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           allSeatStagings,
           zoeSeatAdmin,
           seatData,
-          getMathKind,
+          getMathKindByBrand,
         );
         zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
         zcfSeatToSeatHandle.init(zcfSeat, seatHandle);

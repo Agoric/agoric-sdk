@@ -113,8 +113,8 @@ export const makeIssuerStorage = exportedIssuerStorage => {
 
   const storeIssuers = issuers => Promise.all(issuers.map(storeIssuer));
 
-  /** @type {GetMathKind} */
-  const getMathKind = brand => getByBrand(brand).mathKind;
+  /** @type {GetMathKindByBrand} */
+  const getMathKindByBrand = brand => getByBrand(brand).mathKind;
 
   /**
    *
@@ -169,7 +169,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     storeIssuerKeywordRecord,
     storeIssuer,
     storeIssuerRecord,
-    getMathKind,
+    getMathKindByBrand,
     getBrandForIssuer,
     getIssuerForBrand,
     exportIssuerStorage,

@@ -41,7 +41,7 @@
  * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
- * @property {(brand: Brand) => AmountMathKind} getMathKind
+ * @property {GetMathKindByBrand} getMathKind
  * @property {MakeZCFMint} makeZCFMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig

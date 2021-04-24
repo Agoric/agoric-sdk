@@ -171,7 +171,7 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * :Timer, deadline :bigint } }
  *
  * @param {Proposal} proposal
- * @param {GetMathKind} getMathKindByBrand
+ * @param {GetMathKindByBrand} getMathKindByBrand
  * @returns {ProposalRecord}
  */
 export const cleanProposal = (proposal, getMathKindByBrand) => {
