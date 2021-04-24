@@ -53,17 +53,17 @@ export function buildRootObject(vatPowers) {
 
   /*
   // A:
-  agoric.ibcport[0]~.addListener( { onAccept() => {
-    const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-B', comms);
-    const helloAddress = await host~.publish(hello);
+  E(agoric.ibcport[0]).addListener( { onAccept() => {
+    const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-B', comms);
+    const helloAddress = await E(host).publish(hello);
     // helloAddress = '/alleged-chain/${chainID}/egress/${clistIndex}'
     return handler;
    });
 
    // B:
-   const { host, handler } = await agoric.vattp~.makeNetworkHost('ag-chain-A', comms, console);
-   agoric.ibcport[1]~.connect('/ibc-port/portADDR/ordered/vattp-1', handler);
-   host~.lookup(helloAddress)~.hello()
+   const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-A', comms, console);
+   E(agoric.ibcport[1]).connect('/ibc-port/portADDR/ordered/vattp-1', handler);
+   E(E(host).lookup(helloAddress)).hello()
   */
 
   function makeNetworkHost(allegedName, comms, cons = console) {

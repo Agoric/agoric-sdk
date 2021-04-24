@@ -8,8 +8,6 @@ import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import * as babelCore from '@babel/core';
-import * as babelParser from '@agoric/babel-parser';
-import babelGenerate from '@babel/generator';
 import anylogger from 'anylogger';
 import { tmpName } from 'tmp';
 
@@ -18,7 +16,6 @@ import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import { makeTransform } from '@agoric/transform-eventual-send';
 import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
 import { WeakRef, FinalizationRegistry } from './weakref';
@@ -199,9 +196,6 @@ export async function makeSwingsetController(
   }
   harden(transformMetering);
 
-  // the same is true for the tildot transform
-  const transformTildot = harden(makeTransform(babelParser, babelGenerate));
-
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({
     // re2 is a RegExp work-a-like that disables backtracking expressions for
@@ -257,7 +251,6 @@ export async function makeSwingsetController(
     makeConsole,
     replaceGlobalMeter,
     transformMetering,
-    transformTildot,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,

@@ -24,7 +24,6 @@ export function makeLocalVatManagerFactory(tools) {
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
-    transformTildot: allVatPowers.transformTildot,
   };
   // testLog is also a vatPower, only for unit tests
 

@@ -1,6 +1,6 @@
 import { Far, getInterfaceOf } from '@agoric/marshal';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(_vatPowers) {
   let counter = 0;
   return Far('root', {
     increment() {
@@ -8,9 +8,6 @@ export function buildRootObject(vatPowers) {
     },
     read() {
       return counter;
-    },
-    tildot() {
-      return vatPowers.transformTildot('x~.foo(arg1)');
     },
     remotable() {
       const r = Far('iface1');

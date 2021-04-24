@@ -7,7 +7,7 @@ The type of connection is limited by the host in which the vat is running. Chain
 [**CAVEAT:** IBC uses "Connection" to mean a chain-to-chain "hop", and "Channel" to mean a Port-to-Port pathway through a series of hops.  https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#connection . This is unfortunate, because IBC "Channels" correspond most precisely to TCP "connections", and most discussions of network APIs (including this one, below) will talk about "connections" extensively. 
 For now, our IBC implementation can only use pre-established hops, and provides no means for user-level code to create new hops (IBC Connections) at runtime. But user-level code can create new IBC Channels at any time. The terminology confusion will be most obvious in the section on "Accepting an Inbound Connection", where the user code is really accepting an inbound *IBC Channel*.]
 
-A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`target~.foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
+A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`E(target).foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
 
 Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accept them must provide their own authentication and access control protections.
 
@@ -15,7 +15,7 @@ Solo machines may be able to talk to chains and vice versa using specialized pro
 
 ## The agoric-sdk User Local Port
 
-Each user of the Agoric testnet gets a few personal IBC listening ports. You can access these `Port` objects in the `home.ibcport` array, and you can learn their local address by calling something like `home.ibcport[0]~.getLocalAddress()`, which will give you a local address like `/ibc-port/portbvmnfb`.
+Each user of the Agoric testnet gets a few personal IBC listening ports. You can access these `Port` objects in the `home.ibcport` array, and you can learn their local address by calling something like `E(home.ibcport[0]).getLocalAddress()`, which will give you a local address like `/ibc-port/portbvmnfb`.
 
 This is currently the only way for user code to get an IBC `Port`, though non-IBC ports can be allocated using the local `home.network` object.  This is an advanced use case, to be documented later.
 
@@ -28,7 +28,7 @@ You must also prepare a `ConnectionHandler` object to manage the connection you'
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
 ```js
-home.ibcport[0]~.connect(endpoint, connectionHandler)
+E(home.ibcport[0]).connect(endpoint, connectionHandler)
   .then(conn => doSomethingWithConnection(conn));
 ```
 
@@ -40,11 +40,11 @@ To get a listening port, you need a `NetworkInterface` object (such as the one o
 
 ```js
 // ask for a random allocation - ends with a slash
-home.network~.bind('/ibc-port/`)
+E(home.network).bind('/ibc-port/`)
   .then(port => usePort(port));
 //
 // or ask for a specific port name
-home.network~.bind('/ibc-port/my-cool-port-name`)
+E(home.network).bind('/ibc-port/my-cool-port-name`)
   .then(port => usePort(port));
 ```
 
@@ -53,10 +53,10 @@ IBC has named "hops" (what they call "Connections" in the IBC spec) which each c
 You can ask the `Port` object this returns for its local address, which is especially useful if you had asked for a random allocation (since otherwise you have no way to know what address you got):
 
 ```js
-port~.getLocalAddress().then(localAddress => useIt(localAddress))
+E(port).getLocalAddress().then(localAddress => useIt(localAddress))
 ```
 
-`home.ibcport[0]~.addListener()`
+`E(home.ibcport[0]).addListener()`
 
 Once the port is bound, you must call `addListener` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
 
@@ -138,4 +138,4 @@ port.revoke();
 
 to completely deallocate the port, remove all listeners, close all pending connections, and release its address.
 
-**CAUTION:** Be aware that if you call `home.ibcport[0]~.revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
+**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.

@@ -4,8 +4,6 @@ This runtime treats vats as if they were userspace processes in an operating sys
 
 "Liveslots" is a particular dispatch mechanism that uses Maps/WeakMaps to track "live objects". Imported references to objects on other vats are represented by special "Presence" objects. Liveslots implements the `E` wrapper which allows messages to be sent through presences: `promise = E(presence).methodname(args)`. Presences can be sent in arguments or returned from method calls.
 
-In the future, we expect to have a syntax desugaring phase, so `E(p).foo(arg)` can be written as `p~.foo(arg)`. This "tildot notation" indicates that we're effectively calling `p.foo(arg)`, but 1: it always happens in a later turn (and always returns a Promise), and 2: `p` can refer to something on a remote host.
-
 The nice thing about Liveslots is that user code looks pretty close to regular non-distributed code. Objects are retained (protected against garbage collection) by virtue of being referenced by external vats, starting with the "root occupant" (aka "Object 0") as created by the `buildRootObject()` function.
 
 The downside is that we don't have a good way to persist a vat using Liveslots. Since any living object could reference any javascript object, including functions, closures, and iterators, we can't turn the entire vat into data and store it for later resumption. This impacts our ability to use this mechanism on blockchain-based machines, as well as our ability to migrate vats from one kernel to another.
@@ -52,15 +50,6 @@ p.then(obj2 => E(obj2).bar('arg2'))
 ```
 
 The method name being invoked can be any string, or the special `Symbol.asyncIterator`. All other Symbol-named methods are currently rejected, but see #2612 for plans to accept anything that JavaScript will accept.
-
-All vats are subject to the "tildot transformation", which means these calls may also be written like:
-
-```js
-const p = target~.foo('arg1');
-p.then(obj2 => obj2~.bar('arg2'))
-```
-
-However, most editors and linters are not yet aware of the tildot syntax, so they may complain. As a result, most of the agoric-sdk vats are written with the `E()` syntax for now.
 
 ## What can be serialized
 

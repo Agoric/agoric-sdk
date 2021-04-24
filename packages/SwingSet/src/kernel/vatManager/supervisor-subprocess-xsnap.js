@@ -134,14 +134,6 @@ function makeWorker(port) {
     return harden(cons);
   }
 
-  /** @type { (extSrc: string) => string } */
-  function transformTildot(extSrc) {
-    const reply = port.call(['transformTildot', extSrc]);
-    assert(Array.isArray(reply));
-    if (reply[0] === 'err') throw new Error(reply[1]);
-    return reply[1];
-  }
-
   /**
    * @param {unknown} vatID
    * @param {unknown} bundle
@@ -170,7 +162,6 @@ function makeWorker(port) {
 
     const vatPowers = {
       makeMarshal,
-      transformTildot,
       testLog: (...args) =>
         port.send([
           'testLog',

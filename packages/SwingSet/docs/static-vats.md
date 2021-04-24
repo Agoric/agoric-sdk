@@ -12,7 +12,7 @@ The source code for all static vats must be available at the time the host appli
 
 Static vats are defined by a JS module file which exports a function named `buildRootObject`. The file may export other names; these are currently ignored. The module can import other modules, as long as they are pure JS (no native modules or binary libraries), and they are compatible with SES. See `vat-environment.md` for details of the kind of JS you can use. The static vat file will be scanned for its imports, and the entire dependency graph will be merged into a single "source bundle" object when the kernel first launches.
 
-The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports (such as `tildotTransform`), and vat-specific authorities that are not easy to express through syscalls. See below for the current property list.
+The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports, and vat-specific authorities that are not easy to express through syscalls. See below for the current property list.
 
 `buildRootObject` is expected to return a hardened object with callable methods and no data properties (note that `harden` is available as a global). For example:
 
@@ -34,7 +34,7 @@ Each vat has a name. A *Presence* for this vat's root object will be made availa
 
 ```js
 function bootstrap(argv, vats, devices) {
-  vats.counter~.increment();
+  E(vats.counter).increment();
 }
 ```
 
@@ -63,18 +63,9 @@ A few vats do not use liveslots. The main one is the "comms vat", which performs
 
 Static vats currently receive the following objects in their `buildRootObject()`'s sole `vatPowers` argument:
 
-* `transformTildot`
 * `exitVat`
 * `exitVatWithFailure`
 * `disavow`, but only if `creationOptions.enableDisavow` was truthy
-
-### wavy-dot: `transformTildot`
-
-The "tildot transform" converts wavy-dot (aka tildot) syntax (`counter~.increment()`) into invocations of `HandledPromise` APIs (`HandledPromise.applyMethod(counter, "increment", [])`). The function passed as `vatPowers.transformTildot` accepts one string and returns a new string, with the transform applied.
-
-This is particularly useful for vats that implement a REPL, so operators can include tildot syntax in the expressions they submit. Such a vat will have to transform each expression string before passing it to e.g. `compartment.evaluate()`, generally by creating a new `Compartment` with `transforms: [ vatPowers.transformTildot ]`.
-
-`transformTildot` is provided in `vatPowers` because it relies upon the Babel parser library, and Babel does not run inside a SES non-"Start Compartment" yet. Also, Babel has a lot of code, and bundling all of it into a vat would make the vat bundle file pretty large. Finally, `transformTildot` is unmetered. This doesn't matter for static vats (which aren't metered either), but for dynamic vats (which *are* metered), calling `transformTildot` under metering would consume a lot of the vat's metering budget.
 
 ### vat termination: `exitVat` and `exitVatWithFailure`
 

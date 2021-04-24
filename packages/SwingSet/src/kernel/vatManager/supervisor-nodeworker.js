@@ -70,10 +70,6 @@ parentPort.on('message', ([type, ...margs]) => {
     }
     const syscall = makeSupervisorSyscall(syscallToManager, false);
     const vatID = 'demo-vatID';
-    // todo: maybe add transformTildot, makeGetMeter/transformMetering to
-    // vatPowers, but only if options tell us they're wanted. Maybe
-    // transformTildot should be async and outsourced to the kernel
-    // process/thread.
     const vatPowers = {
       makeMarshal,
       testLog,
