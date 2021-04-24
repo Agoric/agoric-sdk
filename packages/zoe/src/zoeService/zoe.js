@@ -58,7 +58,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     storeIssuerKeywordRecord,
     storeIssuer,
     storeIssuerRecord,
-    getMathKind,
+    getMathKindByBrand,
     exportIssuerStorage,
   } = makeIssuerStorage();
 
@@ -67,7 +67,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     invitationKit.issuer,
     instanceToInstanceAdmin,
     depositPayments,
-    getMathKind,
+    getMathKindByBrand,
   );
 
   /** @type {GetAmountOfInvitationThen} */
@@ -178,6 +178,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         return zoeMint;
       };
 
+      /** @type {PromiseRecord<AddSeatObj>} */
       const addSeatObjPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
@@ -248,15 +249,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
             zoeSeatAdmins.add(zoeSeatAdmin);
 
-            E(/** @type {Promise<AddSeatObj>} */ (addSeatObjPromiseKit.promise))
+            E(addSeatObjPromiseKit.promise)
               .addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle)
               .then(({ offerResultP, exitObj }) => {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);
-              })
-              // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-              // This does not suppress any error messages.
-              .catch(() => {});
+              });
 
             // return the userSeat before the offerHandler is called
             return userSeat;

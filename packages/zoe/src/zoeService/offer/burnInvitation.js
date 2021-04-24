@@ -12,8 +12,13 @@ import { E } from '@agoric/eventual-send';
  * @returns {Promise<{instanceHandle: Instance, invitationHandle: InvitationHandle}>}
  */
 export const burnInvitation = (invitationIssuer, invitation) => {
-  const handleRejected = () =>
-    assert.fail(X`A Zoe invitation is required, not ${invitation}`);
+  const handleRejected = reason => {
+    const err = assert.error(
+      X`A Zoe invitation is required, not ${invitation}`,
+    );
+    assert.note(err, X`Due to ${reason}`);
+    throw err;
+  };
   const handleFulfilled = invitationAmount => {
     const invitationValue = invitationAmount.value;
     assert(Array.isArray(invitationValue));

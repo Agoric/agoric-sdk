@@ -15,7 +15,7 @@ export const makeZcfSeatAdminKit = (
   allSeatStagings,
   zoeSeatAdmin,
   seatData,
-  getMathKind,
+  getMathKindByBrand,
 ) => {
   // The proposal and notifier are not reassigned.
   const { proposal, notifier } = seatData;
@@ -81,7 +81,7 @@ export const makeZcfSeatAdminKit = (
         brand,
         X`A brand must be supplied when the keyword is not defined`,
       );
-      const mathKind = getMathKind(brand);
+      const mathKind = getMathKindByBrand(brand);
       return amountMath.makeEmpty(brand, mathKind);
     },
     getCurrentAllocation: () => {

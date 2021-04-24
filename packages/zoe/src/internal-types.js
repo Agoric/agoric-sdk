@@ -69,7 +69,7 @@
  * - a presence from Zoe such that ZCF can tell Zoe
  * about seat events
  * @param {SeatData} seatData - pass-by-copy data to use to make the seat
- * @param {GetMathKind} getMathKind - get the mathKind given the brand
+ * @param {GetMathKindByBrand} getMathKindByBrand - get the mathKind given the brand
  * @returns {ZcfSeatAdminKit}
  */
 
@@ -255,7 +255,7 @@
  */
 
 /**
- * @callback GetMathKind
+ * @callback GetMathKindByBrand
  * Get the mathKind for a brand known by Zoe
  *
  * To be deleted when brands have a property for mathKind

@@ -30,7 +30,6 @@ import { assertKeywordName, getKeywords } from './cleanProposal';
  */
 
 /**
- *
  * @typedef {{ addIssuerToInstanceRecord: AddIssuerToInstanceRecord,
  * getInstanceRecord: GetInstanceRecord,
  * getTerms: () => Terms,
@@ -40,7 +39,6 @@ import { assertKeywordName, getKeywords } from './cleanProposal';
  */
 
 /**
- *
  * @param {InstanceRecord} instanceRecord
  * @returns {InstanceRecordManager}
  */

@@ -19,8 +19,8 @@ const setupIssuersForTest = () => {
   return { currencyKit, ticketKit };
 };
 
-test('storeIssuer, getMathKind', async t => {
-  const { storeIssuer, getMathKind } = makeIssuerStorage();
+test('storeIssuer, getMathKindByBrand', async t => {
+  const { storeIssuer, getMathKindByBrand } = makeIssuerStorage();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
@@ -40,8 +40,8 @@ test('storeIssuer, getMathKind', async t => {
     amountMathKind: MathKind.SET,
   });
 
-  t.is(getMathKind(currencyKit.brand), MathKind.NAT);
-  t.is(getMathKind(ticketKit.brand), MathKind.SET);
+  t.is(getMathKindByBrand(currencyKit.brand), MathKind.NAT);
+  t.is(getMathKindByBrand(ticketKit.brand), MathKind.SET);
 });
 
 test('storeIssuer, same issuer twice', async t => {
@@ -71,10 +71,10 @@ test('storeIssuer, promise for issuer', async t => {
   });
 });
 
-test(`getMathKind - brand isn't stored`, t => {
-  const { getMathKind } = makeIssuerStorage();
+test(`getMathKindByBrand - brand isn't stored`, t => {
+  const { getMathKindByBrand } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
-  t.throws(() => getMathKind(currencyKit.brand), {
+  t.throws(() => getMathKindByBrand(currencyKit.brand), {
     message: '"brand" not found: "[Alleged: currency brand]"',
   });
 });
@@ -107,7 +107,7 @@ test(`storeIssuerKeywordRecord, twice`, async t => {
 });
 
 test(`storeIssuerRecord`, async t => {
-  const { storeIssuerRecord, getMathKind } = makeIssuerStorage();
+  const { storeIssuerRecord, getMathKindByBrand } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
 
   const issuerRecord = makeIssuerRecord(
@@ -123,7 +123,7 @@ test(`storeIssuerRecord`, async t => {
 
   t.deepEqual(returnedIssuerRecord, issuerRecord);
 
-  t.is(getMathKind(currencyKit.brand), MathKind.NAT);
+  t.is(getMathKindByBrand(currencyKit.brand), MathKind.NAT);
 });
 
 test('getBrandForIssuer', async t => {
