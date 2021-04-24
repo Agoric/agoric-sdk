@@ -42,9 +42,12 @@ export const makeGetCurrentPrice = (
     const { brand: brandIn } = amountIn;
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      // we'll charge the protocol fee before sending the remainder to the pool,
-      // so we need to subtract it from amountIn before getting a quote, and add
-      // it back before sending out the quote.
+      // we'll subtract the protocol fee from amountIn before sending the
+      // remainder to the pool to get a quote. Then we'll add it to deltaX
+      // before sending out the quote.
+
+      // prelimProtocolFee will be replaced by protocolFee once we get the final
+      // value of amountIn from getPriceGivenAvailableInput.
       const prelimProtocolFee = multiplyBy(amountIn, protocolFeeRatio);
       const poolAmountIn = amountMath.subtract(amountIn, prelimProtocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
@@ -55,6 +58,7 @@ export const makeGetCurrentPrice = (
       const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
       const amountInFinal = amountMath.add(price.amountIn, protocolFee);
 
+      // amountIn is what the user pays. deltaX is poolAmountIn
       return {
         amountIn: amountInFinal,
         amountOut: price.amountOut,
@@ -70,6 +74,8 @@ export const makeGetCurrentPrice = (
       const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
       const amountOutFinal = amountMath.subtract(price.amountOut, protocolFee);
 
+      // the user pays amountIn, and gets amountOutFinal. The pool pays
+      // price.amountOut and gains amountIn
       return {
         amountIn: price.amountIn,
         amountOut: amountOutFinal,
@@ -96,12 +102,17 @@ export const makeGetCurrentPrice = (
         halfPoolFeeBP,
       );
 
-      // firstDraftFee will be replaced by actualFee (from final central amount)
+      // the protocolFee will be extracted from the central being transferred
+      // from brandInPool to brandOutPool. We start by calculating the fee
+      // required if amountIn is spent. firstDraftFee will be replaced by
+      // actualFee calculated from final central amount.
       const firstDraftFee = multiplyBy(centralAmount, protocolFeeRatio);
       const centralAmountLessFee = amountMath.subtract(
         centralAmount,
         firstDraftFee,
       );
+      // The brandOutPool will get the central amount from brandInPool, less
+      // the protocol fee. This gives the amountOut that that would purchase.
       const {
         amountIn: reducedCentralAmount,
         amountOut,
@@ -110,14 +121,18 @@ export const makeGetCurrentPrice = (
         brandOut,
         halfPoolFeeBP,
       );
+      // Now we know the amountOut that the user will receive, and can ask
+      // whether it can be obtained for less.
 
       const actualFee = multiplyBy(reducedCentralAmount, protocolFeeRatio);
       const reducedCentralPlusFee = amountMath.add(
         reducedCentralAmount,
         actualFee,
       );
+      // brandInPool will receive reducedAmountIn and give up centralAmount. The
+      // protocol fee will be calculated from reducedAmountIn.
 
-      // propagate reduced prices back to the first pool
+      // propagate reduced prices back to brandInPool
       const {
         amountIn: reducedAmountIn,
         amountOut: finalCentralAmount,
@@ -126,6 +141,10 @@ export const makeGetCurrentPrice = (
         reducedCentralPlusFee,
         halfPoolFeeBP,
       );
+
+      // the trader pays reducedAmountIn, and gains amountOut. brandInPool
+      // gains reducedAmountIn, and pays finalCentralAmount + actualFee.
+      // brandOutPool gains finalCentralAmount, and pays amountOut.
       return {
         amountIn: reducedAmountIn,
         amountOut,
@@ -141,8 +160,8 @@ export const makeGetCurrentPrice = (
     const { brand: brandOut } = amountOut;
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      // trader gains amountOut, pays deltaX + protocolFee. Pool pays amountOut,
-      // gains deltaX.
+      // The user requested amountOut, which will be paid by the pool as deltaY.
+      // user pays deltaX + protocolFee. Pool pays amountOut, gains deltaX.
       const price = getPool(brandOut).getPriceGivenRequiredOutput(
         brandIn,
         amountOut,
@@ -156,8 +175,9 @@ export const makeGetCurrentPrice = (
         protocolFee,
       };
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      // trader gets amountOut, pays deltaY. Pool gains deltaY, pays amountOut
-      // plus protocolFee
+      // We'll subtract the protocol fee from amountOut, which is what the user
+      // requested. The user will pay deltaY. The Pool gains deltaY, pays
+      // amountOut plus protocolFee
       const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,
@@ -184,7 +204,8 @@ export const makeGetCurrentPrice = (
       const brandInPool = getPool(brandIn);
       const brandOutPool = getPool(brandOut);
 
-      // firstCentralAmount will be replaced by finalCentralAmount
+      // firstCentralAmount will be replaced by finalCentralAmount.  We start by
+      // asking how much amountIn is required to buy amountOut.
       const {
         amountIn: firstCentralAmount,
       } = brandOutPool.getPriceGivenRequiredOutput(
@@ -192,6 +213,10 @@ export const makeGetCurrentPrice = (
         amountOut,
         halfPoolFeeBP,
       );
+
+      // protocolFee will be extracted from the central being transferred from
+      // brandInPool to brandOutPool. add protocolFee to firstCentralAmount to
+      // find amountIn, which the user will pay.
       const {
         amountIn,
         amountOut: finalCentralAmountWithFee,
@@ -217,6 +242,10 @@ export const makeGetCurrentPrice = (
         brandOut,
         halfPoolFeeBP,
       );
+
+      // The trader pays amountIn to brandInPool, and gets improvedAmountOut.
+      // brandInPool gets amountIn, and pays finalCentralAmount + protocolFee.
+      // brandOutPool gets finalCentralAmount, and pays improvedAmountOut.
       return {
         amountIn,
         amountOut: improvedAmountOut,
