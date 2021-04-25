@@ -23,7 +23,7 @@ import {
   buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
-import { getBestSwingStore } from '@agoric/swing-store-lmdb/check-lmdb';
+import { getBestSwingStore } from '@agoric/cosmic-swingset/src/check-lmdb';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 

@@ -13,7 +13,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { getBestSwingStore } from '@agoric/swing-store-lmdb/check-lmdb';
+import { getBestSwingStore } from './check-lmdb';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,

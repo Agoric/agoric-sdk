@@ -8,7 +8,7 @@ import {
 import {
   openSwingStore as openSwingStoreLMDB,
   initSwingStore as initSwingStoreLMDB,
-} from '.';
+} from '@agoric/swing-store-lmdb';
 
 /*
  * Return an 'openSwingStore' function for the best kind of DB that works on
