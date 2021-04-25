@@ -43,7 +43,7 @@ export const makeGetCurrentPrice = (
 
     if (isCentral(brandIn) && isSecondary(brandOut)) {
       // we'll subtract the protocol fee from amountIn before sending the
-      // remainder to the pool to get a quote. Then we'll add it to deltaX
+      // remainder to the pool to get a quote. Then we'll add the fee to deltaX
       // before sending out the quote.
 
       // prelimProtocolFee will be replaced by protocolFee once we get the final
@@ -56,11 +56,11 @@ export const makeGetCurrentPrice = (
         poolFeeBP,
       );
       const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
-      const amountInFinal = amountMath.add(price.amountIn, protocolFee);
 
-      // amountIn is what the user pays. deltaX is poolAmountIn
+      // price.amountIn is what the user pays, and includes the protocolFee. The
+      // user will receive price.amountOut.
       return {
-        amountIn: amountInFinal,
+        amountIn: amountMath.add(price.amountIn, protocolFee),
         amountOut: price.amountOut,
         protocolFee,
       };
@@ -142,7 +142,7 @@ export const makeGetCurrentPrice = (
         halfPoolFeeBP,
       );
 
-      // the trader pays reducedAmountIn, and gains amountOut. brandInPool
+      // the user pays reducedAmountIn, and gains amountOut. brandInPool
       // gains reducedAmountIn, and pays finalCentralAmount + actualFee.
       // brandOutPool gains finalCentralAmount, and pays amountOut.
       return {
@@ -175,9 +175,8 @@ export const makeGetCurrentPrice = (
         protocolFee,
       };
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      // We'll subtract the protocol fee from amountOut, which is what the user
-      // requested. The user will pay deltaY. The Pool gains deltaY, pays
-      // amountOut plus protocolFee
+      // We'll add the protocol fee to amountOut to get deltaY. The user will
+      // pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
       const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,
@@ -185,10 +184,11 @@ export const makeGetCurrentPrice = (
         poolFeeBP,
       );
 
+      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
       return {
         amountIn: price.amountIn,
-        amountOut: price.amountOut,
-        protocolFee: multiplyBy(price.amountOut, protocolFeeRatio),
+        amountOut: amountMath.subtract(price.amountOut, protocolFee),
+        protocolFee,
       };
     } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
       // We must do two consecutive getPriceGivenRequiredOutput() calls,
@@ -243,7 +243,7 @@ export const makeGetCurrentPrice = (
         halfPoolFeeBP,
       );
 
-      // The trader pays amountIn to brandInPool, and gets improvedAmountOut.
+      // The user pays amountIn to brandInPool, and gets improvedAmountOut.
       // brandInPool gets amountIn, and pays finalCentralAmount + protocolFee.
       // brandOutPool gets finalCentralAmount, and pays improvedAmountOut.
       return {

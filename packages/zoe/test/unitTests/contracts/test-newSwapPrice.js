@@ -201,7 +201,7 @@ test('newSwap getPriceGivenRequiredOutput specify central', async t => {
   const pFee = protocolFee(valueOut);
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut),
+    amountOut: moola(valueOut - pFee),
     protocolFee: moola(pFee),
   });
   t.truthy(
@@ -313,7 +313,7 @@ test('newSwap getPriceGivenOutput central extreme', async t => {
   const pFee = protocolFee(valueOut);
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut),
+    amountOut: moola(valueOut - pFee),
     protocolFee: moola(pFee),
   });
 
