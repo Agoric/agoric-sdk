@@ -112,9 +112,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   let agSolo;
   if (opts.sdk) {
-    agSolo = path.resolve(__dirname, '../../cosmic-swingset/bin/ag-solo');
+    agSolo = path.resolve(__dirname, '../../solo/src/entrypoint.cjs');
   } else {
-    agSolo = `/usr/src/dapp/${process.cwd()}/node_modules/@agoric/cosmic-swingset/bin/ag-solo`;
+    agSolo = `ag-solo`;
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
@@ -131,10 +131,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     if (!opts.sdk) {
       if (
-        !(await exists('node_modules/@agoric/cosmic-swingset')) &&
-        !(await exists(
-          '_agstate/agoric-servers/node_modules/@agoric/cosmic-swingset',
-        ))
+        !(await exists('node_modules/@agoric/solo')) &&
+        !(await exists('_agstate/agoric-servers/node_modules/@agoric/solo'))
       ) {
         log.error(`you must first run '${progname} install'`);
         return 1;

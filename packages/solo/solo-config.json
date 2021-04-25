@@ -1,0 +1,20 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "spawner": {
+      "sourceSpec": "./src/vat-spawner.js"
+    },
+    "http": {
+      "sourceSpec": "./src/vat-http.js"
+    },
+    "network": {
+      "sourceSpec": "@agoric/vats/src/vat-network.js"
+    },
+    "uploads": {
+      "sourceSpec": "./src/vat-uploads.js"
+    },
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/bootstrap.js"
+    }
+  }
+}

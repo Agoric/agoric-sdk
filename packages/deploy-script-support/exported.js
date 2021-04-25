@@ -1,4 +1,4 @@
 import '@agoric/bundle-source/exported';
-import '@agoric/cosmic-swingset/exported';
+import '@agoric/vats/exported';
 
 import './src/externalTypes';

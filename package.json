@@ -34,6 +34,8 @@
     "packages/spawner",
     "packages/sharing-service",
     "packages/zoe",
+    "packages/vats",
+    "packages/solo",
     "packages/dapp-svelte-wallet/ui",
     "packages/dapp-svelte-wallet/api",
     "packages/dapp-svelte-wallet",

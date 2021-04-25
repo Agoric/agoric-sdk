@@ -1,1 +1,1 @@
-export { stringify } from '@agoric/cosmic-swingset/lib/ag-solo/vats/repl';
+export { stringify } from '@agoric/vats/src/repl';

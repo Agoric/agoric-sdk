@@ -255,6 +255,50 @@ jobs:
       run: cd packages/swing-store-simple && yarn test
       env:
         ESM_DISABLE_CACHE: true
+
+  test-quick2:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['12.14.1', '12.x', '14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (treasury)
+      run: cd packages/treasury && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (pegasus)
+      run: cd packages/pegasus && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (vats)
+      run: cd packages/vats && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
       env:
@@ -282,6 +326,43 @@ jobs:
 
 ##############
 # Long-running tests are executed individually.
+  test-solo:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['12.14.1', '12.x', '14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v1
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (solo)
+      run: cd packages/solo && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+
+
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
     needs: build
@@ -324,14 +405,6 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - name: yarn test (treasury)
-      run: cd packages/treasury && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-    - name: yarn test (pegasus)
-      run: cd packages/pegasus && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
       env:

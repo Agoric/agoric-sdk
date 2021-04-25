@@ -5,6 +5,7 @@ INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 
 GOSRC = ../../golang/cosmos
+AG_SOLO = $(shell cd ../solo/bin && pwd)/ag-solo
 
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
@@ -32,7 +33,7 @@ scenario0-setup:
 	rm -rf t9/$(BASE_PORT)
 
 scenario0-run scenario0-run-client:
-	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) bin/ag-solo setup --webport=$(BASE_PORT)
+	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --webport=$(BASE_PORT)
 scenario0-run-chain:
 	@echo 'We use the Agoric testnet, not a local chain.'
 
@@ -43,7 +44,7 @@ scenario1-run-chain:
 	AG_SETUP_COSMOS_HOME=t8 ../deployment/ag-setup-cosmos bootstrap
 
 scenario1-run-client:
-	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) bin/ag-solo setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
+	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
 AGC = ./bin/ag-chain-cosmos
 AGCH = ag-cosmos-helper
@@ -55,7 +56,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos.
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
-		bin/ag-solo init t1/$$port --webport=$$port; \
+		$(AG_SOLO) init t1/$$port --webport=$$port; \
 	done
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
@@ -97,7 +98,7 @@ t1-provision-one:
 
 # Actually start the ag-solo.
 t1-start-ag-solo:
-	cd t1/$(BASE_PORT) && ../../bin/ag-solo start
+	cd t1/$(BASE_PORT) && $(AG_SOLO) start
 
 # scenario3 is a single JS process without any Golang.  However,
 # the client and the chain within the process run two separate
@@ -110,7 +111,7 @@ t1-start-ag-solo:
 VATWORKER=local
 scenario3-setup:
 	rm -rf t3
-	bin/ag-solo init t3 --egresses=fake --webport=$(BASE_PORT) --defaultManagerType=$(VATWORKER)
+	$(AG_SOLO) init t3 --egresses=fake --webport=$(BASE_PORT) --defaultManagerType=$(VATWORKER)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.
@@ -118,10 +119,10 @@ scenario3-run-client: scenario3-run
 # Set the fake chain here in case the delay has changed.
 scenario3-run:
 	cd t3 && \
-			../bin/ag-solo set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
+			$(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
 	cd t3 && \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
-		../bin/ag-solo start
+		$(AG_SOLO) start
 
 docker-pull:
 	for f in '' -setup -solo; do \
@@ -146,8 +147,8 @@ install:
 
 start-ag-solo:
 	rm -rf t1
-	bin/ag-solo init t1
-	cd t1 && ../bin/ag-solo start
+	$(AG_SOLO) init t1
+	cd t1 && $(AG_SOLO) start
 
 show-local-gci:
 	@./calc-gci.js ~/.ag-chain-cosmos/config/genesis.json
@@ -158,5 +159,5 @@ set-local-gci-ingress:
 	rpcport=`./calc-rpcport.js t1/n0/config/config.toml`; \
 	for dir in t1/[0-9]*; do \
 		(cd $$dir && \
-			../../bin/ag-solo set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
+			$(AG_SOLO) set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
 	done

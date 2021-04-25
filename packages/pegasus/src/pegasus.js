@@ -10,7 +10,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
 import { amountMath } from '@agoric/ertp';
 
 import '@agoric/notifier/exported';
-import '@agoric/cosmic-swingset/exported';
+import '@agoric/vats/exported';
 import '@agoric/swingset-vat/src/vats/network/types';
 import '@agoric/zoe/exported';
 import '../exported';
