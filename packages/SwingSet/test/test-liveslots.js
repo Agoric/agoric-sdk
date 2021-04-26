@@ -15,6 +15,8 @@ import {
   makeResolve,
   makeReject,
   makeDropExports,
+  makeRetireExports,
+  makeRetireImports,
 } from './util';
 
 test('calls', async t => {
@@ -630,13 +632,13 @@ test('disavow', async t => {
   t.deepEqual(log, []);
 });
 
-test('dropExports', async t => {
+test('GC operations', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
     const ex1 = Far('export', {});
     const root = Far('root', {
-      one() {
+      one(_arg) {
         return ex1;
       },
     });
@@ -645,11 +647,12 @@ test('dropExports', async t => {
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
+  const arg = 'o-1';
 
-  // rp1 = root~.one()
+  // rp1 = root~.one(arg)
   // ex1 = await rp1
   const rp1 = 'p-1';
-  dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
+  dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg), rp1));
   await waitUntilQuiescent();
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
@@ -659,9 +662,22 @@ test('dropExports', async t => {
   });
   t.deepEqual(log, []);
 
-  // now tell the vat to drop that export
-  dispatch(makeDropExports(ex1));
+  // now tell the vat we don't need a strong reference to that export
   // for now, all that we care about is that liveslots doesn't crash
+  dispatch(makeDropExports(ex1));
+
+  // and release its identity too
+  dispatch(makeRetireExports(ex1));
+
+  // Sending retireImport into a vat that hasn't yet emitted dropImport is
+  // rude, and would only happen if the exporter unilaterally revoked the
+  // object's identity. Normally the kernel would only send retireImport
+  // after receiving dropImport (and sending a dropExport into the exporter,
+  // and getting a retireExport from the exporter, gracefully terminating the
+  // object's identity). We do it the rude way because it's good enough to
+  // test that liveslots can tolerate it, but we may have to update this when
+  // we implement retireImport for real.
+  dispatch(makeRetireImports(arg));
 });
 
 // Create a WeakRef/FinalizationRegistry pair that can be manipulated for

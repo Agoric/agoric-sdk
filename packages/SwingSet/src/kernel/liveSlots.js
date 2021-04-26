@@ -742,6 +742,20 @@ function build(
     console.log(`-- liveslots ignoring dropExports`);
   }
 
+  function retireExports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+    console.log(`-- liveslots ignoring retireExports`);
+  }
+
+  function retireImports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
+    console.log(`-- liveslots ignoring retireImports`);
+  }
+
   // TODO: when we add notifyForward, guard against cycles
 
   function exitVat(completion) {
@@ -819,6 +833,16 @@ function build(
       case 'dropExports': {
         const [vrefs] = args;
         dropExports(vrefs);
+        break;
+      }
+      case 'retireExports': {
+        const [vrefs] = args;
+        retireExports(vrefs);
+        break;
+      }
+      case 'retireImports': {
+        const [vrefs] = args;
+        retireImports(vrefs);
         break;
       }
       default:

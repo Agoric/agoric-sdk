@@ -17,6 +17,12 @@ export function buildSyscall() {
     dropImports(slots) {
       log.push({ type: 'dropImports', slots });
     },
+    retireImports(slots) {
+      log.push({ type: 'retireImports', slots });
+    },
+    retireExports(slots) {
+      log.push({ type: 'retireExports', slots });
+    },
     exit(isFailure, info) {
       log.push({ type: 'exit', isFailure, info });
     },

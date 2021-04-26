@@ -119,6 +119,18 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  function retireImports(koids) {
+    assert(Array.isArray(koids), X`retireImports given non-Array ${koids}`);
+    console.log(`-- kernel ignoring retireImports ${koids.join(',')}`);
+    return OKNULL;
+  }
+
+  function retireExports(koids) {
+    assert(Array.isArray(koids), X`retireExports given non-Array ${koids}`);
+    console.log(`-- kernel ignoring retireExports ${koids.join(',')}`);
+    return OKNULL;
+  }
+
   function doKernelSyscall(ksc) {
     const [type, ...args] = ksc;
     switch (type) {
@@ -140,6 +152,10 @@ export function makeKernelSyscallHandler(tools) {
         return vatstoreDelete(...args);
       case 'dropImports':
         return dropImports(...args);
+      case 'retireImports':
+        return retireImports(...args);
+      case 'retireExports':
+        return retireExports(...args);
       default:
         assert.fail(X`unknown vatSyscall type ${type}`);
     }
@@ -147,9 +163,6 @@ export function makeKernelSyscallHandler(tools) {
 
   const kernelSyscallHandler = harden({
     send, // TODO remove these individual ones
-    invoke,
-    subscribe,
-    resolve,
     doKernelSyscall,
   });
   return kernelSyscallHandler;

@@ -131,3 +131,13 @@ export function makeDropExports(...vrefs) {
   const vatDeliverObject = harden(['dropExports', vrefs]);
   return vatDeliverObject;
 }
+
+export function makeRetireExports(...vrefs) {
+  const vatDeliverObject = harden(['retireExports', vrefs]);
+  return vatDeliverObject;
+}
+
+export function makeRetireImports(...vrefs) {
+  const vatDeliverObject = harden(['retireImports', vrefs]);
+  return vatDeliverObject;
+}

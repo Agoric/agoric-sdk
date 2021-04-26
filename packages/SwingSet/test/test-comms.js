@@ -5,7 +5,12 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
 import { makeState } from '../src/vats/comms/state';
 import { makeCListKit } from '../src/vats/comms/clist';
 import { debugState } from '../src/vats/comms/dispatch';
-import { makeMessage, makeDropExports } from './util';
+import {
+  makeMessage,
+  makeDropExports,
+  makeRetireExports,
+  makeRetireImports,
+} from './util';
 import { commsVatDriver } from './commsVatDriver';
 
 test('provideRemoteForLocal', t => {
@@ -229,8 +234,18 @@ test('receive', t => {
     { message: /unexpected recv seqNum .*/ },
   );
 
-  // make sure comms can tolerate dropExports, even if it's a no-op
+  // make sure comms can tolerate GC operations, even if they're a no-op
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
+  dispatch(makeRetireExports(expectedAliceKernel, expectedAyanaKernel));
+  // Sending retireImport into a vat that hasn't yet emitted dropImport is
+  // rude, and would only happen if the exporter unilaterally revoked the
+  // object's identity. Normally the kernel would only send retireImport
+  // after receiving dropImport (and sending a dropExport into the exporter,
+  // and getting a retireExport from the exporter, gracefully terminating the
+  // object's identity). We do it the rude way because it's good enough to
+  // test the comms vat can tolerate it, but we may have to update this when
+  // we implement retireImport for real.
+  dispatch(makeRetireImports(bobKernel));
 });
 
 // This tests the various pathways through the comms vat driver.  This has the
