@@ -16,7 +16,7 @@ jobs:
       matrix:
         node-version: ['12.14.1', '12.x', '14.x']
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
     - uses: actions/setup-node@v1
@@ -63,7 +63,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -96,7 +96,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -138,7 +138,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -275,7 +275,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -345,7 +345,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -382,7 +382,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -429,7 +429,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -474,7 +474,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
@@ -512,7 +512,7 @@ jobs:
       with:
         path: .
         key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
