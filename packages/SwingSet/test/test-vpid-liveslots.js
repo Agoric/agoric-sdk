@@ -5,7 +5,6 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { buildSyscall, makeDispatch } from './liveslots-helpers';
 import { makeMessage, makeResolve, makeReject, capargs } from './util';
 
@@ -182,14 +181,13 @@ async function doVatResolveCase1(t, mode) {
   const expectedP3 = 'p+7';
   const expectedP4 = 'p+8';
 
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'run',
       capargs([slot0arg, slot1arg], [target1, target2]),
     ),
   );
-  await waitUntilQuiescent();
 
   // The vat should send 'one' and subscribe to the result promise
   t.deepEqual(log.shift(), {
@@ -340,26 +338,24 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const target2 = 'o-2';
 
   if (which === 2) {
-    dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
-    dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
+    await dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
+    await dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
   } else if (which === 3) {
-    dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
-    dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
+    await dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
+    await dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
   } else {
     assert.fail(X`bad which=${which}`);
   }
-  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log, []);
 
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'run',
       capargs([slot0arg, slot1arg], [target1, target2]),
     ),
   );
-  await waitUntilQuiescent();
 
   // At the end of the turn in which run() is executed, the promise queue
   // will contain deliveries one() and two() (specifically invocations of the
@@ -559,13 +555,11 @@ async function doVatResolveCase4(t, mode) {
   }
   const target2 = 'o-2';
 
-  dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log, []);
 
-  dispatch(makeMessage(rootA, 'first', capargs([slot0arg], [target1])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'first', capargs([slot0arg], [target1])));
 
   const expectedP2 = nextP();
   t.deepEqual(log.shift(), {
@@ -604,12 +598,10 @@ async function doVatResolveCase4(t, mode) {
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
-  dispatch(r);
-  await waitUntilQuiescent();
+  await dispatch(r);
   t.deepEqual(log, []);
 
-  dispatch(makeMessage(rootA, 'second', capargs([slot0arg], [target1])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'second', capargs([slot0arg], [target1])));
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
@@ -688,16 +680,15 @@ test('inter-vat circular promise references', async t => {
   // const pbB = 'p-18';
   // const paB = 'p-19';
 
-  dispatchA(makeMessage(rootA, 'genPromise', capargs([], []), paA));
-  await waitUntilQuiescent();
+  await dispatchA(makeMessage(rootA, 'genPromise', capargs([], []), paA));
   t.deepEqual(log, []);
 
-  // dispatchB(makeMessage(rootB, 'genPromise', capargs([], []), pbB));
-  // await waitUntilQuiescent();
+  // await dispatchB(makeMessage(rootB, 'genPromise', capargs([], []), pbB));
   // t.deepEqual(log, []);
 
-  dispatchA(makeMessage(rootA, 'usePromise', capargs([[slot0arg]], [pbA])));
-  await waitUntilQuiescent();
+  await dispatchA(
+    makeMessage(rootA, 'usePromise', capargs([[slot0arg]], [pbA])),
+  );
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
     type: 'resolve',
@@ -705,8 +696,7 @@ test('inter-vat circular promise references', async t => {
   });
   t.deepEqual(log, []);
 
-  // dispatchB(makeMessage(rootB, 'usePromise', capargs([[slot0arg]], [paB])));
-  // await waitUntilQuiescent();
+  // await dispatchB(makeMessage(rootB, 'usePromise', capargs([[slot0arg]], [paB])));
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
   //   type: 'resolve',

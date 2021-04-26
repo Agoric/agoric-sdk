@@ -41,45 +41,40 @@ test('calls', async t => {
   const rootA = 'o+0';
 
   // root!one() // sendOnly
-  dispatch(makeMessage(rootA, 'one', capargs(['args'])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'one', capargs(['args'])));
   t.deepEqual(log.shift(), 'one');
 
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.resolve('result')
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'two',
       capargs([{ '@qclass': 'slot', index: 0 }], ['p-1']),
     ),
   );
-  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch(makeResolve('p-1', capargs('result')));
-  await waitUntilQuiescent();
+  await dispatch(makeResolve('p-1', capargs('result')));
   t.deepEqual(log.shift(), ['res', 'result']);
 
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.reject('rejection')
 
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'two',
       capargs([{ '@qclass': 'slot', index: 0 }], ['p-2']),
     ),
   );
-  await waitUntilQuiescent();
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
-  dispatch(makeReject('p-2', capargs('rejection')));
-  await waitUntilQuiescent();
+  await dispatch(makeReject('p-2', capargs('rejection')));
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 
   // TODO: more calls, more slot types
@@ -107,10 +102,9 @@ test('liveslots pipelines to syscall.send', async t => {
   const p3 = 'p+7';
 
   // root!one(x) // sendOnly
-  dispatch(
+  await dispatch(
     makeMessage(rootA, 'one', capargs([{ '@qclass': 'slot', index: 0 }], [x])),
   );
-  await waitUntilQuiescent();
 
   // calling one() should cause three syscall.send() calls to be made: one
   // for x!pipe1(), a second pipelined to the result promise of it, and a
@@ -169,8 +163,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   const slot0arg = { '@qclass': 'slot', index: 0 };
 
   // function deliver(target, method, argsdata, result) {
-  dispatch(makeMessage(rootA, 'one', capargs([slot0arg], [p1])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'one', capargs([slot0arg], [p1])));
   // the vat should subscribe to the inbound p1 during deserialization
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   // then it pipeline-sends `pipe1` to p1, with a new result promise
@@ -186,8 +179,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
-  dispatch(makeResolve(p1, capargs(slot0arg, [o2])));
-  await waitUntilQuiescent();
+  await dispatch(makeResolve(p1, capargs(slot0arg, [o2])));
   // this allows E(o2).nonpipe2() to go out, which was not pipelined
   t.deepEqual(log.shift(), {
     type: 'send',
@@ -202,8 +194,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
 
   // now call two(), which should send nonpipe3 to o2, not p1, since p1 has
   // been resolved
-  dispatch(makeMessage(rootA, 'two', capargs([], [])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'two', capargs([], [])));
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: o2,
@@ -279,10 +270,9 @@ async function doOutboundPromise(t, mode) {
   }
 
   // function deliver(target, method, argsdata, result) {
-  dispatch(
+  await dispatch(
     makeMessage(rootA, 'run', capargs([slot0arg, resolution], [target])),
   );
-  await waitUntilQuiescent();
 
   // The vat should send 'one' and mention the promise for the first time. It
   // does not subscribe to its own promise.
@@ -367,8 +357,7 @@ async function doResultPromise(t, mode) {
   const target2 = 'o-2';
   // if it returns data or a rejection, two() results in an error
 
-  dispatch(makeMessage(rootA, 'run', capargs([slot0arg], [target1])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'run', capargs([slot0arg], [target1])));
 
   // The vat should send 'getTarget2' and subscribe to the result promise
   t.deepEqual(log.shift(), {
@@ -396,20 +385,18 @@ async function doResultPromise(t, mode) {
   // resolve p1 first. The one() call was already pipelined, so this
   // should not trigger any new syscalls.
   if (mode === 'to presence') {
-    dispatch(makeResolve(expectedP1, capargs(slot0arg, [target2])));
+    await dispatch(makeResolve(expectedP1, capargs(slot0arg, [target2])));
   } else if (mode === 'to data') {
-    dispatch(makeResolve(expectedP1, capargs(4, [])));
+    await dispatch(makeResolve(expectedP1, capargs(4, [])));
   } else if (mode === 'reject') {
-    dispatch(makeReject(expectedP1, capargs('error', [])));
+    await dispatch(makeReject(expectedP1, capargs('error', [])));
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
-  await waitUntilQuiescent();
   t.deepEqual(log, []);
 
   // Now we resolve p2, allowing the second two() to proceed
-  dispatch(makeResolve(expectedP2, capargs(4, [])));
-  await waitUntilQuiescent();
+  await dispatch(makeResolve(expectedP2, capargs(4, [])));
 
   if (mode === 'to presence') {
     // If we resolved it to a target, we should see two() sent through to the
@@ -473,8 +460,9 @@ test('liveslots vs symbols', async t => {
 
   // E(root)[Symbol.asyncIterator]('one')
   const rp1 = 'p-1';
-  dispatch(makeMessage(rootA, 'Symbol.asyncIterator', capargs(['one']), 'p-1'));
-  await waitUntilQuiescent();
+  await dispatch(
+    makeMessage(rootA, 'Symbol.asyncIterator', capargs(['one']), 'p-1'),
+  );
   t.deepEqual(log.shift(), {
     type: 'resolve',
     resolutions: [[rp1, false, capargs(['ok', 'asyncIterator', 'one'])]],
@@ -482,14 +470,13 @@ test('liveslots vs symbols', async t => {
   t.deepEqual(log, []);
 
   // root~.good(target) -> send(methodname=Symbol.asyncIterator)
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'good',
       capargs([{ '@qclass': 'slot', index: 0 }], [target]),
     ),
   );
-  await waitUntilQuiescent();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
@@ -508,7 +495,7 @@ test('liveslots vs symbols', async t => {
     message: 'arbitrary Symbols cannot be used as method names',
     name: 'Error',
   };
-  dispatch(
+  await dispatch(
     makeMessage(
       rootA,
       'bad',
@@ -516,7 +503,6 @@ test('liveslots vs symbols', async t => {
       rp2,
     ),
   );
-  await waitUntilQuiescent();
   t.deepEqual(log.shift(), {
     type: 'resolve',
     resolutions: [[rp2, false, capargs(['caught', expErr])]],
@@ -539,8 +525,7 @@ test('disable disavow', async t => {
   const rootA = 'o+0';
 
   // root~.one() // sendOnly
-  dispatch(makeMessage(rootA, 'one', capargs([])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'one', capargs([])));
   t.deepEqual(log.shift(), false);
   t.deepEqual(log, []);
 });
@@ -598,8 +583,7 @@ test('disavow', async t => {
   const import1 = 'o-1';
 
   // root~.one(import1) // sendOnly
-  dispatch(makeMessage(rootA, 'one', capargsOneSlot(import1)));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(import1)));
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
   t.deepEqual(log.shift(), 'disavowed pres1');
 
@@ -652,8 +636,7 @@ test('GC operations', async t => {
   // rp1 = root~.one(arg)
   // ex1 = await rp1
   const rp1 = 'p-1';
-  dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg), rp1));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg), rp1));
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
@@ -664,10 +647,10 @@ test('GC operations', async t => {
 
   // now tell the vat we don't need a strong reference to that export
   // for now, all that we care about is that liveslots doesn't crash
-  dispatch(makeDropExports(ex1));
+  await dispatch(makeDropExports(ex1));
 
   // and release its identity too
-  dispatch(makeRetireExports(ex1));
+  await dispatch(makeRetireExports(ex1));
 
   // Sending retireImport into a vat that hasn't yet emitted dropImport is
   // rude, and would only happen if the exporter unilaterally revoked the
@@ -677,7 +660,7 @@ test('GC operations', async t => {
   // object's identity). We do it the rude way because it's good enough to
   // test that liveslots can tolerate it, but we may have to update this when
   // we implement retireImport for real.
-  dispatch(makeRetireImports(arg));
+  await dispatch(makeRetireImports(arg));
 });
 
 // Create a WeakRef/FinalizationRegistry pair that can be manipulated for
@@ -765,6 +748,7 @@ function makeMockGC() {
     FinalizationRegistry: mockFinalizationRegistry,
     kill,
     getAllFRs,
+    waitUntilQuiescent,
   });
 }
 
@@ -798,8 +782,7 @@ test('dropImports', async t => {
   const rootA = 'o+0';
 
   // immediate drop should push import to deadSet after finalizer runs
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-1')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-1')));
   // the immediate gcTools.kill() means that the import should now be in the
   // "COLLECTED" state
   t.deepEqual(deadSet, new Set());
@@ -809,12 +792,10 @@ test('dropImports', async t => {
   deadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
 
   // separate hold and free should do the same
-  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-2')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-2')));
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 0);
-  dispatch(makeMessage(rootA, 'free', capargs([])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'free', capargs([])));
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
   FR.runOneCallback(); // moves to FINALIZED
@@ -823,14 +804,12 @@ test('dropImports', async t => {
 
   // re-introduction during COLLECTED should return to REACHABLE
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-3')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-3')));
   // now COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-3')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-3')));
   // back to REACHABLE
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -838,8 +817,7 @@ test('dropImports', async t => {
   FR.runOneCallback(); // stays at REACHABLE
   t.deepEqual(deadSet, new Set());
 
-  dispatch(makeMessage(rootA, 'free', capargs([])));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'free', capargs([])));
   // now COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -850,20 +828,17 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains REACHABLE
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
   // now COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
-  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-4')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-4')));
   // back to REACHABLE
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -878,14 +853,12 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains FINALIZED
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
   // now COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -901,8 +874,7 @@ test('dropImports', async t => {
 
   // re-introduction during FINALIZED moves back to REACHABLE
 
-  dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-6')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-6')));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -911,8 +883,7 @@ test('dropImports', async t => {
   t.deepEqual(deadSet, new Set(['o-6']));
   t.is(FR.countCallbacks(), 0);
 
-  dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
-  await waitUntilQuiescent();
+  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
   // back to REACHABLE, removed from deadSet
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 0);

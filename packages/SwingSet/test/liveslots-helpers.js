@@ -1,4 +1,5 @@
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 export function buildSyscall() {
@@ -37,7 +38,7 @@ export function makeDispatch(
   vatID = 'vatA',
   enableDisavow = false,
 ) {
-  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  const gcTools = harden({ WeakRef, FinalizationRegistry, waitUntilQuiescent });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
     vatID,

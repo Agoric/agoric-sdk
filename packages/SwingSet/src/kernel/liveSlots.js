@@ -25,7 +25,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, vatDecref }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} console
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
@@ -45,7 +45,7 @@ function build(
   gcTools,
   console,
 ) {
-  const { WeakRef, FinalizationRegistry } = gcTools;
+  const { WeakRef, FinalizationRegistry, waitUntilQuiescent } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -816,8 +816,12 @@ function build(
     exported.add(rootObject);
   }
 
-  function dispatch(vatDeliveryObject) {
-    const [type, ...args] = vatDeliveryObject;
+  /**
+   * @param { VatDeliveryObject } delivery
+   * @returns { void }
+   */
+  function dispatchToUserspace(delivery) {
+    const [type, ...args] = delivery;
     switch (type) {
       case 'message': {
         const [targetSlot, msg] = args;
@@ -849,6 +853,31 @@ function build(
         assert.fail(X`unknown delivery type ${type}`);
     }
   }
+
+  /**
+   * This low-level liveslots code is responsible for deciding when userspace
+   * is done with a crank. Userspace code can use Promises, so it can add as
+   * much as it wants to the ready promise queue. But since userspace never
+   * gets direct access to the timer or IO queues (i.e. setImmediate,
+   * setInterval, setTimeout), then once the promise queue is empty, the vat
+   * has lost "agency" (the ability to initiate further execution).
+   *
+   * @param { VatDeliveryObject } delivery
+   * @returns { Promise<void> }
+   */
+  async function dispatch(delivery) {
+    // Start user code running, record any internal liveslots errors. We do
+    // *not* directly wait for the userspace function to complete, nor for
+    // any promise it returns to fire.
+    Promise.resolve(delivery)
+      .then(dispatchToUserspace)
+      .catch(err =>
+        console.log(`liveslots error ${err} during delivery ${delivery}`),
+      );
+    // Instead, we wait for userspace to become idle by draining the promise
+    // queue.
+    return waitUntilQuiescent();
+  }
   harden(dispatch);
 
   // we return 'deadSet' for unit tests
@@ -865,7 +894,7 @@ function build(
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
- * @param {*} gcTools { WeakRef, FinalizationRegistry }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
  *
