@@ -29,15 +29,18 @@ function makeSupervisorDispatch(dispatch, waitUntilQuiescent) {
    *
    */
   async function dispatchToVat(delivery) {
-    // the (low-level) vat is not currently responsible for giving up agency:
-    // we enforce that ourselves for now
-    Promise.resolve(delivery)
+    // the (low-level) vat is responsible for giving up agency, but we still
+    // protect against exceptions
+    return Promise.resolve(delivery)
       .then(dispatch)
-      .catch(err =>
-        console.log(`error ${err} during vat dispatch of ${delivery}`),
+      .then(
+        () => harden(['ok', null, null]),
+        err => {
+          // TODO react more thoughtfully, maybe terminate the vat
+          console.log(`error ${err} during vat dispatch of ${delivery}`);
+          return harden(['error', `${err.message}`, null]);
+        },
       );
-    await waitUntilQuiescent();
-    return harden(['ok', null, null]);
   }
 
   return harden(dispatchToVat);
@@ -158,6 +161,8 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     resolve: resolutions => doSyscall(['resolve', resolutions]),
     exit: (isFailure, data) => doSyscall(['exit', isFailure, data]),
     dropImports: vrefs => doSyscall(['dropImports', vrefs]),
+    retireImports: vrefs => doSyscall(['retireImports', vrefs]),
+    retireExports: vrefs => doSyscall(['retireExports', vrefs]),
 
     // These syscalls should be omitted if the worker cannot get a
     // synchronous return value back from the kernel, such as when the worker

@@ -185,18 +185,41 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   }
 
   function translateDropImports(vrefs) {
-    assert(Array.isArray(vrefs), X`dropImport() given non-Array ${vrefs}`);
-    // We delete clist entries as we translate, which will (TODO) decref the
-    // krefs. When we're done with that loop, we hand the set of krefs to
-    // kernelSyscall so it can (TODO) check newly-decremented refcounts
-    // against zero, and maybe delete even more.
+    assert(Array.isArray(vrefs), X`dropImports() given non-Array ${vrefs}`);
+    // TODO: dropImports does not affect the c-list, but makes the kernel
+    // calculate the refcount of a kref, possibly causing further action.
     const krefs = vrefs.map(vref => {
-      insistVatType('object', vref);
+      insistVatType('object', vref); // TODO: probably device nodes too
       const kref = mapVatSlotToKernelSlot(vref);
-      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
     return harden(['dropImports', krefs]);
+  }
+
+  function translateRetireImports(vrefs) {
+    assert(Array.isArray(vrefs), X`retireImports() given non-Array ${vrefs}`);
+    // TODO: retireImports will delete clist entries as we translate, which
+    // will (TODO) decref the krefs. When we're done with that loop, we hand
+    // the set of krefs to kernelSyscall so it can (TODO) check
+    // newly-decremented refcounts against zero, and maybe delete even more.
+    const krefs = vrefs.map(vref => {
+      insistVatType('object', vref); // TODO: probably device nodes too
+      const kref = mapVatSlotToKernelSlot(vref);
+      // vatKeeper.deleteCListEntry(kref, vref);
+      return kref;
+    });
+    return harden(['retireImports', krefs]);
+  }
+
+  function translateRetireExports(vrefs) {
+    assert(Array.isArray(vrefs), X`retireExports() given non-Array ${vrefs}`);
+    // TODO: not sure how the kernel should react to this yet
+    const krefs = vrefs.map(vref => {
+      insistVatType('object', vref); // TODO: probably device nodes too
+      const kref = mapVatSlotToKernelSlot(vref);
+      return kref;
+    });
+    return harden(['retireExports', krefs]);
   }
 
   function translateCallNow(target, method, args) {
@@ -276,6 +299,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateVatstoreDelete(...args);
       case 'dropImports':
         return translateDropImports(...args);
+      case 'retireImports':
+        return translateRetireImports(...args);
+      case 'retireExports':
+        return translateRetireExports(...args);
       default:
         assert.fail(X`unknown vatSyscall type ${type}`);
     }

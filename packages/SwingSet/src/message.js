@@ -55,7 +55,9 @@ export function insistVatDeliveryObject(vdo) {
       }
       break;
     }
-    case 'dropExports': {
+    case 'dropExports':
+    case 'retireExports':
+    case 'retireImports': {
       const [slots] = rest;
       assert(Array.isArray(slots));
       for (const slot of slots) {
@@ -150,7 +152,9 @@ export function insistVatSyscallObject(vso) {
       assert.typeof(key, 'string');
       break;
     }
-    case 'dropImports': {
+    case 'dropImports':
+    case 'retireImports':
+    case 'retireExports': {
       const [slots] = rest;
       assert(Array.isArray(slots));
       for (const slot of slots) {

@@ -128,6 +128,20 @@ export function buildCommsDispatch(
     console.log(`-- comms ignoring dropExports`);
   }
 
+  function retireExports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+    console.log(`-- comms ignoring retireExports`);
+  }
+
+  function retireImports(vrefs) {
+    assert(Array.isArray(vrefs));
+    vrefs.map(vref => insistVatType('object', vref));
+    vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
+    console.log(`-- comms ignoring retireImports`);
+  }
+
   function dispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
@@ -146,6 +160,16 @@ export function buildCommsDispatch(
         const [vrefs] = args;
         dropExports(vrefs);
         return;
+      }
+      case 'retireExports': {
+        const [vrefs] = args;
+        retireExports(vrefs);
+        break;
+      }
+      case 'retireImports': {
+        const [vrefs] = args;
+        retireImports(vrefs);
+        break;
       }
       default:
         assert.fail(X`unknown delivery type ${type}`);

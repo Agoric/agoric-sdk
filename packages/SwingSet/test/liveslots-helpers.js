@@ -1,4 +1,5 @@
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 export function buildSyscall() {
@@ -17,6 +18,12 @@ export function buildSyscall() {
     dropImports(slots) {
       log.push({ type: 'dropImports', slots });
     },
+    retireImports(slots) {
+      log.push({ type: 'retireImports', slots });
+    },
+    retireExports(slots) {
+      log.push({ type: 'retireExports', slots });
+    },
     exit(isFailure, info) {
       log.push({ type: 'exit', isFailure, info });
     },
@@ -31,7 +38,7 @@ export function makeDispatch(
   vatID = 'vatA',
   enableDisavow = false,
 ) {
-  const gcTools = harden({ WeakRef, FinalizationRegistry });
+  const gcTools = harden({ WeakRef, FinalizationRegistry, waitUntilQuiescent });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
     vatID,

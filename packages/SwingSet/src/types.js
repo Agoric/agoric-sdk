@@ -70,7 +70,11 @@
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
  * @typedef { [tag: 'notify', resolutions: string[] ]} VatDeliveryNotify
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
- * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports } VatDeliveryObject
+ * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
+ * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
+ * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
+ *            | VatDeliveryRetireExports | VatDeliveryRetireImports
+ *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: unknown] | [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
  *
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
@@ -82,10 +86,13 @@
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
+ * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
+ * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
  *    | VatSyscallResolve | VatSyscallVatstoreGet | VatSyscallVatstoreSet
  *    | VatSyscallVatstoreDelete | VatSyscallDropImports
+ *    | VatSyscallRetireImports | VatSyscallRetireExports
  * } VatSyscallObject
  *
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | null ]} VatSyscallResultOk
