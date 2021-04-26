@@ -7,10 +7,10 @@ import {
   getInputPrice,
   getOutputPrice,
   natSafeMath,
-} from '../../../src/contractSupport';
-import { setup } from '../setupBasicMints';
-import { makeGetCurrentPrice } from '../../../src/contracts/newSwap/getCurrentPrice';
-import { outputFromInputPrice, priceFromTargetOutput } from '../../autoswapJig';
+} from '../../../../src/contractSupport';
+import { setup } from '../../setupBasicMints';
+import { makeGetCurrentPrice } from '../../../../src/contracts/newSwap/getCurrentPrice';
+import { outputFromInputPrice, priceFromTargetOutput } from '../../../autoswapJig';
 
 const { add, subtract, floorDivide, multiply } = natSafeMath;
 const BASIS_POINTS = 10000n;
@@ -201,7 +201,7 @@ test('newSwap getPriceGivenRequiredOutput specify central', async t => {
   const pFee = protocolFee(valueOut);
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut),
+    amountOut: moola(valueOut - pFee),
     protocolFee: moola(pFee),
   });
   t.truthy(
@@ -313,7 +313,7 @@ test('newSwap getPriceGivenOutput central extreme', async t => {
   const pFee = protocolFee(valueOut);
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut),
+    amountOut: moola(valueOut - pFee),
     protocolFee: moola(pFee),
   });
 
