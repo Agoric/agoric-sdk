@@ -1,6 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import '../../types';
@@ -108,13 +108,6 @@ function abbreviateReplacer(_, arg) {
   return arg;
 }
 
-function bigIntReplacer(_, arg) {
-  if (typeof arg === 'bigint') {
-    return Number(arg);
-  }
-  return arg;
-}
-
 /**
  * @param { ReturnType<typeof managerPort> } port
  */
@@ -130,7 +123,7 @@ function makeWorker(port) {
    */
   function makeConsole(tag) {
     const log = level => (...args) => {
-      const jsonSafeArgs = JSON.parse(JSON.stringify(args, bigIntReplacer));
+      const jsonSafeArgs = JSON.parse(`${q(args)}`);
       port.send(['console', level, tag, ...jsonSafeArgs]);
     };
     const cons = {
