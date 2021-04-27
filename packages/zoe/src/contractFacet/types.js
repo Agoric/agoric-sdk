@@ -155,15 +155,6 @@
  * @param {Error=} reason
  * @returns {Error}
  */
-/**
- * @callback ZCFSeatKickOut
- *
- * called with the reason for this failure,
- * where reason is normally an instanceof Error. This method is
- * deprecated as of 0.9.1-dev.3 in favor of fail().
- * @param {Error=} reason
- * @returns {Error}
- */
 
 /**
  * @callback ZCFGetAmountAllocated
@@ -178,7 +169,6 @@
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {ZCFSeatKickOut} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
