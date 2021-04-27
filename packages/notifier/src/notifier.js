@@ -12,6 +12,11 @@ import {
 
 import './types';
 
+/**
+ * @template T
+ * @param {BaseNotifier<T>} baseNotifierP
+ * @returns {AsyncIterable<T> & SharableNotifier}
+ */
 export const makeNotifier = baseNotifierP => {
   const asyncIterable = makeAsyncIterableFromNotifier(baseNotifierP);
 

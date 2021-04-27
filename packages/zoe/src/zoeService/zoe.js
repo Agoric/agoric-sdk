@@ -198,7 +198,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         const hasExited = zoeSeatAdmin => !zoeSeatAdmins.has(zoeSeatAdmin);
 
         /** @type {InstanceAdmin} */
-        return Far('instanceAdmin', {
+        const instanceAdmin = Far('instanceAdmin', {
           getPublicFacet: () => publicFacetPromiseKit.promise,
           getTerms,
           getIssuers,
@@ -278,6 +278,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return { userSeat, notifier, zoeSeatAdmin };
           },
         });
+        return instanceAdmin;
       };
 
       const instanceAdmin = makeInstanceAdmin();

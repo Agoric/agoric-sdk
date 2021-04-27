@@ -66,9 +66,12 @@
 
 /**
  * @template T
- * @typedef {BaseNotifier<T> & AsyncIterable<T>} Notifier<T> an object that can
+ * @typedef {BaseNotifier<T> & AsyncIterable<T> & SharableNotifier} Notifier<T> an object that can
  * be used to get the current state or updates
- *
+ */
+
+/**
+ * @typedef {Object} SharableNotifier
  * @property {() => NotifierInternals} getSharableNotifierInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Notification, do
@@ -103,9 +106,12 @@
 
 /**
  * @template T
- * @typedef {BaseSubscription<T> & AsyncIterable<T>} Subscription<T>
+ * @typedef {BaseSubscription<T> & AsyncIterable<T> & SharableSubscription} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
- *
+ */
+
+/**
+ * @typedef {Object} SharableSubscription
  * @property {() => SubscriptionInternals} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do

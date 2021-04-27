@@ -23,8 +23,6 @@
  * using makeSwapOutInvitation at the current price
  * @property {() => Record<string, Amount>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool.
- * @property {() => Array<Brand>} getAllPoolBrands get a list of all the brands
- * that have associated pools.
  */
 
 /**
@@ -88,7 +86,7 @@
  * AmountKeywordRecord showing the current balances in the pool for brand.
  * @property {() => Issuer} getQuoteIssuer - get the Issuer that attests to
  * the prices in the priceQuotes issued by the PriceAuthorities
- * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}}} getPriceAuthorities
+ * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
  */
