@@ -3,7 +3,9 @@ function sub() {
 }
 
 function delveForeverIntoTheRecursiveDepths() {
-  return delveForeverIntoTheRecursiveDepths();
+  return (
+    delveForeverIntoTheRecursiveDepths() + delveForeverIntoTheRecursiveDepths()
+  );
 }
 
 export function meterMe(log2, explode = 'no') {
