@@ -47,7 +47,7 @@
  */
 
 /**
- * @typedef {*} PrimaryRemotable
+ * @typedef {Record<string | symbol, Function>} PrimaryRemotable
  * An object marked with `Far` consisting of methods that can be remotely
  * invoked. A PrimaryRemotable has a fresh unforgeable identity, i.e.,
  * an unforgeable identity created when the object was created.
@@ -58,8 +58,19 @@
  */
 
 /**
+ * Note on the odd use of `{_Remote: T}` below. Suggested at
+ * https://github.com/Agoric/agoric-sdk/pull/2909#discussion_r615522426 .
+ * We do not expect any `_Remote` property to actually exist. Since
+ * TS is structurally typed, we need some structure to make a distinct
+ * structure. IOW, using a non-existent property is a way to emulate
+ * nominal types in a structural type system.
+ *
+ * TODO We can use this pseudo-property to obtain the `PrimaryRemotable` type.
+ * We can then extend the definition of `E()` to deal with `Remote<T>`s as if
+ * they have the methods and properties found on `T`.
+ *
  * @template {PrimaryRemotable} T
- * @typedef {*} Remote
+ * @typedef {{_Remote: T}} Remote
  * A `Remote<T>` is a Remotable object in one vat that represents a
  * PrimaryRemotable of type T in another vat. The Remote has an unforgeable
  * identity that is one-to-one with the unforgeable identity of its primary.
@@ -79,14 +90,14 @@
  *
  * A Remotable<T> is either the PrimaryRemotable T in its home vat, or is one
  * of its Remote<T> representatives in other vats. The primary together with
- * all of its remotes are, in aggregate, the Unum<T>, the abstact distributed
+ * all of its remotes are, in aggregate, the abstact distributed Remotable<T>
  * object consisting of all these individual remotables. If there is only one
- * coherent comm system among the vats in question, then the unum as a whole
- * effectively has the unforgeable identity of its primary, since the identity
- * of each of its remotables is not observably different than the identity of
- * its primary.
+ * coherent comm system among the vats in question, then the remotable as a
+ * whole effectively has the unforgeable identity of its primary, since the
+ * identity of each of its remotables is not observably different than the
+ * identity of its primary. (TODO explain relationship to the Unum model.)
  *
- * A Remotable is a PassableKey, which `sameKey` compares for euivalence
+ * A Remotable is a PassableKey, which `sameKey` compares for equivalence
  * according to its unforgeable identity, which effectively compares the
  * unforgeable identities of their primaries.
  *
@@ -106,7 +117,8 @@
  */
 
 /**
- * @typedef {Remotable | Promise} LeafCap
+ * @template T
+ * @typedef {Remotable<T> | Promise<T>} LeafCap
  * The Corresponding PassStyles are "remotable" or "promise".
  *
  * Both remotables and promises may appear as the capability leaves of
@@ -237,7 +249,7 @@
  */
 
 /**
- * @typedef {Remotable | OnlyData | NestedData<PassableKey> } PassableKey
+ * @typedef {Remotable<any> | OnlyData | NestedData<PassableKey> } PassableKey
  *
  * PassableKeys can be compared for equivalence with `sameKey`. A
  * PassableKey can be used as a key in a StrongStore, i.e., used
@@ -255,7 +267,7 @@
 
 /**
  * @template {PassableKey} K
- * @typedef {*} CopyStore
+ * @typedef {Object} CopyStore
  * @property {(key: K) => boolean} has
  * @property {() => K[]} keys
  *
@@ -289,8 +301,8 @@
  */
 
 /**
- * @template T
- * @typedef { PassableKey | CopySet<T> | CopyMap<T,T> } NestedComparable
+ * @template K,V
+ * @typedef { PassableKey | CopySet<K> | CopyMap<K,V> } NestedComparable
  */
 
 /**
@@ -298,7 +310,7 @@
  */
 
 /**
- * @typedef {Promise | NestedComparable<Passable>} Passable
+ * @typedef {Promise<any> | NestedComparable<Passable>} Passable
  * A Passable value that may be marshalled. It is classified as one of
  * PassStyle. A Passable must be hardened.
  *
