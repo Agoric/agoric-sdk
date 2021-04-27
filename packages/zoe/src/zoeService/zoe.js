@@ -29,6 +29,7 @@ import { makeIssuerStorage } from '../issuerStorage';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
 import { makeOffer } from './offer/offer';
+import { makeInvitationQueryFns } from './invitationQueries';
 
 /**
  * Create an instance of Zoe.
@@ -46,6 +47,12 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
+
+  const {
+    getInstance,
+    getInstallation,
+    getInvitationDetails,
+  } = makeInvitationQueryFns(invitationKit.issuer);
 
   const {
     createPurse,
@@ -70,15 +77,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     getMathKindByBrand,
   );
 
-  /** @type {GetAmountOfInvitationThen} */
-  const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
-    const onRejected = () =>
-      assert.fail(X`A Zoe invitation is required, not ${invitationP}`);
-    return E(invitationKit.issuer)
-      .getAmountOf(invitationP)
-      .then(onFulfilled, onRejected);
-  };
-
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
     getInvitationIssuer: () => invitationKit.issuer,
@@ -88,18 +86,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
     getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
     getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
-    getInstance: invitation => {
-      const onFulfilled = amount => amount.value[0].instance;
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
-    getInstallation: invitation => {
-      const onFulfilled = amount => amount.value[0].installation;
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
-    getInvitationDetails: invitation => {
-      const onFulfilled = amount => amount.value[0];
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
+    getInstance,
+    getInstallation,
+    getInvitationDetails,
     startInstance: async (
       installationP,
       uncleanIssuerKeywordRecord = harden({}),

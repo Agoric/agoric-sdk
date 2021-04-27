@@ -28,16 +28,57 @@
  * @property {Install} install
  * @property {StartInstance} startInstance
  * @property {Offer} offer
- * @property {(instance: Instance) => Object} getPublicFacet
- * @property {(instance: Instance) => IssuerKeywordRecord} getIssuers
- * @property {(instance: Instance) => BrandKeywordRecord} getBrands
- * @property {(instance: Instance) => Object} getTerms
- * @property {(invitation: ERef<Invitation>) => Promise<Instance>} getInstance
- * @property {(invitation: ERef<Invitation>) => Promise<Installation>} getInstallation
- * @property {(invitation: ERef<Invitation>) => Promise<InvitationDetails>}
- * getInvitationDetails - return an object with the instance,
- * installation, description, invitation handle, and any custom properties
- * specific to the contract.
+ * @property {GetPublicFacet} getPublicFacet
+ * @property {GetIssuers} getIssuers
+ * @property {GetBrands} getBrands
+ * @property {GetTerms} getTerms
+ * @property {GetInstance} getInstance
+ * @property {GetInstallation} getInstallation
+ * @property {GetInvitationDetails} getInvitationDetails - return an
+ * object with the instance, installation, description, invitation
+ * handle, and any custom properties specific to the contract.
+ */
+
+/**
+ * @callback GetPublicFacet
+ * @param {Instance} instance
+ * @returns {Object}
+ */
+
+/**
+ * @callback GetIssuers
+ * @param {Instance} instance
+ * @returns {IssuerKeywordRecord}
+ */
+
+/**
+ * @callback GetBrands
+ * @param {Instance} instance
+ * @returns {BrandKeywordRecord}
+ */
+
+/**
+ * @callback GetTerms
+ * @param {Instance} instance
+ * @returns {Terms}
+ */
+
+/**
+ * @callback GetInstance
+ * @param {ERef<Invitation>} invitation
+ * @returns {Promise<Instance>}
+ */
+
+/**
+ * @callback GetInstallation
+ * @param {ERef<Invitation>} invitation
+ * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback GetInvitationDetails
+ * @param {ERef<Invitation>} invitation
+ * @returns {Promise<InvitationDetails>}
  */
 
 /**
