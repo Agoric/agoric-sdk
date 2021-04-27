@@ -24,7 +24,10 @@ import {
   multiplyBy,
   makeRatio,
 } from '../../../../src/contractSupport';
-import { assertAmountsEqual } from '../../../zoeTestHelpers';
+import {
+  assertAmountsEqual,
+  assertPayoutAmount,
+} from '../../../zoeTestHelpers';
 
 const newSwapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAutoswap`;
 
@@ -404,7 +407,11 @@ test('newSwap doubleSwap', async t => {
   const installation = await zoe.install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
   const fakeTimer = buildManualTimer(console.log, 30);
-  const { instance, publicFacet } = await zoe.startInstance(
+  const {
+    instance,
+    publicFacet,
+    creatorFacet,
+  } = await zoe.startInstance(
     installation,
     harden({ Central: centralR.issuer }),
     { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
@@ -580,6 +587,23 @@ test('newSwap doubleSwap', async t => {
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
+
+  const collectFeesInvitation = await E(
+    creatorFacet,
+  ).makeCollectFeesInvitation();
+  const collectFeesSeat = await zoe.offer(
+    collectFeesInvitation,
+    undefined,
+    undefined,
+  );
+
+  const payout = await E(collectFeesSeat).getPayout('RUN');
+
+  await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: amountMath.makeEmpty(centralR.brand),
+  });
 });
 
 test('newSwap with some invalid offers', async t => {
@@ -675,6 +699,7 @@ test('newSwap jig - swapOut uneven', async t => {
 
   const {
     /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
+    creatorFacet,
   } = startRecord;
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
@@ -858,4 +883,26 @@ test('newSwap jig - swapOut uneven', async t => {
   });
 
   mPoolState = updatePoolState(mPoolState, expectedC);
+
+  const collectFeesInvitation = await E(
+    creatorFacet,
+  ).makeCollectFeesInvitation();
+  const collectFeesSeat = await zoe.offer(
+    collectFeesInvitation,
+    undefined,
+    undefined,
+  );
+
+  const payout = await E(collectFeesSeat).getPayout('RUN');
+
+  await assertPayoutAmount(
+    t,
+    centralR.issuer,
+    payout,
+    amountMath.make(centralR.brand, 48),
+  );
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: amountMath.makeEmpty(centralR.brand),
+  });
 });

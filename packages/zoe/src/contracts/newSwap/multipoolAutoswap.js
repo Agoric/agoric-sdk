@@ -13,6 +13,7 @@ import { makeMakeAddLiquidityInvitation } from '../multipoolAutoswap/addLiquidit
 import { makeMakeRemoveLiquidityInvitation } from '../multipoolAutoswap/removeLiquidity';
 
 import '../../../exported';
+import { makeMakeCollectFeesInvitation } from './collectFees';
 
 /**
  * Multipool Autoswap is a rewrite of Uniswap that supports multiple liquidity
@@ -159,6 +160,15 @@ const start = zcf => {
     getPool,
   );
 
+  const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
+    zcf,
+    protocolSeat,
+    centralBrand,
+  );
+  const creatorFacet = Far('Private Facet', {
+    makeCollectFeesInvitation,
+  });
+
   /** @type {MultipoolAutoswapPublicFacet} */
   const publicFacet = Far('MultipoolAutoswapPublicFacet', {
     addPool,
@@ -181,7 +191,7 @@ const start = zcf => {
     getProtocolPoolBalance: () => protocolSeat.getCurrentAllocation(),
   });
 
-  return harden({ publicFacet });
+  return harden({ publicFacet, creatorFacet });
 };
 
 harden(start);
