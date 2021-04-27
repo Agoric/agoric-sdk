@@ -32,6 +32,7 @@
     "@agoric/install-ses": "^0.5.9",
     "@agoric/marshal": "^0.4.7",
     "@agoric/nat": "^4.0.0",
+    "@agoric/notifier": "^0.3.11",
     "@agoric/pegasus": "^0.2.3",
     "@agoric/promise-kit": "^0.2.9",
     "@agoric/registrar": "^0.2.10",
