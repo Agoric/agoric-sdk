@@ -27,6 +27,7 @@ function makeIssuerKit(
   assert.typeof(allegedName, 'string');
   displayInfo = coerceDisplayInfo(displayInfo);
 
+  /** @type {Brand} */
   const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {
     isMyIssuer: allegedIssuerP => {
       return E.when(allegedIssuerP, allegedIssuer => {

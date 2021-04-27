@@ -92,7 +92,7 @@
 // eslint-disable-next-line jsdoc/require-property
 /**
  * @template T
- * @typedef {Object} BaseSubscription<T>
+ * @typedef {{}} BaseSubscription<T>
  */
 
 /**
