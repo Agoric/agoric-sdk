@@ -5,7 +5,7 @@
  * @typedef { "undefined" | "null" |
  *   "boolean" | "number" | "bigint" | "string" | "symbol" |
  *   "copyArray" | "copyRecord" | "remotable" | "copySet" | "copyMap" |
- *   "promise" | "copyError"
+ *   "promise" | "copyError" | "patternNode"
  * } PassStyle
  *
  * TODO: We need to add a binary blob type to the PassStyles above and the
@@ -315,7 +315,103 @@
  */
 
 /**
- * @typedef {Promise<any> | CopyError | NestedComparable<Passable>} Passable
+ * TODO Big open question raised as soon as we try to use these abstractions
+ * on amounts. Consider an amount containing invite descritions. Each invite is a
+ * non-fungible eright. An amount contains a set of invite descriptions. For now,
+ * assume that each individual invite description is a PassableKey. But then
+ * an amount of invites would naturally be a CopySet of these descriptions, we
+ * we consider a Comparable but not a PassableKey. But an individual invite
+ * description itself can contain arbitrary amounts, which forces us into the
+ * fixed point of a CopySet of Comparables rather than a CopySet of PassableKeys.
+ * What's worse, is we then cannot form a KeyPattern that matches amounts.
+ *
+ * What we're currently doing is that a non-fungible amount contains a CopyArray
+ * of values representing a set, rather than using a CopySet directly. Then,
+ * our prior work on amount patterns had to make a special case (the layering
+ * violation below) to compare these arrays as if they were sets. Once we have
+ * sets, this is unnatural.
+ *
+ * I think this means that we need to back off from our stratification of
+ * PassableKey vs Comparable. Instead, reusing our transitive type constraint
+ * logic, a CopySet containing only PassableKeys is itself a PassableKey. A
+ * CopyMap containing only PassableKey keys and PassableKey values is itself
+ * a CopyMap. This means that PassableKeys in general cannot be canonically
+ * sorted. But we know when they're not, and we can still canonically sort them
+ * into buckets for efficient indexing and iteration. Within each bucket, we
+ * search by using brute force, which is what we're doing now. Or we privately
+ * and separately use identity-indexed maps without exposing any sort order.
+ */
+
+/**
+ * @typedef { "*" | "bind" | "rest" |
+ *   "and" | "or" |
+ *   "lt" | "lte" | "gte" | "gt" |
+ *   "amountBrand" | "amountKind" | "amountEmpty" | "amountEqual" | "amountGTE"
+ * } PatternKind
+ *
+ * * "*" is a wildcard. It matches anything.
+ * * "bind" is a wildcard that binds the speciment to that variable name if
+ *   there is a naming environment. Otherwise the appearance of "bind" is
+ *   an error.
+ * * "rest" matches a subset of a specimen record against the "like"
+ *   CopyRecord, each of whose values can be a pattern. And it matches the
+ *   rest of the specimen record against the "rest" pattern.
+ * * "and", "or" take lists of sub-patterns, each of which is matched against
+ *   the same specimen.
+ * * "lt", "lte", "gte", "gt" compares against a LeafData right operand.
+ *   The specimen must be the same type as the operant.
+ *
+ * In a gross violation of layering, we include some patterns specifically
+ * tailored for amounts, to be used through the abstract `amountMath` API.
+ * TODO The problem is that we do not yet have the knobs needed to make
+ * PatternKind be user extensible.
+ *
+ * * "amountBrand" checks that it coerces using the stated brand.
+ * * "amountKind" checks the AmountMathKind.
+ * * "amountEmpty" checks that it is empty, i.e., represents to erights
+ * * "amountEqual" checks that it represents the same erights.
+ * * "isGTE" checks that it represents at least those erights.
+ *
+ * Unlike LeafData, amounts are in a set-like partial order.
+ */
+
+/**
+ * @template T
+ * @typedef {{ '@patternKind': T}} PatternClass
+ */
+
+/**
+ * @typedef {PatternClass<'*'> |
+ *   PatternClass<'bind'> & { name: string } |
+ *   PatternClass<'rest'> & { like: CopyRecord, rest: KeyPattern }
+ *   PatternClass<'and'> & { conjuncts: KeyPattern[] } |
+ *   PatternClass<'or'> & { disjuncts: KeyPattern[] } |
+ *   PatternClass<'lt'> & { rightOperand: LeafData } |
+ *   PatternClass<'lte'> & { rightOperand: LeafData } |
+ *   PatternClass<'gte'> & { rightOperand: LeafData } |
+ *   PatternClass<'gt'> & { rightOperand: LeafData } |
+ *
+ *   PatternClass<'amountBrand'> & { brand:  Brand } |
+ *   PatternClass<'amountKind'> & { mathKind:  AmountMathKind } |
+ *   PatternClass<'amountEmpty'> |
+ *   PatternClass<'amountEqual'> & { rightOperand:  Amount } |
+ *   PatternClass<'amountGTE'> & { rightOperand:  Amount } |
+ * } PatternNode
+ */
+
+/**
+ * A KeyPattern matches some set of PassableKeys. A PassableKey used as
+ * a KeyPattern uniquely matches only that PassableKey. When both `pattern`
+ * and `specimen` are PassableKeys, then `match(pattern, specimen)` gives
+ * the same answer as `sameKey(pattern, specimen)`.
+ *
+ * @typedef {PassableKey | PatternNode} KeyPattern
+ */
+
+/**
+ * @typedef { Promise<any> | CopyError | PatternNode |
+ *   NestedComparable<Passable>
+ * } Passable
  * A Passable value that may be marshalled. It is classified as one of
  * PassStyle. A Passable must be hardened.
  *
@@ -355,20 +451,25 @@
  */
 
 /**
- * TODO Add cases for CopySet and CopyMap
+ * TODO Add cases for CopySet, CopyMap, and PatternNode
  *
  * @typedef {EncodingClass<'NaN'> |
- * EncodingClass<'undefined'> |
- * EncodingClass<'Infinity'> |
- * EncodingClass<'-Infinity'> |
- * EncodingClass<'bigint'> & { digits: string } |
- * EncodingClass<'@@asyncIterator'> |
- * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
- * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
- * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
- * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
+ *   EncodingClass<'undefined'> |
+ *   EncodingClass<'Infinity'> |
+ *   EncodingClass<'-Infinity'> |
+ *   EncodingClass<'bigint'> & { digits: string } |
+ *   EncodingClass<'@@asyncIterator'> |
+ *   EncodingClass<'error'> & { name: string,
+ *                              message: string,
+ *                              errorId?: string } |
+ *   EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
+ *   EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }
+ * } EncodingUnion
+ * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }
+ * } EncodingRecord
  * We exclude '@qclass' as a property in encoding records.
- * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
+ * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord
+ * } EncodingElement
  */
 
 /**

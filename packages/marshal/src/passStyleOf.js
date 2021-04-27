@@ -427,7 +427,7 @@ export function passStyleOf(val) {
       if (isPassByCopyRecord(val)) {
         return 'copyRecord';
       }
-      // TODO recognize CopySet and CopyMap
+      // TODO recognize CopySet, CopyMap, and PatternNode
       if (isPassByCopyError(val)) {
         return 'copyError';
       }

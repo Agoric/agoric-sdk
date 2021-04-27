@@ -79,7 +79,8 @@ function pureCopy(val, already = new WeakMap()) {
     }
 
     case 'copySet':
-    case 'copyMap': {
+    case 'copyMap':
+    case 'patternNode': {
       assert.fail(X`${q(passStyle)} not yet implemented.`);
     }
 
@@ -365,7 +366,8 @@ export function makeMarshal(
               return result;
             }
             case 'copySet':
-            case 'copyMap': {
+            case 'copyMap':
+            case 'patternNode': {
               assert.fail(X`${q(passStyle)} not yet implemented.`);
             }
             case 'copyError': {
