@@ -194,7 +194,7 @@ const makeCourier = ({
 
     // Reflect any error back to the seat.
     return tryToSend().catch(reason => {
-      zcfSeat.kickOut(reason);
+      zcfSeat.fail(reason);
     });
   };
 
@@ -215,7 +215,7 @@ const makeCourier = ({
       redeem(zcfSeat, { Transfer: localAmount });
       zcfSeat.exit();
     } catch (e) {
-      zcfSeat.kickOut(e);
+      zcfSeat.fail(e);
       throw e;
     }
 
