@@ -22,10 +22,10 @@ import './types';
 function makeIssuerKit(
   allegedName,
   amountMathKind = MathKind.NAT,
-  displayInfo = undefined,
+  rawDisplayInfo = harden({}),
 ) {
   assert.typeof(allegedName, 'string');
-  displayInfo = coerceDisplayInfo(displayInfo);
+  const displayInfo = coerceDisplayInfo(rawDisplayInfo);
 
   /** @type {Brand} */
   const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {

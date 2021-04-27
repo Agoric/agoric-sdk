@@ -37,9 +37,6 @@ export const assertKeysAllowed = (allowedKeys, record) => {
 };
 
 export const assertDisplayInfo = allegedDisplayInfo => {
-  if (allegedDisplayInfo === undefined) {
-    return;
-  }
   assert(
     passStyleOf(allegedDisplayInfo) === 'copyRecord',
     X`A displayInfo can only be a pass-by-copy record: ${allegedDisplayInfo}`,
@@ -48,7 +45,11 @@ export const assertDisplayInfo = allegedDisplayInfo => {
   assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
 };
 
-export const coerceDisplayInfo = allegedDisplayInfo => {
+/**
+ * @param {any} [allegedDisplayInfo={}]
+ * @returns {DisplayInfo}
+ */
+export const coerceDisplayInfo = (allegedDisplayInfo = {}) => {
   allegedDisplayInfo = pureCopy(allegedDisplayInfo);
   assertDisplayInfo(allegedDisplayInfo);
   return allegedDisplayInfo;
