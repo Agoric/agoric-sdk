@@ -11,7 +11,7 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { ErrorCode, ErrorSignal, ErrorMessage } from './api';
+import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from './api';
 import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
@@ -170,17 +170,17 @@ export function xsnap(options) {
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
         let compute = null;
+        let allocate = null;
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
           const meterData = message.slice(1, meterSeparator);
-          // We parse the meter data as JSON.
-          // For now it is just a number for the used compute meter.
-          compute = JSON.parse(decoder.decode(meterData));
+          // We parse the meter data as JSON, expecting an array of two numbers.
+          [compute, allocate] = JSON.parse(decoder.decode(meterData));
         }
         const meterUsage = {
           meterType: METER_TYPE,
-          allocate: null, // No allocation meter yet.
+          allocate,
           compute,
         };
         // console.log('have meterUsage', meterUsage);

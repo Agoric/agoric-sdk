@@ -454,7 +454,7 @@ test('property name space exhaustion: orderly fail-stop', async t => {
   for (const debug of [false, true]) {
     for (const [parserBufferSize, qty, failure] of [
       [undefined, 100, null],
-      [undefined, 8192 * 1024 + 100, 'buffer overflow'],
+      [undefined, (8192 * 1024) / 4 + 100, 'buffer overflow'],
       [2, 10, null],
       [2, 50000, 'buffer overflow'],
     ]) {
