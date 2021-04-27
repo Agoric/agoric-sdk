@@ -3,7 +3,7 @@ import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import { initSwingStore } from '@agoric/swing-store-simple';
 import test from 'ava';
-import { buildVatController } from '../../src/index';
+import { buildKernelBundles, buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 
 function capdata(body, slots = []) {
@@ -14,23 +14,37 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-test('metering dynamic vats', async t => {
+async function prepare() {
+  const kernelBundles = await buildKernelBundles();
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (metered) dynamic vat
   const dynamicVatBundle = await bundleSource(
     require.resolve('./metered-dynamic-vat.js'),
   );
+  const bootstrapBundle = await bundleSource(
+    require.resolve('./vat-load-dynamic.js'),
+  );
+  return { kernelBundles, dynamicVatBundle, bootstrapBundle };
+}
+
+test.before(async t => {
+  t.context.data = await prepare();
+});
+
+async function runOneTest(t, explosion, managerType) {
+  const { kernelBundles, dynamicVatBundle, bootstrapBundle } = t.context.data;
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./vat-load-dynamic.js'),
+        bundle: bootstrapBundle,
       },
     },
   };
   const { storage } = initSwingStore();
   const c = await buildVatController(config, [], {
     hostStorage: storage,
+    kernelBundles,
   });
   const nextLog = makeNextLog(c);
 
@@ -42,7 +56,7 @@ test('metering dynamic vats', async t => {
     'bootstrap',
     'o+0',
     'createVat',
-    capargs([dynamicVatBundle]),
+    capargs([dynamicVatBundle, { managerType }]),
   );
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
@@ -75,7 +89,7 @@ test('metering dynamic vats', async t => {
   // message result promise should be rejected, and the control facet should
   // report the vat's demise.  Remnants of the killed vat should be gone
   // from the kernel state store.
-  c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs(['allocate']));
+  c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs([explosion]));
   await c.run();
   t.is(JSON.parse(storage.get('vat.dynamicIDs')).length, 0);
   t.is(storage.get(`${root}.owner`), undefined);
@@ -94,11 +108,17 @@ test('metering dynamic vats', async t => {
   // t.is(storage.get(`${neverKPID}.data.body`),
   //      JSON.stringify('vat terminated'));
 
+  const expected = {
+    allocate: 'Allocate meter exceeded',
+    compute: 'Compute meter exceeded',
+    stack: 'Stack meter exceeded',
+  };
+
   t.deepEqual(
     nextLog(),
     [
       'did explode: Error: vat terminated',
-      'terminated: Error: Allocate meter exceeded',
+      `terminated: Error: ${expected[explosion]}`,
     ],
     'first boom',
   );
@@ -107,4 +127,31 @@ test('metering dynamic vats', async t => {
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
   t.deepEqual(nextLog(), ['run exploded: Error: vat terminated'], 'stay dead');
+}
+
+test('local vat allocate overflow', t => {
+  return runOneTest(t, 'allocate', 'local');
+});
+
+test('local vat compute overflow', t => {
+  return runOneTest(t, 'compute', 'local');
+});
+
+test('local vat stack overflow', t => {
+  return runOneTest(t, 'stack', 'local');
+});
+
+test('xsnap vat allocate overflow', t => {
+  // TODO: gets v6:undefined exited with code 1
+  return runOneTest(t, 'allocate', 'xs-worker');
+});
+
+test('xsnap vat compute overflow', t => {
+  // TODO: gets v6:undefined exited with code 7
+  return runOneTest(t, 'compute', 'xs-worker');
+});
+
+test('xsnap vat stack overflow', t => {
+  // TODO: gets v6:undefined exited with code 7
+  return runOneTest(t, 'stack', 'xs-worker');
 });
