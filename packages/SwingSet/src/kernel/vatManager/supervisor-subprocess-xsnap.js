@@ -1,6 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import '../../types';
@@ -122,8 +122,10 @@ function makeWorker(port) {
    * @param { string } tag
    */
   function makeConsole(tag) {
-    const log = level => (...args) =>
-      port.send(['console', level, tag, ...args]);
+    const log = level => (...args) => {
+      const jsonSafeArgs = JSON.parse(`${q(args)}`);
+      port.send(['console', level, tag, ...jsonSafeArgs]);
+    };
     const cons = {
       debug: log('debug'),
       log: log('log'),
