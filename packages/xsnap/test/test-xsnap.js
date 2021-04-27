@@ -4,6 +4,7 @@ import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '../src/xsnap';
+import { ExitCode, ErrorCode } from '../src/api';
 
 const importMetaUrl = `file://${__filename}`;
 
@@ -52,8 +53,8 @@ test('evaluate infinite loop', async t => {
   const vat = xsnap(opts);
   t.teardown(vat.terminate);
   await t.throwsAsync(vat.evaluate(`for (;;) {}`), {
-    message: /xsnap test worker exited with code 7/,
-    instanceOf: Error,
+    code: ExitCode.E_TOO_MUCH_COMPUTATION,
+    instanceOf: ErrorCode,
   });
   t.deepEqual([], opts.messages);
 });
@@ -71,8 +72,8 @@ test('evaluate promise loop', async t => {
     f();
   `),
     {
-      message: /exited with code 7/,
-      instanceOf: Error,
+      code: ExitCode.E_TOO_MUCH_COMPUTATION,
+      instanceOf: ErrorCode,
     },
   );
   t.deepEqual([], opts.messages);
@@ -402,7 +403,9 @@ test('heap exhaustion: orderly fail-stop', async t => {
     const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
     t.teardown(() => vat.terminate());
     // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow), { message: /exited with code 1$/ });
+    await t.throwsAsync(vat.evaluate(grow), {
+      code: ExitCode.E_NOT_ENOUGH_MEMORY,
+    });
   }
 });
 
@@ -432,7 +435,7 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     console.log({ debug, qty: 4000000000 });
     // eslint-disable-next-line no-await-in-loop
     await t.throwsAsync(vat.evaluate(grow(4000000000)), {
-      message: /exited with code 6/,
+      code: ExitCode.E_NO_MORE_KEYS,
     });
   }
 });
@@ -497,7 +500,7 @@ test('property name space exhaustion: orderly fail-stop', async t => {
             // ignore
           }
         })()`),
-        { message: /exited with code 1$/ },
+        { code: ExitCode.E_NOT_ENOUGH_MEMORY },
       );
     });
   }
