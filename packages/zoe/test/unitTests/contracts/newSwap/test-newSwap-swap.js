@@ -19,7 +19,12 @@ import {
   outputFromInputPrice,
 } from '../../../autoswapJig';
 import buildManualTimer from '../../../../tools/manualTimer';
-import { getAmountOut } from '../../../../src/contractSupport';
+import {
+  getAmountOut,
+  multiplyBy,
+  makeRatio,
+} from '../../../../src/contractSupport';
+import { assertAmountsEqual } from '../../../zoeTestHelpers';
 
 const newSwapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAutoswap`;
 
@@ -34,14 +39,13 @@ test('multipoolAutoSwap with valid offers', async t => {
   const centralTokens = value => amountMath.make(value, centralR.brand);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
   // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50));
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
   const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(398));
 
   // Setup Bob
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17));
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(74));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17000));
 
   // Alice creates an autoswap instance
 
@@ -95,7 +99,6 @@ test('multipoolAutoSwap with valid offers', async t => {
   const simoleanLiquidity = value =>
     amountMath.make(value, simoleanLiquidityBrand);
 
-  const quoteIssuer = await E(publicFacet).getQuoteIssuer();
   const { toCentral: priceAuthority } = await E(
     publicFacet,
   ).getPriceAuthorities(moolaR.brand);
@@ -127,8 +130,8 @@ test('multipoolAutoSwap with valid offers', async t => {
   // 10 moola = 5 central tokens at the time of the liquidity adding
   // aka 2 moola = 1 central token
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50) },
-    give: { Secondary: moola(100), Central: centralTokens(50) },
+    want: { Liquidity: moolaLiquidity(50000) },
+    give: { Secondary: moola(100000), Central: centralTokens(50000) },
   });
   const alicePayments = {
     Secondary: aliceMoolaPayment,
@@ -151,33 +154,16 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   t.deepEqual(
     await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
-    moolaLiquidity(50),
+    moolaLiquidity(50000),
   );
   t.deepEqual(
     await E(publicFacet).getPoolAllocation(moolaR.brand),
     harden({
-      Secondary: moola(100),
-      Central: centralTokens(50),
+      Secondary: moola(100000),
+      Central: centralTokens(50000),
       Liquidity: moolaLiquidity(0),
     }),
     `The poolAmounts record should contain the new liquidity`,
-  );
-
-  const quotePostLiquidity = await E(priceAuthority).quoteGiven(
-    moola(50),
-    centralR.brand,
-  );
-  t.truthy(
-    amountMath.isEqual(
-      await quoteIssuer.getAmountOf(quotePostLiquidity.quotePayment),
-      quotePostLiquidity.quoteAmount,
-    ),
-  );
-  t.truthy(
-    amountMath.isEqual(
-      getAmountOut(quotePostLiquidity),
-      amountMath.make(16, centralR.brand),
-    ),
   );
 
   // Bob creates a swap invitation for himself
@@ -194,20 +180,16 @@ test('multipoolAutoSwap with valid offers', async t => {
     `installation is as expected`,
   );
 
-  // Bob looks up the price of 17 moola in central tokens
-  const priceInCentrals = await E(bobPublicFacet).getInputPrice(
-    moola(17),
-    centralR.brand,
-  );
-  t.deepEqual(
-    priceInCentrals,
-    centralTokens(7),
-    `price in central tokens of 7 moola is as expected`,
-  );
+  // Bob looks up the price of 17000 moola in central tokens
+  const { amountOut: priceInCentrals } = await E(
+    bobPublicFacet,
+  ).getPriceGivenAvailableInput(moola(17000), centralR.brand);
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 
   const bobMoolaForCentralProposal = harden({
-    want: { Out: centralTokens(7) },
-    give: { In: moola(17) },
+    want: { Out: priceInCentrals },
+    give: { In: moola(17000) },
   });
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
@@ -217,16 +199,22 @@ test('multipoolAutoSwap with valid offers', async t => {
     bobMoolaForCentralProposal,
     bobMoolaForCentralPayments,
   );
+
+  const protocolFeeRatio = makeRatio(6n, centralR.brand, 10000);
+  let runningFees = multiplyBy(priceInCentrals, protocolFeeRatio);
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: runningFees,
+  });
+
   const quoteGivenBob = await E(priceAuthority).quoteGiven(
-    moola(50),
+    moola(5000),
     centralR.brand,
   );
-  t.truthy(
-    amountMath.isEqual(
-      getAmountOut(quoteGivenBob),
-      amountMath.make(12, centralR.brand),
-    ),
-    `expected amount of 12, but saw ${q(getAmountOut(quoteGivenBob))}`,
+  assertAmountsEqual(
+    t,
+    getAmountOut(quoteGivenBob),
+    amountMath.make(centralR.brand, 1747n),
+    `expected amount of 1747, but saw ${q(getAmountOut(quoteGivenBob))}`,
   );
 
   t.is(await E(bobSeat).getOfferResult(), 'Swap successfully completed.');
@@ -234,21 +222,23 @@ test('multipoolAutoSwap with valid offers', async t => {
   const bobMoolaPayout1 = await bobSeat.getPayout('In');
   const bobCentralPayout1 = await bobSeat.getPayout('Out');
 
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     await moolaR.issuer.getAmountOf(bobMoolaPayout1),
     moola(0n),
     `bob gets no moola back`,
   );
-  t.deepEqual(
+  assertAmountsEqual(
+    t,
     await centralR.issuer.getAmountOf(bobCentralPayout1),
-    centralTokens(7),
+    centralTokens(7246),
     `bob gets the same price as when he called the getInputPrice method`,
   );
   t.deepEqual(
     await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
     {
-      Secondary: moola(117),
-      Central: centralTokens(43),
+      Secondary: moola(117000),
+      Central: centralTokens(42750),
       Liquidity: moolaLiquidity(0),
     },
     `pool allocation added the moola and subtracted the central tokens`,
@@ -257,25 +247,25 @@ test('multipoolAutoSwap with valid offers', async t => {
   const bobCentralPurse = await E(centralR.issuer).makeEmptyPurse();
   await E(bobCentralPurse).deposit(bobCentralPayout1);
 
-  // Bob looks up the price of 7 central tokens in moola
+  // Bob looks up the price of 700 central tokens in moola
   const moolaAmounts = await E(bobPublicFacet).getInputPrice(
-    centralTokens(7),
+    centralTokens(700),
     moolaR.brand,
   );
   t.deepEqual(
     moolaAmounts,
-    moola(16),
+    moola(1880),
     `the fee was one moola over the two trades`,
   );
 
   // Bob makes another offer and swaps
   const bobSwapInvitation2 = await E(bobPublicFacet).makeSwapInInvitation();
   const bobCentralForMoolaProposal = harden({
-    want: { Out: moola(16) },
-    give: { In: centralTokens(7) },
+    want: { Out: moola(1880) },
+    give: { In: centralTokens(700) },
   });
   const centralForMoolaPayments = harden({
-    In: await E(bobCentralPurse).withdraw(centralTokens(7)),
+    In: await E(bobCentralPurse).withdraw(centralTokens(700)),
   });
 
   const bobSeat2 = await zoe.offer(
@@ -284,6 +274,14 @@ test('multipoolAutoSwap with valid offers', async t => {
     centralForMoolaPayments,
   );
 
+  runningFees = amountMath.add(
+    runningFees,
+    multiplyBy(centralTokens(700), protocolFeeRatio),
+  );
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: runningFees,
+  });
+
   t.is(
     await bobSeat2.getOfferResult(),
     'Swap successfully completed.',
@@ -291,14 +289,13 @@ test('multipoolAutoSwap with valid offers', async t => {
   );
 
   const quoteBob2 = await E(priceAuthority).quoteGiven(
-    moola(50),
+    moola(5000),
     centralR.brand,
   );
-  t.truthy(
-    amountMath.isEqual(
-      getAmountOut(quoteBob2),
-      amountMath.make(16, centralR.brand),
-    ),
+  assertAmountsEqual(
+    t,
+    getAmountOut(quoteBob2),
+    amountMath.make(centralR.brand, 1803),
   );
 
   const bobMoolaPayout2 = await bobSeat2.getPayout('Out');
@@ -306,8 +303,8 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout2),
-    moola(16),
-    `bob gets 16 moola back`,
+    moola(1880),
+    `bob gets 1880 moola back`,
   );
   t.deepEqual(
     await centralR.issuer.getAmountOf(bobCentralPayout2),
@@ -317,8 +314,8 @@ test('multipoolAutoSwap with valid offers', async t => {
   t.deepEqual(
     await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
     {
-      Secondary: moola(101),
-      Central: centralTokens(50),
+      Secondary: moola(115120),
+      Central: centralTokens(43450),
       Liquidity: moolaLiquidity(0),
     },
     `fee added to liquidity pool`,
@@ -350,15 +347,14 @@ test('multipoolAutoSwap with valid offers', async t => {
   );
 
   const quoteLiquidation2 = await E(priceAuthority).quoteGiven(
-    moola(50),
+    moola(5000),
     centralR.brand,
   );
-  // a simolean trade had no effect
-  t.truthy(
-    amountMath.isEqual(
-      getAmountOut(quoteLiquidation2),
-      amountMath.make(16, centralR.brand),
-    ),
+  // a simolean trade had no effect on moola prices
+  assertAmountsEqual(
+    t,
+    getAmountOut(quoteLiquidation2),
+    amountMath.make(1803, centralR.brand),
   );
   t.is(
     await aliceSeat2.getOfferResult(),
@@ -382,159 +378,208 @@ test('multipoolAutoSwap with valid offers', async t => {
     }),
     `The poolAmounts record should contain the new liquidity`,
   );
+});
 
-  // Bob tries to swap simoleans for moola. This will go through the
-  // central token, meaning that two swaps will happen synchronously
-  // under the hood.
+test('multipoolAutoSwap doubleSwap', async t => {
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
 
-  // Bob checks the price. Let's say he gives 74 simoleans, and he
-  // wants to know how many moola he would get back.
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = value => amountMath.make(value, centralR.brand);
 
-  const priceInMoola = await E(bobPublicFacet).getInputPrice(
-    simoleans(74),
-    moolaR.brand,
+  // Setup Alice
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
+  // Let's assume that central tokens are worth 2x as much as moola
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
+  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(39800));
+
+  // Setup Bob
+  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000));
+
+  // Alice creates an autoswap instance
+  const bundle = await bundleSource(newSwapRoot);
+
+  const installation = await zoe.install(bundle);
+  // This timer is only used to build quotes. Let's make it non-zero
+  const fakeTimer = buildManualTimer(console.log, 30);
+  const { instance, publicFacet } = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+  );
+  const aliceAddLiquidityInvitation = E(
+    publicFacet,
+  ).makeAddLiquidityInvitation();
+
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+
+  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+    simoleanR.issuer,
+    'Simoleans',
+  );
+
+  const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
+  const simoleanLiquidity = value =>
+    amountMath.make(value, simoleanLiquidityBrand);
+
+  const issuerKeywordRecord = zoe.getIssuers(instance);
+  t.deepEqual(
+    issuerKeywordRecord,
+    harden({
+      Central: centralR.issuer,
+      Moola: moolaR.issuer,
+      MoolaLiquidity: moolaLiquidityIssuer,
+      Simoleans: simoleanR.issuer,
+      SimoleansLiquidity: simoleanLiquidityIssuer,
+    }),
+    `There are keywords for central token and two additional tokens and liquidity`,
   );
   t.deepEqual(
-    priceInMoola,
-    moola(10),
-    `price is as expected for secondary token to secondary token`,
-  );
-
-  // This is the same as making two synchronous exchanges
-  const priceInCentral = await E(bobPublicFacet).getInputPrice(
-    simoleans(74),
-    centralR.brand,
+    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    {},
+    `The poolAllocation object values for moola should be empty`,
   );
   t.deepEqual(
-    priceInCentral,
-    centralTokens(6),
-    `price is as expected for secondary token to central`,
+    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    {},
+    `The poolAllocation object values for simoleans should be empty`,
   );
 
-  const centralPriceInMoola = await E(bobPublicFacet).getInputPrice(
-    centralTokens(6),
-    moolaR.brand,
-  );
-  t.deepEqual(
-    centralPriceInMoola,
-    moola(10),
-    `price is as expected for secondary token to secondary token`,
+  // Alice adds liquidity for moola
+  // 10 moola = 5 central tokens at the time of the liquidity adding
+  // aka 2 moola = 1 central token
+  const aliceProposal = harden({
+    want: { Liquidity: moolaLiquidity(50000) },
+    give: { Secondary: moola(100000), Central: centralTokens(50000) },
+  });
+  const alicePayments = {
+    Secondary: aliceMoolaPayment,
+    Central: aliceCentralPayment,
+  };
+
+  const addLiquiditySeat = await zoe.offer(
+    aliceAddLiquidityInvitation,
+    aliceProposal,
+    alicePayments,
   );
 
-  const bobThirdInvitation = await E(bobPublicFacet).makeSwapInInvitation();
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Alice added moola and central liquidity`,
+  );
+  await addLiquiditySeat.getPayout('Liquidity');
+
+  // Alice adds simoleans and central tokens to the simolean
+  // liquidity pool. 398 simoleans = 43 central tokens at the time of
+  // the liquidity adding
+  //
+  const aliceSimLiquidityInvitation = await E(
+    publicFacet,
+  ).makeAddLiquidityInvitation();
+  const aliceSimCentralProposal = harden({
+    want: { Liquidity: simoleanLiquidity(430) },
+    give: { Secondary: simoleans(39800), Central: centralTokens(43000) },
+  });
+  const aliceCentralPayment2 = await centralR.mint.mintPayment(
+    centralTokens(43000),
+  );
+  const aliceSimCentralPayments = {
+    Secondary: aliceSimoleanPayment,
+    Central: aliceCentralPayment2,
+  };
+
+  const aliceSeat2 = await zoe.offer(
+    aliceSimLiquidityInvitation,
+    aliceSimCentralProposal,
+    aliceSimCentralPayments,
+  );
+
+  t.is(
+    await aliceSeat2.getOfferResult(),
+    'Added liquidity.',
+    `Alice added simoleans and central liquidity`,
+  );
+
+  // Bob swaps moola for simoleans
+
+  // Bob looks up the value of 4000 simoleans in moola
+  const { amountOut: priceInMoola } = await E(
+    publicFacet,
+  ).getPriceGivenAvailableInput(simoleans(4000), moolaR.brand);
+
+  const bobInvitation = await E(publicFacet).makeSwapInInvitation();
   const bobSimsForMoolaProposal = harden({
-    want: { Out: moola(10) },
-    give: { In: simoleans(74) },
+    want: { Out: priceInMoola },
+    give: { In: simoleans(4000) },
   });
   const simsForMoolaPayments = harden({
     In: bobSimoleanPayment,
   });
 
-  const bobSeat3 = await zoe.offer(
-    bobThirdInvitation,
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
+
+  const bobSeat1 = await zoe.offer(
+    bobInvitation,
     bobSimsForMoolaProposal,
     simsForMoolaPayments,
   );
-
-  const bobSimsPayout3 = await bobSeat3.getPayout('In');
-  const bobMoolaPayout3 = await bobSeat3.getPayout('Out');
-
-  const quotePostTrade = await E(priceAuthority).quoteGiven(
-    moola(50),
-    centralR.brand,
-  );
-  t.truthy(
-    amountMath.isEqual(
-      getAmountOut(quotePostTrade),
-      amountMath.make(19, centralR.brand),
-    ),
-  );
+  const bobMoolaPayout = await bobSeat1.getPayout('Out');
 
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(bobMoolaPayout3),
-    moola(10),
-    `bob gets 10 moola`,
-  );
-  t.deepEqual(
-    await simoleanR.issuer.getAmountOf(bobSimsPayout3),
-    simoleans(9),
-    `bob gets 9 simoleans back because 74 was more than required`,
+    await moolaR.issuer.getAmountOf(bobMoolaPayout),
+    moola(7261),
+    `bob gets 7261 moola`,
   );
 
-  t.deepEqual(
-    await E(bobPublicFacet).getPoolAllocation(simoleanR.brand),
-    harden({
-      // 398 + 65
-      Secondary: simoleans(463),
-      // 43 - 6
-      Central: centralTokens(37),
-      Liquidity: simoleanLiquidity(0),
-    }),
-    `the simolean liquidity pool gains simoleans and loses central tokens`,
-  );
-  t.deepEqual(
-    await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
-    harden({
-      // 101 - 10
-      Secondary: moola(91),
-      // 50 + 6
-      Central: centralTokens(56),
-      Liquidity: moolaLiquidity(0),
-    }),
-    `the moola liquidity pool loses moola and gains central tokens`,
-  );
-
-  // Alice removes her liquidity
-  // She's not picky...
-  const aliceRemoveLiquidityInvitation = await E(
-    publicFacet,
-  ).makeRemoveLiquidityInvitation();
-  const aliceRemoveLiquidityProposal = harden({
-    give: { Liquidity: moolaLiquidity(50) },
-    want: { Secondary: moola(91), Central: centralTokens(56) },
+  let runningFees = amountMath.make(centralR.brand, 2n);
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: runningFees,
   });
 
-  const aliceSeat3 = await zoe.offer(
-    aliceRemoveLiquidityInvitation,
-    aliceRemoveLiquidityProposal,
-    harden({ Liquidity: liquidityPayout }),
+  // Bob swaps simoleans for moola
+
+  // Bob looks up the value of 5000 moola in simoleans
+  const { amountOut: priceInSimoleans } = await E(
+    publicFacet,
+  ).getPriceGivenAvailableInput(moola(5000), simoleanR.brand);
+
+  const bobInvitation2 = await E(publicFacet).makeSwapInInvitation();
+  const bobMoolaForSimsProposal = harden({
+    want: { Out: priceInSimoleans },
+    give: { In: moola(5000) },
+  });
+  const moolaForSimsPayments = harden({
+    In: bobMoolaPayment,
+  });
+
+  const bobSeat2 = await zoe.offer(
+    bobInvitation2,
+    bobMoolaForSimsProposal,
+    moolaForSimsPayments,
   );
-
-  t.is(await aliceSeat3.getOfferResult(), 'Liquidity successfully removed.');
-
-  const aliceMoolaPayout = await aliceSeat3.getPayout('Secondary');
-  const aliceCentralPayout = await aliceSeat3.getPayout('Central');
-  const aliceLiquidityPayout = await aliceSeat3.getPayout('Liquidity');
+  const bobSimoleanPayout = await bobSeat2.getPayout('Out');
 
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
-    moola(91),
-    `alice gets all the moola in the pool`,
-  );
-  t.deepEqual(
-    await centralR.issuer.getAmountOf(aliceCentralPayout),
-    centralTokens(56),
-    `alice gets all the central tokens in the pool`,
-  );
-  t.deepEqual(
-    await moolaLiquidityIssuer.getAmountOf(aliceLiquidityPayout),
-    moolaLiquidity(0),
-    `alice gets no liquidity tokens`,
-  );
-  t.deepEqual(
-    await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
-    harden({
-      Secondary: moola(0n),
-      Central: centralTokens(0),
-      Liquidity: moolaLiquidity(50),
-    }),
-    `liquidity is empty`,
+    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+    simoleans(2880),
+    `bob gets 2880 simoleans`,
   );
 
-  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [
-    moolaR.brand,
-    simoleanR.brand,
-  ]);
+  runningFees = amountMath.add(
+    runningFees,
+    amountMath.make(centralR.brand, 1n),
+  );
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: runningFees,
+  });
 });
 
 test('multipoolAutoSwap with some invalid offers', async t => {
@@ -600,221 +645,7 @@ test('multipoolAutoSwap with some invalid offers', async t => {
   t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
-test('multipoolAutoSwap jig - swapOut', async t => {
-  const { moolaR, moola, simoleanR, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
-
-  // Pack the contract.
-  const bundle = await bundleSource(newSwapRoot);
-  const installation = await zoe.install(bundle);
-
-  // Set up central token
-  const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
-
-  // set up purses
-  const centralPayment = centralR.mint.mintPayment(centralTokens(30000));
-  const centralPurse = centralR.issuer.makeEmptyPurse();
-  await centralPurse.deposit(centralPayment);
-  const moolaPurse = moolaR.issuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
-  const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000)));
-
-  const fakeTimer = buildManualTimer(console.log);
-  const startRecord = await zoe.startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
-  );
-
-  const {
-    /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
-  } = startRecord;
-  t.deepEqual(await E(publicFacet).getAllPoolBrands(), []);
-  const moolaLiquidityIssuer = await E(publicFacet).addPool(
-    moolaR.issuer,
-    'Moola',
-  );
-  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
-  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
-
-  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
-    simoleanR.issuer,
-    'Simoleans',
-  );
-
-  const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
-  const simoleanLiquidity = value =>
-    amountMath.make(value, simoleanLiquidityBrand);
-  const mIssuerKeywordRecord = {
-    Secondary: moolaR.issuer,
-    Liquidity: moolaLiquidityIssuer,
-  };
-  const purses = [
-    moolaPurse,
-    moolaLiquidityIssuer.makeEmptyPurse(),
-    centralPurse,
-    simoleanPurse,
-    simoleanLiquidityIssuer.makeEmptyPurse(),
-  ];
-  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
-
-  let mPoolState = {
-    c: 0n,
-    s: 0n,
-    l: 0n,
-    k: 0n,
-  };
-  const initMoolaLiquidityDetails = {
-    cAmount: centralTokens(10000),
-    sAmount: moola(10000),
-    lAmount: moolaLiquidity(10000),
-  };
-  const initMoolaLiquidityExpected = {
-    c: 10000n,
-    s: 10000n,
-    l: 10000n,
-    k: 100000000n,
-    payoutC: 0n,
-    payoutS: 0n,
-    payoutL: 10000n,
-  };
-  await alice.initLiquidityAndCheck(
-    t,
-    mPoolState,
-    initMoolaLiquidityDetails,
-    initMoolaLiquidityExpected,
-    mIssuerKeywordRecord,
-  );
-  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
-
-  let sPoolState = {
-    c: 0n,
-    s: 0n,
-    l: 0n,
-    k: 0n,
-  };
-  const initSimoleanLiquidityDetails = {
-    cAmount: centralTokens(10000),
-    sAmount: simoleans(10000),
-    lAmount: simoleanLiquidity(10000),
-  };
-  const initSimLiqExpected = {
-    c: 10000n,
-    s: 10000n,
-    l: 10000n,
-    k: 100000000n,
-    payoutC: 0n,
-    payoutS: 0n,
-    payoutL: 10000n,
-  };
-  const sIssuerKeywordRecord = {
-    Secondary: simoleanR.issuer,
-    Liquidity: simoleanLiquidityIssuer,
-  };
-
-  await alice.initLiquidityAndCheck(
-    t,
-    sPoolState,
-    initSimoleanLiquidityDetails,
-    initSimLiqExpected,
-    sIssuerKeywordRecord,
-  );
-  sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
-
-  // trade for central specifying 300 output: moola price 311
-  const gain = 300n;
-  const mPrice = priceFromTargetOutput(gain, mPoolState.c, mPoolState.s, 30n);
-  t.is(mPrice, 311n);
-
-  const tradeDetailsB = {
-    inAmount: moola(500),
-    outAmount: centralTokens(gain),
-  };
-
-  const expectedB = {
-    c: mPoolState.c - gain,
-    s: mPoolState.s + mPrice,
-    l: 10000n,
-    k: (mPoolState.c - gain) * (mPoolState.s + mPrice),
-    out: gain,
-    in: 500n - mPrice,
-  };
-  await alice.tradeAndCheck(
-    t,
-    false,
-    mPoolState,
-    tradeDetailsB,
-    expectedB,
-    mIssuerKeywordRecord,
-  );
-  mPoolState = updatePoolState(mPoolState, expectedB);
-
-  // trade for moola specifying 250 output: central price: 242. don't overpay
-  const gainC = 250n;
-  const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 30n);
-  t.is(mPriceC, 242n);
-
-  const tradeDetailsC = {
-    inAmount: centralTokens(mPriceC),
-    outAmount: moola(gainC),
-  };
-
-  const expectedC = {
-    c: mPoolState.c + mPriceC,
-    s: mPoolState.s - gainC,
-    l: 10000n,
-    k: (mPoolState.c + mPriceC) * (mPoolState.s - gainC),
-    out: gainC,
-    in: 0n,
-  };
-  await alice.tradeAndCheck(
-    t,
-    false,
-    mPoolState,
-    tradeDetailsC,
-    expectedC,
-    mIssuerKeywordRecord,
-  );
-  mPoolState = updatePoolState(mPoolState, expectedC);
-
-  // trade simoleans for moola specifying 305 moola output: requires 312 Sim
-  const gainD = 305n;
-  const mPriceD = priceFromTargetOutput(gainD, mPoolState.s, mPoolState.c, 30n);
-  t.is(mPriceD, 312n);
-
-  const tradeDetailsD = {
-    inAmount: centralTokens(mPriceD),
-    outAmount: moola(gainD),
-  };
-
-  const expectedD = {
-    c: mPoolState.c + mPriceD,
-    s: mPoolState.s - gainD,
-    l: 10000n,
-    k: (mPoolState.c + mPriceD) * (mPoolState.s - gainD),
-    out: gainD,
-    in: 0n,
-  };
-  await alice.tradeAndCheck(
-    t,
-    false,
-    mPoolState,
-    tradeDetailsD,
-    expectedD,
-    mIssuerKeywordRecord,
-  );
-  mPoolState = updatePoolState(mPoolState, expectedD);
-
-  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [
-    moolaR.brand,
-    simoleanR.brand,
-  ]);
-});
-
-test.only('multipoolAutoSwap jig - swapOut uneven', async t => {
+test('multipoolAutoSwap jig - swapOut uneven', async t => {
   const { moolaR, moola, simoleanR, simoleans } = setup();
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -941,38 +772,35 @@ test.only('multipoolAutoSwap jig - swapOut uneven', async t => {
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 
-  // trade for central specifying 30000 output: moola price 156
+  // trade for central specifying 30000 output: moola price 15082
   // Notice that it takes half as much moola as the desired Central
-  const mGain = 30000n;
-  const mPrice = priceFromTargetOutput(mGain, mPoolState.c, mPoolState.s, 24n);
-  const actualGain = outputFromInputPrice(
-    mPoolState.s,
+  const cGain = 30000n;
+  // The pool will be charged the protocol fee on top of deltaY
+  const protocolFee = (cGain * 6n) / 10000n;
+  const deltaY = priceFromTargetOutput(
+    cGain + protocolFee,
     mPoolState.c,
-    mPrice,
+    mPoolState.s,
     24n,
   );
+  const deltaX = outputFromInputPrice(mPoolState.s, mPoolState.c, deltaY, 24n);
 
+  // overpay
   const moolaIn = 16000n;
-  t.is(mPrice, 15082n);
+  t.is(deltaY, 15091n);
   const tradeDetailsB = {
     inAmount: moola(moolaIn),
-    outAmount: centralTokens(actualGain),
+    outAmount: centralTokens(deltaX - protocolFee),
   };
-
-  // The trader will get the calculated amount less the protocol fee. The pool
-  // will pay the protocolFee
-  const expectedProtocolCharge = (actualGain * 6n) / 10000n;
 
   const expectedB = {
-    c: mPoolState.c - actualGain - expectedProtocolCharge,
-    s: mPoolState.s + mPrice,
+    c: mPoolState.c - deltaX,
+    s: mPoolState.s + deltaY,
     l: 10000000n,
-    k: (mPoolState.c - actualGain) * (mPoolState.s + mPrice),
-    out: actualGain,
-    in: moolaIn - mPrice,
+    k: (mPoolState.c - deltaX) * (mPoolState.s + deltaY),
+    out: deltaX - protocolFee,
+    in: moolaIn - deltaY,
   };
-
-  console.log(`about to fail because in (${expectedB.in}) is wrong`);
 
   await alice.tradeAndCheck(
     t,
@@ -985,21 +813,14 @@ test.only('multipoolAutoSwap jig - swapOut uneven', async t => {
   mPoolState = updatePoolState(mPoolState, expectedB);
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    Central: expectedProtocolCharge,
+    RUN: amountMath.make(centralR.brand, 18n),
   });
 
   // trade for moola specifying 2500 moola output: central price: 496, roughly double.
-  const gainC = 2500n;
-  const mPriceC = priceFromTargetOutput(gainC, mPoolState.s, mPoolState.c, 24n);
+  const gainM = 25000n;
+  const mPriceC = priceFromTargetOutput(gainM, mPoolState.s, mPoolState.c, 24n);
 
-  // HUH?   Why doesn't this fail?  I multiplied inputs by 10
-
-  console.log(`${mPriceC} is not 496`);
-
-  t.is(mPriceC, 496n, 'complain');
-  t.deepEqual(mPriceC, 496n, 'complain');
-  t.truthy(mPriceC === 496n, 'complain');
-
+  t.is(mPriceC, 50070n);
   const actualGainM = outputFromInputPrice(
     mPoolState.c,
     mPoolState.s,
@@ -1016,12 +837,10 @@ test.only('multipoolAutoSwap jig - swapOut uneven', async t => {
   };
 
   const expectedC = {
-    c: mPoolState.c + mPriceC + expectedProtocolCharge2,
+    c: mPoolState.c + mPriceC,
     s: mPoolState.s - actualGainM,
     l: 10000000n,
-    k:
-      (mPoolState.c + mPriceC + expectedProtocolCharge2) *
-      (mPoolState.s - actualGainM),
+    k: (mPoolState.c + mPriceC) * (mPoolState.s - actualGainM),
     out: actualGainM,
     in: 0n,
   };
@@ -1033,5 +852,10 @@ test.only('multipoolAutoSwap jig - swapOut uneven', async t => {
     expectedC,
     mIssuerKeywordRecord,
   );
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+    RUN: amountMath.make(centralR.brand, 48n),
+  });
+
   mPoolState = updatePoolState(mPoolState, expectedC);
 });

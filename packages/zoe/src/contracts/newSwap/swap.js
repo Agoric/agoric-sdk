@@ -8,15 +8,6 @@ import { assertProposalShape } from '../../contractSupport';
 import '../../../exported';
 
 /**
- * @typedef {Object} SwapPriceQuote
- *
- * @property {Amount} amountOut
- * @property {Amount} amountIn
- * @property {Amount|undefined} centralAmount
- * @property {Amount} protocolFee
- */
-
-/**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
  * @param {(brand: Brand) => boolean} isCentral
@@ -130,7 +121,7 @@ export const makeMakeSwapInvitation = (
         amountIn: reducedAmountIn,
         amountOut,
         protocolFee,
-        // @ts-ignore If has Central, should not be typed as PriceAmountPair
+        // @ts-ignore two pool version of getPrice returns central
         centralAmount,
       } = getPriceGivenAvailableInput(amountIn, brandOut);
 
@@ -257,6 +248,7 @@ export const makeMakeSwapInvitation = (
         amountIn,
         amountOut: improvedAmountOut,
         protocolFee,
+        // @ts-ignore two pool version of getPrice returns central
         centralAmount: improvedCentralAmount,
       } = getPriceGivenRequiredOutput(brandIn, amountOut);
 

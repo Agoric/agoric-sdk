@@ -10,7 +10,10 @@ import {
 } from '../../../../src/contractSupport';
 import { setup } from '../../setupBasicMints';
 import { makeGetCurrentPrice } from '../../../../src/contracts/newSwap/getCurrentPrice';
-import { outputFromInputPrice, priceFromTargetOutput } from '../../../autoswapJig';
+import {
+  outputFromInputPrice,
+  priceFromTargetOutput,
+} from '../../../autoswapJig';
 
 const { add, subtract, floorDivide, multiply } = natSafeMath;
 const BASIS_POINTS = 10000n;
