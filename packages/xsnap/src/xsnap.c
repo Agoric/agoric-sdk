@@ -73,7 +73,7 @@ static void fxRunLoop(txMachine* the);
 
 static int fxReadNetString(FILE *inStream, char** dest, size_t* len);
 static char* fxReadNetStringError(int code);
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, char* buf, size_t len);
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t len);
 static int fxWriteNetString(FILE* outStream, char* prefix, char* buf, size_t len);
 static char* fxWriteNetStringError(int code);
 
@@ -430,7 +430,7 @@ ExitCode main(int argc, char* argv[])
 							}
 						}
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
-						writeError = fxWriteOkay(toParent, meterIndex, response, responseLength);
+						writeError = fxWriteOkay(toParent, meterIndex, the->allocatedSpace, response, responseLength);
 					}
 				}
 				xsEndHost(machine);
@@ -466,7 +466,7 @@ ExitCode main(int argc, char* argv[])
 				fxRunLoop(machine);
 				meterIndex = xsEndCrank(machine);
 				if (error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -496,7 +496,7 @@ ExitCode main(int argc, char* argv[])
 					c_exit(E_IO_ERROR);
 				}
 				if (snapshot.error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -1063,6 +1063,12 @@ void fxCreateMachinePlatform(txMachine* the)
 #endif
 	the->promiseJobs = 0;
 	the->timerJobs = NULL;
+
+	// SLOGFILE=out.slog agoric start local-chain
+	// jq -s '.|.[]|.dr[2].allocate' < out.slog|grep -v null|sort -u | sort -nr
+	int MB = 1024 * 1024;
+	int measured_max = 30 * MB;
+	the->allocationLimit = 10 * measured_max;
 }
 
 void fxDeleteMachinePlatform(txMachine* the)
@@ -1381,10 +1387,12 @@ static char* fxReadNetStringError(int code)
 	}
 }
 
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, char* buf, size_t length) {
-	char prefix[32];
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t length)
+{
+	// large enough for 2 64bit numbers, with a spare 64 bit word
+	char prefix[sizeof ".[12345678901234567890,12345678901234567890]\1" + 8];
 	// Prepend the meter usage to the reply.
-	snprintf(prefix, sizeof(prefix) - 1, ".%u\1", meterIndex);
+	snprintf(prefix, sizeof(prefix) - 1, ".[%u,%u]\1", meterIndex, allocatedSpace);
 	return fxWriteNetString(outStream, prefix, buf, length);
 }
 
@@ -1447,6 +1455,46 @@ static void fx_issueCommand(xsMachine *the)
 
 	xsResult = xsArrayBuffer(buf, len);
 }
+
+
+void adjustSpaceMeter(txMachine* the, txSize theSize)
+{
+	txSize previous = the->allocatedSpace;
+	the->allocatedSpace += theSize;
+	if (the->allocatedSpace > the->allocationLimit ||
+		// overflow?
+		the->allocatedSpace < previous) {
+		fxAbort(the, XS_NOT_ENOUGH_MEMORY_EXIT);
+	}
+}
+
+void* fxAllocateChunks(txMachine* the, txSize theSize)
+{
+	// fprintf(stderr, "fxAllocateChunks(%lu)\n", theSize);
+	adjustSpaceMeter(the, theSize);
+	return c_malloc(theSize);
+}
+
+void fxFreeChunks(txMachine* the, void* theChunks)
+{
+	// "XS doesn't currently free the allocations until the VM is
+	// terminated, so a simple space meter only needs to track the
+	// allocations." -- PH 2021-04-26
+	c_free(theChunks);
+}
+
+txSlot* fxAllocateSlots(txMachine* the, txSize theCount)
+{
+	// fprintf(stderr, "fxAllocateSlots(%u) * %d = %ld\n", theCount, sizeof(txSlot), theCount * sizeof(txSlot));
+	adjustSpaceMeter(the, theCount * sizeof(txSlot));
+	return(txSlot*)c_malloc(theCount * sizeof(txSlot));
+}
+
+void fxFreeSlots(txMachine* the, void* theSlots)
+{
+	c_free(theSlots);
+}
+
 
 // Local Variables:
 // tab-width: 4
