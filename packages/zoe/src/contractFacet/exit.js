@@ -16,13 +16,8 @@ import {
  */
 
 /** @type {MakeExitObj} */
-export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
+export const makeExitObj = (proposal, zcfSeat) => {
   const { exit } = proposal;
-
-  const reusedExitFn = () => {
-    zcfSeatAdmin.updateHasExited();
-    return E(zoeSeatAdmin).exit();
-  };
 
   if (isOnDemandExitRule(exit)) {
     // Allow the user to exit their seat on demand. Note: we must wrap
@@ -31,7 +26,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
     // data) and presences (local proxies for objects that may have
     // methods).
     return Far('exitObj', {
-      exit: reusedExitFn,
+      exit: zcfSeat.exit,
     });
   }
 
@@ -41,7 +36,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
       .setWakeup(
         exit.afterDeadline.deadline,
         Far('wakeObj', {
-          wake: reusedExitFn,
+          wake: zcfSeat.exit,
         }),
       )
       .catch(reason => {
@@ -49,8 +44,7 @@ export const makeExitObj = (proposal, zoeSeatAdmin, zcfSeatAdmin) => {
           `The seat could not be made with the provided timer ${exit.afterDeadline.timer} and deadline ${exit.afterDeadline.deadline}`,
         );
         console.error(reason);
-        zcfSeatAdmin.updateHasExited();
-        E(zoeSeatAdmin).fail(reason);
+        zcfSeat.fail(reason);
         throw reason;
       });
   }
