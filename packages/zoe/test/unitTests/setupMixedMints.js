@@ -2,7 +2,7 @@
 
 import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
-import fakeVatAdmin from '../../src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '../../tools/fakeVatAdmin';
 
 const setupMixed = () => {
   const ccBundle = makeIssuerKit('CryptoCats', MathKind.SET);

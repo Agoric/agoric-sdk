@@ -7,7 +7,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
 
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeRegistrar } from '@agoric/registrar';
 
