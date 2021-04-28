@@ -97,11 +97,8 @@
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
- *     proposal: ProposalRecord) => Promise<UserSeat> } makeUserSeat
- * @property {(initialAllocation: Allocation,
- *     proposal: ProposalRecord,
- *     exitObj: ExitObj,
- *     seatHandle: SeatHandle) => foo } makeNoEscrowSeat
+ *     proposal: ProposalRecord) => UserSeat } makeUserSeat
+ * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers

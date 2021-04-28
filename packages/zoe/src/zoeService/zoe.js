@@ -218,11 +218,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
           stopAcceptingOffers: () => (acceptingOffers = false),
-          makeUserSeat: async (
-            invitationHandle,
-            initialAllocation,
-            proposal,
-          ) => {
+          makeUserSeat: (invitationHandle, initialAllocation, proposal) => {
             const offerResultPromiseKit = makePromiseKit();
             // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
             // This does not suppress any error messages.
