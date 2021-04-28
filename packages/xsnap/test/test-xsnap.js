@@ -4,7 +4,7 @@ import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '../src/xsnap';
-import { ExitCode, ErrorCode } from '../src/api';
+import { ExitCode, ErrorCode } from '../api';
 
 const importMetaUrl = `file://${__filename}`;
 

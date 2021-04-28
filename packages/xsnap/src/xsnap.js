@@ -11,7 +11,7 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from './api';
+import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api';
 import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';

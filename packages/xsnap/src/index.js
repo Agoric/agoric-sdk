@@ -5,5 +5,5 @@ export {
   ErrorCode,
   ErrorSignal,
   METER_TYPE,
-} from './api';
+} from '../api';
 export { makeSnapstore } from './snapStore';

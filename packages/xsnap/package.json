@@ -19,9 +19,9 @@
     "build": "yarn build:bin && yarn build:bundle",
     "clean": "rm -rf build",
     "lint": "yarn lint:js && yarn lint:types",
-    "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js'",
+    "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
     "lint:types": "tsc -p jsconfig.json",
-    "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js'",
+    "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' api.js",
     "lint-check": "yarn lint",
     "test": "ava",
     "test:xs": "exit 0"
