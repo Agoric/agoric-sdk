@@ -185,7 +185,13 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
           : [secondaryIssuer, secondary, centralIssuer, central];
       const { In: refund, Out: payout } = await seat.getPayouts();
       assertPayoutAmount(t, outIssuer, payout, out(outExpected), 'trade out');
-      assertPayoutAmount(t, inIssuer, refund, inMath(inExpected), 'trade in');
+      await assertPayoutAmount(
+        t,
+        inIssuer,
+        refund,
+        inMath(inExpected),
+        'trade in',
+      );
 
       const poolPost = await getPoolAllocation(secondaryIssuer);
       t.deepEqual(poolPost.Central, central(cPost), `central after swap`);

@@ -41,7 +41,7 @@ export const assertPayoutAmount = async (
   label = '',
 ) => {
   const amount = await issuer.getAmountOf(payout);
-  assertAmountsEqual(t, amount, expectedAmount, label);
+  await assertAmountsEqual(t, amount, expectedAmount, label);
 };
 
 // Returns a promise that can be awaited in tests to ensure the check completes.
