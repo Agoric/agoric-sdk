@@ -3,6 +3,7 @@ function sub() {
 }
 
 function delveForeverIntoTheRecursiveDepths() {
+  // Two calls defeat tail call optimization in engines such as XS.
   return (
     delveForeverIntoTheRecursiveDepths() + delveForeverIntoTheRecursiveDepths()
   );
