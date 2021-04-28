@@ -77,6 +77,9 @@ harden(sameValueZero);
  * leaf promise of the passable has been replaced with its
  * corresponding comparable.
  *
+ * If the Passable contains an Error, it cannot be transformed into
+ * a Comparable.
+ *
  * @param {Passable} passable
  * @returns {Promise<Comparable>}
  */
@@ -89,9 +92,11 @@ function allComparable(passable) {
     case 'boolean':
     case 'number':
     case 'bigint':
-    case 'remotable':
-    case 'copyError': {
+    case 'remotable': {
       return passable;
+    }
+    case 'copyError': {
+      assert.fail(X`Errors are not comparable`);
     }
     case 'promise': {
       return passable.then(nonp => allComparable(nonp));
@@ -106,6 +111,10 @@ function allComparable(passable) {
       return Promise.all(valPs).then(vals =>
         harden(objectFromEntries(vals.map((val, i) => [names[i], val]))),
       );
+    }
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(passStyle)} not yet implemented.`);
     }
     default: {
       assert.fail(X`unrecognized passStyle ${passStyle}`, TypeError);
@@ -137,6 +146,14 @@ function sameStructure(left, right) {
   assert(
     rightStyle !== 'promise',
     X`Cannot structurally compare promises: ${right}`,
+  );
+  assert(
+    leftStyle !== 'copyError',
+    X`Cannot structurally compare errors: ${left}`,
+  );
+  assert(
+    rightStyle !== 'copyError',
+    X`Cannot structurally compare errors: ${right}`,
   );
 
   if (leftStyle !== rightStyle) {
@@ -171,8 +188,9 @@ function sameStructure(left, right) {
       }
       return true;
     }
-    case 'copyError': {
-      return left.name === right.name && left.message === right.message;
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(leftStyle)} not yet implemented.`);
     }
     default: {
       assert.fail(X`unrecognized passStyle ${leftStyle}`, TypeError);
@@ -216,6 +234,12 @@ function mustBeSameStructureInternal(left, right, message, path) {
   if (rightStyle === 'promise') {
     complain('Promise on right');
   }
+  if (leftStyle === 'copyError') {
+    complain('Error on left');
+  }
+  if (rightStyle === 'copyError') {
+    complain('Error on right');
+  }
 
   if (leftStyle !== rightStyle) {
     complain('different passing style');
@@ -253,16 +277,9 @@ function mustBeSameStructureInternal(left, right, message, path) {
       }
       break;
     }
-    case 'copyError': {
-      if (left.name !== right.name) {
-        complain(`different error name: ${left.name} vs ${right.name}`);
-      }
-      if (left.message !== right.message) {
-        complain(
-          `different error message: ${left.message} vs ${right.message}`,
-        );
-      }
-      break;
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(leftStyle)} not yet implemented.`);
     }
     default: {
       complain(`unrecognized passStyle ${leftStyle}`);

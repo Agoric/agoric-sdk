@@ -4,7 +4,8 @@
 /**
  * @typedef { "undefined" | "null" |
  *   "boolean" | "number" | "bigint" | "string" | "symbol" |
- *   "copyArray" | "copyRecord" | "copyError" | "remotable" | "promise"
+ *   "copyArray" | "copyRecord" | "remotable" | "copySet" | "copyMap" |
+ *   "promise" | "copyError"
  * } PassStyle
  *
  * TODO: We need to add a binary blob type to the PassStyles above and the
@@ -204,27 +205,10 @@
  */
 
 /**
- * @typedef {Object} CopyError
- * Corresponding PassStyle is "copyError".
- *
- * TODO What I'd like to say in these types in that only a CopyError
- * without an `errorId` field is a Comparable.
- *
- * ***TODO WARNING*** Since CopyErrors have no analog amount Records and
- * Tuples, perhaps a CopyError in general should only be a Comparable but
- * not a PassableKey. Or perhaps not even a Comparable! In that case we
- * wouldn't need to make a special case for `errorId`.
- * @property {string} name
- * @property {string} message
- * @property {string=} errorId
- */
-
-/**
  * @template {Passable} T
- * @typedef { LeafData | CopyArray<T> | CopyRecord<T> | CopyError
- * } NestedData
+ * @typedef { LeafData | CopyArray<T> | CopyRecord<T> } NestedData
  * Corresponding PassStyle values are
- * the PassStyles of LeafData, "copyArray", "copyRecord", "copyError"
+ * the PassStyles of LeafData, "copyArray", and "copyRecord"
  *
  * NestedData is parameterized over various "deep" constraints. See
  * the discussion in CopyArray and CopyRecord above.
@@ -289,12 +273,15 @@
 /**
  * @template {PassableKey} K
  * @typedef {CopyStore<K>} CopySet
+ * Not yet implemented, but its PassStyle will be "copySet"
  */
 
 /**
  * @template {PassableKey} K
  * @template {Passable} V
  * @typedef {CopyStore<K>} CopyMap
+ * Not yet implemented, but its PassStyle will be "copyMap"
+ *
  * @property {(key: K) => V} get
  * @property {() => V[]} values
  * @property {() => [K,V][]} entries
@@ -310,15 +297,33 @@
  */
 
 /**
- * @typedef {Promise<any> | NestedComparable<Passable>} Passable
+ * @typedef {Object} CopyError
+ * Corresponding PassStyle is "copyError".
+ *
+ * Like a Promise, a CopyError is not a `PassableKey` or even a `Comparable`.
+ * Thus, any composite (`CopyArray`, `CopyRecord`, `CopySet`, `CopyMap`)
+ * that contains either one is itself not a `PassableKey` or even a
+ * `Comparable`. However, a Promise is a capability (a LeafCap) whereas
+ * a `CopyError` consists only of pure data. However, the data includes
+ * information intended to help debugging and may vary in an undisciplined
+ * manner. Thus, we discourage code from depending on the contents of
+ * a `CopyError`.
+ *
+ * @property {string} name
+ * @property {string} message
+ * @property {string=} errorId
+ */
+
+/**
+ * @typedef {Promise<any> | CopyError | NestedComparable<Passable>} Passable
  * A Passable value that may be marshalled. It is classified as one of
  * PassStyle. A Passable must be hardened.
  *
  * A Passable has a pass-by-copy superstructure. This includes the atomic
- * pass-by-copy primitives ("bigint" | "boolean" | "null" | "number" |
- * "string" | "undefined") and the composite pass-by-copy objects ("copyArray" |
- * "copyRecord" | "copyError"). The composite pass-by-copy objects that may
- * contain other Passables.
+ * pass-by-copy data primitives, the pass-by-copy composites that can
+ * contain other passables (CopyArray, CopyRecord, CopySet, CopyMap),
+ * and finally `CopyError`s which are purely pass-by-copy but not considered
+ * Comparable.
  *
  * A Passable's pass-by-copy superstructure ends in LeafData and LeafCaps. The
  * Passable can be further classified by the nature of the LeafCaps. Since a
@@ -350,6 +355,8 @@
  */
 
 /**
+ * TODO Add cases for CopySet and CopyMap
+ *
  * @typedef {EncodingClass<'NaN'> |
  * EncodingClass<'undefined'> |
  * EncodingClass<'Infinity'> |
