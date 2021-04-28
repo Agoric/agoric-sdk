@@ -1013,6 +1013,17 @@ void fx_setTimerCallback(txJob* job)
 
 /* PLATFORM */
 
+/**
+ * fxAbort is the catch-all for "something happened which might make
+ * you want to abort." The status argument tells you what
+ * happened. For example, when the metering on opcodes expires, the
+ * status is XS_TOO_MUCH_COMPUTATION_EXIT. There's no danger, from an
+ * XS perspective, in ignoring that and simply returning from
+ * fxAbort (or using fxExitToHost).
+ *
+ * But we MUST c_exit() on XS_NOT_ENOUGH_MEMORY_EXIT: it may leave the
+ * engine corrupted.
+ */
 void fxAbort(txMachine* the, int status)
 {
 	switch (status) {
