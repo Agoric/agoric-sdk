@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { ExitCode } from '@agoric/xsnap/src/api';
+import { ExitCode } from '@agoric/xsnap/api';
 import { makeManagerKit } from './manager-helper';
 
 import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
