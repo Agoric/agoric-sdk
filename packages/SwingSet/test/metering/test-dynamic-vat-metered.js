@@ -142,16 +142,13 @@ test('local vat stack overflow', t => {
 });
 
 test('xsnap vat allocate overflow', t => {
-  // TODO: gets v6:undefined exited with code 1
   return runOneTest(t, 'allocate', 'xs-worker');
 });
 
 test('xsnap vat compute overflow', t => {
-  // TODO: gets v6:undefined exited with code 7
   return runOneTest(t, 'compute', 'xs-worker');
 });
 
 test('xsnap vat stack overflow', t => {
-  // TODO: gets v6:undefined exited with code 7
   return runOneTest(t, 'stack', 'xs-worker');
 });
