@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { setup } from '../setupBasicMints';
 import { makeZoe } from '../../..';
-import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { depositToSeat, withdrawFromSeat } from '../../../src/contractSupport';
 import { assertPayoutAmount } from '../../zoeTestHelpers';
 import { makeOffer } from '../makeOffer';

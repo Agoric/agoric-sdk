@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';

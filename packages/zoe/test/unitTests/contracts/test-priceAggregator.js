@@ -11,7 +11,7 @@ import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import buildManualTimer from '../../../tools/manualTimer';
 

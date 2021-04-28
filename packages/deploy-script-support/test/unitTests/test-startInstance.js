@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit } from '@agoric/ertp';
 
