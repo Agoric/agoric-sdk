@@ -2,6 +2,8 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { amountMath } from '@agoric/ertp';
+import { isPromise } from '@agoric/promise-kit';
 
 import '@agoric/ertp/exported';
 import '@agoric/notifier/exported';
@@ -70,7 +72,11 @@ function makeVirtualPurse(vpc, kit) {
   } = makeNotifierKit();
 
   /** @type {ERef<Amount>} */
-  let lastBalance = balanceNotifier.getUpdateSince().then(nrec => nrec.value);
+  let lastBalance = E.when(brand, b => {
+    const amt = amountMath.makeEmpty(b);
+    balanceUpdater.updateState(amt);
+    return amt;
+  });
 
   // Robustly observe the balance.
   const fail = reason => {
@@ -99,6 +105,11 @@ function makeVirtualPurse(vpc, kit) {
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = {
     async receive(payment, optAmount = undefined) {
+      if (isPromise(payment)) {
+        throw TypeError(
+          `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+        );
+      }
       // FIXME: There is no potential recovery protocol for failed deposit,
       // since retaining the payment consumes it, and there's no way to send a
       // new payment back to the virtual purse holder.
