@@ -198,7 +198,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         const hasExited = zoeSeatAdmin => !zoeSeatAdmins.has(zoeSeatAdmin);
 
         /** @type {InstanceAdmin} */
-        return Far('instanceAdmin', {
+        const instanceAdmin = Far('instanceAdmin', {
           getPublicFacet: () => publicFacetPromiseKit.promise,
           getTerms,
           getIssuers,
@@ -218,11 +218,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
           },
           stopAcceptingOffers: () => (acceptingOffers = false),
-          makeUserSeat: async (
-            invitationHandle,
-            initialAllocation,
-            proposal,
-          ) => {
+          makeUserSeat: (invitationHandle, initialAllocation, proposal) => {
             const offerResultPromiseKit = makePromiseKit();
             // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
             // This does not suppress any error messages.
@@ -278,6 +274,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             return { userSeat, notifier, zoeSeatAdmin };
           },
         });
+        return instanceAdmin;
       };
 
       const instanceAdmin = makeInstanceAdmin();

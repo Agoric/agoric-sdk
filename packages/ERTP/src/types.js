@@ -289,7 +289,7 @@
  * @callback MakeIssuerKit
  * @param {string} allegedName
  * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
- * @param {DisplayInfo=} [displayInfo=undefined]
+ * @param {DisplayInfo} [displayInfo={}]
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The

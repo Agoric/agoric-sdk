@@ -378,7 +378,7 @@ test(`zcf.makeZCFMint - NAT`, async t => {
   };
   await testTerms(t, zcf, expected);
   t.is(issuerRecord.mathKind, MathKind.NAT);
-  t.is(issuerRecord.brand.getDisplayInfo(), undefined);
+  t.deepEqual(issuerRecord.brand.getDisplayInfo(), {});
 });
 
 test(`zcf.makeZCFMint - SET`, async t => {

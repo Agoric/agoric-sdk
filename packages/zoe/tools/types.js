@@ -44,8 +44,8 @@
 
 /**
  * @typedef {Object} MutableQuote
- * @property {() => void} cancel
- * @property {() => void} updateLevel
+ * @property {(reason?: any) => void} cancel
+ * @property {(amountIn: Amount, amountOut: Amount) => void} updateLevel
  * @property {() => ERef<PriceQuote>} getPromise
  */
 

@@ -538,7 +538,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return harden(makeEchoConnectionHandler());
         },
         async onListen(port, _listenHandler) {
-          console.debug(`listening on port: ${port}`);
+          console.debug(`listening on echo port: ${port}`);
         },
       }),
     );

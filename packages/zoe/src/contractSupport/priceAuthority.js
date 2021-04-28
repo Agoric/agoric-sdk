@@ -5,6 +5,7 @@ import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { amountMath } from '@agoric/ertp';
+import { makeNotifier } from '@agoric/notifier';
 
 import '../../exported';
 
@@ -236,26 +237,57 @@ export function makeOnewayPriceAuthorityKit(opts) {
       assertBrands(brandIn, brandOut);
       return timer;
     },
-    getPriceNotifier(brandIn, brandOut) {
-      assertBrands(brandIn, brandOut);
-      return notifier;
+    makeQuoteNotifier(amountIn, brandOut) {
+      amountMath.coerce(amountIn, actualBrandIn);
+      assertBrands(amountIn.brand, brandOut);
+
+      // Wrap our underlying notifier with specific quotes.
+      const specificBaseNotifier = harden({
+        async getUpdateSince(updateCount = NaN) {
+          // We use the same updateCount as our underlying notifier.
+          const record = await E(notifier).getUpdateSince(updateCount);
+
+          // We create a quote inline.
+          const quote = createQuote(calcAmountOut => ({
+            amountIn,
+            amountOut: calcAmountOut(amountIn),
+          }));
+          assert(quote);
+
+          const value = await quote;
+          return harden({
+            value,
+            updateCount: record.updateCount,
+          });
+        },
+      });
+
+      /** @type {Notifier<PriceQuote>} */
+      const specificNotifier = Far('QuoteNotifier', {
+        ...makeNotifier(specificBaseNotifier),
+        // TODO stop exposing baseNotifier methods directly.
+        ...specificBaseNotifier,
+      });
+      return specificNotifier;
     },
     async quoteGiven(amountIn, brandOut) {
       amountMath.coerce(amountIn, actualBrandIn);
       assertBrands(amountIn.brand, brandOut);
 
       await E(notifier).getUpdateSince();
-      return createQuote(calcAmountOut => ({
+      const quote = createQuote(calcAmountOut => ({
         amountIn,
         amountOut: calcAmountOut(amountIn),
       }));
+      assert(quote);
+      return quote;
     },
     async quoteWanted(brandIn, amountOut) {
       amountMath.coerce(amountOut, actualBrandOut);
       assertBrands(brandIn, amountOut.brand);
 
       await E(notifier).getUpdateSince();
-      return createQuote((calcAmountOut, calcAmountIn) => {
+      const quote = createQuote((calcAmountOut, calcAmountIn) => {
         // We need to determine an amountIn that guarantees at least the amountOut.
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
@@ -266,6 +298,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
         );
         return { amountIn, amountOut };
       });
+      assert(quote);
+      return quote;
     },
     async quoteAtTime(deadline, amountIn, brandOut) {
       assert.typeof(deadline, 'bigint');
