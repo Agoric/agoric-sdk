@@ -92,6 +92,7 @@ import (
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -123,6 +124,7 @@ var (
 		ibc.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		dibc.AppModuleBasic{},
+		vpurse.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
@@ -138,6 +140,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		vpurse.ModuleName:              {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -155,7 +158,8 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Marshaler
 	interfaceRegistry types.InterfaceRegistry
 
-	ibcPort int
+	ibcPort    int
+	vpursePort int
 
 	invCheckPeriod uint
 
@@ -184,6 +188,7 @@ type GaiaApp struct { // nolint: golint
 
 	SwingSetKeeper swingset.Keeper
 	DibcKeeper     dibc.Keeper
+	VpurseKeeper   vpurse.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -240,7 +245,9 @@ func NewAgoricApp(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, swingset.StoreKey, dibc.StoreKey, capabilitytypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		swingset.StoreKey, dibc.StoreKey, vpurse.StoreKey,
+		capabilitytypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -355,6 +362,14 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(dibc.ModuleName, dibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.VpurseKeeper = vpurse.NewKeeper(
+		appCodec, keys[vpurse.StoreKey],
+		app.BankKeeper,
+		callToController,
+	)
+	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)
+	app.vpursePort = swingset.RegisterPortHandler("bank", vpurse.NewPortHandler(app.VpurseKeeper))
+
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
@@ -396,6 +411,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		swingset.NewAppModule(app.SwingSetKeeper),
 		dibcModule,
+		vpurseModule,
 		transferModule,
 	)
 
@@ -484,10 +500,13 @@ func NewAgoricApp(
 }
 
 type cosmosInitAction struct {
-	Type        string `json:"type"`
-	IBCPort     int    `json:"ibcPort"`
-	StoragePort int    `json:"storagePort"`
-	ChainID     string `json:"chainID"`
+	Type             string `json:"type"`
+	IBCPort          int    `json:"ibcPort"`
+	StoragePort      int    `json:"storagePort"`
+	VPursePort       int    `json:"vpursePort"`
+	ChainID          string `json:"chainID"`
+	BootstrapAddress string `json:"bootstrapAddress"`
+	BootstrapValue   string `json:"bootstrapValue"`
 }
 
 // MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
@@ -507,12 +526,32 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	}
 	app.controllerInited = true
 
+	/*
+		  FIXME: Get this from genesis!
+			- name: mallory
+				type: local
+				address: agoric1z8rldx498tf49p5ze04jhakyumkh7vyxku7e0p
+				pubkey: agoricpub1addwnpepqtzw4lz7yjhg7qljwf0jqaykj6q94hh9epxa6nq7u0a3hxhsn7u670cgwnz
+				mnemonic: ""
+				threshold: 0
+				pubkeys: []
+	*/
+	bootstrapAddr, err := sdk.AccAddressFromBech32("agoric1z8rldx498tf49p5ze04jhakyumkh7vyxku7e0p")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot get bootstrap addr", err)
+		os.Exit(1)
+	}
+	bootstrapValue := "50000000000"
+
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		Type:        "AG_COSMOS_INIT",
-		IBCPort:     app.ibcPort,
-		StoragePort: swingset.GetPort("storage"),
-		ChainID:     ctx.ChainID(),
+		Type:             "AG_COSMOS_INIT",
+		VPursePort:       app.vpursePort,
+		IBCPort:          app.ibcPort,
+		StoragePort:      swingset.GetPort("storage"),
+		ChainID:          ctx.ChainID(),
+		BootstrapAddress: bootstrapAddr.String(),
+		BootstrapValue:   bootstrapValue,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {

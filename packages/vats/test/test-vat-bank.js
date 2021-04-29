@@ -34,7 +34,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VPURSE_MINT': {
+        case 'VPURSE_GIVE': {
           const { amount, denom, recipient, type: _type, ...rest } = obj;
           t.is(recipient, 'agoricfoo');
           t.is(denom, 'ubld');
@@ -44,7 +44,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VPURSE_BURN_IF_AVAILABLE': {
+        case 'VPURSE_GRAB': {
           const { amount, denom, sender, type: _type, ...rest } = obj;
           t.is(sender, 'agoricfoo');
           t.is(denom, 'ubld');
@@ -68,7 +68,7 @@ test('communication', async t => {
 
   // Create a bank manager.
   const bankMgr = await E(bankVat).makeBankManager(bridgeMgr);
-  const bank = E(bankMgr).makeBankForAddress('agoricfoo');
+  const bank = E(bankMgr).getBankForAddress('agoricfoo');
 
   const sub = await E(bank).getAssetSubscription();
   const it = sub[Symbol.asyncIterator]();

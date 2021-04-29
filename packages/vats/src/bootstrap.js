@@ -138,6 +138,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     const treasuryCreator = await installEconomy();
+
     const [
       centralIssuer,
       centralBrand,
@@ -149,6 +150,26 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(agoricNames).lookup('instance', 'autoswap'),
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
+
+    async function payThePiper(bootMsg) {
+      if (!bankManager || !bootMsg) {
+        return;
+      }
+      // We just transfer the bootstrapValue in central tokens to the low-level
+      // bootstrapAddress.
+      const { bootstrapAddress, bootstrapValue } = bootMsg;
+      if (!bootstrapAddress || !bootstrapValue) {
+        return;
+      }
+      const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
+      const pmt = await E(treasuryCreator).getBootstrapPayment(
+        amountMath.make(bootstrapValue, centralBrand),
+      );
+      const purse = E(bank).getPurse(centralBrand);
+      await E(purse).deposit(pmt);
+    }
+    console.error('have vatParameters', vatParameters);
+    await payThePiper(vatParameters.bootMsg);
 
     /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
@@ -470,7 +491,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         };
 
         const bank = await (bankManager &&
-          E(bankManager).makeBankForAddress(address));
+          E(bankManager).getBankForAddress(address));
         const bundle = harden({
           ...additionalPowers,
           agoricNames,

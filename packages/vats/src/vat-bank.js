@@ -46,7 +46,7 @@ const makePurseController = (
     async pushAmount(amt) {
       const value = amountMath.getValue(amt, brand);
       return bankCall({
-        type: 'VPURSE_MINT',
+        type: 'VPURSE_GIVE',
         recipient: address,
         denom,
         amount: `${value}`,
@@ -55,7 +55,7 @@ const makePurseController = (
     async pullAmount(amt) {
       const value = amountMath.getValue(amt, brand);
       return bankCall({
-        type: 'VPURSE_BURN_IF_AVAILABLE',
+        type: 'VPURSE_GRAB',
         sender: address,
         denom,
         amount: `${value}`,
@@ -120,6 +120,7 @@ export function buildRootObject(_vatPowers) {
         publication: assetPublication,
       } = makeSubscriptionKit();
 
+      const addressToBank = makeStore('address');
       return Far('bankManager', {
         /**
          * Returns assets as they are added to the bank.
@@ -160,11 +161,15 @@ export function buildRootObject(_vatPowers) {
          *
          * @param {string} address lower-level bank account address
          */
-        makeBankForAddress(address) {
+        getBankForAddress(address) {
+          assert.typeof(address, 'string');
+          if (addressToBank.has(address)) {
+            return addressToBank.get(address);
+          }
+
           /** @type {Store<Brand, VirtualPurse>} */
           const brandToVPurse = makeStore('brand');
-
-          return Far('bank', {
+          const bank = Far('bank', {
             /**
              * Returns assets as they are added to the bank.
              *
@@ -218,6 +223,8 @@ export function buildRootObject(_vatPowers) {
               return vpurse;
             },
           });
+          addressToBank.init(address, bank);
+          return bank;
         },
       });
     },
