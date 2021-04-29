@@ -55,6 +55,11 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
   // eslint-disable-next-line no-use-before-define
   const fakeMarshal = makeMarshal(fakeConvertValToSlot, fakeConvertSlotToVal);
 
+  function fakeRegisterValue(slot, val) {
+    slotToVal.set(slot, val);
+    valToSlot.set(val, slot);
+  }
+
   const {
     makeVirtualObjectRepresentative,
     makeWeakStore,
@@ -64,6 +69,7 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
     fakeSyscall,
     fakeAllocateExportID,
     valToSlot,
+    fakeRegisterValue,
     fakeMarshal,
     cacheSize,
   );

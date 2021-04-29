@@ -278,15 +278,15 @@ test('exercise cache', async t => {
   await make('thing2', false, T2); // make t2 - [t2 t1]
   await read(T1, 'thing1'); // refresh t1 - [t1 t2]
   await read(T2, 'thing2'); // refresh t2 - [t2 t1]
-  await readHeld('thing1'); // cache unchanged - [t2 t1]
+  await readHeld('thing1'); // refresh t1 - [t1 t2]
 
-  await make('thing3', false, T3); // make t3 - [t3 t2 t1]
-  await make('thing4', false, T4); // make t4 - [t4 t3 t2 t1]
+  await make('thing3', false, T3); // make t3 - [t3 t1 t2]
+  await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
   t.deepEqual(log, []);
-  await make('thing5', false, T5); // evict t1, make t5 - [t5 t4 t3 t2] t1
-  t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1')]);
-  await make('thing6', false, T6); // evict t2, make t6 - [t6 t5 t4 t3] t2
+  await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
   t.deepEqual(log.shift(), ['set', thingID(2), thingVal('thing2')]);
+  await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
+  t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1')]);
   await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
   t.deepEqual(log.shift(), ['set', thingID(3), thingVal('thing3')]);
   await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
@@ -300,17 +300,17 @@ test('exercise cache', async t => {
   t.deepEqual(log.shift(), ['set', thingID(6), thingVal('thing6')]);
 
   await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
-  await writeHeld('thing1 updated'); // cache unchanged - [t2 t1 t8 t7]
+  await writeHeld('thing1 updated'); // refresh t1 - [t1 t2 t8 t7]
 
-  await read(T8, 'thing8'); // refresh t8 - [t8 t2 t1 t7]
-  await read(T7, 'thing7'); // refresh t7 - [t7 t8 t2 t1]
+  await read(T8, 'thing8'); // refresh t8 - [t8 t1 t2 t7]
+  await read(T7, 'thing7'); // refresh t7 - [t7 t8 t1 t2]
   t.deepEqual(log, []);
-  await read(T6, 'thing6'); // reanimate t6, evict t1 - [t6 t7 t8 t2]
+  await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
   t.deepEqual(log.shift(), ['get', thingID(6), thingVal('thing6')]);
-  t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1 updated')]);
-  await read(T5, 'thing5'); // reanimate t5, evict t2 - [t5 t6 t7 t8]
-  t.deepEqual(log.shift(), ['get', thingID(5), thingVal('thing5')]);
   t.deepEqual(log.shift(), ['set', thingID(2), thingVal('thing2 updated')]);
+  await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
+  t.deepEqual(log.shift(), ['get', thingID(5), thingVal('thing5')]);
+  t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1 updated')]);
   await read(T4, 'thing4'); // reanimate t4, evict t8 - [t4 t5 t6 t7]
   t.deepEqual(log.shift(), ['get', thingID(4), thingVal('thing4')]);
   t.deepEqual(log.shift(), ['set', thingID(8), thingVal('thing8')]);
