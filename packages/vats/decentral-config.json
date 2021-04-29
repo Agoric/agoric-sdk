@@ -5,6 +5,7 @@
       "sourceSpec": "@agoric/zoe/contractFacet"
     }
   },
+  "defaultManagerType": "xs-worker",
   "vats": {
     "board": {
       "sourceSpec": "./src/vat-board.js"
