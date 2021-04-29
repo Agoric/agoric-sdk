@@ -6,6 +6,9 @@
     }
   },
   "vats": {
+    "bank": {
+      "sourceSpec": "./src/vat-bank.js"
+    },
     "board": {
       "sourceSpec": "./src/vat-board.js"
     },

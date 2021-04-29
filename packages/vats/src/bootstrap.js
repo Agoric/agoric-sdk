@@ -64,6 +64,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   ) {
     // Create singleton instances.
     const [
+      bankManager,
       sharingService,
       registry,
       board,
@@ -71,6 +72,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       zoe,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
+      bridgeManager && E(vats.bank).makeBankManager(bridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
@@ -403,21 +405,19 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
 
         const additionalPowers = {};
-        if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
-          additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
-        }
-        if (powerFlags && powerFlags.includes('agoric.pegasusConnections')) {
-          additionalPowers.pegasusConnections = pegasusConnections;
-        }
-        if (powerFlags && powerFlags.includes('agoric.priceAuthorityAdmin')) {
-          additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
-        }
-        if (powerFlags && powerFlags.includes('agoric.treasuryCreator')) {
-          additionalPowers.treasuryCreator = treasuryCreator;
-        }
-        if (powerFlags && powerFlags.includes('agoric.vattp')) {
-          // Give the authority to create a new host for vattp to share objects with.
-          additionalPowers.vattp = makeVattpFrom(vats);
+        const powerFlagConfig = [
+          ['agoricNamesAdmin', agoricNamesAdmin],
+          ['bankManager', bankManager],
+          ['pegasusConnections', pegasusConnections],
+          ['priceAuthorityAdmin', priceAuthorityAdmin],
+          ['treasuryCreator', treasuryCreator],
+          ['vattp', () => makeVattpFrom(vats)],
+        ];
+        for (const [flag, value] of powerFlagConfig) {
+          if (powerFlags && powerFlags.includes(`agoric.${flag}`)) {
+            const power = typeof value === 'function' ? value() : value;
+            additionalPowers[flag] = power;
+          }
         }
 
         const mintIssuerNames = [];
@@ -469,9 +469,12 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         };
 
+        const bank = await (bankManager &&
+          E(bankManager).makeBankForAddress(address));
         const bundle = harden({
           ...additionalPowers,
           agoricNames,
+          bank,
           chainTimerService,
           sharingService,
           faucet,
