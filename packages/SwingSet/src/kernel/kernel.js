@@ -519,8 +519,20 @@ export default function buildKernel(
     function makeErrorResponse(error) {
       // delete partial vat state
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      console.log('makeErrorResponse@@', error);
+      console.log('makeErrorResponse@@ done');
       return {
-        body: JSON.stringify([vatID, { error: `${error}` }]),
+        body: JSON.stringify([
+          vatID,
+          {
+            error: {
+              '@qclass': 'error',
+              message: error.message,
+              name: error.name,
+              errorId: 'BOB@@',
+            },
+          },
+        ]),
         slots: [],
       };
     }

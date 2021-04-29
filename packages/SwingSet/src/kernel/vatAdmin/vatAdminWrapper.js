@@ -5,6 +5,7 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
+import { details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
@@ -62,7 +63,8 @@ export function buildRootObject(vatPowers) {
     if (results.rootObject) {
       resolve(results.rootObject);
     } else {
-      reject(Error(`Vat Creation Error: ${results.error}`));
+      debugger;
+      reject(assert.error(X`Vat Creation Error: ${results.error}`));
     }
   }
 

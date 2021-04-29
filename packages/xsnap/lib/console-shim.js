@@ -1,8 +1,9 @@
 /* global globalThis */
 function tryPrint(...args) {
+  debugger;
   try {
     // eslint-disable-next-line
-    print(...args);
+    print('FRED THE FRIENDLY CONSOLE@@', ...args);
   } catch (err) {
     // eslint-disable-next-line
     print('cannot print:', err.message);

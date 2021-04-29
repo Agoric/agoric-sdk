@@ -1,6 +1,7 @@
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api';
+import { makeMarshal } from '@agoric/marshal';
 import { makeManagerKit } from './manager-helper';
 
 import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
@@ -14,6 +15,7 @@ function parentLog(first, ...args) {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const marshal = makeMarshal();
 
 /**
  * @param {{
@@ -107,7 +109,7 @@ export function makeXsSubprocessFactory({
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
-      const reply = JSON.parse(result.reply);
+      const reply = marshal.unserialize({ body: result.reply, slots: [] });
       assert(Array.isArray(reply));
       const [tag, ...rest] = reply;
       return { ...result, reply: [tag, ...rest] };
@@ -125,8 +127,8 @@ export function makeXsSubprocessFactory({
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);
     } else {
-      const [_tag, errName, message] = bundleReply;
-      assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      const [_tag, err] = bundleReply;
+      assert.fail(X`createFromBundle failed: ${err}`);
     }
 
     /**

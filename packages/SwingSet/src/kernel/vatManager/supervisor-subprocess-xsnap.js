@@ -16,6 +16,10 @@ import {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const marshal = makeMarshal(undefined, undefined, {
+  // don't scare the validators with errors they don't know what to do with.
+  marshalSaveError: () => {},
+});
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -36,7 +40,7 @@ function managerPort(issueCommand) {
   const encode = item => {
     let txt;
     try {
-      txt = JSON.stringify(item);
+      txt = marshal.serialize(harden(item)).body;
     } catch (nope) {
       workerLog(nope.message, item);
       throw nope;
@@ -83,7 +87,7 @@ function managerPort(issueCommand) {
             report.result = encode(item);
           })
           .catch(err => {
-            report.result = encode(['err', err.name, err.message]);
+            report.result = encode(['err', err]);
           })
           .catch(_err => {
             report.result = lastResort;
