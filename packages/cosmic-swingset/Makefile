@@ -77,24 +77,36 @@ scenario2-run-chain:
 		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
+scenario2-reset-client:
+	rm -rf t1/$(BASE_PORT)
+	$(AG_SOLO) init t1/$(BASE_PORT) --webport=$(BASE_PORT)
+	$(MAKE) set-local-gci-ingress
+
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.bankManager,agoric.agoricNamesAdmin,agoric.pegasusConnections,agoric.priceAuthorityAdmin,agoric.treasuryCreator,agoric.vattp
+SOLO_COINS = 13000000ubld
 t1-provision-one-with-powers:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+			bootstrap $$addr $(SOLO_COINS); \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'
+		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
 
 t1-provision-one:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+			bootstrap $$addr $(SOLO_COINS); \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'
+		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'; }
 
 # Actually start the ag-solo.
 t1-start-ag-solo:

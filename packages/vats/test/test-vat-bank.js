@@ -82,7 +82,7 @@ test('communication', async t => {
   let itResult;
   const p = it.next().then(r => (itResult = r));
   t.is(itResult, undefined);
-  await E(bankMgr).addAsset('ubld', 'BLD Staking Tokens', kit);
+  await E(bankMgr).addAsset('ubld', 'BLD', 'Staking Tokens', kit);
   await p;
   t.is(itResult && itResult.done, false);
 

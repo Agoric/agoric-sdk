@@ -111,6 +111,7 @@ export function buildRootObject(_vatPowers) {
        * @typedef {Object} AssetDescriptor
        * @property {Brand} brand
        * @property {Issuer} issuer
+       * @property {string} issuerName
        * @property {string} denom
        * @property {string} proposedName
        */
@@ -134,11 +135,13 @@ export function buildRootObject(_vatPowers) {
          * Add an asset to the bank, and publish it to the subscriptions.
          *
          * @param {string} denom lower-level denomination string
+         * @param {string} issuerName
          * @param {string} proposedName
          * @param {IssuerKit} kit ERTP issuer kit (mint, brand, issuer)
          */
-        async addAsset(denom, proposedName, kit) {
+        async addAsset(denom, issuerName, proposedName, kit) {
           assert.typeof(denom, 'string');
+          assert.typeof(issuerName, 'string');
           assert.typeof(proposedName, 'string');
 
           const brand = await kit.brand;
@@ -153,7 +156,13 @@ export function buildRootObject(_vatPowers) {
           brandToAssetRecord.init(brand, assetRecord);
           denomToAddressUpdater.init(denom, makeStore('address'));
           assetPublication.updateState(
-            harden({ brand, denom, issuer: kit.issuer, proposedName }),
+            harden({
+              brand,
+              denom,
+              issuerName,
+              issuer: kit.issuer,
+              proposedName,
+            }),
           );
         },
         /**

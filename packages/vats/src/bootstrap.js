@@ -48,6 +48,7 @@ function makeVattpFrom(vats) {
 }
 
 export function buildRootObject(vatPowers, vatParameters) {
+  console.error('%%%HAVE vatParameters', vatParameters);
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
     await E(httpVat).setCommandDevice(cmdDevice, roles);
@@ -163,13 +164,15 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
       const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
       const pmt = await E(treasuryCreator).getBootstrapPayment(
-        amountMath.make(bootstrapValue, centralBrand),
+        amountMath.make(BigInt(bootstrapValue), centralBrand),
       );
       const purse = E(bank).getPurse(centralBrand);
       await E(purse).deposit(pmt);
     }
-    console.error('have vatParameters', vatParameters);
-    await payThePiper(vatParameters.bootMsg);
+    false &&
+      (await payThePiper(
+        vatParameters && vatParameters.argv && vatParameters.argv.bootMsg,
+      ));
 
     /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
@@ -210,6 +213,21 @@ export function buildRootObject(vatPowers, vatParameters) {
         issuerNameToRecord.set(
           issuerName,
           harden({ ...record, brand, issuer }),
+        );
+        if (!record.bankDenom || !record.bankPurse) {
+          return issuer;
+        }
+
+        // We need to obtain the mint in order to mint the tokens when they
+        // come from the bank.
+        // FIXME: Be more careful with the mint.
+        const mint = await E(vats.mints).getMint(issuerName);
+        const kit = harden({ brand, issuer, mint });
+        await E(bankManager).addAsset(
+          record.bankDenom,
+          issuerName,
+          record.bankPurse,
+          kit,
         );
         return issuer;
       }),
