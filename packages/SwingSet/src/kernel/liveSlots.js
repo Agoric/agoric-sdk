@@ -346,6 +346,8 @@ function build(
     syscall,
     allocateExportID,
     valToSlot,
+    // eslint-disable-next-line no-use-before-define
+    registerValue,
     m,
     cacheSize,
   );
@@ -397,7 +399,7 @@ function build(
   }
 
   function registerValue(slot, val) {
-    const { type } = parseVatSlot(slot);
+    const { type, virtual } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
     if (type === 'object' || type === 'device') {
@@ -414,7 +416,9 @@ function build(
     // that test-liveslots.js test('dropImports') passes despite this,
     // because it uses a fake WeakRef that doesn't care about the strong
     // reference.
-    safetyPins.add(val);
+    if (!virtual) {
+      safetyPins.add(val);
+    }
   }
 
   function convertSlotToVal(slot, iface = undefined) {
@@ -459,8 +463,8 @@ function build(
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
-      registerValue(slot, val);
     }
+    registerValue(slot, val);
     return val;
   }
 

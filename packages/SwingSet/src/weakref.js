@@ -6,7 +6,7 @@ const { defineProperties } = Object;
 /*
  * We retain a measure of compatibility with Node.js v12, which does not
  * expose WeakRef or FinalizationRegistry (there is a --flag for it, but it's
- * * not clear how stable it is). When running on a platform without these *
+ * not clear how stable it is). When running on a platform without these
  * tools, vats cannot do GC, and the tools they get will be no-ops. WeakRef
  * instances will hold a strong reference, and the FinalizationRegistry will
  * never invoke the callbacks.

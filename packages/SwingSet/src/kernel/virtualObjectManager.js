@@ -102,7 +102,7 @@ export function makeCache(size, fetch, store) {
       if (innerObj) {
         cache.refresh(innerObj);
       } else {
-        innerObj = { vobjID, rawData: null };
+        innerObj = { vobjID, rawData: null, repCount: 0 };
         cache.remember(innerObj);
       }
       if (load && !innerObj.rawData) {
@@ -121,8 +121,10 @@ export function makeCache(size, fetch, store) {
  *   and `vatstoreSet` operations.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {*} valToSlotTable  The vat's table that maps object identities to
+ * @param {*} valToSlot  The vat's table that maps object identities to
  *   their corresponding export IDs
+ * @param {*} registerValue  Function to register a new value in liveSlot's
+ *   various tables
  * @param {*} m The vat's marshaler.
  * @param {number} cacheSize How many virtual objects this manager should cache
  *   in memory.
@@ -156,7 +158,8 @@ export function makeCache(size, fetch, store) {
 export function makeVirtualObjectManager(
   syscall,
   allocateExportID,
-  valToSlotTable,
+  valToSlot,
+  registerValue,
   m,
   cacheSize,
 ) {
@@ -246,7 +249,7 @@ export function makeVirtualObjectManager(
     }
 
     function virtualObjectKey(key) {
-      const vobjID = valToSlotTable.get(key);
+      const vobjID = valToSlot.get(key);
       if (!vobjID) {
         return undefined;
       } else {
@@ -392,8 +395,16 @@ export function makeVirtualObjectManager(
     const propertyNames = new Set();
 
     function makeRepresentative(innerSelf, initializing) {
+      assert(
+        innerSelf.repCount === 0,
+        X`${innerSelf.vobjID} already has a representative`,
+      );
+      innerSelf.repCount += 1;
+
       function ensureState() {
-        if (!innerSelf.rawData) {
+        if (innerSelf.rawData) {
+          cache.refresh(innerSelf);
+        } else {
           innerSelf = cache.lookup(innerSelf.vobjID, true);
         }
       }
@@ -431,7 +442,6 @@ export function makeVirtualObjectManager(
         instanceKit = harden(instanceKitMaker(activeData));
       }
       cache.remember(innerSelf);
-      valToSlotTable.set(instanceKit.self, innerSelf.vobjID);
       return instanceKit;
     }
 
@@ -447,7 +457,7 @@ export function makeVirtualObjectManager(
 
       const initialData = {};
       initializationsInProgress.add(initialData);
-      const innerSelf = { vobjID, rawData: initialData };
+      const innerSelf = { vobjID, rawData: initialData, repCount: 0 };
       // kdebug(`vo make ${vobjID}`);
       // prettier-ignore
       const { self: initialRepresentative, init } =
@@ -455,6 +465,7 @@ export function makeVirtualObjectManager(
       if (init) {
         init(...args);
       }
+      registerValue(vobjID, initialRepresentative);
       initializationsInProgress.delete(initialData);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {

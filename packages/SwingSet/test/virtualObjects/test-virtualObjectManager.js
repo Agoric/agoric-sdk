@@ -91,88 +91,113 @@ test('virtual object operations', t => {
   t.deepEqual(dumpStore(), []);
 
   // phase 1: object creations
-  const thing1 = thingMaker('thing-1');
-  const thing2 = thingMaker('thing-2', 100);
-  const thing3 = thingMaker('thing-3', 200);
-  const thing4 = thingMaker('thing-4', 300);
+  const thing1 = thingMaker('thing-1'); // [t1-0]
+  // t1-0: 'thing-1' 0 0
+  const thing2 = thingMaker('thing-2', 100); // [t2-0 t1-0]
+  // t2-0: 'thing-2' 100 0
+  const thing3 = thingMaker('thing-3', 200); // [t3-0 t2-0 t1-0]
+  // t3-0: 'thing-3' 200 0
+  const thing4 = thingMaker('thing-4', 300); // [t4-0 t3-0 t2-0 t1-0]
+  // t4-0: 'thing-4' 300 0
 
-  const zot1 = zotMaker(23, 'Alice', 'is this on?');
-  const zot2 = zotMaker(29, 'Bob', 'what are you saying?');
-  const zot3 = zotMaker(47, 'Carol', 'as if...');
-  const zot4 = zotMaker(66, 'Dave', 'you and what army?');
+  const zot1 = zotMaker(23, 'Alice', 'is this on?'); // [z1-0 t4-0 t3-0 t2-0] evict t1-0
+  // z1-0: 23 'Alice' 'is this on?' 0
+  const zot2 = zotMaker(29, 'Bob', 'what are you saying?'); // [z2-0 z1-0 t4-0 t3-0] evict t2-0
+  // z2-0: 29 'Bob' 'what are you saying?' 0
+  const zot3 = zotMaker(47, 'Carol', 'as if...'); // [z3-0 z2-0 z1-0 t4-0] evict t3-0
+  // z3-0: 47 'Carol' 'as if...' 0
+  const zot4 = zotMaker(66, 'Dave', 'you and what army?'); // [z4-0 z3-0 z2-0 z1-0] evict t4-0
+  // z4-0: 66 'Dave' 'you and what army?' 0
 
   t.deepEqual(dumpStore(), [
-    ['o+1/1', thingVal(0, 'thing-1', 0)],
-    ['o+1/2', thingVal(100, 'thing-2', 0)],
-    ['o+1/3', thingVal(200, 'thing-3', 0)],
-    ['o+1/4', thingVal(300, 'thing-4', 0)],
+    ['o+1/1', thingVal(0, 'thing-1', 0)], // t1-0
+    ['o+1/2', thingVal(100, 'thing-2', 0)], // t2-0
+    ['o+1/3', thingVal(200, 'thing-3', 0)], // t3-0
+    ['o+1/4', thingVal(300, 'thing-4', 0)], // t4-0
   ]);
 
   // phase 2: first batch-o-stuff
-  t.is(thing1.inc(), 1);
-  t.is(zot1.sayHello('hello'), 'hello Alice');
-  t.is(thing1.inc(), 2);
-  t.is(zot2.sayHello('hi'), 'hi Bob');
-  t.is(thing1.inc(), 3);
-  t.is(zot3.sayHello('aloha'), 'aloha Carol');
-  t.is(zot4.sayHello('bonjour'), 'bonjour Dave');
-  t.is(zot1.sayHello('hello again'), 'hello again Alice');
+  t.is(thing1.inc(), 1); // [t1-1 z4-0 z3-0 z2-0] evict z1-0
+  // t1-1: 'thing-1' 1 0
+  t.is(zot1.sayHello('hello'), 'hello Alice'); // [z1-1 t1-1 z4-0 z3-0] evict z2-0
+  // z1-1: 23 'Alice' 'is this on?' 1
+  t.is(thing1.inc(), 2); // [t1-2 z1-1 z4-0 z3-0]
+  // t1-2: 'thing-1' 2 0
+  t.is(zot2.sayHello('hi'), 'hi Bob'); // [z2-1 t1-2 z1-1 z4-0] evict z3-0
+  // z2-1: 29 'Bob' 'what are you saying?' 1
+  t.is(thing1.inc(), 3); // [t1-3 z2-1 z1-1 z4-0]
+  // t1-3: 'thing-1' 3 0
+  t.is(zot3.sayHello('aloha'), 'aloha Carol'); // [z3-1 t1-3 z2-1 z1-1] evict z4-0
+  // z3-1: 47 'Carol' 'as if...' 1
+  t.is(zot4.sayHello('bonjour'), 'bonjour Dave'); // [z4-1 z3-1 t1-3 z2-1] evict z1-1
+  // z4-1: 66 'Dave' 'you and what army?' 1
+  t.is(zot1.sayHello('hello again'), 'hello again Alice'); // [z1-2 z4-1 z3-1 t1-3] evict z2-1
+  // z1-2: 23 'Alice' 'is this on?' 2
   t.is(
-    thing2.describe(),
+    thing2.describe(), // [t2-0 z1-2 z4-1 z3-1] evict t1-3
     'thing-2 counter has been reset 0 times and is now 100',
   );
   t.deepEqual(dumpStore(), [
-    ['o+1/1', thingVal(3, 'thing-1', 0)],
-    ['o+1/2', thingVal(100, 'thing-2', 0)],
-    ['o+1/3', thingVal(200, 'thing-3', 0)],
-    ['o+1/4', thingVal(300, 'thing-4', 0)],
-    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 2)],
-    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 0)],
-    ['o+2/3', zotVal(47, 'Carol', 'as if...', 0)],
-    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 0)],
+    ['o+1/1', thingVal(3, 'thing-1', 0)], // =t1-3
+    ['o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
+    ['o+1/3', thingVal(200, 'thing-3', 0)], // =t3-0
+    ['o+1/4', thingVal(300, 'thing-4', 0)], // =t4-0
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 1)], // =z1-1
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 1)], // =z2-1
+    ['o+2/3', zotVal(47, 'Carol', 'as if...', 0)], // =z3-0
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 0)], // =z4-0
   ]);
 
   // phase 3: second batch-o-stuff
-  t.is(thing1.get(), 3);
-  t.is(thing1.inc(), 4);
-  t.is(thing4.reset(1000), 1);
-  t.is(zot3.rename('Chester'), 'Chester');
-  t.is(zot1.getInfo(), 'zot Alice tag=is this on? count=3 arbitrary=23');
-  t.is(zot2.getInfo(), 'zot Bob tag=what are you saying? count=2 arbitrary=29');
+  t.is(thing1.get(), 3); // [t1-3 t2-0 z1-2 z4-1] evict z3-1
+  t.is(thing1.inc(), 4); // [t1-4 t2-0 z1-2 z4-1]
+  // t1-4: 'thing-1' 4 0
+  t.is(thing4.reset(1000), 1); // [t4-1 t1-4 t2-0 z1-2] evict z4-1
+  // t4-1: 'thing-4' 1000 1
+  t.is(zot3.rename('Chester'), 'Chester'); // [z3-2 t4-1 t1-4 t2-0] evict z1-2
+  // z3-2: 47 'Chester' 'as if...' 2
+  t.is(zot1.getInfo(), 'zot Alice tag=is this on? count=3 arbitrary=23'); // [z1-3 z3-2 t4-1 t1-4] evict t2-0
+  // z1-3: 23 'Alice' 'is this on?' 3
+  t.is(zot2.getInfo(), 'zot Bob tag=what are you saying? count=2 arbitrary=29'); // [z2-2 z1-3 z3-2 t4-1] evict t1-4
+  // z2-2: 29 'Bob' 'what are you saying?' 1
   t.is(
-    thing2.describe(),
+    thing2.describe(), // [t1-4 z2-2 z1-3 z3-2] evict t4-1
     'thing-2 counter has been reset 0 times and is now 100',
   );
-  t.is(zot3.getInfo(), 'zot Chester tag=as if... count=3 arbitrary=47');
-  t.is(zot4.getInfo(), 'zot Dave tag=you and what army? count=2 arbitrary=66');
-  t.is(thing3.inc(), 201);
+  t.is(zot3.getInfo(), 'zot Chester tag=as if... count=3 arbitrary=47'); // [z3-3 t1-4 z2-2 z1-3]
+  // z3-3: 47 'Chester' 'as if...' 3
+  t.is(zot4.getInfo(), 'zot Dave tag=you and what army? count=2 arbitrary=66'); // [z4-1 z3-3 t1-4 z2-2] evict z1-3
+  // z4-2: 66 'Dave' 'you and what army?' 2
+  t.is(thing3.inc(), 201); // [t3-0 z4-2 z3-3 t1-4] evict z2-2
+  // t3-1: 'thing-3' 201 0
   t.is(
-    thing4.describe(),
+    thing4.describe(), // [t4-1 t3-0 z4-2 z3-3] evict t1-4
     'thing-4 counter has been reset 1 times and is now 1000',
   );
   t.deepEqual(dumpStore(), [
-    ['o+1/1', thingVal(4, 'thing-1', 0)],
-    ['o+1/2', thingVal(100, 'thing-2', 0)],
-    ['o+1/3', thingVal(200, 'thing-3', 0)],
-    ['o+1/4', thingVal(1000, 'thing-4', 1)],
-    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)],
-    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)],
-    ['o+2/3', zotVal(47, 'Chester', 'as if...', 3)],
-    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 1)],
+    ['o+1/1', thingVal(4, 'thing-1', 0)], // =t1-4
+    ['o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
+    ['o+1/3', thingVal(200, 'thing-3', 0)], // =t3-0
+    ['o+1/4', thingVal(1000, 'thing-4', 1)], // =t4-1
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
+    ['o+2/3', zotVal(47, 'Carol', 'as if...', 1)], // =z3-1
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 1)], // =z4-1
   ]);
 
   // phase 4: flush test
-  t.is(thing1.inc(), 5);
-  flushCache();
+  t.is(thing1.inc(), 5); // [t1-5 t4-1 t3-0 z4-2] evict z3-3
+  // t1-5: 'thing-1' 5 0
+  flushCache(); // [] evict z4-2 t3-0 t4-1 t1-5
   t.deepEqual(dumpStore(), [
-    ['o+1/1', thingVal(5, 'thing-1', 0)],
-    ['o+1/2', thingVal(100, 'thing-2', 0)],
-    ['o+1/3', thingVal(201, 'thing-3', 0)],
-    ['o+1/4', thingVal(1000, 'thing-4', 1)],
-    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)],
-    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)],
-    ['o+2/3', zotVal(47, 'Chester', 'as if...', 3)],
-    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 2)],
+    ['o+1/1', thingVal(5, 'thing-1', 0)], // =t1-5
+    ['o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
+    ['o+1/3', thingVal(201, 'thing-3', 0)], // =t3-0
+    ['o+1/4', thingVal(1000, 'thing-4', 1)], // =t4-1
+    ['o+2/1', zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
+    ['o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
+    ['o+2/3', zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
+    ['o+2/4', zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
   ]);
 });
 
