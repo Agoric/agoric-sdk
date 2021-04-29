@@ -4,36 +4,33 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
-  /** @type {GetAmountOfInvitationThen} */
-  const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
-    const onRejected = () =>
-      assert.fail(X`A Zoe invitation is required, not ${invitationP}`);
-    return E(invitationIssuer)
-      .getAmountOf(invitationP)
-      .then(onFulfilled, onRejected);
+  /** @type {GetInvitationDetails} */
+  const getInvitationDetails = async invitationP => {
+    const onRejected = reason => {
+      const err = assert.error(X`A Zoe invitation is required, not ${invitationP}`);
+      assert.note(err, X`Due to ${reason}`);
+      throw err;
+    };
+    return E.get(
+      E.get(
+        E(invitationIssuer)
+          .getAmountOf(invitationP)
+          .catch(onRejected),
+      ).value,
+    )[0];
   };
 
   /** @type {GetInstance} */
-  const getInstance = invitation => {
-    const onFulfilled = amount => amount.value[0].instance;
-    return getAmountOfInvitationThen(invitation, onFulfilled);
-  };
+  const getInstance = invitation =>
+    E.get(getInvitationDetails(invitation)).instance;
 
   /** @type {GetInstallation} */
-  const getInstallation = invitation => {
-    const onFulfilled = amount => amount.value[0].installation;
-    return getAmountOfInvitationThen(invitation, onFulfilled);
-  };
+  const getInstallation = invitation =>
+    E.get(getInvitationDetails(invitation)).installation;
 
-  /** @type {GetInvitationDetails} */
-  const getInvitationDetails = invitation => {
-    const onFulfilled = amount => amount.value[0];
-    return getAmountOfInvitationThen(invitation, onFulfilled);
-  };
-
-  return {
+  return harden({
     getInstance,
     getInstallation,
     getInvitationDetails,
-  };
+  });
 };
