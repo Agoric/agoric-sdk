@@ -7,7 +7,9 @@ export const makeInvitationQueryFns = invitationIssuer => {
   /** @type {GetInvitationDetails} */
   const getInvitationDetails = async invitationP => {
     const onRejected = reason => {
-      const err = assert.error(X`A Zoe invitation is required, not ${invitationP}`);
+      const err = assert.error(
+        X`A Zoe invitation is required, not ${invitationP}`,
+      );
       assert.note(err, X`Due to ${reason}`);
       throw err;
     };
