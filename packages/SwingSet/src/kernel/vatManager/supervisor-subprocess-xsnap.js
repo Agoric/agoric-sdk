@@ -83,7 +83,7 @@ function managerPort(issueCommand) {
             report.result = encode(item);
           })
           .catch(err => {
-            report.result = encode(['err', f.name, err.message]);
+            report.result = encode(['err', err.name, err.message]);
           })
           .catch(_err => {
             report.result = lastResort;
