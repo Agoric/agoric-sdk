@@ -447,7 +447,10 @@ export function makeVirtualObjectManager(
 
     function reanimate(vobjID) {
       // kdebug(`vo reanimate ${vobjID}`);
-      return makeRepresentative(cache.lookup(vobjID, false), false).self;
+      const innerSelf = cache.lookup(vobjID, false);
+      const representative = makeRepresentative(innerSelf, false).self;
+      innerSelf.representative = representative;
+      return representative;
     }
     kindTable.set(kindID, reanimate);
 
@@ -465,6 +468,7 @@ export function makeVirtualObjectManager(
       if (init) {
         init(...args);
       }
+      innerSelf.representative = initialRepresentative;
       registerValue(vobjID, initialRepresentative);
       initializationsInProgress.delete(initialData);
       const rawData = {};
