@@ -18,7 +18,11 @@ import { amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  observeIteration,
+  observeNotifier,
+} from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeIssuerTable } from './issuerTable';
@@ -637,11 +641,13 @@ export function makeWallet({
     brandPetname,
     petnameForPurse,
     defaultAutoDeposit = false,
+    purseMaker = issuer => E(issuer).makeEmptyPurse(),
   ) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
-    const purse = await E(issuer).makeEmptyPurse();
+    /** @type {Purse} */
+    const purse = await purseMaker(issuer);
 
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
@@ -1519,5 +1525,29 @@ export function makeWallet({
       .then(addInviteDepositFacet);
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
   };
-  return { admin: wallet, initialized: initialize() };
+
+  const importBankAssets = async bank => {
+    observeIteration(E(bank).getAssetSubscription(), {
+      async updateState({ proposedName, issuerName, issuer, brand }) {
+        try {
+          await addIssuer(issuerName, issuer);
+          const purse = await E(bank).getPurse(brand);
+          await wallet.makeEmptyPurse(
+            issuerName,
+            proposedName,
+            true,
+            () => purse,
+          );
+        } catch (e) {
+          console.error('/// could not add bank asset purse', e, {
+            issuerName,
+            proposedName,
+            issuer,
+            brand,
+          });
+        }
+      },
+    }).finally(() => console.error('/// This is the end of the bank assets'));
+  };
+  return { admin: wallet, initialized: initialize(), importBankAssets };
 }
