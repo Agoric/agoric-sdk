@@ -2,7 +2,6 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { amountMath } from '@agoric/ertp';
 import { isPromise } from '@agoric/promise-kit';
 
 import '@agoric/ertp/exported';
@@ -72,11 +71,7 @@ function makeVirtualPurse(vpc, kit) {
   } = makeNotifierKit();
 
   /** @type {ERef<Amount>} */
-  let lastBalance = E.when(brand, b => {
-    const amt = amountMath.makeEmpty(b);
-    balanceUpdater.updateState(amt);
-    return amt;
-  });
+  let lastBalance = E.get(balanceNotifier.getUpdateSince()).value;
 
   // Robustly observe the balance.
   const fail = reason => {

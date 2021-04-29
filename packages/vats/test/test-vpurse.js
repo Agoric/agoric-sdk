@@ -74,7 +74,7 @@ const setup = t => {
 
 test('makeVirtualPurse', async t => {
   t.plan(16);
-  const { expected, issuer, mint, brand, vpurse } = setup(t);
+  const { expected, balanceUpdater, issuer, mint, brand, vpurse } = setup(t);
 
   const payment = mint.mintPayment(amountMath.make(837n, brand));
 
@@ -90,6 +90,7 @@ test('makeVirtualPurse', async t => {
     nextUpdateP = E(notifier).getUpdateSince(updateCount);
   };
 
+  balanceUpdater.updateState(amountMath.makeEmpty(brand));
   await checkNotifier();
   t.assert(
     amountMath.isEqual(
@@ -145,7 +146,7 @@ test('makeVirtualPurse', async t => {
 
 test('vpurse.deposit', async t => {
   t.plan(14);
-  const { mint, brand, vpurse, expected } = setup(t);
+  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
   const fungible0 = amountMath.makeEmpty(brand);
   const fungible17 = amountMath.make(17n, brand);
   const fungible25 = amountMath.make(25n, brand);
@@ -185,6 +186,7 @@ test('vpurse.deposit', async t => {
     );
   };
 
+  balanceUpdater.updateState(amountMath.makeEmpty(brand));
   await checkNotifier();
   expected.pushAmount(fungible17);
   await E(vpurse)
@@ -214,7 +216,7 @@ test('vpurse.deposit promise', async t => {
 
 test('vpurse.getDepositFacet', async t => {
   t.plan(8);
-  const { mint, brand, vpurse, expected } = setup(t);
+  const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
   const fungible25 = amountMath.make(25n, brand);
 
   const payment = mint.mintPayment(fungible25);
@@ -242,6 +244,7 @@ test('vpurse.getDepositFacet', async t => {
     );
   };
 
+  balanceUpdater.updateState(amountMath.makeEmpty(brand));
   await checkNotifier();
   expected.pushAmount(fungible25);
   await E(vpurse)

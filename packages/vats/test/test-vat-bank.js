@@ -3,13 +3,15 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { amountMath, makeIssuerKit, MathKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank';
 
 test('communication', async t => {
-  // t.plan(4);
+  t.plan(24);
   const bankVat = E(buildRootObject)();
+
+  /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
   let bankHandler;
 
   /** @type {import('../src/bridge').BridgeManager} */
@@ -21,7 +23,42 @@ test('communication', async t => {
     },
     toBridge(dstID, obj) {
       t.is(dstID, 'bank');
-      t.assert(obj);
+      let ret;
+      switch (obj.type) {
+        case 'VPURSE_GET_BALANCE': {
+          const { address, denom, type: _type, ...rest } = obj;
+          t.is(address, 'agoricfoo');
+          t.is(denom, 'ubld');
+          t.deepEqual(rest, {});
+          ret = '11993';
+          break;
+        }
+
+        case 'VPURSE_MINT': {
+          const { amount, denom, recipient, type: _type, ...rest } = obj;
+          t.is(recipient, 'agoricfoo');
+          t.is(denom, 'ubld');
+          t.is(amount, '14');
+          t.deepEqual(rest, {});
+          ret = amount;
+          break;
+        }
+
+        case 'VPURSE_BURN_IF_AVAILABLE': {
+          const { amount, denom, sender, type: _type, ...rest } = obj;
+          t.is(sender, 'agoricfoo');
+          t.is(denom, 'ubld');
+          t.is(amount, '14');
+          t.deepEqual(rest, {});
+          ret = amount;
+          break;
+        }
+
+        default: {
+          t.is(obj, null);
+        }
+      }
+      return ret;
     },
     unregister(srcID) {
       t.is(srcID, 'bank');
@@ -49,5 +86,42 @@ test('communication', async t => {
   await p;
   t.is(itResult && itResult.done, false);
 
-  // TODO test deposit/withdrawal/balance via test-vpurse.js
+  // First balance.
+  const vpurse = await E(bank).getPurse(kit.brand);
+  const bal = await E(vpurse).getCurrentAmount();
+  t.assert(amountMath.isEqual(bal, amountMath.make(11993n, kit.brand)));
+
+  // Deposit.
+  const paymentAmount = amountMath.make(14n, kit.brand);
+  const payment = await E(kit.mint).mintPayment(paymentAmount);
+  const actualPaymentAmount = await E(vpurse).deposit(payment, paymentAmount);
+  t.assert(amountMath.isEqual(actualPaymentAmount, paymentAmount));
+
+  // Withdrawal.
+  const payment2 = /** @type {Payment} */ (await E(vpurse).withdraw(
+    paymentAmount,
+  ));
+  const actualPaymentAmount2 = await E(kit.issuer).burn(
+    payment2,
+    paymentAmount,
+  );
+  t.assert(amountMath.isEqual(actualPaymentAmount2, paymentAmount));
+
+  // Balance update.
+  const notifier = E(vpurse).getCurrentAmountNotifier();
+  const updateRecord = await E(notifier).getUpdateSince();
+  const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
+  const obj = { type: 'VPURSE_BALANCE_UPDATE', updated: [balance] };
+  t.assert(bankHandler);
+  await (bankHandler && E(bankHandler).fromBridge('bank', obj));
+
+  // Wait for new balance.
+  await E(notifier).getUpdateSince(updateRecord.updateCount);
+  const bal2 = await E(vpurse).getCurrentAmount();
+  t.assert(
+    amountMath.isEqual(
+      bal2,
+      amountMath.make(BigInt(balance.amount), kit.brand),
+    ),
+  );
 });
