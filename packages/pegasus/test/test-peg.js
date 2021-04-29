@@ -11,7 +11,7 @@ import bundleSource from '@agoric/bundle-source';
 import { amountMath } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 
-import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 
 const contractPath = `${__dirname}/../src/pegasus`;
 

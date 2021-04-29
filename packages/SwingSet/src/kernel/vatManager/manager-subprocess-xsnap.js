@@ -1,5 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
+import { ExitCode } from '@agoric/xsnap/api';
 import { makeManagerKit } from './manager-helper';
 
 import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
@@ -133,7 +134,28 @@ export function makeXsSubprocessFactory({
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
-      const result = await issueTagged(['deliver', delivery]);
+      let result;
+      try {
+        result = await issueTagged(['deliver', delivery]);
+      } catch (err) {
+        parentLog('issueTagged error:', err.code, err.message);
+        let message;
+        switch (err.code) {
+          case ExitCode.E_TOO_MUCH_COMPUTATION:
+            message = 'Compute meter exceeded';
+            break;
+          case ExitCode.E_STACK_OVERFLOW:
+            message = 'Stack meter exceeded';
+            break;
+          case ExitCode.E_NOT_ENOUGH_MEMORY:
+            message = 'Allocate meter exceeded';
+            break;
+          default:
+            message = err.message;
+        }
+        return harden(['error', message, null]);
+      }
+
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       // Attach the meterUsage to the deliver result.
       const deliverResult = harden([

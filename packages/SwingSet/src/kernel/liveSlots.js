@@ -64,9 +64,9 @@ function build(
    * Exports: pass-by-presence objects (Remotables) in the vat are exported
    * as o+NN slots, as are "virtual object" exports. Promises are exported as
    * p+NN slots. We retain a strong reference to all exports via the
-   * `exported` Set until (TODO) the kernel tells us all external references
-   * have been dropped via dispatch.dropExports, or by some unilateral
-   * revoke-object operation executed by our user-level code.
+   * `exportedRemotables` Set until (TODO) the kernel tells us all external
+   * references have been dropped via dispatch.dropExports, or by some
+   * unilateral revoke-object operation executed by our user-level code.
    *
    * Imports: o-NN slots are represented as a Presence. p-NN slots are
    * represented as an imported Promise, with the resolver held in an
@@ -74,29 +74,29 @@ function build(
    * incoming resolution message. We retain a weak reference to the Presence,
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
    * we can notify the kernel. We retain strong references to Promises, for
-   * now, via the `exported` Set (whose name is not entirely accurate) until
-   * we figure out a better GC approach. When an import is added, the
-   * finalizer is added to `droppedRegistry`.
+   * now, via the `safetyPins` Set until we figure out a better GC approach.
+   * When an import is added, the finalizer is added to `droppedRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
    * weakref is dead), treat that as if the entry was not present. The same
    * slotToVal table is used for both imports and returning exports. The
    * subset of those which need to be held strongly (exported objects and
-   * promises, imported promises) are kept alive by `exported`.
+   * promises, imported promises) are kept alive by `exportedRemotables`.
    *
    * valToSlot is a WeakMap whose keys are Remotable/Presence/Promise
    * objects, and the keys are (string) slot identifiers. This is used
    * for both exports and returned imports.
    *
-   * We use two weak maps plus the strong `exported` set, because it seems
-   * simpler than using four separate maps (import-vs-export times
+   * We use two weak maps plus the strong `exportedRemotables` set, because
+   * it seems simpler than using four separate maps (import-vs-export times
    * strong-vs-weak).
    */
 
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
-  const exported = new Set(); // objects
+  const exportedRemotables = new Set(); // objects
+  const safetyPins = new Set(); // temporary
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
   /*
@@ -381,7 +381,7 @@ function build(
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
       // we do not use droppedRegistry for exports
-      exported.add(val); // keep it alive until kernel tells us to release it
+      exportedRemotables.add(val); // keep it alive until kernel tells us to release it
     }
     return valToSlot.get(val);
   }
@@ -394,6 +394,27 @@ function build(
     const result = importedPromises;
     importedPromises = null;
     return result;
+  }
+
+  function registerValue(slot, val) {
+    const { type } = parseVatSlot(slot);
+    slotToVal.set(slot, new WeakRef(val));
+    valToSlot.set(val, slot);
+    if (type === 'object' || type === 'device') {
+      // we don't dropImports on promises, to avoid interaction with retire
+      droppedRegistry.register(val, slot);
+      deadSet.delete(slot); // might have been FINALIZED before, no longer
+    }
+
+    // TODO: until #2724 is implemented, we cannot actually release
+    // Presences, else WeakMaps would forget their entries. I'm also
+    // uncertain about releasing Promises early. We disable GC by stashing
+    // everything in the (strong) `safetyPins` Set. Promises are deleted from
+    // this set when we retire their identifiers in retirePromiseID. Note
+    // that test-liveslots.js test('dropImports') passes despite this,
+    // because it uses a fake WeakRef that doesn't care about the strong
+    // reference.
+    safetyPins.add(val);
   }
 
   function convertSlotToVal(slot, iface = undefined) {
@@ -438,19 +459,7 @@ function build(
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
-      slotToVal.set(slot, new WeakRef(val));
-      // TODO: until #2724 is implemented, we cannot actually release
-      // Presences, else WeakMaps would forget their entries. We disable GC
-      // by stashing everything in the (strong) `exported` Set. Note that
-      // test-liveslots.js test('dropImports') passes despite this, because
-      // it uses a fake WeakRef that doesn't care about the strong reference.
-      exported.add(val);
-      if (type === 'object' || type === 'device') {
-        // we don't dropImports on promises, to avoid interaction with retire
-        droppedRegistry.register(val, slot);
-        deadSet.delete(slot); // might have been FINALIZED before, no longer
-      }
-      valToSlot.set(val, slot);
+      registerValue(slot, val);
     }
     return val;
   }
@@ -545,7 +554,7 @@ function build(
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
     // we do not use droppedRegistry for promises, even result promises
-    exported.add(returnedP); // TODO: revisit, can we GC these? when?
+    exportedRemotables.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -657,7 +666,7 @@ function build(
     const p = wr && wr.deref();
     if (p) {
       valToSlot.delete(p);
-      exported.delete(p);
+      safetyPins.delete(p);
     }
     slotToVal.delete(promiseID);
   }
@@ -813,7 +822,7 @@ function build(
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     // we do not use droppedRegistry for exports
-    exported.add(rootObject);
+    exportedRemotables.add(rootObject);
   }
 
   /**

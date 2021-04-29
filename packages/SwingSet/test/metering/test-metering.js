@@ -87,7 +87,10 @@ async function meteredImportBundle(bundle, endowments) {
   };
 }
 
-test('metering a single bundle', async function testSingleBundle(t) {
+// This exercises our Node.js-based injected-metering code, which is only
+// used on the 'local' vat worker.
+
+test('injected metering of a single bundle', async function testSingleBundle(t) {
   const bundle = await bundleSource(require.resolve('./metered-code.js'));
   harden(Object.getPrototypeOf(console));
   const endowments = { console, assert };

@@ -11,6 +11,7 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
+import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api';
 import { defer } from './defer';
 import * as netstring from './netstring';
 import * as node from './node-stream';
@@ -112,9 +113,19 @@ export function xsnap(options) {
     if (code === 0) {
       vatExit.resolve();
     } else if (signal !== null) {
-      vatExit.reject(new Error(`${name} exited due to signal ${signal}`));
+      const reason = new ErrorSignal(
+        signal,
+        `${name} exited due to signal ${signal}`,
+      );
+      vatExit.reject(reason);
+    } else if (code === null) {
+      throw TypeError('null code???');
     } else {
-      vatExit.reject(new Error(`${name} exited with code ${code}`));
+      const reason = new ErrorCode(
+        code,
+        `${name} exited: ${ErrorMessage[code] || 'unknown error'}`,
+      );
+      vatExit.reject(reason);
     }
   });
 
@@ -159,19 +170,17 @@ export function xsnap(options) {
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
         let compute = null;
+        let allocate = null;
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
           const meterData = message.slice(1, meterSeparator);
-          // We parse the meter data as JSON.
-          // For now it is just a number for the used compute meter.
-          compute = JSON.parse(decoder.decode(meterData));
+          // We parse the meter data as JSON, expecting an array of two numbers.
+          [compute, allocate] = JSON.parse(decoder.decode(meterData));
         }
         const meterUsage = {
-          // The version identifier for our meter type.
-          // TODO Bump this whenever there's a change to metering semantics.
-          meterType: 'xs-meter-1',
-          allocate: null, // No allocation meter yet.
+          meterType: METER_TYPE,
+          allocate,
           compute,
         };
         // console.log('have meterUsage', meterUsage);

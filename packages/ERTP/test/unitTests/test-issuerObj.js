@@ -16,7 +16,7 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   );
   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
   t.is(issuer.getAllegedName(), 'fungible');
-  t.is(brand.getDisplayInfo(), undefined);
+  t.deepEqual(brand.getDisplayInfo(), {});
 });
 
 test('brand.getDisplayInfo()', t => {

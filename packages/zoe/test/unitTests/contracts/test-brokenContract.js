@@ -9,7 +9,7 @@ import bundleSource from '@agoric/bundle-source';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
-import fakeVatAdmin from '../../../src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
 const automaticRefundRoot = `${__dirname}/brokenAutoRefund`;
 

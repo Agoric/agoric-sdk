@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/vats/src/lib-board';
 // eslint-disable-next-line import/no-extraneous-dependencies

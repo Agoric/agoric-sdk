@@ -7,7 +7,7 @@ import '../src/types';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeFakeVatAdmin } from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeLoopback } from '@agoric/captp';
 
 import { makeZoe } from '@agoric/zoe';

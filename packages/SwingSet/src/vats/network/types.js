@@ -31,7 +31,7 @@
  * @typedef {Object} ListenHandler A handler for incoming connections
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onListen] The listener has been registered
  * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<ConnectionHandler>} onAccept A new connection is incoming
- * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<void>} onReject The connection was rejected
+ * @property {(port: Port, localAddr: Endpoint, remoteAddr: Endpoint, l: ListenHandler) => Promise<void>} [onReject] The connection was rejected
  * @property {(port: Port, rej: any, l: ListenHandler) => Promise<void>} [onError] There was an error while listening
  * @property {(port: Port, l: ListenHandler) => Promise<void>} [onRemove] The listener has been removed
  */

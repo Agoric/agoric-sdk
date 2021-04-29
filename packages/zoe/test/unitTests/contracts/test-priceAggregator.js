@@ -11,7 +11,7 @@ import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import buildManualTimer from '../../../tools/manualTimer';
 
@@ -133,7 +133,10 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
 
   // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
   // @ts-ignore fix needed
-  const notifier = E(pa).getPriceNotifier(brandIn, brandOut);
+  const notifier = E(pa).makeQuoteNotifier(
+    amountMath.make(brandIn, 1n),
+    brandOut,
+  );
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
   });

@@ -96,14 +96,14 @@
  * @typedef {Object} InstanceAdmin
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
-      initialAllocation: Allocation,
-      proposal: ProposalRecord) => UserSeat } makeUserSeat
+ *     initialAllocation: Allocation,
+ *     proposal: ProposalRecord) => UserSeat } makeUserSeat
+ * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
- * @property {() => boolean} acceptingOffers
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {(reason: TerminationReason) => void} failAllSeats
  * @property {() => void} stopAcceptingOffers

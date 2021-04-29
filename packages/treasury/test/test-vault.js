@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '@agoric/zoe/exported';
 
 import { E } from '@agoric/eventual-send';
-import { makeFakeVatAdmin } from '@agoric/zoe/src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeLoopback } from '@agoric/captp';
 import { makeZoe } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';

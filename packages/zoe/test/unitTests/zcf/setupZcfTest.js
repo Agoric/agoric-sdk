@@ -7,7 +7,7 @@ import { assert } from '@agoric/assert';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
-import { makeFakeVatAdmin } from '../../../src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 

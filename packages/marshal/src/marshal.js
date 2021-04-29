@@ -35,10 +35,10 @@ const { ownKeys } = Reflect;
  * The resulting copy is guaranteed to be pure data, as well as hardened.
  * Such a hardened, pure copy cannot be used as a communications path.
  *
- * @template T
- * @param {T & OnlyData} val input value.  NOTE: Must be hardened!
+ * @template {OnlyData} T
+ * @param {T} val input value.  NOTE: Must be hardened!
  * @param {WeakMap<any,any>} [already=new WeakMap()]
- * @returns {T & PureData} pure, hardened copy
+ * @returns {T} pure, hardened copy
  */
 function pureCopy(val, already = new WeakMap()) {
   // eslint-disable-next-line no-use-before-define
@@ -684,13 +684,16 @@ export { Remotable };
 /**
  * A concise convenience for the most common `Remotable` use.
  *
+ * @template T
  * @param {string} farName This name will be prepended with `Alleged: `
  * for now to form the `Remotable` `iface` argument.
- * @param {object} [remotable={}] The object used as the remotable
- * @returns {object} remotable, modified for debuggability
+ * @param {T|undefined} [remotable={}] The object used as the remotable
+ * @returns {T} remotable, modified for debuggability
  */
-const Far = (farName, remotable = {}) =>
-  Remotable(`Alleged: ${farName}`, undefined, remotable);
+const Far = (farName, remotable = undefined) => {
+  const r = remotable === undefined ? {} : remotable;
+  return Remotable(`Alleged: ${farName}`, undefined, r);
+};
 
 harden(Far);
 export { Far };

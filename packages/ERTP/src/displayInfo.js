@@ -36,20 +36,27 @@ export const assertKeysAllowed = (allowedKeys, record) => {
   );
 };
 
-export const assertDisplayInfo = allegedDisplayInfo => {
-  if (allegedDisplayInfo === undefined) {
-    return;
-  }
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {DisplayInfo} allegedDisplayInfo
+ * @returns {asserts allegedDisplayInfo is DisplayInfo}
+ */
+function assertDisplayInfo(allegedDisplayInfo) {
   assert(
     passStyleOf(allegedDisplayInfo) === 'copyRecord',
     X`A displayInfo can only be a pass-by-copy record: ${allegedDisplayInfo}`,
   );
   const displayInfoKeys = harden(['decimalPlaces']);
   assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
-};
+}
+export { assertDisplayInfo };
 
-export const coerceDisplayInfo = allegedDisplayInfo => {
-  allegedDisplayInfo = pureCopy(allegedDisplayInfo);
-  assertDisplayInfo(allegedDisplayInfo);
-  return allegedDisplayInfo;
+/**
+ * @param {DisplayInfo} [allegedDisplayInfo={}]
+ * @returns {DisplayInfo}
+ */
+export const coerceDisplayInfo = (allegedDisplayInfo = {}) => {
+  const copyDisplayInfo = pureCopy(allegedDisplayInfo);
+  assertDisplayInfo(copyDisplayInfo);
+  return copyDisplayInfo;
 };

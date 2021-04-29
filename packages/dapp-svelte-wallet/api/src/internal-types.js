@@ -12,8 +12,8 @@
 /**
  * @typedef {Object} PurseActions
  * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: Value) => Promise<void>} send
- * @property {(payment: Payment) => Promise<Value>} receive
- * @property {(payment: Payment, amount: Amount=) => Promise<Value>} deposit
+ * @property {(payment: Payment) => Promise<Amount>} receive
+ * @property {(payment: Payment, amount: Amount=) => Promise<Amount>} deposit
  */
 
 /**

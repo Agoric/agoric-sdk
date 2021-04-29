@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../src/contractFacet/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin';
 import { makeZoe } from '../..';
 
 import '../../exported';
