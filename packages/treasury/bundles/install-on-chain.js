@@ -53,7 +53,7 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     priceAuthority,
     loanParams,
     timerService: chainTimerService,
-    bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE,
+    bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE
   });
 
   const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms);
