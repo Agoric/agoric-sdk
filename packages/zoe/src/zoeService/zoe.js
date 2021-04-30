@@ -230,12 +230,17 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
             seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
-            const seatData = harden({ proposal, initialAllocation, notifier });
+            const seatData = harden({
+              proposal,
+              initialAllocation,
+              notifier,
+              seatHandle,
+            });
 
             zoeSeatAdmins.add(zoeSeatAdmin);
 
             E(addSeatObjPromiseKit.promise)
-              .addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle)
+              .addSeat(invitationHandle, zoeSeatAdmin, seatData)
               .then(({ offerResultP, exitObj }) => {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);

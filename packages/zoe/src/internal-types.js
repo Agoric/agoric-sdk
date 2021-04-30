@@ -13,6 +13,7 @@
  * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
+ * @property {SeatHandle} seatHandle
  */
 
 /**
@@ -61,28 +62,6 @@
  */
 
 /**
- * @callback MakeZcfSeatAdminKit
- * Make the ZCF seat and seat admin
- * @param {WeakSet<SeatStaging>} allSeatStagings - a set of valid
- * seatStagings where allocations have been checked for offerSafety
- * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
- * - a presence from Zoe such that ZCF can tell Zoe
- * about seat events
- * @param {SeatData} seatData - pass-by-copy data to use to make the seat
- * @param {GetMathKindByBrand} getMathKindByBrand - get the mathKind given the brand
- * @returns {ZcfSeatAdminKit}
- */
-
-/**
- * @typedef {{zcfSeatAdmin: ZCFSeatAdmin, zcfSeat: ZCFSeat}} ZcfSeatAdminKit
- */
-
-/** @typedef {Object} ZCFSeatAdmin
- * @property {(seatStaging: SeatStaging) => void} commit
- * @property {() => void} updateHasExited - updates `exited` state to true
- */
-
-/**
  * @typedef {Object} AddSeatResult
  * @property {Promise<any>} offerResultP
  * @property {Object} exitObj
@@ -118,7 +97,6 @@
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
- *             seatHandle: SeatHandle,
  *            ) => AddSeatResult} addSeat
  */
 
@@ -208,8 +186,7 @@
 /**
  * @callback MakeExitObj
  * @param {ProposalRecord} proposal
- * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
- * @param {ZCFSeatAdmin} zcfSeatAdmin
+ * @param {ZCFSeat} zoeSeatAdmin
  * @returns {ExitObj}
  */
 
@@ -256,4 +233,39 @@
 
 /**
  * @typedef {Array<IssuerRecord>} ExportedIssuerStorage
+ */
+
+/**
+ * @callback MakeZCFSeat
+ * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin,
+ * @param {SeatData} seatData
+ * @returns {ZCFSeat}
+ */
+
+/**
+ * @callback DropAllReferences
+ *
+ * Drops all of the references in the seat-related weakStores by
+ * dropping the stores
+ * @returns {void}
+ */
+
+/**
+ * @callback ReallocateInternal
+ * @param {SeatStaging[]} seatStagings
+ * @returns {void}
+ */
+
+/**
+ * 
+ * @callback CreateSeatManager
+ * The SeatManager holds the active zcfSeats and seatStagings and can
+ * reallocate and make new zcfSeats.
+ *
+ * @param {ZoeInstanceAdmin} zoeInstanceAdmin 
+ * @param {GetMathKindByBrand} getMathKindByBrand 
+ * @returns {{ makeZCFSeat: MakeZCFSeat,
+    reallocate: Reallocate,
+    reallocateInternal: ReallocateInternal,
+    dropAllReferences: DropAllReferences }}
  */
