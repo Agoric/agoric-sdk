@@ -1,0 +1,213 @@
+# Catalog of Zoe Maps/WeakMaps/Stores
+
+## Zoe Service (one per chain)
+
+### installations - native WeakSet
+
+An installation is added whenever a user calls `E(zoe).install` to
+install a contract bundle. 
+
+**Expected cardinality**: one element per call
+to `E(zoe).install`. On the testnet with only the bootstrap and load
+generation code running, this should be about 5 elements total. 
+
+**Access patterns**: We `add` and `has` only.
+
+**Dropped?**: Currently, never dropped by design.
+
+### brandToIssuerRecord - WeakStore from `@agoric/store`
+
+A (brand, issuerRecord) is added whenever a new issuer is added to
+Zoe. 
+
+**Expected cardinality:** one entry per issuer. On the testnet with
+only the bootstrap and load generation code running, this should be
+about 10 entries. 
+
+**Access patterns**: We `init` and `get` only
+
+**Dropped?**: Currently, never dropped by design.
+
+### issuerToIssuerRecord - WeakStore from `@agoric/store`
+
+An (issuer, issuerRecord) is added whenever a new issuer is added to
+Zoe.
+
+**Expected cardinality:** one entry per issuer. On the testnet with
+only the bootstrap and load generation code running, this should be
+about 10 entries. 
+
+**Access patterns**: We `init` and `has` and `get` only
+
+**Dropped?**: Currently, never dropped by design.
+
+### brandToPurse - WeakStore from `@agoric/store`
+
+A (brand, purse) is added whenever a new issuer is added to Zoe.
+
+**Expected cardinality**: one entry per issuer.  On the testnet with
+only the bootstrap and load generation code running, this should be
+about 10 entries.
+
+**Access patterns**: We `init` and `has` and `get` only
+
+**Dropped?**: Currently, never dropped by design.
+
+### instanceToInstanceAdmin - WeakStore from `@agoric/store`
+
+An (instance, instanceAdmin) is added whenever a user calls
+`E(zoe).startInstance` and creates a new contract instance.
+
+**Expected cardinality**: one entry per instance. On the testnet with
+only the bootstrap and load generation code running, this should be
+about 5 entries. 
+
+**Access patterns**: We `init` and `get` only
+
+**Dropped?**: Currently, not dropped, but there is a task to drop it:
+https://github.com/Agoric/agoric-sdk/issues/2880
+
+### zoeSeatAdmins - native Set
+
+A zoeSeatAdmin is added for every userSeat created, so every time a
+user calls E(zoe).offer with an invitation, OR when a contract creates
+an "emptySeat" for bookkeeping. 
+
+**Expected cardinality**: one entry per userSeat. If a contract
+creates an "emptySeat" for bookkeeping, there will be no invitation,
+so we do not know the cardinality in comparison to invitations,
+especially since many invitations will not be used. 
+
+On the testnet with only the bootstrap and load generation code
+running, this will increase by one for every `E(zoe).offer` call.
+(Note that a different contract might create numerous "emptySeats" for
+accounting, so this is not strictly tied to the number of
+`E(zoe).offer` calls in general.)
+
+**Access patterns**: We `add`, `has`, `delete`, and we iterate with
+`forEach`. We only iterate with `forEach` to exit all the seats in the
+case of a shutdown or shutdownWithFailure. 
+
+**Dropped?**: Currently, dropped when the seat is exited.
+
+
+### seatHandleToZoeSeatAdmin - WeakStore from `@agoric/store`
+
+A (seatHandle, zoeSeatAdmin) is added for every userSeat created, so
+every time a user calls E(zoe).offer with an invitation, OR when a
+contract creates an "emptySeat" for bookkeeping. 
+
+**Expected cardinality**: one entry per userSeat. If a contract
+creates an "emptySeat" for bookkeeping, there will be no invitation,
+so we do not know the cardinality in comparison to invitations,
+especially since many invitations will not be used. 
+
+On the testnet with only the bootstrap and load generation code
+running, this will increase by one for every `E(zoe).offer` call.
+(Note that a different contract might create numerous "emptySeats" for
+accounting, so this is not strictly tied to the number of
+`E(zoe).offer` calls in general.)
+
+**Access patterns**: We `init` and `get` only
+
+**Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
+
+## Contract Facet (one per instance)
+
+### brandToIssuerRecord - WeakStore from `@agoric/store` - uses same code as ZoeService
+
+A (brand, issuerRecord) is added whenever a new issuer is added to
+this contract instance. (If the same issuer is used in multiple
+instances, it is stored in duplicate, since each instance has its own
+vat.) 
+
+**Expected cardinality**: one entry per issuer per contract. On the testnet with
+only the bootstrap and load generation code running, this should be
+about 5-10 entries for each instance at most (the AMM has the most
+issuers by far). 
+
+**Access patterns**: We `init` and `get` only
+
+**Dropped?**: Currently, never dropped by design.
+
+### issuerToIssuerRecord - WeakStore from `@agoric/store` - uses same code as ZoeService
+
+An (issuer, issuerRecord) is added whenever a new issuer is added to
+this contract instance. (If the same issuer is used in multiple
+instances, it is stored in duplicate, since each instance has its own
+vat.)
+
+**Expected cardinality**: one entry per issuer per contract. On the testnet with
+only the bootstrap and load generation code running, this should be
+about 5-10 entries for each instance at most (the AMM has the most
+issuers by far).
+
+**Access patterns**: We `init`, `has`, and `get` only
+
+**Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
+
+### invitationHandleToHandler - WeakStore from `@agoric/store`
+
+An (invitationHandle, offerHandler) is added when an invitation is
+made.
+
+**Expected cardinality**: one entry per invitation. 
+
+**Access patterns**: We `init` and `get` only
+
+**Dropped?**: Currently, never dropped by design.
+
+### seatStagingToSeatHandle - WeakStore from `@agoric/store`
+
+A (seatStaging, seatHandle) is added whenever a seatStaging is made,
+which is either by contract code calling `zcfSeat.stage(` explicitly,
+or by contract code using a ZoeHelper that does so. Note that
+`ZCFMint.mintGains` and `ZCFMint.burnLosses` create a single
+seatStaging each, and the `trade` helper creates two, one per seat
+involved in the reallocation.
+
+**Expected cardinality**: 0, 1 or a few per seat in practice. There's no
+restriction on the number of seatStagings that can be made per seat,
+however.
+
+**Access patterns**: We `init`, `has`, `get` and `delete`
+
+**Dropped?**: As of
+[6a2e217](https://github.com/Agoric/agoric-sdk/commit/6a2e217d7829be169d77fc02ceabe28647a43525)
+it is dropped after a reallocate uses it up. Still needs to be dropped if the
+associated seat no longer exists and it wasn't used. 
+
+### zcfSeatToSeatHandle - WeakStore from `@agoric/store`
+
+A merge mistake. Should be deleted here: https://github.com/Agoric/agoric-sdk/pull/3008
+
+### activeZCFSeats - WeakStore from `@agoric/store`
+
+A (zcfSeat, allocation) is created when a user calls `E(zoe).offer` or
+contract code creates an "emptySeat" for bookkeeping.
+
+**Expected cardinality**: One per call to `E(zoe).offer` or
+"emptySeat". On the testnet with only the bootstrap and load
+generation code running, this will increase by one for every
+`E(zoe).offer` call. (Note that a different contract might create
+numerous "emptySeats" for accounting, so this is not strictly tied to
+the number of `E(zoe).offer` calls in general.)
+
+**Access patterns**: We `init`, `set`, `has`, `get` and `delete`
+
+**Dropped?**: When a ZCFSeat is exited, the entry is dropped.
+
+### zcfSeatsSoFar - Native WeakSet
+
+A new empty WeakSet called `zcfSeatsSoFar` is created in every call to
+`reallocateInternal`. It's used to prevent aliasing issues. Only the
+seats being reallocated over are added.
+
+**Expected cardinality**: In practice, probably 2 elements total every
+time, but it could be larger if the reallocation occurs over multiple
+seats.
+
+**Access patterns**: We `has` and `add`
+
+**Dropped?**: Entire WeakSet is dropped when the function
+`reallocateInternal` ends. 
