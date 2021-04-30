@@ -37,6 +37,8 @@ test('bootstrap payment', async t => {
     recordingPeriod: 10n,
   };
   const manualTimer = buildManualTimer(console.log);
+  // This test value is not a statement about the actual value to
+  // be minted
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
   const { creatorFacet: stablecoinMachine, instance } = await E(
     zoe,
@@ -49,8 +51,7 @@ test('bootstrap payment', async t => {
       loanParams,
       timerService: manualTimer,
       liquidationInstall,
-      // This test value is not a statement about the actual value to
-      // be minted
+
       bootstrapPaymentValue,
     },
   );
@@ -93,8 +94,6 @@ test('bootstrap payment - default value is 0n', async t => {
       loanParams,
       timerService: manualTimer,
       liquidationInstall,
-      // This test value is not a statement about the actual value to
-      // be minted
     },
   );
 
