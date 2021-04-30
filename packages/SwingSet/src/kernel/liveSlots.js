@@ -27,7 +27,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} console
- * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalLexicals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -342,6 +342,8 @@ function build(
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
+    RepairedWeakMap,
+    RepairedWeakSet,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -801,6 +803,11 @@ function build(
     makeKind,
   });
 
+  const inescapableGlobalLexicals = harden({
+    WeakMap: RepairedWeakMap,
+    WeakSet: RepairedWeakSet,
+  });
+
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
     didRoot = true;
@@ -892,7 +899,14 @@ function build(
   harden(dispatch);
 
   // we return 'deadSet' for unit tests
-  return harden({ vatGlobals, setBuildRootObject, dispatch, m, deadSet });
+  return harden({
+    vatGlobals,
+    inescapableGlobalLexicals,
+    setBuildRootObject,
+    dispatch,
+    m,
+    deadSet,
+  });
 }
 
 /**
@@ -907,7 +921,7 @@ function build(
  * @param {boolean} enableDisavow
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
- * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalLexicals, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -955,8 +969,20 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
   );
-  const { vatGlobals, dispatch, setBuildRootObject, deadSet } = r; // omit 'm'
-  return harden({ vatGlobals, dispatch, setBuildRootObject, deadSet });
+  const {
+    vatGlobals,
+    inescapableGlobalLexicals,
+    dispatch,
+    setBuildRootObject,
+    deadSet,
+  } = r; // omit 'm'
+  return harden({
+    vatGlobals,
+    inescapableGlobalLexicals,
+    dispatch,
+    setBuildRootObject,
+    deadSet,
+  });
 }
 
 // for tests

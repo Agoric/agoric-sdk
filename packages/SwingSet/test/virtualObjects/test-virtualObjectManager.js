@@ -241,3 +241,76 @@ test('weak store operations', t => {
   ws1.set(nv2, 'non-virtual object #2 revised');
   t.is(ws1.get(nv2), 'non-virtual object #2 revised');
 });
+
+test('virtualized weak collection operations', t => {
+  // TODO: don't yet have a way to test the weakness of the virtualized weak
+  // collections
+
+  const {
+    RepairedWeakMap,
+    RepairedWeakSet,
+    makeKind,
+  } = makeFakeVirtualObjectManager(3);
+
+  const thingMaker = makeKind(makeThingInstance);
+  const zotMaker = makeKind(makeZotInstance);
+
+  const thing1 = thingMaker('t1');
+  const thing2 = thingMaker('t2');
+
+  const zot1 = zotMaker(1, 'z1');
+  const zot2 = zotMaker(2, 'z2');
+  const zot3 = zotMaker(3, 'z3');
+  const zot4 = zotMaker(4, 'z4');
+
+  const wm1 = new RepairedWeakMap();
+  const wm2 = new RepairedWeakMap();
+  const nv1 = {};
+  const nv2 = { a: 47 };
+  wm1.set(zot1, 'zot #1');
+  wm2.set(zot2, 'zot #2');
+  wm1.set(zot3, 'zot #3');
+  wm2.set(zot4, 'zot #4');
+  wm1.set(thing1, 'thing #1');
+  wm2.set(thing2, 'thing #2');
+  wm1.set(nv1, 'non-virtual object #1');
+  wm1.set(nv2, 'non-virtual object #2');
+  t.is(wm1.get(zot1), 'zot #1');
+  t.is(wm1.has(zot1), true);
+  t.is(wm2.has(zot1), false);
+  wm1.set(zot3, 'zot #3 revised');
+  wm2.delete(zot4);
+  t.is(wm1.get(nv1), 'non-virtual object #1');
+  t.is(wm1.get(nv2), 'non-virtual object #2');
+  t.is(wm2.has(zot4), false);
+  t.is(wm1.get(zot3), 'zot #3 revised');
+  wm1.delete(nv1);
+  t.is(wm1.has(nv1), false);
+  wm1.set(nv2, 'non-virtual object #2 revised');
+  t.is(wm1.get(nv2), 'non-virtual object #2 revised');
+
+  const ws1 = new RepairedWeakSet();
+  const ws2 = new RepairedWeakSet();
+  ws1.add(zot1);
+  ws2.add(zot2);
+  ws1.add(zot3);
+  ws2.add(zot4);
+  ws1.add(thing1);
+  ws2.add(thing2);
+  ws1.add(nv1);
+  ws1.add(nv2);
+  t.is(ws1.has(zot1), true);
+  t.is(ws2.has(zot1), false);
+  ws1.add(zot3);
+  ws2.delete(zot4);
+  t.is(ws1.has(nv1), true);
+  t.is(ws1.has(nv2), true);
+  t.is(ws2.has(nv1), false);
+  t.is(ws2.has(nv2), false);
+  t.is(ws2.has(zot4), false);
+  t.is(ws1.has(zot3), true);
+  ws1.delete(nv1);
+  t.is(ws1.has(nv1), false);
+  ws1.add(nv2);
+  t.is(ws1.has(nv2), true);
+});

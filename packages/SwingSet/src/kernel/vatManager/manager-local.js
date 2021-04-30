@@ -129,7 +129,7 @@ export function makeLocalVatManagerFactory(tools) {
       assert,
     });
     const inescapableTransforms = [];
-    const inescapableGlobalLexicals = {};
+    const inescapableGlobalLexicals = { ...ls.inescapableGlobalLexicals };
     if (metered) {
       const getMeter = meterRecord.getMeter;
       inescapableTransforms.push(src => transformMetering(src, getMeter));

@@ -64,6 +64,8 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
+    RepairedWeakMap,
+    RepairedWeakSet,
     flushCache,
   } = makeVirtualObjectManager(
     fakeSyscall,
@@ -77,6 +79,8 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
   return {
     makeKind,
     makeWeakStore,
+    RepairedWeakMap,
+    RepairedWeakSet,
     flushCache,
     dumpStore,
   };
