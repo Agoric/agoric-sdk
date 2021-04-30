@@ -332,6 +332,7 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
+		app.MustInitController(ctx)
 		defer swingset.SetControllerContext(ctx)()
 		return sendToController(true, str)
 	}
@@ -423,7 +424,7 @@ func NewAgoricApp(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, swingset.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(vpurse.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -433,7 +434,9 @@ func NewAgoricApp(
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
-		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, swingset.ModuleName, ibctransfertypes.ModuleName,
+		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		vpurse.ModuleName, swingset.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -527,23 +530,16 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	}
 	app.controllerInited = true
 
-	/*
-		  FIXME: Get these from genesis!
-			- name: mallory
-				type: local
-				address: agoric1z8rldx498tf49p5ze04jhakyumkh7vyxku7e0p
-				pubkey: agoricpub1addwnpepqtzw4lz7yjhg7qljwf0jqaykj6q94hh9epxa6nq7u0a3hxhsn7u670cgwnz
-				mnemonic: ""
-				threshold: 0
-				pubkeys: []
-	*/
-	bootstrapAddr, err := sdk.AccAddressFromBech32("agoric1z8rldx498tf49p5ze04jhakyumkh7vyxku7e0p")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot get bootstrap addr", err)
-		os.Exit(1)
+	var bootstrapAddr sdk.AccAddress
+	gs := app.VpurseKeeper.GetGenesis(ctx)
+	if len(gs.BootstrapAddress) > 0 {
+		ba, err := sdk.AccAddressFromBech32(gs.BootstrapAddress)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot get bootstrap addr", err)
+			os.Exit(1)
+		}
+		bootstrapAddr = ba
 	}
-	bootstrapValue := "50000000000"
-	donationValue := "5000000"
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
@@ -553,8 +549,8 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		StoragePort:      swingset.GetPort("storage"),
 		ChainID:          ctx.ChainID(),
 		BootstrapAddress: bootstrapAddr.String(),
-		BootstrapValue:   bootstrapValue,
-		DonationValue:    donationValue,
+		BootstrapValue:   gs.BootstrapValue.String(),
+		DonationValue:    gs.DonationValue.String(),
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {
@@ -568,7 +564,6 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 
 // BeginBlocker application updates every begin block
 func (app *GaiaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	app.MustInitController(ctx)
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -598,7 +593,6 @@ func updateTransferPort(gs GenesisState, reservedPort, newPort string) error {
 
 // InitChainer application update at chain initialization
 func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
-	app.MustInitController(ctx)
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)

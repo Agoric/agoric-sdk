@@ -1,0 +1,20 @@
+syntax = "proto3";
+package agoric.vpurse;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types";
+
+message GenesisState {
+    option (gogoproto.equal) = false;
+
+    string bootstrap_address = 1;
+    string bootstrap_value = 2 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.nullable)   = false
+    ];
+    string donation_value = 3 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.nullable)   = false
+    ];
+}

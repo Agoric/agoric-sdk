@@ -9,6 +9,8 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
 )
 
+const genesis string = "genesis"
+
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey sdk.StoreKey
@@ -33,6 +35,19 @@ func NewKeeper(
 		bankKeeper:       bankKeeper,
 		CallToController: callToController,
 	}
+}
+
+func (k Keeper) GetGenesis(ctx sdk.Context) types.GenesisState {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(genesis))
+	var gs types.GenesisState
+	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &gs)
+	return gs
+}
+
+func (k Keeper) SetGenesis(ctx sdk.Context, data types.GenesisState) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set([]byte(genesis), k.cdc.MustMarshalBinaryLengthPrefixed(&data))
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {

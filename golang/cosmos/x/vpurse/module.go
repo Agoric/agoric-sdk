@@ -44,12 +44,16 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 
 // DefaultGenesis returns default genesis state as raw bytes for the deployment
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
-	return nil
+	return cdc.MustMarshalJSON(DefaultGenesisState())
 }
 
 // Validation check of the Genesis
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, config client.TxEncodingConfig, bz json.RawMessage) error {
-	return nil
+	var data types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
+		return err
+	}
+	return ValidateGenesis(&data)
 }
 
 // Register rest routes
@@ -125,11 +129,14 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
+	var genesisState types.GenesisState
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	return InitGenesis(ctx, am.keeper, &genesisState)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the ibc-transfer
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
-	return nil
+	gs := ExportGenesis(ctx, am.keeper)
+	return cdc.MustMarshalJSON(gs)
 }
