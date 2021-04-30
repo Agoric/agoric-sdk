@@ -55,9 +55,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
 
-    /** @type {WeakStore<ZCFSeat,SeatHandle>} */
-    const zcfSeatToSeatHandle = makeNonVOWeakStore('zcfSeat');
-
     // Make the instanceRecord
     const {
       addIssuerToInstanceRecord,
@@ -87,7 +84,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         seatHandle,
       });
       const zcfSeat = makeZCFSeat(zoeSeatAdminPromiseKit.promise, seatData);
-      zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
 
       const exitObj = makeExitObj(seatData.proposal, zcfSeat);
 
@@ -305,7 +301,6 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const addSeatObj = Far('addSeatObj', {
       addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
         const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
-        zcfSeatToSeatHandle.init(zcfSeat, seatData.seatHandle);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           throw zcfSeat.fail(reason);
