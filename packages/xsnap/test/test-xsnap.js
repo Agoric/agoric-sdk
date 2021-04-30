@@ -1,5 +1,6 @@
 /* global setTimeout, __filename */
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { PerformanceObserver, performance } from 'perf_hooks';
 import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
@@ -505,3 +506,54 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     });
   }
 })();
+
+function testMapPerformance(k) {
+  const code = `
+  const range = n => Array.from(Array(n).keys());
+  let obArray;
+  function createObjects(k) {
+    obArray = range(k).map(ix => ({
+      kref: \`o+\${ix}\`,
+      color: 'blue',
+      size: ix % 17,
+    }));
+  }
+  function storeObjects(){
+    const m1 = new Map();
+    obArray.forEach(obj => m1.set(obj.kref, obj));  
+  }
+  `;
+
+  test(`map performance: O(${k})`, async t => {
+    const vat = xsnap({ ...xsnapOptions });
+    t.teardown(() => vat.terminate());
+
+    const run = async (label, script) => {
+      await t.notThrowsAsync(vat.evaluate('gc()'));
+      performance.mark(`${k}: start ${label}`);
+      await t.notThrowsAsync(vat.evaluate(script));
+      performance.mark(`${k}: stop ${label}`);
+      performance.measure(
+        `${k}: ${label}`,
+        `${k}: start ${label}`,
+        `${k}: stop ${label}`,
+      );
+    };
+    await run('initialize', code);
+    await run('create', `createObjects(${k})`);
+    await run('store take 1', `storeObjects()`);
+    await run('store take 2', `storeObjects()`);
+  });
+}
+const obs = new PerformanceObserver(items => {
+  items.getEntries().forEach(({ name, duration }) => {
+    console.log(name, duration);
+  });
+  performance.clearMarks();
+});
+obs.observe({ entryTypes: ['measure'] });
+testMapPerformance(100);
+testMapPerformance(1000);
+testMapPerformance(4000);
+testMapPerformance(8000);
+testMapPerformance(10000);
