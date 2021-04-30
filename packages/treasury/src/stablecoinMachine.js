@@ -48,6 +48,7 @@ export async function start(zcf) {
     loanParams,
     timerService,
     liquidationInstall,
+    bootstrapPaymentValue = 0n,
   } = zcf.getTerms();
 
   assert.typeof(
@@ -284,6 +285,21 @@ export async function start(zcf) {
     return rewardPoolSeat.getCurrentAllocation();
   }
 
+  function getBootstrapPayment() {
+    const {
+      zcfSeat: bootstrapZCFSeat,
+      userSeat: bootstrapUserSeat,
+    } = zcf.makeEmptySeatKit();
+    runMint.mintGains(
+      {
+        Bootstrap: amountMath.make(runBrand, bootstrapPaymentValue),
+      },
+      bootstrapZCFSeat,
+    );
+    bootstrapZCFSeat.exit();
+    return E(bootstrapUserSeat).getPayout('Bootstrap');
+  }
+
   const publicFacet = harden({
     getAMM() {
       return autoswapInstance;
@@ -305,6 +321,7 @@ export async function start(zcf) {
     },
     getCollaterals,
     getRewardAllocation,
+    getBootstrapPayment,
   });
 
   return harden({ creatorFacet: stablecoinMachine, publicFacet });
