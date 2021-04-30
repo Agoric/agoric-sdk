@@ -27,7 +27,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} console
- * @returns {*} { vatGlobals, inescapableGlobalLexicals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -803,7 +803,7 @@ function build(
     makeKind,
   });
 
-  const inescapableGlobalLexicals = harden({
+  const inescapableGlobalProperties = harden({
     WeakMap: RepairedWeakMap,
     WeakSet: RepairedWeakSet,
   });
@@ -901,7 +901,7 @@ function build(
   // we return 'deadSet' for unit tests
   return harden({
     vatGlobals,
-    inescapableGlobalLexicals,
+    inescapableGlobalProperties,
     setBuildRootObject,
     dispatch,
     m,
@@ -921,7 +921,7 @@ function build(
  * @param {boolean} enableDisavow
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
- * @returns {*} { vatGlobals, inescapableGlobalLexicals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -971,14 +971,14 @@ export function makeLiveSlots(
   );
   const {
     vatGlobals,
-    inescapableGlobalLexicals,
+    inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
     deadSet,
   } = r; // omit 'm'
   return harden({
     vatGlobals,
-    inescapableGlobalLexicals,
+    inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
     deadSet,
