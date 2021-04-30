@@ -436,12 +436,12 @@ export function makeVirtualObjectManager(
       if (initializing) {
         innerSelf.wrapData = wrapData;
         instanceKit = harden(instanceKitMaker(innerSelf.rawData));
+        cache.remember(innerSelf);
       } else {
         const activeData = {};
         wrapData(activeData);
         instanceKit = harden(instanceKitMaker(activeData));
       }
-      cache.remember(innerSelf);
       return instanceKit;
     }
 
