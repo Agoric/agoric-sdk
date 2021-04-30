@@ -8,7 +8,7 @@ import stablecoinBundle from './bundle-stablecoinMachine';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
-const BOOTSTRAP_PAYMENT_VALUE = 20000n * 10n ** 6n,
+const BOOTSTRAP_PAYMENT_VALUE = 20000n * 10n ** 6n;
 
 /**
  * @param {Object} param0
@@ -53,7 +53,7 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     priceAuthority,
     loanParams,
     timerService: chainTimerService,
-    bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE
+    bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE,
   });
 
   const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms);
