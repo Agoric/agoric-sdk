@@ -63,21 +63,34 @@ const makePurseController = (
     },
   });
 
+/**
+ * @typedef {Object} AssetIssuerKit
+ * @property {Mint} [mint]
+ * @property {Issuer} issuer
+ * @property {Brand} brand
+ */
+
+/**
+ * @typedef {AssetIssuerKit & { denom: string }} AssetRecord
+ */
+
+/**
+ * @typedef {Object} Bank
+ * @property {() => Subscription<AssetDescriptor>}
+ * getAssetSubscription Returns assets as they are added to the bank
+ * @property {(brand: Brand) => VirtualPurse} getPurse Find any existing vpurse (keyed by address and brand) or create a
+ * new one.
+ */
+
 export function buildRootObject(_vatPowers) {
   return Far('bankMaker', {
     /**
      * @param {import('./bridge').BridgeManager} bridgeMgr
      */
     async makeBankManager(bridgeMgr) {
-      /**
-       * @typedef {Object} BrandRecord
-       * @property {ERef<Issuer>} issuer
-       * @property {ERef<Mint>} mint
-       */
-
       const bankCall = obj => E(bridgeMgr).toBridge('bank', obj);
 
-      /** @type {Store<Brand, IssuerKit & { denom: string }>} */
+      /** @type {Store<Brand, AssetRecord>} */
       const brandToAssetRecord = makeStore('brand');
       /** @type {Store<string, Store<string, (amount: any) => void>>} */
       const denomToAddressUpdater = makeStore('denom');
@@ -121,6 +134,7 @@ export function buildRootObject(_vatPowers) {
         publication: assetPublication,
       } = makeSubscriptionKit();
 
+      /** @type {Store<string, Bank>} */
       const addressToBank = makeStore('address');
       return Far('bankManager', {
         /**
@@ -137,7 +151,7 @@ export function buildRootObject(_vatPowers) {
          * @param {string} denom lower-level denomination string
          * @param {string} issuerName
          * @param {string} proposedName
-         * @param {IssuerKit} kit ERTP issuer kit (mint, brand, issuer)
+         * @param {AssetIssuerKit} kit ERTP issuer kit (mint, brand, issuer)
          */
         async addAsset(denom, issuerName, proposedName, kit) {
           assert.typeof(denom, 'string');
@@ -169,6 +183,7 @@ export function buildRootObject(_vatPowers) {
          * Create a new personal bank interface for a given address.
          *
          * @param {string} address lower-level bank account address
+         * @returns {Bank}
          */
         getBankForAddress(address) {
           assert.typeof(address, 'string');
@@ -178,21 +193,12 @@ export function buildRootObject(_vatPowers) {
 
           /** @type {Store<Brand, VirtualPurse>} */
           const brandToVPurse = makeStore('brand');
+
+          /** @type {Bank} */
           const bank = Far('bank', {
-            /**
-             * Returns assets as they are added to the bank.
-             *
-             * @returns {Subscription<AssetDescriptor>}
-             */
             getAssetSubscription() {
               return harden(assetSubscription);
             },
-            /**
-             * Find any existing vpurse (keyed by address and brand) or create a
-             * new one.
-             *
-             * @param {Brand} brand
-             */
             async getPurse(brand) {
               if (brandToVPurse.has(brand)) {
                 return brandToVPurse.get(brand);

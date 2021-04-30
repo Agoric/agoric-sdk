@@ -637,17 +637,26 @@ export function makeWallet({
     return `instance ${q(petname)} successfully added to wallet`;
   };
 
-  const makeEmptyPurse = async (
+  /**
+   * This function is marked internal and unsafe because it permits importing a
+   * shared purse (which we don't necessarily trust).
+   *
+   * @param {Petname} brandPetname
+   * @param {Petname} petnameForPurse
+   * @param {boolean} defaultAutoDeposit
+   * @param {(issuer: Issuer) => ERef<Purse>} importPurse
+   */
+  const internalUnsafeImportPurse = async (
     brandPetname,
     petnameForPurse,
-    defaultAutoDeposit = false,
-    purseMaker = issuer => E(issuer).makeEmptyPurse(),
+    defaultAutoDeposit,
+    importPurse,
   ) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
     /** @type {Purse} */
-    const purse = await purseMaker(issuer);
+    const purse = await importPurse(issuer);
 
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
@@ -674,6 +683,19 @@ export function makeWallet({
       },
     });
   };
+
+  // This function is exposed to the walletAdmin.
+  const makeEmptyPurse = (
+    brandPetname,
+    petnameForPurse,
+    defaultAutoDeposit = false,
+  ) =>
+    internalUnsafeImportPurse(
+      brandPetname,
+      petnameForPurse,
+      defaultAutoDeposit,
+      issuer => E(issuer).makeEmptyPurse(),
+    );
 
   async function deposit(pursePetname, payment) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
@@ -1526,13 +1548,18 @@ export function makeWallet({
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
   };
 
+  // Importing assets as virtual purses from the bank is a highly-trusted path.
+  // We don't want to expose this mechanism to the user, in case they shoot
+  // themselves in the foot with it by importing an asset/virtual purse they
+  // don't really trust.
   const importBankAssets = async bank => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
           await addIssuer(issuerName, issuer);
           const purse = await E(bank).getPurse(brand);
-          await wallet.makeEmptyPurse(
+          // We can import this purse, because we trust the bank.
+          await internalUnsafeImportPurse(
             issuerName,
             proposedName,
             true,

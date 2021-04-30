@@ -507,6 +507,7 @@ type cosmosInitAction struct {
 	ChainID          string `json:"chainID"`
 	BootstrapAddress string `json:"bootstrapAddress"`
 	BootstrapValue   string `json:"bootstrapValue"`
+	DonationValue    string `json:"donationValue"`
 }
 
 // MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
@@ -527,7 +528,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	app.controllerInited = true
 
 	/*
-		  FIXME: Get this from genesis!
+		  FIXME: Get these from genesis!
 			- name: mallory
 				type: local
 				address: agoric1z8rldx498tf49p5ze04jhakyumkh7vyxku7e0p
@@ -542,6 +543,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		os.Exit(1)
 	}
 	bootstrapValue := "50000000000"
+	donationValue := "5000000"
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
@@ -552,6 +554,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		ChainID:          ctx.ChainID(),
 		BootstrapAddress: bootstrapAddr.String(),
 		BootstrapValue:   bootstrapValue,
+		DonationValue:    donationValue,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {

@@ -29,10 +29,6 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
-// TODO: decide on initial value to be distributed. This would give
-// 20,000 users each 1 display unit of RUN
-const BOOTSTRAP_PAYMENT_VALUE = 20000n * 10n ** 6n;
-
 console.debug(`loading bootstrap.js`);
 
 // Used for coordinating on an index in comms for the provisioning service
@@ -48,7 +44,6 @@ function makeVattpFrom(vats) {
 }
 
 export function buildRootObject(vatPowers, vatParameters) {
-  console.error('%%%HAVE vatParameters', vatParameters);
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
     await E(httpVat).setCommandDevice(cmdDevice, roles);
@@ -63,6 +58,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     vatAdminSvc,
     noFakeCurrencies,
   ) {
+    /** @type {ERef<ReturnType<import('./vat-bank')['buildRootObject']>>} */
+    const bankVat = vats.bank;
+
     // Create singleton instances.
     const [
       bankManager,
@@ -73,7 +71,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       zoe,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
-      bridgeManager && E(vats.bank).makeBankManager(bridgeManager),
+      bridgeManager ? E(bankVat).makeBankManager(bridgeManager) : undefined,
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
@@ -95,7 +93,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       nameAdmin: pegasusConnectionsAdmin,
     } = makeNameHubKit();
 
-    async function installEconomy() {
+    async function installEconomy(bootstrapPaymentValue) {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
       /** @type {Store<NameHub, NameAdmin>} */
@@ -124,7 +122,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           nameAdmins,
           priceAuthority,
           zoe,
-          bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE,
+          bootstrapPaymentValue,
         }),
         installPegasusOnChain({
           agoricNames,
@@ -137,8 +135,13 @@ export function buildRootObject(vatPowers, vatParameters) {
       return treasuryCreator;
     }
 
+    const { bootstrapAddress, donationValue = '0', bootstrapValue = '0' } =
+      (vatParameters && vatParameters.argv && vatParameters.argv.bootMsg) || {};
+    const bootstrapPaymentValue = BigInt(bootstrapValue);
+    const donationPaymentValue = BigInt(donationValue);
+
     // Now we can bootstrap the economy!
-    const treasuryCreator = await installEconomy();
+    const treasuryCreator = await installEconomy(bootstrapPaymentValue);
 
     const [
       centralIssuer,
@@ -152,34 +155,35 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
 
-    async function payThePiper(bootMsg) {
-      if (!bankManager || !bootMsg) {
+    /** @type {undefined | import('@agoric/eventual-send').EOnly<Purse>} */
+    let centralBootstrapPurse;
+
+    // We just transfer the bootstrapValue in central tokens to the low-level
+    // bootstrapAddress.
+    async function depositCentralBootstrapPayment() {
+      if (!bankManager || !bootstrapAddress || !bootstrapPaymentValue) {
         return;
       }
-      // We just transfer the bootstrapValue in central tokens to the low-level
-      // bootstrapAddress.
-      const { bootstrapAddress, bootstrapValue } = bootMsg;
-      if (!bootstrapAddress || !bootstrapValue) {
-        return;
-      }
+      await E(bankManager).addAsset(
+        'urun',
+        CENTRAL_ISSUER_NAME,
+        'Agoric RUN currency',
+        harden({ issuer: centralIssuer, brand: centralBrand }),
+      );
       const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
       const pmt = await E(treasuryCreator).getBootstrapPayment(
-        amountMath.make(BigInt(bootstrapValue), centralBrand),
+        amountMath.make(bootstrapPaymentValue, centralBrand),
       );
-      const purse = E(bank).getPurse(centralBrand);
-      await E(purse).deposit(pmt);
+      centralBootstrapPurse = E(bank).getPurse(centralBrand);
+      await E(centralBootstrapPurse).deposit(pmt);
     }
-    false &&
-      (await payThePiper(
-        vatParameters && vatParameters.argv && vatParameters.argv.bootMsg,
-      ));
+    await depositCentralBootstrapPayment();
 
     /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,
       {
         issuer: centralIssuer,
-        defaultPurses: [['Agoric RUN currency', 0]],
         tradesGivenCentral: [[1, 1]],
       },
     ];
@@ -214,7 +218,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           issuerName,
           harden({ ...record, brand, issuer }),
         );
-        if (!record.bankDenom || !record.bankPurse) {
+        if (!record.bankDenom || !record.bankPurse || !bankManager) {
           return issuer;
         }
 
@@ -510,6 +514,23 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         const bank = await (bankManager &&
           E(bankManager).getBankForAddress(address));
+
+        /** @param {NatValue} value */
+        async function donateCentralFromBootstrap(value) {
+          if (!bank || !centralBootstrapPurse) {
+            return;
+          }
+          const provisionAmount = amountMath.make(value, centralBrand);
+          const centralUserPurse = E(bank).getPurse(centralBrand);
+          const centralPayment = await E(centralBootstrapPurse).withdraw(
+            provisionAmount,
+          );
+          await E(centralUserPurse).deposit(
+            /** @type {Payment} */ (centralPayment),
+          );
+        }
+        await donateCentralFromBootstrap(donationPaymentValue);
+
         const bundle = harden({
           ...additionalPowers,
           agoricNames,
