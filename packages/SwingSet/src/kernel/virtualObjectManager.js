@@ -328,39 +328,40 @@ export function makeVirtualObjectManager(
 
   /* eslint max-classes-per-file: ["error", 2] */
 
-  const actualWeakMaps = new WeakMap();
-  const virtualObjectMaps = new WeakMap();
-
   class VirtualizedWeakMap {
+    #actual;
+
+    #virtual;
+
     constructor() {
-      actualWeakMaps.set(this, new WeakMap());
-      virtualObjectMaps.set(this, new Map());
+      this.#actual = new WeakMap();
+      this.#virtual = new Map();
     }
 
     has(key) {
       const vkey = vrefKey(key);
       if (vkey) {
-        return virtualObjectMaps.get(this).has(vkey);
+        return this.#virtual.has(vkey);
       } else {
-        return actualWeakMaps.get(this).has(key);
+        return this.#actual.has(key);
       }
     }
 
     get(key) {
       const vkey = vrefKey(key);
       if (vkey) {
-        return virtualObjectMaps.get(this).get(vkey);
+        return this.#virtual.get(vkey);
       } else {
-        return actualWeakMaps.get(this).get(key);
+        return this.#actual.get(key);
       }
     }
 
     set(key, value) {
       const vkey = vrefKey(key);
       if (vkey) {
-        virtualObjectMaps.get(this).set(vkey, value);
+        this.#virtual.set(vkey, value);
       } else {
-        actualWeakMaps.get(this).set(key, value);
+        this.#actual.set(key, value);
       }
       return this;
     }
@@ -368,9 +369,9 @@ export function makeVirtualObjectManager(
     delete(key) {
       const vkey = vrefKey(key);
       if (vkey) {
-        return virtualObjectMaps.get(this).delete(vkey);
+        return this.#virtual.delete(vkey);
       } else {
-        return actualWeakMaps.get(this).delete(key);
+        return this.#actual.delete(key);
       }
     }
   }
