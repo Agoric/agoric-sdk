@@ -29,6 +29,10 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
+// TODO: decide on initial value to be distributed. This would give
+// 20,000 users each 1 display unit of RUN
+const BOOTSTRAP_PAYMENT_VALUE = 20000n * 10n ** 6n;
+
 console.debug(`loading bootstrap.js`);
 
 // Used for coordinating on an index in comms for the provisioning service
@@ -117,6 +121,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           nameAdmins,
           priceAuthority,
           zoe,
+          bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE,
         }),
         installPegasusOnChain({
           agoricNames,

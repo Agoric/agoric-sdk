@@ -18,8 +18,9 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
  * @param {ERef<ZoeService>} param0.zoe
+ * @param {NatValue} param0.bootstrapPaymentValue
  */
-export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe }) {
+export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe, bootstrapPaymentValue }) {
   // Fetch the nameAdmins we need.
   const [brandAdmin, installAdmin, instanceAdmin, issuerAdmin, uiConfigAdmin] = await Promise.all(
     ['brand', 'installation', 'instance', 'issuer', 'uiConfig'].map(async edge => {
@@ -52,6 +53,7 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     priceAuthority,
     loanParams,
     timerService: chainTimerService,
+    bootstrapPaymentValue,
   });
 
   const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms);
