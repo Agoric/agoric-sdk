@@ -250,16 +250,13 @@ export function makeVirtualObjectManager(
 
     function virtualObjectKey(key) {
       const vobjID = valToSlot.get(key);
-      if (!vobjID) {
-        return undefined;
-      } else {
+      if (vobjID) {
         const { type, virtual } = parseVatSlot(vobjID);
         if (type === 'object' && virtual) {
           return `ws${storeID}.${vobjID}`;
-        } else {
-          return undefined;
         }
       }
+      return undefined;
     }
 
     return harden({
@@ -316,6 +313,104 @@ export function makeVirtualObjectManager(
         }
       },
     });
+  }
+
+  function vrefKey(value) {
+    const vobjID = valToSlot.get(value);
+    if (vobjID) {
+      const { type, virtual } = parseVatSlot(vobjID);
+      if (type === 'object' && virtual) {
+        return vobjID;
+      }
+    }
+    return undefined;
+  }
+
+  /* eslint max-classes-per-file: ["error", 2] */
+
+  const actualWeakMaps = new WeakMap();
+  const virtualObjectMaps = new WeakMap();
+
+  class VirtualizedWeakMap {
+    constructor() {
+      actualWeakMaps.set(this, new WeakMap());
+      virtualObjectMaps.set(this, new Map());
+    }
+
+    has(key) {
+      const vkey = vrefKey(key);
+      if (vkey) {
+        return virtualObjectMaps.get(this).has(vkey);
+      } else {
+        return actualWeakMaps.get(this).has(key);
+      }
+    }
+
+    get(key) {
+      const vkey = vrefKey(key);
+      if (vkey) {
+        return virtualObjectMaps.get(this).get(vkey);
+      } else {
+        return actualWeakMaps.get(this).get(key);
+      }
+    }
+
+    set(key, value) {
+      const vkey = vrefKey(key);
+      if (vkey) {
+        virtualObjectMaps.get(this).set(vkey, value);
+      } else {
+        actualWeakMaps.get(this).set(key, value);
+      }
+      return this;
+    }
+
+    delete(key) {
+      const vkey = vrefKey(key);
+      if (vkey) {
+        return virtualObjectMaps.get(this).delete(vkey);
+      } else {
+        return actualWeakMaps.get(this).delete(key);
+      }
+    }
+  }
+
+  const actualWeakSets = new WeakMap();
+  const virtualObjectSets = new WeakMap();
+
+  class VirtualizedWeakSet {
+    constructor() {
+      actualWeakSets.set(this, new WeakSet());
+      virtualObjectSets.set(this, new Set());
+    }
+
+    has(value) {
+      const vkey = vrefKey(value);
+      if (vkey) {
+        return virtualObjectSets.get(this).has(vkey);
+      } else {
+        return actualWeakSets.get(this).has(value);
+      }
+    }
+
+    add(value) {
+      const vkey = vrefKey(value);
+      if (vkey) {
+        virtualObjectSets.get(this).add(vkey);
+      } else {
+        actualWeakSets.get(this).add(value);
+      }
+      return this;
+    }
+
+    delete(value) {
+      const vkey = vrefKey(value);
+      if (vkey) {
+        return virtualObjectSets.get(this).delete(vkey);
+      } else {
+        return actualWeakSets.get(this).delete(value);
+      }
+    }
   }
 
   /**
@@ -495,6 +590,8 @@ export function makeVirtualObjectManager(
   return harden({
     makeWeakStore,
     makeKind,
+    VirtualizedWeakMap,
+    VirtualizedWeakSet,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
   });
