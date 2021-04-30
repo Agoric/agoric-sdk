@@ -285,7 +285,7 @@ export async function start(zcf) {
     return rewardPoolSeat.getCurrentAllocation();
   }
 
-  function getBootstrapPayment() {
+  function mintBootstrapPayment() {
     const {
       zcfSeat: bootstrapZCFSeat,
       userSeat: bootstrapUserSeat,
@@ -297,8 +297,15 @@ export async function start(zcf) {
       bootstrapZCFSeat,
     );
     bootstrapZCFSeat.exit();
-    return E(bootstrapUserSeat).getPayout('Bootstrap');
+    const bootstrapPayment = E(bootstrapUserSeat).getPayout('Bootstrap');
+
+    function getBootstrapPayment() {
+      return bootstrapPayment;
+    }
+    return getBootstrapPayment;
   }
+
+  const getBootstrapPayment = mintBootstrapPayment();
 
   const publicFacet = harden({
     getAMM() {
