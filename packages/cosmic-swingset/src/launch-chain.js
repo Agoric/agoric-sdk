@@ -156,7 +156,12 @@ export async function launch(
   }
 
   let bootstrapBlock;
-  async function endBlock(_blockHeight, _blockTime) {
+  async function endBlock(blockHeight, blockTime) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-end-block-start',
+      blockHeight,
+      blockTime,
+    });
     let numCranks = FIXME_MAX_CRANKS_PER_BLOCK;
     if (bootstrapBlock) {
       // This is the initial block, we need to finish processing the entire
@@ -165,6 +170,11 @@ export async function launch(
       bootstrapBlock = false;
     }
     await crankScheduler(numCranks);
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-end-block-finish',
+      blockHeight,
+      blockTime,
+    });
   }
 
   async function saveChainState() {
@@ -182,6 +192,11 @@ export async function launch(
 
   async function deliverInbound(sender, messages, ack) {
     assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-deliver-inbound',
+      sender,
+      count: messages.length,
+    });
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
     }
@@ -189,6 +204,10 @@ export async function launch(
   }
 
   async function doBridgeInbound(source, body) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-bridge-inbound',
+      source,
+    });
     // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
@@ -196,6 +215,11 @@ export async function launch(
   }
 
   async function beginBlock(blockHeight, blockTime) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-begin-block',
+      blockHeight,
+      blockTime,
+    });
     const addedToQueue = timer.poll(blockTime);
     console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,

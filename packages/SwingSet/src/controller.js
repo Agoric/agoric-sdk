@@ -307,6 +307,8 @@ export async function makeSwingsetController(
       kernel.log(str);
     },
 
+    writeSlogObject,
+
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
     },
