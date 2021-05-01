@@ -521,7 +521,7 @@ test('meter details', async t => {
     meterUsage: { meterType, ...meters },
   } = result;
   t.log(meters);
-  t.is(meterType, 'xs-meter-3');
+  t.is(meterType, 'xs-meter-4');
   const { entries, fromEntries } = Object;
   t.deepEqual(
     {
@@ -529,6 +529,7 @@ test('meter details', async t => {
       allocate: 'number',
       allocateChunksCalls: 'number',
       allocateSlotsCalls: 'number',
+      garbageCollectionCount: 'number',
     },
     fromEntries(entries(meters).map(([p, v]) => [p, typeof v])),
   );
