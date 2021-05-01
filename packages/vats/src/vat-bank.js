@@ -44,7 +44,7 @@ const makePurseController = (
       return updateRecord.value;
     },
     async pushAmount(amt) {
-      const value = amountMath.getValue(amt, brand);
+      const value = amountMath.getValue(brand, amt);
       return bankCall({
         type: 'VPURSE_GIVE',
         recipient: address,
@@ -53,7 +53,7 @@ const makePurseController = (
       });
     },
     async pullAmount(amt) {
-      const value = amountMath.getValue(amt, brand);
+      const value = amountMath.getValue(brand, amt);
       return bankCall({
         type: 'VPURSE_GRAB',
         sender: address,
@@ -234,7 +234,7 @@ export function buildRootObject(_vatPowers) {
               const { updater, notifier } = makeNotifierKit();
               const balanceUpdater = value => {
                 // Convert the string value to a bigint.
-                const amt = amountMath.make(BigInt(value), brand);
+                const amt = amountMath.make(brand, BigInt(value));
                 updater.updateState(amt);
               };
 

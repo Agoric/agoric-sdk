@@ -178,7 +178,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
       const pmt = await E(treasuryCreator).getBootstrapPayment(
-        amountMath.make(bootstrapPaymentValue, centralBrand),
+        amountMath.make(centralBrand, bootstrapPaymentValue),
       );
       centralBootstrapPurse = E(bank).getPurse(centralBrand);
       await E(centralBootstrapPurse).deposit(pmt);
@@ -556,7 +556,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           if (!bank || !centralBootstrapPurse) {
             return;
           }
-          const provisionAmount = amountMath.make(value, centralBrand);
+          const provisionAmount = amountMath.make(centralBrand, value);
           const centralUserPurse = E(bank).getPurse(centralBrand);
           const centralPayment = await E(centralBootstrapPurse).withdraw(
             provisionAmount,

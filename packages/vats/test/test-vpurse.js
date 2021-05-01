@@ -76,7 +76,7 @@ test('makeVirtualPurse', async t => {
   t.plan(16);
   const { expected, balanceUpdater, issuer, mint, brand, vpurse } = setup(t);
 
-  const payment = mint.mintPayment(amountMath.make(837n, brand));
+  const payment = mint.mintPayment(amountMath.make(brand, 837n));
 
   const notifier = E(vpurse).getCurrentAmountNotifier();
   let nextUpdateP = E(notifier).getUpdateSince();
@@ -100,7 +100,7 @@ test('makeVirtualPurse', async t => {
     `empty purse is empty`,
   );
   t.is(await E(vpurse).getAllegedBrand(), brand, `purse's brand is correct`);
-  const fungible837 = amountMath.make(837n, brand);
+  const fungible837 = amountMath.make(brand, 837n);
 
   const checkDeposit = async newPurseBalance => {
     t.assert(
@@ -148,8 +148,8 @@ test('vpurse.deposit', async t => {
   t.plan(14);
   const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
   const fungible0 = amountMath.makeEmpty(brand);
-  const fungible17 = amountMath.make(17n, brand);
-  const fungible25 = amountMath.make(25n, brand);
+  const fungible17 = amountMath.make(brand, 17n);
+  const fungible25 = amountMath.make(brand, 25n);
   const fungibleSum = amountMath.add(fungible17, fungible25);
 
   const notifier = E(vpurse).getCurrentAmountNotifier();
@@ -201,7 +201,7 @@ test('vpurse.deposit', async t => {
 test('vpurse.deposit promise', async t => {
   t.plan(2);
   const { issuer, mint, brand, vpurse } = setup(t);
-  const fungible25 = amountMath.make(25n, brand);
+  const fungible25 = amountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
   const exclusivePaymentP = E(issuer).claim(payment);
@@ -217,7 +217,7 @@ test('vpurse.deposit promise', async t => {
 test('vpurse.getDepositFacet', async t => {
   t.plan(8);
   const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
-  const fungible25 = amountMath.make(25n, brand);
+  const fungible25 = amountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
   const notifier = await E(vpurse).getCurrentAmountNotifier();

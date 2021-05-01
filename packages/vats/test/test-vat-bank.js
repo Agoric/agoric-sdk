@@ -89,10 +89,10 @@ test('communication', async t => {
   // First balance.
   const vpurse = await E(bank).getPurse(kit.brand);
   const bal = await E(vpurse).getCurrentAmount();
-  t.assert(amountMath.isEqual(bal, amountMath.make(11993n, kit.brand)));
+  t.assert(amountMath.isEqual(bal, amountMath.make(kit.brand, 11993n)));
 
   // Deposit.
-  const paymentAmount = amountMath.make(14n, kit.brand);
+  const paymentAmount = amountMath.make(kit.brand, 14n);
   const payment = await E(kit.mint).mintPayment(paymentAmount);
   const actualPaymentAmount = await E(vpurse).deposit(payment, paymentAmount);
   t.assert(amountMath.isEqual(actualPaymentAmount, paymentAmount));
@@ -121,7 +121,7 @@ test('communication', async t => {
   t.assert(
     amountMath.isEqual(
       bal2,
-      amountMath.make(BigInt(balance.amount), kit.brand),
+      amountMath.make(kit.brand, BigInt(balance.amount)),
     ),
   );
 });
