@@ -522,7 +522,9 @@ function testMapPerformance(k) {
   }
   function storeObjects(){
     const m1 = new WeakMap();
-    obArray.forEach(obj => m1.set({k: obj.kref}, obj));  
+    for (obj of obArray) {
+      m1.set({k: obj.kref}, obj);
+    }
   }
   `;
 
