@@ -644,19 +644,19 @@ export function makeWallet({
    * @param {Petname} brandPetname
    * @param {Petname} petnameForPurse
    * @param {boolean} defaultAutoDeposit
-   * @param {(issuer: Issuer) => ERef<Purse>} importPurse
+   * @param {ERef<Purse> | undefined} purseToImport
    */
   const internalUnsafeImportPurse = async (
     brandPetname,
     petnameForPurse,
     defaultAutoDeposit,
-    importPurse,
+    purseToImport,
   ) => {
     const brand = brandMapping.petnameToVal.get(brandPetname);
     const { issuer } = brandTable.getByBrand(brand);
 
     /** @type {Purse} */
-    const purse = await importPurse(issuer);
+    const purse = await (purseToImport || E(issuer).makeEmptyPurse());
 
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
@@ -694,7 +694,7 @@ export function makeWallet({
       brandPetname,
       petnameForPurse,
       defaultAutoDeposit,
-      issuer => E(issuer).makeEmptyPurse(),
+      undefined,
     );
 
   async function deposit(pursePetname, payment) {
@@ -1563,7 +1563,7 @@ export function makeWallet({
             issuerName,
             proposedName,
             true,
-            () => purse,
+            purse,
           );
         } catch (e) {
           console.error('/// could not add bank asset purse', e, {

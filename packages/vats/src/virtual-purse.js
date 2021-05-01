@@ -33,7 +33,7 @@ import '@agoric/notifier/exported';
 /**
  * @param {ERef<VirtualPurseController>} vpc the controller that represents the
  * "other side" of this purse.
- * @param {{ issuer: ERef<Issuer>, brand: ERef<Brand>, mint?: ERef<Mint> }} kit
+ * @param {{ issuer: ERef<Issuer>, brand: Brand, mint?: ERef<Mint> }} kit
  * the contents of the issuer kit for "us".
  *
  * If the mint is not specified, then the virtual purse will escrow local assets
@@ -80,22 +80,18 @@ function makeVirtualPurse(vpc, kit) {
     rej.catch(_ => {});
     lastBalance = rej;
   };
-  observeIteration(
-    // Get the brand's actual unwrapped identity.
-    E.when(brand, b => E(vpc).getBalances(b)),
-    {
-      fail,
-      updateState(nonFinalValue) {
-        balanceUpdater.updateState(nonFinalValue);
-        lastBalance = nonFinalValue;
-      },
-      finish(completion) {
-        balanceUpdater.finish(completion);
-        lastBalance = completion;
-      },
-      // Propagate a failed balance properly if the iteration observer fails.
+  observeIteration(E(vpc).getBalances(brand), {
+    fail,
+    updateState(nonFinalValue) {
+      balanceUpdater.updateState(nonFinalValue);
+      lastBalance = nonFinalValue;
     },
-  ).catch(fail);
+    finish(completion) {
+      balanceUpdater.finish(completion);
+      lastBalance = completion;
+    },
+    // Propagate a failed balance properly if the iteration observer fails.
+  }).catch(fail);
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = {
@@ -105,11 +101,15 @@ function makeVirtualPurse(vpc, kit) {
           `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
         );
       }
-      // FIXME: There is no potential recovery protocol for failed deposit,
-      // since retaining the payment consumes it, and there's no way to send a
-      // new payment back to the virtual purse holder.
       const amt = await retain(payment, optAmount);
+
       // The push must always succeed.
+      //
+      // NOTE: There is no potential recovery protocol for failed `.pushAmount`,
+      // there's no path to send a new payment back to the virtual purse holder.
+      // If we don't first retain the payment, we can't be guaranteed that it is
+      // the correct value, and that would be a race where somebody else might
+      // claim the payment before us.
       return E(vpc)
         .pushAmount(amt)
         .then(_ => amt);
@@ -133,6 +133,9 @@ function makeVirtualPurse(vpc, kit) {
       return depositFacet;
     },
     async withdraw(amount) {
+      // Both ensure that the amount exists, and have the other side "send" it
+      // to us.  If this fails, the balance is not affected and the withdraw
+      // (properly) fails, too.
       await E(vpc).pullAmount(amount);
       // Amount has been successfully received from the other side.
       // Try to redeem the amount.

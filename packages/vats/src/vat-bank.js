@@ -4,7 +4,7 @@ import { amountMath, MathKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeVirtualPurse } from './virtual-purse';
 
@@ -85,23 +85,21 @@ const makePurseController = (
 export function buildRootObject(_vatPowers) {
   return Far('bankMaker', {
     /**
-     * @param {import('./bridge').BridgeManager} bridgeManager
+     * @param {import('./bridge').BridgeManager} [bankBridgeManager] a bridge
+     * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
+     * (such as on sim-chain), we just use local purses.
      */
-    async makeBankManager(bridgeManager) {
-      /** @type {Store<Brand, AssetRecord>} */
-      const brandToAssetRecord = makeStore('brand');
+    async makeBankManager(bankBridgeManager = undefined) {
+      /** @type {WeakStore<Brand, AssetRecord>} */
+      const brandToAssetRecord = makeWeakStore('brand');
 
       /** @type {Store<string, Store<string, (amount: any) => void>>} */
       const denomToAddressUpdater = makeStore('denom');
 
       /**
-       * @param {import('./bridge').BridgeManager} bridgeMgr
+       * @param {import('./bridge').BridgeManager} bankBridgeMgr
        */
-      async function getRemoteBankCall(bridgeMgr) {
-        if (!bridgeMgr) {
-          return undefined;
-        }
-
+      async function makeBankCaller(bankBridgeMgr) {
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
           async fromBridge(_srcID, obj) {
@@ -126,13 +124,18 @@ export function buildRootObject(_vatPowers) {
           },
         });
 
-        await E(bridgeMgr).register('bank', handler);
+        await E(bankBridgeMgr).register('bank', handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bridgeMgr).toBridge('bank', obj);
+        return obj => E(bankBridgeMgr).toBridge('bank', obj);
       }
 
-      const bankCall = await getRemoteBankCall(bridgeManager);
+      // We do the logic here if the bridge manager is available.  Otherwise,
+      // the bank is not "remote" (such as on sim-chain), so we just use
+      // immediate purses instead of virtual ones.
+      const bankCall = await (bankBridgeManager
+        ? makeBankCaller(bankBridgeManager)
+        : undefined);
 
       /**
        * @typedef {Object} AssetDescriptor
@@ -205,8 +208,8 @@ export function buildRootObject(_vatPowers) {
             return addressToBank.get(address);
           }
 
-          /** @type {Store<Brand, VirtualPurse>} */
-          const brandToVPurse = makeStore('brand');
+          /** @type {WeakStore<Brand, VirtualPurse>} */
+          const brandToVPurse = makeWeakStore('brand');
 
           /** @type {Bank} */
           const bank = Far('bank', {

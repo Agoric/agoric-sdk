@@ -97,7 +97,14 @@ test('communication', async t => {
   const actualPaymentAmount = await E(vpurse).deposit(payment, paymentAmount);
   t.assert(amountMath.isEqual(actualPaymentAmount, paymentAmount));
 
-  // Withdrawal.
+  // Withdrawal.  We can't easily type a `VirtualPurse` unless we make it
+  // callable only with `E`, in which case we can't automatically unwrap the
+  // return result of `E(vpurse).withdraw` to a sync interface (which `Payment`
+  // is).
+  //
+  // TODO: We can fix this only if the ERTP methods also allow consuming a
+  // `Remote<Payment>` instead of just `Payment`.  That typing has not yet been
+  // done, hence the cast.
   const payment2 = /** @type {Payment} */ (await E(vpurse).withdraw(
     paymentAmount,
   ));
