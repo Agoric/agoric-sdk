@@ -73,7 +73,7 @@ static void fxRunLoop(txMachine* the);
 
 static int fxReadNetString(FILE *inStream, char** dest, size_t* len);
 static char* fxReadNetStringError(int code);
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t len);
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txMachine *the, char* buf, size_t len);
 static int fxWriteNetString(FILE* outStream, char* prefix, char* buf, size_t len);
 static char* fxWriteNetStringError(int code);
 
@@ -430,7 +430,7 @@ ExitCode main(int argc, char* argv[])
 							}
 						}
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
-						writeError = fxWriteOkay(toParent, meterIndex, the->allocatedSpace, response, responseLength);
+						writeError = fxWriteOkay(toParent, meterIndex, the, response, responseLength);
 					}
 				}
 				xsEndHost(machine);
@@ -466,7 +466,7 @@ ExitCode main(int argc, char* argv[])
 				fxRunLoop(machine);
 				meterIndex = xsEndCrank(machine);
 				if (error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -496,7 +496,7 @@ ExitCode main(int argc, char* argv[])
 					c_exit(E_IO_ERROR);
 				}
 				if (snapshot.error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -1398,12 +1398,15 @@ static char* fxReadNetStringError(int code)
 	}
 }
 
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t length)
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txMachine *the, char* buf, size_t length)
 {
-	// large enough for 2 64bit numbers, with a spare 64 bit word
-	char prefix[sizeof ".[12345678901234567890,12345678901234567890]\1" + 8];
+	char fmt[] = ".{\"compute\":%u,\"allocate\":%u,\"allocateChunksCalls\":%u,\"allocateSlotsCalls\":%u}\1";
+	char numeral64[] = "12345678901234567890"; // big enough for 64bit numeral
+	char prefix[8 + sizeof fmt + 4 * sizeof numeral64];
+	// TODO: fxCollect counter
 	// Prepend the meter usage to the reply.
-	snprintf(prefix, sizeof(prefix) - 1, ".[%u,%u]\1", meterIndex, allocatedSpace);
+	snprintf(prefix, sizeof(prefix) - 1, fmt,
+			 meterIndex, the->allocatedSpace, the->allocateChunksCallCount, the->allocateSlotsCallCount);
 	return fxWriteNetString(outStream, prefix, buf, length);
 }
 
@@ -1483,6 +1486,7 @@ void* fxAllocateChunks(txMachine* the, txSize theSize)
 {
 	// fprintf(stderr, "fxAllocateChunks(%lu)\n", theSize);
 	adjustSpaceMeter(the, theSize);
+	the->allocateChunksCallCount += 1;
 	return c_malloc(theSize);
 }
 
@@ -1498,6 +1502,7 @@ txSlot* fxAllocateSlots(txMachine* the, txSize theCount)
 {
 	// fprintf(stderr, "fxAllocateSlots(%u) * %d = %ld\n", theCount, sizeof(txSlot), theCount * sizeof(txSlot));
 	adjustSpaceMeter(the, theCount * sizeof(txSlot));
+	the->allocateSlotsCallCount += 1;
 	return (txSlot*)c_malloc(theCount * sizeof(txSlot));
 }
 

@@ -505,3 +505,22 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     });
   }
 })();
+
+test('meter details', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  const result = await vat.evaluate(`({ size: 2, color: 'green' })`);
+  const {
+    meterUsage: { meterType, ...meters },
+  } = result;
+  t.is(meterType, 'xs-meter-3');
+  t.deepEqual(
+    ['compute', 'allocate', 'allocateChunksCalls', 'allocateSlotsCalls'],
+    Object.keys(meters),
+  );
+  t.deepEqual(
+    ['number', 'number', 'number', 'number'],
+    Object.values(meters).map(v => typeof v),
+  );
+});

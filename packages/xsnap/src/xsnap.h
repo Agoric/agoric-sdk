@@ -69,6 +69,8 @@
 	txSocket connection; \
 	txSize allocationLimit; \
 	txSize allocatedSpace; \
+	txUnsigned allocateChunksCallCount; \
+	txUnsigned allocateSlotsCallCount; \
 	int promiseJobs; \
 	void* timerJobs; \
 	void* waiterCondition; \
