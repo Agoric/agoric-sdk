@@ -4,6 +4,7 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { isEmptyNonRemotableObject } from './helpers';
+import { makePerfCounter } from './perfCounter';
 import './types';
 
 /**
@@ -14,6 +15,9 @@ import './types';
  */
 export function makeWeakStore(keyName = 'key') {
   const wm = new WeakMap();
+
+  const perfCounter = makePerfCounter(`${keyName} WeakStore`);
+
   const assertKeyDoesNotExist = key =>
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
@@ -29,6 +33,7 @@ export function makeWeakStore(keyName = 'key') {
       assertNotBadKey(key);
       assertKeyDoesNotExist(key);
       wm.set(key, value);
+      perfCounter.incrementCount();
     },
     get: key => {
       assertNotBadKey(key);
@@ -44,7 +49,10 @@ export function makeWeakStore(keyName = 'key') {
       assertNotBadKey(key);
       assertKeyExists(key);
       wm.delete(key);
+      perfCounter.decrementCount();
     },
+    getCount: perfCounter.getCount,
+    addName: perfCounter.addName,
   });
 }
 harden(makeWeakStore);

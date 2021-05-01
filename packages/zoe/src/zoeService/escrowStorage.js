@@ -18,6 +18,7 @@ import { arrayToObj, objectMap } from '../objArrayConversion';
 export const makeEscrowStorage = () => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = makeNonVOWeakStore('brand');
+  brandToPurse.addName('zoeService brandToPurse');
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {

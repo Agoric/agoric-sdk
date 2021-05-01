@@ -13,9 +13,11 @@ import { assertRightsConserved } from './rightsConservation';
 export const createSeatManager = (zoeInstanceAdmin, getMathKindByBrand) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
+  activeZCFSeats.addName('contractFacet activeZCFSeats');
 
   /** @type {WeakStore<SeatStaging, SeatHandle>} */
   let seatStagingToSeatHandle = makeNonVOWeakStore('seatStaging');
+  seatStagingToSeatHandle.addName('contractFacet seatStagingToSeatHandle');
 
   /** @type {(zcfSeat: ZCFSeat) => boolean} */
   const hasExited = zcfSeat => !activeZCFSeats.has(zcfSeat);
@@ -209,7 +211,9 @@ export const createSeatManager = (zoeInstanceAdmin, getMathKindByBrand) => {
   /** @type {DropAllReferences} */
   const dropAllReferences = () => {
     activeZCFSeats = makeNonVOWeakStore('zcfSeat');
+    activeZCFSeats.addName('contractFacet activeZCFSeats 2');
     seatStagingToSeatHandle = makeNonVOWeakStore('seatStaging');
+    seatStagingToSeatHandle.addName('contractFacet seatStagingToSeatHandle 2');
   };
 
   return harden({

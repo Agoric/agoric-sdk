@@ -43,7 +43,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getMathKindByBrand,
       getBrandForIssuer,
       getIssuerForBrand,
-    } = makeIssuerStorage(issuerStorageFromZoe);
+    } = makeIssuerStorage(issuerStorageFromZoe, 'contractFacet');
 
     const {
       makeZCFSeat,
@@ -54,6 +54,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
+    invitationHandleToHandler.addName('contractFacet invitationHandleToHandler');
 
     // Make the instanceRecord
     const {

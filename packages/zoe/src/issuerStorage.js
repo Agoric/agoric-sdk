@@ -13,12 +13,18 @@ import { makeIssuerRecord } from './issuerRecord';
  *  then use it as the starting state.
  *
  * @param {ExportedIssuerStorage=} exportedIssuerStorage
+ * @param {string} zoeOrZCF - use the name of the vat in the
+ * perfCounter logs
  */
-export const makeIssuerStorage = exportedIssuerStorage => {
+export const makeIssuerStorage = (exportedIssuerStorage, zoeOrZCF) => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = makeNonVOWeakStore('brand');
+  brandToIssuerRecord.addName(`${zoeOrZCF} brandToIssuerRecord`);
   /** @type {WeakStore<Issuer,IssuerRecord>} */
   const issuerToIssuerRecord = makeNonVOWeakStore('issuer');
+  issuerToIssuerRecord.addName(`${zoeOrZCF} issuerToIssuerRecord`);
+
+  let issuerCount = 0n;
 
   /**
    * If we already know the entire issuer record, such as for a
@@ -52,6 +58,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    * @returns {IssuerRecord}
    */
   const storeIssuerRecord = issuerRecord => {
+    issuerCount += 1n;
     const { brand, issuer } = issuerRecord;
     if (issuerToIssuerRecord.has(issuer)) {
       return issuerToIssuerRecord.get(issuer);
@@ -165,6 +172,8 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    */
   const exportIssuerStorage = issuers => issuers.map(issuerToIssuerRecord.get);
 
+  const getIssuerCount = () => issuerCount;
+
   return {
     storeIssuerKeywordRecord,
     storeIssuer,
@@ -173,5 +182,6 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     getBrandForIssuer,
     getIssuerForBrand,
     exportIssuerStorage,
+    getIssuerCount,
   };
 };

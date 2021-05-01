@@ -44,9 +44,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
+  instanceToInstanceAdmin.addName('zoeService instanceToInstanceAdmin');
 
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
+  seatHandleToZoeSeatAdmin.addName('zoeService seatHandleToZoeSeatAdmin');
 
   const {
     getInstance,
@@ -67,15 +69,36 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     storeIssuerRecord,
     getMathKindByBrand,
     exportIssuerStorage,
-  } = makeIssuerStorage();
+    getIssuerCount,
+  } = makeIssuerStorage(undefined, 'zoeService');
 
-  const { install, unwrapInstallation } = makeInstallationStorage();
+  let seatCount = 0n;
+  let invitationCount = 0n;
+  let installationCount = 0n;
+  let instanceCount = 0n;
+
+  const { install: installRaw, unwrapInstallation } = makeInstallationStorage();
+
+  const install = bundle => {
+    installationCount += 1n;
+    return installRaw(bundle);
+  };
+
   const offer = makeOffer(
     invitationKit.issuer,
     instanceToInstanceAdmin,
     depositPayments,
     getMathKindByBrand,
   );
+
+  const getCounts = () =>
+    harden({
+      issuerCount: getIssuerCount(),
+      seatCount,
+      invitationCount,
+      installationCount,
+      instanceCount,
+    });
 
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
@@ -94,6 +117,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       uncleanIssuerKeywordRecord = harden({}),
       customTerms = harden({}),
     ) => {
+      instanceCount += 1n;
+
       const { installation, bundle } = await unwrapInstallation(installationP);
       // AWAIT ///
 
@@ -227,6 +252,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
               exitObjPromiseKit.promise,
               offerResultPromiseKit.promise,
             );
+            seatCount += 1n;
 
             seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
@@ -263,6 +289,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
               withdrawPayments,
               exitObj,
             );
+            seatCount += 1n;
             zoeSeatAdmins.add(zoeSeatAdmin);
             seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
             return { userSeat, notifier, zoeSeatAdmin };
@@ -303,6 +330,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
             ],
             invitationBrand,
           );
+          invitationCount += 1n;
           return invitationMint.mintPayment(invitationAmount);
         },
         // checks of keyword done on zcf side
@@ -381,6 +409,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       });
     },
     offer,
+    getCounts,
   });
 
   return zoeService;

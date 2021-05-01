@@ -65,7 +65,8 @@ const start = zcf => {
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
   /** @type {WeakStore<Brand,Pool>} */
-  const secondaryBrandToPool = makeWeakStore();
+  const secondaryBrandToPool = makeWeakStore('secondaryBrand');
+  secondaryBrandToPool.addName('multipoolAutoswap secondaryBrandToPool');
   const getPool = secondaryBrandToPool.get;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;

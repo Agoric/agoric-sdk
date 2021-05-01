@@ -535,6 +535,9 @@ test('multipoolAutoSwap with valid offers', async t => {
     moolaR.brand,
     simoleanR.brand,
   ]);
+
+  const counts = await E(zoe).getCounts();
+  console.log(counts);
 });
 
 test('multipoolAutoSwap get detailed prices', async t => {
