@@ -61,6 +61,12 @@ export function buildRootObject(vatPowers, vatParameters) {
     /** @type {ERef<ReturnType<import('./vat-bank')['buildRootObject']>>} */
     const bankVat = vats.bank;
 
+    // Name these differently to distinguish their uses.
+    // TODO: eventually make these different facets of the bridgeManager,
+    // binding to srcIDs/dstIDs 'bank' and 'dibc' respectively.
+    const bankBridgeManager = bridgeManager;
+    const dibcBridgeManager = bridgeManager;
+
     // Create singleton instances.
     const [
       bankManager,
@@ -71,7 +77,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       zoe,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
-      E(bankVat).makeBankManager(bridgeManager),
+      E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
@@ -429,7 +435,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     // eslint-disable-next-line no-use-before-define
     await registerNetworkProtocols(
       vats,
-      bridgeManager,
+      dibcBridgeManager,
       pegasus,
       pegasusConnectionsAdmin,
     );
@@ -475,7 +481,15 @@ export function buildRootObject(vatPowers, vatParameters) {
           record.defaultPurses.forEach(([purseName, value]) => {
             // Only pay to the bank if we don't have an actual bridge to the
             // underlying chain (from which we'll get the assets).
-            payToBank.push(!bridgeManager && purseName === record.bankPurse);
+            if (purseName === record.bankPurse) {
+              if (bankBridgeManager) {
+                // Don't mint or pay if we have a separate bank layer.
+                return;
+              }
+              payToBank.push(true);
+            } else {
+              payToBank.push(false);
+            }
             mintIssuerNames.push(issuerName);
             mintPurseNames.push(purseName);
             mintValues.push(value);
@@ -577,7 +591,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   async function registerNetworkProtocols(
     vats,
-    bridgeMgr,
+    dibcBridgeManager,
     pegasus,
     pegasusConnectionsAdmin,
   ) {
@@ -591,11 +605,11 @@ export function buildRootObject(vatPowers, vatParameters) {
         makeLoopbackProtocolHandler(),
       ),
     );
-    if (bridgeMgr) {
+    if (dibcBridgeManager) {
       // We have access to the bridge, and therefore IBC.
       const callbacks = Far('callbacks', {
         downcall(method, obj) {
-          return bridgeMgr.toBridge('dibc', {
+          return dibcBridgeManager.toBridge('dibc', {
             ...obj,
             type: 'IBC_METHOD',
             method,
@@ -603,7 +617,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         },
       });
       const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-      bridgeMgr.register('dibc', ibcHandler);
+      dibcBridgeManager.register('dibc', ibcHandler);
       ps.push(
         E(vats.network).registerProtocolHandler(
           ['/ibc-port', '/ibc-hop'],
@@ -673,7 +687,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
     }
 
-    if (bridgeMgr) {
+    if (dibcBridgeManager) {
       // Register a provisioning handler over the bridge.
       const handler = Far('provisioningHandler', {
         async fromBridge(_srcID, obj) {
@@ -694,7 +708,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           }
         },
       });
-      bridgeMgr.register('provision', handler);
+      dibcBridgeManager.register('provision', handler);
     }
   }
 
