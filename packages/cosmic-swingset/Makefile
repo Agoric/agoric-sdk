@@ -66,7 +66,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 73000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
 	$(AGCH) --home=t1/n0 validate-genesis
-	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
+	../agoric-cli/bin/agoric set-defaults --export-metrics --bootstrap-address=`cat t1/bootstrap-address` ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	jq '. + { genesis_time: "$(GENESIS_TIME)", initial_height: "$(INITIAL_HEIGHT)" }' t1/n0/config/genesis.json > t1/n0/config/genesis2.json
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json

@@ -44,7 +44,7 @@ case $DAEMON in
 ag-chain-cosmos)
   # For Agoric
   DIR=$(dirname -- "${BASH_SOURCE[0]}")
-  "$DIR/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos ~/.$DAEMON/config
+  "$DIR/../../agoric-cli/bin/agoric" set-defaults --bootstrap-address=$GENACCT ag-chain-cosmos ~/.$DAEMON/config
   ;;
 esac
 
