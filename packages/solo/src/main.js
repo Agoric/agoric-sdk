@@ -49,7 +49,7 @@ export default async function solo(progname, rawArgv) {
 
   if (opts.help) {
     process.stdout.write(`\
-Usage: ${rawArgv[0]} COMMAND [OPTIONS...]
+Usage: ${progname} COMMAND [OPTIONS...]
 
 init
 set-gci-ingress
@@ -146,7 +146,6 @@ start
         stdio: 'inherit',
       });
       process.exit(cp.status);
-      break;
     }
     default: {
       log.error(`unrecognized command ${argv[0]}`);

@@ -6,7 +6,7 @@
     "js": "mjs"
   },
   "bin": {
-    "ag-solo": "./src/entrypoint.cjs"
+    "ag-solo": "bin/ag-solo"
   },
   "main": "src/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",

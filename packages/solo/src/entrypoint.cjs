@@ -11,12 +11,14 @@ require('node-lmdb');
 esmRequire('@agoric/install-metering-and-ses');
 
 const process = require('process');
+const path = require('path');
 
 // Configure logs.
 esmRequire('@agoric/cosmic-swingset/src/anylogger-agoric.js');
 const solo = esmRequire('./main.js').default;
 
-solo(process.argv[1], process.argv.splice(2)).then(
+const baseprog = path.basename(process.argv[1]);
+solo(baseprog, process.argv.slice(2)).then(
   _res => 0,
   reason => {
     console.log(`error running ag-solo:`, reason);
