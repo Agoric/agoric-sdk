@@ -328,7 +328,7 @@ test('newSwap with valid offers', async t => {
   // liquidity pool. 398 simoleans = 43 central tokens at the time of
   // the liquidity adding
   //
-  const aliceSimCentralLiquidityInvitation = await E(
+  const aliceSimCentralLiquidityInvitation = E(
     publicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
@@ -488,7 +488,7 @@ test('newSwap doubleSwap', async t => {
   // liquidity pool. 398 simoleans = 43 central tokens at the time of
   // the liquidity adding
   //
-  const aliceSimLiquidityInvitation = await E(
+  const aliceSimLiquidityInvitation = E(
     publicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
@@ -588,9 +588,7 @@ test('newSwap doubleSwap', async t => {
     RUN: runningFees,
   });
 
-  const collectFeesInvitation = await E(
-    creatorFacet,
-  ).makeCollectFeesInvitation();
+  const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
   const collectFeesSeat = await zoe.offer(
     collectFeesInvitation,
     undefined,
@@ -884,9 +882,7 @@ test('newSwap jig - swapOut uneven', async t => {
 
   mPoolState = updatePoolState(mPoolState, expectedC);
 
-  const collectFeesInvitation = await E(
-    creatorFacet,
-  ).makeCollectFeesInvitation();
+  const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
   const collectFeesSeat = await zoe.offer(
     collectFeesInvitation,
     undefined,
