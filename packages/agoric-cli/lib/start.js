@@ -5,7 +5,6 @@ import { createHash } from 'crypto';
 
 import {
   STAKING_DENOM,
-  MINT_DENOM,
   finishTendermintConfig,
   finishCosmosGenesis,
   finishCosmosApp,
@@ -13,7 +12,7 @@ import {
 
 import { makePspawn } from './helpers';
 
-const PROVISION_COINS = `100000000${STAKING_DENOM},100000000${MINT_DENOM},100provisionpass,100sendpacketpass`;
+const PROVISION_COINS = `100000000${STAKING_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const CHAIN_ID = 'agoric';
 
@@ -312,6 +311,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
+      bootstrapAddress: addrs.provision,
     });
     const newConfigToml = finishTendermintConfig({
       configToml,
