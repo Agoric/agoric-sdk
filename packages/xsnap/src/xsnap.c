@@ -298,8 +298,8 @@ ExitCode main(int argc, char* argv[])
 		}
 	}
 	xsCreation _creation = {
-		1 * 1024 * 1024,	/* initialChunkSize */
-		512 * 1024,			/* incrementalChunkSize */
+		32 * 1024 * 1024,	/* initialChunkSize */
+		4 * 1024 * 1024,	/* incrementalChunkSize */
 		16 * 1024,			/* initialHeapCount */
 		256 * 1024,			/* incrementalHeapCount */
 		4096,				/* stackCount */
