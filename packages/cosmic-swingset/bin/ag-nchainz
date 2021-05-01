@@ -22,7 +22,7 @@ thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
 PATHCONFIG=nchainz/config/paths
 CLI=ag-cosmos-helper
 DAEMON=ag-chain-cosmos
-SOLO=$thisdir/ag-solo
+SOLO=$thisdir/../solo/bin/ag-solo
 SKIP=no
 COMMAND=
 

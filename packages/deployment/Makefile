@@ -34,7 +34,7 @@ docker-build-setup:
 	docker tag $(REPOSITORY)-setup:$(TAG) $(REPOSITORY)-setup:latest
 
 docker-build-solo:
-	docker build --build-arg=TAG=$(TAG) -t $(REPOSITORY)-solo:$(TAG) $(SS)lib/ag-solo
+	docker build --build-arg=TAG=$(TAG) -t $(REPOSITORY)-solo:$(TAG) ../solo
 	docker tag $(REPOSITORY)-solo:$(TAG) $(REPOSITORY)-solo:latest
 
 docker-build-deployment:

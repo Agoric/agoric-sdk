@@ -59,8 +59,8 @@ jobs:
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: agoric/cosmic-swingset-solo
-        dockerfile: packages/cosmic-swingset/lib/ag-solo/Dockerfile
-        context: packages/cosmic-swingset/lib/ag-solo
+        dockerfile: packages/solo/Dockerfile
+        context: packages/solo
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true

@@ -10,6 +10,16 @@ DELEGATE_COINS=62000000ubld,93000000urun
 OP=$1
 shift
 
+case $OP in
+show-faucet-address)
+  exec ag-cosmos-helper --home=$FAUCET_HOME \
+    keys show -a \
+    --keyring-backend=test \
+    -- faucet
+  exit $?
+  ;;
+done
+
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
 IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
 
