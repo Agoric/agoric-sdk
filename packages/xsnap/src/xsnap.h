@@ -71,6 +71,7 @@
 	txSize allocatedSpace; \
 	txUnsigned allocateChunksCallCount; \
 	txUnsigned allocateSlotsCallCount; \
+	txUnsigned garbageCollectionCount; \
 	int promiseJobs; \
 	void* timerJobs; \
 	void* waiterCondition; \
