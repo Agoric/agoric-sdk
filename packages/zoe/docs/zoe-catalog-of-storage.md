@@ -176,11 +176,6 @@ however.
 [6a2e217](https://github.com/Agoric/agoric-sdk/commit/6a2e217d7829be169d77fc02ceabe28647a43525)
 it is dropped after a reallocate uses it up. Still needs to be dropped if the
 associated seat no longer exists and it wasn't used. 
-
-### zcfSeatToSeatHandle - WeakStore from `@agoric/store`
-
-A merge mistake. Should be deleted here: https://github.com/Agoric/agoric-sdk/pull/3008
-
 ### activeZCFSeats - WeakStore from `@agoric/store`
 
 A (zcfSeat, allocation) is created when a user calls `E(zoe).offer` or
