@@ -509,22 +509,24 @@ test('property name space exhaustion: orderly fail-stop', async t => {
 
 function testMapPerformance(k) {
   const code = `
-  const range = n => Array.from(Array(n).keys());
   let obArray;
   function createObjects(k) {
-    obArray = range(k).map(ix => ({
-      kref: \`o+\${ix}\`,
-      color: 'blue',
-      size: ix % 17,
-    }));
+    obArray = []
+    for (ix = 0; ix < k; ix++) {
+      obArray.push({
+        kref: \`o+\${ix}\`,
+        color: 'blue',
+        size: ix % 17,
+      });
+    }
   }
   function storeObjects(){
-    const m1 = new Map();
-    obArray.forEach(obj => m1.set(obj.kref, obj));  
+    const m1 = new WeakMap();
+    obArray.forEach(obj => m1.set({k: obj.kref}, obj));  
   }
   `;
 
-  test(`map performance: O(${k})`, async t => {
+  test.serial(`map performance: O(${k})`, async t => {
     const vat = xsnap({ ...xsnapOptions });
     t.teardown(() => vat.terminate());
 
