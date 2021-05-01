@@ -514,16 +514,34 @@ function testMapPerformance(k) {
     obArray = []
     for (ix = 0; ix < k; ix++) {
       obArray.push({
-        kref: \`o+\${ix}\`,
-        color: 'blue',
-        size: ix % 17,
+        // kref: \`o+\${ix}\`,
+        // color: 'blue',
+        // size: ix % 17,
       });
     }
   }
-  function storeObjects(){
-    const m1 = new WeakMap();
+  let m1;
+  function storeObjects() {
+    m1 = new WeakMap();
     for (obj of obArray) {
-      m1.set({k: obj.kref}, obj);
+      m1.set(obj, obj.kref);
+    }
+  }
+  function readFirst(k) {
+    const o = obArray[0];
+    for (ix = 0; ix < k; ix++) {
+      m1.get(o);
+    }
+  }
+  function readLast(k) {
+    const o = obArray[obArray.length - 1];
+    for (ix = 0; ix < k; ix++) {
+      m1.get(o);
+    }
+  }
+  function readObjects() {
+    for (obj of obArray) {
+      m1.get(obj);
     }
   }
   `;
@@ -547,12 +565,23 @@ function testMapPerformance(k) {
     await run('create', `createObjects(${k})`);
     await run('store take 1', `storeObjects()`);
     await run('store take 2', `storeObjects()`);
+    await run('first take 1', `readFirst(100000)`);
+    await run('first take 2', `readFirst(100000)`);
+    await run('last take 1', `readLast(100000)`);
+    await run('last take 2', `readLast(100000)`);
+    await run('readAll take 1', `readObjects()`);
   });
 }
 const obs = new PerformanceObserver(items => {
+  const keys = [];
+  const values = [];
   items.getEntries().forEach(({ name, duration }) => {
-    console.log(name, duration);
+    console.log(`${name}:`, duration);
+    keys.push(name);
+    values.push(duration);
   });
+  // console.log(keys);
+  // console.log(values);
   performance.clearMarks();
 });
 obs.observe({ entryTypes: ['measure'] });
@@ -560,4 +589,6 @@ testMapPerformance(100);
 testMapPerformance(1000);
 testMapPerformance(4000);
 testMapPerformance(8000);
-testMapPerformance(10000);
+testMapPerformance(12000);
+// testMapPerformance(32000);
+// testMapPerformance(64000);
