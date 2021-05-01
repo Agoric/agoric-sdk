@@ -6,6 +6,9 @@ VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 
 TAG := $(if $(VERSION),$(VERSION),latest)
 MODDABLE_COMMIT_HASH := $(shell git submodule status ../xsnap/moddable | \
 	sed -ne 's/^.\([^ ]*\).*/\1/p')
+GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
+	dirty=`git diff --quiet || echo -dirty`; \
+	echo "$$hash$$dirty")
 
 # Don't push alpha tags as ":$(TAG)".
 ifeq ($(TAG),latest)
@@ -22,10 +25,8 @@ docker-build: docker-build-sdk docker-build-solo \
 	docker-build-setup docker-build-deployment
 
 docker-build-sdk:
-	hash=`git rev-parse --short HEAD`; \
-	  dirty=`git diff --quiet || echo -dirty`; \
-	  echo "$$hash$$dirty" > $(SS)lib/git-revision.txt
 	docker build --build-arg=MODDABLE_COMMIT_HASH=$(MODDABLE_COMMIT_HASH) \
+		--build-arg=GIT_REVISION=$(GIT_REVISION) \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 
