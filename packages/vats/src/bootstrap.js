@@ -71,7 +71,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       zoe,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
-      bridgeManager ? E(bankVat).makeBankManager(bridgeManager) : undefined,
+      E(bankVat).makeBankManager(bridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
@@ -161,7 +161,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     // We just transfer the bootstrapValue in central tokens to the low-level
     // bootstrapAddress.
     async function depositCentralBootstrapPayment() {
-      if (!bankManager || !bootstrapAddress || !bootstrapPaymentValue) {
+      if (!bootstrapAddress || !bootstrapPaymentValue) {
         return;
       }
       await E(bankManager).addAsset(
@@ -218,7 +218,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           issuerName,
           harden({ ...record, brand, issuer }),
         );
-        if (!record.bankDenom || !record.bankPurse || !bankManager) {
+        if (!record.bankDenom || !record.bankPurse) {
           return issuer;
         }
 
@@ -466,12 +466,16 @@ export function buildRootObject(vatPowers, vatParameters) {
         const mintIssuerNames = [];
         const mintPurseNames = [];
         const mintValues = [];
+        const payToBank = [];
         issuerNames.forEach(issuerName => {
           const record = issuerNameToRecord.get(issuerName);
           if (!record.defaultPurses) {
             return;
           }
           record.defaultPurses.forEach(([purseName, value]) => {
+            // Only pay to the bank if we don't have an actual bridge to the
+            // underlying chain (from which we'll get the assets).
+            payToBank.push(!bridgeManager && purseName === record.bankPurse);
             mintIssuerNames.push(issuerName);
             mintPurseNames.push(purseName);
             mintValues.push(value);
@@ -482,17 +486,38 @@ export function buildRootObject(vatPowers, vatParameters) {
           mintValues,
         );
 
-        const paymentInfo = mintIssuerNames.map((issuerName, i) => ({
+        const allPayments = mintIssuerNames.map((issuerName, i) => ({
           issuer: issuerNameToRecord.get(issuerName).issuer,
           issuerPetname: issuerName,
           payment: payments[i],
+          brand: issuerNameToRecord.get(issuerName).brand,
           pursePetname: mintPurseNames[i],
         }));
+
+        const bank = await E(bankManager).getBankForAddress(address);
+
+        // Separate out the purse-creating payments from the bank payments.
+        const faucetPaymentInfo = [];
+        await Promise.all(
+          allPayments.map(async (record, i) => {
+            if (!payToBank[i]) {
+              // Just a faucet payment to be claimed by a wallet.
+              faucetPaymentInfo.push(record);
+              return;
+            }
+            const { brand, payment } = record;
+
+            // Deposit the payment in the bank now.
+            assert(brand);
+            const purse = E(bank).getPurse(brand);
+            await E(purse).deposit(payment);
+          }),
+        );
 
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
-            return paymentInfo;
+            return faucetPaymentInfo;
           },
         });
 
@@ -511,9 +536,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             return address;
           },
         };
-
-        const bank = await (bankManager &&
-          E(bankManager).getBankForAddress(address));
 
         /** @param {NatValue} value */
         async function donateCentralFromBootstrap(value) {

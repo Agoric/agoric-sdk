@@ -1,11 +1,11 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-export const MINT_DENOM = 'urun';
+export const MINT_DENOM = 'ubld';
 export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 
-export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
+export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
 // side of Earth, and multiple round trips per block.

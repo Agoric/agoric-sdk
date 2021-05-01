@@ -85,40 +85,54 @@ const makePurseController = (
 export function buildRootObject(_vatPowers) {
   return Far('bankMaker', {
     /**
-     * @param {import('./bridge').BridgeManager} bridgeMgr
+     * @param {import('./bridge').BridgeManager} bridgeManager
      */
-    async makeBankManager(bridgeMgr) {
-      const bankCall = obj => E(bridgeMgr).toBridge('bank', obj);
-
+    async makeBankManager(bridgeManager) {
       /** @type {Store<Brand, AssetRecord>} */
       const brandToAssetRecord = makeStore('brand');
+
       /** @type {Store<string, Store<string, (amount: any) => void>>} */
       const denomToAddressUpdater = makeStore('denom');
 
-      const handler = Far('bankHandler', {
-        async fromBridge(_srcID, obj) {
-          switch (obj.type) {
-            case 'VPURSE_BALANCE_UPDATE': {
-              for (const update of obj.updated) {
-                try {
-                  const { address, denom, amount: value } = update;
-                  const addressToUpdater = denomToAddressUpdater.get(denom);
-                  const updater = addressToUpdater.get(address);
+      /**
+       * @param {import('./bridge').BridgeManager} bridgeMgr
+       */
+      async function getRemoteBankCall(bridgeMgr) {
+        if (!bridgeMgr) {
+          return undefined;
+        }
 
-                  updater(value);
-                } catch (e) {
-                  console.error('Unregistered update', update);
+        // We need to synchronise with the remote bank.
+        const handler = Far('bankHandler', {
+          async fromBridge(_srcID, obj) {
+            switch (obj.type) {
+              case 'VPURSE_BALANCE_UPDATE': {
+                for (const update of obj.updated) {
+                  try {
+                    const { address, denom, amount: value } = update;
+                    const addressToUpdater = denomToAddressUpdater.get(denom);
+                    const updater = addressToUpdater.get(address);
+
+                    updater(value);
+                  } catch (e) {
+                    console.error('Unregistered update', update);
+                  }
                 }
+                break;
               }
-              break;
+              default:
+                assert.fail(X`Unrecognized request ${obj.type}`);
             }
-            default:
-              assert.fail(X`Unrecognized request ${obj.type}`);
-          }
-        },
-      });
+          },
+        });
 
-      await E(bridgeMgr).register('bank', handler);
+        await E(bridgeMgr).register('bank', handler);
+
+        // We can only downcall to the bank if there exists a bridge manager.
+        return obj => E(bridgeMgr).toBridge('bank', obj);
+      }
+
+      const bankCall = await getRemoteBankCall(bridgeManager);
 
       /**
        * @typedef {Object} AssetDescriptor
@@ -203,7 +217,15 @@ export function buildRootObject(_vatPowers) {
               if (brandToVPurse.has(brand)) {
                 return brandToVPurse.get(brand);
               }
+
               const assetRecord = brandToAssetRecord.get(brand);
+              if (!bankCall) {
+                // Just emulate with a real purse.
+                const purse = await E(assetRecord.issuer).makeEmptyPurse();
+                brandToVPurse.init(brand, purse);
+                return purse;
+              }
+
               const addressToUpdater = denomToAddressUpdater.get(
                 assetRecord.denom,
               );

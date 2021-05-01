@@ -72,6 +72,7 @@ const fromCosmosIssuerEntries = [
     'BLD',
     {
       issuerArgs: [undefined, { decimalPlaces: 6 }],
+      defaultPurses: [['Agoric staking token', scaleMicro(62)]],
       bankDenom: 'ubld',
       bankPurse: 'Agoric staking token',
       collateralConfig: {
