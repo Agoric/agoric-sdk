@@ -512,16 +512,21 @@ test('meter details', async t => {
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
   let m = new Map();
+  let s1 = new Set();
   for (ix = 0; ix < 20000; ix++) {
     m.set(ix, 'garbage');
-    // m.delete(m);
+    s1.add(ix);
+  }
+  for (ix = 0; ix < 20000; ix++) {
+    m.delete(ix);
+    s1.delete(ix);
   }
   `);
   const {
     meterUsage: { meterType, ...meters },
   } = result;
   t.log(meters);
-  t.is(meterType, 'xs-meter-4');
+  t.is(meterType, 'xs-meter-5');
   const { entries, fromEntries } = Object;
   t.deepEqual(
     {
@@ -530,6 +535,8 @@ test('meter details', async t => {
       allocateChunksCalls: 'number',
       allocateSlotsCalls: 'number',
       garbageCollectionCount: 'number',
+      mapSetAddCount: 'number',
+      mapSetRemoveCount: 'number',
     },
     fromEntries(entries(meters).map(([p, v]) => [p, typeof v])),
   );

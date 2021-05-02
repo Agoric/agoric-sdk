@@ -3,7 +3,7 @@
 /** The version identifier for our meter type.
  * TODO Bump this whenever there's a change to metering semantics.
  */
-export const METER_TYPE = 'xs-meter-4';
+export const METER_TYPE = 'xs-meter-5';
 
 export const ExitCode = {
   E_UNKNOWN_ERROR: -1,

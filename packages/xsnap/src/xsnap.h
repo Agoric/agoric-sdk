@@ -72,6 +72,8 @@
 	txUnsigned allocateChunksCallCount; \
 	txUnsigned allocateSlotsCallCount; \
 	txUnsigned garbageCollectionCount; \
+	txUnsigned mapSetAddCount; \
+	txUnsigned mapSetRemoveCount; \
 	int promiseJobs; \
 	void* timerJobs; \
 	void* waiterCondition; \
