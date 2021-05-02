@@ -89,6 +89,10 @@
 #define mxUseDefaultParseScript 1
 #define mxUseDefaultSharedChunks 1
 
+// try changing mxMapSetLength from 127 to.. a prime slightly smaller
+// than four times that
+#define mxMapSetLength (503)
+
 #endif /* __XSNAP__ */
 
 // Local Variables:
