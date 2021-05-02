@@ -1,6 +1,5 @@
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
-INITIAL_TOKENS = 1000000000000urun
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 

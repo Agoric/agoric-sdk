@@ -8,10 +8,9 @@
   vars:
     - service: ag-chain-cosmos
     - data: "{{ SETUP_HOME }}/{{ service }}/data"
-    - BOOTSTRAP_TOKENS: "{{ lookup('file', SETUP_HOME + '/boot-tokens.txt') }}"
     - CHAIN_NAME: "{{ lookup('file', SETUP_HOME + '/' + service + '/chain-name.txt') }}"
     - STAKER: ag-staker
-    - STAKER_INIT_COINS: 62000000ubld,93000000urun
+    - STAKER_INIT_COINS: 62000000ubld
     - STAKER_SELF_DELEGATION: 50000000ubld
     - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
