@@ -25,9 +25,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type GenesisState struct {
-	BootstrapAddress string                                 `protobuf:"bytes,1,opt,name=bootstrap_address,json=bootstrapAddress,proto3" json:"bootstrap_address,omitempty"`
-	BootstrapValue   github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=bootstrap_value,json=bootstrapValue,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"bootstrap_value"`
-	DonationValue    github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,3,opt,name=donation_value,json=donationValue,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"donation_value"`
+	// Cosmos-SDK layer bech32 address to receive bootstrap_value urun.
+	BootstrapAddress string `protobuf:"bytes,1,opt,name=bootstrap_address,json=bootstrapAddress,proto3" json:"bootstrap_address,omitempty"`
+	// Number of urun to have the treasury send to bootstrap_address.
+	BootstrapValue github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=bootstrap_value,json=bootstrapValue,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"bootstrap_value"`
+	// Number of urun to send from bootstrap_address to new ag-solo clients.
+	DonationValue github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,3,opt,name=donation_value,json=donationValue,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"donation_value"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
