@@ -380,6 +380,9 @@ show-config      display the client connection parameters
         const allIds = await needBacktick(
           `${shellEscape(progname)} show-all-ids`,
         );
+        const faucetAddress = await needBacktick(
+          `${shellEscape(progname)} show-faucet-address`,
+        );
         await Promise.all(
           dsts.map(async (dst, i) => {
             // Update the config.toml and genesis.json.
@@ -387,6 +390,7 @@ show-config      display the client connection parameters
               agoricCli,
               `set-defaults`,
               `ag-chain-cosmos`,
+              `--bootstrap-address=${faucetAddress.trimRight()}`,
               `--persistent-peers=${peers}`,
               `--seeds=${seeds}`,
               `--unconditional-peer-ids=${allIds}`,
@@ -430,7 +434,7 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --log_level=warn',
+            '/usr/local/bin/ag-chain-cosmos start --log_level=warn',
           )}`,
           ...agChainCosmosEnvironment,
         ]),
@@ -514,6 +518,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       break;
     }
 
+    case 'show-faucet-address':
     case 'add-egress':
     case 'add-delegate': {
       await inited();

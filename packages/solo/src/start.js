@@ -385,8 +385,9 @@ export default async function start(basedir, argv) {
   swingSetRunning = true;
   deliverOutbound();
 
+  const whenHellFreezesOver = new Promise(() => {});
   if (!hostport) {
-    return;
+    return whenHellFreezesOver;
   }
 
   const deploys = typeof deploy === 'string' ? [deploy] : deploy;
@@ -410,7 +411,7 @@ export default async function start(basedir, argv) {
   // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
   // runs correctly under the same version of the JS engine we're currently
   // using.
-  fork(
+  const cp = fork(
     agoricCli,
     [
       `deploy`,
@@ -426,4 +427,6 @@ export default async function start(basedir, argv) {
       }
     },
   );
+
+  return whenHellFreezesOver.then(() => cp.kill('SIGINT'));
 }

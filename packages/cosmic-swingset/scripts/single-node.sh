@@ -5,7 +5,7 @@ set -e
 DAEMON=${DAEMON-gaiad}
 CLI=${CLI-gaiacli}
 STAKE=${STAKE-10000000000stake}
-coins="${STAKE},100000000000samoleans,1000000000urun,100provisionpass"
+coins="${STAKE},100000000000samoleans,1000000000ubld,100provisionpass"
 
 CHAINID=$1
 GENACCT=$2
@@ -44,7 +44,7 @@ case $DAEMON in
 ag-chain-cosmos)
   # For Agoric
   DIR=$(dirname -- "${BASH_SOURCE[0]}")
-  "$DIR/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos ~/.$DAEMON/config
+  "$DIR/../../agoric-cli/bin/agoric" set-defaults --bootstrap-address=$GENACCT ag-chain-cosmos ~/.$DAEMON/config
   ;;
 esac
 

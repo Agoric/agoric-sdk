@@ -8,10 +8,6 @@ provisioning-server
 solo
 build
 node_modules
-lib/ag-solo/ui/node_modules
-lib/ag-solo/ui/build
-lib/lib*.h
-lib/lib*.so
 ve[0-9]
 t[0-9]
 binding.gyp

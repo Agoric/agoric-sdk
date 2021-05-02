@@ -7,30 +7,6 @@
     mode: push
   when: HELPER_BINARY is defined
 
-- name: Agoric SDK exists
-  delegate_to: localhost
-  stat:
-    path: "/usr/src/agoric-sdk"
-  register: ws
-
-- name: "Synchronize install directory {{APPDIR}}"
-  synchronize:
-    src: "{{APPDIR}}/"
-    dest: "/usr/src/cosmic-swingset/"
-    dirs: yes
-    delete: yes
-    checksum: yes
-    mode: push
-    rsync_opts:
-    - "--exclude=.git"
-    - "--exclude=setup"
-    - "--exclude=.vscode"
-    - "--exclude=chains"
-    - "--exclude=x"
-    - "--exclude=t[0-9]*"
-    - "--exclude=provisioning-server"
-  when: not ws.stat.exists
-
 - name: Synchronize Agoric SDK
   synchronize:
     src: "/usr/src/agoric-sdk/"
@@ -39,35 +15,15 @@
     delete: yes
     checksum: yes
     mode: push
-  when: ws.stat.exists
-
-- name: Remove cosmic-swingset to prepare for linking
-  file:
-    path: /usr/src/cosmic-swingset
-    state: absent
-  when: ws.stat.exists
-
-- name: Symlink cosmic-swingset
-  file:
-    src: /usr/src/agoric-sdk/packages/cosmic-swingset
-    dest: /usr/src/cosmic-swingset
-    state: link
-  when: ws.stat.exists
 
 - name: "Symlink ag-chain-cosmos"
   file:
-    src: "/usr/src/cosmic-swingset/bin/ag-chain-cosmos"
+    src: "/usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos"
     dest: "/usr/local/bin/ag-chain-cosmos"
     state: link
 
-- name: "Symlink /usr/src/ag-solo"
+- name: "Symlink ag-solo"
   file:
-    src: "/usr/src/cosmic-swingset"
-    dest: /usr/src/ag-solo
-    state: link
-
-- name: "Symlink /usr/local/bin/ag-solo"
-  file:
-    src: "/usr/src/cosmic-swingset/bin/ag-solo"
+    src: "/usr/src/agoric-sdk/packages/solo/bin/ag-solo"
     dest: "/usr/local/bin/ag-solo"
     state: link

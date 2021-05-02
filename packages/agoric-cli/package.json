@@ -30,6 +30,7 @@
     "@agoric/bundle-source": "^1.3.4",
     "@agoric/captp": "^1.7.10",
     "@agoric/install-ses": "^0.5.10",
+    "@agoric/nat": "^4.0.0",
     "@agoric/promise-kit": "^0.2.10",
     "@agoric/swing-store-simple": "^0.3.6",
     "@iarna/toml": "^2.2.3",

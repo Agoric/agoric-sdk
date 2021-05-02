@@ -49,7 +49,7 @@ export default async function solo(progname, rawArgv) {
 
   if (opts.help) {
     process.stdout.write(`\
-Usage: ${rawArgv[0]} COMMAND [OPTIONS...]
+Usage: ${progname} COMMAND [OPTIONS...]
 
 init
 set-gci-ingress
@@ -62,7 +62,7 @@ start
       const { netconfig } = parseArgs(argv.slice(1));
       if (!AG_SOLO_BASEDIR) {
         console.error(`setup: you must set $AG_SOLO_BASEDIR`);
-        return;
+        return 1;
       }
       if (!fs.existsSync(AG_SOLO_BASEDIR)) {
         await solo(progname, ['init', AG_SOLO_BASEDIR, ...argv.slice(1)]);
@@ -145,12 +145,13 @@ start
       const cp = spawnSync(`${__dirname}/../../${argv[0]}.js`, argv.slice(1), {
         stdio: 'inherit',
       });
-      process.exit(cp.status);
-      break;
+      return cp.status;
     }
     default: {
       log.error(`unrecognized command ${argv[0]}`);
       log.error(`try one of: init, set-gci-ingress, start`);
+      return 1;
     }
   }
+  return 0;
 }

@@ -358,6 +358,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (solo)
+      timeout-minutes: 20
       run: cd packages/solo && yarn test
       env:
         ESM_DISABLE_CACHE: true

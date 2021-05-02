@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Save Git revision
-      run: git rev-parse HEAD > packages/cosmic-swingset/lib/git-revision.txt
+      run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
     - name: Save MODDABLE_COMMIT_HASH
@@ -23,7 +23,7 @@ jobs:
       with:
         name: agoric/agoric-sdk
         dockerfile: packages/deployment/Dockerfile.sdk
-        buildargs: MODDABLE_COMMIT_HASH
+        buildargs: MODDABLE_COMMIT_HASH,GIT_REVISION
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
@@ -59,8 +59,8 @@ jobs:
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: agoric/cosmic-swingset-solo
-        dockerfile: packages/cosmic-swingset/lib/ag-solo/Dockerfile
-        context: packages/cosmic-swingset/lib/ag-solo
+        dockerfile: packages/solo/Dockerfile
+        context: packages/solo
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true

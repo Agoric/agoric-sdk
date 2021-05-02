@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY golang/cosmos ./
 
-COPY packages/cosmic-swingset/lib/*.txt ./
-RUN make MOD_READONLY= compile-go
+ARG GIT_REVISION
+RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
@@ -47,6 +47,17 @@ WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
+RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
+RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
+COPY . lib/ag-solo/
+
+ARG GIT_REVISION=unknown
+RUN echo "$GIT_REVISION" > /usr/src/agoric-sdk/packages/solo/public/git-revision.txt
+
+# Compatibility links for older containers.
+RUN ln -s /data /agoric
+RUN ln -s /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
+RUN ln -s /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
 # By default, run the daemon with specified arguments.
 WORKDIR /root

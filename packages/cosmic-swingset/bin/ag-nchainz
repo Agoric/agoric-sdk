@@ -22,7 +22,7 @@ thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
 PATHCONFIG=nchainz/config/paths
 CLI=ag-cosmos-helper
 DAEMON=ag-chain-cosmos
-SOLO=$thisdir/ag-solo
+SOLO=$thisdir/../solo/bin/ag-solo
 SKIP=no
 COMMAND=
 
@@ -55,7 +55,6 @@ testnet)
   portstart=$(( $BASE_PORT + $i * $NUM_SOLOS ))
   portend=$(( $portstart + $NUM_SOLOS - 1 ))
   SOLO_ADDRS=()
-  SOLO_NAMES=()
   POWER_FLAGS='[\"agoric.vattp\"]'
   egresses=
   sep=''
@@ -64,6 +63,7 @@ testnet)
     echo "Initializing ag-solo in $solo"
 		$SOLO init $solo --webport=$port
     addr=$(cat $solo/ag-cosmos-helper-address)
+    SOLO_ADDRS+=( "$addr" )
 		$DAEMON add-genesis-account --home=$n0d \
       $($CLI --home=$solo/$CLI-statedir --keyring-backend=test keys show -a ag-solo) \
       1000urun,1provisionpass
@@ -73,7 +73,8 @@ testnet)
 	done
   for node in `ls -d $chainid/n* 2>/dev/null || true`; do
     [[ "$node/$DAEMON" == $n0d ]] || cp $n0d/config/genesis.json $node/$DAEMON/config/genesis.json
-	  "$thisdir/../../agoric-cli/bin/agoric" set-defaults ag-chain-cosmos $node/$DAEMON/config
+	  "$thisdir/../../agoric-cli/bin/agoric" set-defaults --bootstrap-address=${SOLO_ADDRS[0]} \
+      ag-chain-cosmos $node/$DAEMON/config
     cp "$node/$DAEMON/config/genesis.json" "$node/$DAEMON/config/genesis-orig.json"
     # Append the egresses to the genesis and reset bond_denom.
     jq ".*{app_state:{staking:{params:{bond_denom:\"stake\"}},swingset:{storage:{$egresses}}}}" \

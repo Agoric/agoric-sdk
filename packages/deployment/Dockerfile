@@ -28,13 +28,7 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
 
 WORKDIR /usr/src/agoric-sdk/packages/deployment
 RUN ln -sf $PWD/ag-setup-cosmos /usr/local/bin/
-COPY package*.json .
-RUN npm install --production
 
-# Add the ag-solo, so we can deploy it via Ansible.
-COPY --from=agoric/cosmic-swingset-solo /usr/src/agoric-sdk/packages/cosmic-swingset/lib/ag-solo/ /usr/src/agoric-sdk/packages/cosmic-swingset/lib/ag-solo/
-
-COPY . .
-WORKDIR /agoric/chains
+WORKDIR /data/chains
 
 ENTRYPOINT [ "ag-setup-cosmos" ]
