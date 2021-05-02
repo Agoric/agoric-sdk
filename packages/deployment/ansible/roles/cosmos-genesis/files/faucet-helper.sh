@@ -18,7 +18,7 @@ show-faucet-address)
     -- faucet
   exit $?
   ;;
-done
+esac
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
 IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
