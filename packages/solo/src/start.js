@@ -385,9 +385,9 @@ export default async function start(basedir, argv) {
   swingSetRunning = true;
   deliverOutbound();
 
-  const afterHellFreezesOver = new Promise(() => {});
+  const whenHellFreezesOver = new Promise(() => {});
   if (!hostport) {
-    return afterHellFreezesOver;
+    return whenHellFreezesOver;
   }
 
   const deploys = typeof deploy === 'string' ? [deploy] : deploy;
@@ -428,5 +428,5 @@ export default async function start(basedir, argv) {
     },
   );
 
-  return afterHellFreezesOver.then(() => cp.kill('SIGINT'));
+  return whenHellFreezesOver.then(() => cp.kill('SIGINT'));
 }

@@ -28,10 +28,7 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
 
 WORKDIR /usr/src/agoric-sdk/packages/deployment
 RUN ln -sf $PWD/ag-setup-cosmos /usr/local/bin/
-COPY package*.json .
-RUN npm install --production
 
-COPY . .
 WORKDIR /data/chains
 
 ENTRYPOINT [ "ag-setup-cosmos" ]

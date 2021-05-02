@@ -390,7 +390,7 @@ show-config      display the client connection parameters
               agoricCli,
               `set-defaults`,
               `ag-chain-cosmos`,
-              `--bootstrap-address=${faucetAddress}`,
+              `--bootstrap-address=${faucetAddress.trimRight()}`,
               `--persistent-peers=${peers}`,
               `--seeds=${seeds}`,
               `--unconditional-peer-ids=${allIds}`,
@@ -434,7 +434,7 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            '/usr/src/cosmic-swingset/bin/ag-chain-cosmos start --log_level=warn',
+            '/usr/local/bin/ag-chain-cosmos start --log_level=warn',
           )}`,
           ...agChainCosmosEnvironment,
         ]),

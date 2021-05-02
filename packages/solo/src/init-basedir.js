@@ -50,11 +50,11 @@ export default function initBasedir(
 
   // Save our version codes.
   const pj = 'package.json';
-  fs.copyFileSync(path.join(`${here}/..`, pj), path.join(dstHtmldir, pj));
+  fs.copyFileSync(path.join(here, '..', pj), path.join(dstHtmldir, pj));
   const gr = 'git-revision.txt';
   try {
     fs.copyFileSync(
-      path.join(`${here}/../public`, gr),
+      path.join(here, '../public', gr),
       path.join(dstHtmldir, gr),
     );
   } catch (e) {
