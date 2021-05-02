@@ -1,7 +1,7 @@
 #! /bin/sh
 set -e
 PORT=${PORT-8000}
-AG_SOLO=$(cd ../src && pwd)/entrypoint.cjs
+AG_SOLO=$(cd .. && pwd)/bin/ag-solo
 
 TDIR="${TMPDIR-/tmp}/startsolo.$$"
 trap 'rm -rf "$TDIR"' EXIT
