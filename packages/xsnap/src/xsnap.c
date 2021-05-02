@@ -1400,15 +1400,26 @@ static char* fxReadNetStringError(int code)
 
 static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txMachine *the, char* buf, size_t length)
 {
-	char fmt[] = ".{\"compute\":%u,\"allocate\":%u,\"allocateChunksCalls\":%u,\"allocateSlotsCalls\":%u,\"garbageCollectionCount\":%u}\1";
+	char fmt[] = ("." // OK
+				  "{"
+				  "\"compute\":%u,"
+				  "\"allocate\":%u,"
+				  "\"allocateChunksCalls\":%u,"
+				  "\"allocateSlotsCalls\":%u,"
+				  "\"garbageCollectionCount\":%u,"
+				  "\"mapSetAddCount\":%u,"
+				  "\"mapSetRemoveCount\":%u}"
+				  "\1" // separate meter info from result
+				  );
 	char numeral64[] = "12345678901234567890"; // big enough for 64bit numeral
-	char prefix[8 + sizeof fmt + 4 * sizeof numeral64];
+	char prefix[8 + sizeof fmt + 7 * sizeof numeral64];
 	// TODO: fxCollect counter
 	// Prepend the meter usage to the reply.
 	snprintf(prefix, sizeof(prefix) - 1, fmt,
 			 meterIndex, the->allocatedSpace,
 			 the->allocateChunksCallCount, the->allocateSlotsCallCount,
-			 the->garbageCollectionCount);
+			 the->garbageCollectionCount,
+			 the->mapSetAddCount, the->mapSetRemoveCount);
 	return fxWriteNetString(outStream, prefix, buf, length);
 }
 
