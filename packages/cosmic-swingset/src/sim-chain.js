@@ -57,6 +57,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
     noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
+    bootMsg: {
+      bootstrapAddress: 'agoric1simboot',
+      bootstrapValue: `${50000n * 10n ** 6n}`,
+      donationValue: `${5n * 10n ** 6n}`,
+    },
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function flushChainSends(replay) {

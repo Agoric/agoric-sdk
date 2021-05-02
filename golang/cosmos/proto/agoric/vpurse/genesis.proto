@@ -1,0 +1,28 @@
+syntax = "proto3";
+package agoric.vpurse;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types";
+
+message GenesisState {
+    option (gogoproto.equal) = false;
+
+    // These are passed as part of the AG_COSMOS_INIT message.
+    // They are plumbed through to configure the bootstrap of the treasury:
+    
+    // Cosmos-SDK layer bech32 address to receive bootstrap_value urun.
+    string bootstrap_address = 1;
+
+    // Number of urun to have the treasury send to bootstrap_address.
+    string bootstrap_value = 2 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.nullable)   = false
+    ];
+
+    // Number of urun to send from bootstrap_address to new ag-solo clients.
+    string donation_value = 3 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.nullable)   = false
+    ];
+}

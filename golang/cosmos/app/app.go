@@ -92,6 +92,7 @@ import (
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -123,6 +124,7 @@ var (
 		ibc.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		dibc.AppModuleBasic{},
+		vpurse.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
@@ -138,6 +140,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		vpurse.ModuleName:              {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -155,7 +158,8 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Marshaler
 	interfaceRegistry types.InterfaceRegistry
 
-	ibcPort int
+	ibcPort    int
+	vpursePort int
 
 	invCheckPeriod uint
 
@@ -184,6 +188,7 @@ type GaiaApp struct { // nolint: golint
 
 	SwingSetKeeper swingset.Keeper
 	DibcKeeper     dibc.Keeper
+	VpurseKeeper   vpurse.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -240,7 +245,9 @@ func NewAgoricApp(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, swingset.StoreKey, dibc.StoreKey, capabilitytypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		swingset.StoreKey, dibc.StoreKey, vpurse.StoreKey,
+		capabilitytypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -325,6 +332,7 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
+		app.MustInitController(ctx)
 		defer swingset.SetControllerContext(ctx)()
 		return sendToController(true, str)
 	}
@@ -354,6 +362,14 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
 	ibcRouter.AddRoute(dibc.ModuleName, dibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
+
+	app.VpurseKeeper = vpurse.NewKeeper(
+		appCodec, keys[vpurse.StoreKey],
+		app.BankKeeper,
+		callToController,
+	)
+	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)
+	app.vpursePort = swingset.RegisterPortHandler("bank", vpurse.NewPortHandler(app.VpurseKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -396,6 +412,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		swingset.NewAppModule(app.SwingSetKeeper),
 		dibcModule,
+		vpurseModule,
 		transferModule,
 	)
 
@@ -407,7 +424,7 @@ func NewAgoricApp(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, swingset.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(vpurse.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -417,7 +434,9 @@ func NewAgoricApp(
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
-		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, swingset.ModuleName, ibctransfertypes.ModuleName,
+		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		vpurse.ModuleName, swingset.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -484,10 +503,14 @@ func NewAgoricApp(
 }
 
 type cosmosInitAction struct {
-	Type        string `json:"type"`
-	IBCPort     int    `json:"ibcPort"`
-	StoragePort int    `json:"storagePort"`
-	ChainID     string `json:"chainID"`
+	Type             string `json:"type"`
+	IBCPort          int    `json:"ibcPort"`
+	StoragePort      int    `json:"storagePort"`
+	VPursePort       int    `json:"vpursePort"`
+	ChainID          string `json:"chainID"`
+	BootstrapAddress string `json:"bootstrapAddress"`
+	BootstrapValue   string `json:"bootstrapValue"`
+	DonationValue    string `json:"donationValue"`
 }
 
 // MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
@@ -507,12 +530,27 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	}
 	app.controllerInited = true
 
+	var bootstrapAddr sdk.AccAddress
+	gs := app.VpurseKeeper.GetGenesis(ctx)
+	if len(gs.BootstrapAddress) > 0 {
+		ba, err := sdk.AccAddressFromBech32(gs.BootstrapAddress)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot get bootstrap addr", err)
+			os.Exit(1)
+		}
+		bootstrapAddr = ba
+	}
+
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		Type:        "AG_COSMOS_INIT",
-		IBCPort:     app.ibcPort,
-		StoragePort: swingset.GetPort("storage"),
-		ChainID:     ctx.ChainID(),
+		Type:             "AG_COSMOS_INIT",
+		VPursePort:       app.vpursePort,
+		IBCPort:          app.ibcPort,
+		StoragePort:      swingset.GetPort("storage"),
+		ChainID:          ctx.ChainID(),
+		BootstrapAddress: bootstrapAddr.String(),
+		BootstrapValue:   gs.BootstrapValue.String(),
+		DonationValue:    gs.DonationValue.String(),
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {
@@ -526,7 +564,6 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 
 // BeginBlocker application updates every begin block
 func (app *GaiaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	app.MustInitController(ctx)
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -556,7 +593,6 @@ func updateTransferPort(gs GenesisState, reservedPort, newPort string) error {
 
 // InitChainer application update at chain initialization
 func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
-	app.MustInitController(ctx)
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)

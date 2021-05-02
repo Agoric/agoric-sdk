@@ -29,10 +29,6 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
-// TODO: decide on initial value to be distributed. This would give
-// 20,000 users each 1 display unit of RUN
-const BOOTSTRAP_PAYMENT_VALUE = 20000n * 10n ** 6n;
-
 console.debug(`loading bootstrap.js`);
 
 // Used for coordinating on an index in comms for the provisioning service
@@ -62,8 +58,18 @@ export function buildRootObject(vatPowers, vatParameters) {
     vatAdminSvc,
     noFakeCurrencies,
   ) {
+    /** @type {ERef<ReturnType<import('./vat-bank')['buildRootObject']>>} */
+    const bankVat = vats.bank;
+
+    // Name these differently to distinguish their uses.
+    // TODO: eventually make these different facets of the bridgeManager,
+    // binding to srcIDs/dstIDs 'bank' and 'dibc' respectively.
+    const bankBridgeManager = bridgeManager;
+    const dibcBridgeManager = bridgeManager;
+
     // Create singleton instances.
     const [
+      bankManager,
       sharingService,
       registry,
       board,
@@ -71,6 +77,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       zoe,
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
+      E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
@@ -92,7 +99,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       nameAdmin: pegasusConnectionsAdmin,
     } = makeNameHubKit();
 
-    async function installEconomy() {
+    async function installEconomy(bootstrapPaymentValue) {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
       /** @type {Store<NameHub, NameAdmin>} */
@@ -121,7 +128,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           nameAdmins,
           priceAuthority,
           zoe,
-          bootstrapPaymentValue: BOOTSTRAP_PAYMENT_VALUE,
+          bootstrapPaymentValue,
         }),
         installPegasusOnChain({
           agoricNames,
@@ -134,8 +141,14 @@ export function buildRootObject(vatPowers, vatParameters) {
       return treasuryCreator;
     }
 
+    const { bootstrapAddress, donationValue = '0', bootstrapValue = '0' } =
+      (vatParameters && vatParameters.argv && vatParameters.argv.bootMsg) || {};
+    const bootstrapPaymentValue = BigInt(bootstrapValue);
+    const donationPaymentValue = BigInt(donationValue);
+
     // Now we can bootstrap the economy!
-    const treasuryCreator = await installEconomy();
+    const treasuryCreator = await installEconomy(bootstrapPaymentValue);
+
     const [
       centralIssuer,
       centralBrand,
@@ -148,12 +161,35 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
 
+    /** @type {undefined | import('@agoric/eventual-send').EOnly<Purse>} */
+    let centralBootstrapPurse;
+
+    // We just transfer the bootstrapValue in central tokens to the low-level
+    // bootstrapAddress.
+    async function depositCentralBootstrapPayment() {
+      if (!bootstrapAddress || !bootstrapPaymentValue) {
+        return;
+      }
+      await E(bankManager).addAsset(
+        'urun',
+        CENTRAL_ISSUER_NAME,
+        'Agoric RUN currency',
+        harden({ issuer: centralIssuer, brand: centralBrand }),
+      );
+      const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
+      const pmt = await E(treasuryCreator).getBootstrapPayment(
+        amountMath.make(centralBrand, bootstrapPaymentValue),
+      );
+      centralBootstrapPurse = E(bank).getPurse(centralBrand);
+      await E(centralBootstrapPurse).deposit(pmt);
+    }
+    await depositCentralBootstrapPayment();
+
     /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
       CENTRAL_ISSUER_NAME,
       {
         issuer: centralIssuer,
-        defaultPurses: [['Agoric RUN currency', 0]],
         tradesGivenCentral: [[1, 1]],
       },
     ];
@@ -187,6 +223,21 @@ export function buildRootObject(vatPowers, vatParameters) {
         issuerNameToRecord.set(
           issuerName,
           harden({ ...record, brand, issuer }),
+        );
+        if (!record.bankDenom || !record.bankPurse) {
+          return issuer;
+        }
+
+        // We need to obtain the mint in order to mint the tokens when they
+        // come from the bank.
+        // FIXME: Be more careful with the mint.
+        const mint = await E(vats.mints).getMint(issuerName);
+        const kit = harden({ brand, issuer, mint });
+        await E(bankManager).addAsset(
+          record.bankDenom,
+          issuerName,
+          record.bankPurse,
+          kit,
         );
         return issuer;
       }),
@@ -384,7 +435,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     // eslint-disable-next-line no-use-before-define
     await registerNetworkProtocols(
       vats,
-      bridgeManager,
+      dibcBridgeManager,
       pegasus,
       pegasusConnectionsAdmin,
     );
@@ -403,32 +454,42 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
 
         const additionalPowers = {};
-        if (powerFlags && powerFlags.includes('agoric.agoricNamesAdmin')) {
-          additionalPowers.agoricNamesAdmin = agoricNamesAdmin;
-        }
-        if (powerFlags && powerFlags.includes('agoric.pegasusConnections')) {
-          additionalPowers.pegasusConnections = pegasusConnections;
-        }
-        if (powerFlags && powerFlags.includes('agoric.priceAuthorityAdmin')) {
-          additionalPowers.priceAuthorityAdmin = priceAuthorityAdmin;
-        }
-        if (powerFlags && powerFlags.includes('agoric.treasuryCreator')) {
-          additionalPowers.treasuryCreator = treasuryCreator;
-        }
-        if (powerFlags && powerFlags.includes('agoric.vattp')) {
-          // Give the authority to create a new host for vattp to share objects with.
-          additionalPowers.vattp = makeVattpFrom(vats);
+        const powerFlagConfig = [
+          ['agoricNamesAdmin', agoricNamesAdmin],
+          ['bankManager', bankManager],
+          ['pegasusConnections', pegasusConnections],
+          ['priceAuthorityAdmin', priceAuthorityAdmin],
+          ['treasuryCreator', treasuryCreator],
+          ['vattp', () => makeVattpFrom(vats)],
+        ];
+        for (const [flag, value] of powerFlagConfig) {
+          if (powerFlags && powerFlags.includes(`agoric.${flag}`)) {
+            const power = typeof value === 'function' ? value() : value;
+            additionalPowers[flag] = power;
+          }
         }
 
         const mintIssuerNames = [];
         const mintPurseNames = [];
         const mintValues = [];
+        const payToBank = [];
         issuerNames.forEach(issuerName => {
           const record = issuerNameToRecord.get(issuerName);
           if (!record.defaultPurses) {
             return;
           }
           record.defaultPurses.forEach(([purseName, value]) => {
+            // Only pay to the bank if we don't have an actual bridge to the
+            // underlying chain (from which we'll get the assets).
+            if (purseName === record.bankPurse) {
+              if (bankBridgeManager) {
+                // Don't mint or pay if we have a separate bank layer.
+                return;
+              }
+              payToBank.push(true);
+            } else {
+              payToBank.push(false);
+            }
             mintIssuerNames.push(issuerName);
             mintPurseNames.push(purseName);
             mintValues.push(value);
@@ -439,17 +500,38 @@ export function buildRootObject(vatPowers, vatParameters) {
           mintValues,
         );
 
-        const paymentInfo = mintIssuerNames.map((issuerName, i) => ({
+        const allPayments = mintIssuerNames.map((issuerName, i) => ({
           issuer: issuerNameToRecord.get(issuerName).issuer,
           issuerPetname: issuerName,
           payment: payments[i],
+          brand: issuerNameToRecord.get(issuerName).brand,
           pursePetname: mintPurseNames[i],
         }));
+
+        const bank = await E(bankManager).getBankForAddress(address);
+
+        // Separate out the purse-creating payments from the bank payments.
+        const faucetPaymentInfo = [];
+        await Promise.all(
+          allPayments.map(async (record, i) => {
+            if (!payToBank[i]) {
+              // Just a faucet payment to be claimed by a wallet.
+              faucetPaymentInfo.push(record);
+              return;
+            }
+            const { brand, payment } = record;
+
+            // Deposit the payment in the bank now.
+            assert(brand);
+            const purse = E(bank).getPurse(brand);
+            await E(purse).deposit(payment);
+          }),
+        );
 
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
-            return paymentInfo;
+            return faucetPaymentInfo;
           },
         });
 
@@ -469,9 +551,26 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         };
 
+        /** @param {NatValue} value */
+        async function donateCentralFromBootstrap(value) {
+          if (!bank || !centralBootstrapPurse) {
+            return;
+          }
+          const provisionAmount = amountMath.make(centralBrand, value);
+          const centralUserPurse = E(bank).getPurse(centralBrand);
+          const centralPayment = await E(centralBootstrapPurse).withdraw(
+            provisionAmount,
+          );
+          await E(centralUserPurse).deposit(
+            /** @type {Payment} */ (centralPayment),
+          );
+        }
+        await donateCentralFromBootstrap(donationPaymentValue);
+
         const bundle = harden({
           ...additionalPowers,
           agoricNames,
+          bank,
           chainTimerService,
           sharingService,
           faucet,
@@ -492,7 +591,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   async function registerNetworkProtocols(
     vats,
-    bridgeMgr,
+    dibcBridgeManager,
     pegasus,
     pegasusConnectionsAdmin,
   ) {
@@ -506,11 +605,11 @@ export function buildRootObject(vatPowers, vatParameters) {
         makeLoopbackProtocolHandler(),
       ),
     );
-    if (bridgeMgr) {
+    if (dibcBridgeManager) {
       // We have access to the bridge, and therefore IBC.
       const callbacks = Far('callbacks', {
         downcall(method, obj) {
-          return bridgeMgr.toBridge('dibc', {
+          return dibcBridgeManager.toBridge('dibc', {
             ...obj,
             type: 'IBC_METHOD',
             method,
@@ -518,7 +617,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         },
       });
       const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-      bridgeMgr.register('dibc', ibcHandler);
+      dibcBridgeManager.register('dibc', ibcHandler);
       ps.push(
         E(vats.network).registerProtocolHandler(
           ['/ibc-port', '/ibc-hop'],
@@ -588,7 +687,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
     }
 
-    if (bridgeMgr) {
+    if (dibcBridgeManager) {
       // Register a provisioning handler over the bridge.
       const handler = Far('provisioningHandler', {
         async fromBridge(_srcID, obj) {
@@ -609,7 +708,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           }
         },
       });
-      bridgeMgr.register('provision', handler);
+      dibcBridgeManager.register('provision', handler);
     }
   }
 

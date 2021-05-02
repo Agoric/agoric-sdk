@@ -189,7 +189,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
-  async function launchAndInitializeSwingSet() {
+  async function launchAndInitializeSwingSet(bootMsg) {
     // this object is used to store the mailbox state.
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
@@ -224,6 +224,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: env.NO_FAKE_CURRENCIES,
+      bootMsg,
     };
     const meterProvider = getMeterProvider(console, env);
     const slogFile = env.SLOGFILE;
@@ -253,11 +254,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.storage = action.storagePort;
     }
 
+    if (action.vpursePort) {
+      portNums.bank = action.vpursePort;
+    }
+
     if (!blockManager) {
       const {
         savedChainSends: scs,
         ...fns
-      } = await launchAndInitializeSwingSet();
+      } = await launchAndInitializeSwingSet(action);
       savedChainSends = scs;
       blockManager = makeBlockManager({
         ...fns,

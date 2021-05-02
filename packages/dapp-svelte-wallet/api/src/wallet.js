@@ -18,6 +18,7 @@ import { bigintStringify } from './bigintStringify';
 import './internal-types';
 
 export function buildRootObject(_vatPowers) {
+  let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
   /** @type {Array<PursesJSONState>} */
@@ -25,6 +26,7 @@ export function buildRootObject(_vatPowers) {
   /** @type {Array<OfferState>} */
   let inboxState = [];
   let http;
+
   const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
@@ -95,6 +97,7 @@ export function buildRootObject(_vatPowers) {
     await w.initialized;
     console.error('wallet initialized');
     walletAdmin = w.admin;
+    walletRoot = w;
   }
 
   /**
@@ -265,7 +268,12 @@ export function buildRootObject(_vatPowers) {
   };
   harden(preapprovedBridge);
 
-  async function getWallet() {
+  async function getWallet(bank) {
+    console.error('/// importing bank assets', bank);
+    if (bank) {
+      walletRoot.importBankAssets(bank);
+    }
+
     /**
      * This is the complete wallet, including the means to get the
      * WalletAdminFacet (which is not yet standardized, but necessary for the

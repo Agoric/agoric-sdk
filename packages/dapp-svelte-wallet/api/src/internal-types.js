@@ -57,7 +57,7 @@
  * @property {(path: string[], val: T) => void} addPath
  * @property {(petname: Petname, val: T) => void} renamePetname
  * @property {(petname: Petname) => void} deletePetname
- * @property {(petname: Petname, val: T) => void} suggestPetname
+ * @property {(petname: Petname, val: T) => Petname} suggestPetname
  * @property {string} kind
  */
 

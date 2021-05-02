@@ -61,9 +61,9 @@ scenario2-setup-nobuild:
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
-	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 100000000ubld,100provisionpass,100sendpacketpass
+	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 1000000000000000ubld,100provisionpass,100sendpacketpass
 	# Create the (singleton) chain node.
-	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 1000000ubld --chain-id=$(CHAIN_ID)
+	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 73000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
 	$(AGCH) --home=t1/n0 validate-genesis
 	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
@@ -77,24 +77,36 @@ scenario2-run-chain:
 		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
+scenario2-reset-client:
+	rm -rf t1/$(BASE_PORT)
+	$(AG_SOLO) init t1/$(BASE_PORT) --webport=$(BASE_PORT)
+	$(MAKE) set-local-gci-ingress
+
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
-AGORIC_POWERS = agoric.agoricNamesAdmin,agoric.pegasusConnections,agoric.priceAuthorityAdmin,agoric.treasuryCreator,agoric.vattp
+AGORIC_POWERS = agoric.bankManager,agoric.agoricNamesAdmin,agoric.pegasusConnections,agoric.priceAuthorityAdmin,agoric.treasuryCreator,agoric.vattp
+SOLO_COINS = 13000000ubld
 t1-provision-one-with-powers:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+			bootstrap $$addr $(SOLO_COINS); \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'
+		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
 
 t1-provision-one:
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+			bootstrap $$addr $(SOLO_COINS); \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'
+		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'; }
 
 # Actually start the ag-solo.
 t1-start-ag-solo:

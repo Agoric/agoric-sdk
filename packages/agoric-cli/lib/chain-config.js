@@ -1,11 +1,11 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-export const MINT_DENOM = 'urun';
+export const MINT_DENOM = 'ubld';
 export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 
-export const GOV_DEPOSIT_COINS = [{ amount: '10000000', denom: MINT_DENOM }];
+export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
 // side of Earth, and multiple round trips per block.
@@ -123,6 +123,21 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.mint.minter.inflation = '0.0';
   genesis.app_state.mint.params.inflation_rate_change = '0.0';
   genesis.app_state.mint.params.inflation_min = '0.0';
+
+  /*
+		FIXME: Allow these to be configurable.
+		- name: faucet
+		  type: local
+		  address: agoric1hr29lkgsdzdr0jdpa0tfzjgrm0vnd339qde52l
+		  pubkey: agoricpub1addwnpepqw0aeejelzrmy9wn0tp9zcs70jf2d0jw0ycyt6pc4a92fmss9uv4g5e0n9y
+		  mnemonic: ""
+		  threshold: 0
+		  pubkeys: []
+	*/
+  genesis.app_state.vpurse.bootstrap_address =
+    'agoric1hr29lkgsdzdr0jdpa0tfzjgrm0vnd339qde52l';
+  genesis.app_state.vpurse.bootstrap_value = `${50000n * 10n ** 6n}`;
+  genesis.app_state.vpurse.donation_value = `${5n * 10n ** 6n}`;
 
   // Set the denomination for different modules.
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
