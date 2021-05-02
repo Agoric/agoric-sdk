@@ -51,7 +51,7 @@
  */
 
 /**
- * @typedef {Object} Bank
+ * @typedef {Object} BankDepositFacet
  *
  * @property {(accounts: string[], payments: Payment[]) => void} depositMultiple
  * @property {() => Notifier<string[]>} getAccountsNotifier
@@ -64,8 +64,8 @@
  *  sent to the Bank interface per updateInterval
  * @property {bigint} updateInterval - (bigint) parameter to the timer
  *  controlling the interval at which deposits are sent to the Bank API
- * @property {bigint} epochInterval - parameter to the epochTimer controlling
- *  the interval at which rewards should be sent to the bank.
+ * @property {bigint} [epochInterval=1n] - parameter to the epochTimer
+ *  controlling the interval at which rewards should be sent to the bank.
  * @property {Issuer} runIssuer
  * @property {Brand} runBrand
  */
@@ -76,11 +76,12 @@
  * @param {FeeCollector} treasuryCollector - an object with a collectFees()
  *  method, which will return a payment. can be populated with
  *  makeTreasuryFeeCollector(zoe, treasuryCreatorFacet)
- * @param {Bank} bank - object with getAccountsNotifier() and depositMultiple()
- * @param {TimerService} epochTimer - timer that notifies at the end of each
- *  Epoch. The epochInterval parameter controls the interval.
- * @param {TimerService} timer - timer controlling frequency at which batches
- *  of payments are sent to the bank for processing. The parameter updateInterval
- *  specifies the interval at which updates are sent.
+ * @param {ERef<BankDepositFacet>} bank - object with getAccountsNotifier() and
+ *  depositMultiple() @param {ERef<TimerService>} epochTimer - timer that
+ *  notifies at the end of each Epoch. The epochInterval parameter controls the
+ *  interval.
+ * @param {ERef<TimerService>} timer - timer controlling frequency at which
+ *  batches of payments are sent to the bank for processing. The parameter
+ *  updateInterval specifies the interval at which updates are sent.
  * @param {DistributorParams} params
  */

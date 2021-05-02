@@ -34,28 +34,33 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
   const {
     depositsPerUpdate,
     updateInterval,
-    epochInterval,
+    // By default, we assume the epochTimer fires once per epoch.
+    epochInterval = 1n,
     runIssuer,
     runBrand,
   } = params;
-  const accountsNotifier = bank.getAccountsNotifier();
+  const accountsNotifier = E(bank).getAccountsNotifier();
   let leftOverPayment;
   let leftOverValue = 0n;
   const queuedAccounts = [];
   const queuedPayments = [];
   let lastWallTimeUpdate;
-  const timerNotifier = timer.makeNotifier(0n, updateInterval);
+  const timerNotifier = E(timer).makeNotifier(0n, updateInterval);
 
   async function scheduleDeposits() {
     if (!queuedPayments.length) {
       return;
     }
 
-    ({ updateCount: lastWallTimeUpdate } = await timerNotifier.getUpdateSince(
-      lastWallTimeUpdate,
-    ));
+    ({ updateCount: lastWallTimeUpdate } = await E(
+      timerNotifier,
+    ).getUpdateSince(lastWallTimeUpdate));
 
-    bank.depositMultiple(
+    // queuedPayments may have changed since the `await`.
+    if (!queuedPayments.length) {
+      return;
+    }
+    E(bank).depositMultiple(
       queuedAccounts.splice(0, depositsPerUpdate),
       queuedPayments.splice(0, depositsPerUpdate),
     );
@@ -67,7 +72,7 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
     let payment = E(treasury).collectFees();
     const [amount, { value: accounts }] = await Promise.all([
       E(runIssuer).getAmountOf(payment),
-      accountsNotifier.getUpdateSince(),
+      E(accountsNotifier).getUpdateSince(),
     ]);
     const totalValue = add(leftOverValue, amount.value);
     const valuePerAccount = floorDivide(totalValue, accounts.length);
@@ -96,13 +101,13 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
   const timeObserver = {
     updateState: _ => schedulePayments(),
     fail: reason => {
-      throw Error(`Treasury timer failed: ${reason}`);
+      throw Error(`Treasury epoch timer failed: ${reason}`);
     },
     finish: done => {
-      throw Error(`Treasury timer died: ${done}`);
+      throw Error(`Treasury epoch timer died: ${done}`);
     },
   };
 
-  const epochNotifier = epochTimer.makeNotifier(0n, epochInterval);
+  const epochNotifier = E(epochTimer).makeNotifier(0n, epochInterval);
   observeNotifier(epochNotifier, timeObserver);
 }
