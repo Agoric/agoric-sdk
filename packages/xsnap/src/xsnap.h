@@ -74,6 +74,7 @@
 	txUnsigned garbageCollectionCount; \
 	txUnsigned mapSetAddCount; \
 	txUnsigned mapSetRemoveCount; \
+	txUnsigned maxBucketSize; \
 	int promiseJobs; \
 	void* timerJobs; \
 	void* waiterCondition; \
