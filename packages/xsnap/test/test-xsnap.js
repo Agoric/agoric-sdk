@@ -526,7 +526,6 @@ test('meter details', async t => {
     meterUsage: { meterType, ...meters },
   } = result;
   t.log(meters);
-  t.is(meterType, 'xs-meter-5');
   const { entries, fromEntries } = Object;
   t.deepEqual(
     {
@@ -537,7 +536,9 @@ test('meter details', async t => {
       garbageCollectionCount: 'number',
       mapSetAddCount: 'number',
       mapSetRemoveCount: 'number',
+      maxBucketSize: 'number',
     },
     fromEntries(entries(meters).map(([p, v]) => [p, typeof v])),
   );
+  t.is(meterType, 'xs-meter-6');
 });
