@@ -19,7 +19,7 @@ const solo = esmRequire('./main.js').default;
 
 const baseprog = path.basename(process.argv[1]);
 solo(baseprog, process.argv.slice(2)).then(
-  _res => 0,
+  res => process.exit(res || 0),
   reason => {
     console.log(`error running ag-solo:`, reason);
     console.error(`\
