@@ -21,9 +21,10 @@ export const makeMakeCollectFeesInvitation = (
       feeSeat.getAmountAllocated('RUN', runBrand),
       transferSeat.getAmountAllocated('RUN', runBrand),
     );
+    const emptyRunAllocation = { RUN: amountMath.makeEmpty(runBrand) };
     zcf.reallocate(
-      transferSeat.stage({ RUN: amountMath.makeEmpty(runBrand) }),
-      feeSeat.stage({ RUN: amountMath.makeEmpty(runBrand) }),
+      transferSeat.stage(emptyRunAllocation),
+      feeSeat.stage(emptyRunAllocation),
       seat.stage({ RUN: totalTransferred }),
     );
     seat.exit();

@@ -1179,7 +1179,6 @@ test('adjust balances', async t => {
     harden({
       want: { RUN: withdrawRun3, Collateral: collateralDecr2 },
     }),
-    harden({}),
   );
 
   await t.throwsAsync(() => E(aliceReduceCollateralSeat2).getOfferResult(), {
@@ -1372,8 +1371,6 @@ test('overdeposit', async t => {
 
   const collectFeesSeat = await E(zoe).offer(
     E(stablecoinMachine).makeCollectFeesInvitation(),
-    {},
-    {},
   );
   await E(collectFeesSeat).getOfferResult();
   assertAmountsEqual(
@@ -1564,7 +1561,6 @@ test('mutable liquidity triggers and interest', async t => {
     harden({
       want: { Collateral: collateralDecrement },
     }),
-    undefined,
   );
 
   await E(aliceReduceCollateralSeat).getOfferResult();
@@ -1786,8 +1782,6 @@ test('coll fees from loan and AMM', async t => {
 
   const collectFeesSeat = await E(zoe).offer(
     E(stablecoinMachine).makeCollectFeesInvitation(),
-    {},
-    {},
   );
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
