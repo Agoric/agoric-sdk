@@ -34,8 +34,8 @@
 
 /**
  * @typedef {Object} Pool
- * @property {(inputAmount: Amount, outputBrand: Brand) => PriceAmountPair } getPriceGivenAvailableInput
- * @property {(inputBrand: Brand, outputAmount: Amount) => PriceAmountPair } getPriceGivenRequiredOutput
+ * @property {(inputAmount: Amount, outputBrand: Brand, feeBP: bigint=) => PriceAmountPair } getPriceGivenAvailableInput
+ * @property {(inputBrand: Brand, outputAmount: Amount, feeBP: bigint=) => PriceAmountPair } getPriceGivenRequiredOutput
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity

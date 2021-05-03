@@ -17,6 +17,7 @@ import {
 import '../../../exported';
 import { makePriceAuthority } from './priceAuthority';
 
+const POOL_FEE = 30n;
 /**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
@@ -115,7 +116,11 @@ export const makeAddPool = (
       // The caller wants to sell inputAmount. if that could produce at most N,
       // but they could also get N by only selling inputAmount - epsilon
       // we'll reply with { amountIn: inputAmount - epsilon, amountOut: N }.
-      getPriceGivenAvailableInput: (inputAmount, outputBrand) => {
+      getPriceGivenAvailableInput: (
+        inputAmount,
+        outputBrand,
+        feeBP = POOL_FEE,
+      ) => {
         assertPoolInitialized(pool);
         const { inputReserve, outputReserve } = getReserves(
           pool,
@@ -133,8 +138,14 @@ export const makeAddPool = (
           inputAmount.value,
           inputReserve,
           outputReserve,
+          feeBP,
         );
-        const valueIn = getOutputPrice(valueOut, inputReserve, outputReserve);
+        const valueIn = getOutputPrice(
+          valueOut,
+          inputReserve,
+          outputReserve,
+          feeBP,
+        );
         return {
           amountOut: amountMath.make(valueOut, outputBrand),
           amountIn: amountMath.make(valueIn, inputAmount.brand),
@@ -144,7 +155,11 @@ export const makeAddPool = (
       // The caller wants at least outputAmount. if that requires at least N,
       // but they can get outputAmount + delta for N, we'll reply with
       // { amountIn: N, amountOut: outputAmount + delta }.
-      getPriceGivenRequiredOutput: (inputBrand, outputAmount) => {
+      getPriceGivenRequiredOutput: (
+        inputBrand,
+        outputAmount,
+        feeBP = POOL_FEE,
+      ) => {
         assertPoolInitialized(pool);
         const { inputReserve, outputReserve } = getReserves(
           pool,
@@ -162,8 +177,14 @@ export const makeAddPool = (
           outputAmount.value,
           inputReserve,
           outputReserve,
+          feeBP,
         );
-        const valueOut = getInputPrice(valueIn, inputReserve, outputReserve);
+        const valueOut = getInputPrice(
+          valueIn,
+          inputReserve,
+          outputReserve,
+          feeBP,
+        );
         return {
           amountOut: amountMath.make(valueOut, outputAmount.brand),
           amountIn: amountMath.make(valueIn, inputBrand),
