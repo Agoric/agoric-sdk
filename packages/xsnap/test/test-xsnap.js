@@ -542,3 +542,18 @@ test('meter details', async t => {
   );
   t.is(meterType, 'xs-meter-6');
 });
+
+test('high resolution timer', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+      const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+
+      const t = now();
+      send(t);
+    `);
+  const [x] = opts.messages.map(JSON.parse);
+  t.log({ usec: x, date: new Date(x * 1000.0) });
+  t.is('number', typeof x);
+});

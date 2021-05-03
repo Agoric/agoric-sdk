@@ -59,6 +59,7 @@ static void fx_gc(xsMachine* the);
 // static void fx_isPromiseJobQueueEmpty(xsMachine* the);
 static void fx_markTimer(txMachine* the, void* it, txMarkRoot markRoot);
 static void fx_print(xsMachine* the);
+static void fx_performance_now(xsMachine* the);
 static void fx_setImmediate(txMachine* the);
 // static void fx_setInterval(txMachine* the);
 // static void fx_setTimeout(txMachine* the);
@@ -87,6 +88,7 @@ txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_print, // 2
 	fx_setImmediate, // 3
 	fx_gc, // 4
+	fx_performance_now, // 5
 	// fx_evalScript,
 	// fx_isPromiseJobQueueEmpty,
 	// fx_setInterval,
@@ -548,6 +550,7 @@ void fxBuildAgent(xsMachine* the)
 	slot = fxNextHostFunctionProperty(the, slot, fx_gc, 1, xsID("gc"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_isPromiseJobQueueEmpty, 1, xsID("isPromiseJobQueueEmpty"), XS_DONT_ENUM_FLAG);
 	slot = fxNextHostFunctionProperty(the, slot, fx_print, 1, xsID("print"), XS_DONT_ENUM_FLAG);
+	slot = fxNextHostFunctionProperty(the, slot, fx_performance_now, 1, xsID("now"), XS_DONT_ENUM_FLAG);
 	slot = fxNextHostFunctionProperty(the, slot, fx_setImmediate, 1, xsID("setImmediate"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setInterval, 1, xsID("setInterval"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setTimeout, 1, xsID("setTimeout"), XS_DONT_ENUM_FLAG);
@@ -1524,6 +1527,14 @@ txSlot* fxAllocateSlots(txMachine* the, txSize theCount)
 void fxFreeSlots(txMachine* the, void* theSlots)
 {
 	c_free(theSlots);
+}
+
+void fx_performance_now(txMachine *the)
+{
+	c_timeval tv;
+	c_gettimeofday(&tv, NULL);
+	mxResult->kind = XS_NUMBER_KIND;
+	mxResult->value.number = (double)(tv.tv_sec) + ((double)(tv.tv_usec) / 1000000.0);
 }
 
 
