@@ -62,6 +62,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       assertUniqueKeyword,
     } = makeInstanceRecordStorage(instanceRecordFromZoe);
 
+    const recordIssuer = (keyword, issuerRecord) => {
+      addIssuerToInstanceRecord(keyword, issuerRecord);
+      storeIssuerRecord(issuerRecord);
+    };
+
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
       const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
@@ -121,8 +126,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         amountMathKind,
         displayInfo,
       );
-      addIssuerToInstanceRecord(keyword, mintyIssuerRecord);
-      storeIssuerRecord(mintyIssuerRecord);
+      recordIssuer(keyword, mintyIssuerRecord);
 
       /** @type {ZCFMint} */
       const zcfMint = Far('zcfMint', {
@@ -227,8 +231,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         assertUniqueKeyword(keyword);
         const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
         // AWAIT ///
-        storeIssuerRecord(record);
-        addIssuerToInstanceRecord(keyword, record);
+        recordIssuer(keyword, record);
         return record;
       },
       makeInvitation: (
