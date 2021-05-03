@@ -28,7 +28,7 @@ import { assertAmountsEqual } from '../../../zoeTestHelpers';
 
 const newSwapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAutoswap`;
 
-test('multipoolAutoSwap with valid offers', async t => {
+test('newSwap with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const zoe = makeZoe(fakeVatAdmin);
   const invitationIssuer = zoe.getInvitationIssuer();
@@ -380,7 +380,7 @@ test('multipoolAutoSwap with valid offers', async t => {
   );
 });
 
-test('multipoolAutoSwap doubleSwap', async t => {
+test('newSwap doubleSwap', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -582,7 +582,7 @@ test('multipoolAutoSwap doubleSwap', async t => {
   });
 });
 
-test('multipoolAutoSwap with some invalid offers', async t => {
+test('newSwap with some invalid offers', async t => {
   const { moolaR, moola } = setup();
   const zoe = makeZoe(fakeVatAdmin);
   const invitationIssuer = zoe.getInvitationIssuer();
@@ -645,7 +645,7 @@ test('multipoolAutoSwap with some invalid offers', async t => {
   t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
-test('multipoolAutoSwap jig - swapOut uneven', async t => {
+test('newSwap jig - swapOut uneven', async t => {
   const { moolaR, moola, simoleanR, simoleans } = setup();
   const zoe = makeZoe(fakeVatAdmin);
 
