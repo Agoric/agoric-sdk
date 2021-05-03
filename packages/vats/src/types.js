@@ -73,8 +73,8 @@
 /**
  * @callback BuildFeeDistributor
  *
- * @param {FeeCollector} treasuryCollector - an object with a collectFees()
- *  method, which will return a payment. can be populated with
+ * @param {ERef<FeeCollector>} treasuryCollector - an object with a
+ *  collectFees() method, which will return a payment. can be populated with
  *  makeTreasuryFeeCollector(zoe, treasuryCreatorFacet)
  * @param {ERef<BankDepositFacet>} bank - object with getAccountsNotifier() and
  *  depositMultiple() @param {ERef<TimerService>} epochTimer - timer that

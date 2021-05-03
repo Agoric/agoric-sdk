@@ -15,7 +15,7 @@ export function makeTreasuryFeeCollector(zoe, treasuryCreatorFacet) {
   return Far('collectFees', {
     collectFees: () => {
       const invitation = E(treasuryCreatorFacet).makeCollectFeesInvitation();
-      const collectFeesSeat = zoe.offer(invitation, undefined, undefined);
+      const collectFeesSeat = E(zoe).offer(invitation, undefined, undefined);
       return E(collectFeesSeat).getPayout('RUN');
     },
   });
