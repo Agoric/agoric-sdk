@@ -99,7 +99,21 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     if (issuerToIssuerRecord.has(issuer)) {
       return issuerToIssuerRecord.get(issuer);
     }
+    // A malicious issuer may use another issuer's valid brand.
+    // Therefore, we must check that the brand recognizes the issuer
+    // as its own and vice versa. However, we only need to check this
+    // once per issuer per ZoeService, and we do not need to check
+    // this for issuers that the ZoeService creates, such as issuers
+    // made with ZCFMints.
 
+    // In the case of a malicious issuer using another issuer's brand,
+    // the line below will throw in all cases. However, in the case of
+    // a malicious issuer using a *malicious* brand, the malicious
+    // issuer and brand may coordinate to change their answers. At
+    // this point, Zoe has done all it could. Zoe does not prevent or
+    // intend to prevent issuer misbehavior in general, so the user
+    // *must* rely on the good behavior of the issuers used in the
+    // smart contracts they use.
     assert(brandIssuerMatch, `issuer was using a brand which was not its own`);
     const issuerRecord = makeIssuerRecord(
       brand,
