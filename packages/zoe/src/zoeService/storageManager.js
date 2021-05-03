@@ -11,11 +11,11 @@ import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
 import { makeEscrowStorage } from './escrowStorage';
 
-export const makeAuthManager = () => {
+export const makeStorageManager = () => {
   const issuerStorage = makeIssuerStorage();
   const escrowStorage = makeEscrowStorage();
 
-  const makeZoeInstanceAuthManager = async (
+  const makeZoeInstanceStorageManager = async (
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,
@@ -106,7 +106,7 @@ export const makeAuthManager = () => {
   };
 
   return {
-    makeZoeInstanceAuthManager,
+    makeZoeInstanceStorageManager,
     getMathKindByBrand: issuerStorage.getMathKindByBrand,
     depositPayments: escrowStorage.depositPayments,
   };

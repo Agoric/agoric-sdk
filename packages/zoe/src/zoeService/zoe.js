@@ -24,7 +24,7 @@ import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
-import { makeAuthManager } from './authManager';
+import { makeStorageManager } from './storageManager';
 import { makeOffer } from './offer/offer';
 import { makeInvitationQueryFns } from './invitationQueries';
 
@@ -54,8 +54,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const {
     depositPayments,
     getMathKindByBrand,
-    makeZoeInstanceAuthManager,
-  } = makeAuthManager();
+    makeZoeInstanceStorageManager,
+  } = makeStorageManager();
 
   const { install, unwrapInstallation } = makeInstallationStorage();
 
@@ -97,7 +97,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         exportInstanceRecord,
         exportIssuerStorage,
         withdrawPayments,
-      } = await makeZoeInstanceAuthManager(
+      } = await makeZoeInstanceStorageManager(
         installation,
         customTerms,
         uncleanIssuerKeywordRecord,
