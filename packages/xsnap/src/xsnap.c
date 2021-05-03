@@ -1080,9 +1080,9 @@ void fxCreateMachinePlatform(txMachine* the)
 
 	// SLOGFILE=out.slog agoric start local-chain
 	// jq -s '.|.[]|.dr[2].allocate' < out.slog|grep -v null|sort -u | sort -nr
-	int MB = 1024 * 1024;
-	int measured_max = 30 * MB;
-	the->allocationLimit = 10 * measured_max;
+	int GB = 1024 * 1024 * 1024;
+	// int measured_max = 30 * MB;
+	the->allocationLimit = 3 * GB;
 }
 
 void fxDeleteMachinePlatform(txMachine* the)
