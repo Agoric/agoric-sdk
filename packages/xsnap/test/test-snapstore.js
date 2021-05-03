@@ -100,7 +100,6 @@ test('bootstrap, save, compress', async t => {
 
   const h = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
-    t.is(snapSize.raw, Kb(snapFile), 'raw snapshots are large-ish');
   });
 
   const zfile = path.resolve(pool, `${h}.gz`);
