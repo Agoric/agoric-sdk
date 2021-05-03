@@ -1083,11 +1083,15 @@ void fxCreateMachinePlatform(txMachine* the)
 	the->promiseJobs = 0;
 	the->timerJobs = NULL;
 
+	// Original 10x strategy:
 	// SLOGFILE=out.slog agoric start local-chain
 	// jq -s '.|.[]|.dr[2].allocate' < out.slog|grep -v null|sort -u | sort -nr
-	int MB = 1024 * 1024;
-	int measured_max = 30 * MB;
-	the->allocationLimit = 10 * measured_max;
+	// int MB = 1024 * 1024;
+	// int measured_max = 30 * MB;
+	// the->allocationLimit = 10 * measured_max;
+
+	size_t GB = 1024 * 1024 * 1024;
+	the->allocationLimit = 2 * GB;
 }
 
 void fxDeleteMachinePlatform(txMachine* the)
