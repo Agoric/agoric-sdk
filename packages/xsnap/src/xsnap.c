@@ -59,6 +59,7 @@ static void fx_gc(xsMachine* the);
 // static void fx_isPromiseJobQueueEmpty(xsMachine* the);
 static void fx_markTimer(txMachine* the, void* it, txMarkRoot markRoot);
 static void fx_print(xsMachine* the);
+static void fx_performance_now(xsMachine* the);
 static void fx_setImmediate(txMachine* the);
 // static void fx_setInterval(txMachine* the);
 // static void fx_setTimeout(txMachine* the);
@@ -80,13 +81,14 @@ static char* fxWriteNetStringError(int code);
 // The order of the callbacks materially affects how they are introduced to
 // code that runs from a snapshot, so must be consistent in the face of
 // upgrade.
-#define mxSnapshotCallbackCount 5
+#define mxSnapshotCallbackCount 6
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_issueCommand, // 0
 	fx_Array_prototype_meter, // 1
 	fx_print, // 2
 	fx_setImmediate, // 3
 	fx_gc, // 4
+	fx_performance_now, // 5
 	// fx_evalScript,
 	// fx_isPromiseJobQueueEmpty,
 	// fx_setInterval,
@@ -551,6 +553,12 @@ void fxBuildAgent(xsMachine* the)
 	slot = fxNextHostFunctionProperty(the, slot, fx_setImmediate, 1, xsID("setImmediate"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setInterval, 1, xsID("setInterval"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setTimeout, 1, xsID("setTimeout"), XS_DONT_ENUM_FLAG);
+
+	mxPush(mxObjectPrototype);
+	txSlot* performance = fxLastProperty(the, fxNewObjectInstance(the));
+	fxNextHostFunctionProperty(the, performance, fx_performance_now, 1, xsID("now"), XS_DONT_ENUM_FLAG);
+	slot = fxNextSlotProperty(the, slot, the->stack, xsID("performance"), XS_DONT_ENUM_FLAG);
+	mxPop();
 
 	// mxPush(mxObjectPrototype);
 	// fxNextHostFunctionProperty(the, fxLastProperty(the, fxNewObjectInstance(the)), fx_print, 1, xsID("log"), XS_DONT_ENUM_FLAG);
@@ -1524,6 +1532,14 @@ txSlot* fxAllocateSlots(txMachine* the, txSize theCount)
 void fxFreeSlots(txMachine* the, void* theSlots)
 {
 	c_free(theSlots);
+}
+
+void fx_performance_now(txMachine *the)
+{
+	c_timeval tv;
+	c_gettimeofday(&tv, NULL);
+	mxResult->kind = XS_NUMBER_KIND;
+	mxResult->value.number = (double)(tv.tv_sec * 1000.0) + ((double)(tv.tv_usec) / 1000.0);
 }
 
 
