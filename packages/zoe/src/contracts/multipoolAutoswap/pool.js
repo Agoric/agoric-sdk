@@ -17,6 +17,7 @@ import {
 import '../../../exported';
 import { makePriceAuthority } from './priceAuthority';
 
+const POOL_FEE = 30n;
 /**
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => boolean} isSecondary
@@ -115,7 +116,11 @@ export const makeAddPool = (
       // The caller wants to sell inputAmount. if that could produce at most N,
       // but they could also get N by only selling inputAmount - epsilon
       // we'll reply with { amountIn: inputAmount - epsilon, amountOut: N }.
-      getPriceGivenAvailableInput: (inputAmount, outputBrand, feeBP = 30n) => {
+      getPriceGivenAvailableInput: (
+        inputAmount,
+        outputBrand,
+        feeBP = POOL_FEE,
+      ) => {
         assertPoolInitialized(pool);
         const { inputReserve, outputReserve } = getReserves(
           pool,
@@ -150,7 +155,11 @@ export const makeAddPool = (
       // The caller wants at least outputAmount. if that requires at least N,
       // but they can get outputAmount + delta for N, we'll reply with
       // { amountIn: N, amountOut: outputAmount + delta }.
-      getPriceGivenRequiredOutput: (inputBrand, outputAmount, feeBP = 30n) => {
+      getPriceGivenRequiredOutput: (
+        inputBrand,
+        outputAmount,
+        feeBP = POOL_FEE,
+      ) => {
         assertPoolInitialized(pool);
         const { inputReserve, outputReserve } = getReserves(
           pool,
