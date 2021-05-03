@@ -11,7 +11,7 @@ import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
 import { makeEscrowStorage } from './escrowStorage';
 
-export const makeStorageManager = () => {
+export const makeZoeStorageManager = () => {
   const issuerStorage = makeIssuerStorage();
   const escrowStorage = makeEscrowStorage();
 
