@@ -206,7 +206,7 @@ export function buildRootObject(_vatPowers) {
             const assetRecord = brandToAssetRecord.get(brand);
             if (!bankCall) {
               // Just emulate with a real purse.
-              const purse = await E(assetRecord.issuer).makeEmptyPurse();
+              const purse = E(assetRecord.issuer).makeEmptyPurse();
               brandToVPurse.init(brand, purse);
               return purse;
             }
@@ -266,22 +266,23 @@ export function buildRootObject(_vatPowers) {
           return accountsNotifier;
         },
         /**
-         * Send many independent deposits.  If any of them fail, then you should
-         * reclaim the corresponding payments since they didn't get deposited.
+         * Send many independent deposits, all of the same brand. If any of them
+         * fail, then you should reclaim the corresponding payments since they
+         * didn't get deposited.
          *
+         * @param {Brand} brand
          * @param {Array<string>} accounts
          * @param {Array<Payment>} payments
          * @returns {Promise<PromiseSettledResult<Amount>[]>}
          */
-        depositMultiple(accounts, payments) {
+        depositMultiple(brand, accounts, payments) {
           /**
            * @param {string} account
            * @param {Payment} payment
            */
-          const doDeposit = async (account, payment) => {
+          const doDeposit = (account, payment) => {
             // We can get the alleged brand, because the purse we send it to
             // will do the proper verification as part of deposit.
-            const brand = await E(payment).getAllegedBrand();
             const bank = getBankForAddress(account);
             const purse = bank.getPurse(brand);
             return E(purse).deposit(payment);

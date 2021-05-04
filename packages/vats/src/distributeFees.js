@@ -67,7 +67,7 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
     const accounts = queuedAccounts.splice(0, depositsPerUpdate);
     const payments = queuedPayments.splice(0, depositsPerUpdate);
     E(bank)
-      .depositMultiple(accounts, payments)
+      .depositMultiple(runBrand, accounts, payments)
       .then(settledResults => {
         const rejectedPayments = payments.filter(
           (_pmt, i) =>
