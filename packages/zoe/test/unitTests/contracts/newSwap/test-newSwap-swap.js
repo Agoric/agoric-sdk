@@ -421,9 +421,6 @@ test('newSwap doubleSwap', async t => {
     publicFacet,
   ).makeAddLiquidityInvitation();
 
-  const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
-  await zoe.offer(collectFeesInvitation2, undefined, undefined);
-
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
     'Moola',
