@@ -67,8 +67,14 @@
 #endif
 #define mxMachinePlatform \
 	txSocket connection; \
-	txSize allocationLimit; \
-	txSize allocatedSpace; \
+	size_t allocationLimit; \
+	size_t allocatedSpace; \
+	txUnsigned allocateChunksCallCount; \
+	txUnsigned allocateSlotsCallCount; \
+	txUnsigned garbageCollectionCount; \
+	txUnsigned mapSetAddCount; \
+	txUnsigned mapSetRemoveCount; \
+	txUnsigned maxBucketSize; \
 	int promiseJobs; \
 	void* timerJobs; \
 	void* waiterCondition; \

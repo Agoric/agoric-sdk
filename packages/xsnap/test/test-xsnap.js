@@ -19,7 +19,7 @@ const xsnapOptions = {
   stdout: 'inherit',
 };
 
-function options() {
+export function options() {
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
