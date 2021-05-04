@@ -114,6 +114,9 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	}
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
+
+	### MsgSend
+
 	| Type     | Attribute Key | Attribute Value    |
 	| -------- | ------------- | ------------------ |
 	| transfer | recipient     | {recipientAddress} |
@@ -151,7 +154,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	}
 
 	// Dump all the addressToBalances entries to SwingSet.
-	bz, err := marshalBalanceUpdate(ctx, addressToBalance)
+	bz, err := marshalBalanceUpdate(addressToBalance)
 	if err != nil {
 		panic(err)
 	}

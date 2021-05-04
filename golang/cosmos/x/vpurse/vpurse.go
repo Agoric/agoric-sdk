@@ -44,7 +44,7 @@ type vpurseBalanceUpdate struct {
 
 var nonce uint64
 
-func marshalBalanceUpdate(ctx sdk.Context, addressToBalance map[string]sdk.Coins) ([]byte, error) {
+func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error) {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
 		return nil, nil
@@ -110,7 +110,7 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, addressToBalances)
+		bz, err := marshalBalanceUpdate(addressToBalances)
 		if err != nil {
 			return "", err
 		}
@@ -134,7 +134,7 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, addressToBalances)
+		bz, err := marshalBalanceUpdate(addressToBalances)
 		if err != nil {
 			return "", err
 		}
