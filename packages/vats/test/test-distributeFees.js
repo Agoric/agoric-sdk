@@ -28,7 +28,7 @@ function makeFakeBank() {
 
   return {
     getAccountsNotifier: () => notifier,
-    depositMultiple: (a, p) => {
+    depositMultiple: (brand, a, p) => {
       depositAccounts.push(a);
       depositPayments.push(p);
       return p.map(_pmt => ({ status: 'fulfilled' }));

@@ -87,10 +87,10 @@ const makePurseController = (
 
 /**
  * @typedef {Object} Bank
- * @property {() => Subscription<AssetDescriptor>}
- * getAssetSubscription Returns assets as they are added to the bank
- * @property {(brand: Brand) => VirtualPurse} getPurse Find any existing vpurse (keyed by address and brand) or create a
- * new one.
+ * @property {() => Subscription<AssetDescriptor>} getAssetSubscription Returns
+ * assets as they are added to the bank
+ * @property {(brand: Brand) => VirtualPurse} getPurse Find any existing vpurse
+ * (keyed by address and brand) or create a new one.
  */
 
 export function buildRootObject(_vatPowers) {
@@ -281,8 +281,8 @@ export function buildRootObject(_vatPowers) {
            * @param {Payment} payment
            */
           const doDeposit = (account, payment) => {
-            // We can get the alleged brand, because the purse we send it to
-            // will do the proper verification as part of deposit.
+            // The purse we send it to will do the proper verification as part
+            // of deposit.
             const bank = getBankForAddress(account);
             const purse = bank.getPurse(brand);
             return E(purse).deposit(payment);
