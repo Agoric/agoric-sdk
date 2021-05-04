@@ -65,7 +65,7 @@ const build = async (
   );
   const proposal = harden({
     give: {
-      Collateral: amountMath.make(moolaBrand, 1000),
+      Collateral: amountMath.make(moolaBrand, 1000n),
     },
     want: { Governance: amountMath.makeEmpty(govBrand) },
   });

@@ -53,7 +53,7 @@
  *
  * @callback AmountMakeBrandValue
  * @param {Brand} brand
- * @param {Value | number} allegedValue
+ * @param {Value} allegedValue
  * @returns {Amount}
  *
  * TODO find out how to get this "deprecated" marking recognized,
@@ -62,7 +62,7 @@
  * @callback AmountMakeValueBrand
  * Please use the brand-first overload. The value-first overload
  * is deprecated and will go way.
- * @param {Value | number} brand
+ * @param {Value} brand
  * @param {Brand} allegedValue
  * @returns {Amount}
  *
