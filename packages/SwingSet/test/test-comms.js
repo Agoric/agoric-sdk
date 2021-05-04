@@ -220,19 +220,21 @@ test('receive', t => {
   ]);
 
   // react to bad sequence number
-  t.throws(
-    () =>
-      dispatch(
-        makeMessage(
-          receiverID,
-          'receive',
-          encodeArgs(
-            `47:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`,
-          ),
-        ),
-      ),
-    { message: /unexpected recv seqNum .*/ },
-  );
+  // THIS CHECK TEMPORARILY DISABLED DUE TO THE SUPPRESION OF REMOTE COMMS ERRORS
+  // See issue #3021
+  // t.throws(
+  //   () =>
+  //     dispatch(
+  //       makeMessage(
+  //         receiverID,
+  //         'receive',
+  //         encodeArgs(
+  //           `47:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`,
+  //         ),
+  //       ),
+  //     ),
+  //   { message: /unexpected recv seqNum .*/ },
+  // );
 
   // make sure comms can tolerate GC operations, even if they're a no-op
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
@@ -630,16 +632,18 @@ test('outbound promise resolution and inbound message to it crossing in flight',
   // Promise should still be in the comms vat, because no ack yet
   t.is(state.getPromiseStatus(plPromise), 'fulfilled');
 
-  _('a:l', 0); // lag ends, talking to the now retired promise should error
-  t.throws(
-    () => _('a>m', paPromise, 'talkback', undefined),
-    { message: `"${refOf(paPromise)}" must already be in remote "r1 (a)"` },
-  );
+  // THIS CHECK TEMPORARILY DISABLED DUE TO THE SUPPRESION OF REMOTE COMMS ERRORS
+  // See issue #3021
+  // _('a:l', 0); // lag ends, talking to the now retired promise should error
+  // t.throws(
+  //   () => _('a>m', paPromise, 'talkback', undefined),
+  //   { message: `"${refOf(paPromise)}" must already be in remote "r1 (a)"` },
+  // );
 
-  // Alice should be able to address Lisa directly & the promise should be gone
-  _('a>m', oaLisa, 'moretalk', undefined);
-  _('k<m', oLisa, 'moretalk', undefined);
-  t.is(state.getPromiseStatus(plPromise), undefined);
+  // // Alice should be able to address Lisa directly & the promise should be gone
+  // _('a>m', oaLisa, 'moretalk', undefined);
+  // _('k<m', oLisa, 'moretalk', undefined);
+  // t.is(state.getPromiseStatus(plPromise), undefined);
 
   done();
 });

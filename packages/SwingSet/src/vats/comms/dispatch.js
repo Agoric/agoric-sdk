@@ -72,11 +72,38 @@ export function buildCommsDispatch(
 
     const remoteID = state.getRemoteReceiver(target);
     if (remoteID) {
-      assert(method === 'receive', X`unexpected method ${method}`);
-      // the vat-tp integrity layer is a regular vat, so when they send the
-      // received message to us, it will be embedded in a JSON array
-      const message = JSON.parse(args.body)[0];
-      return messageFromRemote(remoteID, message, result);
+      // XXX TODO DANGER DANGER WARNING DANGER VERY BAD BADNESS FIX ASAP OH NOES
+      // The following try/catch intercepts errors triggered by badly
+      // constructed or badly parameterized messages from the remote, and logs
+      // them instead of allowing them to propagate upward and kill the vat.
+      // Ideally, such conditions should just kill the connection to the remote,
+      // but we don't yet have the means set up to do that kind of selective
+      // disablement.  MORE IMPORTANTLY, HOWEVER, this try/catch will actually
+      // intercept ALL errors generated in the processing of the remote message,
+      // including ones that aren't the remote's fault and including ones that
+      // really should kill the vat.  Unfortunately, pretty much all such error
+      // checking is currently done via calls to `assert` or one of its
+      // siblings, which doesn't distinguish the appropriate scope of punishment
+      // for any transgression.  This blind sledgehammer approach needs to be
+      // replaced with a more discriminating mechanism.  Until that is done, the
+      // comms vat remains at risk of inconsistency due to internal errors.
+      // Moreover, if an individual remote connection gets into an inconsistent
+      // state due to misbehavior on the other end, we have no way to kill that
+      // connection and thus we risk whatever weirdness may ensue from the
+      // remote continuing to think everything's ok (and behaving accordingly)
+      // when it's not.  All of this should be fixed soon as practicable.
+      // DANGER WILL ROBINSON CASE NIGHTMARE GREEN ELDRITCH HORRORS OH THE HUMANITY
+      try {
+        assert(method === 'receive', X`unexpected method ${method}`);
+        // the vat-tp integrity layer is a regular vat, so when they send the
+        // received message to us, it will be embedded in a JSON array
+        const message = JSON.parse(args.body)[0];
+        return messageFromRemote(remoteID, message, result);
+      } catch (err) {
+        console.log('WARNING: delivery from remote triggered error:', err);
+        console.log(`Error happened while processing "${args.body}"`);
+        return undefined;
+      }
     }
 
     // If we get to this point, the message is not being delivered to a
