@@ -37,24 +37,43 @@ const sumByBrand = amounts => {
  * indexed by issuer
  */
 const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
-  const leftKeys = leftSumsByBrand.keys();
-  const rightKeys = rightSumsByBrand.keys();
-  assert.equal(
-    leftKeys.length,
-    rightKeys.length,
-    X`${leftKeys.length} should be equal to ${rightKeys.length}`,
-  );
-  leftSumsByBrand
-    .keys()
-    .forEach(brand =>
+  // We cannot assume that all of the brand keys present in
+  // leftSumsByBrand are also present in rightSumsByBrand. A empty
+  // amount could be introduced or dropped, and this should still be
+  // deemed "equal" from the perspective of rights conservation.
+
+  // Thus, we should allow for a brand to be missing from a map, but
+  // only if the sum for the brand in the other map is empty.
+
+  /**
+   * A helper that either gets the sum for the specified brand, or if
+   * the brand is absent in the map, returns an empty amount.
+   *
+   * @param {Store<Brand, Amount>} sumsByBrandMap
+   * @param {Brand} brand
+   * @param {Amount} amount
+   * @returns {Amount}
+   */
+  const getOrEmpty = (sumsByBrandMap, brand, amount) => {
+    if (!sumsByBrandMap.has(brand)) {
+      return amountMath.makeEmptyFromAmount(amount);
+    }
+    return sumsByBrandMap.get(brand);
+  };
+
+  const assertSumsEqualInMap = (mapToIterate, mapToCheck) => {
+    mapToIterate.keys().forEach(brand => {
+      const toIterateSum = mapToIterate.get(brand);
+      const toCheckSumOrEmpty = getOrEmpty(mapToCheck, brand, toIterateSum);
       assert(
-        amountMath.isEqual(
-          leftSumsByBrand.get(brand),
-          rightSumsByBrand.get(brand),
-        ),
+        amountMath.isEqual(toIterateSum, toCheckSumOrEmpty),
         X`rights were not conserved for brand ${brand}`,
-      ),
-    );
+      );
+    });
+  };
+
+  assertSumsEqualInMap(leftSumsByBrand, rightSumsByBrand);
+  assertSumsEqualInMap(rightSumsByBrand, leftSumsByBrand);
 };
 
 /**
