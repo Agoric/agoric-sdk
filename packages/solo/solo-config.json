@@ -1,6 +1,6 @@
 {
   "bootstrap": "bootstrap",
-  "defaultManagerType": "xs-worker",
+  "defaultManagerType": "local",
   "vats": {
     "spawner": {
       "sourceSpec": "./src/vat-spawner.js"
