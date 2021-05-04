@@ -10,6 +10,7 @@ import (
 )
 
 type portHandler struct {
+	am     AppModule
 	keeper Keeper
 }
 
@@ -22,10 +23,51 @@ type portMessage struct { // comes from swingset's vat-bank
 	Amount    string `json:"amount"`
 }
 
-func NewPortHandler(keeper Keeper) portHandler {
+func NewPortHandler(am AppModule, keeper Keeper) portHandler {
 	return portHandler{
+		am:     am,
 		keeper: keeper,
 	}
+}
+
+type vpurseSingleBalanceUpdate struct {
+	Address string `json:"address"`
+	Denom   string `json:"denom"`
+	Amount  string `json:"amount"`
+}
+
+type vpurseBalanceUpdate struct {
+	Nonce   uint64                      `json:"nonce"`
+	Type    string                      `json:"type"`
+	Updated []vpurseSingleBalanceUpdate `json:"updated"`
+}
+
+var nonce uint64
+
+func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error) {
+	nentries := len(addressToBalance)
+	if nentries == 0 {
+		return nil, nil
+	}
+
+	nonce += 1
+	event := vpurseBalanceUpdate{
+		Type:    "VPURSE_BALANCE_UPDATE",
+		Nonce:   nonce,
+		Updated: make([]vpurseSingleBalanceUpdate, 0, nentries),
+	}
+	for address, coins := range addressToBalance {
+		for _, coin := range coins {
+			update := vpurseSingleBalanceUpdate{
+				Address: address,
+				Amount:  coin.Amount.String(),
+				Denom:   coin.Denom,
+			}
+			event.Updated = append(event.Updated, update)
+		}
+	}
+
+	return json.Marshal(&event)
 }
 
 func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret string, err error) {
@@ -66,7 +108,16 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		if err := keeper.GrabCoins(ctx.Context, addr, coins); err != nil {
 			return "", fmt.Errorf("cannot grab %s coins: %w", coins.Sort().String(), err)
 		}
-		ret = "true"
+		addressToBalances := make(map[string]sdk.Coins, 1)
+		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
+		bz, err := marshalBalanceUpdate(addressToBalances)
+		if err != nil {
+			return "", err
+		}
+		if bz == nil {
+			ret = "true"
+		}
+		ret = string(bz)
 
 	case "VPURSE_GIVE":
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
@@ -81,7 +132,16 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		if err := keeper.SendCoins(ctx.Context, addr, coins); err != nil {
 			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
 		}
-		ret = "true"
+		addressToBalances := make(map[string]sdk.Coins, 1)
+		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
+		bz, err := marshalBalanceUpdate(addressToBalances)
+		if err != nil {
+			return "", err
+		}
+		if bz == nil {
+			ret = "true"
+		}
+		ret = string(bz)
 
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)

@@ -54,6 +54,10 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 	return k.bankKeeper.GetBalance(ctx, addr, denom)
 }
 
+func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return k.bankKeeper.GetAllBalances(ctx, addr)
+}
+
 func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
 	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
 		return err

@@ -10,6 +10,7 @@ const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
 const PLEASE_PROVISION = 'PLEASE_PROVISION';
+const VPURSE_BALANCE_UPDATE = 'VPURSE_BALANCE_UPDATE';
 
 export default function makeBlockManager({
   deliverInbound,
@@ -51,6 +52,11 @@ export default function makeBlockManager({
           action.blockTime,
         );
         break;
+
+      case VPURSE_BALANCE_UPDATE: {
+        p = doBridgeInbound('bank', action);
+        break;
+      }
 
       case IBC_EVENT: {
         p = doBridgeInbound('dibc', action);

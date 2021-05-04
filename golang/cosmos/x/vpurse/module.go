@@ -97,6 +97,73 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	events := ctx.EventManager().GetABCIEventHistory()
+	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
+
+	ensureBalanceIsPresent := func(address string) error {
+		if _, ok := addressToBalance[address]; ok {
+			return nil
+		}
+		account, err := sdk.AccAddressFromBech32(address)
+		if err != nil {
+			return err
+		}
+		coins := am.keeper.GetAllBalances(ctx, account)
+		addressToBalance[address] = coins
+		return nil
+	}
+
+	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
+
+	### MsgSend
+
+	| Type     | Attribute Key | Attribute Value    |
+	| -------- | ------------- | ------------------ |
+	| transfer | recipient     | {recipientAddress} |
+	| transfer | sender        | {senderAddress}    |
+	| transfer | amount        | {amount}           |
+	| message  | module        | bank               |
+	| message  | action        | send               |
+	| message  | sender        | {senderAddress}    |
+
+	### MsgMultiSend
+
+	| Type     | Attribute Key | Attribute Value    |
+	| -------- | ------------- | ------------------ |
+	| transfer | recipient     | {recipientAddress} |
+	| transfer | sender        | {senderAddress}    |
+	| transfer | amount        | {amount}           |
+	| message  | module        | bank               |
+	| message  | action        | multisend          |
+	| message  | sender        | {senderAddress}    |
+	*/
+	// fmt.Printf("have vpurse events: %+v\n", events)
+	for _, event := range events {
+		switch event.Type {
+		case "transfer":
+			for _, attr := range event.Attributes {
+				// fmt.Println("have transfer attr", string(attr.GetKey()), string(attr.GetValue()))
+				switch string(attr.GetKey()) {
+				case "recipient":
+				case "sender":
+					address := string(attr.GetValue())
+					ensureBalanceIsPresent(address)
+				}
+			}
+		}
+	}
+
+	// Dump all the addressToBalances entries to SwingSet.
+	bz, err := marshalBalanceUpdate(addressToBalance)
+	if err != nil {
+		panic(err)
+	}
+	if bz != nil {
+		if _, err := am.CallToController(ctx, string(bz)); err != nil {
+			panic(err)
+		}
+	}
+
 	return []abci.ValidatorUpdate{}
 }
 
