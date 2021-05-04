@@ -12,6 +12,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
 
+import { assert } from '@agoric/assert';
 import { makeTracer } from '../src/makeTracer';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -64,6 +65,7 @@ async function launch(zoeP, sourceRoot) {
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
   });
+  assert(creatorInvitation);
   return {
     creatorSeat: E(zoeP).offer(creatorInvitation, proposal, payments),
     creatorFacet,
