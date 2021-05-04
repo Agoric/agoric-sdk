@@ -32,7 +32,7 @@ async function main() {
       `${bundlesDir}/bundle-liquidateMinimum.js`,
     ],
     [
-      `@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap`,
+      `@agoric/zoe/src/contracts/newSwap/multipoolAutoswap`,
       `${__dirname}/../bundles/bundle-multipoolAutoswap.js`,
     ],
   ];
