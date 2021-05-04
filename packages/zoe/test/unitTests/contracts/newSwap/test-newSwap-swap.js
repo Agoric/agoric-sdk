@@ -420,6 +420,13 @@ test('newSwap doubleSwap', async t => {
     publicFacet,
   ).makeAddLiquidityInvitation();
 
+  const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
+  const collectFeesSeat2 = await zoe.offer(
+    collectFeesInvitation2,
+    undefined,
+    undefined,
+  );
+
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
     'Moola',
@@ -901,4 +908,39 @@ test('newSwap jig - swapOut uneven', async t => {
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: amountMath.makeEmpty(centralR.brand),
   });
+});
+
+// This demonstrates that we've worked around
+// https://github.com/Agoric/agoric-sdk/issues/3033.  When that is fixed, the
+// work-around in collectFees should be cleaned up.
+test('newSwap workaround zoe Bug', async t => {
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+
+  // Alice creates an autoswap instance
+  const bundle = await bundleSource(newSwapRoot);
+
+  const installation = await zoe.install(bundle);
+  // This timer is only used to build quotes. Let's make it non-zero
+  const fakeTimer = buildManualTimer(console.log, 30);
+  const { creatorFacet } = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+  );
+
+  const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
+  const collectFeesSeat2 = await zoe.offer(
+    collectFeesInvitation2,
+    undefined,
+    undefined,
+  );
+
+  const payout = await E(collectFeesSeat2).getPayout('RUN');
+  const result = await E(collectFeesSeat2).getOfferResult();
+
+  t.deepEqual(payout, undefined);
+  t.deepEqual(result, 'paid out 0');
 });
