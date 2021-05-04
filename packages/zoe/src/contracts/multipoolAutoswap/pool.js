@@ -108,6 +108,7 @@ export const makeAddPool = (
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
+      stageSeat: poolSeat.stage,
       getCentralAmount: () =>
         poolSeat.getAmountAllocated('Central', centralBrand),
       getSecondaryAmount: () =>
