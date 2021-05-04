@@ -383,23 +383,11 @@ test('newSwap with valid offers', async t => {
   );
 });
 
-test('newSwap doubleSwap', async t => {
-  const { moolaR, simoleanR, moola, simoleans } = setup();
+test.only('newSwap doubleSwap', async t => {
   const zoe = makeZoe(fakeVatAdmin);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
-
-  // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
-  // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
-  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(39800));
-
-  // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000));
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000));
 
   // Alice creates an autoswap instance
   const bundle = await bundleSource(newSwapRoot);
@@ -407,201 +395,24 @@ test('newSwap doubleSwap', async t => {
   const installation = await zoe.install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
   const fakeTimer = buildManualTimer(console.log, 30);
-  const {
-    instance,
-    publicFacet,
-    creatorFacet,
-  } = await zoe.startInstance(
+  const { creatorFacet } = await zoe.startInstance(
     installation,
     harden({ Central: centralR.issuer }),
     { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
   );
-  const aliceAddLiquidityInvitation = E(
-    publicFacet,
-  ).makeAddLiquidityInvitation();
 
-  const moolaLiquidityIssuer = await E(publicFacet).addPool(
-    moolaR.issuer,
-    'Moola',
-  );
-  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
-
-  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
-    simoleanR.issuer,
-    'Simoleans',
-  );
-
-  const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
-  const simoleanLiquidity = value =>
-    amountMath.make(value, simoleanLiquidityBrand);
-
-  const issuerKeywordRecord = zoe.getIssuers(instance);
-  t.deepEqual(
-    issuerKeywordRecord,
-    harden({
-      Central: centralR.issuer,
-      Moola: moolaR.issuer,
-      MoolaLiquidity: moolaLiquidityIssuer,
-      Simoleans: simoleanR.issuer,
-      SimoleansLiquidity: simoleanLiquidityIssuer,
-    }),
-    `There are keywords for central token and two additional tokens and liquidity`,
-  );
-  t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
-    {},
-    `The poolAllocation object values for moola should be empty`,
-  );
-  t.deepEqual(
-    await E(publicFacet).getPoolAllocation(simoleanR.brand),
-    {},
-    `The poolAllocation object values for simoleans should be empty`,
-  );
-
-  // Alice adds liquidity for moola
-  // 10 moola = 5 central tokens at the time of the liquidity adding
-  // aka 2 moola = 1 central token
-  const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50000) },
-    give: { Secondary: moola(100000), Central: centralTokens(50000) },
-  });
-  const alicePayments = {
-    Secondary: aliceMoolaPayment,
-    Central: aliceCentralPayment,
-  };
-
-  const addLiquiditySeat = await zoe.offer(
-    aliceAddLiquidityInvitation,
-    aliceProposal,
-    alicePayments,
-  );
-
-  t.is(
-    await E(addLiquiditySeat).getOfferResult(),
-    'Added liquidity.',
-    `Alice added moola and central liquidity`,
-  );
-  await addLiquiditySeat.getPayout('Liquidity');
-
-  // Alice adds simoleans and central tokens to the simolean
-  // liquidity pool. 398 simoleans = 43 central tokens at the time of
-  // the liquidity adding
-  //
-  const aliceSimLiquidityInvitation = E(
-    publicFacet,
-  ).makeAddLiquidityInvitation();
-  const aliceSimCentralProposal = harden({
-    want: { Liquidity: simoleanLiquidity(430) },
-    give: { Secondary: simoleans(39800), Central: centralTokens(43000) },
-  });
-  const aliceCentralPayment2 = await centralR.mint.mintPayment(
-    centralTokens(43000),
-  );
-  const aliceSimCentralPayments = {
-    Secondary: aliceSimoleanPayment,
-    Central: aliceCentralPayment2,
-  };
-
-  const aliceSeat2 = await zoe.offer(
-    aliceSimLiquidityInvitation,
-    aliceSimCentralProposal,
-    aliceSimCentralPayments,
-  );
-
-  t.is(
-    await aliceSeat2.getOfferResult(),
-    'Added liquidity.',
-    `Alice added simoleans and central liquidity`,
-  );
-
-  // Bob swaps moola for simoleans
-
-  // Bob looks up the value of 4000 simoleans in moola
-  const { amountOut: priceInMoola } = await E(
-    publicFacet,
-  ).getPriceGivenAvailableInput(simoleans(4000), moolaR.brand);
-
-  const bobInvitation = await E(publicFacet).makeSwapInInvitation();
-  const bobSimsForMoolaProposal = harden({
-    want: { Out: priceInMoola },
-    give: { In: simoleans(4000) },
-  });
-  const simsForMoolaPayments = harden({
-    In: bobSimoleanPayment,
-  });
-
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
-
-  const bobSeat1 = await zoe.offer(
-    bobInvitation,
-    bobSimsForMoolaProposal,
-    simsForMoolaPayments,
-  );
-  const bobMoolaPayout = await bobSeat1.getPayout('Out');
-
-  t.deepEqual(
-    await moolaR.issuer.getAmountOf(bobMoolaPayout),
-    moola(7261),
-    `bob gets 7261 moola`,
-  );
-
-  let runningFees = amountMath.make(centralR.brand, 2n);
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
-  });
-
-  // Bob swaps simoleans for moola
-
-  // Bob looks up the value of 5000 moola in simoleans
-  const { amountOut: priceInSimoleans } = await E(
-    publicFacet,
-  ).getPriceGivenAvailableInput(moola(5000), simoleanR.brand);
-
-  const bobInvitation2 = await E(publicFacet).makeSwapInInvitation();
-  const bobMoolaForSimsProposal = harden({
-    want: { Out: priceInSimoleans },
-    give: { In: moola(5000) },
-  });
-  const moolaForSimsPayments = harden({
-    In: bobMoolaPayment,
-  });
-
-  const bobSeat2 = await zoe.offer(
-    bobInvitation2,
-    bobMoolaForSimsProposal,
-    moolaForSimsPayments,
-  );
-  const bobSimoleanPayout = await bobSeat2.getPayout('Out');
-
-  t.deepEqual(
-    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
-    simoleans(2880),
-    `bob gets 2880 simoleans`,
-  );
-
-  runningFees = amountMath.add(
-    runningFees,
-    amountMath.make(centralR.brand, 1n),
-  );
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
-  });
-
-  const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
-  const collectFeesSeat = await zoe.offer(
-    collectFeesInvitation,
+  const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
+  const collectFeesSeat2 = await zoe.offer(
+    collectFeesInvitation2,
     undefined,
     undefined,
   );
 
-  const payout = await E(collectFeesSeat).getPayout('RUN');
+  const payout = await E(collectFeesSeat2).getPayout('RUN');
+  const result = await E(collectFeesSeat2).getOfferResult();
 
-  await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
-
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: amountMath.makeEmpty(centralR.brand),
-  });
+  t.deepEqual(payout, undefined);
+  t.deepEqual(result, 'foo');
 });
 
 test('newSwap with some invalid offers', async t => {
