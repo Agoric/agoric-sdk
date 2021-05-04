@@ -31,9 +31,8 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 // https://github.com/tendermint/tendermint/pull/6204.
 // replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210310191408-9156bacf449c
 
-// At least until https://github.com/cosmos/cosmos-sdk/issues/8478 is solved and
-// released.
-// replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210129184725-f1afab29a888
+// At least until GetABCIEventHistory() is implemented and released.
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210504041254-7cead73a2b33
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk

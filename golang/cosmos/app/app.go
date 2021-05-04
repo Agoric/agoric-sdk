@@ -369,7 +369,7 @@ func NewAgoricApp(
 		callToController,
 	)
 	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)
-	app.vpursePort = swingset.RegisterPortHandler("bank", vpurse.NewPortHandler(app.VpurseKeeper))
+	app.vpursePort = swingset.RegisterPortHandler("bank", vpurse.NewPortHandler(vpurseModule, app.VpurseKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
