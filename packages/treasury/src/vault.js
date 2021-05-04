@@ -145,6 +145,7 @@ export function makeVaultKit(
     updateUiState();
   }
 
+  /** @type {OfferHandler} */
   async function closeHook(seat) {
     assertVaultIsOpen();
     assertProposalShape(seat, {
@@ -369,6 +370,7 @@ export function makeVaultKit(
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   }
 
+  /** @type {OfferHandler} */
   async function openLoan(seat) {
     assert(amountMath.isEmpty(runDebt), X`vault must be empty initially`);
     // get the payout to provide access to the collateral if the
@@ -384,7 +386,9 @@ export function makeVaultKit(
 
     const fee = multiplyBy(wantedRun, manager.getLoanFee());
     if (amountMath.isEmpty(fee)) {
-      throw seat.exit('loan requested is too small; cannot accrue interest');
+      throw seat.fail(
+        Error('loan requested is too small; cannot accrue interest'),
+      );
     }
 
     runDebt = amountMath.add(wantedRun, fee);
