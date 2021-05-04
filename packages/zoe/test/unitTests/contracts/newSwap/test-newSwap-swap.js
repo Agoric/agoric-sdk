@@ -6,7 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { q } from '@agoric/assert';
+import { assert, q } from '@agoric/assert';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
@@ -57,7 +57,7 @@ test('newSwap with valid offers', async t => {
 
   const installation = await zoe.install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30);
+  const fakeTimer = buildManualTimer(console.log, 30n);
   const { instance, publicFacet } = await zoe.startInstance(
     installation,
     harden({ Central: centralR.issuer }),
@@ -172,9 +172,9 @@ test('newSwap with valid offers', async t => {
   // Bob creates a swap invitation for himself
   const bobSwapInvitation1 = await E(publicFacet).makeSwapInInvitation();
 
-  const {
-    value: [bobInvitationValue],
-  } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
+  const { value } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
+  assert(Array.isArray(value));
+  const [bobInvitationValue] = value;
   const bobPublicFacet = await zoe.getPublicFacet(bobInvitationValue.instance);
 
   t.is(
@@ -204,6 +204,7 @@ test('newSwap with valid offers', async t => {
   );
 
   const protocolFeeRatio = makeRatio(6n, centralR.brand, 10000);
+  /** @type {Amount} */
   let runningFees = multiplyBy(priceInCentrals, protocolFeeRatio);
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
@@ -298,7 +299,7 @@ test('newSwap with valid offers', async t => {
   assertAmountsEqual(
     t,
     getAmountOut(quoteBob2),
-    amountMath.make(centralR.brand, 1803),
+    amountMath.make(centralR.brand, 1803n),
   );
 
   const bobMoolaPayout2 = await bobSeat2.getPayout('Out');
@@ -357,7 +358,7 @@ test('newSwap with valid offers', async t => {
   assertAmountsEqual(
     t,
     getAmountOut(quoteLiquidation2),
-    amountMath.make(1803, centralR.brand),
+    amountMath.make(centralR.brand, 1803n),
   );
   t.is(
     await aliceSeat2.getOfferResult(),
@@ -406,7 +407,7 @@ test('newSwap doubleSwap', async t => {
 
   const installation = await zoe.install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30);
+  const fakeTimer = buildManualTimer(console.log, 30n);
   const {
     instance,
     publicFacet,
@@ -421,11 +422,7 @@ test('newSwap doubleSwap', async t => {
   ).makeAddLiquidityInvitation();
 
   const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
-  const collectFeesSeat2 = await zoe.offer(
-    collectFeesInvitation2,
-    undefined,
-    undefined,
-  );
+  await zoe.offer(collectFeesInvitation2, undefined, undefined);
 
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
@@ -640,9 +637,9 @@ test('newSwap with some invalid offers', async t => {
   // Bob creates a swap invitation for himself
   const bobSwapInvitation1 = await E(publicFacet).makeSwapInInvitation();
 
-  const {
-    value: [bobInvitationValue],
-  } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
+  const { value } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
+  assert(Array.isArray(value));
+  const [bobInvitationValue] = value;
   const bobPublicFacet = zoe.getPublicFacet(bobInvitationValue.instance);
 
   // Bob tries to look up prices, but the pool isn't initiailzed
@@ -902,7 +899,7 @@ test('newSwap jig - swapOut uneven', async t => {
     t,
     centralR.issuer,
     payout,
-    amountMath.make(centralR.brand, 48),
+    amountMath.make(centralR.brand, 48n),
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
@@ -924,7 +921,7 @@ test('newSwap workaround zoe Bug', async t => {
 
   const installation = await zoe.install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30);
+  const fakeTimer = buildManualTimer(console.log, 30n);
   const { creatorFacet } = await zoe.startInstance(
     installation,
     harden({ Central: centralR.issuer }),
