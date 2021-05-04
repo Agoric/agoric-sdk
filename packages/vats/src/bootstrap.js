@@ -161,6 +161,25 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
 
+    // Start the reward distributor.
+    const epochTimerService = chainTimerService;
+    const distributorParams = {
+      depositsPerUpdate: 51,
+      updateInterval: 1n, // 1 second
+      epochInterval: 60n * 60n, // 1 hour
+      runIssuer: centralIssuer,
+      runBrand: centralBrand,
+    };
+    E(vats.distributeFees)
+      .buildDistributor(
+        E(vats.distributeFees).makeTreasuryFeeCollector(zoe, treasuryCreator),
+        E(bankManager).getDepositFacet(),
+        epochTimerService,
+        chainTimerService,
+        harden(distributorParams),
+      )
+      .catch(e => console.error('Error distributing fees', e));
+
     /** @type {undefined | import('@agoric/eventual-send').EOnly<Purse>} */
     let centralBootstrapPurse;
 
