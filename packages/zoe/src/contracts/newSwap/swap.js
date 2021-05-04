@@ -37,6 +37,58 @@ export const makeMakeSwapInvitation = (
     return protocolStage;
   }
 
+  function poolStagingFromCentral(amountIn, amountOut, protocolFee) {
+    const pool = getPool(amountOut.brand);
+    // gains (amountIn - protocolFee), loses amountOut
+    return pool.stageSeat({
+      Central: amountMath.add(
+        pool.getCentralAmount(),
+        amountMath.subtract(amountIn, protocolFee),
+      ),
+      Secondary: amountMath.subtract(pool.getSecondaryAmount(), amountOut),
+    });
+  }
+
+  function poolStagingToCentral(amountIn, amountOut, protocolFee) {
+    const pool = getPool(amountIn.brand);
+    // gains reducedAmountIn, loses (amountOut + protocolFee)
+    return pool.stageSeat({
+      Central: amountMath.subtract(
+        pool.getCentralAmount(),
+        amountMath.add(amountOut, protocolFee),
+      ),
+      Secondary: amountMath.add(pool.getSecondaryAmount(), amountIn),
+    });
+  }
+
+  function secondaryPoolStagings(
+    amountIn,
+    amountOut,
+    centralAmount,
+    protocolFee,
+  ) {
+    const brandInPool = getPool(amountIn.brand);
+    // gains reducedAmountIn, loses (centralAmount + protocolFee)
+    const brandInStaging = brandInPool.stageSeat({
+      Secondary: amountMath.add(brandInPool.getSecondaryAmount(), amountIn),
+      Central: amountMath.subtract(
+        brandInPool.getCentralAmount(),
+        amountMath.add(centralAmount, protocolFee),
+      ),
+    });
+
+    const brandOutPool = getPool(amountOut.brand);
+    // gains centralAmount, loses amountOut
+    const brandOutStaging = brandOutPool.stageSeat({
+      Central: amountMath.add(brandOutPool.getCentralAmount(), centralAmount),
+      Secondary: amountMath.subtract(
+        brandOutPool.getSecondaryAmount(),
+        amountOut,
+      ),
+    });
+    return [brandInStaging, brandOutStaging];
+  }
+
   // trade with a stated amountIn.
   const swapIn = seat => {
     assertProposalShape(seat, {
@@ -61,7 +113,6 @@ export const makeMakeSwapInvitation = (
 
     const stagings = [];
     stagings.push(stageProtocolSeatFee(protocolFee));
-    // The seat's staging is the same for every trade
     stagings.push(
       seat.stage(
         harden({
@@ -71,68 +122,25 @@ export const makeMakeSwapInvitation = (
       ),
     );
 
-    function poolStagingFromCentral() {
-      const pool = getPool(amountOut.brand);
-      // gains (amountIn - protocolFee), loses amountOut
-      return pool.stageSeat({
-        Central: amountMath.add(
-          pool.getCentralAmount(),
-          amountMath.subtract(amountIn, protocolFee),
-        ),
-        Secondary: amountMath.subtract(pool.getSecondaryAmount(), amountOut),
-      });
-    }
-
-    function poolStagingToCentral() {
-      const pool = getPool(reducedAmountIn.brand);
-      // gains reducedAmountIn, loses (amountOut + protocolFee)
-      return pool.stageSeat({
-        Central: amountMath.subtract(
-          pool.getCentralAmount(),
-          amountMath.add(amountOut, protocolFee),
-        ),
-        Secondary: amountMath.add(pool.getSecondaryAmount(), reducedAmountIn),
-      });
-    }
-
-    function secondaryPoolStagings() {
-      const brandInPool = getPool(brandIn);
-      // gains reducedAmountIn, loses (centralAmount + protocolFee)
-      const brandInStaging = brandInPool.stageSeat({
-        Secondary: amountMath.add(
-          brandInPool.getSecondaryAmount(),
-          reducedAmountIn,
-        ),
-        Central: amountMath.subtract(
-          brandInPool.getCentralAmount(),
-          amountMath.add(centralAmount, protocolFee),
-        ),
-      });
-
-      const brandOutPool = getPool(brandOut);
-      // gains centralAmount, loses amountOut
-      const brandOutStaging = brandOutPool.stageSeat({
-        Central: amountMath.add(brandOutPool.getCentralAmount(), centralAmount),
-        Secondary: amountMath.subtract(
-          brandOutPool.getSecondaryAmount(),
-          amountOut,
-        ),
-      });
-      return [brandInStaging, brandOutStaging];
-    }
-
     // central to secondary, secondary to central, or secondary to secondary
     const pools = [];
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      stagings.push(poolStagingFromCentral());
+      stagings.push(poolStagingFromCentral(amountIn, amountOut, protocolFee));
       pools.push(getPool(brandOut));
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      stagings.push(poolStagingToCentral());
+      stagings.push(
+        poolStagingToCentral(reducedAmountIn, amountOut, protocolFee),
+      );
       pools.push(getPool(brandIn));
     } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      stagings.push(...secondaryPoolStagings());
-      pools.push(getPool(brandIn));
-      pools.push(getPool(brandOut));
+      const secondaryStagings = secondaryPoolStagings(
+        reducedAmountIn,
+        amountOut,
+        centralAmount,
+        protocolFee,
+      );
+      stagings.push(...secondaryStagings);
+      pools.push(getPool(brandIn), getPool(brandOut));
     } else {
       assert.fail(X`brands were not recognized`);
     }
@@ -168,63 +176,12 @@ export const makeMakeSwapInvitation = (
 
     const stagings = [];
     stagings.push(stageProtocolSeatFee(protocolFee));
-    // The seat's staging is the same for every trade
     stagings.push(
       seat.stage({
         In: amountMath.subtract(offeredAmountIn, amountIn),
         Out: improvedAmountOut,
       }),
     );
-
-    function poolStagingToCentral() {
-      const pool = getPool(brandIn);
-      // gains amountIn, loses (improvedAmountOut + protocolFee)
-      return pool.stageSeat({
-        Central: amountMath.subtract(
-          pool.getCentralAmount(),
-          amountMath.add(improvedAmountOut, protocolFee),
-        ),
-        Secondary: amountMath.add(pool.getSecondaryAmount(), amountIn),
-      });
-    }
-
-    function poolStagingFromCentral() {
-      const pool = getPool(brandOut);
-      // gains (amountIn - protocolFee), loses improvedAmountOut
-      return pool.stageSeat({
-        Central: amountMath.add(
-          pool.getCentralAmount(),
-          amountMath.subtract(amountIn, protocolFee),
-        ),
-        Secondary: amountMath.subtract(
-          pool.getSecondaryAmount(),
-          improvedAmountOut,
-        ),
-      });
-    }
-
-    function secondaryPoolStagings() {
-      const brandInPool = getPool(brandIn);
-      // gains amountIn, loses (centralAmount + protocolFee)
-      const brandInStaging = brandInPool.stageSeat({
-        Secondary: amountMath.add(brandInPool.getSecondaryAmount(), amountIn),
-        Central: amountMath.subtract(
-          brandInPool.getCentralAmount(),
-          amountMath.add(centralAmount, protocolFee),
-        ),
-      });
-
-      const brandOutPool = getPool(brandOut);
-      // gains centralAmount, loses improvedAmountOut
-      const brandOutStaging = brandOutPool.stageSeat({
-        Central: amountMath.add(brandOutPool.getCentralAmount(), centralAmount),
-        Secondary: amountMath.subtract(
-          brandOutPool.getSecondaryAmount(),
-          improvedAmountOut,
-        ),
-      });
-      return [brandInStaging, brandOutStaging];
-    }
 
     // central to secondary, secondary to central, or secondary to secondary
     const pools = [];
@@ -233,13 +190,23 @@ export const makeMakeSwapInvitation = (
         const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
         throw seat.fail(Error(reason));
       }
-      stagings.push(poolStagingToCentral());
+      stagings.push(
+        poolStagingToCentral(amountIn, improvedAmountOut, protocolFee),
+      );
       pools.push(getPool(brandIn));
     } else if (isSecondary(brandOut) && isCentral(brandIn)) {
-      stagings.push(poolStagingFromCentral());
+      stagings.push(
+        poolStagingFromCentral(amountIn, improvedAmountOut, protocolFee),
+      );
       pools.push(getPool(brandOut));
     } else if (isSecondary(brandOut) && isSecondary(brandIn)) {
-      stagings.push(...secondaryPoolStagings());
+      const secondaryStagings = secondaryPoolStagings(
+        amountIn,
+        improvedAmountOut,
+        centralAmount,
+        protocolFee,
+      );
+      stagings.push(...secondaryStagings);
       pools.push(getPool(brandIn), getPool(brandOut));
     } else {
       assert.fail(X`brands were not recognized`);
