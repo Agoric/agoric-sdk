@@ -384,7 +384,9 @@ export function makeVaultKit(
 
     const fee = multiplyBy(wantedRun, manager.getLoanFee());
     if (amountMath.isEmpty(fee)) {
-      throw seat.exit('loan requested is too small; cannot accrue interest');
+      throw seat.fail(
+        Error('loan requested is too small; cannot accrue interest'),
+      );
     }
 
     runDebt = amountMath.add(wantedRun, fee);
