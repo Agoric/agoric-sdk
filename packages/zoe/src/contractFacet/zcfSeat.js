@@ -144,6 +144,13 @@ export const createSeatManager = (zoeInstanceAdmin, getMathKindByBrand) => {
           'Seat exited with failure. Please check the log for more information.',
         ),
       ) => {
+        if (typeof reason === 'string') {
+          reason = Error(reason);
+          assert.note(
+            reason,
+            X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
+          );
+        }
         if (!hasExited(zcfSeat)) {
           doExitSeat(zcfSeat);
           E(zoeSeatAdmin).fail(harden(reason));
