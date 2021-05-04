@@ -1376,7 +1376,7 @@ test('overdeposit', async t => {
   assertAmountsEqual(
     t,
     await E.get(E(collectFeesSeat).getCurrentAllocation()).RUN,
-    amountMath.make(runBrand, 300),
+    amountMath.make(runBrand, 300n),
   );
 });
 
@@ -1764,7 +1764,7 @@ test('coll fees from loan and AMM', async t => {
   });
 
   const amm = E(zoe).getPublicFacet(await E(stablecoinMachine).getAMM());
-  const swapAmount = amountMath.make(aethBrand, 60000);
+  const swapAmount = amountMath.make(aethBrand, 60000n);
   const swapSeat = await E(zoe).offer(
     E(amm).makeSwapInInvitation(),
     harden({

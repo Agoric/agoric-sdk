@@ -18,8 +18,8 @@ const build = async (log, zoe, brands, payments, timer) => {
     const loanSeat = await E(zoe).offer(
       E(treasury).makeLoanInvitation(),
       harden({
-        give: { Collateral: amountMath.make(moolaBrand, 100) },
-        want: { RUN: amountMath.make(runBrand, 500000) },
+        give: { Collateral: amountMath.make(moolaBrand, 100n) },
+        want: { RUN: amountMath.make(runBrand, 500000n) },
       }),
       harden({
         Collateral: moolaPayment,
