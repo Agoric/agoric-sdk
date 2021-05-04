@@ -53,7 +53,7 @@
 /**
  * @typedef {Object} BankDepositFacet
  *
- * @property {(accounts: string[], payments: Payment[]) => Promise<PromiseSettledResult<Amount>[]>} depositMultiple
+ * @property {(brand: Brand, accounts: string[], payments: Payment[]) => Promise<PromiseSettledResult<Amount>[]>} depositMultiple
  * @property {() => Notifier<string[]>} getAccountsNotifier
  */
 
