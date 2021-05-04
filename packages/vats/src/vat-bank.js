@@ -171,6 +171,138 @@ export function buildRootObject(_vatPowers) {
 
       /** @type {Store<string, Bank>} */
       const addressToBank = makeStore('address');
+
+      /** @type {NotifierRecord<string[]>} */
+      const {
+        notifier: accountsNotifier,
+        updater: accountsUpdater,
+      } = makeNotifierKit([...addressToBank.keys()]);
+
+      /**
+       * Create a new personal bank interface for a given address.
+       *
+       * @param {string} address lower-level bank account address
+       * @returns {Bank}
+       */
+      const getBankForAddress = address => {
+        assert.typeof(address, 'string');
+        if (addressToBank.has(address)) {
+          return addressToBank.get(address);
+        }
+
+        /** @type {WeakStore<Brand, VirtualPurse>} */
+        const brandToVPurse = makeWeakStore('brand');
+
+        /** @type {Bank} */
+        const bank = Far('bank', {
+          getAssetSubscription() {
+            return harden(assetSubscription);
+          },
+          async getPurse(brand) {
+            if (brandToVPurse.has(brand)) {
+              return brandToVPurse.get(brand);
+            }
+
+            const assetRecord = brandToAssetRecord.get(brand);
+            if (!bankCall) {
+              // Just emulate with a real purse.
+              const purse = await E(assetRecord.issuer).makeEmptyPurse();
+              brandToVPurse.init(brand, purse);
+              return purse;
+            }
+
+            const addressToUpdater = denomToAddressUpdater.get(
+              assetRecord.denom,
+            );
+
+            /** @type {NotifierRecord<Amount>} */
+            const { updater, notifier } = makeNotifierKit();
+            /** @type {bigint} */
+            let lastBalanceUpdate = -1n;
+            /** @type {BalanceUpdater} */
+            const balanceUpdater = (value, nonce = undefined) => {
+              if (nonce !== undefined) {
+                const thisBalanceUpdate = BigInt(nonce);
+                if (thisBalanceUpdate <= lastBalanceUpdate) {
+                  return;
+                }
+                lastBalanceUpdate = thisBalanceUpdate;
+              }
+              // Convert the string value to a bigint.
+              const amt = amountMath.make(brand, BigInt(value));
+              updater.updateState(amt);
+            };
+
+            // Get the initial balance.
+            addressToUpdater.init(address, balanceUpdater);
+            const balanceString = await bankCall({
+              type: 'VPURSE_GET_BALANCE',
+              address,
+              denom: assetRecord.denom,
+            });
+            balanceUpdater(balanceString);
+
+            // Create and return the virtual purse.
+            const vpc = makePurseController(
+              bankCall,
+              assetRecord.denom,
+              brand,
+              address,
+              notifier,
+              updateBalances,
+            );
+            const vpurse = makeVirtualPurse(vpc, assetRecord);
+            brandToVPurse.init(brand, vpurse);
+            return vpurse;
+          },
+        });
+        addressToBank.init(address, bank);
+        accountsUpdater.updateState([...addressToBank.keys()]);
+        return bank;
+      };
+
+      const bankDepositFacet = Far('bankDepositFacet', {
+        getAccountsNotifier() {
+          return accountsNotifier;
+        },
+        /**
+         * Send many independent deposits.  If any of them fail, then you should
+         * reclaim the corresponding payments since they didn't get deposited.
+         *
+         * @param {Array<string>} accounts
+         * @param {Array<Payment>} payments
+         * @returns {Promise<PromiseSettledResult<Amount>[]>}
+         */
+        depositMultiple(accounts, payments) {
+          /**
+           * @param {string} account
+           * @param {Payment} payment
+           */
+          const doDeposit = async (account, payment) => {
+            // We can get the alleged brand, because the purse we send it to
+            // will do the proper verification as part of deposit.
+            const brand = await E(payment).getAllegedBrand();
+            const bank = getBankForAddress(account);
+            const purse = bank.getPurse(brand);
+            return E(purse).deposit(payment);
+          };
+
+          // We want just a regular iterable that yields deposit promises.
+          function* generateDepositPromises() {
+            const max = Math.max(accounts.length, payments.length);
+            for (let i = 0; i < max; i += 1) {
+              // Create a deposit promise.
+              yield doDeposit(accounts[i], payments[i]);
+            }
+          }
+
+          // We wait for all deposits to settle so that the whole batch
+          // completes, even if there are failures with individual accounts,
+          // payments, or deposits.
+          return Promise.allSettled(generateDepositPromises());
+        },
+      });
+
       return Far('bankManager', {
         /**
          * Returns assets as they are added to the bank.
@@ -179,6 +311,9 @@ export function buildRootObject(_vatPowers) {
          */
         getAssetSubscription() {
           return harden(assetSubscription);
+        },
+        getDepositFacet() {
+          return bankDepositFacet;
         },
         /**
          * Add an asset to the bank, and publish it to the subscriptions.
@@ -214,87 +349,7 @@ export function buildRootObject(_vatPowers) {
             }),
           );
         },
-        /**
-         * Create a new personal bank interface for a given address.
-         *
-         * @param {string} address lower-level bank account address
-         * @returns {Bank}
-         */
-        getBankForAddress(address) {
-          assert.typeof(address, 'string');
-          if (addressToBank.has(address)) {
-            return addressToBank.get(address);
-          }
-
-          /** @type {WeakStore<Brand, VirtualPurse>} */
-          const brandToVPurse = makeWeakStore('brand');
-
-          /** @type {Bank} */
-          const bank = Far('bank', {
-            getAssetSubscription() {
-              return harden(assetSubscription);
-            },
-            async getPurse(brand) {
-              if (brandToVPurse.has(brand)) {
-                return brandToVPurse.get(brand);
-              }
-
-              const assetRecord = brandToAssetRecord.get(brand);
-              if (!bankCall) {
-                // Just emulate with a real purse.
-                const purse = await E(assetRecord.issuer).makeEmptyPurse();
-                brandToVPurse.init(brand, purse);
-                return purse;
-              }
-
-              const addressToUpdater = denomToAddressUpdater.get(
-                assetRecord.denom,
-              );
-
-              /** @type {NotifierRecord<Amount>} */
-              const { updater, notifier } = makeNotifierKit();
-              /** @type {bigint} */
-              let lastBalanceUpdate = -1n;
-              /** @type {BalanceUpdater} */
-              const balanceUpdater = (value, nonce = undefined) => {
-                if (nonce !== undefined) {
-                  const thisBalanceUpdate = BigInt(nonce);
-                  if (thisBalanceUpdate <= lastBalanceUpdate) {
-                    return;
-                  }
-                  lastBalanceUpdate = thisBalanceUpdate;
-                }
-                // Convert the string value to a bigint.
-                const amt = amountMath.make(brand, BigInt(value));
-                updater.updateState(amt);
-              };
-
-              // Get the initial balance.
-              addressToUpdater.init(address, balanceUpdater);
-              const balanceString = await bankCall({
-                type: 'VPURSE_GET_BALANCE',
-                address,
-                denom: assetRecord.denom,
-              });
-              balanceUpdater(balanceString);
-
-              // Create and return the virtual purse.
-              const vpc = makePurseController(
-                bankCall,
-                assetRecord.denom,
-                brand,
-                address,
-                notifier,
-                updateBalances,
-              );
-              const vpurse = makeVirtualPurse(vpc, assetRecord);
-              brandToVPurse.init(brand, vpurse);
-              return vpurse;
-            },
-          });
-          addressToBank.init(address, bank);
-          return bank;
-        },
+        getBankForAddress,
       });
     },
   });

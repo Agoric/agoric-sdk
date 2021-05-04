@@ -47,7 +47,10 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
   let lastWallTimeUpdate;
   const timerNotifier = E(timer).makeNotifier(0n, updateInterval);
 
-  async function scheduleDeposits() {
+  /**
+   * @param {(pmt: Payment[]) => void} disposeRejectedPayments
+   */
+  async function scheduleDeposits(disposeRejectedPayments) {
     if (!queuedPayments.length) {
       return;
     }
@@ -60,12 +63,21 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
     if (!queuedPayments.length) {
       return;
     }
-    E(bank).depositMultiple(
-      queuedAccounts.splice(0, depositsPerUpdate),
-      queuedPayments.splice(0, depositsPerUpdate),
-    );
 
-    scheduleDeposits();
+    const accounts = queuedAccounts.splice(0, depositsPerUpdate);
+    const payments = queuedPayments.splice(0, depositsPerUpdate);
+    E(bank)
+      .depositMultiple(accounts, payments)
+      .then(settledResults => {
+        const rejectedPayments = payments.filter(
+          (_pmt, i) =>
+            settledResults[i] && settledResults[i].status === 'rejected',
+        );
+
+        // Redeposit the payments.
+        disposeRejectedPayments(rejectedPayments);
+      });
+    scheduleDeposits(disposeRejectedPayments);
   }
 
   async function schedulePayments() {
@@ -95,7 +107,9 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
     queuedPayments.push(...manyPayments.slice(0, manyPayments.length - 1));
     queuedAccounts.push(...accounts);
 
-    scheduleDeposits();
+    scheduleDeposits(_pmts => {
+      // TODO: Somehow reclaim the rejected payments.
+    });
   }
 
   const timeObserver = {
@@ -109,5 +123,5 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
   };
 
   const epochNotifier = E(epochTimer).makeNotifier(0n, epochInterval);
-  observeNotifier(epochNotifier, timeObserver);
+  return observeNotifier(epochNotifier, timeObserver);
 }

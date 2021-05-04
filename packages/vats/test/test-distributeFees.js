@@ -31,6 +31,7 @@ function makeFakeBank() {
     depositMultiple: (a, p) => {
       depositAccounts.push(a);
       depositPayments.push(p);
+      return p.map(_pmt => ({ status: 'fulfilled' }));
     },
 
     // tools for the fake:
