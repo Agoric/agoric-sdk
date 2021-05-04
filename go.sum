@@ -56,6 +56,8 @@ github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201011165527-9684bf64c2db h1:UqImt
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20201011165527-9684bf64c2db/go.mod h1:YZcO00Tq/qqj4ncsfn+PobyTelsot7wEMGPpxEbEAT0=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210129184725-f1afab29a888 h1:0be7uMLEqiZ4Bqp2VD8agsf7DmJEFNdKrRBRIYKAb5s=
 github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210129184725-f1afab29a888/go.mod h1:vlgqdPpUGSxgqSbZea6fjszoLkPKwCuiqSBySLlv4ro=
+github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210504041254-7cead73a2b33 h1:ED86oqboGopyS7PIkdsgScbCax8+Fbn0Y4UVDnu1Za0=
+github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210504041254-7cead73a2b33/go.mod h1:I1Zw1zmU4rA/NITaakTb71pXQnQrWyFBhqo3WSeg0vA=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210122151802-a81eb67c924d h1:/4mrvbNZs/K6ZDppuy0/Drm9Yb/dr5j+15Y6n2x4pVY=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210122151802-a81eb67c924d/go.mod h1:FxbRbTEQsxz1LUmY4cVFFcjcdNT6VwVm7Ajw5HQmf04=
 github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210126214117-87803b32fbb4 h1:oHNB57wl8KSb6oo1w32FW19PdB5uFfPjfnFYX6/pbn8=

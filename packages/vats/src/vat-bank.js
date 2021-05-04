@@ -16,11 +16,18 @@ import '@agoric/notifier/exported';
  */
 
 /**
+ * @callback BalanceUpdater
+ * @param {any} value
+ * @param {any} [nonce]
+ */
+
+/**
  * @param {(obj: any) => Promise<any>} bankCall
  * @param {string} denom
  * @param {Brand} brand
  * @param {string} address
  * @param {Notifier<Amount>} balanceNotifier
+ * @param {(obj: any) => boolean} updateBalances
  * @returns {VirtualPurseController}
  */
 const makePurseController = (
@@ -29,8 +36,9 @@ const makePurseController = (
   brand,
   address,
   balanceNotifier,
-) =>
-  harden({
+  updateBalances,
+) => {
+  return harden({
     async *getBalances(b) {
       assert.equal(b, brand);
       let updateRecord = await balanceNotifier.getUpdateSince();
@@ -45,23 +53,26 @@ const makePurseController = (
     },
     async pushAmount(amt) {
       const value = amountMath.getValue(brand, amt);
-      return bankCall({
+      const update = await bankCall({
         type: 'VPURSE_GIVE',
         recipient: address,
         denom,
         amount: `${value}`,
       });
+      updateBalances(update);
     },
     async pullAmount(amt) {
       const value = amountMath.getValue(brand, amt);
-      return bankCall({
+      const update = await bankCall({
         type: 'VPURSE_GRAB',
         sender: address,
         denom,
         amount: `${value}`,
       });
+      updateBalances(update);
     },
   });
+};
 
 /**
  * @typedef {Object} AssetIssuerKit
@@ -93,8 +104,30 @@ export function buildRootObject(_vatPowers) {
       /** @type {WeakStore<Brand, AssetRecord>} */
       const brandToAssetRecord = makeWeakStore('brand');
 
-      /** @type {Store<string, Store<string, (amount: any) => void>>} */
+      /** @type {Store<string, Store<string, BalanceUpdater>>} */
       const denomToAddressUpdater = makeStore('denom');
+
+      const updateBalances = obj => {
+        switch (obj && obj.type) {
+          case 'VPURSE_BALANCE_UPDATE': {
+            for (const update of obj.updated) {
+              try {
+                const { address, denom, amount: value } = update;
+                const addressToUpdater = denomToAddressUpdater.get(denom);
+                const updater = addressToUpdater.get(address);
+
+                updater(value, obj.nonce);
+                console.error('Successful update', update);
+              } catch (e) {
+                console.error('Unregistered update', update);
+              }
+            }
+            return true;
+          }
+          default:
+            return false;
+        }
+      };
 
       /**
        * @param {import('./bridge').BridgeManager} bankBridgeMgr
@@ -103,23 +136,8 @@ export function buildRootObject(_vatPowers) {
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
           async fromBridge(_srcID, obj) {
-            switch (obj.type) {
-              case 'VPURSE_BALANCE_UPDATE': {
-                for (const update of obj.updated) {
-                  try {
-                    const { address, denom, amount: value } = update;
-                    const addressToUpdater = denomToAddressUpdater.get(denom);
-                    const updater = addressToUpdater.get(address);
-
-                    updater(value);
-                  } catch (e) {
-                    console.error('Unregistered update', update);
-                  }
-                }
-                break;
-              }
-              default:
-                assert.fail(X`Unrecognized request ${obj.type}`);
+            if (!updateBalances(obj)) {
+              assert.fail(X`Unrecognized request ${obj && obj.type}`);
             }
           },
         });
@@ -233,9 +251,19 @@ export function buildRootObject(_vatPowers) {
                 assetRecord.denom,
               );
 
-              /** @typedef {NotifierRecord<Amount>} */
+              /** @type {NotifierRecord<Amount>} */
               const { updater, notifier } = makeNotifierKit();
-              const balanceUpdater = value => {
+              /** @type {bigint} */
+              let lastBalanceUpdate = -1n;
+              /** @type {BalanceUpdater} */
+              const balanceUpdater = (value, nonce = undefined) => {
+                if (nonce !== undefined) {
+                  const thisBalanceUpdate = BigInt(nonce);
+                  if (thisBalanceUpdate <= lastBalanceUpdate) {
+                    return;
+                  }
+                  lastBalanceUpdate = thisBalanceUpdate;
+                }
                 // Convert the string value to a bigint.
                 const amt = amountMath.make(brand, BigInt(value));
                 updater.updateState(amt);
@@ -257,6 +285,7 @@ export function buildRootObject(_vatPowers) {
                 brand,
                 address,
                 notifier,
+                updateBalances,
               );
               const vpurse = makeVirtualPurse(vpc, assetRecord);
               brandToVPurse.init(brand, vpurse);
