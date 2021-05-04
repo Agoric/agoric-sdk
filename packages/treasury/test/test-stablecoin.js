@@ -18,13 +18,13 @@ import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
+import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers';
 import { makeTracer } from '../src/makeTracer';
 import { SECONDS_PER_YEAR } from '../src/interest';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';
-const autoswapRoot =
-  '@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap';
+const autoswapRoot = '@agoric/zoe/src/contracts/newSwap/multipoolAutoswap';
 const trace = makeTracer('TestST');
 
 const BASIS_POINTS = 10000n;
@@ -142,6 +142,8 @@ test('first', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
@@ -309,6 +311,8 @@ test('price drop', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24,
+    protocolFee: 6,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
@@ -452,6 +456,8 @@ test('price falls precipitously', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
 
   const {
@@ -610,6 +616,8 @@ test('stablecoin display collateral', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine } = await E(zoe).startInstance(
@@ -697,6 +705,8 @@ test('interest on multiple vaults', async t => {
   const loanParams = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   // Clock ticks by days
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay);
@@ -901,6 +911,8 @@ test('adjust balances', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
@@ -1167,7 +1179,6 @@ test('adjust balances', async t => {
     harden({
       want: { RUN: withdrawRun3, Collateral: collateralDecr2 },
     }),
-    harden({}),
   );
 
   await t.throwsAsync(() => E(aliceReduceCollateralSeat2).getOfferResult(), {
@@ -1202,6 +1213,8 @@ test('overdeposit', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
@@ -1355,6 +1368,16 @@ test('overdeposit', async t => {
     aliceCollateralization5.denominator,
     amountMath.make(1n, runBrand),
   );
+
+  const collectFeesSeat = await E(zoe).offer(
+    E(stablecoinMachine).makeCollectFeesInvitation(),
+  );
+  await E(collectFeesSeat).getOfferResult();
+  assertAmountsEqual(
+    t,
+    await E.get(E(collectFeesSeat).getCurrentAllocation()).RUN,
+    amountMath.make(runBrand, 300),
+  );
 });
 
 // We'll make two loans, and trigger one via price changes, and the other via
@@ -1386,6 +1409,8 @@ test('mutable liquidity triggers and interest', async t => {
   const loanParams = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
@@ -1536,7 +1561,6 @@ test('mutable liquidity triggers and interest', async t => {
     harden({
       want: { Collateral: collateralDecrement },
     }),
-    undefined,
   );
 
   await E(aliceReduceCollateralSeat).getOfferResult();
@@ -1606,6 +1630,8 @@ test('bad chargingPeriod', async t => {
   const loanParams = {
     chargingPeriod: 2,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
 
@@ -1624,4 +1650,141 @@ test('bad chargingPeriod', async t => {
       ),
     { message: 'chargingPeriod (2) must be a BigInt' },
   );
+});
+
+test('coll fees from loan and AMM', async t => {
+  /* @type {TestContext} */
+  let testJig;
+  const setJig = jig => {
+    testJig = jig;
+  };
+  const zoe = setUpZoeForTest(setJig);
+
+  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
+  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
+  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
+
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+
+  const priceAuthorityPromiseKit = makePromiseKit();
+  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
+  const loanParams = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
+  };
+  const manualTimer = buildManualTimer(console.log);
+  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
+    zoe,
+  ).startInstance(
+    stablecoinInstall,
+    {},
+    {
+      autoswapInstall,
+      priceAuthority: priceAuthorityPromise,
+      loanParams,
+      timerService: manualTimer,
+      liquidationInstall,
+    },
+  );
+
+  const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
+  const { brand: runBrand } = runIssuerRecord;
+  const { brand: govBrand } = govIssuerRecord;
+  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+
+  // priceAuthority needs the RUN brand, which isn't available until the
+  // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
+  const priceAuthority = makePriceAuthority(
+    aethBrand,
+    runBrand,
+    [500n, 15n],
+    null,
+    manualTimer,
+    quoteMint,
+    amountMath.make(900n, aethBrand),
+  );
+  priceAuthorityPromiseKit.resolve(priceAuthority);
+
+  // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
+  const capitalAmount = amountMath.make(900n, aethBrand);
+  const rates = makeRates(runBrand, aethBrand);
+  const aethVaultSeat = await E(zoe).offer(
+    E(stablecoinMachine).makeAddTypeInvitation(aethIssuer, 'AEth', rates),
+    harden({
+      give: { Collateral: capitalAmount },
+      want: { Governance: amountMath.makeEmpty(govBrand) },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(capitalAmount),
+    }),
+  );
+
+  await E(aethVaultSeat).getOfferResult();
+
+  // Create a loan for 470 RUN with 1100 aeth collateral
+  const collateralAmount = amountMath.make(1100n, aethBrand);
+  const loanAmount = amountMath.make(470n, runBrand);
+  const loanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+
+  const { vault, _liquidationPayout } = await E(loanSeat).getOfferResult();
+  const debtAmount = await E(vault).getDebtAmount();
+  const fee = multiplyBy(amountMath.make(470n, runBrand), rates.loanFee);
+  t.deepEqual(
+    debtAmount,
+    amountMath.add(loanAmount, fee),
+    'vault lent 470 RUN',
+  );
+  trace('correct debt', debtAmount);
+
+  const { RUN: lentAmount } = await E(loanSeat).getCurrentAllocation();
+  const loanProceeds = await E(loanSeat).getPayouts();
+  await loanProceeds.RUN;
+  t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
+  t.deepEqual(
+    vault.getCollateralAmount(),
+    amountMath.make(1100n, aethBrand),
+    'vault holds 1100 Collateral',
+  );
+
+  t.deepEqual(stablecoinMachine.getRewardAllocation(), {
+    RUN: amountMath.make(23n, runBrand),
+  });
+
+  const amm = E(zoe).getPublicFacet(await E(stablecoinMachine).getAMM());
+  const swapAmount = amountMath.make(aethBrand, 60000);
+  const swapSeat = await E(zoe).offer(
+    E(amm).makeSwapInInvitation(),
+    harden({
+      give: { In: swapAmount },
+      want: { Out: amountMath.makeEmpty(runBrand) },
+    }),
+    harden({
+      In: aethMint.mintPayment(swapAmount),
+    }),
+  );
+
+  await E(swapSeat).getPayouts();
+
+  const feePoolBalance = await E(amm).getProtocolPoolBalance();
+
+  const collectFeesSeat = await E(zoe).offer(
+    E(stablecoinMachine).makeCollectFeesInvitation(),
+  );
+  await E(collectFeesSeat).getOfferResult();
+  const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
+    .RUN;
+  t.truthy(amountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
 });

@@ -4,6 +4,8 @@ import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
 import { amountMath } from '@agoric/ertp';
+import { isNat } from '@agoric/nat';
+
 import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
 
 const { ceilDivide } = natSafeMath;
@@ -35,6 +37,10 @@ export const makeGetCurrentPrice = (
   poolFeeBP,
   protocolFeeBP,
 ) => {
+  assert(
+    isNat(poolFeeBP) && isNat(protocolFeeBP),
+    X`poolFee (${poolFeeBP}) and protocolFee (${protocolFeeBP}) must be Nats`,
+  );
   const protocolFeeRatio = makeRatio(protocolFeeBP, centralBrand, BASIS_POINTS);
   const halfPoolFeeBP = ceilDivide(poolFeeBP, 2);
 

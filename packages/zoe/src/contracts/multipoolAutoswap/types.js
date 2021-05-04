@@ -91,3 +91,10 @@
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
  */
+
+/**
+ * @typedef {Object} MultipoolAutoswapCreatorFacet
+ * @property {() => Invitation<Issuer>} makeCollectFeesInvitation
+ * return an invitation that allows the caller to collect fees paid to the
+ * autoswap
+ */

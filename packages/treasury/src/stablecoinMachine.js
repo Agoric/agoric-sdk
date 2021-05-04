@@ -36,6 +36,7 @@ import { amountMath } from '@agoric/ertp';
 import { makeTracer } from './makeTracer';
 import { makeVaultManager } from './vaultManager';
 import { makeLiquidationStrategy } from './liquidateMinimum';
+import { makeMakeCollectFeesInvitation } from './collectRewardFees';
 
 const trace = makeTracer('ST');
 
@@ -93,13 +94,20 @@ export async function start(zcf) {
   // we assume the multipool-autoswap is public, so folks can buy/sell
   // through it without our involvement
   // Should it use creatorFacet, creatorInvitation, instance?
-  /** @type {{ publicFacet: MultipoolAutoswapPublicFacet, instance: Instance}} */
-  const { publicFacet: autoswapAPI, instance: autoswapInstance } = await E(
-    zoe,
-  ).startInstance(
+  /** @type {{ publicFacet: MultipoolAutoswapPublicFacet, instance: Instance,
+   *  creatorFacet: MultipoolAutoswapCreatorFacet }} */
+  const {
+    publicFacet: autoswapAPI,
+    instance: autoswapInstance,
+    creatorFacet: autoswapCreatorFacet,
+  } = await E(zoe).startInstance(
     autoswapInstall,
     { Central: runIssuer },
-    { timer: timerService },
+    {
+      timer: timerService,
+      poolFee: loanParams.poolFee,
+      protocolFee: loanParams.protocolFee,
+    },
   );
 
   // We process only one offer per collateralType. They must tell us the
@@ -320,6 +328,13 @@ export async function start(zcf) {
     },
   });
 
+  const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
+    zcf,
+    rewardPoolSeat,
+    autoswapCreatorFacet,
+    runBrand,
+  );
+
   /** @type {StablecoinMachine} */
   const stablecoinMachine = harden({
     makeAddTypeInvitation,
@@ -329,6 +344,7 @@ export async function start(zcf) {
     getCollaterals,
     getRewardAllocation,
     getBootstrapPayment,
+    makeCollectFeesInvitation,
   });
 
   return harden({ creatorFacet: stablecoinMachine, publicFacet });
