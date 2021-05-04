@@ -145,6 +145,7 @@ export function makeVaultKit(
     updateUiState();
   }
 
+  /** @type {OfferHandler} */
   async function closeHook(seat) {
     assertVaultIsOpen();
     assertProposalShape(seat, {
@@ -369,6 +370,7 @@ export function makeVaultKit(
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   }
 
+  /** @type {OfferHandler} */
   async function openLoan(seat) {
     assert(amountMath.isEmpty(runDebt), X`vault must be empty initially`);
     // get the payout to provide access to the collateral if the
