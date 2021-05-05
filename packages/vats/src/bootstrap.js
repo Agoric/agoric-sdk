@@ -165,7 +165,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const epochTimerService = chainTimerService;
     const distributorParams = {
       depositsPerUpdate: 51,
-      updateInterval: 1n, // 1 second
+      updateInterval: 5n, // 5 seconds
       epochInterval: 60n * 60n, // 1 hour
       runIssuer: centralIssuer,
       runBrand: centralBrand,
