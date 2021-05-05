@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.5.5...@agoric/xsnap@0.6.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* **xsnap:** fix the xsnap/moddable git-submodule ([fc34fba](https://github.com/Agoric/agoric-sdk/commit/fc34fba9d28776bd5120831864ef12f71e120766))
+* **xsnap:** start with expected heap (32MB) and grow by 4MB ([2e59868](https://github.com/Agoric/agoric-sdk/commit/2e598684ca009d9575fbe078205396eaf89d06e8))
+* ignore an xsnap build output ([#2887](https://github.com/Agoric/agoric-sdk/issues/2887)) ([646b621](https://github.com/Agoric/agoric-sdk/commit/646b6211618381fe569a2be0820137523a484a6e))
+
+
+### Features
+
+* **ava-xs:** provide test script name to xsnap ([05f0637](https://github.com/Agoric/agoric-sdk/commit/05f0637942586b449e516796f1f9881fe218d08c))
+* **xsnap:** $XSNAP_DEBUG_RR for time-travel debugging ([bd4af92](https://github.com/Agoric/agoric-sdk/commit/bd4af925c73ac33e027027f5e56bc65c4c10a38a))
+* **xsnap:** define XSnapOptions type ([1ce5618](https://github.com/Agoric/agoric-sdk/commit/1ce561892e4d1bfb91e8dc6491e1229713619967))
+* **xsnap:** grow heap more slowly ([11795de](https://github.com/Agoric/agoric-sdk/commit/11795deeec15afda3ea96ed8a994243480f97a69))
+* **xsnap:** high resolution timer: performance.now() ([10940f9](https://github.com/Agoric/agoric-sdk/commit/10940f902fef4a47a5fd8b63faeceb9c5c0be4eb))
+* **xsnap:** increase allocation limit to 2GB ([5922cbd](https://github.com/Agoric/agoric-sdk/commit/5922cbdd360a29acaac4fbe00d298b0af8e5e8a4))
+* **xsnap:** meter add/remove on map, set ([327062f](https://github.com/Agoric/agoric-sdk/commit/327062f9f9843ed2f4d8d6e0fa2445d1fa4fdf55))
+* **xsnap:** meter allocation ([eecd58d](https://github.com/Agoric/agoric-sdk/commit/eecd58d503904e0aff24e6850730b165eeac1c9e))
+* **xsnap:** meter calls to allocateChunks, allocateSlots ([5a35842](https://github.com/Agoric/agoric-sdk/commit/5a35842cca71433f7dd2a52cc2750df53a01b269))
+* **xsnap:** meter garbageCollectionCount ([f649ff7](https://github.com/Agoric/agoric-sdk/commit/f649ff7715700a5cf3002fcc332692e2786d9d53))
+* **xsnap:** meter maxBucketSize ([eff98b4](https://github.com/Agoric/agoric-sdk/commit/eff98b4770a4742cb0b9b2d5bc2de1266d38951b))
+* **xsnap:** specify exit codes for meter exhaustion etc. ([db3daaa](https://github.com/Agoric/agoric-sdk/commit/db3daaaeeef1ac81104b8a58922da932ccdbadd9))
+* refcount-based promise GC in the comms vat ([209b034](https://github.com/Agoric/agoric-sdk/commit/209b034f196d46f5d6b499f8b0bf32dbddca1114))
+
+
+
+
+
 ## [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.5.4...@agoric/xsnap@0.5.5) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/xsnap

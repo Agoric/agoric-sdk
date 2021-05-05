@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.4...@agoric/cosmic-swingset@0.30.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* adjust git-revision.txt generation ([6a8b0f2](https://github.com/Agoric/agoric-sdk/commit/6a8b0f20df17d5427b1c70273bcc170c7945dc2a))
+* clean up Docker directory usage ([a97d0b3](https://github.com/Agoric/agoric-sdk/commit/a97d0b3edc1f47e04d93d37c6e999d0798903d03))
+* don't get GCI from gci.js; use kernel argv.FIXME_GCI instead ([f994574](https://github.com/Agoric/agoric-sdk/commit/f9945744f70e0c535b36173ebb4754fbc18888cf))
+* eliminate urun from cosmos bootstrap (it comes from treasury) ([16c1694](https://github.com/Agoric/agoric-sdk/commit/16c169446602a187810949748915eca31894fcb9))
+* use agoric set-defaults --bootstrap-address ([4f96b2c](https://github.com/Agoric/agoric-sdk/commit/4f96b2c1e890432eb0da90578157e9a317d44f45))
+* **cosmic-swingset:** finish reorganization ([7aa778f](https://github.com/Agoric/agoric-sdk/commit/7aa778fa1c88835a3b5c17c34ef010921630f342))
+* **spawner:** rewrite to use createVat, strip down to bare minimum API ([86c0a58](https://github.com/Agoric/agoric-sdk/commit/86c0a58a588a7fa9b07c18c8038935b7bc6175cf)), closes [#1343](https://github.com/Agoric/agoric-sdk/issues/1343)
+
+
+### Features
+
+* add bank assets for "cosmos" issuers (currently BLD) ([3148b83](https://github.com/Agoric/agoric-sdk/commit/3148b8337db517e0908b07df93c9b7d497ddcf40))
+* add home.bank and home.bankManager ([276a1d3](https://github.com/Agoric/agoric-sdk/commit/276a1d3eb28fe83b1f59ca329e645aa1e9686849))
+* handle VPURSE_BALANCE_UPDATE ([116fcd2](https://github.com/Agoric/agoric-sdk/commit/116fcd2b50a824fb4c8b5a0bac41d6798855d03e))
+* have the bank use normal purses when not on chain ([90ab888](https://github.com/Agoric/agoric-sdk/commit/90ab888c5cdc71a2322ca05ad813c6411c876a74))
+* **cosmic-swingset:** $SLOGFILE will make the chain write a slogfile ([c845132](https://github.com/Agoric/agoric-sdk/commit/c8451329294ee91330914befd63690ec94964607))
+* **vpurse:** connect to golang ([d2f719d](https://github.com/Agoric/agoric-sdk/commit/d2f719dce9936a129817a3781bc1de8c4367bb46))
+* have the wallet-bridge.html announce it was loaded ([36d9f0f](https://github.com/Agoric/agoric-sdk/commit/36d9f0f9744d22587fe01031a66f51f7f8e64099))
+
+
+
+
+
 ## [0.29.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.3...@agoric/cosmic-swingset@0.29.4) (2021-04-22)
 
 
