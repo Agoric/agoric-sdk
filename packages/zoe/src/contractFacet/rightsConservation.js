@@ -34,7 +34,6 @@ const sumByBrand = amounts => {
  *
  * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
  * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
- * indexed by issuer
  */
 const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   // We cannot assume that all of the brand keys present in
