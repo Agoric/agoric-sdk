@@ -28,9 +28,10 @@ function makeFakeBank() {
 
   return {
     getAccountsNotifier: () => notifier,
-    depositMultiple: (a, p) => {
+    depositMultiple: (brand, a, p) => {
       depositAccounts.push(a);
       depositPayments.push(p);
+      return p.map(_pmt => ({ status: 'fulfilled' }));
     },
 
     // tools for the fake:
@@ -73,7 +74,7 @@ test('fee distribution', async t => {
   };
   buildDistributor(treasury, bank, epochTimer, wallTimer, distributorParams);
 
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 500)));
+  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 500n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
 
   t.deepEqual(bank.getAccounts(), []);
@@ -131,7 +132,7 @@ test('fee distribution, leftovers', async t => {
   };
   buildDistributor(treasury, bank, epochTimer, wallTimer, distributorParams);
 
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 12)));
+  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 12n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
 
   t.deepEqual(bank.getAccounts(), []);
@@ -147,7 +148,7 @@ test('fee distribution, leftovers', async t => {
   waitForPromisesToSettle();
 
   // Pay them again
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 13)));
+  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 13n)));
   await wallTimer.tick();
 
   await epochTimer.tick();
