@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.0...@agoric/xsnap@0.6.1) (2021-05-05)
+
+
+### Bug Fixes
+
+* cope with getting moddable submodule from agoric-labs ([a1a2693](https://github.com/Agoric/agoric-sdk/commit/a1a26931d17ade84ae97aa3a9d0e7c5c58a74491))
+
+
+
+
+
 # [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.5.5...@agoric/xsnap@0.6.0) (2021-05-05)
 
 

@@ -15,6 +15,7 @@ RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
 # The js build container
 FROM node:12-buster AS build-js
 ARG MODDABLE_COMMIT_HASH
+ARG MODDABLE_URL
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
@@ -29,7 +30,7 @@ RUN cd golang/cosmos && yarn build:gyp
 RUN cd packages/cosmic-swingset && make install install-helper
 
 # Check out the specified Moddable SDK version.
-RUN MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" yarn build
+RUN MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" MODDABLE_URL="$MODDABLE_URL" yarn build
 
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable

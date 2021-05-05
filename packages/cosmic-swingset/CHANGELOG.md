@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.30.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.30.0...@agoric/cosmic-swingset@0.30.1) (2021-05-05)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
 # [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.29.4...@agoric/cosmic-swingset@0.30.0) (2021-05-05)
 
 

@@ -6,6 +6,7 @@ VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 
 TAG := $(if $(VERSION),$(VERSION),latest)
 MODDABLE_COMMIT_HASH := $(shell git submodule status ../xsnap/moddable | \
 	sed -ne 's/^.\([^ ]*\).*/\1/p')
+MODDABLE_URL := $(shell sed -ne 's!^.* = \(https://.*moddable\.git\).*!\1!p' ../../.gitmodules)
 GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
 	dirty=`git diff --quiet || echo -dirty`; \
 	echo "$$hash$$dirty")
@@ -26,6 +27,7 @@ docker-build: docker-build-sdk docker-build-solo \
 
 docker-build-sdk:
 	docker build --build-arg=MODDABLE_COMMIT_HASH=$(MODDABLE_COMMIT_HASH) \
+		--build-arg=MODDABLE_URL=$(MODDABLE_URL) \
 		--build-arg=GIT_REVISION=$(GIT_REVISION) \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
