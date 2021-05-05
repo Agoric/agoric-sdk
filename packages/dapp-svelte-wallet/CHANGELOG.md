@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.9.4...@agoric/dapp-svelte-wallet@0.10.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* update dapp-svelte-wallet to new packages ([a1dcabd](https://github.com/Agoric/agoric-sdk/commit/a1dcabd60790ef1effe16565ea33f9811b32fa09))
+* update types and implementation now that Far preserves them ([a4695c4](https://github.com/Agoric/agoric-sdk/commit/a4695c43a09abc92a20c12104cfbfefb4cae2ff2))
+
+
+### Features
+
+* donate RUN from the bootstrap payment on each provision ([43c5db5](https://github.com/Agoric/agoric-sdk/commit/43c5db5d819a3be059a5ead074aa96c3d87416c4))
+* **wallet:** subscribe to bank assets and fetch purses ([92a0a44](https://github.com/Agoric/agoric-sdk/commit/92a0a44b26a77d75668314f628ba28c4c58331a8))
+
+
+
+
+
 ## [0.9.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.9.3...@agoric/dapp-svelte-wallet@0.9.4) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

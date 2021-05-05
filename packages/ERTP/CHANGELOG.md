@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.10.8...@agoric/ertp@0.11.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* **ERTP:** now that {} is data, always return a displayInfo object ([fcc0cc4](https://github.com/Agoric/agoric-sdk/commit/fcc0cc4e61daef103556589fe7003da99d3c4626))
+* settle REMOTE_STYLE name ([#2900](https://github.com/Agoric/agoric-sdk/issues/2900)) ([3dc6638](https://github.com/Agoric/agoric-sdk/commit/3dc66385b85cb3e8a1056b8d6e64cd3e448c041f))
+* **ERTP:** avoid jessie warning ([fa68a8a](https://github.com/Agoric/agoric-sdk/commit/fa68a8af6864d04a73fbc9dc70f63fb3d4225c1a)), closes [#2704](https://github.com/Agoric/agoric-sdk/issues/2704)
+
+
+### Features
+
+* upgrade use-jessie eslint, and honour '// [@jessie-check](https://github.com/jessie-check)' ([fd1c24a](https://github.com/Agoric/agoric-sdk/commit/fd1c24a84584f6b5f7b7d5e8b21d756464db05b6))
+
+
+
+
+
 ## [0.10.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.10.7...@agoric/ertp@0.10.8) (2021-04-22)
 
 

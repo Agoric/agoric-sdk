@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.11...@agoric/spawner@0.4.12) (2021-05-05)
+
+
+### Bug Fixes
+
+* **spawner:** rewrite to use createVat, strip down to bare minimum API ([86c0a58](https://github.com/Agoric/agoric-sdk/commit/86c0a58a588a7fa9b07c18c8038935b7bc6175cf)), closes [#1343](https://github.com/Agoric/agoric-sdk/issues/1343)
+* **spawner:** use fs.mkdirSync properly ([75d8afb](https://github.com/Agoric/agoric-sdk/commit/75d8afb1626a3a0e21d9705e233b0478afbcda85))
+
+
+
+
+
 ## [0.4.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.10...@agoric/spawner@0.4.11) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/spawner

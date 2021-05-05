@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.12.13...@agoric/swingset-runner@0.13.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* remove deprecated ibid support ([#2898](https://github.com/Agoric/agoric-sdk/issues/2898)) ([f865a2a](https://github.com/Agoric/agoric-sdk/commit/f865a2a8fb5d6cb1d16d9fc21ad4868ea6d5a294)), closes [#2896](https://github.com/Agoric/agoric-sdk/issues/2896) [#2896](https://github.com/Agoric/agoric-sdk/issues/2896) [#2896](https://github.com/Agoric/agoric-sdk/issues/2896)
+* update kerneldump to work with SES ([4989fa3](https://github.com/Agoric/agoric-sdk/commit/4989fa35cec68227b4d6bd920f84b6c45c2b761f))
+
+
+### Features
+
+* refcount-based promise GC in the comms vat ([209b034](https://github.com/Agoric/agoric-sdk/commit/209b034f196d46f5d6b499f8b0bf32dbddca1114))
+
+
+
+
+
 ## [0.12.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.12.12...@agoric/swingset-runner@0.12.13) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/swingset-runner

@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.4...@agoric/treasury@0.4.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* default and propagate the poolFee and protocolFee in treasury ([d210bcf](https://github.com/Agoric/agoric-sdk/commit/d210bcf1427bee73c9a13f0a00ee2a757d978cd2))
+* have the treasury use the newSwap AMM implementation ([ed6b84a](https://github.com/Agoric/agoric-sdk/commit/ed6b84ad02cdf59431aa92d3d1e8c8e669379881))
+* polishing touches ([334a253](https://github.com/Agoric/agoric-sdk/commit/334a253c02dc1c74117237f6ae18b31505e635af))
+
+
+### Features
+
+* share one instance of liquidation across all vaultManagers ([#2869](https://github.com/Agoric/agoric-sdk/issues/2869)) ([0ae776a](https://github.com/Agoric/agoric-sdk/commit/0ae776a91d0ec77443073f6340e714b8e161e062))
+
+
+
+
+
 ## [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.3...@agoric/treasury@0.3.4) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/treasury

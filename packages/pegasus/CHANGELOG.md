@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.2.4...@agoric/pegasus@0.2.5) (2021-05-05)
+
+
+### Bug Fixes
+
+* **pegasus:** update to new solo package ([cf91a04](https://github.com/Agoric/agoric-sdk/commit/cf91a04fa6ce53dc06de0ccb8c8173050134575a))
+
+
+
+
+
 ## [0.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.2.3...@agoric/pegasus@0.2.4) (2021-04-22)
 
 
