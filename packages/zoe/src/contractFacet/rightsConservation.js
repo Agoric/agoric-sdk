@@ -34,27 +34,54 @@ const sumByBrand = amounts => {
  *
  * @param  {Store<Brand, Amount>} leftSumsByBrand - a map of brands to sums
  * @param  {Store<Brand, Amount>} rightSumsByBrand - a map of brands to sums
- * indexed by issuer
  */
 const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
-  const leftKeys = leftSumsByBrand.keys();
-  const rightKeys = rightSumsByBrand.keys();
-  assert.equal(
-    leftKeys.length,
-    rightKeys.length,
-    X`${leftKeys.length} should be equal to ${rightKeys.length}`,
-  );
-  leftSumsByBrand
-    .keys()
-    .forEach(brand =>
-      assert(
-        amountMath.isEqual(
-          leftSumsByBrand.get(brand),
-          rightSumsByBrand.get(brand),
-        ),
-        X`rights were not conserved for brand ${brand}`,
-      ),
+  // We cannot assume that all of the brand keys present in
+  // leftSumsByBrand are also present in rightSumsByBrand. A empty
+  // amount could be introduced or dropped, and this should still be
+  // deemed "equal" from the perspective of rights conservation.
+
+  // Thus, we should allow for a brand to be missing from a map, but
+  // only if the sum for the brand in the other map is empty.
+
+  /**
+   * A helper that either gets the sums for the specified brand, or if
+   * the brand is absent in the map, returns an empty amount.
+   *
+   * @param {Brand} brand
+   * @returns {{ leftSum: Amount, rightSum: Amount }}
+   */
+  const getSums = brand => {
+    let leftSum;
+    let rightSum;
+    if (leftSumsByBrand.has(brand)) {
+      leftSum = leftSumsByBrand.get(brand);
+    }
+    if (rightSumsByBrand.has(brand)) {
+      rightSum = rightSumsByBrand.get(brand);
+    }
+    if (leftSum === undefined) {
+      assert(rightSum);
+      leftSum = amountMath.makeEmptyFromAmount(rightSum);
+    }
+    if (rightSum === undefined) {
+      rightSum = amountMath.makeEmptyFromAmount(leftSum);
+    }
+    return { leftSum, rightSum };
+  };
+
+  const allBrands = new Set([
+    ...leftSumsByBrand.keys(),
+    ...rightSumsByBrand.keys(),
+  ]);
+
+  allBrands.forEach(brand => {
+    const { leftSum, rightSum } = getSums(brand);
+    assert(
+      amountMath.isEqual(leftSum, rightSum),
+      X`rights were not conserved for brand ${brand}`,
     );
+  });
 };
 
 /**
