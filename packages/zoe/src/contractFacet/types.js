@@ -152,7 +152,7 @@
  *
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
- * @param {Error=} reason
+ * @param {Error} reason
  * @returns {Error}
  */
 /**
@@ -161,7 +161,7 @@
  * called with the reason for this failure,
  * where reason is normally an instanceof Error. This method is
  * deprecated as of 0.9.1-dev.3 in favor of fail().
- * @param {Error=} reason
+ * @param {Error} reason
  * @returns {Error}
  */
 
