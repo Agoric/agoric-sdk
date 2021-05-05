@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.11...@agoric/same-structure@0.1.12) (2021-05-05)
+
+**Note:** Version bump only for package @agoric/same-structure
+
+
+
+
+
+## [0.1.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.10...@agoric/same-structure@0.1.11) (2021-05-05)
+
+
+### Bug Fixes
+
+* settle REMOTE_STYLE name ([#2900](https://github.com/Agoric/agoric-sdk/issues/2900)) ([3dc6638](https://github.com/Agoric/agoric-sdk/commit/3dc66385b85cb3e8a1056b8d6e64cd3e448c041f))
+* split marshal module ([#2803](https://github.com/Agoric/agoric-sdk/issues/2803)) ([2e19e78](https://github.com/Agoric/agoric-sdk/commit/2e19e7878bc06dd71e166e13c9cce462b3d5ff7a))
+
+
+
+
+
 ## [0.1.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.9...@agoric/same-structure@0.1.10) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/same-structure

@@ -53,7 +53,7 @@
 /**
  * @typedef {Object} BankDepositFacet
  *
- * @property {(accounts: string[], payments: Payment[]) => void} depositMultiple
+ * @property {(brand: Brand, accounts: string[], payments: Payment[]) => Promise<PromiseSettledResult<Amount>[]>} depositMultiple
  * @property {() => Notifier<string[]>} getAccountsNotifier
  */
 
@@ -84,4 +84,5 @@
  *  batches of payments are sent to the bank for processing. The parameter
  *  updateInterval specifies the interval at which updates are sent.
  * @param {DistributorParams} params
+ * @returns {Promise<void>}
  */

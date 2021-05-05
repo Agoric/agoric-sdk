@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.7...@agoric/deploy-script-support@0.2.8) (2021-05-05)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+## [0.2.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.6...@agoric/deploy-script-support@0.2.7) (2021-05-05)
+
+
+### Bug Fixes
+
+* **deploy-script-support:** update to new vats package ([9de6ed1](https://github.com/Agoric/agoric-sdk/commit/9de6ed12dca1346912bb3255bbb48601ac09693e))
+* settle REMOTE_STYLE name ([#2900](https://github.com/Agoric/agoric-sdk/issues/2900)) ([3dc6638](https://github.com/Agoric/agoric-sdk/commit/3dc66385b85cb3e8a1056b8d6e64cd3e448c041f))
+
+
+
+
+
 ## [0.2.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.5...@agoric/deploy-script-support@0.2.6) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

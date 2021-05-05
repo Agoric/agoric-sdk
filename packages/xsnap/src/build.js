@@ -26,13 +26,16 @@ function exec(command, cwd, args = []) {
 (async () => {
   // Allow overriding of the checked-out version of the Moddable submodule.
   const moddableCommitHash = process.env.MODDABLE_COMMIT_HASH;
+  const moddableUrl =
+    process.env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git';
 
   if (moddableCommitHash) {
     // Do the moral equivalent of submodule update when explicitly overriding.
     if (!existsSync('moddable')) {
       await exec('git', '.', [
         'clone',
-        'https://github.com/Moddable-OpenSource/moddable.git',
+        // NOTE: We need to depend on cloning from agoric-labs.
+        moddableUrl,
         'moddable',
       ]);
     }

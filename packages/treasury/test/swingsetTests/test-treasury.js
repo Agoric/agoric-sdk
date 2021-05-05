@@ -5,7 +5,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -13,6 +13,9 @@ import { E } from '@agoric/eventual-send';
 import liquidateBundle from '../../bundles/bundle-liquidateMinimum';
 import autoswapBundle from '../../bundles/bundle-multipoolAutoswap';
 import stablecoinBundle from '../../bundles/bundle-stablecoinMachine';
+
+/** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
+const test = rawTest;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

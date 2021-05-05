@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.27.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.27.0...@agoric/deployment@1.27.1) (2021-05-05)
+
+
+### Bug Fixes
+
+* cope with getting moddable submodule from agoric-labs ([a1a2693](https://github.com/Agoric/agoric-sdk/commit/a1a26931d17ade84ae97aa3a9d0e7c5c58a74491))
+
+
+
+
+
+# [1.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.5...@agoric/deployment@1.27.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* adjust git-revision.txt generation ([6a8b0f2](https://github.com/Agoric/agoric-sdk/commit/6a8b0f20df17d5427b1c70273bcc170c7945dc2a))
+* clean up Docker directory usage ([a97d0b3](https://github.com/Agoric/agoric-sdk/commit/a97d0b3edc1f47e04d93d37c6e999d0798903d03))
+* correct faucet-helper.sh show-faucet-address and use it ([5e236e6](https://github.com/Agoric/agoric-sdk/commit/5e236e6cc0b457dc5c764d4494f4c4d8e3031f29))
+* eliminate urun from cosmos bootstrap (it comes from treasury) ([16c1694](https://github.com/Agoric/agoric-sdk/commit/16c169446602a187810949748915eca31894fcb9))
+* include backwards-compat /data directory links ([16feacd](https://github.com/Agoric/agoric-sdk/commit/16feacdd94400920190b6283a76968c6a61b3055))
+* more Docker paths ([7783bb4](https://github.com/Agoric/agoric-sdk/commit/7783bb4740f4ea83b788fec45c1d1aa70145bba1))
+
+
+### Features
+
+* have the bank use normal purses when not on chain ([90ab888](https://github.com/Agoric/agoric-sdk/commit/90ab888c5cdc71a2322ca05ad813c6411c876a74))
+
+
+
+
+
 ## [1.26.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.26.4...@agoric/deployment@1.26.5) (2021-04-22)
 
 

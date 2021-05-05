@@ -28,6 +28,8 @@ const build = async (
   const loanParams = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
 
   const priceAuthorityKit = await E(priceAuthorityVat).makePriceAuthority();
@@ -65,7 +67,7 @@ const build = async (
   );
   const proposal = harden({
     give: {
-      Collateral: amountMath.make(moolaBrand, 1000),
+      Collateral: amountMath.make(moolaBrand, 1000n),
     },
     want: { Governance: amountMath.makeEmpty(govBrand) },
   });

@@ -174,6 +174,11 @@ export const makeMakeSwapInvitation = (
       centralAmount,
     } = getPriceGivenRequiredOutput(brandIn, amountOut);
 
+    if (!amountMath.isGTE(offeredAmountIn, amountIn)) {
+      const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
+      throw seat.fail(Error(reason));
+    }
+
     const stagings = [];
     stagings.push(stageProtocolSeatFee(protocolFee));
     stagings.push(
@@ -186,10 +191,6 @@ export const makeMakeSwapInvitation = (
     // central to secondary, secondary to central, or secondary to secondary
     const pools = [];
     if (isCentral(brandOut) && isSecondary(brandIn)) {
-      if (!amountMath.isGTE(offeredAmountIn, amountIn)) {
-        const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
-        throw seat.fail(Error(reason));
-      }
       stagings.push(
         poolStagingToCentral(amountIn, improvedAmountOut, protocolFee),
       );
