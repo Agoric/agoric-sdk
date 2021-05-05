@@ -46,34 +46,43 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   // only if the sum for the brand in the other map is empty.
 
   /**
-   * A helper that either gets the sum for the specified brand, or if
+   * A helper that either gets the sums for the specified brand, or if
    * the brand is absent in the map, returns an empty amount.
    *
-   * @param {Store<Brand, Amount>} sumsByBrandMap
    * @param {Brand} brand
-   * @param {Amount} amount
-   * @returns {Amount}
+   * @returns {{ leftSum: Amount, rightSum: Amount }}
    */
-  const getOrEmpty = (sumsByBrandMap, brand, amount) => {
-    if (!sumsByBrandMap.has(brand)) {
-      return amountMath.makeEmptyFromAmount(amount);
+  const getSums = brand => {
+    let leftSum;
+    let rightSum;
+    if (leftSumsByBrand.has(brand)) {
+      leftSum = leftSumsByBrand.get(brand);
     }
-    return sumsByBrandMap.get(brand);
+    if (rightSumsByBrand.has(brand)) {
+      rightSum = rightSumsByBrand.get(brand);
+    }
+    if (leftSum === undefined) {
+      assert(rightSum);
+      leftSum = amountMath.makeEmptyFromAmount(rightSum);
+    }
+    if (rightSum === undefined) {
+      rightSum = amountMath.makeEmptyFromAmount(leftSum);
+    }
+    return { leftSum, rightSum };
   };
 
-  const assertSumsEqualInMap = (mapToIterate, mapToCheck) => {
-    mapToIterate.keys().forEach(brand => {
-      const toIterateSum = mapToIterate.get(brand);
-      const toCheckSumOrEmpty = getOrEmpty(mapToCheck, brand, toIterateSum);
-      assert(
-        amountMath.isEqual(toIterateSum, toCheckSumOrEmpty),
-        X`rights were not conserved for brand ${brand}`,
-      );
-    });
-  };
+  const allBrands = new Set([
+    ...leftSumsByBrand.keys(),
+    ...rightSumsByBrand.keys(),
+  ]);
 
-  assertSumsEqualInMap(leftSumsByBrand, rightSumsByBrand);
-  assertSumsEqualInMap(rightSumsByBrand, leftSumsByBrand);
+  allBrands.forEach(brand => {
+    const { leftSum, rightSum } = getSums(brand);
+    assert(
+      amountMath.isEqual(leftSum, rightSum),
+      X`rights were not conserved for brand ${brand}`,
+    );
+  });
 };
 
 /**
