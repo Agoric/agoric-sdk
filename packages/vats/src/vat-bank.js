@@ -196,7 +196,7 @@ export function buildRootObject(_vatPowers) {
         /** @type {Bank} */
         const bank = Far('bank', {
           getAssetSubscription() {
-            return harden(assetSubscription);
+            return assetSubscription;
           },
           async getPurse(brand) {
             if (brandToVPurse.has(brand)) {
@@ -280,7 +280,7 @@ export function buildRootObject(_vatPowers) {
            * @param {string} account
            * @param {Payment} payment
            */
-          const doDeposit = (account, payment) => {
+          const doDeposit = async (account, payment) => {
             // The purse we send it to will do the proper verification as part
             // of deposit.
             const bank = getBankForAddress(account);

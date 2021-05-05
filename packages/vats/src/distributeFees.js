@@ -76,7 +76,8 @@ export function buildDistributor(treasury, bank, epochTimer, timer, params) {
 
         // Redeposit the payments.
         disposeRejectedPayments(rejectedPayments);
-      });
+      })
+      .catch(e => console.error(`distributeFees cannot depositMultiple`, e));
     scheduleDeposits(disposeRejectedPayments);
   }
 

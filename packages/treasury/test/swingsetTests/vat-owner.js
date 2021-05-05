@@ -28,6 +28,8 @@ const build = async (
   const loanParams = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
 
   const priceAuthorityKit = await E(priceAuthorityVat).makePriceAuthority();
