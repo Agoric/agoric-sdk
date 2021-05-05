@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.17.0...@agoric/swingset-vat@0.17.1) (2021-05-05)
+
+
+### Bug Fixes
+
+* **swingset:** force vattp to run on worker=local for now ([a6aff0a](https://github.com/Agoric/agoric-sdk/commit/a6aff0ac52de6ecd12b9b1c5c82958f502b549b3)), closes [#3039](https://github.com/Agoric/agoric-sdk/issues/3039)
+
+
+
+
+
 # [0.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.16.4...@agoric/swingset-vat@0.17.0) (2021-05-05)
 
 
