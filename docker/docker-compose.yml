@@ -8,6 +8,7 @@ services:
       - "${HOST_PORT:-8000}:${PORT:-8000}"
     volumes:
       - "ag-solo-state:/usr/src/app/solo"
+      - "ag-solo-state:/data/solo"
       - "$HOME/.agoric:/root/.agoric"
     environment:
       - "AG_SOLO_BASEDIR=${SOLO_HOME:-agoric}"
