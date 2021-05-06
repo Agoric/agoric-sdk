@@ -3067,6 +3067,11 @@
   dependencies:
     "@sinonjs/fake-timers" "^7.1.0"
 
+"@types/tmp@^0.2.0":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@types/tmp/-/tmp-0.2.1.tgz#83ecf4ec22a8c218c71db25f316619fe5b986011"
+  integrity sha512-7cTXwKP/HLOPVgjg+YhBdQ7bMiobGMuoBmrGmqwIWJv8elC6t1DfVc/mn4fD9UE1IjhwmhaQ5pGVXkmXbH0rhg==
+
 "@types/trusted-types@^1.0.1":
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/@types/trusted-types/-/trusted-types-1.0.6.tgz#569b8a08121d3203398290d602d84d73c8dcf5da"
