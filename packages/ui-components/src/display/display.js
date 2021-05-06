@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details } from '@agoric/assert';
-import { MathKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import '@agoric/ertp/exported';
 
 import { parseAsNat } from './natValue/parseAsNat';
@@ -11,44 +11,44 @@ import { stringifySet } from './setValue/stringifySet';
 /**
  *
  * @param {string} str - string to parse as a value
- * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
  * @returns {Value}
  */
 export const parseAsValue = (
   str,
-  mathKind = MathKind.NAT,
+  assetKind = AssetKind.NAT,
   decimalPlaces = 0,
 ) => {
-  if (mathKind === MathKind.NAT) {
+  if (assetKind === AssetKind.NAT) {
     return parseAsNat(str, decimalPlaces);
   }
-  if (mathKind === MathKind.SET) {
+  if (assetKind === AssetKind.SET) {
     return parseAsSet(str);
   }
-  assert.fail(details`MathKind ${mathKind} must be NAT or SET`);
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
 };
 
 /**
  * @param {string} str - string to parse as a value
  * @param {Brand} brand - brand to use in the amount
- * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
  * @returns {Amount}
  */
 export const parseAsAmount = (
   str,
   brand,
-  mathKind = MathKind.NAT,
+  assetKind = AssetKind.NAT,
   decimalPlaces = 0,
 ) => {
-  return { brand, value: parseAsValue(str, mathKind, decimalPlaces) };
+  return { brand, value: parseAsValue(str, assetKind, decimalPlaces) };
 };
 
 /**
  *
  * @param {Value} value - value to stringify
- * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
  * @param {number} [placesToShow] - places after the decimal to show
@@ -56,19 +56,19 @@ export const parseAsAmount = (
  */
 export const stringifyValue = (
   value,
-  mathKind = MathKind.NAT,
+  assetKind = AssetKind.NAT,
   decimalPlaces = 0,
   placesToShow = 2,
 ) => {
-  if (mathKind === MathKind.NAT) {
+  if (assetKind === AssetKind.NAT) {
     // @ts-ignore Value is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
-  if (mathKind === MathKind.SET) {
+  if (assetKind === AssetKind.SET) {
     // @ts-ignore Value is a SetValue
     return stringifySet(value);
   }
-  assert.fail(details`MathKind ${mathKind} must be NAT or SET`);
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
 };
 
 /**
@@ -83,7 +83,7 @@ export const stringifyPurseValue = purse => {
   }
   return stringifyValue(
     purse.value,
-    purse.displayInfo.mathKind,
+    purse.displayInfo.assetKind,
     purse.displayInfo.decimalPlaces,
   );
 };
@@ -92,7 +92,7 @@ export const stringifyPurseValue = purse => {
  * Stringify the value in an amount
  *
  * @param {Amount} amount
- * @param {AmountMathKind} [mathKind] - mathKind of the value
+ * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
  * @param {number} [placesToShow] - places after the decimal to show
@@ -100,12 +100,12 @@ export const stringifyPurseValue = purse => {
  */
 export function stringifyAmountValue(
   amount,
-  mathKind,
+  assetKind,
   decimalPlaces,
   placesToShow,
 ) {
   if (!amount) {
     return '0';
   }
-  return stringifyValue(amount.value, mathKind, decimalPlaces, placesToShow);
+  return stringifyValue(amount.value, assetKind, decimalPlaces, placesToShow);
 }

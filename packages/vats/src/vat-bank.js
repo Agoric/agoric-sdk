@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { amountMath, MathKind } from '@agoric/ertp';
+import { amountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
@@ -330,11 +330,11 @@ export function buildRootObject(_vatPowers) {
           assert.typeof(proposedName, 'string');
 
           const brand = await kit.brand;
-          const mathKind = await E(kit.issuer).getAmountMathKind();
+          const assetKind = await E(kit.issuer).getAssetKind();
           assert.equal(
-            mathKind,
-            MathKind.NAT,
-            `Only fungible assets are allowed, not ${mathKind}`,
+            assetKind,
+            AssetKind.NAT,
+            `Only fungible assets are allowed, not ${assetKind}`,
           );
 
           const assetRecord = harden({ ...kit, denom, brand });

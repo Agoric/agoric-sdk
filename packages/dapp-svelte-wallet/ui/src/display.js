@@ -1,12 +1,12 @@
 // @ts-check
 import JSON5 from 'json5';
 import { assert, details as X } from '@agoric/assert';
-import { MathKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
 
 /**
- * @typedef {{ amountMathKind?: AmountMathKind } & DisplayInfo} AmountDisplayInfo
+ * @typedef {{ assetKind?: AssetKind } & DisplayInfo} AmountDisplayInfo
  */
 
 /**
@@ -15,12 +15,12 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
  * @param {AmountDisplayInfo} displayInfo
  */
 export function parseValue(str, displayInfo) {
-  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } =
+  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } =
     displayInfo || {};
 
   assert.typeof(str, 'string', X`valueString ${str} is not a string`);
 
-  if (amountMathKind !== MathKind.NAT) {
+  if (assetKind !== AssetKind.NAT) {
     // Punt to JSON5 parsing.
     return JSON5.parse(str);
   }
@@ -47,10 +47,10 @@ export function parseValue(str, displayInfo) {
  * @returns {string}
  */
 export function stringifyValue(value, displayInfo = undefined) {
-  const { amountMathKind = MathKind.NAT, decimalPlaces = 0 } =
+  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } =
     displayInfo || {};
 
-  if (amountMathKind !== MathKind.NAT) {
+  if (assetKind !== AssetKind.NAT) {
     // Just return the size of the set.
     return `${value.length}`;
   }

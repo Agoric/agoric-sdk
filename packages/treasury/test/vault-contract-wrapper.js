@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/src/types';
 
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -72,7 +72,7 @@ export async function start(zcf) {
     priceList: [80],
     tradeList: undefined,
     timer,
-    quoteMint: makeIssuerKit('quote', MathKind.SET).mint,
+    quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
   };
   const priceAuthority = makeFakePriceAuthority(options);
 

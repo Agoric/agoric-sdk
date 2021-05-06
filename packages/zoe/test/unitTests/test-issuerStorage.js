@@ -110,7 +110,7 @@ test(`storeIssuerRecord`, async t => {
   const { storeIssuerRecord, getAssetKindByBrand } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
 
-  const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
+  const issuerRecord = makeIssueaRecord(currencyKit.brand, currencyKit.issuer, {
     decimalPlaces: 18,
     assetKind: AssetKind.NAT,
   });
