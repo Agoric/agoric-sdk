@@ -160,9 +160,11 @@ async function buildSwingset(
     }
     await initializeSwingset(config, argv, hostStorage);
   }
+  const slogFile = process.env.CLIENTSLOGFILE;
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
+    { slogFile },
   );
 
   async function saveState() {
