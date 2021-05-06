@@ -16,13 +16,16 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   );
   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
   t.is(issuer.getAllegedName(), 'fungible');
-  t.deepEqual(brand.getDisplayInfo(), {});
+  t.deepEqual(brand.getDisplayInfo(), { assetKind: AssetKind.NAT });
 });
 
 test('brand.getDisplayInfo()', t => {
   const displayInfo = harden({ decimalPlaces: 3 });
   const { brand } = makeIssuerKit('fungible', AssetKind.NAT, displayInfo);
-  t.deepEqual(brand.getDisplayInfo(), displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), {
+    ...displayInfo,
+    assetKind: AssetKind.NAT,
+  });
   const display = amount => {
     const { brand: myBrand, value } = amount;
     const { decimalPlaces } = myBrand.getDisplayInfo();
@@ -54,7 +57,10 @@ test('bad display info', t => {
 test('empty display info', t => {
   const displayInfo = harden({});
   const { brand } = makeIssuerKit('fungible', AssetKind.NAT, displayInfo);
-  t.deepEqual(brand.getDisplayInfo(), displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), {
+    ...displayInfo,
+    assetKind: AssetKind.NAT,
+  });
 });
 
 test('issuer.getAssetKind', t => {

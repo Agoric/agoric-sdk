@@ -25,7 +25,13 @@ function makeIssuerKit(
   displayInfo = harden({}),
 ) {
   assert.typeof(allegedName, 'string');
-  displayInfo = coerceDisplayInfo(displayInfo);
+  assert(
+    Object.values(AssetKind).includes(assetKind),
+    X`The assetKind ${assetKind} must be either AssetKind.NAT or AssetKind.SET`,
+  );
+
+  // add assetKind to displayInfo, or override if present
+  const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
 
   /** @type {Brand} */
   const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {
@@ -38,7 +44,7 @@ function makeIssuerKit(
     getAllegedName: () => allegedName,
 
     // Give information to UI on how to display the amount.
-    getDisplayInfo: () => displayInfo,
+    getDisplayInfo: () => cleanDisplayInfo,
   });
 
   /** @type {(left: Amount, right: Amount) => Amount } */
@@ -194,6 +200,7 @@ function makeIssuerKit(
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAssetKind: () => assetKind,
+    getDisplayInfo: () => cleanDisplayInfo,
     makeEmptyPurse: makePurse,
 
     isLive: paymentP => {
@@ -283,6 +290,7 @@ function makeIssuerKit(
     mint,
     issuer,
     brand,
+    displayInfo: cleanDisplayInfo,
   });
 }
 

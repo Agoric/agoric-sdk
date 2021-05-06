@@ -169,16 +169,18 @@
 
 /**
  * @typedef {Object} DisplayInfo
- * @property {number=} decimalPlaces
- *   Tells the display software how many decimal places to move the
- *   decimal over to the left, or in other words, which position corresponds to whole
- *   numbers. We require fungible digital assets to be represented in
- *   integers, in the smallest unit (i.e. USD might be represented in mill,
- *   a thousandth of a dollar. In that case, `decimalPlaces` would be 3.)
- *   This property is optional, and for non-fungible digital assets,
- *   should not be specified.
- *   The decimalPlaces property should be used for *display purposes only*. Any
- *   other use is an anti-pattern.
+ * @property {number=} decimalPlaces Tells the display software how
+ *   many decimal places to move the decimal over to the left, or in
+ *   other words, which position corresponds to whole numbers. We
+ *   require fungible digital assets to be represented in integers, in
+ *   the smallest unit (i.e. USD might be represented in mill, a
+ *   thousandth of a dollar. In that case, `decimalPlaces` would be
+ *   3.) This property is optional, and for non-fungible digital
+ *   assets, should not be specified. The decimalPlaces property
+ *   should be used for *display purposes only*. Any other use is an
+ *   anti-pattern.
+ * @property {AssetKind} assetKind - the kind of asset, either
+ *   AssetKind.NAT (fungible) or AssetKind.SET (non-fungible)
  */
 
 /**
@@ -219,77 +221,102 @@
  */
 
 /**
- * @typedef {Object} Issuer
- * The issuer cannot mint a new amount, but it can create empty purses and
- * payments. The issuer can also transform payments (splitting payments,
- * combining payments, burning payments, and claiming payments
- * exclusively). The issuer should be gotten from a trusted source and
- * then relied upon as the decider of whether an untrusted payment is valid.
+ * @typedef {Object} Issuer The issuer cannot mint a new amount, but
+ * it can create empty purses and payments. The issuer can also
+ * transform payments (splitting payments, combining payments, burning
+ * payments, and claiming payments exclusively). The issuer should be
+ * gotten from a trusted source and then relied upon as the decider of
+ * whether an untrusted payment is valid.
  *
- * @property {() => Brand} getBrand Get the Brand for this Issuer. The Brand
- * indicates the kind of
- * digital asset and is shared by the mint, the issuer, and any purses
- * and payments of this particular kind. The brand is not closely
- * held, so this function should not be trusted to identify an issuer
- * alone. Fake digital assets and amount can use another issuer's brand.
+ * @property {() => Brand} getBrand Get the Brand for this Issuer. The
+ * Brand indicates the kind of digital asset and is shared by the
+ * mint, the issuer, and any purses and payments of this particular
+ * kind. The brand is not closely held, so this function should not be
+ * trusted to identify an issuer alone. Fake digital assets and amount
+ * can use another issuer's brand.
  *
- * @property {() => string} getAllegedName Get the allegedName for this mint/issuer
+ * @property {() => string} getAllegedName Get the allegedName for
+ * this mint/issuer
  * @property {() => AssetKind} getAssetKind Get the kind of
  * MathHelpers used by this Issuer.
- * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
- * @property {(payment: PaymentP) => Promise<boolean>} isLive
- * Return true if the payment continues to exist.
+ * @property {() => DisplayInfo} getDisplayInfo Give information to UI
+ *  on how to display amounts for this issuer.
+ * @property {() => Purse} makeEmptyPurse Make an empty purse of this
+ * brand.
+ * @property {(payment: PaymentP) => Promise<boolean>} isLive Return
+ * true if the payment continues to exist.
  *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
  *
- * @property {(payment: PaymentP) => Promise<Amount>} getAmountOf
- * Get the amount of digital assets in the payment. Because the
- * payment is not trusted, we cannot call a method on it directly,
- * and must use the issuer instead.
+ * @property {(payment: PaymentP) => Promise<Amount>} getAmountOf Get
+ * the amount of digital assets in the payment. Because the payment is
+ * not trusted, we cannot call a method on it directly, and must use
+ * the issuer instead.
  *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
  *
- * @property {IssuerBurn} burn
- * Burn all of the digital assets in the payment. `optAmount` is optional.
- * If `optAmount` is present, the code will insist that the amount of
- * the digital assets in the payment is equal to `optAmount`, to
- * prevent sending the wrong payment and other confusion.
+ * @property {IssuerBurn} burn Burn all of the digital assets in the
+ * payment. `optAmount` is optional. If `optAmount` is present, the
+ * code will insist that the amount of the digital assets in the
+ * payment is equal to `optAmount`, to prevent sending the wrong
+ * payment and other confusion.
  *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
  *
- * @property {IssuerClaim} claim
- * Transfer all digital assets from the payment to a new payment and
- * delete the original. `optAmount` is optional.
- * If `optAmount` is present, the code will insist that the amount of
- * digital assets in the payment is equal to `optAmount`, to prevent
- * sending the wrong  payment and other confusion.
+ * @property {IssuerClaim} claim Transfer all digital assets from the
+ * payment to a new payment and delete the original. `optAmount` is
+ * optional. If `optAmount` is present, the code will insist that the
+ * amount of digital assets in the payment is equal to `optAmount`, to
+ * prevent sending the wrong  payment and other confusion.
  *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
  *
  * @property {(paymentsArray: PaymentP[]) => Promise<Payment>} combine
  * Combine multiple payments into one payment.
  *
- * If any of the payments is a promise, the operation will proceed upon
+ * If any of the payments is a promise, the operation will proceed
+ * upon resolution.
+ *
+ * @property {(payment: PaymentP, paymentAmountA: Amount) =>
+ * Promise<Payment[]>} split Split a single payment into two payments,
+ * A and B, according to the paymentAmountA passed in.
+ *
+ * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
- * @property {(payment: PaymentP, paymentAmountA: Amount) => Promise<Payment[]>} split
- * Split a single payment into two payments, A and B, according to the
- * paymentAmountA passed in.
+ * @property {(payment: PaymentP, amounts: Amount[]) =>
+ * Promise<Payment[]>} splitMany Split a single payment into many
+ * payments, according to the amounts passed in.
  *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ */
+
+/**
+ * @typedef {Object} AdditionalDisplayInfo
  *
- * @property {(payment: PaymentP, amounts: Amount[]) => Promise<Payment[]>} splitMany
- * Split a single payment into many payments, according to the
- * amounts passed in.
- *
- * If the payment is a promise, the operation will proceed upon resolution.
+ * Does not include `assetKind`, which is automatically added in MakeIssuerKit
+ * @property {number=} decimalPlaces Tells the display software how
+ *   many decimal places to move the decimal over to the left, or in
+ *   other words, which position corresponds to whole numbers. We
+ *   require fungible digital assets to be represented in integers, in
+ *   the smallest unit (i.e. USD might be represented in mill, a
+ *   thousandth of a dollar. In that case, `decimalPlaces` would be
+ *   3.) This property is optional, and for non-fungible digital
+ *   assets, should not be specified. The decimalPlaces property
+ *   should be used for *display purposes only*. Any other use is an
+ *   anti-pattern.
  */
 
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
  * @param {AssetKind} [assetKind=AssetKind.NAT]
- * @param {DisplayInfo} [displayInfo={}]
+ * @param {AdditionalDisplayInfo} [displayInfo={}]
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The
@@ -309,6 +336,7 @@
  * @property {Mint} mint
  * @property {Issuer} issuer
  * @property {Brand} brand
+ * @property {DisplayInfo} displayInfo
  */
 
 /**
