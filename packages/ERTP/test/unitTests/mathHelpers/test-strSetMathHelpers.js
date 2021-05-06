@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { amountMath as m, MathKind } from '../../../src';
+import { amountMath as m, AssetKind } from '../../../src';
 import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through
@@ -56,7 +56,7 @@ test('set with strings getValue', t => {
 
 test('set with strings makeEmpty', t => {
   t.deepEqual(
-    m.makeEmpty(mockBrand, MathKind.SET),
+    m.makeEmpty(mockBrand, AssetKind.SET),
     { brand: mockBrand, value: [] },
     `empty is []`,
   );

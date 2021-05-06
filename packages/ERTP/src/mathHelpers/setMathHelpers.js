@@ -36,7 +36,7 @@ const hashBadly = thing => {
     return getKeyForRecord(thing);
   }
   assert.fail(
-    X`typeof ${typeof thing} is not allowed in an amount of MathKind.SET`,
+    X`typeof ${typeof thing} is not allowed in an amount of AssetKind.SET`,
   );
 };
 

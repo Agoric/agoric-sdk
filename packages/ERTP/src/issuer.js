@@ -9,7 +9,7 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
-import { amountMath, MathKind } from './amountMath';
+import { amountMath, AssetKind } from './amountMath';
 import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
 import { makePaymentMaker } from './payment';
@@ -21,7 +21,7 @@ import './types';
  */
 function makeIssuerKit(
   allegedName,
-  amountMathKind = MathKind.NAT,
+  assetKind = AssetKind.NAT,
   displayInfo = harden({}),
 ) {
   assert.typeof(allegedName, 'string');
@@ -51,7 +51,7 @@ function makeIssuerKit(
   const isEqual = (left, right) => amountMath.isEqual(left, right, brand);
 
   /** @type {Amount} */
-  const emptyAmount = amountMath.makeEmpty(brand, amountMathKind);
+  const emptyAmount = amountMath.makeEmpty(brand, assetKind);
 
   const makePayment = makePaymentMaker(allegedName, brand);
 
@@ -193,7 +193,7 @@ function makeIssuerKit(
   const issuer = Far(makeFarName(allegedName, ERTPKind.ISSUER), {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
-    getAmountMathKind: () => amountMathKind,
+    getAssetKind: () => assetKind,
     makeEmptyPurse: makePurse,
 
     isLive: paymentP => {

@@ -37,13 +37,13 @@
  */
 
 /**
- * @typedef {'nat' | 'set' } AmountMathKind
+ * @typedef {'nat' | 'set' } AssetKind
  */
 
 /**
  * @callback MakeEmpty
  * @param {Brand} brand
- * @param {AmountMathKind=} mathKind
+ * @param {AssetKind=} assetKind
  * @returns {Amount}
  */
 
@@ -135,7 +135,7 @@
  *
  * @property {(amount: Amount) => Amount} makeEmptyFromAmount
  * Return the amount representing an empty amount, using another
- * amount as the template for the brand and mathKind.
+ * amount as the template for the brand and assetKind.
  *
  * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
  * Return true if the Amount is empty. Otherwise false.
@@ -234,7 +234,7 @@
  * alone. Fake digital assets and amount can use another issuer's brand.
  *
  * @property {() => string} getAllegedName Get the allegedName for this mint/issuer
- * @property {() => AmountMathKind} getAmountMathKind Get the kind of
+ * @property {() => AssetKind} getAssetKind Get the kind of
  * MathHelpers used by this Issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this brand.
  * @property {(payment: PaymentP) => Promise<boolean>} isLive
@@ -288,7 +288,7 @@
 /**
  * @callback MakeIssuerKit
  * @param {string} allegedName
- * @param {AmountMathKind} [amountMathKind=MathKind.NAT]
+ * @param {AssetKind} [assetKind=AssetKind.NAT]
  * @param {DisplayInfo} [displayInfo={}]
  * @returns {IssuerKit}
  *
@@ -297,7 +297,7 @@
  * its value. The allegedName is useful for debugging and double-checking
  * assumptions, but should not be trusted.
  *
- * The amountMathKind will be used to import a specific mathHelpers
+ * The assetKind will be used to import a specific mathHelpers
  * from the mathHelpers library. For example, natMathHelpers, the
  * default, is used for basic fungible tokens.
  *

@@ -13,17 +13,17 @@ import {
   looksLikeBrand,
 } from './typeGuards';
 
-// We want an enum, but narrowed to the AmountMathKind type.
+// We want an enum, but narrowed to the AssetKind type.
 /**
- * Constants for the kinds of amountMath we support.
+ * Constants for the kinds of assets we support.
  *
  * @type {{ NAT: 'nat', SET: 'set' }}
  */
-const MathKind = {
+const AssetKind = {
   NAT: 'nat',
   SET: 'set',
 };
-harden(MathKind);
+harden(AssetKind);
 
 /**
  * Amounts describe digital assets. From an amount, you can learn the
@@ -82,8 +82,8 @@ const getHelpersFromValue = value => {
   assert.fail(X`value ${value} must be a bigint or an array`);
 };
 
-/** @type {(amount: Amount) => AmountMathKind} */
-const getMathKind = amount => {
+/** @type {(amount: Amount) => AssetKind} */
+const getAssetKind = amount => {
   if (looksLikeSetValue(amount.value)) {
     return 'set';
   }
@@ -199,16 +199,16 @@ const amountMath = {
   },
   // @ts-ignore TODO Why doesn't this type correctly?
   getValue: (brand, amount) => amountMath.coerce(brand, amount).value,
-  makeEmpty: (brand, mathKind = MathKind.NAT) => {
+  makeEmpty: (brand, assetKind = AssetKind.NAT) => {
     assert(
-      helpers[mathKind],
-      X`${mathKind} must be MathKind.NAT or MathKind.SET`,
+      helpers[assetKind],
+      X`${assetKind} must be AssetKind.NAT or AssetKind.SET`,
     );
     assertLooksLikeBrand(brand);
-    return noCoerceMake(helpers[mathKind].doMakeEmpty(), brand);
+    return noCoerceMake(helpers[assetKind].doMakeEmpty(), brand);
   },
   makeEmptyFromAmount: amount =>
-    amountMath.makeEmpty(amount.brand, getMathKind(amount)),
+    amountMath.makeEmpty(amount.brand, getAssetKind(amount)),
   isEmpty: (amount, brand = undefined) => {
     assertLooksLikeAmount(amount);
     optionalBrandCheck(amount, brand);
@@ -245,4 +245,4 @@ const amountMath = {
 };
 harden(amountMath);
 
-export { amountMath, MathKind, getMathKind };
+export { amountMath, AssetKind, getAssetKind };
