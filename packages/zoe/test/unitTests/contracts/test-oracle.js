@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import bundleSource from '@agoric/bundle-source';
 
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -38,7 +38,7 @@ test.before(
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
 
-    const link = makeIssuerKit('$LINK', MathKind.NAT);
+    const link = makeIssuerKit('$LINK', AssetKind.NAT);
 
     // Install the contract on Zoe, getting an installation. We can
     // use this installation to look up the code we installed. Outside

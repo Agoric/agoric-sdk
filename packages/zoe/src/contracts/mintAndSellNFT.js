@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
@@ -30,7 +30,7 @@ import { assert } from '@agoric/assert';
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
-  const { issuer, mint, brand } = makeIssuerKit(tokenName, MathKind.SET);
+  const { issuer, mint, brand } = makeIssuerKit(tokenName, AssetKind.SET);
 
   const zoeService = zcf.getZoeService();
 

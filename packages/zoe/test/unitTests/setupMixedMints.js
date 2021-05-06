@@ -1,11 +1,11 @@
 // @ts-check
 
-import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
 
 const setupMixed = () => {
-  const ccBundle = makeIssuerKit('CryptoCats', MathKind.SET);
+  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
   const moolaBundle = makeIssuerKit('moola');
   const allBundles = { cc: ccBundle, moola: moolaBundle };
   const mints = new Map();

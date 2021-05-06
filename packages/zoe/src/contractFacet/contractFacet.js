@@ -11,7 +11,7 @@ import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { MathKind, amountMath } from '@agoric/ertp';
+import { AssetKind, amountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -40,7 +40,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
   ) => {
     const {
       storeIssuerRecord,
-      getMathKindByBrand,
+      getAssetKindByBrand,
       getBrandForIssuer,
       getIssuerForBrand,
     } = makeIssuerStorage(issuerStorageFromZoe);
@@ -50,7 +50,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       reallocate,
       reallocateInternal,
       dropAllReferences,
-    } = createSeatManager(zoeInstanceAdmin, getMathKindByBrand);
+    } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand);
 
     /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
     const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
@@ -69,7 +69,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const makeEmptySeatKit = (exit = undefined) => {
       const initialAllocation = harden({});
-      const proposal = cleanProposal(harden({ exit }), getMathKindByBrand);
+      const proposal = cleanProposal(harden({ exit }), getAssetKindByBrand);
       const { notifier, updater } = makeNotifierKit();
       /** @type {PromiseRecord<ZoeSeatAdmin>} */
       const zoeSeatAdminPromiseKit = makePromiseKit();
@@ -106,25 +106,26 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     /** @type {MakeZCFMint} */
     const makeZCFMint = async (
       keyword,
-      amountMathKind = MathKind.NAT,
+      assetKind = AssetKind.NAT,
       displayInfo,
     ) => {
       assertUniqueKeyword(keyword);
 
       const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
         keyword,
-        amountMathKind,
+        assetKind,
         displayInfo,
       );
-      const { brand: mintyBrand, issuer: mintyIssuer } = await E(
-        zoeMintP,
-      ).getIssuerRecord();
+      const {
+        brand: mintyBrand,
+        issuer: mintyIssuer,
+        displayInfo: mintyDisplayInfo,
+      } = await E(zoeMintP).getIssuerRecord();
       // AWAIT
       const mintyIssuerRecord = makeIssuerRecord(
         mintyBrand,
         mintyIssuer,
-        amountMathKind,
-        displayInfo,
+        mintyDisplayInfo,
       );
       recordIssuer(keyword, mintyIssuerRecord);
 
@@ -143,7 +144,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
-          let totalToMint = amountMath.makeEmpty(mintyBrand, amountMathKind);
+          let totalToMint = amountMath.makeEmpty(mintyBrand, assetKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
             assert(
@@ -179,7 +180,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             X`losses ${losses} must be an amountKeywordRecord`,
           );
           assert(losses !== null, X`losses cannot be null`);
-          let totalToBurn = amountMath.makeEmpty(mintyBrand, amountMathKind);
+          let totalToBurn = amountMath.makeEmpty(mintyBrand, assetKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
             losses,
@@ -273,7 +274,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getTerms,
       getBrandForIssuer,
       getIssuerForBrand,
-      getMathKind: getMathKindByBrand,
+      getAssetKind: getAssetKindByBrand,
       /**
        * Provide a jig object for testing purposes only.
        *

@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { amountMath, makeIssuerKit, MathKind } from '@agoric/ertp';
+import { amountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
 import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage';
@@ -18,11 +18,11 @@ test('makeEscrowStorage', async t => {
 
   const currencyKit = makeIssuerKit(
     'currency',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', MathKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
   createPurse(currencyKit.issuer, currencyKit.brand);
 
@@ -107,22 +107,22 @@ test('makeEscrowStorage', async t => {
 const setupPurses = createPurse => {
   const currencyKit = makeIssuerKit(
     'currency',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
   /** @type {IssuerRecord} */
   const currencyIssuerRecord = {
     issuer: currencyKit.issuer,
-    mathKind: MathKind.NAT,
+    assetKind: AssetKind.NAT,
     brand: currencyKit.brand,
   };
 
-  const ticketKit = makeIssuerKit('tickets', MathKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
   const ticketIssuerRecord = {
     issuer: ticketKit.issuer,
-    mathKind: MathKind.SET,
+    assetKind: AssetKind.SET,
     brand: ticketKit.brand,
   };
   createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);

@@ -41,7 +41,7 @@
  * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
- * @property {GetMathKindByBrand} getMathKind
+ * @property {GetAssetKindByBrand} getAssetKind
  * @property {MakeZCFMint} makeZCFMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
@@ -102,7 +102,7 @@
 /**
  * @callback MakeZCFMint
  * @param {Keyword} keyword
- * @param {AmountMathKind=} amountMathKind
+ * @param {AssetKind=} assetKind
  * @param {DisplayInfo=} displayInfo
  * @returns {Promise<ZCFMint>}
  */

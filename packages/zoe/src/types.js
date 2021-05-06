@@ -34,7 +34,7 @@
  * @typedef {Object} IssuerRecord
  * @property {Brand} brand
  * @property {Issuer} issuer
- * @property {AmountMathKind} mathKind
+ * @property {AssetKind} assetKind
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation

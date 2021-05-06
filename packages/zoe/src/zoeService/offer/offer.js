@@ -12,14 +12,14 @@ import '../internal-types';
  * @param {Issuer} invitationIssuer
  * @param {WeakStore<Instance,InstanceAdmin>} instanceToInstanceAdmin
  * @param {DepositPayments} depositPayments
- * @param {GetMathKindByBrand} getMathKindByBrand
+ * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {Offer}
  */
 export const makeOffer = (
   invitationIssuer,
   instanceToInstanceAdmin,
   depositPayments,
-  getMathKindByBrand,
+  getAssetKindByBrand,
 ) => {
   /** @type {Offer} */
   const offer = async (
@@ -35,7 +35,7 @@ export const makeOffer = (
     const instanceAdmin = instanceToInstanceAdmin.get(instanceHandle);
     instanceAdmin.assertAcceptingOffers();
 
-    const proposal = cleanProposal(uncleanProposal, getMathKindByBrand);
+    const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
     const initialAllocation = await depositPayments(
       proposal,
       paymentKeywordRecord,

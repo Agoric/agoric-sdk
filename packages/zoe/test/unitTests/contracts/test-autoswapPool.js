@@ -6,7 +6,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { MathKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import { setupZCFTest } from '../zcf/setupZcfTest';
 
 import { setup } from '../setupBasicMints';
@@ -41,7 +41,7 @@ async function setupPool(poolBalances) {
   };
   const isSecondary = b => poolInitialized && b === secondaryBrand;
   const timer = buildManualTimer(console.log);
-  const quoteMint = await zcf.makeZCFMint('AutoswapQuotes', MathKind.SET);
+  const quoteMint = await zcf.makeZCFMint('AutoswapQuotes', AssetKind.SET);
   const addPool = makeAddPool(
     zcf,
     isSecondary,

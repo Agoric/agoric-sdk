@@ -58,7 +58,7 @@
  */
 
 /**
- * @callback {(brand: Brand) => AmountMathKind} GetMathKind
+ * @callback {(brand: Brand) => AssetKind} GetAssetKind
  */
 
 /**
@@ -125,7 +125,7 @@
 /**
  * @callback MakeZoeMint
  * @param {Keyword} keyword
- * @param {AmountMathKind=} amountMathKind
+ * @param {AssetKind=} assetKind
  * @param {DisplayInfo=} displayInfo
  * @returns {ZoeMint}
  */
@@ -222,13 +222,13 @@
  */
 
 /**
- * @callback GetMathKindByBrand
- * Get the mathKind for a brand known by Zoe
+ * @callback GetAssetKindByBrand
+ * Get the assetKind for a brand known by Zoe
  *
- * To be deleted when brands have a property for mathKind
+ * To be deleted when brands have a property for assetKind
  *
  * @param {Brand} brand
- * @returns {AmountMathKind}
+ * @returns {AssetKind}
  */
 
 /**
@@ -263,7 +263,7 @@
  * reallocate and make new zcfSeats.
  *
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin 
- * @param {GetMathKindByBrand} getMathKindByBrand 
+ * @param {GetAssetKindByBrand} getAssetKindByBrand 
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,

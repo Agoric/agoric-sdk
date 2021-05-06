@@ -6,7 +6,7 @@ import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { MathKind, amountMath } from '@agoric/ertp';
+import { AssetKind, amountMath } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
 
@@ -313,7 +313,7 @@ export const assertProposalShape = (seat, expected) => {
 /* Given a brand, assert that the issuer uses NAT amountMath. */
 export const assertUsesNatMath = (zcf, brand) => {
   assert(
-    zcf.getMathKind(brand) === MathKind.NAT,
+    zcf.getAssetKind(brand) === AssetKind.NAT,
     X`issuer must use NAT amountMath`,
   );
 };

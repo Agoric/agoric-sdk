@@ -1,12 +1,12 @@
 // @ts-check
 
-import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
 
 const setupNonFungible = () => {
-  const ccBundle = makeIssuerKit('CryptoCats', MathKind.SET);
-  const rpgBundle = makeIssuerKit('MMORPG Items', MathKind.SET);
+  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
+  const rpgBundle = makeIssuerKit('MMORPG Items', AssetKind.SET);
   const allBundles = { cc: ccBundle, rpg: rpgBundle };
   const mints = new Map();
   const issuers = new Map();

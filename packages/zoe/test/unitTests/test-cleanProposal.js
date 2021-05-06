@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { MathKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import { cleanProposal } from '../../src/cleanProposal';
 import { setup } from './setupBasicMints';
 import buildManualTimer from '../../tools/manualTimer';
@@ -21,9 +21,9 @@ test('cleanProposal test', t => {
     exit: { onDemand: null },
   });
 
-  const getMathKind = _brand => MathKind.NAT;
+  const getAssetKind = _brand => AssetKind.NAT;
 
-  const actual = cleanProposal(proposal, getMathKind);
+  const actual = cleanProposal(proposal, getAssetKind);
 
   t.deepEqual(actual, expected);
 });
@@ -41,10 +41,10 @@ test('cleanProposal - all empty', t => {
     exit: { waived: null },
   });
 
-  const getMathKind = _brand => MathKind.NAT;
+  const getAssetKind = _brand => AssetKind.NAT;
 
   // cleanProposal no longer fills in empty keywords
-  t.deepEqual(cleanProposal(proposal, getMathKind), expected);
+  t.deepEqual(cleanProposal(proposal, getAssetKind), expected);
 });
 
 test('cleanProposal - repeated brands', t => {
@@ -66,16 +66,16 @@ test('cleanProposal - repeated brands', t => {
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
-  const getMathKind = _brand => MathKind.NAT;
+  const getAssetKind = _brand => AssetKind.NAT;
 
   // cleanProposal no longer fills in empty keywords
-  const actual = cleanProposal(proposal, getMathKind);
+  const actual = cleanProposal(proposal, getAssetKind);
   t.deepEqual(actual.want, expected.want);
   t.deepEqual(actual.give, expected.give);
   t.deepEqual(actual.exit, expected.exit);
 });
 
-test('cleanProposal - wrong mathKind', t => {
+test('cleanProposal - wrong assetKind', t => {
   const { moola, simoleans } = setup();
   const timer = buildManualTimer(console.log);
 
@@ -85,9 +85,9 @@ test('cleanProposal - wrong mathKind', t => {
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
-  const getMathKind = _brand => MathKind.SET;
+  const getAssetKind = _brand => AssetKind.SET;
 
-  t.throws(() => cleanProposal(proposal, getMathKind), {
-    message: /The amount .* did not have the mathKind of the brand .*/,
+  t.throws(() => cleanProposal(proposal, getAssetKind), {
+    message: /The amount .* did not have the assetKind of the brand .*/,
   });
 });

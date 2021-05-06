@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { MathKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints';
 import {
   swap,
@@ -102,7 +102,7 @@ test(`zcf assertUsesNatMath`, async t => {
 
 test(`zcf assertUsesNatMath - not natMath`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { brand } = zcfMint.getIssuerRecord();
   t.throws(() => assertUsesNatMath(zcf, brand), {
     message: 'issuer must use NAT amountMath',
@@ -111,7 +111,7 @@ test(`zcf assertUsesNatMath - not natMath`, async t => {
 
 test.failing(`zcf assertUsesNatMath - not brand`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { issuer } = zcfMint.getIssuerRecord();
   // TODO: distinguish non-brands from brands
   // https://github.com/Agoric/agoric-sdk/issues/1800
@@ -147,7 +147,7 @@ test(`zcf saveAllIssuers - multiple`, async t => {
   const { issuer: dIssuer, brand: dBrand } = makeIssuerKit('doubloons');
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    MathKind.SET,
+    AssetKind.SET,
   );
 
   await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
@@ -179,7 +179,7 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
 
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    MathKind.SET,
+    AssetKind.SET,
   );
 
   await t.notThrowsAsync(

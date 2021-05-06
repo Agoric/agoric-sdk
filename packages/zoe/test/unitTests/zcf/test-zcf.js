@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { MathKind, amountMath } from '@agoric/ertp';
+import { AssetKind, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
 import { makeOffer } from '../makeOffer';
@@ -364,38 +364,41 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: '"whatever" must be MathKind.NAT or MathKind.SET',
+    message:
+      'The assetKind "whatever" must be either AssetKind.NAT or AssetKind.SET',
   });
 });
 
 test(`zcf.makeZCFMint - NAT`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.NAT);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.NAT);
   const issuerRecord = zcfMint.getIssuerRecord();
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
   };
   await testTerms(t, zcf, expected);
-  t.is(issuerRecord.mathKind, MathKind.NAT);
-  t.deepEqual(issuerRecord.brand.getDisplayInfo(), {});
+  t.is(issuerRecord.assetKind, AssetKind.NAT);
+  t.deepEqual(issuerRecord.brand.getDisplayInfo(), {
+    assetKind: AssetKind.NAT,
+  });
 });
 
 test(`zcf.makeZCFMint - SET`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const issuerRecord = zcfMint.getIssuerRecord();
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
   };
   await testTerms(t, zcf, expected);
-  t.is(issuerRecord.mathKind, MathKind.SET);
+  t.is(issuerRecord.assetKind, AssetKind.SET);
 });
 
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message: /gains "\[undefined\]" must be an amountKeywordRecord/,
@@ -404,7 +407,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
 
 test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.NAT);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.NAT);
   const { brand } = zcfMint.getIssuerRecord();
   const zcfSeat = zcfMint.mintGains({ A: amountMath.make(4n, brand) });
   t.truthy(zcfSeat);
@@ -417,7 +420,7 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
 
 test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // TODO: create seat if one is not provided
   // https://github.com/Agoric/agoric-sdk/issues/1696
@@ -429,7 +432,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
 
 test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message: /losses "\[undefined\]" must be an amountKeywordRecord/,
@@ -438,7 +441,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
 
 test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
@@ -450,7 +453,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
   const { moola, moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
 
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
     message: /Only digital assets of brand .* can be minted in this call. .* has the wrong brand./,
@@ -461,7 +464,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
   const { moola, moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
 
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
     message: /Only digital assets of brand .* can be burned in this call. .* has the wrong brand./,
@@ -555,7 +558,7 @@ test(`zcf.makeZCFMint - displayInfo`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint(
     'A',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({
       decimalPlaces: 3,
     }),
