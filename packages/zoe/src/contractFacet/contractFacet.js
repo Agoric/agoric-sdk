@@ -1,7 +1,5 @@
 // @ts-check
 
-/* global makeWeakStore */
-
 // This is the Zoe contract facet. Each time we make a new instance of a
 // contract we will start by creating a new vat and running this code in it. In
 // order to install this code in a vat, Zoe needs to import a bundle containing
@@ -11,25 +9,24 @@
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { makeStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
-
+import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { MathKind, amountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assertRightsConserved } from './rightsConservation';
+
 import { cleanProposal } from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
-import { makeZcfSeatAdminKit } from './seat';
 import { makeExitObj } from './exit';
 import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
 import { makeIssuerStorage } from '../issuerStorage';
 import { makeIssuerRecord } from '../issuerRecord';
+import { createSeatManager } from './zcfSeat';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage';
 
 import '../../exported';
 import '../internal-types';
-import { makeInstanceRecordStorage } from '../instanceRecordStorage';
 
 export function buildRootObject(powers, _params, testJigSetter = undefined) {
   /** @type {ExecuteContract} */
@@ -48,13 +45,15 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getIssuerForBrand,
     } = makeIssuerStorage(issuerStorageFromZoe);
 
-    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
-    const invitationHandleToHandler = makeWeakStore('invitationHandle');
+    const {
+      makeZCFSeat,
+      reallocate,
+      reallocateInternal,
+      dropAllReferences,
+    } = createSeatManager(zoeInstanceAdmin, getMathKindByBrand);
 
-    /** @type {Store<ZCFSeat,ZCFSeatAdmin>} */
-    const zcfSeatToZCFSeatAdmin = makeStore('zcfSeat');
-    /** @type {WeakStore<ZCFSeat,SeatHandle>} */
-    const zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
+    const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
 
     // Make the instanceRecord
     const {
@@ -63,54 +62,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       assertUniqueKeyword,
     } = makeInstanceRecordStorage(instanceRecordFromZoe);
 
-    const allSeatStagings = new WeakSet();
-
-    /**
-     * Unlike the zcf.reallocate method, this one does not check conservation,
-     * and so can be used internally for reallocations that violate
-     * conservation.
-     *
-     * @param {SeatStaging[]} seatStagings
-     */
-    const reallocateInternal = seatStagings => {
-      // Keep track of seats used so far in this call, to prevent aliasing.
-      const seatsSoFar = new WeakSet();
-
-      seatStagings.forEach(seatStaging => {
-        assert(
-          allSeatStagings.has(seatStaging),
-          X`The seatStaging ${seatStaging} was not recognized`,
-        );
-        const seat = seatStaging.getSeat();
-        assert(
-          !seatsSoFar.has(seat),
-          X`Seat (${seat}) was already an argument to reallocate`,
-        );
-        seatsSoFar.add(seat);
-      });
-
-      // No side effects above. All conditions checked which could have
-      // caused us to reject this reallocation.
-      // COMMIT POINT
-      // All the effects below must succeed "atomically". Scare quotes because
-      // the eventual send at the bottom is part of this "atomicity" even
-      // though its effects happen later. The send occurs in the order of
-      // updates from zcf to zoe, its effects must occur immediately in zoe
-      // on reception, and must not fail.
-      //
-      // Commit the staged allocations (currentAllocation is replaced
-      // for each of the seats) and inform Zoe of the
-      // newAllocation.
-
-      seatStagings.forEach(seatStaging =>
-        zcfSeatToZCFSeatAdmin.get(seatStaging.getSeat()).commit(seatStaging),
-      );
-      const seatHandleAllocations = seatStagings.map(seatStaging => {
-        const zcfSeat = seatStaging.getSeat();
-        const seatHandle = zcfSeatToSeatHandle.get(zcfSeat);
-        return { seatHandle, allocation: zcfSeat.getCurrentAllocation() };
-      });
-      E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+    const recordIssuer = (keyword, issuerRecord) => {
+      addIssuerToInstanceRecord(keyword, issuerRecord);
+      storeIssuerRecord(issuerRecord);
     };
 
     const makeEmptySeatKit = (exit = undefined) => {
@@ -132,21 +86,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         proposal,
         initialAllocation,
         notifier,
+        seatHandle,
       });
-      const { zcfSeat, zcfSeatAdmin } = makeZcfSeatAdminKit(
-        allSeatStagings,
-        zoeSeatAdminPromiseKit.promise,
-        seatData,
-        getMathKindByBrand,
-      );
-      zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
-      zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
+      const zcfSeat = makeZCFSeat(zoeSeatAdminPromiseKit.promise, seatData);
 
-      const exitObj = makeExitObj(
-        seatData.proposal,
-        zoeSeatAdminPromiseKit.promise,
-        zcfSeatAdmin,
-      );
+      const exitObj = makeExitObj(seatData.proposal, zcfSeat);
 
       E(zoeInstanceAdmin)
         .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
@@ -182,8 +126,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         amountMathKind,
         displayInfo,
       );
-      addIssuerToInstanceRecord(keyword, mintyIssuerRecord);
-      storeIssuerRecord(mintyIssuerRecord);
+      recordIssuer(keyword, mintyIssuerRecord);
 
       /** @type {ZCFMint} */
       const zcfMint = Far('zcfMint', {
@@ -273,43 +216,13 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
     const shutdownWithFailure = reason => {
       E(zoeInstanceAdmin).failAllSeats(reason);
-      zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
-        if (!zcfSeat.hasExited()) {
-          zcfSeatAdmin.updateHasExited();
-        }
-      });
+      dropAllReferences();
       powers.exitVatWithFailure(reason);
     };
 
     /** @type {ContractFacet} */
     const zcf = Far('zcf', {
-      reallocate: (/** @type {SeatStaging[]} */ ...seatStagings) => {
-        // We may want to handle this with static checking instead.
-        // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
-        assert(
-          seatStagings.length >= 2,
-          X`reallocating must be done over two or more seats`,
-        );
-
-        // Ensure that rights are conserved overall. Offer safety was
-        // already checked when an allocation was staged for an individual seat.
-        const flattenAllocations = allocations =>
-          allocations.flatMap(Object.values);
-
-        const previousAllocations = seatStagings.map(seatStaging =>
-          seatStaging.getSeat().getCurrentAllocation(),
-        );
-        const previousAmounts = flattenAllocations(previousAllocations);
-
-        const newAllocations = seatStagings.map(seatStaging =>
-          seatStaging.getStagedAllocation(),
-        );
-        const newAmounts = flattenAllocations(newAllocations);
-
-        assertRightsConserved(previousAmounts, newAmounts);
-
-        reallocateInternal(seatStagings);
-      },
+      reallocate,
       assertUniqueKeyword,
       saveIssuer: async (issuerP, keyword) => {
         // TODO: The checks of the keyword for uniqueness are
@@ -318,8 +231,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
         assertUniqueKeyword(keyword);
         const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
         // AWAIT ///
-        storeIssuerRecord(record);
-        addIssuerToInstanceRecord(keyword, record);
+        recordIssuer(keyword, record);
         return record;
       },
       makeInvitation: (
@@ -346,11 +258,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       // Shutdown the entire vat and give payouts
       shutdown: completion => {
         E(zoeInstanceAdmin).exitAllSeats(completion);
-        zcfSeatToZCFSeatAdmin.entries().forEach(([zcfSeat, zcfSeatAdmin]) => {
-          if (!zcfSeat.hasExited()) {
-            zcfSeatAdmin.updateHasExited();
-          }
-        });
+        dropAllReferences();
         powers.exitVat(completion);
       },
       shutdownWithFailure,
@@ -394,24 +302,19 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     // added in offer(). ZCF responds with the exitObj and offerResult.
     /** @type {AddSeatObj} */
     const addSeatObj = Far('addSeatObj', {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatData, seatHandle) => {
-        const { zcfSeatAdmin, zcfSeat } = makeZcfSeatAdminKit(
-          allSeatStagings,
-          zoeSeatAdmin,
-          seatData,
-          getMathKindByBrand,
-        );
-        zcfSeatToZCFSeatAdmin.init(zcfSeat, zcfSeatAdmin);
-        zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
+      addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
+        const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
+          if (reason === undefined) {
+            const newErr = new Error(
+              `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
+            );
+            throw zcfSeat.fail(newErr);
+          }
           throw zcfSeat.fail(reason);
         });
-        const exitObj = makeExitObj(
-          seatData.proposal,
-          zoeSeatAdmin,
-          zcfSeatAdmin,
-        );
+        const exitObj = makeExitObj(seatData.proposal, zcfSeat);
         /** @type {AddSeatResult} */
         return harden({ offerResultP, exitObj });
       },

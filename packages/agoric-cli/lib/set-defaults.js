@@ -17,6 +17,18 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     X`<prog> must currently be 'ag-chain-cosmos'`,
   );
 
+  const { bootstrapAddress, bootstrapValue, donationValue } = opts;
+
+  console.log(bootstrapAddress, bootstrapValue, donationValue);
+  assert(
+    bootstrapAddress || !bootstrapValue,
+    X`must set bootstrap-address if bootstrap-value is set`,
+  );
+  assert(
+    bootstrapAddress || !donationValue,
+    X`must set bootstrap-address if donation-value is set`,
+  );
+
   const { exportMetrics } = opts;
 
   let appFile;
@@ -82,6 +94,9 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
       exportedGenesisJson,
+      bootstrapAddress,
+      bootstrapValue,
+      donationValue,
     });
 
     await create(genesisFile, newGenesisJson);

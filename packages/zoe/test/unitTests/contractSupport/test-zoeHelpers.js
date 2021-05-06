@@ -6,7 +6,7 @@ import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { makeNotifier } from '@agoric/notifier';
 import { setup } from '../setupBasicMints';
-import { makeZcfSeatAdminKit } from '../../../src/contractFacet/seat';
+import { createSeatManager } from '../../../src/contractFacet/zcfSeat';
 
 import {
   defaultAcceptanceMsg,
@@ -111,16 +111,26 @@ test('ZoeHelpers satisfies() with give', t => {
   );
 });
 
-const makeMockZcfSeatAdmin = (proposal, initialAllocation, getMathKind) => {
-  const allSeatStagings = new WeakSet();
+const makeMockZcfSeatAdmin = (
+  proposal,
+  initialAllocation,
+  getMathKindByBrand,
+) => {
   const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
   const notifier = makeNotifier();
-  const { zcfSeat: actual } = makeZcfSeatAdminKit(
-    allSeatStagings,
-    mockZoeSeatAdmin,
-    { proposal, initialAllocation, notifier },
-    getMathKind,
+  const seatHandle = {};
+  const zoeInstanceAdmin = Far('mockZoeInstanceAdmin', {});
+
+  const { makeZCFSeat } = createSeatManager(
+    zoeInstanceAdmin,
+    getMathKindByBrand,
   );
+  const actual = makeZCFSeat(mockZoeSeatAdmin, {
+    proposal,
+    initialAllocation,
+    notifier,
+    seatHandle,
+  });
   let hasExited = false;
   const mockSeat = Far('mockSeat', {
     isOfferSafe: actual.isOfferSafe,

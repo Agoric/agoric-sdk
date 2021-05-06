@@ -24,11 +24,9 @@ import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
 import { makeInstallationStorage } from './installationStorage';
-import { makeEscrowStorage } from './escrowStorage';
-import { makeIssuerStorage } from '../issuerStorage';
-import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
-import { makeIssuerRecord } from '../issuerRecord';
+import { makeZoeStorageManager } from './zoeStorageManager';
 import { makeOffer } from './offer/offer';
+import { makeInvitationQueryFns } from './invitationQueries';
 
 /**
  * Create an instance of Zoe.
@@ -48,36 +46,25 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
   const {
-    createPurse,
-    makeLocalPurse,
-    withdrawPayments,
-    depositPayments,
-  } = makeEscrowStorage();
+    getInstance,
+    getInstallation,
+    getInvitationDetails,
+  } = makeInvitationQueryFns(invitationKit.issuer);
 
   const {
-    storeIssuerKeywordRecord,
-    storeIssuer,
-    storeIssuerRecord,
+    depositPayments,
     getMathKindByBrand,
-    exportIssuerStorage,
-  } = makeIssuerStorage();
+    makeZoeInstanceStorageManager,
+  } = makeZoeStorageManager();
 
   const { install, unwrapInstallation } = makeInstallationStorage();
+
   const offer = makeOffer(
     invitationKit.issuer,
     instanceToInstanceAdmin,
     depositPayments,
     getMathKindByBrand,
   );
-
-  /** @type {GetAmountOfInvitationThen} */
-  const getAmountOfInvitationThen = async (invitationP, onFulfilled) => {
-    const onRejected = () =>
-      assert.fail(X`A Zoe invitation is required, not ${invitationP}`);
-    return E(invitationKit.issuer)
-      .getAmountOf(invitationP)
-      .then(onFulfilled, onRejected);
-  };
 
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
@@ -88,18 +75,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
     getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
     getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
-    getInstance: invitation => {
-      const onFulfilled = amount => amount.value[0].instance;
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
-    getInstallation: invitation => {
-      const onFulfilled = amount => amount.value[0].installation;
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
-    getInvitationDetails: invitation => {
-      const onFulfilled = amount => amount.value[0];
-      return getAmountOfInvitationThen(invitation, onFulfilled);
-    },
+    getInstance,
+    getInstallation,
+    getInvitationDetails,
     startInstance: async (
       installationP,
       uncleanIssuerKeywordRecord = harden({}),
@@ -110,27 +88,21 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       const instance = makeHandle('Instance');
 
-      const { issuers, brands } = await storeIssuerKeywordRecord(
-        uncleanIssuerKeywordRecord,
-      );
-      // AWAIT ///
-
-      Object.entries(issuers).forEach(([keyword, issuer]) =>
-        createPurse(issuer, brands[keyword]),
-      );
-
       const {
-        addIssuerToInstanceRecord,
-        getInstanceRecord,
         getTerms,
         getIssuers,
         getBrands,
-      } = makeAndStoreInstanceRecord(
+        saveIssuer,
+        makeZoeMint,
+        exportInstanceRecord,
+        exportIssuerStorage,
+        withdrawPayments,
+      } = await makeZoeInstanceStorageManager(
         installation,
         customTerms,
-        issuers,
-        brands,
+        uncleanIssuerKeywordRecord,
       );
+      // AWAIT ///
 
       const createVatResultP = zcfBundleName
         ? E(vatAdminSvc).createVatByName(zcfBundleName)
@@ -138,45 +110,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const { adminNode, root } = await createVatResultP;
       /** @type {ZCFRoot} */
       const zcfRoot = root;
-
-      /** @type {MakeZoeMint} */
-      const makeZoeMint = (
-        keyword,
-        amountMathKind = MathKind.NAT,
-        displayInfo,
-      ) => {
-        // Local indicates one that zoe itself makes from vetted code,
-        // and so can be assumed correct and fresh by zoe.
-        const {
-          mint: localMint,
-          issuer: localIssuer,
-          brand: localBrand,
-        } = makeIssuerKit(keyword, amountMathKind, displayInfo);
-        const localIssuerRecord = makeIssuerRecord(
-          localBrand,
-          localIssuer,
-          amountMathKind,
-          displayInfo,
-        );
-        storeIssuerRecord(localIssuerRecord);
-        const localPooledPurse = makeLocalPurse(localIssuer, localBrand);
-        addIssuerToInstanceRecord(keyword, localIssuerRecord);
-        /** @type {ZoeMint} */
-        const zoeMint = Far('ZoeMint', {
-          getIssuerRecord: () => {
-            return localIssuerRecord;
-          },
-          mintAndEscrow: totalToMint => {
-            const payment = localMint.mintPayment(totalToMint);
-            localPooledPurse.deposit(payment, totalToMint);
-          },
-          withdrawAndBurn: totalToBurn => {
-            const payment = localPooledPurse.withdraw(totalToBurn);
-            localIssuer.burn(payment, totalToBurn);
-          },
-        });
-        return zoeMint;
-      };
 
       /** @type {PromiseRecord<AddSeatObj>} */
       const addSeatObjPromiseKit = makePromiseKit();
@@ -241,12 +174,17 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
             seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
 
-            const seatData = harden({ proposal, initialAllocation, notifier });
+            const seatData = harden({
+              proposal,
+              initialAllocation,
+              notifier,
+              seatHandle,
+            });
 
             zoeSeatAdmins.add(zoeSeatAdmin);
 
             E(addSeatObjPromiseKit.promise)
-              .addSeat(invitationHandle, zoeSeatAdmin, seatData, seatHandle)
+              .addSeat(invitationHandle, zoeSeatAdmin, seatData)
               .then(({ offerResultP, exitObj }) => {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);
@@ -312,13 +250,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           return invitationMint.mintPayment(invitationAmount);
         },
         // checks of keyword done on zcf side
-        saveIssuer: async (issuerP, keyword) => {
-          const issuerRecord = await storeIssuer(issuerP);
-          // AWAIT ///
-          createPurse(issuerRecord.issuer, issuerRecord.brand);
-          addIssuerToInstanceRecord(keyword, issuerRecord);
-          return issuerRecord;
-        },
+        saveIssuer,
         // A Seat requested by the contract without any payments to escrow
         makeNoEscrowSeat: instanceAdmin.makeNoEscrowSeat,
         exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
@@ -336,8 +268,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       // At this point, the contract will start executing. All must be
       // ready
 
-      const instanceRecord = getInstanceRecord();
-
       const {
         creatorFacet = Far('emptyCreatorFacet', {}),
         publicFacet = Far('emptyPublicFacet', {}),
@@ -348,8 +278,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        instanceRecord,
-        exportIssuerStorage(Object.values(instanceRecord.terms.issuers)),
+        exportInstanceRecord(),
+        exportIssuerStorage(),
       );
 
       addSeatObjPromiseKit.resolve(addSeatObj);

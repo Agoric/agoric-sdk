@@ -22,7 +22,7 @@ show-*)
   ;;
 esac
 exec docker run --rm $TTY $FLAGS \
-  --volume=ag-setup-cosmos-chains:/agoric/chains \
+  --volume=ag-setup-cosmos-chains:/data/chains \
   --volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos \
   --volume=/var/run/docker.sock:/var/run/docker.sock \
   --env AG_SETUP_COSMOS_NAME=$NETWORK_NAME \

@@ -34,13 +34,14 @@
 
 /**
  * @typedef {Object} Pool
- * @property {(inputAmount: Amount, outputBrand: Brand) => PriceAmountPair } getPriceGivenAvailableInput
- * @property {(inputBrand: Brand, outputAmount: Amount) => PriceAmountPair } getPriceGivenRequiredOutput
+ * @property {(inputAmount: Amount, outputBrand: Brand, feeBP: bigint=) => PriceAmountPair } getPriceGivenAvailableInput
+ * @property {(inputBrand: Brand, outputAmount: Amount, feeBP: bigint=) => PriceAmountPair } getPriceGivenRequiredOutput
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
+ * @property {(newAllocation: Allocation) => SeatStaging} stageSeat
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  * @property {() => Notifier} getNotifier
@@ -89,4 +90,11 @@
  * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
+ */
+
+/**
+ * @typedef {Object} MultipoolAutoswapCreatorFacet
+ * @property {() => Invitation<Issuer>} makeCollectFeesInvitation
+ * return an invitation that allows the caller to collect fees paid to the
+ * autoswap
  */

@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api';
 import { makeManagerKit } from './manager-helper';
 
@@ -125,7 +125,8 @@ export function makeXsSubprocessFactory({
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);
     } else {
-      assert.fail(X`failed to setBundle: ${bundleReply}`);
+      const [_tag, errName, message] = bundleReply;
+      assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
     }
 
     /**

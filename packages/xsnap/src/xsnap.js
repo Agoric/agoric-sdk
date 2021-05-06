@@ -169,19 +169,18 @@ export function xsnap(options) {
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        let compute = null;
-        let allocate = null;
+        let meterInfo = { compute: null, allocate: null };
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
           const meterData = message.slice(1, meterSeparator);
-          // We parse the meter data as JSON, expecting an array of two numbers.
-          [compute, allocate] = JSON.parse(decoder.decode(meterData));
+          // We parse the meter data as JSON
+          meterInfo = JSON.parse(decoder.decode(meterData));
+          // assert(typeof meterInfo === 'object');
         }
         const meterUsage = {
           meterType: METER_TYPE,
-          allocate,
-          compute,
+          ...meterInfo,
         };
         // console.log('have meterUsage', meterUsage);
         return {

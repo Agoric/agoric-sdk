@@ -1,0 +1,297 @@
+// @ts-check
+
+import '../../../exported';
+
+import { assert, details as X } from '@agoric/assert';
+import { amountMath } from '@agoric/ertp';
+import { isNat } from '@agoric/nat';
+
+import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
+
+const { ceilDivide } = natSafeMath;
+const BASIS_POINTS = 10000;
+
+/**
+ * Build functions to calculate prices for multipoolAutoswap. Four methods are
+ * returned, as two complementary pairs. In one pair of methods the caller
+ * specifies the amount they will pay, and in the other they specify the amount
+ * they wish to receive. The two with shorter names (getOutputForGivenInput,
+ * getInputForGivenOutput) are consistent with the uniswap interface. They each
+ * return a single amount. The other two return { amountIn, centralAmount,
+ * amountOut }, which specifies the best exchange consistent with the request.
+ * centralAmount is omitted from these methods' results in the publicFacet.
+ *
+ * @param {(brand: Brand) => boolean} isSecondary
+ * @param {(brand: Brand) => boolean} isCentral
+ * @param {(brand: Brand) => Pool} getPool
+ * @param {Brand} centralBrand
+ * @param {bigint} poolFeeBP - fee (BP) to the pool in every swap.
+ * @param {bigint} protocolFeeBP - fee (BP) charged in RUN to every swap.
+ */
+
+export const makeGetCurrentPrice = (
+  isSecondary,
+  isCentral,
+  getPool,
+  centralBrand,
+  poolFeeBP,
+  protocolFeeBP,
+) => {
+  assert(
+    isNat(poolFeeBP) && isNat(protocolFeeBP),
+    X`poolFee (${poolFeeBP}) and protocolFee (${protocolFeeBP}) must be Nats`,
+  );
+  const protocolFeeRatio = makeRatio(protocolFeeBP, centralBrand, BASIS_POINTS);
+  const halfPoolFeeBP = ceilDivide(poolFeeBP, 2);
+
+  const getPriceGivenAvailableInput = (amountIn, brandOut) => {
+    const { brand: brandIn } = amountIn;
+
+    if (isCentral(brandIn) && isSecondary(brandOut)) {
+      // we'll subtract the protocol fee from amountIn before sending the
+      // remainder to the pool to get a quote. Then we'll add the fee to deltaX
+      // before sending out the quote.
+
+      // prelimProtocolFee will be replaced by protocolFee once we get the final
+      // value of amountIn from getPriceGivenAvailableInput.
+      const prelimProtocolFee = multiplyBy(amountIn, protocolFeeRatio);
+      const poolAmountIn = amountMath.subtract(amountIn, prelimProtocolFee);
+      const price = getPool(brandOut).getPriceGivenAvailableInput(
+        poolAmountIn,
+        brandOut,
+        poolFeeBP,
+      );
+      const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
+
+      // price.amountIn is what the user pays, and includes the protocolFee. The
+      // user will receive price.amountOut.
+      return {
+        amountIn: amountMath.add(price.amountIn, protocolFee),
+        amountOut: price.amountOut,
+        protocolFee,
+      };
+    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
+      // We'll charge the protocol fee after getting the quote
+      const price = getPool(brandIn).getPriceGivenAvailableInput(
+        amountIn,
+        brandOut,
+        poolFeeBP,
+      );
+      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
+      const amountOutFinal = amountMath.subtract(price.amountOut, protocolFee);
+
+      // the user pays amountIn, and gets amountOutFinal. The pool pays
+      // price.amountOut and gains amountIn
+      return {
+        amountIn: price.amountIn,
+        amountOut: amountOutFinal,
+        protocolFee,
+      };
+    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
+      // We must do two consecutive getPriceGivenAvailableInput() calls,
+      // followed by a call to getPriceGivenRequiredOutput().
+      // 1) from amountIn to the central token, which tells us how much central
+      // would be provided for amountIn (centralAmount)
+      // 2) from centralAmount to brandOut, which tells us how much of brandOut
+      // will be provided (amountOut) as well as the minimum price in central
+      // tokens (reducedCentralAmount), then finally
+      // 3) call getPriceGivenRequiredOutput() to see if the same proceeds can
+      // be purchased for less (reducedAmountIn).
+
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
+      const {
+        amountOut: centralAmount,
+      } = brandInPool.getPriceGivenAvailableInput(
+        amountIn,
+        centralBrand,
+        halfPoolFeeBP,
+      );
+
+      // the protocolFee will be extracted from the central being transferred
+      // from brandInPool to brandOutPool. We start by calculating the fee
+      // required if amountIn is spent. firstDraftFee will be replaced by
+      // actualFee calculated from final central amount.
+      const firstDraftFee = multiplyBy(centralAmount, protocolFeeRatio);
+      const centralAmountLessFee = amountMath.subtract(
+        centralAmount,
+        firstDraftFee,
+      );
+      // The brandOutPool will get the central amount from brandInPool, less
+      // the protocol fee. This gives the amountOut that that would purchase.
+      const {
+        amountIn: reducedCentralAmount,
+        amountOut,
+      } = brandOutPool.getPriceGivenAvailableInput(
+        centralAmountLessFee,
+        brandOut,
+        halfPoolFeeBP,
+      );
+      // Now we know the amountOut that the user will receive, and can ask
+      // whether it can be obtained for less.
+
+      const actualFee = multiplyBy(reducedCentralAmount, protocolFeeRatio);
+      const reducedCentralPlusFee = amountMath.add(
+        reducedCentralAmount,
+        actualFee,
+      );
+      // brandInPool will receive reducedAmountIn and give up centralAmount. The
+      // protocol fee will be calculated from reducedAmountIn.
+
+      // propagate reduced prices back to brandInPool
+      const {
+        amountIn: reducedAmountIn,
+        amountOut: finalCentralAmount,
+      } = brandInPool.getPriceGivenRequiredOutput(
+        brandIn,
+        reducedCentralPlusFee,
+        halfPoolFeeBP,
+      );
+
+      // the user pays reducedAmountIn, and gains amountOut. brandInPool
+      // gains reducedAmountIn, and pays finalCentralAmount + actualFee.
+      // brandOutPool gains finalCentralAmount, and pays amountOut.
+      return {
+        amountIn: reducedAmountIn,
+        amountOut,
+        centralAmount: finalCentralAmount,
+        protocolFee: actualFee,
+      };
+    }
+
+    assert.fail(X`brands were not recognized`);
+  };
+
+  const getPriceGivenRequiredOutput = (brandIn, amountOut) => {
+    const { brand: brandOut } = amountOut;
+
+    if (isCentral(brandIn) && isSecondary(brandOut)) {
+      // The user requested amountOut, which will be paid by the pool as deltaY.
+      // user pays deltaX + protocolFee. Pool pays amountOut, gains deltaX.
+      const price = getPool(brandOut).getPriceGivenRequiredOutput(
+        brandIn,
+        amountOut,
+        poolFeeBP,
+      );
+
+      const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
+      return {
+        amountIn: amountMath.add(price.amountIn, protocolFee),
+        amountOut: price.amountOut,
+        protocolFee,
+      };
+    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
+      // We'll add the protocol fee to amountOut to get deltaY. The user will
+      // pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
+      const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
+      const price = getPool(brandIn).getPriceGivenRequiredOutput(
+        brandIn,
+        amountMath.add(amountOut, preliminaryProtocolFee),
+        poolFeeBP,
+      );
+
+      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
+      return {
+        amountIn: price.amountIn,
+        amountOut: amountMath.subtract(price.amountOut, protocolFee),
+        protocolFee,
+      };
+    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
+      // We must do two consecutive getPriceGivenRequiredOutput() calls,
+      // followed by a call to getPriceGivenAvailableInput().
+      // 1) from amountOut to the central token, which tells us how much central
+      // is required to obtain amountOut (centralAmount)
+      // 2) from centralAmount to brandIn, which tells us how much of brandIn
+      // is required (amountIn) as well as the max proceeds in central
+      // tokens (improvedCentralAmount), then finally
+      // 3) call getPriceGivenAvailableInput() to see if improvedCentralAmount
+      // produces a larger amount (improvedAmountOut)
+
+      const brandInPool = getPool(brandIn);
+      const brandOutPool = getPool(brandOut);
+
+      // firstCentralAmount will be replaced by finalCentralAmount.  We start by
+      // asking how much amountIn is required to buy amountOut.
+      const {
+        amountIn: firstCentralAmount,
+      } = brandOutPool.getPriceGivenRequiredOutput(
+        centralBrand,
+        amountOut,
+        halfPoolFeeBP,
+      );
+
+      // protocolFee will be extracted from the central being transferred from
+      // brandInPool to brandOutPool. add protocolFee to firstCentralAmount to
+      // find amountIn, which the user will pay.
+      const {
+        amountIn,
+        amountOut: finalCentralAmountWithFee,
+      } = brandInPool.getPriceGivenRequiredOutput(
+        brandIn,
+        amountMath.add(
+          firstCentralAmount,
+          multiplyBy(firstCentralAmount, protocolFeeRatio),
+        ),
+        halfPoolFeeBP,
+      );
+
+      // propagate improved prices
+      const protocolFee = multiplyBy(
+        finalCentralAmountWithFee,
+        protocolFeeRatio,
+      );
+      const {
+        amountIn: finalCentralAmount,
+        amountOut: improvedAmountOut,
+      } = brandOutPool.getPriceGivenAvailableInput(
+        amountMath.subtract(finalCentralAmountWithFee, protocolFee),
+        brandOut,
+        halfPoolFeeBP,
+      );
+
+      // The user pays amountIn to brandInPool, and gets improvedAmountOut.
+      // brandInPool gets amountIn, and pays finalCentralAmount + protocolFee.
+      // brandOutPool gets finalCentralAmount, and pays improvedAmountOut.
+      return {
+        amountIn,
+        amountOut: improvedAmountOut,
+        centralAmount: finalCentralAmount,
+        protocolFee,
+      };
+    }
+
+    assert.fail(X`brands were not recognized`);
+  };
+
+  /**
+   * `getOutputForGivenInput` calculates the result of a trade, given a certain
+   * amount of digital assets in.
+   *
+   * @param {Amount} amountIn - the amount of digital
+   * assets to be sent in
+   * @param {Brand} brandOut - The brand of asset desired
+   * @returns {Amount} the amount that would be paid out at the current price.
+   */
+  const getOutputForGivenInput = (amountIn, brandOut) => {
+    return getPriceGivenAvailableInput(amountIn, brandOut).amountOut;
+  };
+
+  /**
+   * `getInputForGivenOutput` calculates the amount of assets required to be
+   * provided in order to obtain a specified gain.
+   *
+   * @param {Amount} amountOut - the amount of digital assets desired
+   * @param {Brand} brandIn - The brand of asset desired
+   * @returns {Amount} The amount required to be paid in order to gain amountOut
+   */
+  const getInputForGivenOutput = (amountOut, brandIn) => {
+    return getPriceGivenRequiredOutput(brandIn, amountOut).amountIn;
+  };
+
+  return {
+    getOutputForGivenInput,
+    getInputForGivenOutput,
+    getPriceGivenRequiredOutput,
+    getPriceGivenAvailableInput,
+  };
+};

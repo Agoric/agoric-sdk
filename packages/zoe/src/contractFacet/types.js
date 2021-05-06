@@ -152,7 +152,7 @@
  *
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
- * @param {Error=} reason
+ * @param {Error} reason
  * @returns {Error}
  */
 

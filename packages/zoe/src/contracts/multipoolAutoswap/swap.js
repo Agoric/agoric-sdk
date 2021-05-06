@@ -113,7 +113,7 @@ export const makeMakeSwapInvitation = (
         }),
       );
 
-      const poolBrandInStaging = brandInPool.getPoolSeat().stage({
+      const poolBrandInStaging = brandInPool.stageSeat({
         Secondary: amountMath.add(
           brandInPool.getSecondaryAmount(),
           reducedAmountIn,
@@ -124,7 +124,7 @@ export const makeMakeSwapInvitation = (
         ),
       });
 
-      const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
+      const poolBrandOutStaging = brandOutPool.stageSeat({
         Central: amountMath.add(
           brandOutPool.getCentralAmount(),
           reducedCentralAmount,
@@ -231,7 +231,7 @@ export const makeMakeSwapInvitation = (
         }),
       );
 
-      const poolBrandInStaging = brandInPool.getPoolSeat().stage({
+      const poolBrandInStaging = brandInPool.stageSeat({
         Secondary: amountMath.add(brandInPool.getSecondaryAmount(), amountIn),
         Central: amountMath.subtract(
           brandInPool.getCentralAmount(),
@@ -239,7 +239,7 @@ export const makeMakeSwapInvitation = (
         ),
       });
 
-      const poolBrandOutStaging = brandOutPool.getPoolSeat().stage({
+      const poolBrandOutStaging = brandOutPool.stageSeat({
         Central: amountMath.add(
           brandOutPool.getCentralAmount(),
           improvedCentralAmount,

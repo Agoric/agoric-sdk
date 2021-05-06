@@ -252,8 +252,8 @@ test('reportingPeriod shorter than charging', async t => {
   };
   const afterTwoMonths = {
     latestInterestUpdate: ONE_MONTH,
-    interest: amountMath.make(203, brand),
-    newDebt: amountMath.make(100203n, brand),
+    interest: amountMath.make(brand, 203n),
+    newDebt: amountMath.make(brand, 100203n),
   };
   // charging period is 30 days. 2nd interest isn't charged until 60 days.
   t.deepEqual(calculator.calculate(debtStatus, 32n * ONE_DAY), afterTwoMonths);

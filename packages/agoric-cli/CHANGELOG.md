@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.13.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.0...agoric@0.13.1) (2021-05-05)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
+# [0.13.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.12.13...agoric@0.13.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* **agoric-cli:** hardcode vpurse genesis state with faucet address ([04b004c](https://github.com/Agoric/agoric-sdk/commit/04b004cacde1968bbaf9476111ec19e0403794f2))
+* **agoric-cli:** increase integration-test timeout ([942c2a2](https://github.com/Agoric/agoric-sdk/commit/942c2a29b9805fb095eb4afbf99290246ad16379)), closes [#1343](https://github.com/Agoric/agoric-sdk/issues/1343)
+* **agoric-cli:** use new solo package ([0780be8](https://github.com/Agoric/agoric-sdk/commit/0780be829d1a124ac3429ee57ef617bfd4f1d9cc))
+
+
+### Features
+
+* **agoric:** set-defaults --bootstrap-address and friends ([f37adcf](https://github.com/Agoric/agoric-sdk/commit/f37adcf88ad9f59e3ff203db63810b15ed98ba3c))
+* have the bank use normal purses when not on chain ([90ab888](https://github.com/Agoric/agoric-sdk/commit/90ab888c5cdc71a2322ca05ad813c6411c876a74))
+
+
+
+
+
 ## [0.12.13](https://github.com/Agoric/agoric-sdk/compare/agoric@0.12.12...agoric@0.12.13) (2021-04-22)
 
 

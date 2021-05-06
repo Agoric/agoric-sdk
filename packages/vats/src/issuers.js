@@ -23,6 +23,8 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  * @property {Brand} [brand]
  * @property {Array<any>} [issuerArgs]
  * @property {CollateralConfig} [collateralConfig]
+ * @property {string} [bankDenom]
+ * @property {string} [bankPurse]
  * @property {Array<[string, Bigish]>} [defaultPurses]
  * @property {Array<[Bigish, Bigish]>} [tradesGivenCentral]
  */
@@ -70,10 +72,12 @@ const fromCosmosIssuerEntries = [
     'BLD',
     {
       issuerArgs: [undefined, { decimalPlaces: 6 }],
-      defaultPurses: [['Agoric staking token', scaleMicro(73)]],
+      defaultPurses: [['Agoric staking token', scaleMicro(62)]],
+      bankDenom: 'ubld',
+      bankPurse: 'Agoric staking token',
       collateralConfig: {
         keyword: 'BLD',
-        collateralValue: scaleMicro(1000000n),
+        collateralValue: scaleMicro(2000000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,

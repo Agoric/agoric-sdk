@@ -538,7 +538,7 @@ export default function buildKernel(
     }
 
     // eslint-disable-next-line no-use-before-define
-    return createVatDynamically(vatID, source, dynamicOptions)
+    return createVatDynamically(vatID, source, options)
       .then(makeSuccessResponse, makeErrorResponse)
       .then(sendResponse)
       .catch(err => console.error(`error in vat creation`, err));

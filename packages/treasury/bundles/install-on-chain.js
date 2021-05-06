@@ -9,6 +9,8 @@ import stablecoinBundle from './bundle-stablecoinMachine';
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
+const DEFAULT_POOL_FEE = 24n;
+const DEFAULT_PROTOCOL_FEE = 6n;
 /**
  * @param {Object} param0
  * @param {ERef<NameHub>} param0.agoricNames
@@ -18,8 +20,11 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
  * @param {ERef<ZoeService>} param0.zoe
+ * @param {NatValue} param0.bootstrapPaymentValue
+ * @param {NatValue} [param0.poolFee]
+ * @param {NatValue} [param0.protocolFee]
  */
-export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe }) {
+export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe, bootstrapPaymentValue, poolFee = DEFAULT_POOL_FEE, protocolFee = DEFAULT_PROTOCOL_FEE }) {
   // Fetch the nameAdmins we need.
   const [brandAdmin, installAdmin, instanceAdmin, issuerAdmin, uiConfigAdmin] = await Promise.all(
     ['brand', 'installation', 'instance', 'issuer', 'uiConfig'].map(async edge => {
@@ -44,6 +49,8 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
   const loanParams = {
     chargingPeriod: SECONDS_PER_HOUR,
     recordingPeriod: SECONDS_PER_DAY,
+    poolFee,
+    protocolFee,
   };
 
   const terms = harden({
@@ -52,6 +59,7 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     priceAuthority,
     loanParams,
     timerService: chainTimerService,
+    bootstrapPaymentValue,
   });
 
   const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms);

@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.7.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.5...@agoric/dapp-svelte-wallet-ui@1.7.6) (2021-05-05)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+## [1.7.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.4...@agoric/dapp-svelte-wallet-ui@1.7.5) (2021-05-05)
+
+
+### Bug Fixes
+
+* update dapp-svelte-wallet to new packages ([a1dcabd](https://github.com/Agoric/agoric-sdk/commit/a1dcabd60790ef1effe16565ea33f9811b32fa09))
+
+
+
+
+
 ## [1.7.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.3...@agoric/dapp-svelte-wallet-ui@1.7.4) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui

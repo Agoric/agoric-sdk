@@ -15,9 +15,8 @@
 
 - name: "Extract faucet address"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} \
-    --keyring-backend=test \
-    keys show -a faucet > {{ SETUP_HOME + '/../faucet/address.txt' }}"
+  shell: "{{ SETUP_HOME + '/faucet-helper.sh' }} show-faucet-address \
+    > {{ SETUP_HOME + '/../faucet/address.txt' }}"
   when: not faucet
 
 - set_fact:

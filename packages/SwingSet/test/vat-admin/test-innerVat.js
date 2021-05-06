@@ -45,10 +45,13 @@ test('VatAdmin counter test', async t => {
 test('VatAdmin broken vat creation', async t => {
   const c = await doTestSetup(t, 'brokenVat');
   await c.run();
-  t.deepEqual(c.dump().log, [
-    'starting brokenVat test',
-    'yay, rejected: Error: Vat Creation Error: ReferenceError: missing is not defined',
-  ]);
+  const { log } = c.dump();
+  t.is(log.length, 2);
+  t.is(log[0], 'starting brokenVat test');
+  t.regex(
+    log[1],
+    /^yay, rejected: Error: Vat Creation Error:.*ReferenceError.*missing/,
+  );
 });
 
 test('error creating vat from non-bundle', async t => {

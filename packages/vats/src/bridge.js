@@ -18,10 +18,10 @@ import { Far } from '@agoric/marshal';
 
 /**
  * @typedef {Object} BridgeHandler An object that can receive messages from the bridge device
- * @property {(srcId: string, obj: any) => Promise<void>} fromBridge Handle an inbound message
+ * @property {(srcId: string, obj: any) => Promise<any>} fromBridge Handle an inbound message
  *
  * @typedef {Object} BridgeManager The object to manage this bridge
- * @property {(dstID: string, obj: any) => void} toBridge
+ * @property {(dstID: string, obj: any) => any} toBridge
  * @property {(srcID: string, handler: BridgeHandler) => void} register
  * @property {(srcID: string, handler: BridgeHandler) => void} unregister
  */

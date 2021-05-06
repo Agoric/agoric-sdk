@@ -59,6 +59,7 @@ static void fx_gc(xsMachine* the);
 // static void fx_isPromiseJobQueueEmpty(xsMachine* the);
 static void fx_markTimer(txMachine* the, void* it, txMarkRoot markRoot);
 static void fx_print(xsMachine* the);
+static void fx_performance_now(xsMachine* the);
 static void fx_setImmediate(txMachine* the);
 // static void fx_setInterval(txMachine* the);
 // static void fx_setTimeout(txMachine* the);
@@ -73,20 +74,21 @@ static void fxRunLoop(txMachine* the);
 
 static int fxReadNetString(FILE *inStream, char** dest, size_t* len);
 static char* fxReadNetStringError(int code);
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t len);
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txMachine *the, char* buf, size_t len);
 static int fxWriteNetString(FILE* outStream, char* prefix, char* buf, size_t len);
 static char* fxWriteNetStringError(int code);
 
 // The order of the callbacks materially affects how they are introduced to
 // code that runs from a snapshot, so must be consistent in the face of
 // upgrade.
-#define mxSnapshotCallbackCount 5
+#define mxSnapshotCallbackCount 6
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_issueCommand, // 0
 	fx_Array_prototype_meter, // 1
 	fx_print, // 2
 	fx_setImmediate, // 3
 	fx_gc, // 4
+	fx_performance_now, // 5
 	// fx_evalScript,
 	// fx_isPromiseJobQueueEmpty,
 	// fx_setInterval,
@@ -298,10 +300,10 @@ ExitCode main(int argc, char* argv[])
 		}
 	}
 	xsCreation _creation = {
-		1 * 1024 * 1024,	/* initialChunkSize */
-		512 * 1024,			/* incrementalChunkSize */
-		16 * 1024,			/* initialHeapCount */
-		256 * 1024,			/* incrementalHeapCount */
+		32 * 1024 * 1024,	/* initialChunkSize */
+		4 * 1024 * 1024,	/* incrementalChunkSize */
+		256 * 1024,			/* initialHeapCount */
+		128 * 1024,			/* incrementalHeapCount */
 		4096,				/* stackCount */
 		32000,				/* keyCount */
 		1993,				/* nameModulo */
@@ -430,7 +432,7 @@ ExitCode main(int argc, char* argv[])
 							}
 						}
 						// fprintf(stderr, "response of %d bytes\n", responseLength);
-						writeError = fxWriteOkay(toParent, meterIndex, the->allocatedSpace, response, responseLength);
+						writeError = fxWriteOkay(toParent, meterIndex, the, response, responseLength);
 					}
 				}
 				xsEndHost(machine);
@@ -466,7 +468,7 @@ ExitCode main(int argc, char* argv[])
 				fxRunLoop(machine);
 				meterIndex = xsEndCrank(machine);
 				if (error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -496,7 +498,7 @@ ExitCode main(int argc, char* argv[])
 					c_exit(E_IO_ERROR);
 				}
 				if (snapshot.error == 0) {
-					int writeError = fxWriteOkay(toParent, meterIndex, machine->allocatedSpace, "", 0);
+					int writeError = fxWriteOkay(toParent, meterIndex, machine, "", 0);
 					if (writeError != 0) {
 						fprintf(stderr, "%s\n", fxWriteNetStringError(writeError));
 						c_exit(E_IO_ERROR);
@@ -551,6 +553,12 @@ void fxBuildAgent(xsMachine* the)
 	slot = fxNextHostFunctionProperty(the, slot, fx_setImmediate, 1, xsID("setImmediate"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setInterval, 1, xsID("setInterval"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextHostFunctionProperty(the, slot, fx_setTimeout, 1, xsID("setTimeout"), XS_DONT_ENUM_FLAG);
+
+	mxPush(mxObjectPrototype);
+	txSlot* performance = fxLastProperty(the, fxNewObjectInstance(the));
+	fxNextHostFunctionProperty(the, performance, fx_performance_now, 1, xsID("now"), XS_DONT_ENUM_FLAG);
+	slot = fxNextSlotProperty(the, slot, the->stack, xsID("performance"), XS_DONT_ENUM_FLAG);
+	mxPop();
 
 	// mxPush(mxObjectPrototype);
 	// fxNextHostFunctionProperty(the, fxLastProperty(the, fxNewObjectInstance(the)), fx_print, 1, xsID("log"), XS_DONT_ENUM_FLAG);
@@ -1075,11 +1083,15 @@ void fxCreateMachinePlatform(txMachine* the)
 	the->promiseJobs = 0;
 	the->timerJobs = NULL;
 
+	// Original 10x strategy:
 	// SLOGFILE=out.slog agoric start local-chain
 	// jq -s '.|.[]|.dr[2].allocate' < out.slog|grep -v null|sort -u | sort -nr
-	int MB = 1024 * 1024;
-	int measured_max = 30 * MB;
-	the->allocationLimit = 10 * measured_max;
+	// int MB = 1024 * 1024;
+	// int measured_max = 30 * MB;
+	// the->allocationLimit = 10 * measured_max;
+
+	size_t GB = 1024 * 1024 * 1024;
+	the->allocationLimit = 2 * GB;
 }
 
 void fxDeleteMachinePlatform(txMachine* the)
@@ -1398,12 +1410,30 @@ static char* fxReadNetStringError(int code)
 	}
 }
 
-static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txSize allocatedSpace, char* buf, size_t length)
+static int fxWriteOkay(FILE* outStream, xsUnsignedValue meterIndex, txMachine *the, char* buf, size_t length)
 {
-	// large enough for 2 64bit numbers, with a spare 64 bit word
-	char prefix[sizeof ".[12345678901234567890,12345678901234567890]\1" + 8];
+	char fmt[] = ("." // OK
+				  "{"
+				  "\"compute\":%u,"
+				  "\"allocate\":%u,"
+				  "\"allocateChunksCalls\":%u,"
+				  "\"allocateSlotsCalls\":%u,"
+				  "\"garbageCollectionCount\":%u,"
+				  "\"mapSetAddCount\":%u,"
+				  "\"mapSetRemoveCount\":%u,"
+				  "\"maxBucketSize\":%u}"
+				  "\1" // separate meter info from result
+				  );
+	char numeral64[] = "12345678901234567890"; // big enough for 64bit numeral
+	char prefix[8 + sizeof fmt + 8 * sizeof numeral64];
+	// TODO: fxCollect counter
 	// Prepend the meter usage to the reply.
-	snprintf(prefix, sizeof(prefix) - 1, ".[%u,%u]\1", meterIndex, allocatedSpace);
+	snprintf(prefix, sizeof(prefix) - 1, fmt,
+			 meterIndex, the->allocatedSpace,
+			 the->allocateChunksCallCount, the->allocateSlotsCallCount,
+			 the->garbageCollectionCount,
+			 the->mapSetAddCount, the->mapSetRemoveCount,
+			 the->maxBucketSize);
 	return fxWriteNetString(outStream, prefix, buf, length);
 }
 
@@ -1483,6 +1513,7 @@ void* fxAllocateChunks(txMachine* the, txSize theSize)
 {
 	// fprintf(stderr, "fxAllocateChunks(%lu)\n", theSize);
 	adjustSpaceMeter(the, theSize);
+	the->allocateChunksCallCount += 1;
 	return c_malloc(theSize);
 }
 
@@ -1498,12 +1529,21 @@ txSlot* fxAllocateSlots(txMachine* the, txSize theCount)
 {
 	// fprintf(stderr, "fxAllocateSlots(%u) * %d = %ld\n", theCount, sizeof(txSlot), theCount * sizeof(txSlot));
 	adjustSpaceMeter(the, theCount * sizeof(txSlot));
+	the->allocateSlotsCallCount += 1;
 	return (txSlot*)c_malloc(theCount * sizeof(txSlot));
 }
 
 void fxFreeSlots(txMachine* the, void* theSlots)
 {
 	c_free(theSlots);
+}
+
+void fx_performance_now(txMachine *the)
+{
+	c_timeval tv;
+	c_gettimeofday(&tv, NULL);
+	mxResult->kind = XS_NUMBER_KIND;
+	mxResult->value.number = (double)(tv.tv_sec * 1000.0) + ((double)(tv.tv_usec) / 1000.0);
 }
 
 

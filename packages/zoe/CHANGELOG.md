@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.15.5...@agoric/zoe@0.15.6) (2021-05-05)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
+## [0.15.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.15.4...@agoric/zoe@0.15.5) (2021-05-05)
+
+
+### Bug Fixes
+
+* test and workaround for a reallocate issue in zoe ([f56ff7a](https://github.com/Agoric/agoric-sdk/commit/f56ff7a76587fc36bcaf5a88efe663b3b1f974e8))
+* **newSwap:** move guard out of conditional; tests pass ([dc67e67](https://github.com/Agoric/agoric-sdk/commit/dc67e67a9feb131e2509db69359e0f258fdc5367))
+* update types and implementation now that Far preserves them ([a4695c4](https://github.com/Agoric/agoric-sdk/commit/a4695c43a09abc92a20c12104cfbfefb4cae2ff2))
+* **ERTP:** now that {} is data, always return a displayInfo object ([fcc0cc4](https://github.com/Agoric/agoric-sdk/commit/fcc0cc4e61daef103556589fe7003da99d3c4626))
+* settle REMOTE_STYLE name ([#2900](https://github.com/Agoric/agoric-sdk/issues/2900)) ([3dc6638](https://github.com/Agoric/agoric-sdk/commit/3dc66385b85cb3e8a1056b8d6e64cd3e448c041f))
+* **zoe:** use fs.mkdirSync properly ([d7a8a41](https://github.com/Agoric/agoric-sdk/commit/d7a8a41310448895751ba6e67537f03b307c46bb))
+* remove incorrect assertion in multipoolAutoSwap priceAuthority ([#2839](https://github.com/Agoric/agoric-sdk/issues/2839)) ([cb022d6](https://github.com/Agoric/agoric-sdk/commit/cb022d678bb1468ac06c73495e5f98b1d556cc7a)), closes [#2831](https://github.com/Agoric/agoric-sdk/issues/2831)
+
+
+
+
+
 ## [0.15.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.15.3...@agoric/zoe@0.15.4) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/zoe

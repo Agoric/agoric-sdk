@@ -3,6 +3,133 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.18.0...@agoric/sdk@2.18.1) (2021-05-05)
+
+
+### Bug Fixes
+
+* **swingset:** force vattp to run on worker=local for now ([a6aff0a](https://github.com/Agoric/agoric-sdk/commit/a6aff0ac52de6ecd12b9b1c5c82958f502b549b3)), closes [#3039](https://github.com/Agoric/agoric-sdk/issues/3039)
+* cope with getting moddable submodule from agoric-labs ([a1a2693](https://github.com/Agoric/agoric-sdk/commit/a1a26931d17ade84ae97aa3a9d0e7c5c58a74491))
+
+
+
+
+
+# [2.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.4...@agoric/sdk@2.18.0) (2021-05-05)
+
+
+### Bug Fixes
+
+* add brand to `depositMultiple` mock bank ([0d1f22d](https://github.com/Agoric/agoric-sdk/commit/0d1f22d2f091ccf330428a1573e0043820b21ac2))
+* adjust git-revision.txt generation ([6a8b0f2](https://github.com/Agoric/agoric-sdk/commit/6a8b0f20df17d5427b1c70273bcc170c7945dc2a))
+* clean up Docker directory usage ([a97d0b3](https://github.com/Agoric/agoric-sdk/commit/a97d0b3edc1f47e04d93d37c6e999d0798903d03))
+* correct faucet-helper.sh show-faucet-address and use it ([5e236e6](https://github.com/Agoric/agoric-sdk/commit/5e236e6cc0b457dc5c764d4494f4c4d8e3031f29))
+* default and propagate the poolFee and protocolFee in treasury ([d210bcf](https://github.com/Agoric/agoric-sdk/commit/d210bcf1427bee73c9a13f0a00ee2a757d978cd2))
+* disable comms vat termination via remote comms errors ([d286fbd](https://github.com/Agoric/agoric-sdk/commit/d286fbde334433a27ac21709797e6c10cd7f8599))
+* eliminate unnecessary script indirection ([119d7b9](https://github.com/Agoric/agoric-sdk/commit/119d7b91d4042e0881b4bd8acf79391709bcd08d))
+* eliminate urun from cosmos bootstrap (it comes from treasury) ([16c1694](https://github.com/Agoric/agoric-sdk/commit/16c169446602a187810949748915eca31894fcb9))
+* have the treasury use the newSwap AMM implementation ([ed6b84a](https://github.com/Agoric/agoric-sdk/commit/ed6b84ad02cdf59431aa92d3d1e8c8e669379881))
+* include backwards-compat /data directory links ([16feacd](https://github.com/Agoric/agoric-sdk/commit/16feacdd94400920190b6283a76968c6a61b3055))
+* more Docker paths ([7783bb4](https://github.com/Agoric/agoric-sdk/commit/7783bb4740f4ea83b788fec45c1d1aa70145bba1))
+* polishing touches ([334a253](https://github.com/Agoric/agoric-sdk/commit/334a253c02dc1c74117237f6ae18b31505e635af))
+* remove awaita from `depositMultiple` ([a7da714](https://github.com/Agoric/agoric-sdk/commit/a7da714e54f2c6e2427ac44c26e5c359ebde92aa))
+* test and workaround for a reallocate issue in zoe ([f56ff7a](https://github.com/Agoric/agoric-sdk/commit/f56ff7a76587fc36bcaf5a88efe663b3b1f974e8))
+* **agoric-cli:** hardcode vpurse genesis state with faucet address ([04b004c](https://github.com/Agoric/agoric-sdk/commit/04b004cacde1968bbaf9476111ec19e0403794f2))
+* **agoric-cli:** increase integration-test timeout ([942c2a2](https://github.com/Agoric/agoric-sdk/commit/942c2a29b9805fb095eb4afbf99290246ad16379)), closes [#1343](https://github.com/Agoric/agoric-sdk/issues/1343)
+* **agoric-cli:** use new solo package ([0780be8](https://github.com/Agoric/agoric-sdk/commit/0780be829d1a124ac3429ee57ef617bfd4f1d9cc))
+* **cosmic-swingset:** finish reorganization ([7aa778f](https://github.com/Agoric/agoric-sdk/commit/7aa778fa1c88835a3b5c17c34ef010921630f342))
+* **deploy-script-support:** update to new vats package ([9de6ed1](https://github.com/Agoric/agoric-sdk/commit/9de6ed12dca1346912bb3255bbb48601ac09693e))
+* **ERTP:** avoid jessie warning ([fa68a8a](https://github.com/Agoric/agoric-sdk/commit/fa68a8af6864d04a73fbc9dc70f63fb3d4225c1a)), closes [#2704](https://github.com/Agoric/agoric-sdk/issues/2704)
+* **ERTP:** now that {} is data, always return a displayInfo object ([fcc0cc4](https://github.com/Agoric/agoric-sdk/commit/fcc0cc4e61daef103556589fe7003da99d3c4626))
+* **liveslots:** low-level vat dispatch() is now async ([1a6ae48](https://github.com/Agoric/agoric-sdk/commit/1a6ae480c74993f2dc620079e27640a1ba536802)), closes [#2671](https://github.com/Agoric/agoric-sdk/issues/2671) [#2660](https://github.com/Agoric/agoric-sdk/issues/2660)
+* **marshal:** [#2435](https://github.com/Agoric/agoric-sdk/issues/2435) make getInterfaceOf truthful ([ff19f93](https://github.com/Agoric/agoric-sdk/commit/ff19f9333ed30a99bcbe1a9bfc167dea8d73c057))
+* **newSwap:** move guard out of conditional; tests pass ([dc67e67](https://github.com/Agoric/agoric-sdk/commit/dc67e67a9feb131e2509db69359e0f258fdc5367))
+* **pegasus:** update to new solo package ([cf91a04](https://github.com/Agoric/agoric-sdk/commit/cf91a04fa6ce53dc06de0ccb8c8173050134575a))
+* **solo:** propagate exit status ([1f6537e](https://github.com/Agoric/agoric-sdk/commit/1f6537e513e0bfa2ed6e28780903f18255ebf3d1))
+* **swingset:** add GC stubs: syscall/dispatch retireImports/Exports ([fa24bb9](https://github.com/Agoric/agoric-sdk/commit/fa24bb991d69fd01d410685c867578590f99249b)), closes [#2724](https://github.com/Agoric/agoric-sdk/issues/2724)
+* **swingset:** recreateDynamicVat() waits for vat creation ([fe6ab38](https://github.com/Agoric/agoric-sdk/commit/fe6ab38be097e2a9ec525704f3f346fda68eaf64)), closes [#2871](https://github.com/Agoric/agoric-sdk/issues/2871)
+* **swingset:** stop rejecting metered=true for xs-worker ([3714ed9](https://github.com/Agoric/agoric-sdk/commit/3714ed9fc5b62b39b2c04e7b24bb6e985268036a)), closes [#2868](https://github.com/Agoric/agoric-sdk/issues/2868)
+* **swingset:** supervisor-xs: tolerate console.log(BigInt) ([#2967](https://github.com/Agoric/agoric-sdk/issues/2967)) ([cddd949](https://github.com/Agoric/agoric-sdk/commit/cddd949d3d8e986c24feb6af5bdf6be606af9374)), closes [#2936](https://github.com/Agoric/agoric-sdk/issues/2936)
+* **swingset:** test metering on both local and xsnap workers ([1e50fa4](https://github.com/Agoric/agoric-sdk/commit/1e50fa49286a9a3240d17dd53b4e645577f4bbc2)), closes [#2972](https://github.com/Agoric/agoric-sdk/issues/2972)
+* **xs-worker:** provide error message on vat creation failure ([6a1705e](https://github.com/Agoric/agoric-sdk/commit/6a1705edc5565f6b0320f40e1496a230fd3ad8f3))
+* **xsnap:** start with expected heap (32MB) and grow by 4MB ([2e59868](https://github.com/Agoric/agoric-sdk/commit/2e598684ca009d9575fbe078205396eaf89d06e8))
+* Add banner to README.md ([#2902](https://github.com/Agoric/agoric-sdk/issues/2902)) ([99e24ed](https://github.com/Agoric/agoric-sdk/commit/99e24ed93508c12cd65819998f7f9c3727bda0c4))
+* add missing syscalls to kernel stats collection ([1617918](https://github.com/Agoric/agoric-sdk/commit/1617918378bf8fb76e33b55068c43d0e0e278706))
+* add noIbids option ([#2886](https://github.com/Agoric/agoric-sdk/issues/2886)) ([39388bc](https://github.com/Agoric/agoric-sdk/commit/39388bc6b96c6b05b807d8c44614b9acb670467d))
+* add tests and correct issues the tests found ([0d42e64](https://github.com/Agoric/agoric-sdk/commit/0d42e649866ee93d95d7bf8985d95f455d08a736))
+* don't get GCI from gci.js; use kernel argv.FIXME_GCI instead ([f994574](https://github.com/Agoric/agoric-sdk/commit/f9945744f70e0c535b36173ebb4754fbc18888cf))
+* handle transient 0 refCounts correctly ([9975d75](https://github.com/Agoric/agoric-sdk/commit/9975d7505773f1573325219ccf908291aafee4df))
+* ignore an xsnap build output ([#2887](https://github.com/Agoric/agoric-sdk/issues/2887)) ([646b621](https://github.com/Agoric/agoric-sdk/commit/646b6211618381fe569a2be0820137523a484a6e))
+* incorporate review feedback and other bits of tidying up ([235957b](https://github.com/Agoric/agoric-sdk/commit/235957b8e4c845f00e0fe4bb93c37f4cd18d8fd2))
+* properly hang when `ag-solo start` is run ([b63135f](https://github.com/Agoric/agoric-sdk/commit/b63135fb7f72b6c5a0498cb243909ae39b5d860a))
+* remove deprecated ibid support ([#2898](https://github.com/Agoric/agoric-sdk/issues/2898)) ([f865a2a](https://github.com/Agoric/agoric-sdk/commit/f865a2a8fb5d6cb1d16d9fc21ad4868ea6d5a294)), closes [#2896](https://github.com/Agoric/agoric-sdk/issues/2896) [#2896](https://github.com/Agoric/agoric-sdk/issues/2896) [#2896](https://github.com/Agoric/agoric-sdk/issues/2896)
+* remove incorrect assertion in multipoolAutoSwap priceAuthority ([#2839](https://github.com/Agoric/agoric-sdk/issues/2839)) ([cb022d6](https://github.com/Agoric/agoric-sdk/commit/cb022d678bb1468ac06c73495e5f98b1d556cc7a)), closes [#2831](https://github.com/Agoric/agoric-sdk/issues/2831)
+* settle REMOTE_STYLE name ([#2900](https://github.com/Agoric/agoric-sdk/issues/2900)) ([3dc6638](https://github.com/Agoric/agoric-sdk/commit/3dc66385b85cb3e8a1056b8d6e64cd3e448c041f))
+* split marshal module ([#2803](https://github.com/Agoric/agoric-sdk/issues/2803)) ([2e19e78](https://github.com/Agoric/agoric-sdk/commit/2e19e7878bc06dd71e166e13c9cce462b3d5ff7a))
+* update dapp-svelte-wallet to new packages ([a1dcabd](https://github.com/Agoric/agoric-sdk/commit/a1dcabd60790ef1effe16565ea33f9811b32fa09))
+* update repo-wide package config ([bff9a38](https://github.com/Agoric/agoric-sdk/commit/bff9a38d79d1dd15e5e4bade0c9d2f7711a49507))
+* use agoric set-defaults --bootstrap-address ([4f96b2c](https://github.com/Agoric/agoric-sdk/commit/4f96b2c1e890432eb0da90578157e9a317d44f45))
+* **swingset:** create dynamic vats with the right options ([66fc842](https://github.com/Agoric/agoric-sdk/commit/66fc8423f57101998394c0e31e539d0c0d0ac8c7))
+* update types and implementation now that Far preserves them ([a4695c4](https://github.com/Agoric/agoric-sdk/commit/a4695c43a09abc92a20c12104cfbfefb4cae2ff2))
+* **spawner:** rewrite to use createVat, strip down to bare minimum API ([86c0a58](https://github.com/Agoric/agoric-sdk/commit/86c0a58a588a7fa9b07c18c8038935b7bc6175cf)), closes [#1343](https://github.com/Agoric/agoric-sdk/issues/1343)
+* **spawner:** use fs.mkdirSync properly ([75d8afb](https://github.com/Agoric/agoric-sdk/commit/75d8afb1626a3a0e21d9705e233b0478afbcda85))
+* **swingset:** disable GC for now ([e93066f](https://github.com/Agoric/agoric-sdk/commit/e93066f7b9bebecced901fcb7cbf5d445f78dcf9)), closes [#2724](https://github.com/Agoric/agoric-sdk/issues/2724)
+* **swingset:** refactor dispatch() ([ec2e993](https://github.com/Agoric/agoric-sdk/commit/ec2e993f53f168531010b8ad09a197109d33a425))
+* **swingset:** schedule vat creation on the run-queue ([51cf813](https://github.com/Agoric/agoric-sdk/commit/51cf813b248fc97966566f5f73c7d351ae646869)), closes [#2911](https://github.com/Agoric/agoric-sdk/issues/2911)
+* **swingset:** speed up vat-admin tests by pre-bundling the kernel ([51d06e8](https://github.com/Agoric/agoric-sdk/commit/51d06e8827558ba9ae30c9d4e0e5bd7adf59a1b0))
+* **xsnap:** fix the xsnap/moddable git-submodule ([fc34fba](https://github.com/Agoric/agoric-sdk/commit/fc34fba9d28776bd5120831864ef12f71e120766))
+* **zoe:** use fs.mkdirSync properly ([d7a8a41](https://github.com/Agoric/agoric-sdk/commit/d7a8a41310448895751ba6e67537f03b307c46bb))
+* update kerneldump to work with SES ([4989fa3](https://github.com/Agoric/agoric-sdk/commit/4989fa35cec68227b4d6bd920f84b6c45c2b761f))
+* **swingset:** when a static vat dies, tolerate lack of next-of-kin ([215dfb9](https://github.com/Agoric/agoric-sdk/commit/215dfb95cbe90767df9740aa80174b9d0e23921b))
+
+
+### Features
+
+* default to xs-worker in chain ([#2995](https://github.com/Agoric/agoric-sdk/issues/2995)) ([7ebb5d8](https://github.com/Agoric/agoric-sdk/commit/7ebb5d8dac86662e167ff0333cc655bd511d2c58))
+* wire up vats.distributeFees ([9e16332](https://github.com/Agoric/agoric-sdk/commit/9e163327602fad3a6ba3264c7fa29c02e07af765))
+* **agoric:** set-defaults --bootstrap-address and friends ([f37adcf](https://github.com/Agoric/agoric-sdk/commit/f37adcf88ad9f59e3ff203db63810b15ed98ba3c))
+* **ava-xs:** provide test script name to xsnap ([05f0637](https://github.com/Agoric/agoric-sdk/commit/05f0637942586b449e516796f1f9881fe218d08c))
+* **cosmic-swingset:** $SLOGFILE will make the chain write a slogfile ([c845132](https://github.com/Agoric/agoric-sdk/commit/c8451329294ee91330914befd63690ec94964607))
+* **golang:** implement balance updates for virtual purses ([c4c485c](https://github.com/Agoric/agoric-sdk/commit/c4c485cbc2280464e632b1b4a2fa945e86ff8b36))
+* **solo:** fully-working ag-solo package ([57ea595](https://github.com/Agoric/agoric-sdk/commit/57ea59584e28f32288de62aa1be4d5717a0d146b))
+* **swingset:** add WeakRef tracking to liveslots ([6309e5f](https://github.com/Agoric/agoric-sdk/commit/6309e5fcc60503610381ea1cb4b906beb8e8e4fc)), closes [#2664](https://github.com/Agoric/agoric-sdk/issues/2664) [#2660](https://github.com/Agoric/agoric-sdk/issues/2660)
+* **vats:** fully-working decentral services ([3525283](https://github.com/Agoric/agoric-sdk/commit/3525283edb8f24718f35c942684ec2feca8ebbb7))
+* **vpurse:** connect to golang ([d2f719d](https://github.com/Agoric/agoric-sdk/commit/d2f719dce9936a129817a3781bc1de8c4367bb46))
+* **wallet:** subscribe to bank assets and fetch purses ([92a0a44](https://github.com/Agoric/agoric-sdk/commit/92a0a44b26a77d75668314f628ba28c4c58331a8))
+* **xsnap:** $XSNAP_DEBUG_RR for time-travel debugging ([bd4af92](https://github.com/Agoric/agoric-sdk/commit/bd4af925c73ac33e027027f5e56bc65c4c10a38a))
+* **xsnap:** define XSnapOptions type ([1ce5618](https://github.com/Agoric/agoric-sdk/commit/1ce561892e4d1bfb91e8dc6491e1229713619967))
+* **xsnap:** grow heap more slowly ([11795de](https://github.com/Agoric/agoric-sdk/commit/11795deeec15afda3ea96ed8a994243480f97a69))
+* **xsnap:** high resolution timer: performance.now() ([10940f9](https://github.com/Agoric/agoric-sdk/commit/10940f902fef4a47a5fd8b63faeceb9c5c0be4eb))
+* **xsnap:** increase allocation limit to 2GB ([5922cbd](https://github.com/Agoric/agoric-sdk/commit/5922cbdd360a29acaac4fbe00d298b0af8e5e8a4))
+* **xsnap:** meter add/remove on map, set ([327062f](https://github.com/Agoric/agoric-sdk/commit/327062f9f9843ed2f4d8d6e0fa2445d1fa4fdf55))
+* **xsnap:** meter allocation ([eecd58d](https://github.com/Agoric/agoric-sdk/commit/eecd58d503904e0aff24e6850730b165eeac1c9e))
+* **xsnap:** meter calls to allocateChunks, allocateSlots ([5a35842](https://github.com/Agoric/agoric-sdk/commit/5a35842cca71433f7dd2a52cc2750df53a01b269))
+* **xsnap:** meter garbageCollectionCount ([f649ff7](https://github.com/Agoric/agoric-sdk/commit/f649ff7715700a5cf3002fcc332692e2786d9d53))
+* **xsnap:** meter maxBucketSize ([eff98b4](https://github.com/Agoric/agoric-sdk/commit/eff98b4770a4742cb0b9b2d5bc2de1266d38951b))
+* add bank assets for "cosmos" issuers (currently BLD) ([3148b83](https://github.com/Agoric/agoric-sdk/commit/3148b8337db517e0908b07df93c9b7d497ddcf40))
+* add home.bank and home.bankManager ([276a1d3](https://github.com/Agoric/agoric-sdk/commit/276a1d3eb28fe83b1f59ca329e645aa1e9686849))
+* donate RUN from the bootstrap payment on each provision ([43c5db5](https://github.com/Agoric/agoric-sdk/commit/43c5db5d819a3be059a5ead074aa96c3d87416c4))
+* first cut at a virtual purse API ([0c46a9d](https://github.com/Agoric/agoric-sdk/commit/0c46a9ddacbb5b06217104414ebd4cca6cb2e410))
+* handle VPURSE_BALANCE_UPDATE ([116fcd2](https://github.com/Agoric/agoric-sdk/commit/116fcd2b50a824fb4c8b5a0bac41d6798855d03e))
+* handle VPURSE_BALANCE_UPDATE as return value from GIVE/GRAB ([6e62c24](https://github.com/Agoric/agoric-sdk/commit/6e62c244b2e1c07fbcfca8e4882ff9c1135f457e))
+* have the bank use normal purses when not on chain ([90ab888](https://github.com/Agoric/agoric-sdk/commit/90ab888c5cdc71a2322ca05ad813c6411c876a74))
+* have the wallet-bridge.html announce it was loaded ([36d9f0f](https://github.com/Agoric/agoric-sdk/commit/36d9f0f9744d22587fe01031a66f51f7f8e64099))
+* implement the comms vat driver for testing the comms vat ([6793925](https://github.com/Agoric/agoric-sdk/commit/67939254c442befe08e7733cf8677d71e1777af1))
+* implement vat-bank and test ([e7c342a](https://github.com/Agoric/agoric-sdk/commit/e7c342aa27b6d4090e4f9f922637d5621c35a9a5))
+* keep all comms vat state in a persistent store ([51d7204](https://github.com/Agoric/agoric-sdk/commit/51d72040d8409d9b9be117f8101164fe97b99044))
+* keep persistent comms vat state in the vatstore ([c55401b](https://github.com/Agoric/agoric-sdk/commit/c55401b7452a04d6cf58abe9a70f541daf9c034a))
+* plumb through the genesis data to vpurse initialisation ([8105589](https://github.com/Agoric/agoric-sdk/commit/8105589dd7e14a7e8edbbac4a794d8eee2f30298))
+* **xsnap:** specify exit codes for meter exhaustion etc. ([db3daaa](https://github.com/Agoric/agoric-sdk/commit/db3daaaeeef1ac81104b8a58922da932ccdbadd9))
+* load virtual objects when accessed, not when deserialized ([5e659e6](https://github.com/Agoric/agoric-sdk/commit/5e659e6d85061dfd39a3ac7fb8e2d259ac78458e))
+* refcount-based promise GC in the comms vat ([209b034](https://github.com/Agoric/agoric-sdk/commit/209b034f196d46f5d6b499f8b0bf32dbddca1114))
+* share one instance of liquidation across all vaultManagers ([#2869](https://github.com/Agoric/agoric-sdk/issues/2869)) ([0ae776a](https://github.com/Agoric/agoric-sdk/commit/0ae776a91d0ec77443073f6340e714b8e161e062))
+* support promise retirement in comms vat ([a9b826f](https://github.com/Agoric/agoric-sdk/commit/a9b826f34ed5a6ea6e1a77acf7cfb491648fd058))
+* upgrade use-jessie eslint, and honour '// [@jessie-check](https://github.com/jessie-check)' ([fd1c24a](https://github.com/Agoric/agoric-sdk/commit/fd1c24a84584f6b5f7b7d5e8b21d756464db05b6))
+
+
+
+
+
 ## [2.17.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.17.3...@agoric/sdk@2.17.4) (2021-04-22)
 
 
