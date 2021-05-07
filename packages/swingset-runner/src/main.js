@@ -157,7 +157,7 @@ function generateIndirectConfig(baseConfig) {
  * Command line utility to run a swingset for development and testing purposes.
  */
 export async function main() {
-  const argv = process.argv.splice(2);
+  const argv = process.argv.slice(2);
 
   let forceReset = false;
   let dbMode = '--lmdb';

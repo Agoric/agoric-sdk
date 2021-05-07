@@ -54,7 +54,7 @@ function dirContains(dirpath, suffix) {
 }
 
 export function main() {
-  const argv = process.argv.splice(2);
+  const argv = process.argv.slice(2);
   let rawMode = false;
   let refCounts = false;
   let justStats = false;
