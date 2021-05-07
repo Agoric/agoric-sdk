@@ -90,7 +90,6 @@ case of a shutdown or shutdownWithFailure.
 
 **Dropped?**: Currently, dropped when the seat is exited.
 
-
 ### seatHandleToZoeSeatAdmin - WeakStore from `@agoric/store`
 
 A (seatHandle, zoeSeatAdmin) is added for every userSeat created, so
@@ -113,7 +112,6 @@ accounting, so this is not strictly tied to the number of
 **Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
 
 ## Contract Facet (one per instance)
-
 ### brandToIssuerRecord - WeakStore from `@agoric/store` - uses same code as ZoeService
 
 A (brand, issuerRecord) is added whenever a new issuer is added to
@@ -144,7 +142,7 @@ issuers by far).
 
 **Access patterns**: We `init`, `has`, and `get` only
 
-**Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
+**Dropped?**: Currently, never dropped by design.
 
 ### invitationHandleToHandler - WeakStore from `@agoric/store`
 
@@ -155,8 +153,7 @@ made.
 
 **Access patterns**: We `init` and `get` only
 
-**Dropped?**: Currently, never dropped by design.
-
+**Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
 ### seatStagingToSeatHandle - WeakStore from `@agoric/store`
 
 A (seatStaging, seatHandle) is added whenever a seatStaging is made,
@@ -206,3 +203,15 @@ seats.
 
 **Dropped?**: Entire WeakSet is dropped when the function
 `reallocateInternal` ends. 
+
+### sumsByBrand - Store from `@agoric/store`
+
+Two of these are created in every call to `zcf.reallocate`, and then
+are immediately dropped.
+
+**Expected cardinality**: One key per brand of allocation reallocated over.
+
+**Access patterns**: `init`, `set`, `has`, `get`
+
+**Dropped?**: Entire Store is dropped when the function
+`assertRightsConserved` ends. 
