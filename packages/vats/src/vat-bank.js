@@ -265,42 +265,11 @@ export function buildRootObject(_vatPowers) {
         getAccountsNotifier() {
           return accountsNotifier;
         },
-        /**
-         * Send many independent deposits, all of the same brand. If any of them
-         * fail, then you should reclaim the corresponding payments since they
-         * didn't get deposited.
-         *
-         * @param {Brand} brand
-         * @param {Array<string>} accounts
-         * @param {Array<Payment>} payments
-         * @returns {Promise<PromiseSettledResult<Amount>[]>}
-         */
-        depositMultiple(brand, accounts, payments) {
-          /**
-           * @param {string} account
-           * @param {Payment} payment
-           */
-          const doDeposit = async (account, payment) => {
-            // The purse we send it to will do the proper verification as part
-            // of deposit.
-            const bank = getBankForAddress(account);
-            const purse = bank.getPurse(brand);
-            return E(purse).deposit(payment);
-          };
-
-          // We want just a regular iterable that yields deposit promises.
-          function* generateDepositPromises() {
-            const max = Math.max(accounts.length, payments.length);
-            for (let i = 0; i < max; i += 1) {
-              // Create a deposit promise.
-              yield doDeposit(accounts[i], payments[i]);
-            }
-          }
-
-          // We wait for all deposits to settle so that the whole batch
-          // completes, even if there are failures with individual accounts,
-          // payments, or deposits.
-          return Promise.allSettled(generateDepositPromises());
+        deposit(brand, account, payment) {
+          // The purse will do the proper verification as part of deposit.
+          const bank = getBankForAddress(account);
+          const purse = bank.getPurse(brand);
+          return E(purse).deposit(payment);
         },
       });
 
