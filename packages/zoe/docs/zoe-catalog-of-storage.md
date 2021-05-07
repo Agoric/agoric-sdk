@@ -11,7 +11,7 @@ install a contract bundle.
 to `E(zoe).install`. On the testnet with only the bootstrap and load
 generation code running, this should be about 5 elements total. 
 
-**Access patterns**: We `add` and `has` only.
+**Access patterns**: `add`, `has`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -24,7 +24,7 @@ Zoe.
 only the bootstrap and load generation code running, this should be
 about 10 entries. 
 
-**Access patterns**: We `init` and `get` only
+**Access patterns**: `init`, `get`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -37,7 +37,7 @@ Zoe.
 only the bootstrap and load generation code running, this should be
 about 10 entries. 
 
-**Access patterns**: We `init` and `has` and `get` only
+**Access patterns**: `init`, `has`, `get`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -49,7 +49,7 @@ A (brand, purse) is added whenever a new issuer is added to Zoe.
 only the bootstrap and load generation code running, this should be
 about 10 entries.
 
-**Access patterns**: We `init` and `has` and `get` only
+**Access patterns**: `init`, `has`, `get`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -62,7 +62,7 @@ An (instance, instanceAdmin) is added whenever a user calls
 only the bootstrap and load generation code running, this should be
 about 5 entries. 
 
-**Access patterns**: We `init` and `get` only
+**Access patterns**: `init`, `get`
 
 **Dropped?**: Currently, not dropped, but there is a task to drop it:
 https://github.com/Agoric/agoric-sdk/issues/2880
@@ -70,7 +70,7 @@ https://github.com/Agoric/agoric-sdk/issues/2880
 ### zoeSeatAdmins - native Set
 
 A zoeSeatAdmin is added for every userSeat created, so every time a
-user calls E(zoe).offer with an invitation, OR when a contract creates
+user calls `E(zoe).offer` with an invitation, OR when a contract creates
 an "emptySeat" for bookkeeping. 
 
 **Expected cardinality**: one entry per userSeat. If a contract
@@ -84,8 +84,7 @@ running, this will increase by one for every `E(zoe).offer` call.
 accounting, so this is not strictly tied to the number of
 `E(zoe).offer` calls in general.)
 
-**Access patterns**: We `add`, `has`, `delete`, and we iterate with
-`forEach`. We only iterate with `forEach` to exit all the seats in the
+**Access patterns**: `add`, `has`, `delete`, `forEach`. We only iterate with `forEach` to exit all the seats in the
 case of a shutdown or shutdownWithFailure. 
 
 **Dropped?**: Currently, dropped when the seat is exited.
@@ -93,7 +92,7 @@ case of a shutdown or shutdownWithFailure.
 ### seatHandleToZoeSeatAdmin - WeakStore from `@agoric/store`
 
 A (seatHandle, zoeSeatAdmin) is added for every userSeat created, so
-every time a user calls E(zoe).offer with an invitation, OR when a
+every time a user calls `E(zoe).offer` with an invitation, OR when a
 contract creates an "emptySeat" for bookkeeping. 
 
 **Expected cardinality**: one entry per userSeat. If a contract
@@ -107,7 +106,7 @@ running, this will increase by one for every `E(zoe).offer` call.
 accounting, so this is not strictly tied to the number of
 `E(zoe).offer` calls in general.)
 
-**Access patterns**: We `init` and `get` only
+**Access patterns**: `init`, `get`
 
 **Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
 
@@ -124,7 +123,7 @@ only the bootstrap and load generation code running, this should be
 about 5-10 entries for each instance at most (the AMM has the most
 issuers by far). 
 
-**Access patterns**: We `init` and `get` only
+**Access patterns**: `init`, `get`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -140,7 +139,7 @@ only the bootstrap and load generation code running, this should be
 about 5-10 entries for each instance at most (the AMM has the most
 issuers by far).
 
-**Access patterns**: We `init`, `has`, and `get` only
+**Access patterns**: `init`, `has`, `get`
 
 **Dropped?**: Currently, never dropped by design.
 
@@ -151,13 +150,13 @@ made.
 
 **Expected cardinality**: one entry per invitation. 
 
-**Access patterns**: We `init` and `get` only
+**Access patterns**: `init`, `get`
 
 **Dropped?**: Currently, not dropped, but there is a task to drop it: https://github.com/Agoric/agoric-sdk/issues/2880
 ### seatStagingToSeatHandle - WeakStore from `@agoric/store`
 
 A (seatStaging, seatHandle) is added whenever a seatStaging is made,
-which is either by contract code calling `zcfSeat.stage(` explicitly,
+which is either by contract code calling `zcfSeat.stage` explicitly,
 or by contract code using a ZoeHelper that does so. Note that
 `ZCFMint.mintGains` and `ZCFMint.burnLosses` create a single
 seatStaging each, and the `trade` helper creates two, one per seat
@@ -167,7 +166,7 @@ involved in the reallocation.
 restriction on the number of seatStagings that can be made per seat,
 however.
 
-**Access patterns**: We `init`, `has`, `get` and `delete`
+**Access patterns**: `init`, `has`, `get`, `delete`
 
 **Dropped?**: As of
 [6a2e217](https://github.com/Agoric/agoric-sdk/commit/6a2e217d7829be169d77fc02ceabe28647a43525)
@@ -185,7 +184,7 @@ generation code running, this will increase by one for every
 numerous "emptySeats" for accounting, so this is not strictly tied to
 the number of `E(zoe).offer` calls in general.)
 
-**Access patterns**: We `init`, `set`, `has`, `get` and `delete`
+**Access patterns**: `init`, `set`, `has`, `get`, `delete`
 
 **Dropped?**: When a ZCFSeat is exited, the entry is dropped.
 
@@ -199,7 +198,7 @@ seats being reallocated over are added.
 time, but it could be larger if the reallocation occurs over multiple
 seats.
 
-**Access patterns**: We `has` and `add`
+**Access patterns**: `has`, `add`
 
 **Dropped?**: Entire WeakSet is dropped when the function
 `reallocateInternal` ends. 
