@@ -105,7 +105,7 @@ test(`zcf assertNatAssetKind - not natMath`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { brand } = zcfMint.getIssuerRecord();
   t.throws(() => assertNatAssetKind(zcf, brand), {
-    message: 'issuer must use NAT amountMath',
+    message: 'brand must be AssetKind.NAT',
   });
 });
 
