@@ -28,10 +28,11 @@ function makeFakeBank() {
 
   return {
     getAccountsNotifier: () => notifier,
-    depositMultiple: (brand, a, p) => {
+    deposit: async (brand, a, p) => {
       depositAccounts.push(a);
       depositPayments.push(p);
-      return p.map(_pmt => ({ status: 'fulfilled' }));
+      // success or failure is all that matters for the test
+      return amountMath.makeEmpty(brand);
     },
 
     // tools for the fake:
@@ -64,15 +65,12 @@ test('fee distribution', async t => {
   const bankUpdater = bank.getUpdater();
   const treasury = makeFakeTreasury();
   const epochTimer = buildManualTimer(console.log);
-  const wallTimer = buildManualTimer(console.log);
   const distributorParams = {
-    depositsPerUpdate: 2,
-    updateInterval: 1n,
     epochInterval: 1n,
     runIssuer: issuer,
     runBrand: brand,
   };
-  buildDistributor(treasury, bank, epochTimer, wallTimer, distributorParams);
+  buildDistributor(treasury, bank, epochTimer, distributorParams);
 
   treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 500n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
@@ -83,36 +81,8 @@ test('fee distribution', async t => {
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  t.deepEqual(bank.getAccounts(), [['a37', 'a2389']]);
-  assertPaymentArray(t, bank.getPayments()[0], 2, 100, issuer, brand);
-
-  await wallTimer.tick();
-  waitForPromisesToSettle();
-
-  t.deepEqual(bank.getAccounts(), [
-    ['a37', 'a2389'],
-    ['a274', 'a16'],
-  ]);
-  assertPaymentArray(t, bank.getPayments()[1], 2, 100, issuer, brand);
-
-  await wallTimer.tick();
-  waitForPromisesToSettle();
-
-  t.deepEqual(bank.getAccounts(), [
-    ['a37', 'a2389'],
-    ['a274', 'a16'],
-    ['a1772'],
-  ]);
-  assertPaymentArray(t, bank.getPayments()[2], 1, 100, issuer, brand);
-
-  await wallTimer.tick();
-  waitForPromisesToSettle();
-
-  t.deepEqual(bank.getAccounts(), [
-    ['a37', 'a2389'],
-    ['a274', 'a16'],
-    ['a1772'],
-  ]);
+  t.deepEqual(bank.getAccounts(), ['a37', 'a2389', 'a274', 'a16', 'a1772']);
+  assertPaymentArray(t, bank.getPayments(), 5, 100, issuer, brand);
 });
 
 test('fee distribution, leftovers', async t => {
@@ -122,15 +92,12 @@ test('fee distribution, leftovers', async t => {
   const bankUpdater = bank.getUpdater();
   const treasury = makeFakeTreasury();
   const epochTimer = buildManualTimer(console.log);
-  const wallTimer = buildManualTimer(console.log);
   const distributorParams = {
-    depositsPerUpdate: 7,
-    updateInterval: 1n,
     epochInterval: 1n,
     runIssuer: issuer,
     runBrand: brand,
   };
-  buildDistributor(treasury, bank, epochTimer, wallTimer, distributorParams);
+  buildDistributor(treasury, bank, epochTimer, distributorParams);
 
   treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 12n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
@@ -141,25 +108,26 @@ test('fee distribution, leftovers', async t => {
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  t.deepEqual(bank.getAccounts(), [['a37', 'a2389', 'a274', 'a16', 'a1772']]);
-  assertPaymentArray(t, bank.getPayments()[0], 5, 2, issuer, brand);
-
-  await wallTimer.tick();
-  waitForPromisesToSettle();
+  t.deepEqual(bank.getAccounts(), ['a37', 'a2389', 'a274', 'a16', 'a1772']);
+  assertPaymentArray(t, bank.getPayments(), 5, 2, issuer, brand);
 
   // Pay them again
   treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 13n)));
-  await wallTimer.tick();
 
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  await wallTimer.tick();
-  waitForPromisesToSettle();
-
   t.deepEqual(bank.getAccounts(), [
-    ['a37', 'a2389', 'a274', 'a16', 'a1772'],
-    ['a37', 'a2389', 'a274', 'a16', 'a1772'],
+    'a37',
+    'a2389',
+    'a274',
+    'a16',
+    'a1772',
+    'a37',
+    'a2389',
+    'a274',
+    'a16',
+    'a1772',
   ]);
-  assertPaymentArray(t, bank.getPayments()[1], 5, 3, issuer, brand);
+  assertPaymentArray(t, bank.getPayments().slice(5), 5, 3, issuer, brand);
 });
