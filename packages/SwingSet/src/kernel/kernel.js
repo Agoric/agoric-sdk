@@ -875,8 +875,8 @@ export default function buildKernel(
       logStartup(`starting device ${name} as ${deviceID}`);
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const { source, options } = deviceKeeper.getSourceAndOptions();
-      assertKnownOptions(options, ['deviceParameters']);
-      const { deviceParameters = {} } = options;
+      assertKnownOptions(options, ['deviceParameters', 'unendowed']);
+      const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(source.bundle, {
@@ -887,14 +887,20 @@ export default function buildKernel(
         typeof NS.buildRootDeviceNode === 'function',
         `device ${name} lacks buildRootDeviceNode`,
       );
-      const manager = buildDeviceManager(
-        deviceID,
-        name,
-        NS.buildRootDeviceNode,
-        deviceEndowments[name],
-        deviceParameters,
-      );
-      addDeviceManager(deviceID, name, manager);
+      if (deviceEndowments[name] || unendowed) {
+        const manager = buildDeviceManager(
+          deviceID,
+          name,
+          NS.buildRootDeviceNode,
+          deviceEndowments[name],
+          deviceParameters,
+        );
+        addDeviceManager(deviceID, name, manager);
+      } else {
+        console.log(
+          `WARNING: skipping device ${deviceID} (${name}) because it has no endowments`,
+        );
+      }
     }
 
     // replay any transcripts
