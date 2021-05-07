@@ -103,7 +103,7 @@
  * @callback MakeZCFMint
  * @param {Keyword} keyword
  * @param {AssetKind=} assetKind
- * @param {DisplayInfo=} displayInfo
+ * @param {AdditionalDisplayInfo=} displayInfo
  * @returns {Promise<ZCFMint>}
  */
 
