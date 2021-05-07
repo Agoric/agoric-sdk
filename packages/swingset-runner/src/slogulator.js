@@ -80,6 +80,20 @@ export function main() {
     syscall: handleSyscall,
     'syscall-result': handleSyscallResult,
     terminate: handleTerminate,
+    'import-kernel-start': handleImportKernelStart,
+    'import-kernel-finish': handleImportKernelFinish,
+    'vat-startup-start': handleVatStartupStart,
+    'vat-startup-finish': handleVatStartupFinish,
+    'replay-transcript-start': handleReplayTranscriptStart,
+    'replay-transcript-finish': handleReplayTranscriptFinish,
+    'start-replay-delivery': handleStartReplayDelivery,
+    'finish-replay-delivery': handleFinishReplayDelivery,
+    'start-replay': handleStartReplay,
+    'finish-replay': handleFinishReplay,
+    'cosmic-swingset-begin-block': handleCosmicSwingsetBeginBlock,
+    'cosmic-swingset-end-block-start': handleCosmicSwingsetEndBlockStart,
+    'cosmic-swingset-end-block-finish': handleCosmicSwingsetEndBlockFinish,
+    'cosmic-swingset-deliver-inbound': handleCosmicSwingsetDeliverInbound,
   };
 
   const slogFile = argv._[0];
@@ -94,6 +108,21 @@ export function main() {
   let currentCrank = 0;
   let currentVat;
   let currentSyscallName;
+  let importKernelStartTime = 0;
+  let vatStartupStartTime = 0;
+  let vatStartupVat;
+  let replayTranscriptStartTime = 0;
+  let replayTranscriptVat;
+  let replayStartTime = 0;
+  let replayVat;
+  let replayDeliveryStartTime = 0;
+  let replayDeliveryVat;
+  let replayDeliveryNum;
+  let replayDeliveryDelivery;
+  let cosmicSwingsetBeginBlockTime = 0;
+  let cosmicSwingsetEndBlockStartTime = 0;
+  let cosmicSwingsetBlockTime;
+  let cosmicSwingsetBlockHeight;
 
   const vatNames = new Map();
   const crankLabels = new Map();
@@ -147,8 +176,16 @@ export function main() {
     p('// crank 0');
   }
   let line = lines.next();
+  let lineNumber = 0;
   while (line) {
-    const entry = JSON.parse(line);
+    lineNumber += 1;
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch (err) {
+      p(`// JSON.parse error on line ${lineNumber}`);
+      throw err;
+    }
     const type = entry.type;
     if (entry.crankNum && entry.crankNum !== currentCrank) {
       currentCrank = entry.crankNum;
@@ -167,7 +204,12 @@ export function main() {
       summary[type] = 1;
     }
     const handler = handlers[type] || defaultHandler;
-    handler(entry);
+    try {
+      handler(entry);
+    } catch (err) {
+      p(`// handler problem on line ${lineNumber}`);
+      throw err;
+    }
     line = lines.next();
   }
   if (argv.crankbreaks) {
@@ -188,7 +230,7 @@ export function main() {
   }
 
   function defaultHandler(entry) {
-    p(`${entry.type}: ${JSON.stringify(entry)}`);
+    p(`@ ${entry.type}: ${JSON.stringify(entry)}`);
   }
 
   function vatLabel(entry) {
@@ -280,39 +322,62 @@ export function main() {
     return legibilizeValue(JSON.parse(data.body), data.slots);
   }
 
-  function doDeliverMessage(delivery) {
+  function doDeliverMessage(delivery, prefix = '') {
     const target = delivery[1];
     const msg = delivery[2];
     // prettier-ignore
-    p(`deliver: ${pref(target)} <- ${msg.method}(${pargs(msg.args)}): ${pref(msg.result)}`);
+    p(`${prefix}deliver: ${pref(target)} <- ${msg.method}(${pargs(msg.args)}): ${pref(msg.result)}`);
   }
 
-  function doDeliverNotify(delivery) {
+  function doDeliverNotify(delivery, prefix = '') {
     const resolutions = delivery[1];
     let idx = 0;
     for (const resolution of resolutions) {
       const [target, value] = resolution;
-      const tag = terse ? value.state : `notify ${value.state}`;
-      switch (value.state) {
+      let state;
+      let data;
+      // 'delivery' records for notifications have annoyingly different shapes
+      // for the kernel ('kd') and vat ('vd') resolution records.
+      // 'start-replay-delivery' records use the vat shape.
+      //
+      // The kernel resolution shape is:
+      //   [TARGET, {state:STATESTR, refCount:REFCOUNT, data: { body: BODYSTR, slots: [...SLOTS]}}]
+      // where STATESTR is 'fulfilled' or 'rejected'
+      //
+      // The vat resolution shape is:
+      //   [TARGET, REJECTED, { body: BODYSTR, slots: [...SLOTS]}]
+      // where REJECTED is false for fulfilled and true for rejected.
+      //
+      // We figure out which shape we're dealing with by checking to see if the
+      // second element of the array is a boolean.
+      if (typeof value === 'boolean') {
+        state = value ? 'rejected' : 'fulfilled';
+        data = resolution[2];
+      } else {
+        state = value.state;
+        data = value.data;
+      }
+      const tag = terse ? state : `notify ${state}`;
+      switch (state) {
         case 'fulfilled':
         case 'rejected':
-          p(`${tag}: ${idx} ${pref(target)} := ${pdata(value.data)}`);
+          p(`${prefix}${tag}: ${idx} ${pref(target)} := ${pdata(data)}`);
           break;
         default:
-          p(`notify: unknown state "${value.state}"`);
+          p(`notify: unknown state "${state}"`);
           break;
       }
       idx += 1;
     }
   }
 
-  function doDeliver(delivery) {
+  function doDeliver(delivery, prefix) {
     switch (delivery[0]) {
       case 'message':
-        doDeliverMessage(delivery);
+        doDeliverMessage(delivery, prefix);
         break;
       case 'notify':
-        doDeliverNotify(delivery);
+        doDeliverNotify(delivery, prefix);
         break;
       default:
         p(`deliver: unknown deliver type "${delivery[0]}"`);
@@ -376,6 +441,7 @@ export function main() {
   function doSyscallVatstoreSet(tag, entry) {
     const key = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
+    /*
     const data = JSON.parse(value);
     if (key.startsWith('ws')) {
       p(`${tag}: '${key}' (${pref(key, false)}) = ${pdata(data)}`);
@@ -386,6 +452,8 @@ export function main() {
       }
       p(`${tag}: '${key}' (${pref(key, false)}) = ${JSON.stringify(interp)}`);
     }
+    */
+    p(`${tag}: ${key} := '${value}'`);
   }
 
   function doSyscallExit(tag, entry) {
@@ -426,6 +494,112 @@ export function main() {
     }
   }
 
+  function handleImportKernelStart(entry) {
+    importKernelStartTime = entry.time;
+  }
+
+  function handleImportKernelFinish(entry) {
+    p(`kernel-import: ${entry.time - importKernelStartTime}`);
+  }
+
+  function handleVatStartupStart(entry) {
+    vatStartupStartTime = entry.time;
+    vatStartupVat = entry.vatID;
+  }
+
+  function handleVatStartupFinish(entry) {
+    // prettier-ignore
+    if (entry.vatID !== vatStartupVat) {
+      p(`vat-startup-finish vat ${entry.vatID} doesn't match vat-startup-start vat ${vatStartupVat}`);
+    } else {
+      p(`vat-startup: ${entry.vatID} ${entry.time - vatStartupStartTime}`);
+    }
+  }
+
+  function handleReplayTranscriptStart(entry) {
+    replayTranscriptStartTime = entry.time;
+    replayTranscriptVat = entry.vatID;
+    p(`replay-transcript-start: ${entry.vatID}`);
+  }
+
+  function handleReplayTranscriptFinish(entry) {
+    // prettier-ignore
+    if (entry.vatID !== replayTranscriptVat) {
+      p(`replay-transcript-finish vat ${entry.vatID} doesn't match replay-transcript-start vat ${replayTranscriptVat}`);
+    } else {
+      p(`replay-transcript-finish: ${entry.vatID} ${entry.time - replayTranscriptStartTime}`);
+    }
+  }
+
+  function handleStartReplay(entry) {
+    replayStartTime = entry.time;
+    replayVat = entry.vatID;
+    p(`start-replay: ${entry.vatID} ${entry.deliveries}`);
+  }
+
+  function handleFinishReplay(entry) {
+    // prettier-ignore
+    if (entry.vatID !== replayVat) {
+      p(`finish-replay vat ${entry.vatID} doesn't match start-replay vat ${replayVat}`);
+    } else {
+      p(`finish-replay ${entry.vatID} ${entry.time - replayStartTime}`);
+    }
+  }
+
+  function handleStartReplayDelivery(entry) {
+    replayDeliveryStartTime = entry.time;
+    replayDeliveryVat = entry.vatID;
+    replayDeliveryNum = entry.deliveryNum;
+    replayDeliveryDelivery = entry.delivery;
+  }
+
+  function handleFinishReplayDelivery(entry) {
+    // prettier-ignore
+    if (entry.vatID !== replayDeliveryVat) {
+      p(`finish-replay-delivery vat ${entry.vatID} doesn't match start-replay-delivery vat ${replayDeliveryVat}`);
+    } else if (entry.deliveryNum !== replayDeliveryNum) {
+      p(`finish-replay-delivery number ${entry.deliveryNum} doesn't match start-replay-delivery number ${replayDeliveryNum}`);
+    } else {
+      const prefix = `replay ${entry.vatID} ${entry.deliveryNum} ${entry.time - replayDeliveryStartTime} `;
+      doDeliver(replayDeliveryDelivery, prefix);
+    }
+  }
+
+  function handleCosmicSwingsetBeginBlock(entry) {
+    cosmicSwingsetBeginBlockTime = entry.time;
+    cosmicSwingsetBlockTime = entry.blockTime;
+    cosmicSwingsetBlockHeight = entry.blockHeight;
+    p(`cosmic-swingset-begin-block: ${entry.blockHeight} ${entry.blockTime}`);
+  }
+
+  function handleCosmicSwingsetEndBlockStart(entry) {
+    cosmicSwingsetEndBlockStartTime = entry.time;
+    // prettier-ignore
+    if (entry.blockTime !== cosmicSwingsetBlockTime) {
+      p(`cosmic-swingset-end-block-start time ${entry.blockTime} doesn't match cosmic-swingset-begin-block time ${cosmicSwingsetBlockTime}`);
+    } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
+      p(`cosmic-swingset-end-block-start height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
+    } else {
+      p(`cosmic-swingset-end-block-start`);
+    }
+  }
+
+  function handleCosmicSwingsetEndBlockFinish(entry) {
+    cosmicSwingsetEndBlockStartTime = entry.time;
+    // prettier-ignore
+    if (entry.blockTime !== cosmicSwingsetBlockTime) {
+      p(`cosmic-swingset-end-block-finish time ${entry.blockTime} doesn't match cosmic-swingset-begin-block time ${cosmicSwingsetBlockTime}`);
+    } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
+      p(`cosmic-swingset-end-block-finish height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
+    } else {
+      p(`cosmic-swingset-end-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetEndBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetEndBlockStartTime}`);
+    }
+  }
+
+  function handleCosmicSwingsetDeliverInbound(entry) {
+    p(`cosmic-swingset-deliver-inbound: ${entry.count} ${entry.sender}`);
+  }
+
   function handleSyscall(entry) {
     doSyscall(kernelSpace ? entry.ksc : entry.vsc);
   }
@@ -454,7 +628,7 @@ export function main() {
         p(`${tag}: '${value}'`);
         break;
       default:
-        p(`this can't happen`);
+        p(`syscall-result missing start of syscall`);
         break;
     }
   }
