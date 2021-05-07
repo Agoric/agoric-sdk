@@ -9,7 +9,7 @@ import {
   trade,
   defaultAcceptanceMsg,
   assertProposalShape,
-  assertUsesNatMath,
+  assertNatAssetKind,
 } from '../contractSupport';
 
 import '../../exported';
@@ -40,7 +40,7 @@ const start = zcf => {
   const { pricePerItem, issuers, brands } = zcf.getTerms();
   const allKeywords = ['Items', 'Money'];
   assertIssuerKeywords(zcf, harden(allKeywords));
-  assertUsesNatMath(zcf, pricePerItem.brand);
+  assertNatAssetKind(zcf, pricePerItem.brand);
 
   let sellerSeat;
 

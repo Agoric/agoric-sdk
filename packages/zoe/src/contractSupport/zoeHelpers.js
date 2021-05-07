@@ -310,11 +310,11 @@ export const assertProposalShape = (seat, expected) => {
   assertKeys(actual.exit, expected.exit);
 };
 
-/* Given a brand, assert that the issuer uses NAT amountMath. */
-export const assertUsesNatMath = (zcf, brand) => {
+/* Given a brand, assert that brand is AssetKind.NAT. */
+export const assertNatAssetKind = (zcf, brand) => {
   assert(
     zcf.getAssetKind(brand) === AssetKind.NAT,
-    X`issuer must use NAT amountMath`,
+    X`brand must be AssetKind.NAT`,
   );
 };
 

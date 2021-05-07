@@ -30,7 +30,7 @@ export {
   assertProposalShape,
   assertIssuerKeywords,
   satisfies,
-  assertUsesNatMath,
+  assertNatAssetKind,
   swapExact,
   depositToSeat,
   withdrawFromSeat,

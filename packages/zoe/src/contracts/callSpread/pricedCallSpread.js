@@ -12,7 +12,7 @@ import {
   assertProposalShape,
   depositToSeat,
   trade,
-  assertUsesNatMath,
+  assertNatAssetKind,
   makeRatio,
   multiplyBy,
   oneMinus,
@@ -68,8 +68,8 @@ const start = zcf => {
     strikePrice2,
     settlementAmount,
   } = zcf.getTerms();
-  assertUsesNatMath(zcf, brands.Collateral);
-  assertUsesNatMath(zcf, brands.Strike);
+  assertNatAssetKind(zcf, brands.Collateral);
+  assertNatAssetKind(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.
 
   assert(
