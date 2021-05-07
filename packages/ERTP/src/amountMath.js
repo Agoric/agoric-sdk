@@ -170,7 +170,7 @@ const coerceLR = (h, leftAmount, rightAmount) => {
 };
 
 /** @type {AmountMath} */
-const amountMath = {
+const AmountMath = {
   make: (brand, allegedValue) => {
     if (looksLikeBrand(allegedValue)) {
       // Swap to support deprecated reverse argument order
@@ -195,10 +195,10 @@ const amountMath = {
       X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
     );
     // Will throw on inappropriate value
-    return amountMath.make(brand, allegedAmount.value);
+    return AmountMath.make(brand, allegedAmount.value);
   },
   // @ts-ignore TODO Why doesn't this type correctly?
-  getValue: (brand, amount) => amountMath.coerce(brand, amount).value,
+  getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   makeEmpty: (brand, mathKind = MathKind.NAT) => {
     assert(
       helpers[mathKind],
@@ -208,7 +208,7 @@ const amountMath = {
     return noCoerceMake(helpers[mathKind].doMakeEmpty(), brand);
   },
   makeEmptyFromAmount: amount =>
-    amountMath.makeEmpty(amount.brand, getMathKind(amount)),
+    AmountMath.makeEmpty(amount.brand, getMathKind(amount)),
   isEmpty: (amount, brand = undefined) => {
     assertLooksLikeAmount(amount);
     optionalBrandCheck(amount, brand);
@@ -243,6 +243,14 @@ const amountMath = {
     );
   },
 };
-harden(amountMath);
+harden(AmountMath);
 
-export { amountMath, MathKind, getMathKind };
+/**
+ * Usage of lowercase `amountMath` is deprecated. Please import
+ * `AmountMath` instead.
+ *
+ * @deprecated
+ */
+const amountMath = AmountMath;
+
+export { amountMath, AmountMath, MathKind, getMathKind };
