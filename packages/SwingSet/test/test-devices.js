@@ -136,6 +136,7 @@ async function test2(t, mode) {
     devices: {
       d2: {
         sourceSpec: require.resolve('./files-devices/device-2'),
+        creationOptions: { unendowed: true },
       },
     },
   };
@@ -223,6 +224,7 @@ test.serial('device state', async t => {
     devices: {
       d3: {
         sourceSpec: require.resolve('./files-devices/device-3'),
+        creationOptions: { unendowed: true },
       },
     },
   };
@@ -492,12 +494,13 @@ test.serial('liveslots throws when D() gets promise', async t => {
     devices: {
       d0: {
         sourceSpec: require.resolve('./files-devices/device-0'),
+        creationOptions: { unendowed: true },
       },
     },
   };
   const storage = initSwingStore().storage;
   await initializeSwingset(config, ['promise1'], storage, t.context.data);
-  const c = await makeSwingsetController(storage, { d0: {} });
+  const c = await makeSwingsetController(storage, {});
   await c.step();
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
@@ -527,12 +530,13 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
     devices: {
       d0: {
         sourceSpec: require.resolve('./files-devices/device-0'),
+        creationOptions: { unendowed: true },
       },
     },
   };
   const storage = initSwingStore().storage;
   await initializeSwingset(config, [], storage, t.context.data);
-  const c = await makeSwingsetController(storage, { d0: {} });
+  const c = await makeSwingsetController(storage, {});
   await c.step();
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);

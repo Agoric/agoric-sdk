@@ -13,6 +13,9 @@ async function makeController(managerType) {
   config.devices = {
     add: {
       sourceSpec: require.resolve('./device-add.js'),
+      creationOptions: {
+        unendowed: true,
+      },
     },
   };
   const c = await buildVatController(config, []);
