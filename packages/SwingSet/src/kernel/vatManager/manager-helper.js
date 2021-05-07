@@ -164,6 +164,7 @@ function makeManagerKit(
       });
       // eslint-disable-next-line no-await-in-loop
       await deliver(t.d);
+      transcriptManager.finishReplayDelivery();
       kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
       deliveryNum += 1;
     }

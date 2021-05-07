@@ -59,6 +59,22 @@ export function makeTranscriptManager(vatKeeper, vatID) {
     return s.response;
   }
 
+  function finishReplayDelivery() {
+    if (playbackSyscalls.length !== 0) {
+      console.log(`anachrophobia strikes vat ${vatID}`);
+      console.log(
+        `delivery completed with ${playbackSyscalls.length} expected syscalls remaining`,
+      );
+      for (const s of playbackSyscalls) {
+        console.log(`expected:`, djson.stringify(s.d));
+      }
+      if (!replayError) {
+        replayError = new Error(`historical inaccuracy in replay of ${vatID}`);
+      }
+      throw replayError;
+    }
+  }
+
   function checkReplayError() {
     if (replayError) {
       throw replayError;
@@ -73,6 +89,7 @@ export function makeTranscriptManager(vatKeeper, vatID) {
     startReplayDelivery,
     finishReplay,
     simulateSyscall,
+    finishReplayDelivery,
     checkReplayError,
     inReplay,
   });
