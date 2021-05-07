@@ -15,8 +15,7 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
  * @param {AmountDisplayInfo} displayInfo
  */
 export function parseValue(str, displayInfo) {
-  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } =
-    displayInfo || {};
+  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } = displayInfo || {};
 
   assert.typeof(str, 'string', X`valueString ${str} is not a string`);
 
@@ -47,8 +46,7 @@ export function parseValue(str, displayInfo) {
  * @returns {string}
  */
 export function stringifyValue(value, displayInfo = undefined) {
-  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } =
-    displayInfo || {};
+  const { assetKind = AssetKind.NAT, decimalPlaces = 0 } = displayInfo || {};
 
   if (assetKind !== AssetKind.NAT) {
     // Just return the size of the set.
