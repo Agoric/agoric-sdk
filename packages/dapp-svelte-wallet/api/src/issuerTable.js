@@ -65,7 +65,7 @@ const makeIssuerTable = () => {
       issuerTable.initIssuerByRecord({
         brand,
         issuer,
-        assetKind: assetKind,
+        assetKind,
         displayInfo: { ...displayInfo, assetKind },
       });
       return issuerTable.getByBrand(brand);
