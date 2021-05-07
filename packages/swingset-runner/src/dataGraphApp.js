@@ -61,7 +61,7 @@ function fail(message, printUsage, showFields) {
 }
 
 export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
-  const argv = process.argv.splice(2);
+  const argv = process.argv.slice(2);
 
   let outfile = null;
   const datafiles = [];
