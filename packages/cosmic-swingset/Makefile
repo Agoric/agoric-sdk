@@ -98,6 +98,7 @@ wait-for-cosmos:
 		sleep 5; \
 	done
 	@echo ' done!'
+	# TODO: find a way to tell when the chain is ready without a race.
 	sleep 10 # Generous timeout to wait for chain to be ready
 
 t1-provision-one-with-powers: wait-for-cosmos

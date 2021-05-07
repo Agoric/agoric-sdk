@@ -2,7 +2,7 @@ package vpurse
 
 import (
 	"encoding/json"
-	"fmt"
+	stdlog "log"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -148,7 +148,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 				case "recipient", "sender":
 					address := string(attr.GetValue())
 					if err := ensureBalanceIsPresent(address); err != nil {
-						fmt.Println("Cannot ensure vpurse balance for", address, err)
+						stdlog.Println("Cannot ensure vpurse balance for", address, err)
 					}
 				}
 			}
