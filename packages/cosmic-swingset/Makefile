@@ -6,6 +6,8 @@ GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 GOSRC = ../../golang/cosmos
 AG_SOLO = $(shell cd ../solo/bin && pwd)/ag-solo
 
+SHELL = bash
+
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
 FAKE_CHAIN_DELAY = 0
@@ -87,7 +89,19 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.bankManager,agoric.agoricNamesAdmin,agoric.pegasusConnections,agoric.priceAuthorityAdmin,agoric.treasuryCreator,agoric.vattp
 SOLO_COINS = 13000000ubld
-t1-provision-one-with-powers:
+COSMOS_RPC_HOST = localhost
+COSMOS_RPC_PORT = 26657
+wait-for-cosmos:
+	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT) to come live..."
+	@while ! curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status >/dev/null; do \
+		echo -n '.'; \
+		sleep 5; \
+	done
+	@echo ' done!'
+	# TODO: find a way to tell when the chain is ready without a race.
+	sleep 10 # Generous timeout to wait for chain to be ready
+
+t1-provision-one-with-powers: wait-for-cosmos
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
@@ -97,7 +111,7 @@ t1-provision-one-with-powers:
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
 
-t1-provision-one:
+t1-provision-one: wait-for-cosmos
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
@@ -168,7 +182,7 @@ set-local-gci-ingress:
 	set -e; \
 	gci=`./calc-gci.js t1/n0/config/genesis.json`; \
 	rpcport=`./calc-rpcport.js t1/n0/config/config.toml`; \
-	for dir in t1/[0-9]*; do \
-		(cd $$dir && \
+	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
+		(cd t1/$$port && \
 			$(AG_SOLO) set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
 	done

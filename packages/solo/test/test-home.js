@@ -14,11 +14,13 @@ import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers';
 
 import { makeFixture, E } from './captp-fixture';
 
+const SOLO_PORT = 7999;
+
 // This runs before all the tests.
 let home;
 let teardown;
 test.before('setup', async t => {
-  const { homeP, kill } = await makeFixture(process.env.NOISY);
+  const { homeP, kill } = await makeFixture(SOLO_PORT, process.env.NOISY);
   teardown = kill;
   home = await homeP;
   t.truthy('ready');

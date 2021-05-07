@@ -118,7 +118,7 @@ func (sh storageHandler) Receive(ctx *ControllerContext, str string) (ret string
 		if keys.Keys == nil {
 			return "0", nil
 		}
-		return string(len(keys.Keys)), nil
+		return fmt.Sprint(len(keys.Keys)), nil
 	}
 
 	return "", errors.New("Unrecognized msg.Method " + msg.Method)

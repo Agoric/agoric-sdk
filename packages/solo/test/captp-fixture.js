@@ -5,12 +5,10 @@ import { makeCapTP, E } from '@agoric/captp';
 
 import { getAccessToken } from '../src/access-token';
 
-const PORT = 7999;
-
 // Ensure we're all using the same HandledPromise.
 export { E };
 
-export async function makeFixture(noisy = false) {
+export async function makeFixture(PORT, noisy = false) {
   const accessToken = await getAccessToken(PORT);
 
   let expectedToExit = false;
