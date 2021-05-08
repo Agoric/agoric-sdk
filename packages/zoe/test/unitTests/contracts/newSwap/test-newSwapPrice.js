@@ -7,6 +7,8 @@ import {
   getInputPrice,
   getOutputPrice,
   natSafeMath,
+  makeRatio,
+  multiplyBy,
 } from '../../../../src/contractSupport';
 import { setup } from '../../setupBasicMints';
 import { makeGetCurrentPrice } from '../../../../src/contracts/newSwap/getCurrentPrice';
@@ -140,26 +142,26 @@ function protocolFee(input) {
 test('newSwap getPriceGivenAvailableInput specify central', async t => {
   const initMoola = 800000n;
   const initBucks = 300000n;
-  const { bucks, moola, bucksBrand, pricer } = setupPricer(
+  const { bucks, moola, moolaBrand, bucksBrand, pricer } = setupPricer(
     initMoola,
     initBucks,
   );
 
   const input = 10000n;
-  const pFeePre = protocolFee(input);
+  const feeOverOnePlusFee = makeRatio(6n, moolaBrand, add(BASIS_POINTS, 6n));
+  const pFee = multiplyBy(moola(input), feeOverOnePlusFee);
 
   const valueOut = outputFromInputPrice(
     initMoola,
     initBucks,
-    input - pFeePre,
+    input - pFee.value,
     24n,
   );
   const valueIn = priceFromTargetOutput(valueOut, initBucks, initMoola, 24n);
-  const pFee = protocolFee(valueIn);
   t.deepEqual(pricer.getPriceGivenAvailableInput(moola(input), bucksBrand), {
-    amountIn: moola(valueIn + pFee),
+    amountIn: moola(valueIn + pFee.value),
     amountOut: bucks(valueOut),
-    protocolFee: moola(pFee),
+    protocolFee: moola(pFee.value),
   });
   t.truthy(
     (initMoola - valueOut) * (initBucks + valueIn) > initBucks * initMoola,

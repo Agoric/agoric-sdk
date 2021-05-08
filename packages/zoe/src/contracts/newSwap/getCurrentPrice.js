@@ -42,11 +42,6 @@ export const makeGetCurrentPrice = (
     X`poolFee (${poolFeeBP}) and protocolFee (${protocolFeeBP}) must be Nats`,
   );
   const protocolFeeRatio = makeRatio(protocolFeeBP, centralBrand, BASIS_POINTS);
-  const protocolFeeReductionRatio = makeRatio(
-    protocolFeeBP,
-    centralBrand,
-    add(BASIS_POINTS, protocolFeeBP),
-  );
   const halfPoolFeeBP = ceilDivide(poolFeeBP, 2);
 
   const getPriceGivenAvailableInput = (amountIn, brandOut) => {
@@ -57,9 +52,16 @@ export const makeGetCurrentPrice = (
       // remainder to the pool to get a quote. Then we'll add the fee to deltaX
       // before sending out the quote.
 
-      // prelimProtocolFee will be replaced by protocolFee once we get the final
-      // value of amountIn from getPriceGivenAvailableInput.
-      const protocolFee = multiplyBy(amountIn, protocolFeeReductionRatio);
+      // amountIn will be divided into deltaX (what's added to the pool) and the
+      // protocol fee. protocolFee will be protocolFeeRatio * deltaX.
+      // Therefore, amountIn = (1 + protocolFeeRatio) * deltaX, and
+      // protocolFee =  protocolFeeRatio * amountIn / (1 + protocolFeeRatio).
+      const feeOverOnePlusFee = makeRatio(
+        protocolFeeBP,
+        centralBrand,
+        add(BASIS_POINTS, protocolFeeBP),
+      );
+      const protocolFee = multiplyBy(amountIn, feeOverOnePlusFee);
       const poolAmountIn = AmountMath.subtract(amountIn, protocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
         poolAmountIn,
@@ -187,14 +189,25 @@ export const makeGetCurrentPrice = (
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
       // We'll add the protocol fee to amountOut to get deltaY. The user will
       // pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
-      const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
+
+      // protocolFee is feeRatio * deltaY, and deltaY is (1 + feeRatio) * amountOut,
+      // so we compute protocolFee as feeRatio * (1 + feeRatio) * amountOut
+      const onePlusProtocolFee = makeRatio(
+        add(BASIS_POINTS, protocolFeeBP),
+        centralBrand,
+        BASIS_POINTS,
+      );
+      const protocolFee = multiplyBy(
+        multiplyBy(amountOut, onePlusProtocolFee),
+        protocolFeeRatio,
+      );
+
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,
-        AmountMath.add(amountOut, preliminaryProtocolFee),
+        AmountMath.add(amountOut, protocolFee),
         poolFeeBP,
       );
 
-      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
       return {
         amountIn: price.amountIn,
         amountOut: AmountMath.subtract(price.amountOut, protocolFee),

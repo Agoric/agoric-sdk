@@ -991,22 +991,33 @@ test('newSwap jig - breaking scenario', async t => {
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 
-  const priceQuote = await E(publicFacet).getPriceGivenAvailableInput(
+  const quoteFromRun = await E(publicFacet).getPriceGivenAvailableInput(
     centralTokens(73000000n),
     moolaR.brand,
   );
-  t.deepEqual(priceQuote, {
+  t.deepEqual(quoteFromRun, {
     amountIn: centralTokens(72999997n),
     amountOut: moola(3145007n),
   });
 
-  const newPriceQuote = await E(publicFacet).getPriceGivenAvailableInput(
-    priceQuote.amountIn,
+  const newQuoteFromRun = await E(publicFacet).getPriceGivenAvailableInput(
+    quoteFromRun.amountIn,
     moolaR.brand,
   );
 
-  t.truthy(amountMath.isGTE(priceQuote.amountIn, newPriceQuote.amountIn));
-  t.truthy(amountMath.isGTE(newPriceQuote.amountOut, priceQuote.amountOut));
+  t.truthy(amountMath.isGTE(quoteFromRun.amountIn, newQuoteFromRun.amountIn));
+  t.truthy(amountMath.isGTE(newQuoteFromRun.amountOut, quoteFromRun.amountOut));
+
+  const quoteToRun = await E(publicFacet).getPriceGivenRequiredOutput(
+    moolaR.brand,
+    centralTokens(370000000n),
+  );
+  const newQuoteToRun = await E(publicFacet).getPriceGivenRequiredOutput(
+    moolaR.brand,
+    quoteToRun.amountOut,
+  );
+  t.deepEqual(quoteToRun.amountIn, newQuoteToRun.amountIn);
+  t.deepEqual(newQuoteToRun.amountOut, quoteToRun.amountOut);
 });
 
 // This demonstrates that we've worked around
