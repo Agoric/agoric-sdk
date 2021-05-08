@@ -904,6 +904,111 @@ test('newSwap jig - swapOut uneven', async t => {
   });
 });
 
+test('newSwap jig - breaking scenario', async t => {
+  const { moolaR, moola, simoleanR } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(newSwapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = value => amountMath.make(value, centralR.brand);
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(
+    centralTokens(55825056949339n),
+  );
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(2396247730468n + 4145005n)));
+
+  const fakeTimer = buildManualTimer(console.log);
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+  );
+
+  const {
+    /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
+  } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+
+  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+    simoleanR.issuer,
+    'Simoleans',
+  );
+
+  const mIssuerKeywordRecord = {
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+    simoleanLiquidityIssuer.makeEmptyPurse(),
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let mPoolState = {
+    c: 0n,
+    s: 0n,
+    l: 0n,
+    k: 0n,
+  };
+
+  const initMoolaLiquidityDetails = {
+    cAmount: centralTokens(50825056949339n),
+    sAmount: moola(2196247730468n),
+    lAmount: moolaLiquidity(50825056949339n),
+  };
+  const initMoolaLiquidityExpected = {
+    c: 50825056949339n,
+    s: 2196247730468n,
+    l: 50825056949339n,
+    k: 50825056949339n * 2196247730468n,
+    payoutC: 0n,
+    payoutS: 0n,
+    payoutL: 50825056949339n,
+  };
+  await alice.initLiquidityAndCheck(
+    t,
+    mPoolState,
+    initMoolaLiquidityDetails,
+    initMoolaLiquidityExpected,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
+
+  const priceQuote = await E(publicFacet).getPriceGivenAvailableInput(
+    centralTokens(73000000n),
+    moolaR.brand,
+  );
+  t.deepEqual(priceQuote, {
+    amountIn: centralTokens(72999997n),
+    amountOut: moola(3145007n),
+  });
+
+  const newPriceQuote = await E(publicFacet).getPriceGivenAvailableInput(
+    priceQuote.amountIn,
+    moolaR.brand,
+  );
+
+  t.truthy(amountMath.isGTE(priceQuote.amountIn, newPriceQuote.amountIn));
+  t.truthy(amountMath.isGTE(newPriceQuote.amountOut, priceQuote.amountOut));
+});
+
 // This demonstrates that we've worked around
 // https://github.com/Agoric/agoric-sdk/issues/3033.  When that is fixed, the
 // work-around in collectFees should be cleaned up.

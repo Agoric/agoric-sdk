@@ -8,7 +8,7 @@ import { isNat } from '@agoric/nat';
 
 import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
 
-const { ceilDivide } = natSafeMath;
+const { ceilDivide, add } = natSafeMath;
 const BASIS_POINTS = 10000;
 
 /**
@@ -42,6 +42,11 @@ export const makeGetCurrentPrice = (
     X`poolFee (${poolFeeBP}) and protocolFee (${protocolFeeBP}) must be Nats`,
   );
   const protocolFeeRatio = makeRatio(protocolFeeBP, centralBrand, BASIS_POINTS);
+  const protocolFeeReductionRatio = makeRatio(
+    protocolFeeBP,
+    centralBrand,
+    add(BASIS_POINTS, protocolFeeBP),
+  );
   const halfPoolFeeBP = ceilDivide(poolFeeBP, 2);
 
   const getPriceGivenAvailableInput = (amountIn, brandOut) => {
@@ -54,14 +59,13 @@ export const makeGetCurrentPrice = (
 
       // prelimProtocolFee will be replaced by protocolFee once we get the final
       // value of amountIn from getPriceGivenAvailableInput.
-      const prelimProtocolFee = multiplyBy(amountIn, protocolFeeRatio);
-      const poolAmountIn = AmountMath.subtract(amountIn, prelimProtocolFee);
+      const protocolFee = multiplyBy(amountIn, protocolFeeReductionRatio);
+      const poolAmountIn = AmountMath.subtract(amountIn, protocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
         poolAmountIn,
         brandOut,
         poolFeeBP,
       );
-      const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
 
       // price.amountIn is what the user pays, and includes the protocolFee. The
       // user will receive price.amountOut.
