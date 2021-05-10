@@ -146,7 +146,7 @@ const start = zcf => {
   // compatibility with Treasury which expects to be able to collect fees from
   // the AMM.
   const makeCollectFeesInvitation = () => {
-    return zcf.makeInvitation(seat => seat.exit(), 'collect empty fee');
+    return zcf.makeInvitation(seat => seat.exit(), 'collect Fees');
   };
 
   const creatorFacet = Far('Private Facet', {
