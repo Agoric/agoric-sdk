@@ -1,5 +1,5 @@
 // @ts-check
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   makeNotifierKit,
@@ -41,7 +41,7 @@ export async function makeFakePriceAuthority(options) {
     timer,
     unitAmountIn = amountMath.make(1n, actualBrandIn),
     quoteInterval = 1n,
-    quoteMint = makeIssuerKit('quote', MathKind.SET).mint,
+    quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
   } = options;
 
   assert(

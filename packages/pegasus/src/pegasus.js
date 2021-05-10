@@ -370,7 +370,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {ERef<Connection>} connectionP The network connection (such as IBC
      * channel) to communicate over
      * @param {Denom} remoteDenom Remote denomination
-     * @param {string} [amountMathKind=DEFAULT_AMOUNT_MATH_KIND] The kind of
+     * @param {string} [assetKind=DEFAULT_AMOUNT_MATH_KIND] The kind of
      * amount math for the pegged values
      * @param {DisplayInfo} [displayInfo]
      * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL]
@@ -380,14 +380,14 @@ const makePegasus = (zcf, board, namesByAddress) => {
       allegedName,
       connectionP,
       remoteDenom,
-      amountMathKind = DEFAULT_AMOUNT_MATH_KIND,
+      assetKind = DEFAULT_AMOUNT_MATH_KIND,
       displayInfo = undefined,
       protocol = DEFAULT_PROTOCOL,
     ) {
       // Assertions
       assert(
-        amountMathKind === 'nat',
-        details`Unimplemented amountMathKind ${q(amountMathKind)}; need "nat"`,
+        assetKind === 'nat',
+        details`Unimplemented assetKind ${q(assetKind)}; need "nat"`,
       );
       assert(
         protocol === 'ics20-1',
@@ -407,7 +407,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const localKeyword = createLocalIssuerKeyword();
       const zcfMint = await zcf.makeZCFMint(
         localKeyword,
-        amountMathKind,
+        assetKind,
         displayInfo,
       );
       const { brand: localBrand } = zcfMint.getIssuerRecord();

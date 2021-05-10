@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { MathKind, amountMath, isNatValue } from '@agoric/ertp/';
+import { AssetKind, amountMath, isNatValue } from '@agoric/ertp/';
 import { makeNotifierKit } from '@agoric/notifier';
 
 import {
@@ -318,8 +318,8 @@ export const makeAddPool = (
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    const [secondaryMathKind, secondaryBrand] = await Promise.all([
-      E(secondaryIssuer).getAmountMathKind(),
+    const [secondaryAssetKind, secondaryBrand] = await Promise.all([
+      E(secondaryIssuer).getAssetKind(),
       E(secondaryIssuer).getBrand(),
     ]);
 
@@ -328,7 +328,7 @@ export const makeAddPool = (
       X`issuer ${secondaryIssuer} already has a pool`,
     );
     assert(
-      secondaryMathKind === MathKind.NAT,
+      secondaryAssetKind === AssetKind.NAT,
       X`${keyword} issuer must use NAT math`,
     );
 

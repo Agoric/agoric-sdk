@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { assert, details as X } from '@agoric/assert';
 import { stringifyRatioAsFraction } from '../../../src/display/natValue/stringifyRatioAsFraction';
@@ -18,12 +18,12 @@ test('stringifyRatio dollars for one eth', t => {
 
   const dollarKit = makeIssuerKit(
     '$',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 2 }),
   );
   const ethKit = makeIssuerKit(
     'ETH',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
@@ -66,13 +66,13 @@ test('stringifyApproxRatio - marketPrice for ETH in RUN', t => {
 
   const RUNKit = makeIssuerKit(
     'RUN',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
 
   const ethKit = makeIssuerKit(
     'ETH',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 

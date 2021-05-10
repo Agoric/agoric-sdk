@@ -10,7 +10,7 @@ import { isOfferSafe } from './offerSafety';
 import { assertRightsConserved } from './rightsConservation';
 
 /** @type {CreateSeatManager} */
-export const createSeatManager = (zoeInstanceAdmin, getMathKindByBrand) => {
+export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
 
@@ -169,8 +169,8 @@ export const createSeatManager = (zoeInstanceAdmin, getMathKindByBrand) => {
           brand,
           X`A brand must be supplied when the keyword is not defined`,
         );
-        const mathKind = getMathKindByBrand(brand);
-        return amountMath.makeEmpty(brand, mathKind);
+        const assetKind = getAssetKindByBrand(brand);
+        return amountMath.makeEmpty(brand, assetKind);
       },
       getCurrentAllocation: () => getCurrentAllocation(zcfSeat),
       isOfferSafe: newAllocation => {

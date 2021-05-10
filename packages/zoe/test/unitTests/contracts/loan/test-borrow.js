@@ -302,7 +302,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
     {
       Collateral: amountMath.makeEmpty(
         collateralKit.brand,
-        collateralKit.amountMathKind,
+        collateralKit.assetKind,
       ),
       Loan: amountMath.make(101n, loanKit.brand),
     },

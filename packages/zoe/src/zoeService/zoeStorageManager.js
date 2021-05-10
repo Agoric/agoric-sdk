@@ -1,6 +1,6 @@
 // @ts-check
 
-import { MathKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
 import './types';
@@ -43,23 +43,19 @@ export const makeZoeStorageManager = () => {
     };
 
     /** @type {MakeZoeMint} */
-    const makeZoeMint = (
-      keyword,
-      amountMathKind = MathKind.NAT,
-      displayInfo,
-    ) => {
+    const makeZoeMint = (keyword, assetKind = AssetKind.NAT, displayInfo) => {
       // Local indicates one that zoe itself makes from vetted code,
       // and so can be assumed correct and fresh by zoe.
       const {
         mint: localMint,
         issuer: localIssuer,
         brand: localBrand,
-      } = makeIssuerKit(keyword, amountMathKind, displayInfo);
+        displayInfo: localDisplayInfo,
+      } = makeIssuerKit(keyword, assetKind, displayInfo);
       const localIssuerRecord = makeIssuerRecord(
         localBrand,
         localIssuer,
-        amountMathKind,
-        displayInfo,
+        localDisplayInfo,
       );
       issuerStorage.storeIssuerRecord(localIssuerRecord);
       const localPooledPurse = escrowStorage.makeLocalPurse(
@@ -107,7 +103,7 @@ export const makeZoeStorageManager = () => {
 
   return {
     makeZoeInstanceStorageManager,
-    getMathKindByBrand: issuerStorage.getMathKindByBrand,
+    getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
   };
 };

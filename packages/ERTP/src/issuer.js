@@ -9,7 +9,7 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
-import { amountMath, MathKind } from './amountMath';
+import { amountMath, AssetKind } from './amountMath';
 import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
 import { makePaymentMaker } from './payment';
@@ -21,11 +21,17 @@ import './types';
  */
 function makeIssuerKit(
   allegedName,
-  amountMathKind = MathKind.NAT,
+  assetKind = AssetKind.NAT,
   displayInfo = harden({}),
 ) {
   assert.typeof(allegedName, 'string');
-  displayInfo = coerceDisplayInfo(displayInfo);
+  assert(
+    Object.values(AssetKind).includes(assetKind),
+    X`The assetKind ${assetKind} must be either AssetKind.NAT or AssetKind.SET`,
+  );
+
+  // add assetKind to displayInfo, or override if present
+  const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
 
   /** @type {Brand} */
   const brand = Far(makeFarName(allegedName, ERTPKind.BRAND), {
@@ -38,7 +44,7 @@ function makeIssuerKit(
     getAllegedName: () => allegedName,
 
     // Give information to UI on how to display the amount.
-    getDisplayInfo: () => displayInfo,
+    getDisplayInfo: () => cleanDisplayInfo,
   });
 
   /** @type {(left: Amount, right: Amount) => Amount } */
@@ -51,7 +57,7 @@ function makeIssuerKit(
   const isEqual = (left, right) => amountMath.isEqual(left, right, brand);
 
   /** @type {Amount} */
-  const emptyAmount = amountMath.makeEmpty(brand, amountMathKind);
+  const emptyAmount = amountMath.makeEmpty(brand, assetKind);
 
   const makePayment = makePaymentMaker(allegedName, brand);
 
@@ -193,7 +199,8 @@ function makeIssuerKit(
   const issuer = Far(makeFarName(allegedName, ERTPKind.ISSUER), {
     getBrand: () => brand,
     getAllegedName: () => allegedName,
-    getAmountMathKind: () => amountMathKind,
+    getAssetKind: () => assetKind,
+    getDisplayInfo: () => cleanDisplayInfo,
     makeEmptyPurse: makePurse,
 
     isLive: paymentP => {
@@ -283,6 +290,7 @@ function makeIssuerKit(
     mint,
     issuer,
     brand,
+    displayInfo: cleanDisplayInfo,
   });
 }
 

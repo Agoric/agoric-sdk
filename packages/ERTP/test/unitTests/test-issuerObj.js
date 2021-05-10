@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { MathKind, makeIssuerKit, amountMath } from '../../src';
+import { AssetKind, makeIssuerKit, amountMath } from '../../src';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   const { issuer, brand } = makeIssuerKit('fungible');
@@ -16,13 +16,16 @@ test('issuer.getBrand, brand.isMyIssuer', t => {
   );
   t.is(issuer.getAllegedName(), myBrand.getAllegedName());
   t.is(issuer.getAllegedName(), 'fungible');
-  t.deepEqual(brand.getDisplayInfo(), {});
+  t.deepEqual(brand.getDisplayInfo(), { assetKind: AssetKind.NAT });
 });
 
 test('brand.getDisplayInfo()', t => {
   const displayInfo = harden({ decimalPlaces: 3 });
-  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
-  t.deepEqual(brand.getDisplayInfo(), displayInfo);
+  const { brand } = makeIssuerKit('fungible', AssetKind.NAT, displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), {
+    ...displayInfo,
+    assetKind: AssetKind.NAT,
+  });
   const display = amount => {
     const { brand: myBrand, value } = amount;
     const { decimalPlaces } = myBrand.getDisplayInfo();
@@ -40,7 +43,7 @@ test('brand.getDisplayInfo()', t => {
 test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
   // @ts-ignore deliberate invalid arguments for testing
-  t.throws(() => makeIssuerKit('fungible', MathKind.NAT, displayInfo), {
+  t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
     message:
       // Should be able to use more informative error once SES double
       // disclosure bug is fixed. See
@@ -53,13 +56,16 @@ test('bad display info', t => {
 
 test('empty display info', t => {
   const displayInfo = harden({});
-  const { brand } = makeIssuerKit('fungible', MathKind.NAT, displayInfo);
-  t.deepEqual(brand.getDisplayInfo(), displayInfo);
+  const { brand } = makeIssuerKit('fungible', AssetKind.NAT, displayInfo);
+  t.deepEqual(brand.getDisplayInfo(), {
+    ...displayInfo,
+    assetKind: AssetKind.NAT,
+  });
 });
 
-test('issuer.getAmountMathKind', t => {
+test('issuer.getAssetKind', t => {
   const { issuer } = makeIssuerKit('fungible');
-  t.is(issuer.getAmountMathKind(), MathKind.NAT);
+  t.is(issuer.getAssetKind(), AssetKind.NAT);
 });
 
 test('issuer.makeEmptyPurse', async t => {

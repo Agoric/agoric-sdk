@@ -7,14 +7,14 @@ import { makePromiseKit } from '@agoric/promise-kit';
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  *
- * Within Zoe, the mathKind of validated amounts must be consistent
- * with the brand's mathKind. This is stricter than the validation
+ * Within Zoe, the assetKind of validated amounts must be consistent
+ * with the brand's assetKind. This is stricter than the validation
  * provided by amountMath currently. When the brand has a
- * mathKind itself, amountMath will validate that.
+ * assetKind itself, amountMath will validate that.
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -37,7 +37,7 @@ import { makeInvitationQueryFns } from './invitationQueries';
  * @returns {ZoeService} The created Zoe service.
  */
 function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
-  const invitationKit = makeIssuerKit('Zoe Invitation', MathKind.SET);
+  const invitationKit = makeIssuerKit('Zoe Invitation', AssetKind.SET);
 
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
@@ -53,7 +53,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   const {
     depositPayments,
-    getMathKindByBrand,
+    getAssetKindByBrand,
     makeZoeInstanceStorageManager,
   } = makeZoeStorageManager();
 
@@ -63,7 +63,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     invitationKit.issuer,
     instanceToInstanceAdmin,
     depositPayments,
-    getMathKindByBrand,
+    getAssetKindByBrand,
   );
 
   /** @type {ZoeService} */

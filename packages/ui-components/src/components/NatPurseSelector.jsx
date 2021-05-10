@@ -1,4 +1,4 @@
-import { MathKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import clsx from 'clsx';
 import { stringifyValue } from '../display';
 
@@ -6,6 +6,7 @@ import { stringifyValue } from '../display';
  * Return `purses` filtered to just the fungible ones, and optionally just the ones for a
  * supplied brand. The `purses` argument should be provided but may be falsy because UI
  * components represent inital state as null/undefined.
+ *
  * @param {Array<Purse> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
  * @param {Brand} [optBrand] - optional brand to filter for
  * @returns {Purse[]}
@@ -15,13 +16,13 @@ export const filterPurses = (purses, optBrand) => {
     // nothing to filter
     return purses;
   }
-  const filter = ({ brand, displayInfo: { amountMathKind } }) =>
-    amountMathKind === MathKind.NAT && (!optBrand || brand === optBrand);
+  const filter = ({ brand, displayInfo: { assetKind } }) =>
+    assetKind === AssetKind.NAT && (!optBrand || brand === optBrand);
   return purses.filter(filter);
 };
 
-const isNatPurse = ({ displayInfo: { amountMathKind } }) =>
-  amountMathKind === MathKind.NAT;
+const isNatPurse = ({ displayInfo: { assetKind } }) =>
+  assetKind === AssetKind.NAT;
 
 // Because we are importing the ui-components from the locally linked
 // version of agoric-sdk, we must make sure that we are not using
@@ -77,7 +78,7 @@ const makeNatPurseSelector = ({
             primary={pursePetname}
             secondary={`${stringifyValue(
               value,
-              MathKind.NAT,
+              AssetKind.NAT,
               displayInfo && displayInfo.decimalPlaces,
             )} ${brandPetname}`}
           />

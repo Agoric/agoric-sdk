@@ -80,7 +80,7 @@ test('getPursesNotifier', async t => {
     ],
   });
   t.deepEqual(moolaPurseInfo.displayInfo, {
-    amountMathKind: 'nat',
+    assetKind: 'nat',
   });
   const moolaPurse = wallet.getPurse(MOOLA_PURSE_PETNAME);
   t.is(moolaPurseInfo.purse, moolaPurse);
@@ -120,7 +120,7 @@ test('getAttenuatedPursesNotifier', async t => {
     ],
   });
   t.deepEqual(moolaPurseInfo.displayInfo, {
-    amountMathKind: 'nat',
+    assetKind: 'nat',
   });
 
   t.false('purse' in moolaPurseInfo);

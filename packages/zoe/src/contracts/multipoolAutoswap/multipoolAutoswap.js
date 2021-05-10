@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
-import { MathKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool';
 import { makeGetCurrentPrice } from './getCurrentPrice';
@@ -71,7 +71,7 @@ const start = zcf => {
   const isSecondary = secondaryBrandToPool.has;
   const isCentral = brand => brand === centralBrand;
 
-  const quoteIssuerKit = makeIssuerKit('Quote', MathKind.SET);
+  const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();

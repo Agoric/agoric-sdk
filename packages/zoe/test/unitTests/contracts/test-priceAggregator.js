@@ -7,7 +7,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert } from '@agoric/assert';
@@ -58,8 +58,8 @@ test.before(
     const oracleInstallation = await E(zoe).install(oracleBundle);
     const aggregatorInstallation = await E(zoe).install(aggregatorBundle);
 
-    const link = makeIssuerKit('$LINK', MathKind.NAT);
-    const usd = makeIssuerKit('$USD', MathKind.NAT);
+    const link = makeIssuerKit('$LINK', AssetKind.NAT);
+    const usd = makeIssuerKit('$USD', AssetKind.NAT);
 
     /** @type {MakeFakePriceOracle} */
     const makeFakePriceOracle = async (t, valueOut = undefined) => {
@@ -94,7 +94,7 @@ test.before(
       });
     };
 
-    const quote = makeIssuerKit('quote', MathKind.SET);
+    const quote = makeIssuerKit('quote', AssetKind.SET);
     /**
      * @param {RelativeTime} POLL_INTERVAL
      */

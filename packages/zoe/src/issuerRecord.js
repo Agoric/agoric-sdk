@@ -4,14 +4,13 @@
  *
  * @param {Brand} brand
  * @param {Issuer} issuer
- * @param {AmountMathKind} amountMathKind
  * @param {DisplayInfo=} displayInfo
  * @returns {IssuerRecord}
  */
-export const makeIssuerRecord = (brand, issuer, amountMathKind, displayInfo) =>
+export const makeIssuerRecord = (brand, issuer, displayInfo) =>
   harden({
     brand,
     issuer,
-    mathKind: amountMathKind,
-    displayInfo: { ...displayInfo, amountMathKind },
+    assetKind: displayInfo.assetKind,
+    displayInfo,
   });

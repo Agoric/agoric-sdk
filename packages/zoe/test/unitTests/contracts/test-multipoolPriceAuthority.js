@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
 import { makePriceAuthority } from '../../../src/contracts/multipoolAutoswap/priceAuthority';
 import { setup } from '../setupBasicMints';
 import buildManualTimer from '../../../tools/manualTimer';
@@ -13,7 +13,7 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   const timer = buildManualTimer(console.log, 0n);
   const { notifier, updater } = makeNotifierKit();
 
-  const quoteKit = makeIssuerKit('quoteIssuer', MathKind.SET);
+  const quoteKit = makeIssuerKit('quoteIssuer', AssetKind.SET);
 
   function ersatzQuote(moolaIn, simoleansOut) {
     return {
