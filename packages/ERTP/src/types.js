@@ -229,7 +229,7 @@
  * whether an untrusted payment is valid.
  *
  * @property {() => Brand} getBrand Get the Brand for this Issuer. The
- * Brand indicates the kind of digital asset and is shared by the
+ * Brand indicates the type of digital asset and is shared by the
  * mint, the issuer, and any purses and payments of this particular
  * kind. The brand is not closely held, so this function should not be
  * trusted to identify an issuer alone. Fake digital assets and amount
@@ -422,7 +422,7 @@
  * calling `issuer.makeEmptyPurse()` to create a purse, then `purse.deposit(payment)`.
  *
  * @property {() => Brand} getAllegedBrand
- * Get the allegedBrand, indicating the kind of digital asset this
+ * Get the allegedBrand, indicating the type of digital asset this
  * payment purports to be, and which issuer to use. Because payments
  * are not trusted, any method calls on payments should be treated
  * with suspicion and verified elsewhere.

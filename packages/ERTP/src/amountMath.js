@@ -27,12 +27,13 @@ harden(AssetKind);
 
 /**
  * Amounts describe digital assets. From an amount, you can learn the
- * kind of digital asset as well as "how much" or "how many". Amounts
- * have two parts: a brand (the kind of digital asset) and the value
- * (the answer to "how much"). For example, in the phrase "5 bucks",
- * "bucks" takes the role of the brand and the value is 5. Amounts
- * can describe fungible and non-fungible digital assets. Amounts are
- * pass-by-copy and can be made by and sent to anyone.
+ * brand of digital asset as well as "how much" or "how many". Amounts
+ * have two parts: a brand (loosely speaking, the type of digital
+ * asset) and the value (the answer to "how much"). For example, in
+ * the phrase "5 bucks", "bucks" takes the role of the brand and the
+ * value is 5. Amounts can describe fungible and non-fungible digital
+ * assets. Amounts are pass-by-copy and can be made by and sent to
+ * anyone.
  *
  * The issuer has an internal table that maps purses and payments to
  * amounts. The issuer must be able to do things such as add digital
@@ -51,15 +52,16 @@ harden(AssetKind);
  *
  * amountMath uses mathHelpers to do most of the work, but then adds
  * the brand to the result. The function `value` gets the value from
- * the amount by removing the brand (amount -> value), and the function
- * `make` adds the brand to produce an amount (value -> amount). The
- * function `coerce` takes an amount and checks it, returning an amount (amount
- * -> amount).
+ * the amount by removing the brand (amount -> value), and the
+ * function `make` adds the brand to produce an amount (value ->
+ * amount). The function `coerce` takes an amount and checks it,
+ * returning an amount (amount -> amount).
  *
- * Each issuer of digital assets has an associated brand in a one-to-one
- * mapping. In untrusted contexts, such as in analyzing payments and
- * amounts, we can get the brand and find the issuer which matches the
- * brand. The issuer and the brand mutually validate each other.
+ * Each issuer of digital assets has an associated brand in a
+ * one-to-one mapping. In untrusted contexts, such as in analyzing
+ * payments and amounts, we can get the brand and find the issuer
+ * which matches the brand. The issuer and the brand mutually validate
+ * each other.
  */
 
 /** @type {{ nat: NatMathHelpers, set: SetMathHelpers }} */
