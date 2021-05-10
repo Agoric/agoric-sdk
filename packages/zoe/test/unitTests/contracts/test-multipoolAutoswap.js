@@ -18,7 +18,7 @@ import {
   scaleForRemoveLiquidity,
   priceFromTargetOutput,
 } from '../../autoswapJig';
-import { assertPayoutDeposit } from '../../zoeTestHelpers';
+import { assertPayoutDeposit, assertAmountsEqual } from '../../zoeTestHelpers';
 import buildManualTimer from '../../../tools/manualTimer';
 import { getAmountOut } from '../../../src/contractSupport';
 
@@ -1840,4 +1840,33 @@ test('multipoolAutoSwap jig - insufficient', async t => {
   const { In: refund, Out: payout } = await seat.getPayouts();
   t.deepEqual(await moolaR.issuer.getAmountOf(refund), moola(200n));
   t.deepEqual(await centralR.issuer.getAmountOf(payout), centralTokens(0));
+});
+
+test('multipoolAutoSwap collect empty fees', async t => {
+  const zoe = makeZoe(fakeVatAdmin);
+  const centralR = makeIssuerKit('central');
+  const centralTokens = value => amountMath.make(value, centralR.brand);
+
+  const bundle = await bundleSource(multipoolAutoswapRoot);
+  const installation = await zoe.install(bundle);
+  // This timer is only used to build quotes. Let's make it non-zero
+  const fakeTimer = buildManualTimer(console.log, 30);
+  const { publicFacet, creatorFacet } = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+    { timer: fakeTimer },
+  );
+  const aliceCollectFeesInvitation = await E(
+    creatorFacet,
+  ).makeCollectFeesInvitation();
+
+  const feeSeat = await zoe.offer(aliceCollectFeesInvitation);
+  t.deepEqual(await E(feeSeat).getCurrentAllocation(), {});
+
+  await assertAmountsEqual(
+    t,
+    await E(publicFacet).getProtocolPoolBalance(),
+    centralTokens(0),
+    'no reported fees',
+  );
 });
