@@ -1869,4 +1869,6 @@ test('multipoolAutoSwap collect empty fees', async t => {
     centralTokens(0),
     'no reported fees',
   );
+
+  t.deepEqual(await E(feeSeat).getPayouts(), {});
 });
