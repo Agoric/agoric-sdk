@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
-import { MathKind, makeIssuerKit } from '@agoric/ertp';
+import { MathKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool';
 import { makeGetCurrentPrice } from './getCurrentPrice';
@@ -143,6 +143,16 @@ const start = zcf => {
     getPool,
   );
 
+  // compatibility with Treasury which expects to be able to collect fees from
+  // the AMM.
+  const makeCollectFeesInvitation = () => {
+    return zcf.makeInvitation(seat => seat.exit(), 'collect Fees');
+  };
+
+  const creatorFacet = Far('Private Facet', {
+    makeCollectFeesInvitation,
+  });
+
   /** @type {MultipoolAutoswapPublicFacet} */
   const publicFacet = Far('MultipoolAutoswapPublicFacet', {
     addPool,
@@ -162,9 +172,11 @@ const start = zcf => {
     getPriceAuthorities,
     getAllPoolBrands: () =>
       Object.values(zcf.getTerms().brands).filter(isSecondary),
+    // compatibility with Treasury which expects to be able to collect fees
+    getProtocolPoolBalance: () => AmountMath.makeEmpty(centralBrand),
   });
 
-  return harden({ publicFacet });
+  return harden({ publicFacet, creatorFacet });
 };
 
 harden(start);
