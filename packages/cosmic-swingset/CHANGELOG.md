@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.30.1...@agoric/cosmic-swingset@0.31.0) (2021-05-10)
+
+
+### Bug Fixes
+
+* make scenario2-run-client is now idempotent ([5f08b89](https://github.com/Agoric/agoric-sdk/commit/5f08b8960499af0143431ee9f5b4b85d4fc34841))
+
+
+### Features
+
+* add a check-validator.js script to verify node keys ([73248c2](https://github.com/Agoric/agoric-sdk/commit/73248c2b92c42673344c80085916367c8bef4f60))
+
+
+
+
+
 ## [0.30.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.30.0...@agoric/cosmic-swingset@0.30.1) (2021-05-05)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset
