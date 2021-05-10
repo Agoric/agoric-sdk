@@ -77,7 +77,7 @@ const fromCosmosIssuerEntries = [
       bankPurse: 'Agoric staking token',
       collateralConfig: {
         keyword: 'BLD',
-        collateralValue: scaleMicro(2000000n),
+        collateralValue: scaleMicro(20000000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
@@ -163,7 +163,7 @@ const fromPegasusIssuerEntries = [
       defaultPurses: [['USD Coin', scaleEth(1323n)]],
       collateralConfig: {
         keyword: 'USDC',
-        collateralValue: scaleEth(1000000n),
+        collateralValue: scaleEth(10000000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,

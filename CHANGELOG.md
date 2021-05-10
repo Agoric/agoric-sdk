@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.18.1...@agoric/sdk@2.19.0) (2021-05-10)
+
+
+### Bug Fixes
+
+* a malformed case statement elided recipient vpurse updates ([5f4664d](https://github.com/Agoric/agoric-sdk/commit/5f4664de429740a266bbbd0ad6b1f868a2b4240b))
+* make scenario2-run-client is now idempotent ([5f08b89](https://github.com/Agoric/agoric-sdk/commit/5f08b8960499af0143431ee9f5b4b85d4fc34841))
+* simplify scheduling in distributeFees ([#3051](https://github.com/Agoric/agoric-sdk/issues/3051)) ([eb6b8fe](https://github.com/Agoric/agoric-sdk/commit/eb6b8fe5fd6013e854b81198916d13a333e8ab59)), closes [#3044](https://github.com/Agoric/agoric-sdk/issues/3044)
+* update AMM liquidity ([56884f1](https://github.com/Agoric/agoric-sdk/commit/56884f19ca95df4586880afa717d06d09a5d5c1b))
+* update incorrect string cast where Sprint was needed ([c83dc19](https://github.com/Agoric/agoric-sdk/commit/c83dc198a23c844edaccacf351bb8911c893153b))
+* **deployment:** make copy.yml copy ag-cosmos-helper by default ([2d3f5fb](https://github.com/Agoric/agoric-sdk/commit/2d3f5fbb32c294aa47453f96054778960a7f1dd7))
+* **docker-compose:** accomodate new /data or old /usr/src/app state ([1cbb2c9](https://github.com/Agoric/agoric-sdk/commit/1cbb2c93f810c21d55db61fb938f04e24690bb01))
+
+
+### Features
+
+* add a check-validator.js script to verify node keys ([73248c2](https://github.com/Agoric/agoric-sdk/commit/73248c2b92c42673344c80085916367c8bef4f60))
+
+
+
+
+
 ## [2.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@2.18.0...@agoric/sdk@2.18.1) (2021-05-05)
 
 
