@@ -79,19 +79,11 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     const brandP = E(issuerP).getBrand();
     const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
     const displayInfoP = E(brandP).getDisplayInfo();
-    const amountMathKindP = E(issuerP).getAmountMathKind();
-    /** @type {[Issuer,Brand,boolean,AmountMathKind,any]} */
-    const [
-      issuer,
-      brand,
-      brandIssuerMatch,
-      amountMathKind,
-      displayInfo,
-    ] = await Promise.all([
+    /** @type {[Issuer,Brand,boolean,DisplayInfo]} */
+    const [issuer, brand, brandIssuerMatch, displayInfo] = await Promise.all([
       issuerP,
       brandP,
       brandIssuerMatchP,
-      amountMathKindP,
       displayInfoP,
     ]);
     // AWAIT /////
@@ -115,20 +107,15 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     // *must* rely on the good behavior of the issuers used in the
     // smart contracts they use.
     assert(brandIssuerMatch, `issuer was using a brand which was not its own`);
-    const issuerRecord = makeIssuerRecord(
-      brand,
-      issuer,
-      amountMathKind,
-      displayInfo,
-    );
+    const issuerRecord = makeIssuerRecord(brand, issuer, displayInfo);
     storeIssuerRecord(issuerRecord);
     return getByBrand(brand);
   };
 
   const storeIssuers = issuers => Promise.all(issuers.map(storeIssuer));
 
-  /** @type {GetMathKindByBrand} */
-  const getMathKindByBrand = brand => getByBrand(brand).mathKind;
+  /** @type {GetAssetKindByBrand} */
+  const getAssetKindByBrand = brand => getByBrand(brand).assetKind;
 
   /**
    *
@@ -183,7 +170,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     storeIssuerKeywordRecord,
     storeIssuer,
     storeIssuerRecord,
-    getMathKindByBrand,
+    getAssetKindByBrand,
     getBrandForIssuer,
     getIssuerForBrand,
     exportIssuerStorage,

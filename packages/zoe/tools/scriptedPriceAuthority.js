@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath, makeIssuerKit, MathKind } from '@agoric/ertp';
+import { amountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
@@ -17,7 +17,7 @@ export function makeScriptedPriceAuthority(options) {
     timer,
     unitAmountIn = amountMath.make(1n, actualBrandIn),
     quoteInterval = 1n,
-    quoteIssuerKit = makeIssuerKit('quote', MathKind.SET),
+    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
   let currentPrice = priceList[0];

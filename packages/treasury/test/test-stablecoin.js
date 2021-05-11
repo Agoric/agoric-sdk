@@ -11,7 +11,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeLoopback } from '@agoric/captp';
 
 import { makeZoe } from '@agoric/zoe';
-import { makeIssuerKit, MathKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
@@ -166,7 +166,7 @@ test('first', async t => {
 
   const { brand: govBrand } = govIssuerRecord;
 
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   // priceAuthority needs the RUN brand, which isn't available until the
   // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
@@ -333,7 +333,7 @@ test('price drop', async t => {
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
 
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -495,7 +495,7 @@ test('price falls precipitously', async t => {
   // RUN, which uses an autoswap that presents a fixed price of 4 RUN
   // per Collateral.
 
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   // priceAuthority needs the RUN brand, which isn't available till the
   // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
@@ -635,7 +635,7 @@ test('stablecoin display collateral', async t => {
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
   const { brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -727,7 +727,7 @@ test('interest on multiple vaults', async t => {
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -932,7 +932,7 @@ test('adjust balances', async t => {
   const { runIssuerRecord, govIssuerRecord } = testJig;
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -1234,7 +1234,7 @@ test('overdeposit', async t => {
   const { runIssuerRecord, govIssuerRecord } = testJig;
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -1430,7 +1430,7 @@ test('mutable liquidity triggers and interest', async t => {
   const { runIssuerRecord, govIssuerRecord } = testJig;
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   const priceAuthority = makePriceAuthority(
     aethBrand,
@@ -1694,7 +1694,7 @@ test('coll fees from loan and AMM', async t => {
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
   const { brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', MathKind.SET).mint;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   // priceAuthority needs the RUN brand, which isn't available until the
   // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here

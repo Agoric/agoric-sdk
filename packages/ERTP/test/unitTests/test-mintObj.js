@@ -6,14 +6,14 @@ import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
-import { makeIssuerKit, MathKind, amountMath } from '../../src';
+import { makeIssuerKit, AssetKind, amountMath } from '../../src';
 
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
   t.is(mint.getIssuer(), issuer);
 });
 
-test('mint.mintPayment default nat MathKind', async t => {
+test('mint.mintPayment default nat AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const fungible1000 = amountMath.make(1000n, brand);
   const payment1 = mint.mintPayment(fungible1000);
@@ -25,8 +25,8 @@ test('mint.mintPayment default nat MathKind', async t => {
   t.assert(amountMath.isEqual(paymentBalance2, fungible1000));
 });
 
-test('mint.mintPayment set w strings MathKind', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', MathKind.SET);
+test('mint.mintPayment set w strings AssetKind', async t => {
+  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
   const items1and2and4 = amountMath.make(['1', '2', '4'], brand);
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -38,8 +38,8 @@ test('mint.mintPayment set w strings MathKind', async t => {
   t.assert(amountMath.isEqual(paymentBalance2, items5and6));
 });
 
-test('mint.mintPayment set MathKind', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', MathKind.SET);
+test('mint.mintPayment set AssetKind', async t => {
+  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
   const item1handle = Far('iface', {});
   const item2handle = Far('iface', {});
   const item3handle = Far('iface', {});
@@ -60,8 +60,8 @@ test('mint.mintPayment set MathKind', async t => {
   t.assert(amountMath.isEqual(paymentBalance3, item3));
 });
 
-test('mint.mintPayment set MathKind with invites', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', MathKind.SET);
+test('mint.mintPayment set AssetKind with invites', async t => {
+  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
   const instanceHandle1 = Far('iface', {});
   const invite1Value = {
     handle: Far('iface', {}),
@@ -94,7 +94,7 @@ test('non-fungible tokens example', async t => {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     brand,
-  } = makeIssuerKit('Agoric Ballet Opera tickets', MathKind.SET);
+  } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET);
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 

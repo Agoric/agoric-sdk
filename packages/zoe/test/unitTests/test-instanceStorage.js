@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 
 import {
@@ -17,11 +17,11 @@ const root = `${__dirname}/bounty`;
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(
     'currency',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', MathKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
   return { currencyKit, ticketKit };
 };
@@ -70,7 +70,7 @@ test('makeAndStoreInstanceRecord', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, MathKind.NAT, {
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, AssetKind.NAT, {
       decimalPlaces: 18,
     }),
   );
@@ -119,7 +119,7 @@ test('makeInstanceRecordStorage', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, MathKind.NAT, {
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, AssetKind.NAT, {
       decimalPlaces: 18,
     }),
   );

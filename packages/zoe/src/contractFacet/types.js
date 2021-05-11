@@ -41,7 +41,7 @@
  * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
- * @property {GetMathKindByBrand} getMathKind
+ * @property {GetAssetKindByBrand} getAssetKind
  * @property {MakeZCFMint} makeZCFMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
@@ -102,8 +102,8 @@
 /**
  * @callback MakeZCFMint
  * @param {Keyword} keyword
- * @param {AmountMathKind=} amountMathKind
- * @param {DisplayInfo=} displayInfo
+ * @param {AssetKind=} assetKind
+ * @param {AdditionalDisplayInfo=} displayInfo
  * @returns {Promise<ZCFMint>}
  */
 
@@ -155,15 +155,6 @@
  * @param {Error} reason
  * @returns {Error}
  */
-/**
- * @callback ZCFSeatKickOut
- *
- * called with the reason for this failure,
- * where reason is normally an instanceof Error. This method is
- * deprecated as of 0.9.1-dev.3 in favor of fail().
- * @param {Error} reason
- * @returns {Error}
- */
 
 /**
  * @callback ZCFGetAmountAllocated
@@ -178,7 +169,6 @@
  * @typedef {Object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {ZCFSeatKickOut} kickOut
  * @property {() => Notifier<Allocation>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal

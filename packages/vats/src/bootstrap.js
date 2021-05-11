@@ -14,7 +14,7 @@ import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { assert, details as X } from '@agoric/assert';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
-import { amountMath, MathKind } from '@agoric/ertp';
+import { amountMath, AssetKind } from '@agoric/ertp';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
 import {
@@ -318,7 +318,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             },
             want: {
               // We just throw away our governance tokens.
-              Governance: amountMath.makeEmpty(govBrand, MathKind.NAT),
+              Governance: amountMath.makeEmpty(govBrand, AssetKind.NAT),
             },
           });
           const paymentKeywords = harden({

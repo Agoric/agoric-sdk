@@ -46,17 +46,20 @@ function assertDisplayInfo(allegedDisplayInfo) {
     passStyleOf(allegedDisplayInfo) === 'copyRecord',
     X`A displayInfo can only be a pass-by-copy record: ${allegedDisplayInfo}`,
   );
-  const displayInfoKeys = harden(['decimalPlaces']);
+  const displayInfoKeys = harden(['decimalPlaces', 'assetKind']);
   assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
 }
 export { assertDisplayInfo };
 
 /**
- * @param {DisplayInfo} [allegedDisplayInfo={}]
+ * @param {AdditionalDisplayInfo} allegedDisplayInfo
+ * @param {AssetKind} assetKind
  * @returns {DisplayInfo}
  */
-export const coerceDisplayInfo = (allegedDisplayInfo = {}) => {
-  const copyDisplayInfo = pureCopy(allegedDisplayInfo);
+export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
+  const copyDisplayInfo = pureCopy(
+    harden({ ...allegedDisplayInfo, assetKind }),
+  );
   assertDisplayInfo(copyDisplayInfo);
   return copyDisplayInfo;
 };

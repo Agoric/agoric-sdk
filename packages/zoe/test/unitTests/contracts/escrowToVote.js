@@ -8,7 +8,7 @@ import { amountMath } from '@agoric/ertp';
 import {
   assertIssuerKeywords,
   assertProposalShape,
-  assertUsesNatMath,
+  assertNatAssetKind,
 } from '../../../src/contractSupport';
 
 import '../../../exported';
@@ -33,7 +33,7 @@ const start = zcf => {
   let electionOpen = true;
   assertIssuerKeywords(zcf, harden(['Assets']));
   assert.typeof(question, 'string');
-  assertUsesNatMath(zcf, assetsBrand);
+  assertNatAssetKind(zcf, assetsBrand);
 
   const seatToResponse = makeStore('seat');
 

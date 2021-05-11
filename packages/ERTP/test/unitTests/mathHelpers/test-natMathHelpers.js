@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
-import { amountMath as m, MathKind } from '../../../src';
+import { amountMath as m, AssetKind } from '../../../src';
 import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through
@@ -109,7 +109,7 @@ test('natMathHelpers makeEmpty', t => {
 test('natMathHelpers makeEmpty no brand', t => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
-    () => m.makeEmpty(MathKind.NAT),
+    () => m.makeEmpty(AssetKind.NAT),
     {
       message: /The brand .* doesn't look like a brand./,
     },

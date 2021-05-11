@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
-import { MathKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from '../multipoolAutoswap/pool';
 import { makeGetCurrentPrice } from './getCurrentPrice';
@@ -76,7 +76,7 @@ const start = zcf => {
   const isSecondary = secondaryBrandToPool.has;
   const isCentral = brand => brand === centralBrand;
 
-  const quoteIssuerKit = makeIssuerKit('Quote', MathKind.SET);
+  const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.

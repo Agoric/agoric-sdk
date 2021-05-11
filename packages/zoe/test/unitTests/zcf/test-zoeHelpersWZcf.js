@@ -2,14 +2,14 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { MathKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints';
 import {
   swap,
   assertIssuerKeywords,
   assertProposalShape,
   swapExact,
-  assertUsesNatMath,
+  assertNatAssetKind,
   saveAllIssuers,
 } from '../../../src/contractSupport';
 import { assertPayoutAmount } from '../../zoeTestHelpers';
@@ -93,37 +93,37 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   assertPayoutAmount(t, moolaIssuer, await bUserSeat.getPayout('A'), moola(5));
 });
 
-test(`zcf assertUsesNatMath`, async t => {
+test(`zcf assertNatAssetKind`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A');
   const { brand } = zcfMint.getIssuerRecord();
-  t.notThrows(() => assertUsesNatMath(zcf, brand), 'default');
+  t.notThrows(() => assertNatAssetKind(zcf, brand), 'default');
 });
 
-test(`zcf assertUsesNatMath - not natMath`, async t => {
+test(`zcf assertNatAssetKind - not natMath`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { brand } = zcfMint.getIssuerRecord();
-  t.throws(() => assertUsesNatMath(zcf, brand), {
-    message: 'issuer must use NAT amountMath',
+  t.throws(() => assertNatAssetKind(zcf, brand), {
+    message: 'brand must be AssetKind.NAT',
   });
 });
 
-test.failing(`zcf assertUsesNatMath - not brand`, async t => {
+test.failing(`zcf assertNatAssetKind - not brand`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', MathKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { issuer } = zcfMint.getIssuerRecord();
   // TODO: distinguish non-brands from brands
   // https://github.com/Agoric/agoric-sdk/issues/1800
-  t.throws(() => assertUsesNatMath(zcf, issuer), {
-    message: /assertUsesNatMath requires a brand, not .*/,
+  t.throws(() => assertNatAssetKind(zcf, issuer), {
+    message: /assertNatAssetKind requires a brand, not .*/,
   });
 });
 
-test(`zcf assertUsesNatMath - brand not registered`, async t => {
+test(`zcf assertNatAssetKind - brand not registered`, async t => {
   const { zcf } = await setupZCFTest();
   const { brand } = makeIssuerKit('gelt');
-  t.throws(() => assertUsesNatMath(zcf, brand), {
+  t.throws(() => assertNatAssetKind(zcf, brand), {
     message:
       // Should be able to use more informative error once SES double
       // disclosure bug is fixed. See
@@ -147,7 +147,7 @@ test(`zcf saveAllIssuers - multiple`, async t => {
   const { issuer: dIssuer, brand: dBrand } = makeIssuerKit('doubloons');
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    MathKind.SET,
+    AssetKind.SET,
   );
 
   await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
@@ -179,7 +179,7 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
 
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    MathKind.SET,
+    AssetKind.SET,
   );
 
   await t.notThrowsAsync(
@@ -202,8 +202,8 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
     'issuer should not be found',
   );
 
-  t.notThrows(() => assertUsesNatMath(zcf, pandaBrand), 'default');
-  t.throws(() => assertUsesNatMath(zcf, pBrand), {
+  t.notThrows(() => assertNatAssetKind(zcf, pandaBrand), 'default');
+  t.throws(() => assertNatAssetKind(zcf, pBrand), {
     message:
       // Should be able to use more informative error once SES double
       // disclosure bug is fixed. See

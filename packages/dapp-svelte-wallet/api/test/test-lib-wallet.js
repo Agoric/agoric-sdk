@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
@@ -45,7 +45,7 @@ async function setupTest() {
 
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
-  const rpgBundle = makeIssuerKit('rpg', MathKind.SET);
+  const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
   const zoe = makeZoe(fakeVatAdmin);
   const registry = makeRegistrar();
   const board = makeBoard();
@@ -166,7 +166,7 @@ test('lib-wallet issuer and purse methods', async t => {
   const moolaPurse = wallet.getPurse('fun money');
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.makeEmpty(moolaBundle.brand, MathKind.NAT),
+    amountMath.makeEmpty(moolaBundle.brand, AssetKind.NAT),
     `empty purse is empty`,
   );
   t.deepEqual(
@@ -205,7 +205,7 @@ test('lib-wallet issuer and purse methods', async t => {
         brandBoardId: '1667979430',
         depositBoardId: '604346717',
         displayInfo: {
-          amountMathKind: 'set',
+          assetKind: 'set',
         },
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
@@ -225,7 +225,7 @@ test('lib-wallet issuer and purse methods', async t => {
         brandBoardId: '727995140',
         brandPetname: 'moola',
         displayInfo: {
-          amountMathKind: 'nat',
+          assetKind: 'nat',
         },
         pursePetname: 'fun money',
         value: 100,
@@ -339,7 +339,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
-        amountMathKind: 'set',
+        assetKind: 'set',
       },
 
       brandPetname: 'zoe invite',
@@ -423,7 +423,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
-        amountMathKind: 'set',
+        assetKind: 'set',
       },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
@@ -532,7 +532,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       brandBoardId: '1667979430',
       depositBoardId: '604346717',
       displayInfo: {
-        amountMathKind: 'set',
+        assetKind: 'set',
       },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
@@ -713,7 +713,7 @@ test('lib-wallet offer methods', async t => {
       depositBoardId: '604346717',
       brandPetname: 'zoe invite',
       displayInfo: {
-        amountMathKind: 'set',
+        assetKind: 'set',
       },
       pursePetname: 'Default Zoe invite purse',
       value: [],
@@ -736,7 +736,7 @@ test('lib-wallet offer methods', async t => {
       brandBoardId: '1532665031',
       brandPetname: 'moola',
       displayInfo: {
-        amountMathKind: 'nat',
+        assetKind: 'nat',
       },
       pursePetname: 'Fun budget',
       value: 100,
@@ -780,7 +780,7 @@ test('lib-wallet offer methods', async t => {
                 },
                 value: 1,
                 displayInfo: {
-                  amountMathKind: 'nat',
+                  assetKind: 'nat',
                 },
               },
             },
@@ -812,7 +812,7 @@ test('lib-wallet offer methods', async t => {
                 },
                 value: 1,
                 displayInfo: {
-                  amountMathKind: 'nat',
+                  assetKind: 'nat',
                 },
               },
             },

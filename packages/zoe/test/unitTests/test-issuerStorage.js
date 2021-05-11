@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { makeIssuerKit, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { makeIssuerStorage } from '../../src/issuerStorage';
 import { makeIssuerRecord } from '../../src/issuerRecord';
@@ -10,38 +10,38 @@ import { makeIssuerRecord } from '../../src/issuerRecord';
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(
     'currency',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', MathKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
   return { currencyKit, ticketKit };
 };
 
-test('storeIssuer, getMathKindByBrand', async t => {
-  const { storeIssuer, getMathKindByBrand } = makeIssuerStorage();
+test('storeIssuer, getAssetKindByBrand', async t => {
+  const { storeIssuer, getAssetKindByBrand } = makeIssuerStorage();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
   t.is(currencyIssuerRecord.issuer, currencyKit.issuer);
   t.is(currencyIssuerRecord.brand, currencyKit.brand);
-  t.is(currencyIssuerRecord.mathKind, MathKind.NAT);
+  t.is(currencyIssuerRecord.assetKind, AssetKind.NAT);
   t.deepEqual(currencyIssuerRecord.displayInfo, {
-    amountMathKind: MathKind.NAT,
+    assetKind: AssetKind.NAT,
     decimalPlaces: 18,
   });
 
   const ticketIssuerRecord = await storeIssuer(ticketKit.issuer);
   t.is(ticketIssuerRecord.issuer, ticketKit.issuer);
   t.is(ticketIssuerRecord.brand, ticketKit.brand);
-  t.is(ticketIssuerRecord.mathKind, MathKind.SET);
+  t.is(ticketIssuerRecord.assetKind, AssetKind.SET);
   t.deepEqual(ticketIssuerRecord.displayInfo, {
-    amountMathKind: MathKind.SET,
+    assetKind: AssetKind.SET,
   });
 
-  t.is(getMathKindByBrand(currencyKit.brand), MathKind.NAT);
-  t.is(getMathKindByBrand(ticketKit.brand), MathKind.SET);
+  t.is(getAssetKindByBrand(currencyKit.brand), AssetKind.NAT);
+  t.is(getAssetKindByBrand(ticketKit.brand), AssetKind.SET);
 });
 
 test('storeIssuer, same issuer twice', async t => {
@@ -64,17 +64,17 @@ test('storeIssuer, promise for issuer', async t => {
 
   t.is(currencyIssuerRecord.issuer, currencyKit.issuer);
   t.is(currencyIssuerRecord.brand, currencyKit.brand);
-  t.is(currencyIssuerRecord.mathKind, MathKind.NAT);
+  t.is(currencyIssuerRecord.assetKind, AssetKind.NAT);
   t.deepEqual(currencyIssuerRecord.displayInfo, {
-    amountMathKind: MathKind.NAT,
+    assetKind: AssetKind.NAT,
     decimalPlaces: 18,
   });
 });
 
-test(`getMathKindByBrand - brand isn't stored`, t => {
-  const { getMathKindByBrand } = makeIssuerStorage();
+test(`getAssetKindByBrand - brand isn't stored`, t => {
+  const { getAssetKindByBrand } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
-  t.throws(() => getMathKindByBrand(currencyKit.brand), {
+  t.throws(() => getAssetKindByBrand(currencyKit.brand), {
     message: '"brand" not found: "[Alleged: currency brand]"',
   });
 });
@@ -107,23 +107,19 @@ test(`storeIssuerKeywordRecord, twice`, async t => {
 });
 
 test(`storeIssuerRecord`, async t => {
-  const { storeIssuerRecord, getMathKindByBrand } = makeIssuerStorage();
+  const { storeIssuerRecord, getAssetKindByBrand } = makeIssuerStorage();
   const { currencyKit } = setupIssuersForTest();
 
-  const issuerRecord = makeIssuerRecord(
-    currencyKit.brand,
-    currencyKit.issuer,
-    MathKind.NAT,
-    {
-      decimalPlaces: 18,
-    },
-  );
+  const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
+    decimalPlaces: 18,
+    assetKind: AssetKind.NAT,
+  });
 
   const returnedIssuerRecord = await storeIssuerRecord(issuerRecord);
 
   t.deepEqual(returnedIssuerRecord, issuerRecord);
 
-  t.is(getMathKindByBrand(currencyKit.brand), MathKind.NAT);
+  t.is(getAssetKindByBrand(currencyKit.brand), AssetKind.NAT);
 });
 
 test('getBrandForIssuer', async t => {

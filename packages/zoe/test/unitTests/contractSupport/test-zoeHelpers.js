@@ -114,7 +114,7 @@ test('ZoeHelpers satisfies() with give', t => {
 const makeMockZcfSeatAdmin = (
   proposal,
   initialAllocation,
-  getMathKindByBrand,
+  getAssetKindByBrand,
 ) => {
   const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
   const notifier = makeNotifier();
@@ -123,7 +123,7 @@ const makeMockZcfSeatAdmin = (
 
   const { makeZCFSeat } = createSeatManager(
     zoeInstanceAdmin,
-    getMathKindByBrand,
+    getAssetKindByBrand,
   );
   const actual = makeZCFSeat(mockZoeSeatAdmin, {
     proposal,
