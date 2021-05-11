@@ -79,8 +79,9 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
   /**
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
+   * @param { boolean } [metered]
    */
-  async function startXSnap(name, handleCommand) {
+  async function startXSnap(name, handleCommand, metered) {
     if (supervisorHash) {
       return snapStore.load(supervisorHash, async snapshot => {
         const xs = xsnap({ snapshot, name, handleCommand, ...xsnapOpts });
@@ -88,7 +89,8 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
         return xs;
       });
     }
-    const worker = xsnap({ handleCommand, name, ...xsnapOpts });
+    const meterOpts = metered ? {} : { meteringLimit: 0 };
+    const worker = xsnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
     for (const bundle of bundles) {
       assert(
