@@ -143,13 +143,13 @@ export function makeSlogger(slogCallbacks, writeObj) {
       crankNum = newCrankNum;
       const when = { crankNum, vatID, deliveryNum };
       write({ type: 'deliver', ...when, kd, vd });
-      deliveryNum += 1;
       syscallNum = 0;
 
       // dr: deliveryResult
       function finish(dr) {
         assertOldState(DELIVERY, 'delivery-finish called twice?');
         write({ type: 'deliver-result', ...when, dr });
+        deliveryNum += 1;
         state = IDLE;
       }
       return harden(finish);

@@ -43,11 +43,14 @@ export function dumpStore(store, outfile, rawMode) {
   }
 
   popt('crankNumber');
+  popt('kernel.defaultManagerType');
   popt('kernelStats');
   gap();
 
   p('// bundles');
   poptBig('bundle', 'kernelBundle');
+  poptBig('bundle', 'lockdownBundle');
+  poptBig('bundle', 'supervisorBundle');
   for (const key of groupKeys('bundle.')) {
     poptBig('bundle', key);
   }
