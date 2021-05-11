@@ -71,6 +71,22 @@ test('meter details', async t => {
   t.is(meterType, 'xs-meter-7');
 });
 
+test('meter details are still available with no limit', async t => {
+  const opts = options();
+  const vat = xsnap({ ...opts, meteringLimit: 0 });
+  t.teardown(() => vat.terminate());
+  const result = await vat.evaluate(`
+  for (ix = 0; ix < 200; ix++) {
+  }
+  `);
+  const { meterUsage: meters } = result;
+  t.log(meters);
+  t.is(typeof meters.compute, 'number');
+  t.is(typeof meters.allocate, 'number');
+  t.true(meters.compute > 0);
+  t.true(meters.allocate > 0);
+});
+
 test('high resolution timer', async t => {
   const opts = options();
   const vat = xsnap(opts);
