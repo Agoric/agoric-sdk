@@ -8,8 +8,6 @@ import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makeRegistrar } from '@agoric/registrar';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -47,7 +45,6 @@ async function setupTest() {
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
   const zoe = makeZoe(fakeVatAdmin);
-  const registry = makeRegistrar();
   const board = makeBoard();
 
   // Create AutomaticRefund instance
@@ -96,7 +93,6 @@ async function setupTest() {
     simoleanBundle,
     rpgBundle,
     zoe,
-    registry,
     board,
     wallet,
     invite,

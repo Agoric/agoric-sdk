@@ -35,7 +35,6 @@
     "@agoric/notifier": "^0.3.14",
     "@agoric/pegasus": "^0.2.7",
     "@agoric/promise-kit": "^0.2.13",
-    "@agoric/registrar": "^0.2.14",
     "@agoric/same-structure": "^0.1.13",
     "@agoric/sharing-service": "^0.1.14",
     "@agoric/sparse-ints": "^0.1.9",
