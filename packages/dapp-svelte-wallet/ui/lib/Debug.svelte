@@ -5,11 +5,11 @@
   import Dialog from "smelte/src/components/Dialog";
   import Button from "smelte/src/components/Button";
   import CancelButton from './CancelButton.svelte';
-  import { stringify } from './helpers';
+  import { dump } from './helpers';
 
   export let title = "Debug Info";
   export let target;
-  $: display = stringify(target, 2);
+  $: display = dump(target, 2);
 
   let showModal = false;
 </script>

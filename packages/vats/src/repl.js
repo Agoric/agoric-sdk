@@ -12,14 +12,13 @@ const UNJSONABLES = new Map([
   [undefined, 'undefined'],
 ]);
 
-// A REPL-specific JSON stringify.
-export function stringify(
-  value,
-  spaces,
-  gio = getInterfaceOf,
-  inProgress = new WeakSet(),
-  depth = 0,
-) {
+// A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
+// output is unambiguous (even though it cannot be round-tripped).
+
+// eslint-disable-next-line no-use-before-define
+export const dump = (value, spaces = undefined) => dump0(value, spaces);
+
+function dump0(value, spaces, inProgress = new WeakSet(), depth = 0) {
   if (Object(value) !== value) {
     if (typeof value === 'bigint') {
       return `${value}n`;
@@ -39,7 +38,7 @@ export function stringify(
     return `[Function ${value.name || '<anon>'}]`;
   }
 
-  // This stringify attempts to show a little bit more of the structure.
+  // This dump attempts to show a little bit more of the structure.
   if (isPromise(value)) {
     return '[Promise]';
   }
@@ -56,7 +55,7 @@ export function stringify(
 
   let ret = '';
   const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
-  if (gio && gio(value) !== undefined) {
+  if (getInterfaceOf(value) !== undefined) {
     ret += `${value}`;
   } else if (Array.isArray(value)) {
     ret += `[`;
@@ -67,7 +66,7 @@ export function stringify(
       if (spcs !== '') {
         ret += `\n${spcs.repeat(depth + 1)}`;
       }
-      ret += stringify(value[i], spaces, gio, inProgress, depth + 1);
+      ret += dump0(value[i], spaces, inProgress, depth + 1);
       sep = ',';
     }
     if (sep !== '' && spcs !== '') {
@@ -85,7 +84,7 @@ export function stringify(
       ret += `\n${spcs.repeat(depth + 1)}`;
     }
     ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
-    ret += stringify(value[key], spaces, gio, inProgress, depth + 1);
+    ret += dump0(value[key], spaces, inProgress, depth + 1);
     sep = ',';
   }
   if (sep !== '' && spcs !== '') {
@@ -127,7 +126,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
       if (typeof a === 'string') {
         s = a;
       } else {
-        s = stringify(a, 2, getInterfaceOf);
+        s = dump(a, 2);
       }
       ret += `${sep}${s}`;
       sep = ' ';
@@ -232,7 +231,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
       try {
         r = c.evaluate(body, { sloppyGlobalsMode: true });
         history[histnum] = r;
-        display[histnum] = stringify(r, undefined, getInterfaceOf);
+        display[histnum] = dump(r);
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
@@ -247,11 +246,11 @@ export function getReplHandler(replObjects, send, vatPowers) {
         r.then(
           res => {
             history[histnum] = res;
-            display[histnum] = stringify(res, undefined, getInterfaceOf);
+            display[histnum] = dump(res);
           },
           rej => {
             // leave history[] alone: leave the rejected promise in place
-            display[histnum] = `Promise.reject(${stringify(`${rej}`)})`;
+            display[histnum] = `Promise.reject(${dump(`${rej}`)})`;
           },
         ).then(_ => updateHistorySlot(histnum));
       }
