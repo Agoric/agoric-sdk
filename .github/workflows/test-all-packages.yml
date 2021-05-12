@@ -219,10 +219,6 @@ jobs:
       run: cd packages/promise-kit && yarn test
       env:
         ESM_DISABLE_CACHE: true
-    - name: yarn test (registrar)
-      run: cd packages/registrar && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (same-structure)
       run: cd packages/same-structure && yarn test
       env:

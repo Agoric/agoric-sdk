@@ -31,9 +31,6 @@
     "provisioning": {
       "sourceSpec": "./src/vat-provisioning.js"
     },
-    "registrar": {
-      "sourceSpec": "./src/vat-registrar.js"
-    },
     "sharing": {
       "sourceSpec": "./src/vat-sharing.js"
     },

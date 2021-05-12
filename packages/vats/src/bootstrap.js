@@ -71,7 +71,6 @@ export function buildRootObject(vatPowers, vatParameters) {
     const [
       bankManager,
       sharingService,
-      registry,
       board,
       chainTimerService,
       zoe,
@@ -79,7 +78,6 @@ export function buildRootObject(vatPowers, vatParameters) {
     ] = await Promise.all([
       E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
-      E(vats.registrar).getSharedRegistrar(),
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
       /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
@@ -594,8 +592,6 @@ export function buildRootObject(vatPowers, vatParameters) {
           myAddressNameAdmin,
           namesByAddress,
           priceAuthority,
-          registrar: registry,
-          registry,
           board,
           zoe,
         });
