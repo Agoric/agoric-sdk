@@ -85,23 +85,68 @@ test('repl: bigInts', async t => {
   t.deepEqual(sentMessages, []);
 });
 
-// TODO(2278) The bug describes failures for Symbol, undefined, NaN, infinities
-test.failing('repl: NaN', async t => {
+test('repl: Symbols', async t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
-  t.deepEqual(doEval(0, 'NaN'), {});
-  m = sentMessages.shift();
-  t.deepEqual(m.type, 'updateHistory');
-  t.is(sentMessages.length, 1);
 
-  t.is(m.histnum, 0);
-  t.is(m.display, 'working on eval(NaN)');
-  m = sentMessages.shift();
-  t.is(m.type, 'updateHistory');
-  t.is(m.histnum, 0);
-  t.is(m.display, 'NaN');
-  t.deepEqual(sentMessages, []);
+  let histnum = 0;
+  for (const expr of ['asyncIterator', 'toStringTag', 'hasInstance'].map(
+    name => `Symbol.${name}`,
+  )) {
+    t.deepEqual(doEval(histnum, expr), {});
+    m = sentMessages.shift();
+    t.deepEqual(m.type, 'updateHistory');
+    t.is(sentMessages.length, 1);
+
+    t.is(m.histnum, histnum);
+    t.is(m.display, `working on eval(${expr})`);
+    m = sentMessages.shift();
+    t.is(m.type, 'updateHistory');
+    t.is(m.histnum, histnum);
+    t.is(m.display, `Symbol(${expr})`);
+    t.deepEqual(sentMessages, []);
+    histnum += 1;
+  }
+
+  for (const expr of [`Symbol.for('foo')`, `Symbol('foo')`]) {
+    t.deepEqual(doEval(histnum, expr), {});
+    m = sentMessages.shift();
+    t.deepEqual(m.type, 'updateHistory');
+    t.is(sentMessages.length, 1);
+
+    t.is(m.histnum, histnum);
+    t.is(m.display, `working on eval(${expr})`);
+    m = sentMessages.shift();
+    t.is(m.type, 'updateHistory');
+    t.is(m.histnum, histnum);
+    t.is(m.display, `Symbol(?)`);
+    t.deepEqual(sentMessages, []);
+    histnum += 1;
+  }
+});
+
+test('repl: unjsonables', async t => {
+  const { doEval, sentMessages } = make();
+
+  let m = sentMessages.shift();
+
+  let histnum = 0;
+  for (const valStr of ['NaN', 'Infinity', '-Infinity', 'undefined']) {
+    t.deepEqual(doEval(histnum, valStr), {});
+    m = sentMessages.shift();
+    t.deepEqual(m.type, 'updateHistory');
+    t.is(sentMessages.length, 1);
+
+    t.is(m.histnum, histnum);
+    t.is(m.display, `working on eval(${valStr})`);
+    m = sentMessages.shift();
+    t.is(m.type, 'updateHistory');
+    t.is(m.histnum, histnum);
+    t.is(m.display, valStr);
+    t.deepEqual(sentMessages, []);
+    histnum += 1;
+  }
 });
 
 test('repl: sloppyGlobals, home, endowments', async t => {

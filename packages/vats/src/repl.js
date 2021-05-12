@@ -5,6 +5,21 @@ import { getInterfaceOf, Remotable, Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent';
 
+const UNJSONABLES = new Map([
+  [NaN, 'NaN'],
+  [Infinity, 'Infinity'],
+  [-Infinity, '-Infinity'],
+  [undefined, 'undefined'],
+]);
+
+for (const [name, { value }] of Object.entries(
+  Object.getOwnPropertyDescriptors(Symbol),
+)) {
+  if (typeof value === 'symbol' && typeof name === 'string') {
+    UNJSONABLES.set(value, `Symbol(Symbol.${name})`);
+  }
+}
+
 // A REPL-specific JSON stringify.
 export function stringify(
   value,
@@ -16,6 +31,13 @@ export function stringify(
   if (Object(value) !== value) {
     if (typeof value === 'bigint') {
       return `${value}n`;
+    }
+    const rawString = UNJSONABLES.get(value);
+    if (rawString) {
+      return rawString;
+    }
+    if (typeof value === 'symbol') {
+      return `Symbol(?)`;
     }
     return JSON.stringify(value, null, spaces);
   }
