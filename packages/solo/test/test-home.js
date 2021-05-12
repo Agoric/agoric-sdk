@@ -29,19 +29,6 @@ test.before('setup', async t => {
 // Now come the tests that use `home`...
 // =========================================
 
-test.serial('home.registry', async t => {
-  const { registry } = E.get(home);
-  const regVal = await E(registry).get('foolobr_19191');
-  t.is(regVal, undefined, 'random registry name is undefined');
-
-  const target = 'something';
-  const myRegKey = await E(registry).register('myname', target);
-  t.is(typeof myRegKey, 'string', 'registry key is string');
-
-  const registered = await E(registry).get(myRegKey);
-  t.is(registered, target, 'registry registers target');
-});
-
 test.serial('home.board', async t => {
   const { board } = E.get(home);
   await t.throwsAsync(
