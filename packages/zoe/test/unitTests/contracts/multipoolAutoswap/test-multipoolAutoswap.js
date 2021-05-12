@@ -2032,13 +2032,16 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
 
   // Bob checks the price. Let's say he wants 200 moola, and he
   // wants to know how many simoleans that would cost.
-  const priceInSimoleans = await E(publicFacet).getOutputPrice(
-    moola(200),
+  const priceQuote = await E(publicFacet).getPriceGivenRequiredOutput(
     simoleanR.brand,
+    moola(200),
   );
   t.deepEqual(
-    priceInSimoleans,
-    simoleans(209),
+    priceQuote,
+    {
+      amountIn: simoleans(209),
+      amountOut: moola(201),
+    },
     `price is as expected for secondary token to secondary token`,
   );
 
