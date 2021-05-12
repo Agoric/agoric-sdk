@@ -12,14 +12,6 @@ const UNJSONABLES = new Map([
   [undefined, 'undefined'],
 ]);
 
-for (const [name, { value }] of Object.entries(
-  Object.getOwnPropertyDescriptors(Symbol),
-)) {
-  if (typeof value === 'symbol' && typeof name === 'string') {
-    UNJSONABLES.set(value, `Symbol(Symbol.${name})`);
-  }
-}
-
 // A REPL-specific JSON stringify.
 export function stringify(
   value,
@@ -32,12 +24,12 @@ export function stringify(
     if (typeof value === 'bigint') {
       return `${value}n`;
     }
+    if (typeof value === 'symbol') {
+      return String(value);
+    }
     const rawString = UNJSONABLES.get(value);
     if (rawString) {
       return rawString;
-    }
-    if (typeof value === 'symbol') {
-      return `Symbol(?)`;
     }
     return JSON.stringify(value, null, spaces);
   }

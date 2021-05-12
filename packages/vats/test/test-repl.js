@@ -91,9 +91,16 @@ test('repl: Symbols', async t => {
   let m = sentMessages.shift();
 
   let histnum = 0;
-  for (const expr of ['asyncIterator', 'toStringTag', 'hasInstance'].map(
-    name => `Symbol.${name}`,
-  )) {
+  const exprDisplays = [
+    'asyncIterator',
+    'toStringTag',
+    'hasInstance',
+  ].map(name => [`Symbol.${name}`, `Symbol(Symbol.${name})`]);
+  exprDisplays.push(
+    [`Symbol.for('foo')`, `Symbol(foo)`],
+    [`Symbol('foo')`, `Symbol(foo)`],
+  );
+  for (const [expr, display] of exprDisplays) {
     t.deepEqual(doEval(histnum, expr), {});
     m = sentMessages.shift();
     t.deepEqual(m.type, 'updateHistory');
@@ -104,23 +111,7 @@ test('repl: Symbols', async t => {
     m = sentMessages.shift();
     t.is(m.type, 'updateHistory');
     t.is(m.histnum, histnum);
-    t.is(m.display, `Symbol(${expr})`);
-    t.deepEqual(sentMessages, []);
-    histnum += 1;
-  }
-
-  for (const expr of [`Symbol.for('foo')`, `Symbol('foo')`]) {
-    t.deepEqual(doEval(histnum, expr), {});
-    m = sentMessages.shift();
-    t.deepEqual(m.type, 'updateHistory');
-    t.is(sentMessages.length, 1);
-
-    t.is(m.histnum, histnum);
-    t.is(m.display, `working on eval(${expr})`);
-    m = sentMessages.shift();
-    t.is(m.type, 'updateHistory');
-    t.is(m.histnum, histnum);
-    t.is(m.display, `Symbol(?)`);
+    t.is(m.display, display);
     t.deepEqual(sentMessages, []);
     histnum += 1;
   }
