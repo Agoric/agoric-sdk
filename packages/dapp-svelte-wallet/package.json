@@ -24,7 +24,6 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "@agoric/babel-parser": "^7.6.4",
     "agoric": "^0.13.2",
     "babel-eslint": "^10.0.3",
     "eslint-plugin-eslint-comments": "^3.1.2"

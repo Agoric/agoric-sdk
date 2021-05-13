@@ -8,7 +8,6 @@ import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
-import * as babelCore from '@babel/core';
 import anylogger from 'anylogger';
 import { tmpName } from 'tmp';
 
@@ -213,7 +212,7 @@ export async function makeSwingsetController(
   // cannot be implemented within a non-start-Compartment. We build it out
   // here and pass it to the kernel, which then passes it to vats. This is
   // intended to be powerless.
-  const mt = makeMeteringTransformer(babelCore);
+  const mt = makeMeteringTransformer();
   function transformMetering(src, getMeter) {
     // 'getMeter' provides the meter to which the transformation itself is
     // billed (the COMPUTE meter is charged the length of the source string).
