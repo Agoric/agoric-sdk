@@ -1,1 +1,1 @@
-export { stringify } from '@agoric/vats/src/repl';
+export { dump } from '@agoric/vats/src/repl';

@@ -5,17 +5,30 @@ import { getInterfaceOf, Remotable, Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent';
 
-// A REPL-specific JSON stringify.
-export function stringify(
-  value,
-  spaces,
-  gio = getInterfaceOf,
-  inProgress = new WeakSet(),
-  depth = 0,
-) {
+const UNJSONABLES = new Map([
+  [NaN, 'NaN'],
+  [Infinity, 'Infinity'],
+  [-Infinity, '-Infinity'],
+  [undefined, 'undefined'],
+]);
+
+// A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
+// output is unambiguous (even though it cannot be round-tripped).
+export const dump = (value, spaces = '') =>
+  // eslint-disable-next-line no-use-before-define
+  dump0(value, spaces, new WeakSet(), 0);
+
+function dump0(value, spaces, inProgress, depth) {
   if (Object(value) !== value) {
     if (typeof value === 'bigint') {
       return `${value}n`;
+    }
+    if (typeof value === 'symbol') {
+      return String(value);
+    }
+    const rawString = UNJSONABLES.get(value);
+    if (rawString) {
+      return rawString;
     }
     return JSON.stringify(value, null, spaces);
   }
@@ -25,61 +38,87 @@ export function stringify(
     return `[Function ${value.name || '<anon>'}]`;
   }
 
-  // This stringify attempts to show a little bit more of the structure.
-  if (isPromise(value)) {
-    return '[Promise]';
+  // This dump attempts to show a little bit more of the structure.
+  if (Promise.resolve(value) === value) {
+    return `[Promise]`;
   }
 
   if (value instanceof Error) {
-    return JSON.stringify(`${value.name}: ${value.message}`);
+    return `[${value.name}: ${value.message}]`;
   }
 
   // Detect cycles.
   if (inProgress.has(value)) {
     return '[Circular]';
   }
-  inProgress.add(value);
 
-  let ret = '';
-  const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
-  if (gio && gio(value) !== undefined) {
-    ret += `${value}`;
-  } else if (Array.isArray(value)) {
-    ret += `[`;
+  // Ensure we delete value on throw or return with the finally block below.
+  try {
+    inProgress.add(value);
+
+    let ret = '';
+    let spcs = spaces;
+    if (!spcs) {
+      spcs = '';
+    } else if (typeof spcs === 'number') {
+      spcs = ' '.repeat(spaces);
+    }
+
+    const singleSep = spaces ? ' ' : '';
+
+    const proto = Object.getPrototypeOf(value);
+    const stringTag = proto ? proto[Symbol.toStringTag] : undefined;
+    if (stringTag !== undefined) {
+      // Use stringification to get the string tag out.
+      ret += `[Object ${stringTag}]${singleSep}`;
+    }
 
     let sep = '';
-    for (let i = 0; i < value.length; i += 1) {
+    let closer;
+    const names = Object.getOwnPropertyNames(value);
+    const nonNumber = new Set(names);
+    if (Array.isArray(value)) {
+      ret += `[`;
+      closer = ']';
+      nonNumber.delete('length');
+
+      for (let i = 0; i < value.length; i += 1) {
+        ret += sep;
+        if (spcs !== '') {
+          ret += `\n${spcs.repeat(depth + 1)}`;
+        }
+        nonNumber.delete(String(i));
+        ret += dump0(value[i], spaces, inProgress, depth + 1);
+        sep = ',';
+      }
+    } else {
+      ret += '{';
+      closer = '}';
+    }
+
+    const props = names
+      .filter(n => nonNumber.has(n))
+      .concat(Object.getOwnPropertySymbols(value));
+
+    for (const key of props) {
       ret += sep;
       if (spcs !== '') {
         ret += `\n${spcs.repeat(depth + 1)}`;
       }
-      ret += stringify(value[i], spaces, gio, inProgress, depth + 1);
+      const keyDump = dump0(key, spaces, inProgress, depth + 1);
+      ret += typeof key === 'string' ? keyDump : `[${keyDump}]`;
+      ret += `:${singleSep}`;
+      ret += dump0(value[key], spaces, inProgress, depth + 1);
       sep = ',';
     }
     if (sep !== '' && spcs !== '') {
       ret += `\n${spcs.repeat(depth)}`;
     }
-    ret += ']';
+    ret += closer;
     return ret;
+  } finally {
+    inProgress.delete(value);
   }
-
-  ret += '{';
-  let sep = '';
-  for (const key of Object.keys(value)) {
-    ret += sep;
-    if (spcs !== '') {
-      ret += `\n${spcs.repeat(depth + 1)}`;
-    }
-    ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
-    ret += stringify(value[key], spaces, gio, inProgress, depth + 1);
-    sep = ',';
-  }
-  if (sep !== '' && spcs !== '') {
-    ret += `\n${spcs.repeat(depth)}`;
-  }
-  ret += '}';
-  inProgress.delete(value);
-  return ret;
 }
 
 export function getReplHandler(replObjects, send, vatPowers) {
@@ -113,7 +152,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
       if (typeof a === 'string') {
         s = a;
       } else {
-        s = stringify(a, 2, getInterfaceOf);
+        s = dump(a, 2);
       }
       ret += `${sep}${s}`;
       sep = ' ';
@@ -218,7 +257,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
       try {
         r = c.evaluate(body, { sloppyGlobalsMode: true });
         history[histnum] = r;
-        display[histnum] = stringify(r, undefined, getInterfaceOf);
+        display[histnum] = dump(r);
       } catch (e) {
         console.log(`error in eval`, e);
         history[histnum] = e;
@@ -233,11 +272,11 @@ export function getReplHandler(replObjects, send, vatPowers) {
         r.then(
           res => {
             history[histnum] = res;
-            display[histnum] = stringify(res, undefined, getInterfaceOf);
+            display[histnum] = dump(res);
           },
           rej => {
             // leave history[] alone: leave the rejected promise in place
-            display[histnum] = `Promise.reject(${stringify(`${rej}`)})`;
+            display[histnum] = `Promise.reject(${dump(`${rej}`)})`;
           },
         ).then(_ => updateHistorySlot(histnum));
       }
