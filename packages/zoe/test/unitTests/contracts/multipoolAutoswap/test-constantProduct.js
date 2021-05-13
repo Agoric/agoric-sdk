@@ -5,22 +5,22 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { wrapZCF } from '../../../../src/contractSupport';
+import { checkZCF } from '../../../../src/contractSupport';
 import { assertConstantProduct } from '../../../../src/contracts/multipoolAutoswap/constantProduct';
 import { setupZCFTest } from '../../zcf/setupZcfTest';
 
 test('constantProduct invariant', async t => {
   const { zcf } = await setupZCFTest();
 
-  const wrappedZCF = wrapZCF(zcf, assertConstantProduct);
+  const checkedZCF = checkZCF(zcf, assertConstantProduct);
 
-  const { zcfSeat: poolSeat } = wrappedZCF.makeEmptySeatKit();
-  const { zcfSeat: swapSeat } = wrappedZCF.makeEmptySeatKit();
+  const { zcfSeat: poolSeat } = checkedZCF.makeEmptySeatKit();
+  const { zcfSeat: swapSeat } = checkedZCF.makeEmptySeatKit();
 
   // allocate some secondary and central to the poolSeat
-  const centralMint = await wrappedZCF.makeZCFMint('Central');
+  const centralMint = await checkedZCF.makeZCFMint('Central');
   const { brand: centralBrand } = centralMint.getIssuerRecord();
-  const secondaryMint = await wrappedZCF.makeZCFMint('Secondary');
+  const secondaryMint = await checkedZCF.makeZCFMint('Secondary');
   const { brand: secondaryBrand } = secondaryMint.getIssuerRecord();
   centralMint.mintGains(
     { Central: AmountMath.make(centralBrand, 10n ** 6n) },
@@ -46,7 +46,7 @@ test('constantProduct invariant', async t => {
   // nothing, a clear violation of the constant product
   t.throws(
     () =>
-      wrappedZCF.reallocate(
+      checkedZCF.reallocate(
         poolSeat.stage({
           Central: AmountMath.make(centralBrand, 0n),
           Secondary: AmountMath.make(secondaryBrand, 0n),

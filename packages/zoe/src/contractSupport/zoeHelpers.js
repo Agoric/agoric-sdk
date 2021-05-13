@@ -486,8 +486,8 @@ export const offerTo = async (
  * that must be true for the reallocate to occur
  * @returns {ContractFacet}
  */
-export const wrapZCF = (zcf, assertFn) => {
-  const wrappedZCF = harden({
+export const checkZCF = (zcf, assertFn) => {
+  const checkedZCF = harden({
     ...zcf,
     reallocate: (...stagings) => {
       assertFn(stagings);
@@ -495,5 +495,5 @@ export const wrapZCF = (zcf, assertFn) => {
       zcf.reallocate(...stagings);
     },
   });
-  return wrappedZCF;
+  return checkedZCF;
 };
