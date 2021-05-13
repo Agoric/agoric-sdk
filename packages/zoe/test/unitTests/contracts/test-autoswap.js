@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import {
   makeTrader,
   outputFromInputPrice,
@@ -56,7 +56,7 @@ test('autoSwap API interactions, no jig', async t => {
   const publicFacet = startRecord.publicFacet;
   const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
   const liquidityBrand = await E(liquidityIssuerP).getBrand();
-  const liquidity = value => amountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(value, liquidityBrand);
 
   // Alice adds liquidity
   // 10 moola = 5 simoleans at the time of the liquidity adding
@@ -252,7 +252,7 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
   simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => amountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(value, liquidityBrand);
 
   const alice = await makeTrader(
     [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
@@ -364,7 +364,7 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
   };
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => amountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(value, liquidityBrand);
 
   // Setup Alice
   const moolaPurse = moolaIssuer.makeEmptyPurse();
@@ -524,7 +524,7 @@ test('autoSwap jig - swap varying amounts', async t => {
   );
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => amountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(value, liquidityBrand);
 
   const issuerRecord = harden({
     Central: moolaIssuer,
@@ -653,7 +653,7 @@ test('autoSwap price quote for zero', async t => {
   const publicFacet = startRecord.publicFacet;
   const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
   const liquidityBrand = await E(liquidityIssuerP).getBrand();
-  const liquidity = value => amountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(value, liquidityBrand);
 
   // Alice adds liquidity
   // 10 moola = 5 simoleans at the time of the liquidity adding

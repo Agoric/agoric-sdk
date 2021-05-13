@@ -3,7 +3,7 @@
 import '../../../exported';
 import './types';
 
-import { amountMath, isNatValue } from '@agoric/ertp';
+import { AmountMath, isNatValue } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
 import { makeRatio, oneMinus } from '../../contractSupport';
 import { make100Percent, make0Percent } from './percent';
@@ -15,20 +15,20 @@ import { make100Percent, make0Percent } from './percent';
  *
  * @type {CalculateShares} */
 function calculateShares(collateralBrand, price, strikePrice1, strikePrice2) {
-  if (amountMath.isGTE(strikePrice1, price)) {
+  if (AmountMath.isGTE(strikePrice1, price)) {
     return {
       longShare: make0Percent(collateralBrand),
       shortShare: make100Percent(collateralBrand),
     };
-  } else if (amountMath.isGTE(price, strikePrice2)) {
+  } else if (AmountMath.isGTE(price, strikePrice2)) {
     return {
       longShare: make100Percent(collateralBrand),
       shortShare: make0Percent(collateralBrand),
     };
   }
 
-  const denominator = amountMath.subtract(strikePrice2, strikePrice1);
-  const numerator = amountMath.subtract(price, strikePrice1);
+  const denominator = AmountMath.subtract(strikePrice2, strikePrice1);
+  const numerator = AmountMath.subtract(price, strikePrice1);
   assert(isNatValue(numerator.value));
   assert(isNatValue(denominator.value));
   const longShare = makeRatio(

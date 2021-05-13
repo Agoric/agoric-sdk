@@ -6,7 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
 
-import { amountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
@@ -169,7 +169,7 @@ test('simpleExchange with valid offers', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMath.isGTE(
+    AmountMath.isGTE(
       await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
       aliceSellOrderProposal.want.Price,
     ),
@@ -390,7 +390,7 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMath.isGTE(
+    AmountMath.isGTE(
       await ccIssuer.getAmountOf(aliceCcPayout),
       aliceSellOrderProposal.want.Price,
     ),
@@ -405,8 +405,8 @@ test('simpleExchange with non-fungible assets', async t => {
   // Assert that the correct payout were received.
   // Alice has an empty RPG purse, and the Cheshire Cat.
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
-  const noCats = amountMath.makeEmpty(brands.get('cc'), AssetKind.SET);
-  const noRpgItems = amountMath.makeEmpty(brands.get('rpg'), AssetKind.SET);
+  const noCats = AmountMath.makeEmpty(brands.get('cc'), AssetKind.SET);
+  const noRpgItems = AmountMath.makeEmpty(brands.get('rpg'), AssetKind.SET);
   await assertPayoutAmount(t, rpgIssuer, aliceRpgPayout, noRpgItems);
   const cheshireCatAmount = cryptoCats(harden(['Cheshire Cat']));
   await assertPayoutAmount(t, ccIssuer, aliceCcPayout, cheshireCatAmount);

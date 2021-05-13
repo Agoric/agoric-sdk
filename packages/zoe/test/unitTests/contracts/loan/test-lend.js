@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '../../../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { setupLoanUnitTest, checkDescription } from './helpers';
 
@@ -21,7 +21,7 @@ test('makeLendInvitation', async t => {
 
   await checkDescription(t, zoe, lendInvitation, 'lend');
 
-  const maxLoan = amountMath.make(1000n, loanKit.brand);
+  const maxLoan = AmountMath.make(1000n, loanKit.brand);
 
   const proposal = harden({
     give: { Loan: maxLoan },

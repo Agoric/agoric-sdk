@@ -32,7 +32,7 @@ import {
   multiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from './makeTracer';
 import { makeVaultManager } from './vaultManager';
 import { makeLiquidationStrategy } from './liquidateMinimum';
@@ -82,7 +82,7 @@ export async function start(zcf) {
   function stageReward(amount) {
     const priorReward = rewardPoolSeat.getAmountAllocated('RUN', runBrand);
     return rewardPoolSeat.stage({
-      RUN: amountMath.add(priorReward, amount, runBrand),
+      RUN: AmountMath.add(priorReward, amount, runBrand),
     });
   }
 
@@ -140,7 +140,7 @@ export async function start(zcf) {
       assert(!collateralTypes.has(collateralBrand));
       const runAmount = multiplyBy(collateralIn, rates.initialPrice);
       // arbitrarily, give governance tokens equal to RUN tokens
-      const govAmount = amountMath.make(runAmount.value, govBrand);
+      const govAmount = AmountMath.make(runAmount.value, govBrand);
 
       // Create new governance tokens, trade them with the incoming offer for
       // collateral. The offer uses the keywords Collateral and Governance.
@@ -192,7 +192,7 @@ export async function start(zcf) {
           Secondary: collateralIn,
           Central: runAmount,
         },
-        want: { Liquidity: amountMath.makeEmpty(liquidityBrand) },
+        want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
       });
       const liqInvitation = E(autoswapAPI).makeAddLiquidityInvitation();
 
@@ -300,7 +300,7 @@ export async function start(zcf) {
     } = zcf.makeEmptySeatKit();
     runMint.mintGains(
       {
-        Bootstrap: amountMath.make(runBrand, bootstrapPaymentValue),
+        Bootstrap: AmountMath.make(runBrand, bootstrapPaymentValue),
       },
       bootstrapZCFSeat,
     );

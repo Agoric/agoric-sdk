@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/src/types';
 
-import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -35,14 +35,14 @@ export async function start(zcf) {
   const autoswapMock = {
     getInputPrice(amountIn, brandOut) {
       assert.equal(brandOut, runBrand);
-      return amountMath.make(4n * amountIn.value, runBrand);
+      return AmountMath.make(4n * amountIn.value, runBrand);
     },
   };
 
   function stageReward(amount, _fromSeat) {
     const priorReward = stableCoinSeat.getAmountAllocated('RUN', runBrand);
     return stableCoinSeat.stage({
-      RUN: amountMath.add(priorReward, amount),
+      RUN: AmountMath.add(priorReward, amount),
     });
   }
 

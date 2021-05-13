@@ -14,7 +14,7 @@ import {
 import { makeNotifierKit } from '@agoric/notifier';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from './makeTracer';
 import { makeInterestCalculator } from './interest';
 
@@ -54,7 +54,7 @@ export function makeVaultKit(
   trace('vaultSeat proposal', vaultSeat.getProposal());
 
   const { brand: runBrand } = runMint.getIssuerRecord();
-  let runDebt = amountMath.makeEmpty(runBrand);
+  let runDebt = AmountMath.makeEmpty(runBrand);
   const interestCalculator = makeInterestCalculator(
     runBrand,
     manager.getInterestRate(),
@@ -71,7 +71,7 @@ export function makeVaultKit(
 
   function assertVaultHoldsNoRun() {
     assert(
-      amountMath.isEmpty(getRunAllocated(vaultSeat)),
+      AmountMath.isEmpty(getRunAllocated(vaultSeat)),
       X`Vault should be empty of RUN`,
     );
   }
@@ -88,7 +88,7 @@ export function makeVaultKit(
   async function assertSufficientCollateral(collateralAmount, wantedRun) {
     const maxRun = await maxDebtFor(collateralAmount);
     assert(
-      amountMath.isGTE(maxRun, wantedRun, runBrand),
+      AmountMath.isGTE(maxRun, wantedRun, runBrand),
       X`Requested ${q(wantedRun)} exceeds max ${q(maxRun)}`,
     );
   }
@@ -96,14 +96,14 @@ export function makeVaultKit(
   function getCollateralAmount() {
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
-      ? amountMath.makeEmpty(collateralBrand)
+      ? AmountMath.makeEmpty(collateralBrand)
       : getCollateralAllocated(vaultSeat);
   }
 
   async function getCollateralizationRatio() {
     const collateralAmount = getCollateralAmount();
     // TODO: allow Ratios to represent X/0.
-    if (amountMath.isEmpty(runDebt)) {
+    if (AmountMath.isEmpty(runDebt)) {
       return makeRatio(collateralAmount.value, runBrand, 1n);
     }
 
@@ -163,7 +163,7 @@ export function makeVaultKit(
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
-    assert(amountMath.isGTE(runReturned, runDebt));
+    assert(AmountMath.isGTE(runReturned, runDebt));
 
     trade(
       zcf,
@@ -177,7 +177,7 @@ export function makeVaultKit(
       },
     );
     seat.exit();
-    runDebt = amountMath.makeEmpty(runBrand);
+    runDebt = AmountMath.makeEmpty(runBrand);
     active = false;
     updateUiState();
 
@@ -219,13 +219,13 @@ export function makeVaultKit(
     const startClientAmount = getCollateralAllocated(seat);
     if (proposal.want.Collateral) {
       return {
-        vault: amountMath.subtract(startVaultAmount, proposal.want.Collateral),
-        client: amountMath.add(startClientAmount, proposal.want.Collateral),
+        vault: AmountMath.subtract(startVaultAmount, proposal.want.Collateral),
+        client: AmountMath.add(startClientAmount, proposal.want.Collateral),
       };
     } else if (proposal.give.Collateral) {
       return {
-        vault: amountMath.add(startVaultAmount, proposal.give.Collateral),
-        client: amountMath.subtract(
+        vault: AmountMath.add(startVaultAmount, proposal.give.Collateral),
+        client: AmountMath.subtract(
           startClientAmount,
           proposal.give.Collateral,
         ),
@@ -250,22 +250,22 @@ export function makeVaultKit(
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
       return {
-        vault: amountMath.makeEmpty(runBrand),
-        client: amountMath.add(clientAllocation, proposal.want.RUN),
+        vault: AmountMath.makeEmpty(runBrand),
+        client: AmountMath.add(clientAllocation, proposal.want.RUN),
       };
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const acceptedRun = amountMath.isGTE(proposal.give.RUN, runDebt)
+      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
         ? runDebt
         : proposal.give.RUN;
 
       return {
         vault: acceptedRun,
-        client: amountMath.subtract(clientAllocation, acceptedRun),
+        client: AmountMath.subtract(clientAllocation, acceptedRun),
       };
     } else {
       return {
-        vault: amountMath.makeEmpty(runBrand),
+        vault: AmountMath.makeEmpty(runBrand),
         client: clientAllocation,
       };
     }
@@ -274,14 +274,14 @@ export function makeVaultKit(
   // Calculate the fee, the amount to mint and the resulting debt.
   function loanFee(proposal, runAfter) {
     let newDebt;
-    let toMint = amountMath.makeEmpty(runBrand);
-    let fee = amountMath.makeEmpty(runBrand);
+    let toMint = AmountMath.makeEmpty(runBrand);
+    let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
       fee = multiplyBy(proposal.want.RUN, manager.getLoanFee());
-      toMint = amountMath.add(proposal.want.RUN, fee);
-      newDebt = amountMath.add(runDebt, toMint);
+      toMint = AmountMath.add(proposal.want.RUN, fee);
+      newDebt = AmountMath.add(runDebt, toMint);
     } else if (proposal.give.RUN) {
-      newDebt = amountMath.subtract(runDebt, runAfter.vault);
+      newDebt = AmountMath.subtract(runDebt, runAfter.vault);
     } else {
       newDebt = runDebt;
     }
@@ -316,17 +316,17 @@ export function makeVaultKit(
     // Get new balances after calling the priceAuthority, so we can compare
     // to the debt limit based on the new values.
     const vaultCollateral =
-      collateralAfter.vault || amountMath.makeEmpty(collateralBrand);
+      collateralAfter.vault || AmountMath.makeEmpty(collateralBrand);
 
     // If the collateral decreased, we pro-rate maxDebt
-    if (amountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
+    if (AmountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
       // We can pro-rate maxDebt because the quote is either linear (price is
       // unchanging) or super-linear (meaning it's an AMM. When the volume sold
       // falls, the proceeds fall less than linearly, so this is a conservative
       // choice.)
       const maxDebtAfter = multiplyBy(vaultCollateral, priceOfCollateralInRun);
       assert(
-        amountMath.isGTE(maxDebtAfter, newDebt),
+        AmountMath.isGTE(maxDebtAfter, newDebt),
         X`The requested debt ${q(
           newDebt,
         )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
@@ -335,7 +335,7 @@ export function makeVaultKit(
       // When the re-checked collateral was larger than the original amount, we
       // should restart, unless the new debt is less than the original target
       // (in which case, we're fine to proceed with the reallocate)
-    } else if (!amountMath.isGTE(maxDebtForOriginalTarget, newDebt)) {
+    } else if (!AmountMath.isGTE(maxDebtForOriginalTarget, newDebt)) {
       return adjustBalancesHook(clientSeat);
     }
 
@@ -372,7 +372,7 @@ export function makeVaultKit(
 
   /** @type {OfferHandler} */
   async function openLoan(seat) {
-    assert(amountMath.isEmpty(runDebt), X`vault must be empty initially`);
+    assert(AmountMath.isEmpty(runDebt), X`vault must be empty initially`);
     // get the payout to provide access to the collateral if the
     // contract abandons
     const {
@@ -385,25 +385,25 @@ export function makeVaultKit(
     // todo trigger process() check right away, in case the price dropped while we ran
 
     const fee = multiplyBy(wantedRun, manager.getLoanFee());
-    if (amountMath.isEmpty(fee)) {
+    if (AmountMath.isEmpty(fee)) {
       throw seat.fail(
         Error('loan requested is too small; cannot accrue interest'),
       );
     }
 
-    runDebt = amountMath.add(wantedRun, fee);
+    runDebt = AmountMath.add(wantedRun, fee);
     await assertSufficientCollateral(collateralAmount, runDebt);
 
     runMint.mintGains({ RUN: runDebt }, vaultSeat);
     const priorCollateral = getCollateralAllocated(vaultSeat);
 
     const collateralSeatStaging = vaultSeat.stage({
-      Collateral: amountMath.add(priorCollateral, collateralAmount),
-      RUN: amountMath.makeEmpty(runBrand),
+      Collateral: AmountMath.add(priorCollateral, collateralAmount),
+      RUN: AmountMath.makeEmpty(runBrand),
     });
     const loanSeatStaging = seat.stage({
       RUN: wantedRun,
-      Collateral: amountMath.makeEmpty(collateralBrand),
+      Collateral: AmountMath.makeEmpty(collateralBrand),
     });
     const stageReward = manager.stageReward(fee);
     zcf.reallocate(collateralSeatStaging, loanSeatStaging, stageReward);
@@ -418,13 +418,13 @@ export function makeVaultKit(
       {
         latestInterestUpdate,
         newDebt: runDebt,
-        interest: amountMath.makeEmpty(runBrand),
+        interest: AmountMath.makeEmpty(runBrand),
       },
       currentTime,
     );
 
     if (interestKit.latestInterestUpdate === latestInterestUpdate) {
-      return amountMath.makeEmpty(runBrand);
+      return AmountMath.makeEmpty(runBrand);
     }
 
     ({ latestInterestUpdate, newDebt: runDebt } = interestKit);

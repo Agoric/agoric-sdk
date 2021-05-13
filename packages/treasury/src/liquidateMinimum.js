@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport';
 import { assert, q } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { makeDefaultLiquidationStrategy } from './liquidation';
 import { makeTracer } from './makeTracer';
@@ -66,7 +66,7 @@ export async function start(zcf) {
           zcf,
           strategy.makeInvitation(),
           undefined, // The keywords were mapped already
-          strategy.makeProposal(amountIn, amountMath.makeEmpty(runBrand)),
+          strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
           debtorSeat,
         );
         // await sellAllDeposited, but don't need the value
@@ -111,7 +111,7 @@ export function makeLiquidationStrategy(creatorFacet) {
   function makeProposal(collateral, run) {
     return harden({
       give: { In: collateral },
-      want: { Out: amountMath.makeEmptyFromAmount(run) },
+      want: { Out: AmountMath.makeEmptyFromAmount(run) },
     });
   }
 

@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { amountMath as m, AssetKind } from '../../../src';
+import { AmountMath as m, AssetKind } from '../../../src';
 import { mockBrand } from './mockBrand';
 
 // The "unit tests" for MathHelpers actually make the calls through

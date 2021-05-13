@@ -2,7 +2,7 @@
 
 import makeStore from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -23,7 +23,7 @@ const sumByBrand = amounts => {
       sumsByBrand.init(brand, amount);
     } else {
       const sumSoFar = sumsByBrand.get(brand);
-      sumsByBrand.set(brand, amountMath.add(sumSoFar, amount));
+      sumsByBrand.set(brand, AmountMath.add(sumSoFar, amount));
     }
   });
   return sumsByBrand;
@@ -62,10 +62,10 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
     }
     if (leftSum === undefined) {
       assert(rightSum);
-      leftSum = amountMath.makeEmptyFromAmount(rightSum);
+      leftSum = AmountMath.makeEmptyFromAmount(rightSum);
     }
     if (rightSum === undefined) {
-      rightSum = amountMath.makeEmptyFromAmount(leftSum);
+      rightSum = AmountMath.makeEmptyFromAmount(leftSum);
     }
     return { leftSum, rightSum };
   };
@@ -78,7 +78,7 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   allBrands.forEach(brand => {
     const { leftSum, rightSum } = getSums(brand);
     assert(
-      amountMath.isEqual(leftSum, rightSum),
+      AmountMath.isEqual(leftSum, rightSum),
       X`rights were not conserved for brand ${brand}`,
     );
   });

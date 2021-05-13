@@ -14,7 +14,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
@@ -275,7 +275,7 @@ export function makeWallet({
         actions: Far('purse.actions', {
           // Send a value from this purse.
           async send(receiverP, sendValue) {
-            const amount = amountMath.make(brand, sendValue);
+            const amount = AmountMath.make(brand, sendValue);
             const payment = await E(purse).withdraw(amount);
             try {
               await E(receiverP).receive(payment);

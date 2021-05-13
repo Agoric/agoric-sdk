@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
@@ -162,7 +162,7 @@ test('lib-wallet issuer and purse methods', async t => {
   const moolaPurse = wallet.getPurse('fun money');
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.makeEmpty(moolaBundle.brand, AssetKind.NAT),
+    AmountMath.makeEmpty(moolaBundle.brand, AssetKind.NAT),
     `empty purse is empty`,
   );
   t.deepEqual(
@@ -179,14 +179,14 @@ test('lib-wallet issuer and purse methods', async t => {
     `can get issuer from purse petname`,
   );
   const moolaPayment = moolaBundle.mint.mintPayment(
-    amountMath.make(moolaBundle.brand, 100n),
+    AmountMath.make(moolaBundle.brand, 100n),
   );
   await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
     wallet.deposit('fun money', moolaPayment),
   );
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.make(moolaBundle.brand, 100n),
+    AmountMath.make(moolaBundle.brand, 100n),
     `deposit successful`,
   );
   t.is(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
@@ -611,7 +611,7 @@ test('lib-wallet offer methods', async t => {
   await waitForUpdate(E(moolaPurse).getCurrentAmountNotifier(), () =>
     wallet.deposit(
       'Fun budget',
-      moolaBundle.mint.mintPayment(amountMath.make(moolaBundle.brand, 100n)),
+      moolaBundle.mint.mintPayment(AmountMath.make(moolaBundle.brand, 100n)),
     ),
   );
 
@@ -676,7 +676,7 @@ test('lib-wallet offer methods', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.make(moolaBundle.brand, 100n),
+    AmountMath.make(moolaBundle.brand, 100n),
     `moolaPurse balance`,
   );
   const rawId2 = '1588645230204';
@@ -837,7 +837,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(amountMath.make(moolaBundle.brand, 1000n)),
+    moolaBundle.mint.mintPayment(AmountMath.make(moolaBundle.brand, 1000n)),
   );
 
   await wallet.addIssuer('simolean', simoleanBundle.issuer);
@@ -845,7 +845,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   await wallet.deposit(
     'Nest egg',
     simoleanBundle.mint.mintPayment(
-      amountMath.make(simoleanBundle.brand, 1000n),
+      AmountMath.make(simoleanBundle.brand, 1000n),
     ),
   );
 
@@ -858,11 +858,11 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: amountMath.make(moolaBundle.brand, 900n),
-      Secondary: amountMath.make(simoleanBundle.brand, 500n),
+      Central: AmountMath.make(moolaBundle.brand, 900n),
+      Secondary: AmountMath.make(simoleanBundle.brand, 500n),
     },
     want: {
-      Liquidity: amountMath.makeEmpty(liquidityBrand),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
     },
   });
 
@@ -937,12 +937,12 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.make(moolaBundle.brand, 70n),
+    AmountMath.make(moolaBundle.brand, 70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    amountMath.make(simoleanBundle.brand, 516n),
+    AmountMath.make(simoleanBundle.brand, 516n),
     `simolean purse balance`,
   );
 });
@@ -962,7 +962,7 @@ test('addOffer invitationQuery', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(amountMath.make(moolaBundle.brand, 1000n)),
+    moolaBundle.mint.mintPayment(AmountMath.make(moolaBundle.brand, 1000n)),
   );
 
   await issuerManager.add('simolean', simoleanBundle.issuer);
@@ -970,7 +970,7 @@ test('addOffer invitationQuery', async t => {
   await wallet.deposit(
     'Nest egg',
     simoleanBundle.mint.mintPayment(
-      amountMath.make(simoleanBundle.brand, 1000n),
+      AmountMath.make(simoleanBundle.brand, 1000n),
     ),
   );
 
@@ -983,11 +983,11 @@ test('addOffer invitationQuery', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: amountMath.make(moolaBundle.brand, 900n),
-      Secondary: amountMath.make(simoleanBundle.brand, 500n),
+      Central: AmountMath.make(moolaBundle.brand, 900n),
+      Secondary: AmountMath.make(simoleanBundle.brand, 500n),
     },
     want: {
-      Liquidity: amountMath.makeEmpty(liquidityBrand),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
     },
   });
 
@@ -1060,12 +1060,12 @@ test('addOffer invitationQuery', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.make(moolaBundle.brand, 70n),
+    AmountMath.make(moolaBundle.brand, 70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    amountMath.make(simoleanBundle.brand, 516n),
+    AmountMath.make(simoleanBundle.brand, 516n),
     `simolean purse balance`,
   );
 });
@@ -1085,7 +1085,7 @@ test('addOffer offer.invitation', async t => {
   await wallet.makeEmptyPurse('moola', 'Fun budget');
   await wallet.deposit(
     'Fun budget',
-    moolaBundle.mint.mintPayment(amountMath.make(moolaBundle.brand, 1000n)),
+    moolaBundle.mint.mintPayment(AmountMath.make(moolaBundle.brand, 1000n)),
   );
 
   await issuerManager.add('simolean', simoleanBundle.issuer);
@@ -1093,7 +1093,7 @@ test('addOffer offer.invitation', async t => {
   await wallet.deposit(
     'Nest egg',
     simoleanBundle.mint.mintPayment(
-      amountMath.make(simoleanBundle.brand, 1000n),
+      AmountMath.make(simoleanBundle.brand, 1000n),
     ),
   );
 
@@ -1106,11 +1106,11 @@ test('addOffer offer.invitation', async t => {
   // we have.
   const proposal = harden({
     give: {
-      Central: amountMath.make(moolaBundle.brand, 900n),
-      Secondary: amountMath.make(simoleanBundle.brand, 500n),
+      Central: AmountMath.make(moolaBundle.brand, 900n),
+      Secondary: AmountMath.make(simoleanBundle.brand, 500n),
     },
     want: {
-      Liquidity: amountMath.makeEmpty(liquidityBrand),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
     },
   });
 
@@ -1176,12 +1176,12 @@ test('addOffer offer.invitation', async t => {
   t.is(seat, seats[0], `both getSeat(s) methods work`);
   t.deepEqual(
     await moolaPurse.getCurrentAmount(),
-    amountMath.make(moolaBundle.brand, 70n),
+    AmountMath.make(moolaBundle.brand, 70n),
     `moola purse balance`,
   );
   t.deepEqual(
     await simoleanPurse.getCurrentAmount(),
-    amountMath.make(simoleanBundle.brand, 516n),
+    AmountMath.make(simoleanBundle.brand, 516n),
     `simolean purse balance`,
   );
 });

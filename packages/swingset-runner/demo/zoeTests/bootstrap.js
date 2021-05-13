@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from './manualTimer';
 
 import { makePrintLog } from './printLog';
@@ -38,7 +38,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) =>
-      mint.mintPayment(amountMath.make(brands[i], values[i])),
+      mint.mintPayment(AmountMath.make(brands[i], values[i])),
     );
   const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 

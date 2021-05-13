@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -67,9 +67,9 @@ const build = async (
   );
   const proposal = harden({
     give: {
-      Collateral: amountMath.make(moolaBrand, 1000n),
+      Collateral: AmountMath.make(moolaBrand, 1000n),
     },
-    want: { Governance: amountMath.makeEmpty(govBrand) },
+    want: { Governance: AmountMath.makeEmpty(govBrand) },
   });
 
   const seat = await E(zoe).offer(

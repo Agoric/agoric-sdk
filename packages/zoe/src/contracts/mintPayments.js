@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -26,12 +26,12 @@ const start = async zcf => {
   const zcfMint = await zcf.makeZCFMint('Tokens');
   // AWAIT
 
-  // Now that ZCF has saved the issuer, brand, and local amountMath, they
+  // Now that ZCF has saved the issuer, brand, and local AmountMath, they
   // can be accessed synchronously.
   const { issuer, brand } = zcfMint.getIssuerRecord();
 
   const mintPayment = value => seat => {
-    const amount = amountMath.make(value, brand);
+    const amount = AmountMath.make(value, brand);
     // Synchronously mint and allocate amount to seat.
     zcfMint.mintGains({ Token: amount }, seat);
     // Exit the seat so that the user gets a payout.

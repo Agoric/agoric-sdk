@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -67,10 +67,10 @@ const start = async zcf => {
     async query(query) {
       try {
         assert(!revoked, revokedMsg);
-        const noFee = amountMath.makeEmpty(feeBrand);
+        const noFee = AmountMath.makeEmpty(feeBrand);
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         assert(
-          !requiredFee || amountMath.isGTE(noFee, requiredFee),
+          !requiredFee || AmountMath.isGTE(noFee, requiredFee),
           X`Oracle required a fee but the query had none`,
         );
         return reply;

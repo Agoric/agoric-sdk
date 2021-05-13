@@ -6,7 +6,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport';
 import { assert } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 const { multiply, isGTE } = natSafeMath;
 
@@ -29,10 +29,10 @@ function ratioGTE(left, right) {
 }
 
 function calculateDebtToCollateral(debtAmount, collateralAmount) {
-  if (amountMath.isEmpty(collateralAmount)) {
+  if (AmountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
       debtAmount,
-      amountMath.make(1n, collateralAmount.brand),
+      AmountMath.make(1n, collateralAmount.brand),
     );
   }
   return makeRatioFromAmounts(debtAmount, collateralAmount);
@@ -124,7 +124,7 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
   function makeObserver(vaultKit) {
     return {
       updateState: state => {
-        if (amountMath.isEmpty(state.locked)) {
+        if (AmountMath.isEmpty(state.locked)) {
           return;
         }
         const debtToCollateral = currentDebtToCollateral(vaultKit);

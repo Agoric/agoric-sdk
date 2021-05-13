@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 export const showPurseBalance = async (purseP, name, log) => {
   try {
@@ -20,9 +20,9 @@ export const setupIssuers = async (zoe, issuers) => {
     issuers.map(issuer => E(issuer).getBrand()),
   );
 
-  const moola = value => amountMath.make(value, moolaBrand);
-  const simoleans = value => amountMath.make(value, simoleanBrand);
-  const bucks = value => amountMath.make(value, bucksBrand);
+  const moola = value => AmountMath.make(value, moolaBrand);
+  const simoleans = value => AmountMath.make(value, simoleanBrand);
+  const bucks = value => AmountMath.make(value, bucksBrand);
 
   return harden({
     issuers: harden([moolaIssuer, simoleanIssuer]),

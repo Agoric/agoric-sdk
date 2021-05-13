@@ -1,5 +1,5 @@
 // @ts-check
-import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   makeNotifierKit,
@@ -39,7 +39,7 @@ export async function makeFakePriceAuthority(options) {
     priceList,
     tradeList,
     timer,
-    unitAmountIn = amountMath.make(1n, actualBrandIn),
+    unitAmountIn = AmountMath.make(1n, actualBrandIn),
     quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
   } = options;
@@ -49,7 +49,7 @@ export async function makeFakePriceAuthority(options) {
     X`One of priceList or tradeList must be specified`,
   );
 
-  const unitValueIn = amountMath.getValue(unitAmountIn, actualBrandIn);
+  const unitValueIn = AmountMath.getValue(unitAmountIn, actualBrandIn);
 
   const comparisonQueue = [];
 
@@ -108,17 +108,17 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
     assertBrands(amountIn.brand, brandOut);
-    amountMath.coerce(amountIn, actualBrandIn);
+    AmountMath.coerce(amountIn, actualBrandIn);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueOut = natSafeMath.floorDivide(
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
-    const quoteAmount = amountMath.make(
+    const quoteAmount = AmountMath.make(
       [
         {
           amountIn,
-          amountOut: amountMath.make(valueOut, actualBrandOut),
+          amountOut: AmountMath.make(valueOut, actualBrandOut),
           timer,
           timestamp: quoteTime,
         },
@@ -140,14 +140,14 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
     assertBrands(brandIn, amountOut.brand);
-    const valueOut = amountMath.getValue(amountOut, actualBrandOut);
+    const valueOut = AmountMath.getValue(amountOut, actualBrandOut);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueIn = natSafeMath.ceilDivide(
       natSafeMath.multiply(valueOut, tradeValueIn),
       tradeValueOut,
     );
     return priceInQuote(
-      amountMath.make(valueIn, brandIn),
+      AmountMath.make(valueIn, brandIn),
       amountOut.brand,
       quoteTime,
     );
@@ -278,19 +278,19 @@ export async function makeFakePriceAuthority(options) {
       return priceOutQuote(brandIn, amountOut, timestamp);
     },
     quoteWhenGTE: (amountIn, amountOutLimit) => {
-      const compareGTE = amount => amountMath.isGTE(amount, amountOutLimit);
+      const compareGTE = amount => AmountMath.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
     },
     quoteWhenGT: (amountIn, amountOutLimit) => {
-      const compareGT = amount => !amountMath.isGTE(amountOutLimit, amount);
+      const compareGT = amount => !AmountMath.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareGT, amountIn, amountOutLimit);
     },
     quoteWhenLTE: (amountIn, amountOutLimit) => {
-      const compareLTE = amount => amountMath.isGTE(amountOutLimit, amount);
+      const compareLTE = amount => AmountMath.isGTE(amountOutLimit, amount);
       return resolveQuoteWhen(compareLTE, amountIn, amountOutLimit);
     },
     quoteWhenLT: (amountIn, amountOutLimit) => {
-      const compareLT = amount => !amountMath.isGTE(amount, amountOutLimit);
+      const compareLT = amount => !AmountMath.isGTE(amount, amountOutLimit);
       return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
     },
     mutableQuoteWhenLT: () => {

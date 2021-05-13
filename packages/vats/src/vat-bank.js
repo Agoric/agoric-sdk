@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { amountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
@@ -52,7 +52,7 @@ const makePurseController = (
       return updateRecord.value;
     },
     async pushAmount(amt) {
-      const value = amountMath.getValue(brand, amt);
+      const value = AmountMath.getValue(brand, amt);
       const update = await bankCall({
         type: 'VPURSE_GIVE',
         recipient: address,
@@ -62,7 +62,7 @@ const makePurseController = (
       updateBalances(update);
     },
     async pullAmount(amt) {
-      const value = amountMath.getValue(brand, amt);
+      const value = AmountMath.getValue(brand, amt);
       const update = await bankCall({
         type: 'VPURSE_GRAB',
         sender: address,
@@ -229,7 +229,7 @@ export function buildRootObject(_vatPowers) {
                 lastBalanceUpdate = thisBalanceUpdate;
               }
               // Convert the string value to a bigint.
-              const amt = amountMath.make(brand, BigInt(value));
+              const amt = AmountMath.make(brand, BigInt(value));
               updater.updateState(amt);
             };
 

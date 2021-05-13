@@ -62,7 +62,7 @@ export const makeRatio = (
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  //  use amountMath's constructor here rather than building the record directly
+  //  use AmountMath's constructor here rather than building the record directly
   return harden({
     numerator: { value: Nat(numerator), brand: numeratorBrand },
     denominator: { value: Nat(denominator), brand: denominatorBrand },
@@ -71,7 +71,7 @@ export const makeRatio = (
 
 export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  // coerce amounts using a native amountMath operation.
+  // coerce amounts using a native AmountMath operation.
 
   return makeRatio(
     Nat(numeratorAmount.value),
@@ -83,7 +83,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 
 export const multiplyBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  // coerce amount using a native amountMath operation.
+  // coerce amount using a native AmountMath operation.
   assert(amount.brand, X`Expected an amount: ${amount}`);
   Nat(amount.value);
 
@@ -96,7 +96,7 @@ export const multiplyBy = (amount, ratio) => {
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  //  use amountMath's constructor here rather than building the record directly
+  //  use AmountMath's constructor here rather than building the record directly
   return harden({
     value: floorDivide(
       multiply(amount.value, ratio.numerator.value),
@@ -108,7 +108,7 @@ export const multiplyBy = (amount, ratio) => {
 
 export const divideBy = (amount, ratio) => {
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  // coerce amount using a native amountMath operation.
+  // coerce amount using a native AmountMath operation.
   assert(amount.brand, X`Expected an amount: ${amount}`);
   Nat(amount.value);
 
@@ -121,7 +121,7 @@ export const divideBy = (amount, ratio) => {
   );
 
   // TODO(https://github.com/Agoric/agoric-sdk/pull/2310) after the refactoring
-  //  use amountMath's constructor here rather than building the record directly
+  //  use AmountMath's constructor here rather than building the record directly
   return harden({
     value: floorDivide(
       multiply(amount.value, ratio.denominator.value),

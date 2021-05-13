@@ -41,16 +41,16 @@ harden(AssetKind);
  * so, it must know how to add and subtract digital assets. Rather
  * than hard-coding a particular solution, we chose to parameterize
  * the issuer with a collection of polymorphic functions, which we
- * call `amountMath`. These math functions include concepts like
+ * call `AmountMath`. These math functions include concepts like
  * addition, subtraction, and greater than or equal to.
  *
  * We also want to make sure there is no confusion as to what kind of
- * asset we are using. Thus, amountMath includes checks of the
+ * asset we are using. Thus, AmountMath includes checks of the
  * `brand`, the unique identifier for the type of digital asset. If
- * the wrong brand is used in amountMath, an error is thrown and the
+ * the wrong brand is used in AmountMath, an error is thrown and the
  * operation does not succeed.
  *
- * amountMath uses mathHelpers to do most of the work, but then adds
+ * AmountMath uses mathHelpers to do most of the work, but then adds
  * the brand to the result. The function `value` gets the value from
  * the amount by removing the brand (amount -> value), and the
  * function `make` adds the brand to produce an amount (value ->

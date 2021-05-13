@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import makeStore from '@agoric/store';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
@@ -23,7 +23,7 @@ const setup = () => {
 
   const zoe = makeZoe(fakeVatAdmin);
 
-  const makeSimpleMake = brand => value => amountMath.make(value, brand);
+  const makeSimpleMake = brand => value => AmountMath.make(value, brand);
 
   /**
    * @typedef {Object} BasicMints

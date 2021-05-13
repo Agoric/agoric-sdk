@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -22,7 +22,7 @@ test('offer', async t => {
   const usdPurse = usdKit.issuer.makeEmptyPurse();
 
   moolaPurse.deposit(
-    moolaKit.mint.mintPayment(amountMath.make(moolaKit.brand, 5n)),
+    moolaKit.mint.mintPayment(AmountMath.make(moolaKit.brand, 5n)),
   );
 
   const walletAdmin = {
@@ -68,9 +68,9 @@ test('offer', async t => {
     partialInvitationDetails: { description: 'getRefund' },
     proposal: {
       give: {
-        Collateral: amountMath.make(moolaKit.brand, 1n),
+        Collateral: AmountMath.make(moolaKit.brand, 1n),
       },
-      want: { Loan: amountMath.make(usdKit.brand, 1n) },
+      want: { Loan: AmountMath.make(usdKit.brand, 1n) },
     },
     paymentsWithPursePetnames: {
       Collateral: MOOLA_PURSE_PETNAME,
@@ -90,7 +90,7 @@ test('offer', async t => {
 
   t.deepEqual(
     await E(moolaPurse).getCurrentAmount(),
-    amountMath.make(moolaKit.brand, 5n),
+    AmountMath.make(moolaKit.brand, 5n),
   );
 
   t.is(invitationDetails.description, 'getRefund');

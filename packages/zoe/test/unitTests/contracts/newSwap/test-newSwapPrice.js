@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import {
   getInputPrice,
   getOutputPrice,
@@ -42,8 +42,8 @@ function makeFakePool(initCentral, initSecondary) {
         feeBP,
       );
       return {
-        amountOut: amountMath.make(valueOut, outputBrand),
-        amountIn: amountMath.make(valueIn, inputAmount.brand),
+        amountOut: AmountMath.make(valueOut, outputBrand),
+        amountIn: AmountMath.make(valueIn, inputAmount.brand),
       };
     },
 
@@ -65,8 +65,8 @@ function makeFakePool(initCentral, initSecondary) {
         feeBP,
       );
       return {
-        amountOut: amountMath.make(valueOut, outputAmount.brand),
-        amountIn: amountMath.make(valueIn, inputBrand),
+        amountOut: AmountMath.make(valueOut, outputAmount.brand),
+        amountIn: AmountMath.make(valueIn, inputBrand),
       };
     },
   };

@@ -2,7 +2,7 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints';
@@ -32,7 +32,7 @@ function makeFakeBank() {
       depositAccounts.push(a);
       depositPayments.push(p);
       // success or failure is all that matters for the test
-      return amountMath.makeEmpty(brand);
+      return AmountMath.makeEmpty(brand);
     },
 
     // tools for the fake:
@@ -54,7 +54,7 @@ function makeFakeTreasury() {
 
 function assertPaymentArray(t, payments, count, value, issuer, brand) {
   for (let i = 0; i < count; i += 1) {
-    assertPayoutAmount(t, issuer, payments[i], amountMath.make(brand, value));
+    assertPayoutAmount(t, issuer, payments[i], AmountMath.make(brand, value));
   }
 }
 
@@ -72,7 +72,7 @@ test('fee distribution', async t => {
   };
   buildDistributor(treasury, bank, epochTimer, distributorParams);
 
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 500n)));
+  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
 
   t.deepEqual(bank.getAccounts(), []);
@@ -99,7 +99,7 @@ test('fee distribution, leftovers', async t => {
   };
   buildDistributor(treasury, bank, epochTimer, distributorParams);
 
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 12n)));
+  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
   bankUpdater.updateState(['a37', 'a2389', 'a274', 'a16', 'a1772']);
 
   t.deepEqual(bank.getAccounts(), []);
@@ -112,7 +112,7 @@ test('fee distribution, leftovers', async t => {
   assertPaymentArray(t, bank.getPayments(), 5, 2, issuer, brand);
 
   // Pay them again
-  treasury.pushFees(runMint.mintPayment(amountMath.make(brand, 13n)));
+  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
 
   await epochTimer.tick();
   await waitForPromisesToSettle();

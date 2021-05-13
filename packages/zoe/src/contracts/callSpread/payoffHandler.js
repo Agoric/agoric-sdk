@@ -4,7 +4,7 @@ import '../../../exported';
 import './types';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { trade, getAmountOut, multiplyBy } from '../../contractSupport';
 import { Position } from './position';
 import { calculateShares } from './calculateShares';
@@ -46,7 +46,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
       seat.exit();
       seatsExited += 1;
       const remainder = collateralSeat.getAmountAllocated('Collateral');
-      if (amountMath.isEmpty(remainder, collateralBrand) && seatsExited === 2) {
+      if (AmountMath.isEmpty(remainder, collateralBrand) && seatsExited === 2) {
         zcf.shutdown('contract has been settled');
       }
     });

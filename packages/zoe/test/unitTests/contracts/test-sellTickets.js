@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { assert } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
@@ -42,7 +42,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 3,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: amountMath.make(20n, moolaBrand),
+    pricePerItem: AmountMath.make(20n, moolaBrand),
   });
   t.is(
     await sellItemsCreatorSeat.getOfferResult(),
@@ -89,7 +89,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 2,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: amountMath.make(20n, moolaBrand),
+    pricePerItem: AmountMath.make(20n, moolaBrand),
   });
   const sellItemsPublicFacet2 = await E(zoe).getPublicFacet(sellItemsInstance2);
   const ticketsForSale2 = await E(sellItemsPublicFacet2).getAvailableItems();
@@ -141,7 +141,7 @@ test(`mint and sell opera tickets`, async t => {
     brand: moolaBrand,
   } = makeIssuerKit('moola');
 
-  const moola = value => amountMath.make(value, moolaBrand);
+  const moola = value => AmountMath.make(value, moolaBrand);
 
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -230,7 +230,7 @@ test(`mint and sell opera tickets`, async t => {
       ticket => ticket.number === 1,
     );
     // make the corresponding amount
-    const ticket1Amount = amountMath.make([ticket1Value], ticketBrand);
+    const ticket1Amount = AmountMath.make([ticket1Value], ticketBrand);
 
     const aliceProposal = harden({
       give: { Money: terms.pricePerItem },
@@ -292,7 +292,7 @@ test(`mint and sell opera tickets`, async t => {
 
     // Joker does NOT check available tickets and tries to buy the ticket
     // number 1(already bought by Alice, but he doesn't know)
-    const ticket1Amount = amountMath.make(
+    const ticket1Amount = AmountMath.make(
       [
         {
           show: 'Steven Universe, the Opera',
@@ -332,7 +332,7 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     t.truthy(
-      amountMath.isEmpty(jokerTicketPayoutAmount),
+      AmountMath.isEmpty(jokerTicketPayoutAmount),
       'Joker should not receive ticket #1',
     );
     t.deepEqual(
@@ -361,7 +361,7 @@ test(`mint and sell opera tickets`, async t => {
     const jokerPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(jokerPurse).deposit(moola100Payment);
 
-    const ticket2Amount = amountMath.make(
+    const ticket2Amount = AmountMath.make(
       [
         {
           show: 'Steven Universe, the Opera',
@@ -404,7 +404,7 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     t.truthy(
-      amountMath.isEmpty(jokerTicketPayoutAmount),
+      AmountMath.isEmpty(jokerTicketPayoutAmount),
       'Joker should not receive ticket #2',
     );
     t.deepEqual(
@@ -456,7 +456,7 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     // Bob buys tickets 2 and 3
-    const ticket2and3Amount = amountMath.make(
+    const ticket2and3Amount = AmountMath.make(
       [
         availableTickets.value.find(ticket => ticket.number === 2),
         availableTickets.value.find(ticket => ticket.number === 3),

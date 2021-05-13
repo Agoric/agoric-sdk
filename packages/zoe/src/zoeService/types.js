@@ -181,8 +181,8 @@
  * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
- * { Asset: amountMath.make(5n, assetBrand), Price:
- * amountMath.make(9n, priceBrand) }
+ * { Asset: AmountMath.make(5n, assetBrand), Price:
+ * AmountMath.make(9n, priceBrand) }
  */
 
 /**

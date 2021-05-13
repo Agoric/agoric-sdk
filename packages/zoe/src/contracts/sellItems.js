@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import {
   assertIssuerKeywords,
   trade,
@@ -67,20 +67,20 @@ const start = zcf => {
     } = buyerSeat.getProposal();
 
     // Check that the wanted items are still for sale.
-    if (!amountMath.isGTE(currentItemsForSale, wantedItems)) {
+    if (!AmountMath.isGTE(currentItemsForSale, wantedItems)) {
       const rejectMsg = `Some of the wanted items were not available for sale`;
       throw buyerSeat.fail(new Error(rejectMsg));
     }
 
     // All items are the same price.
-    const totalCost = amountMath.make(
+    const totalCost = AmountMath.make(
       pricePerItem.value * Nat(wantedItems.value.length),
       brands.Money,
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
     assert(
-      amountMath.isGTE(providedMoney, totalCost),
+      AmountMath.isGTE(providedMoney, totalCost),
       X`More money (${totalCost}) is required to buy these items`,
     );
 
@@ -97,7 +97,7 @@ const start = zcf => {
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
-    if (amountMath.isEmpty(getAvailableItems())) {
+    if (AmountMath.isEmpty(getAvailableItems())) {
       zcf.shutdown('All items sold.');
     }
     return defaultAcceptanceMsg;
@@ -106,7 +106,7 @@ const start = zcf => {
   const makeBuyerInvitation = () => {
     const itemsAmount = sellerSeat.getAmountAllocated('Items');
     assert(
-      sellerSeat && !amountMath.isEmpty(itemsAmount),
+      sellerSeat && !AmountMath.isEmpty(itemsAmount),
       X`no items are for sale`,
     );
     return zcf.makeInvitation(buy, 'buyer');

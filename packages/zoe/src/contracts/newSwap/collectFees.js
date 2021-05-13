@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 export const makeMakeCollectFeesInvitation = (zcf, feeSeat, centralBrand) => {
   const collectFees = seat => {
@@ -10,10 +10,10 @@ export const makeMakeCollectFeesInvitation = (zcf, feeSeat, centralBrand) => {
     // https://github.com/Agoric/agoric-sdk/issues/3033
     // when that bug is fixed, the reallocate can be moved outside the check and
     // the check dropped.
-    if (!amountMath.isEmpty(allocation)) {
+    if (!AmountMath.isEmpty(allocation)) {
       zcf.reallocate(
         seat.stage({ RUN: allocation }),
-        feeSeat.stage({ RUN: amountMath.makeEmpty(centralBrand) }),
+        feeSeat.stage({ RUN: AmountMath.makeEmpty(centralBrand) }),
       );
     }
     seat.exit();

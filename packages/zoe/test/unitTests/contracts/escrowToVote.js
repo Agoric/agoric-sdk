@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
@@ -81,14 +81,14 @@ const start = zcf => {
       assert(electionOpen, 'the election is already closed');
       // YES | NO to Nat
       const tally = new Map();
-      tally.set('YES', amountMath.makeEmpty(assetsBrand));
-      tally.set('NO', amountMath.makeEmpty(assetsBrand));
+      tally.set('YES', AmountMath.makeEmpty(assetsBrand));
+      tally.set('NO', AmountMath.makeEmpty(assetsBrand));
 
       for (const [seat, response] of seatToResponse.entries()) {
         if (!seat.hasExited()) {
           const escrowedAmount = seat.getAmountAllocated('Assets');
           const sumSoFar = tally.get(response);
-          tally.set(response, amountMath.add(escrowedAmount, sumSoFar));
+          tally.set(response, AmountMath.add(escrowedAmount, sumSoFar));
           seat.exit('Thank you for voting');
         }
       }

@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit, amountMath } from '../../../src';
+import { makeIssuerKit, AmountMath } from '../../../src';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const arg0 = vatParameters.argv[0];
@@ -11,7 +11,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   function testSplitPayments(aliceMaker) {
     vatPowers.testLog('start test splitPayments');
     const { mint: moolaMint, issuer, brand } = makeIssuerKit('moola');
-    const moolaPayment = moolaMint.mintPayment(amountMath.make(1000n, brand));
+    const moolaPayment = moolaMint.mintPayment(AmountMath.make(1000n, brand));
 
     const aliceP = E(aliceMaker).make(issuer, brand, moolaPayment);
     return E(aliceP).testSplitPayments();

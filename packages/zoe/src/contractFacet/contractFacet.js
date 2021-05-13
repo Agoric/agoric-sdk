@@ -11,7 +11,7 @@ import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { AssetKind, amountMath } from '@agoric/ertp';
+import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -144,18 +144,18 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
-          let totalToMint = amountMath.makeEmpty(mintyBrand, assetKind);
+          let totalToMint = AmountMath.makeEmpty(mintyBrand, assetKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
             assert(
               totalToMint.brand === amountToAdd.brand,
               X`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
             );
-            totalToMint = amountMath.add(totalToMint, amountToAdd);
+            totalToMint = AmountMath.add(totalToMint, amountToAdd);
             const oldAmount = oldAllocation[seatKeyword];
             // oldAmount being absent is equivalent to empty.
             const newAmount = oldAmount
-              ? amountMath.add(oldAmount, amountToAdd)
+              ? AmountMath.add(oldAmount, amountToAdd)
               : amountToAdd;
             return [seatKeyword, newAmount];
           });
@@ -180,7 +180,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             X`losses ${losses} must be an amountKeywordRecord`,
           );
           assert(losses !== null, X`losses cannot be null`);
-          let totalToBurn = amountMath.makeEmpty(mintyBrand, assetKind);
+          let totalToBurn = AmountMath.makeEmpty(mintyBrand, assetKind);
           const oldAllocation = zcfSeat.getCurrentAllocation();
           const updates = objectMap(
             losses,
@@ -189,9 +189,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
                 totalToBurn.brand === amountToSubtract.brand,
                 X`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
               );
-              totalToBurn = amountMath.add(totalToBurn, amountToSubtract);
+              totalToBurn = AmountMath.add(totalToBurn, amountToSubtract);
               const oldAmount = oldAllocation[seatKeyword];
-              const newAmount = amountMath.subtract(
+              const newAmount = AmountMath.subtract(
                 oldAmount,
                 amountToSubtract,
               );
