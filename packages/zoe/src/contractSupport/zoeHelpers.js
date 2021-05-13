@@ -476,3 +476,24 @@ export const offerTo = async (
 
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
 };
+
+/**
+ * Create a wrapped version of zcf that asserts an invariant
+ * before performing a reallocation.
+ *
+ * @param {ContractFacet} zcf
+ * @param {(stagings: SeatStaging[]) => void} assertFn - an assertion
+ * that must be true for the reallocate to occur
+ * @returns {ContractFacet}
+ */
+export const wrapZCF = (zcf, assertFn) => {
+  const wrappedZCF = harden({
+    ...zcf,
+    reallocate: (...stagings) => {
+      assertFn(stagings);
+      // @ts-ignore The types aren't right for spreading
+      zcf.reallocate(...stagings);
+    },
+  });
+  return wrappedZCF;
+};

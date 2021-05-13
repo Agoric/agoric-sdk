@@ -36,6 +36,7 @@ export {
   withdrawFromSeat,
   saveAllIssuers,
   offerTo,
+  wrapZCF,
 } from './zoeHelpers';
 
 export {

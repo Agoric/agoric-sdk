@@ -5,12 +5,13 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { assertIssuerKeywords } from '../../contractSupport';
+import { assertIssuerKeywords, wrapZCF } from '../../contractSupport';
 import { makeAddPool } from './pool';
 import { makeGetCurrentPrice } from './getCurrentPrice';
 import { makeMakeSwapInvitation } from './swap';
 import { makeMakeAddLiquidityInvitation } from './addLiquidity';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity';
+import { assertConstantProduct } from './constantProduct';
 
 import '../../../exported';
 
@@ -126,7 +127,7 @@ const start = zcf => {
     makeSwapInInvitation,
     makeSwapOutInvitation,
   } = makeMakeSwapInvitation(
-    zcf,
+    wrapZCF(zcf, assertConstantProduct),
     isSecondary,
     isCentral,
     getPool,
