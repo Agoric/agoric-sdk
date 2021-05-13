@@ -6,23 +6,26 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, amountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { setup } from '../setupBasicMints';
+import { makeZoe } from '../../../../src/zoeService/zoe';
+import { setup } from '../../setupBasicMints';
 import {
   makeTrader,
   updatePoolState,
   scaleForAddLiquidity,
   scaleForRemoveLiquidity,
   priceFromTargetOutput,
-} from '../../autoswapJig';
-import { assertPayoutDeposit, assertAmountsEqual } from '../../zoeTestHelpers';
-import buildManualTimer from '../../../tools/manualTimer';
-import { getAmountOut } from '../../../src/contractSupport';
+} from '../../../autoswapJig';
+import {
+  assertPayoutDeposit,
+  assertAmountsEqual,
+} from '../../../zoeTestHelpers';
+import buildManualTimer from '../../../../tools/manualTimer';
+import { getAmountOut } from '../../../../src/contractSupport';
 
-const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap/multipoolAutoswap`;
+const multipoolAutoswapRoot = `${__dirname}/../../../../src/contracts/multipoolAutoswap/multipoolAutoswap`;
 
 test('multipoolAutoSwap with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
