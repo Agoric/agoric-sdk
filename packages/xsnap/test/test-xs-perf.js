@@ -1,7 +1,27 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+import * as childProcess from 'child_process';
+import * as os from 'os';
 import { xsnap } from '../src/xsnap';
-import { options } from './test-xsnap';
+
+const decoder = new TextDecoder();
+
+const xsnapOptions = {
+  name: 'xsnap test worker',
+  spawn: childProcess.spawn,
+  os: os.type(),
+  stderr: 'inherit',
+  stdout: 'inherit',
+};
+
+export function options() {
+  const messages = [];
+  async function handleCommand(message) {
+    messages.push(decoder.decode(message));
+    return new Uint8Array();
+  }
+  return { ...xsnapOptions, handleCommand, messages };
+}
 
 test('meter details', async t => {
   const opts = options();
