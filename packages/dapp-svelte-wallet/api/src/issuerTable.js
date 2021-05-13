@@ -38,19 +38,11 @@ const makeIssuerTable = () => {
       const brandP = E(issuerP).getBrand();
       const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
       const displayInfoP = E(brandP).getDisplayInfo();
-      const assetKindP = E(issuerP).getAssetKind();
-      /** @type {[Issuer,Brand,boolean,AssetKind,any]} */
-      const [
-        issuer,
-        brand,
-        brandIssuerMatch,
-        assetKind,
-        displayInfo,
-      ] = await Promise.all([
+      /** @type {[Issuer,Brand,boolean,DisplayInfo]} */
+      const [issuer, brand, brandIssuerMatch, displayInfo] = await Promise.all([
         issuerP,
         brandP,
         brandIssuerMatchP,
-        assetKindP,
         displayInfoP,
       ]);
       // AWAIT /////
@@ -65,8 +57,8 @@ const makeIssuerTable = () => {
       issuerTable.initIssuerByRecord({
         brand,
         issuer,
-        assetKind,
-        displayInfo: { ...displayInfo, assetKind },
+        assetKind: displayInfo.assetKind,
+        displayInfo,
       });
       return issuerTable.getByBrand(brand);
     },
