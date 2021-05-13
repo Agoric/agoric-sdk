@@ -6,7 +6,6 @@ import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeter, makeMeteringTransformer } from '@agoric/transform-metering';
-import * as babelCore from '@babel/core';
 import re2 from 're2';
 import test from 'ava';
 import { waitUntilQuiescent } from '../../src/waitUntilQuiescent';
@@ -52,7 +51,7 @@ async function meteredImportBundle(bundle, endowments) {
   // controller into the kernel, so the kernel can create dynamic vats. We can also
   // pass it into static vats, so within-vat metering can happen.
 
-  const mt = makeMeteringTransformer(babelCore);
+  const mt = makeMeteringTransformer();
   function transform(src) {
     const ss = mt.rewrite({ src, endowments: { getMeter } });
     // const newRegExp = ss.endowments.RegExp; // === re2
