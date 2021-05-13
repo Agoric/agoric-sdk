@@ -40,7 +40,6 @@
     "@agoric/sparse-ints": "^0.1.9",
     "@agoric/store": "^0.4.14",
     "@agoric/swingset-vat": "^0.17.2",
-    "@agoric/transform-eventual-send": "^1.4.9",
     "@agoric/treasury": "^0.4.2",
     "@agoric/zoe": "^0.15.7",
     "@babel/generator": "^7.6.4",

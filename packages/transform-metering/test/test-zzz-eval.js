@@ -1,10 +1,9 @@
 /* global process setTimeout */
-// eslint-disable-next-line import/order
 import { replaceGlobalMeter } from './install-metering';
 import '@agoric/install-ses'; // calls lockdown()
 
+// eslint-disable-next-line import/order
 import test from 'ava';
-import * as babelCore from '@babel/core';
 
 import { makeMeter, makeMeteredEvaluator } from '../src/index';
 
@@ -42,7 +41,6 @@ test.skip('metering evaluator', async t => {
           refiller();
         }
       },
-      babelCore,
       makeEvaluator,
       quiesceCallback: cb => setTimeout(cb),
     });

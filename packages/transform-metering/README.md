@@ -6,52 +6,9 @@ This technique is not airtight, but it is at least is a best approximation in th
 
 ## Quickstart
 
-### SES 1.0
-
-The following example is for legacy [SES-1.0](https://github.com/Agoric/SES#readme):
-
-```js
-import { SES1TameMeteringShim, SES1ReplaceGlobalMeter } from '@agoric/tame-metering';
-import SES1 from 'ses';
-import * as babelCore from '@babel/core';
-import { makeMeteredEvaluator } from '@agoric/transform-metering';
-
-// Create a new SES instance (root realm).
-const sesRealm = SES1.makeSESRootRealm({
-  shims: [SES1TameMeteringShim],
-  configurableGlobals: true,
-});
-
-const replaceGlobalMeter = SES1ReplaceGlobalMeter(sesRealm);
-
-const meteredEval = makeMeteredEvaluator({
-  // Needed for enabling metering of the global builtins.
-  replaceGlobalMeter,
-  // Needed for source transforms that prevent runaways.
-  babelCore,
-  // Create an object with an `evaluate(src, endowments, options)` method
-  makeEvaluator: opts => {
-    const c = sesRealm.global.Realm.makeCompartment(opts);
-    // FIXME: Realms bug doesn't propagate global properties.
-    Object.defineProperties(
-      c.global,
-      Object.getOwnPropertyDescriptors(sesRealm.global),
-    );
-    return c;
-  },
-  // Call a callback when the code inside the meteredEval is done evaluating.
-  quiesceCallback: cb => setTimeout(cb),
-});
-```
-
-### SES 2.0
-
-This example is for the [SES 2.0 (beta)](https://github.com/Agoric/SES-beta#readme).  Note that it currently has issues that prevents it from working correctly, but YMMV.
-
 ```js
 import { tameMetering } from '@agoric/tame-metering';
 import { lockdown } from 'ses';
-import * as babelCore from '@babel/core';
 import { makeMeteredEvaluator } from '@agoric/transform-metering';
 
 // Override all the global objects with metered versions.
@@ -63,8 +20,6 @@ lockdown();
 const meteredEval = makeMeteredEvaluator({
   // Needed for enabling metering of the global builtins.
   replaceGlobalMeter,
-  // Needed for source transforms that prevent runaways.
-  babelCore,
   // Create an object with an `evaluate(src, endowments)` method
   makeEvaluator: opts => {
     const c = new Compartment(undefined, undefined, opts);
