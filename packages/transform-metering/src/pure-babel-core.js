@@ -1,9 +1,10 @@
-import * as babelParser from '@agoric/babel-parser';
+import * as babelParser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generator from '@babel/generator';
 import * as types from '@babel/types';
 
 // Create a file structure to wire into @babel/traverse.
+// Gleaned from @babel/core/lib/transformation/file/file.js
 export function makePureFile({ code, ast }) {
   const file = {
     ast,
@@ -34,6 +35,7 @@ export function makePureFile({ code, ast }) {
 
 /**
  * Create a working subset of babelCore that doesn't touch the filesystem.
+ * Gleaned from @babel/core/lib/transformation/index.js
  */
 export function makePureBabelCore() {
   return {
