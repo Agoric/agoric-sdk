@@ -14,11 +14,11 @@ const UNJSONABLES = new Map([
 
 // A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
 // output is unambiguous (even though it cannot be round-tripped).
+export const dump = (value, spaces = '') =>
+  // eslint-disable-next-line no-use-before-define
+  dump0(value, spaces, new WeakSet(), 0);
 
-// eslint-disable-next-line no-use-before-define
-export const dump = (value, spaces = undefined) => dump0(value, spaces);
-
-function dump0(value, spaces, inProgress = new WeakSet(), depth = 0) {
+function dump0(value, spaces, inProgress, depth) {
   if (Object(value) !== value) {
     if (typeof value === 'bigint') {
       return `${value}n`;
@@ -39,60 +39,86 @@ function dump0(value, spaces, inProgress = new WeakSet(), depth = 0) {
   }
 
   // This dump attempts to show a little bit more of the structure.
-  if (isPromise(value)) {
-    return '[Promise]';
+  if (Promise.resolve(value) === value) {
+    return `[Promise]`;
   }
 
   if (value instanceof Error) {
-    return JSON.stringify(`${value.name}: ${value.message}`);
+    return `[${value.name}: ${value.message}]`;
   }
 
   // Detect cycles.
   if (inProgress.has(value)) {
     return '[Circular]';
   }
-  inProgress.add(value);
 
-  let ret = '';
-  const spcs = spaces === undefined ? '' : ' '.repeat(spaces);
-  if (getInterfaceOf(value) !== undefined) {
-    ret += `${value}`;
-  } else if (Array.isArray(value)) {
-    ret += `[`;
+  // Ensure we delete value on throw or return with the finally block below.
+  try {
+    inProgress.add(value);
+
+    let ret = '';
+    let spcs = spaces;
+    if (!spcs) {
+      spcs = '';
+    } else if (typeof spcs === 'number') {
+      spcs = ' '.repeat(spaces);
+    }
+
+    const singleSep = spaces ? ' ' : '';
+
+    const proto = Object.getPrototypeOf(value);
+    const stringTag = proto ? proto[Symbol.toStringTag] : undefined;
+    if (stringTag !== undefined) {
+      // Use stringification to get the string tag out.
+      ret += `[Object ${stringTag}]${singleSep}`;
+    }
 
     let sep = '';
-    for (let i = 0; i < value.length; i += 1) {
+    let closer;
+    const names = Object.getOwnPropertyNames(value);
+    const nonNumber = new Set(names);
+    if (Array.isArray(value)) {
+      ret += `[`;
+      closer = ']';
+      nonNumber.delete('length');
+
+      for (let i = 0; i < value.length; i += 1) {
+        ret += sep;
+        if (spcs !== '') {
+          ret += `\n${spcs.repeat(depth + 1)}`;
+        }
+        nonNumber.delete(String(i));
+        ret += dump0(value[i], spaces, inProgress, depth + 1);
+        sep = ',';
+      }
+    } else {
+      ret += '{';
+      closer = '}';
+    }
+
+    const props = names
+      .filter(n => nonNumber.has(n))
+      .concat(Object.getOwnPropertySymbols(value));
+
+    for (const key of props) {
       ret += sep;
       if (spcs !== '') {
         ret += `\n${spcs.repeat(depth + 1)}`;
       }
-      ret += dump0(value[i], spaces, inProgress, depth + 1);
+      const keyDump = dump0(key, spaces, inProgress, depth + 1);
+      ret += typeof key === 'string' ? keyDump : `[${keyDump}]`;
+      ret += `:${singleSep}`;
+      ret += dump0(value[key], spaces, inProgress, depth + 1);
       sep = ',';
     }
     if (sep !== '' && spcs !== '') {
       ret += `\n${spcs.repeat(depth)}`;
     }
-    ret += ']';
+    ret += closer;
     return ret;
+  } finally {
+    inProgress.delete(value);
   }
-
-  ret += '{';
-  let sep = '';
-  for (const key of Object.keys(value)) {
-    ret += sep;
-    if (spcs !== '') {
-      ret += `\n${spcs.repeat(depth + 1)}`;
-    }
-    ret += `${JSON.stringify(key)}:${spaces > 0 ? ' ' : ''}`;
-    ret += dump0(value[key], spaces, inProgress, depth + 1);
-    sep = ',';
-  }
-  if (sep !== '' && spcs !== '') {
-    ret += `\n${spcs.repeat(depth)}`;
-  }
-  ret += '}';
-  inProgress.delete(value);
-  return ret;
 }
 
 export function getReplHandler(replObjects, send, vatPowers) {
