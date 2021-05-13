@@ -1,5 +1,6 @@
 /* global require */
 import * as c from './constants';
+import { makePureBabelCore } from './pure-babel-core';
 
 // We'd like to import this, but RE2 is cjs
 const RE2 = require('re2');
@@ -8,7 +9,7 @@ const METER_GENERATED = Symbol('meter-generated');
 const getMeterId = 'getMeter';
 
 export function makeMeteringTransformer(
-  babelCore,
+  babelCore = makePureBabelCore(),
   {
     overrideParser = undefined,
     overrideRegExp = RE2,
@@ -192,7 +193,6 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
           compact: false,
         },
         plugins: [meteringPlugin(regexpList)],
-        ast: true,
         code: true,
       });
 

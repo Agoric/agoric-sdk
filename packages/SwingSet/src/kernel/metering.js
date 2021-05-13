@@ -1,4 +1,4 @@
-import { makeMeter } from '@agoric/transform-metering';
+import { makeMeter } from '@agoric/transform-metering/src/meter.js';
 
 export function makeMeterManager(replaceGlobalMeter) {
   // It is important that tameMetering() was called by application startup,

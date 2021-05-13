@@ -121,11 +121,7 @@ function dump0(value, spaces, inProgress, depth) {
   }
 }
 
-export function getReplHandler(replObjects, send, vatPowers) {
-  // transformTildot is baked into the Compartment we use to evaluate REPL
-  // inputs. We provide getInterfaceOf and Remotable to REPL input code., but
-  // import them from @agoric/marshal directly
-  const { transformTildot } = vatPowers;
+export function getReplHandler(replObjects, send) {
   let highestHistory = -1;
   const commands = {
     [highestHistory]: '',
@@ -207,15 +203,7 @@ export function getReplHandler(replObjects, send, vatPowers) {
     agent: agentMakers, // TODO: Remove
     ...replObjects,
   };
-  const modules = {};
-  const transforms = [];
-  if (typeof transformTildot === 'function') {
-    transforms.push(transformTildot);
-  } else {
-    console.log(`REPL was not given working transformTildot, disabled`);
-  }
-  const options = { transforms };
-  const c = new Compartment(endowments, modules, options);
+  const c = new Compartment(endowments);
 
   const handler = {
     getHighestHistory() {

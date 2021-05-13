@@ -1,7 +1,4 @@
 import '@agoric/install-ses';
-import { makeTransform } from '@agoric/transform-eventual-send';
-import * as babelParser from '@agoric/babel-parser';
-import babelGenerate from '@babel/generator';
 import test from 'ava';
 import { getReplHandler } from '../src/repl';
 
@@ -9,9 +6,7 @@ function make() {
   const homeObjects = { base: 1, fries: 2, cooking: 3 };
   const sentMessages = [];
   const send = m => sentMessages.push(m);
-  const transformTildot = makeTransform(babelParser, babelGenerate);
-  const vatPowers = { transformTildot };
-  const rh = getReplHandler({ home: homeObjects }, send, vatPowers);
+  const rh = getReplHandler({ home: homeObjects }, send);
 
   const ch = rh.getCommandHandler();
   function getHighestHistory() {
@@ -173,7 +168,7 @@ test('repl: sloppyGlobals, home, endowments', async t => {
   t.deepEqual(sentMessages, []);
 });
 
-test('repl: tildot', async t => {
+test('repl: eventual send', async t => {
   const { doEval, sentMessages } = make();
 
   let m = sentMessages.shift();
@@ -191,11 +186,11 @@ test('repl: tildot', async t => {
   t.is(m.display, '{"foo":[Function foo]}');
   t.deepEqual(sentMessages, []);
 
-  t.deepEqual(doEval(1, 'target~.foo(2)'), {});
+  t.deepEqual(doEval(1, 'E(target).foo(2)'), {});
   m = sentMessages.shift();
   t.is(m.type, 'updateHistory');
   t.is(m.histnum, 1);
-  t.is(m.display, 'working on eval(target~.foo(2))');
+  t.is(m.display, 'working on eval(E(target).foo(2))');
 
   m = sentMessages.shift();
   t.is(m.type, 'updateHistory');
