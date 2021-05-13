@@ -18,11 +18,14 @@ import {
   scaleForRemoveLiquidity,
   priceFromTargetOutput,
 } from '../../../autoswapJig';
-import { assertPayoutDeposit, assertAmountsEqual } from '../../../zoeTestHelpers';
+import {
+  assertPayoutDeposit,
+  assertAmountsEqual,
+} from '../../../zoeTestHelpers';
 import buildManualTimer from '../../../../tools/manualTimer';
 import { getAmountOut } from '../../../../src/contractSupport';
 
-const multipoolAutoswapRoot = `${__dirname}/../../../src/contracts/multipoolAutoswap/multipoolAutoswap`;
+const multipoolAutoswapRoot = `${__dirname}/../../../../src/contracts/multipoolAutoswap/multipoolAutoswap`;
 
 test('multipoolAutoSwap with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
