@@ -77,7 +77,7 @@ const fromCosmosIssuerEntries = [
       bankPurse: 'Agoric staking token',
       collateralConfig: {
         keyword: 'BLD',
-        collateralValue: scaleMicro(20000000n),
+        collateralValue: scaleMicro(20_000_000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
@@ -104,7 +104,7 @@ const fromPegasusIssuerEntries = [
       defaultPurses: [['Cosmos Staking', scaleMicro(68)]],
       collateralConfig: {
         keyword: 'ATOM',
-        collateralValue: scaleMicro(1000000n),
+        collateralValue: scaleMicro(1_000_000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
@@ -123,7 +123,7 @@ const fromPegasusIssuerEntries = [
       issuerArgs: [undefined, { decimalPlaces: 18 }],
       collateralConfig: {
         keyword: 'ETH',
-        collateralValue: scaleEth(1000000n),
+        collateralValue: scaleEth(1_000_000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
@@ -143,7 +143,7 @@ const fromPegasusIssuerEntries = [
       defaultPurses: [['Oracle fee', scaleEth(51n)]],
       collateralConfig: {
         keyword: 'LINK',
-        collateralValue: scaleEth(1000000n),
+        collateralValue: scaleEth(1_000_000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
@@ -160,10 +160,10 @@ const fromPegasusIssuerEntries = [
     'USDC',
     {
       issuerArgs: [undefined, { decimalPlaces: 18 }],
-      defaultPurses: [['USD Coin', scaleEth(1323n)]],
+      defaultPurses: [['USD Coin', scaleEth(1_323n)]],
       collateralConfig: {
         keyword: 'USDC',
-        collateralValue: scaleEth(10000000n),
+        collateralValue: scaleEth(10_000_000n),
         initialMarginPercent: 150n,
         liquidationMarginPercent: 125n,
         interestRateBasis: 250n,
