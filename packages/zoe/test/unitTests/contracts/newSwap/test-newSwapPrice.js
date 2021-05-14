@@ -191,26 +191,37 @@ test('newSwap getPriceGivenAvailableInput secondary', async t => {
 });
 
 test('newSwap getPriceGivenRequiredOutput specify central', async t => {
-  const initMoola = 700000n;
-  const initBucks = 500000n;
-  const { bucks, moola, bucksBrand, pricer } = setupPricer(
+  const initMoola = 70000000n;
+  const initBucks = 50000000n;
+  const poolFee = 24n;
+  const protocolFeeBP = 6n;
+
+  const { bucks, moola, moolaBrand, bucksBrand, pricer } = setupPricer(
     initMoola,
     initBucks,
   );
 
-  const output = 10000n;
-  const pFeePre = protocolFee(output);
-  const poolChange = output + pFeePre;
-  const valueIn = priceFromTargetOutput(poolChange, initMoola, initBucks, 24n);
-  const valueOut = outputFromInputPrice(initBucks, initMoola, valueIn, 24n);
-  const pFee = protocolFee(valueOut);
+  const output = 100000n;
+  const pFee = multiplyBy(
+    moola(output),
+    makeRatio(protocolFeeBP, moolaBrand, subtract(BASIS_POINTS, protocolFeeBP)),
+  );
+  const poolChange = output + pFee.value;
+  const valueIn = priceFromTargetOutput(
+    poolChange,
+    initMoola,
+    initBucks,
+    poolFee,
+  );
+  const valueOut = outputFromInputPrice(initBucks, initMoola, valueIn, poolFee);
+
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut - pFee),
-    protocolFee: moola(pFee),
+    amountOut: AmountMath.subtract(moola(valueOut), pFee),
+    protocolFee: pFee,
   });
   t.truthy(
-    (initMoola - valueOut) * (initBucks + valueIn + pFee) >
+    (initMoola - valueOut) * (initBucks + valueIn + pFee.value) >
       initBucks * initMoola,
   );
 });
@@ -270,6 +281,44 @@ test('newSwap getPriceGivenAvailableInput twoPools', async t => {
   );
 });
 
+test('newSwap getPriceGivenAvailableInput twoPools large fee', async t => {
+  const initMoola = 80000000n;
+  const initBucks = 50000000n;
+  const initSimoleans = 30000000n;
+  const { bucks, simoleansBrand, pricer } = setupPricer(
+    initMoola,
+    initBucks,
+    initSimoleans,
+  );
+  // get price given input from simoleans to bucks through moola
+  const input = 10000000n;
+
+  const quote = pricer.getPriceGivenAvailableInput(
+    bucks(input),
+    simoleansBrand,
+  );
+  t.truthy(AmountMath.isGTE(bucks(input), quote.amountIn));
+  t.deepEqual(
+    quote.protocolFee.value,
+    protocolFee(
+      AmountMath.subtract(quote.centralAmount, quote.protocolFee).value,
+    ),
+  );
+  t.is(
+    quote.centralAmount.value,
+    outputFromInputPrice(initBucks, initMoola, quote.amountIn.value, 12n),
+  );
+  t.is(
+    quote.amountOut.value,
+    outputFromInputPrice(
+      initMoola,
+      initSimoleans,
+      AmountMath.subtract(quote.centralAmount, quote.protocolFee).value,
+      12n,
+    ),
+  );
+});
+
 test('newSwap getPriceGivenRequiredOutput twoPools', async t => {
   const initMoola = 800000n;
   const initBucks = 500000n;
@@ -305,25 +354,36 @@ test('newSwap getPriceGivenRequiredOutput twoPools', async t => {
 test('newSwap getPriceGivenOutput central extreme', async t => {
   const initMoola = 700000n;
   const initBucks = 500000n;
-  const { bucks, moola, bucksBrand, pricer } = setupPricer(
+  const poolFee = 24n;
+  const protocolFeeBP = 6n;
+  const { bucks, moola, moolaBrand, bucksBrand, pricer } = setupPricer(
     initMoola,
     initBucks,
   );
 
   const output = 690000n;
-  const pFeePre = protocolFee(output);
-  const poolChange = output + pFeePre;
-  const valueIn = priceFromTargetOutput(poolChange, initMoola, initBucks, 24n);
-  const valueOut = outputFromInputPrice(initBucks, initMoola, valueIn, 24n);
-  const pFee = protocolFee(valueOut);
+  const pFee = multiplyBy(
+    moola(output),
+    makeRatio(protocolFeeBP, moolaBrand, subtract(BASIS_POINTS, protocolFeeBP)),
+  );
+
+  const poolChange = output + pFee.value;
+  const valueIn = priceFromTargetOutput(
+    poolChange,
+    initMoola,
+    initBucks,
+    poolFee,
+  );
+  const valueOut = outputFromInputPrice(initBucks, initMoola, valueIn, poolFee);
+
   t.deepEqual(pricer.getPriceGivenRequiredOutput(bucksBrand, moola(output)), {
     amountIn: bucks(valueIn),
-    amountOut: moola(valueOut - pFee),
-    protocolFee: moola(pFee),
+    amountOut: AmountMath.subtract(moola(valueOut), pFee),
+    protocolFee: pFee,
   });
 
   t.truthy(
-    (initMoola - valueOut) * (initBucks + valueIn + pFee) >
+    (initMoola - valueOut) * (initBucks + valueIn + pFee.value) >
       initBucks * initMoola,
   );
 });

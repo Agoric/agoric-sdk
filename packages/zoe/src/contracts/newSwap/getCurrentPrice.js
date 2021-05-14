@@ -8,8 +8,8 @@ import { isNat } from '@agoric/nat';
 
 import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
 
-const { ceilDivide, add } = natSafeMath;
-const BASIS_POINTS = 10000;
+const { ceilDivide, add, subtract } = natSafeMath;
+const BASIS_POINTS = 10000n;
 
 /**
  * Build functions to calculate prices for multipoolAutoswap. Four methods are
@@ -52,7 +52,7 @@ export const makeGetCurrentPrice = (
       // remainder to the pool to get a quote. Then we'll add the fee to deltaX
       // before sending out the quote.
 
-      // amountIn will be divided into deltaX (what's added to the pool) and the
+      // amountIn will be split into deltaX (what's added to the pool) and the
       // protocol fee. protocolFee will be protocolFeeRatio * deltaX.
       // Therefore, amountIn = (1 + protocolFeeRatio) * deltaX, and
       // protocolFee =  protocolFeeRatio * amountIn / (1 + protocolFeeRatio).
@@ -83,7 +83,14 @@ export const makeGetCurrentPrice = (
         brandOut,
         poolFeeBP,
       );
-      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
+      // deltaY is computed based on deltaX (the amount that will be added to
+      // the pool) and the fee. In order to ensure that the poolFee and
+      // protocolFee are charged on the same base, we calculate what deltaX
+      // would be without a fee. That way both fees are based on the same deltaX
+      const { amountOut: noFeeDeltaX } = getPool(
+        brandIn,
+      ).getPriceGivenAvailableInput(amountIn, brandOut, 0n);
+      const protocolFee = multiplyBy(noFeeDeltaX, protocolFeeRatio);
       const amountOutFinal = AmountMath.subtract(price.amountOut, protocolFee);
 
       // the user pays amountIn, and gets amountOutFinal. The pool pays
@@ -187,20 +194,20 @@ export const makeGetCurrentPrice = (
         protocolFee,
       };
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      // We'll add the protocol fee to amountOut to get deltaY. The user will
-      // pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
+      // The protocolFee is feeRatio * deltaY. deltaY is amountOut + protocolFee
+      // protocolFee = amountOut / ((1/feeRatio) - 1)
 
-      // protocolFee is feeRatio * deltaY, and deltaY is (1 + feeRatio) * amountOut,
-      // so we compute protocolFee as feeRatio * (1 + feeRatio) * amountOut
-      const onePlusProtocolFee = makeRatio(
-        add(BASIS_POINTS, protocolFeeBP),
+      // We'll subtract the protocol fee from amountIn to get deltaY. The user
+      // will pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
+
+      // we compute protocolFee as
+      // amountOut * protocolFeeBP / (BASIS_POINTS - protocolFeeBP)
+      const protocolFeeMultiplier = makeRatio(
+        protocolFeeBP,
         centralBrand,
-        BASIS_POINTS,
+        subtract(BASIS_POINTS, protocolFeeBP),
       );
-      const protocolFee = multiplyBy(
-        multiplyBy(amountOut, onePlusProtocolFee),
-        protocolFeeRatio,
-      );
+      const protocolFee = multiplyBy(amountOut, protocolFeeMultiplier);
 
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,

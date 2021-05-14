@@ -800,7 +800,7 @@ test('newSwap jig - swapOut uneven', async t => {
   // Notice that it takes half as much moola as the desired Central
   const cGain = 30000n;
   // The pool will be charged the protocol fee on top of deltaY
-  const protocolFee = (cGain * 6n) / 10000n;
+  const protocolFee = (cGain * 6n) / (10000n - 6n);
   const deltaY = priceFromTargetOutput(
     cGain + protocolFee,
     mPoolState.c,
@@ -811,7 +811,6 @@ test('newSwap jig - swapOut uneven', async t => {
 
   // overpay
   const moolaIn = 16000n;
-  t.is(deltaY, 15091n);
   const tradeDetailsB = {
     inAmount: moola(moolaIn),
     outAmount: centralTokens(deltaX - protocolFee),
@@ -836,8 +835,9 @@ test('newSwap jig - swapOut uneven', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedB);
 
+  let expectedPoolBalance = protocolFee;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, 18n),
+    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   // trade for moola specifying 2500 moola output: central price: 496, roughly double.
@@ -877,8 +877,9 @@ test('newSwap jig - swapOut uneven', async t => {
     mIssuerKeywordRecord,
   );
 
+  expectedPoolBalance += expectedProtocolCharge2;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, 48n),
+    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   mPoolState = updatePoolState(mPoolState, expectedC);
@@ -896,7 +897,7 @@ test('newSwap jig - swapOut uneven', async t => {
     t,
     centralR.issuer,
     payout,
-    AmountMath.make(centralR.brand, 48n),
+    AmountMath.make(centralR.brand, expectedPoolBalance),
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
@@ -914,7 +915,7 @@ test('newSwap jig - breaking scenario', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(
@@ -940,7 +941,7 @@ test('newSwap jig - breaking scenario', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
 
   const simoleanLiquidityIssuer = await E(publicFacet).addPool(
     simoleanR.issuer,
@@ -1005,8 +1006,8 @@ test('newSwap jig - breaking scenario', async t => {
     moolaR.brand,
   );
 
-  t.truthy(amountMath.isGTE(quoteFromRun.amountIn, newQuoteFromRun.amountIn));
-  t.truthy(amountMath.isGTE(newQuoteFromRun.amountOut, quoteFromRun.amountOut));
+  t.truthy(AmountMath.isGTE(quoteFromRun.amountIn, newQuoteFromRun.amountIn));
+  t.truthy(AmountMath.isGTE(newQuoteFromRun.amountOut, quoteFromRun.amountOut));
 
   const quoteToRun = await E(publicFacet).getPriceGivenRequiredOutput(
     moolaR.brand,
