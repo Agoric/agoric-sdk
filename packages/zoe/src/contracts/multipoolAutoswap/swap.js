@@ -226,8 +226,8 @@ export const makeMakeSwapInvitation = (
 
       const seatStaging = seat.stage(
         harden({
-          In: amountIn,
-          Out: AmountMath.subtract(improvedAmountOut, amountOut),
+          In: AmountMath.subtract(offeredAmountIn, amountIn),
+          Out: improvedAmountOut,
         }),
       );
 
