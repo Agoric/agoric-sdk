@@ -117,6 +117,56 @@ jobs:
         name: benchmarkstats.json
         path: packages/swingset-runner/benchstats*.json
 
+  coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x']
+    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: generate coverage for all tests
+      run: 'yarn c8 ava --reporter=none || :'
+    - name: generate coverage/html reports
+      run: yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
+    - uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: coverage
+    - name: Find Netlify site ID
+      run: |
+        echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
+    - uses: nwtgck/actions-netlify@v1.1
+      with:
+        # Production deployment if a commit to master.
+        production-deploy: ${{ github.ref == 'refs/heads/master' }}
+        publish-dir: coverage/html
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
 ##################
 # Fast-running tests run as a group:
   test-quick:
