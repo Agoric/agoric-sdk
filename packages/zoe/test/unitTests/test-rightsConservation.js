@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { amountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { assertRightsConserved } from '../../src/contractFacet/rightsConservation';
 
 const setupBrands = () => {
@@ -18,7 +18,7 @@ const setupBrands = () => {
 
 const makeAmountMatrix = (brands, valueMatrix) =>
   valueMatrix.map(row =>
-    row.map((value, i) => amountMath.make(value, brands[i])),
+    row.map((value, i) => AmountMath.make(value, brands[i])),
   );
 
 // rights are conserved for amount with Nat values

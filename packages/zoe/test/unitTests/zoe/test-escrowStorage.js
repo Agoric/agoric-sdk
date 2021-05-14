@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { amountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
 import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage';
@@ -29,13 +29,13 @@ test('makeEscrowStorage', async t => {
   // Normally only used for ZCFMint issuers
   makeLocalPurse(ticketKit.issuer, ticketKit.brand);
 
-  const gameTicketAmount = amountMath.make(ticketKit.brand, [
+  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
     { show: 'superbowl' },
   ]);
 
-  const currencyAmount = amountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
-  const wantedConcertTicketAmount = amountMath.make(ticketKit.brand, [
+  const wantedConcertTicketAmount = AmountMath.make(ticketKit.brand, [
     { show: 'my show' },
   ]);
 
@@ -62,7 +62,7 @@ test('makeEscrowStorage', async t => {
     paymentPKeywordRecord,
   );
 
-  const emptyConcertTicket = amountMath.makeEmptyFromAmount(
+  const emptyConcertTicket = AmountMath.makeEmptyFromAmount(
     wantedConcertTicketAmount,
   );
 
@@ -135,11 +135,11 @@ test('payments without matching give keywords', async t => {
 
   const { ticketKit, currencyKit } = setupPurses(createPurse);
 
-  const gameTicketAmount = amountMath.make(ticketKit.brand, [
+  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
     { show: 'superbowl' },
   ]);
 
-  const currencyAmount = amountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
@@ -169,11 +169,11 @@ test(`give keywords without matching payments`, async t => {
 
   const { ticketKit, currencyKit } = setupPurses(createPurse);
 
-  const gameTicketAmount = amountMath.make(ticketKit.brand, [
+  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
     { show: 'superbowl' },
   ]);
 
-  const currencyAmount = amountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),

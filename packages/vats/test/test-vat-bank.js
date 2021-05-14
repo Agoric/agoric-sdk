@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank';
 
@@ -89,13 +89,13 @@ test('communication', async t => {
   // First balance.
   const vpurse = await E(bank).getPurse(kit.brand);
   const bal = await E(vpurse).getCurrentAmount();
-  t.assert(amountMath.isEqual(bal, amountMath.make(kit.brand, 11993n)));
+  t.assert(AmountMath.isEqual(bal, AmountMath.make(kit.brand, 11993n)));
 
   // Deposit.
-  const paymentAmount = amountMath.make(kit.brand, 14n);
+  const paymentAmount = AmountMath.make(kit.brand, 14n);
   const payment = await E(kit.mint).mintPayment(paymentAmount);
   const actualPaymentAmount = await E(vpurse).deposit(payment, paymentAmount);
-  t.assert(amountMath.isEqual(actualPaymentAmount, paymentAmount));
+  t.assert(AmountMath.isEqual(actualPaymentAmount, paymentAmount));
 
   // Withdrawal.  We can't easily type a `VirtualPurse` unless we make it
   // callable only with `E`, in which case we can't automatically unwrap the
@@ -112,7 +112,7 @@ test('communication', async t => {
     payment2,
     paymentAmount,
   );
-  t.assert(amountMath.isEqual(actualPaymentAmount2, paymentAmount));
+  t.assert(AmountMath.isEqual(actualPaymentAmount2, paymentAmount));
 
   // Balance update.
   const notifier = E(vpurse).getCurrentAmountNotifier();
@@ -126,9 +126,9 @@ test('communication', async t => {
   await E(notifier).getUpdateSince(updateRecord.updateCount);
   const bal2 = await E(vpurse).getCurrentAmount();
   t.assert(
-    amountMath.isEqual(
+    AmountMath.isEqual(
       bal2,
-      amountMath.make(kit.brand, BigInt(balance.amount)),
+      AmountMath.make(kit.brand, BigInt(balance.amount)),
     ),
   );
 });

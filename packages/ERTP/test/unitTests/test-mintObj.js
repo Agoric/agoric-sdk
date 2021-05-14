@@ -6,7 +6,7 @@ import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
-import { makeIssuerKit, AssetKind, amountMath } from '../../src';
+import { makeIssuerKit, AssetKind, AmountMath } from '../../src';
 
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
@@ -15,27 +15,27 @@ test('mint.getIssuer', t => {
 
 test('mint.mintPayment default nat AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const fungible1000 = amountMath.make(1000n, brand);
+  const fungible1000 = AmountMath.make(1000n, brand);
   const payment1 = mint.mintPayment(fungible1000);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
-  t.assert(amountMath.isEqual(paymentBalance1, fungible1000));
+  t.assert(AmountMath.isEqual(paymentBalance1, fungible1000));
 
-  const payment2 = mint.mintPayment(amountMath.make(1000n, brand));
+  const payment2 = mint.mintPayment(AmountMath.make(1000n, brand));
   const paymentBalance2 = await issuer.getAmountOf(payment2);
-  t.assert(amountMath.isEqual(paymentBalance2, fungible1000));
+  t.assert(AmountMath.isEqual(paymentBalance2, fungible1000));
 });
 
 test('mint.mintPayment set w strings AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
-  const items1and2and4 = amountMath.make(['1', '2', '4'], brand);
+  const items1and2and4 = AmountMath.make(['1', '2', '4'], brand);
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
-  t.assert(amountMath.isEqual(paymentBalance1, items1and2and4));
+  t.assert(AmountMath.isEqual(paymentBalance1, items1and2and4));
 
-  const items5and6 = amountMath.make(['5', '6'], brand);
+  const items5and6 = AmountMath.make(['5', '6'], brand);
   const payment2 = mint.mintPayment(items5and6);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
-  t.assert(amountMath.isEqual(paymentBalance2, items5and6));
+  t.assert(AmountMath.isEqual(paymentBalance2, items5and6));
 });
 
 test('mint.mintPayment set AssetKind', async t => {
@@ -43,21 +43,21 @@ test('mint.mintPayment set AssetKind', async t => {
   const item1handle = Far('iface', {});
   const item2handle = Far('iface', {});
   const item3handle = Far('iface', {});
-  const items1and2 = amountMath.make([item1handle, item2handle], brand);
+  const items1and2 = AmountMath.make([item1handle, item2handle], brand);
   const payment1 = mint.mintPayment(items1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
-  t.assert(amountMath.isEqual(paymentBalance1, items1and2));
+  t.assert(AmountMath.isEqual(paymentBalance1, items1and2));
 
-  const item3 = amountMath.make([item3handle], brand);
+  const item3 = AmountMath.make([item3handle], brand);
   const payment2 = mint.mintPayment(item3);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
-  t.assert(amountMath.isEqual(paymentBalance2, item3));
+  t.assert(AmountMath.isEqual(paymentBalance2, item3));
 
   // TODO: prevent reminting the same non-fungible amounts
   // https://github.com/Agoric/agoric-sdk/issues/552
   const payment3 = mint.mintPayment(item3);
   const paymentBalance3 = await issuer.getAmountOf(payment3);
-  t.assert(amountMath.isEqual(paymentBalance3, item3));
+  t.assert(AmountMath.isEqual(paymentBalance3, item3));
 });
 
 test('mint.mintPayment set AssetKind with invites', async t => {
@@ -75,15 +75,15 @@ test('mint.mintPayment set AssetKind with invites', async t => {
     handle: Far('iface', {}),
     instanceHandle: Far('iface', {}),
   };
-  const invites1and2 = amountMath.make([invite1Value, invite2Value], brand);
+  const invites1and2 = AmountMath.make([invite1Value, invite2Value], brand);
   const payment1 = mint.mintPayment(invites1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
-  t.assert(amountMath.isEqual(paymentBalance1, invites1and2));
+  t.assert(AmountMath.isEqual(paymentBalance1, invites1and2));
 
-  const invite3 = amountMath.make([invite3Value], brand);
+  const invite3 = AmountMath.make([invite3Value], brand);
   const payment2 = mint.mintPayment(invite3);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
-  t.assert(amountMath.isEqual(paymentBalance2, invite3));
+  t.assert(AmountMath.isEqual(paymentBalance2, invite3));
 });
 
 // Tests related to non-fungible tokens
@@ -109,7 +109,7 @@ test('non-fungible tokens example', async t => {
   const balletTicketPayments = ticketDescriptionObjects.map(
     ticketDescription => {
       return balletTicketMint.mintPayment(
-        amountMath.make([ticketDescription], brand),
+        AmountMath.make([ticketDescription], brand),
       );
     },
   );

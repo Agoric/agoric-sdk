@@ -3,7 +3,7 @@
 import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers';
 
@@ -19,7 +19,7 @@ export const doLiquidation = async (
   const toAmounts = harden({ In: allCollateral });
   const proposal = harden({
     give: toAmounts,
-    want: { Out: amountMath.makeEmpty(loanBrand) },
+    want: { Out: AmountMath.makeEmpty(loanBrand) },
   });
   const keywordMapping = harden({
     Collateral: 'In',

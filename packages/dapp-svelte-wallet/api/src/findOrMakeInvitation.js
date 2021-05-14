@@ -1,7 +1,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { passStyleOf } from '@agoric/marshal';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
 
@@ -63,7 +63,7 @@ const makeFindInvitation = (invitationPurse, invitationBrand) => {
   const findInvitation = async (queryFn, queryParams) => {
     const purseBalance = await E(invitationPurse).getCurrentAmount();
     const value = await queryFn(purseBalance, queryParams);
-    const invitationAmount = amountMath.make(invitationBrand, value);
+    const invitationAmount = AmountMath.make(invitationBrand, value);
     const invitationP = E(invitationPurse).withdraw(invitationAmount);
     return invitationP;
   };

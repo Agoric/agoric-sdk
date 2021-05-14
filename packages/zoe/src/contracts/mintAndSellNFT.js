@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
@@ -19,7 +19,7 @@ import { assert } from '@agoric/assert';
  *   count: 3n,
  *   moneyIssuer: moolaIssuer,
  *   sellItemsInstallationHandle,
- *   pricePerItem: amountMath.make(20n, moolaBrand),
+ *   pricePerItem: AmountMath.make(20n, moolaBrand),
  * }
  * The payouts are returned as an offerResult in the `outcome`, and an API that
  * allows selling the tickets that were produced. You can reuse the ticket maker
@@ -41,7 +41,7 @@ const start = zcf => {
     sellItemsInstallation,
     pricePerItem,
   }) => {
-    const tokenAmount = amountMath.make(
+    const tokenAmount = AmountMath.make(
       Array(count)
         .fill(undefined)
         .map((_, i) => {

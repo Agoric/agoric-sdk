@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/notifier/exported';
 import '@agoric/vats/exported';
@@ -503,8 +503,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
           winnerKeyword,
           localBrand,
         );
-        const newLoser = amountMath.subtract(currentLoser, amount);
-        const newWinner = amountMath.add(currentWinner, amount);
+        const newLoser = AmountMath.subtract(currentLoser, amount);
+        const newWinner = AmountMath.add(currentWinner, amount);
         const loserStage = loser.stage({ [loserKeyword]: newLoser });
         const winnerStage = winner.stage({ [winnerKeyword]: newWinner });
         zcf.reallocate(loserStage, winnerStage);

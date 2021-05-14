@@ -11,7 +11,7 @@ import bundleSource from '@agoric/bundle-source';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeZoe } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 const stablecoinRoot = `${__dirname}/../src/stablecoinMachine.js`;
 const liquidationRoot = `${__dirname}/../src/liquidateMinimum.js`;
@@ -65,9 +65,9 @@ test('bootstrap payment', async t => {
   const runBrand = await E(issuers.RUN).getBrand();
 
   t.true(
-    amountMath.isEqual(
+    AmountMath.isEqual(
       bootstrapAmount,
-      amountMath.make(runBrand, bootstrapPaymentValue),
+      AmountMath.make(runBrand, bootstrapPaymentValue),
     ),
   );
 });
@@ -112,9 +112,9 @@ test('bootstrap payment - only minted once', async t => {
   const runBrand = await E(issuers.RUN).getBrand();
 
   t.true(
-    amountMath.isEqual(
+    AmountMath.isEqual(
       bootstrapAmount,
-      amountMath.make(runBrand, bootstrapPaymentValue),
+      AmountMath.make(runBrand, bootstrapPaymentValue),
     ),
   );
 
@@ -160,5 +160,5 @@ test('bootstrap payment - default value is 0n', async t => {
 
   const runBrand = await E(issuers.RUN).getBrand();
 
-  t.true(amountMath.isEqual(bootstrapAmount, amountMath.make(runBrand, 0n)));
+  t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
 });

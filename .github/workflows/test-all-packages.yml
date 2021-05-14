@@ -155,10 +155,6 @@ jobs:
     # the top level.
     #- name: yarn test (everything)
     #  run: yarn test
-    - name: yarn test (acorn-eventual-send)
-      run: cd packages/acorn-eventual-send && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (agoric-cli)
       run: cd packages/agoric-cli && yarn test
       env:
@@ -301,10 +297,6 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (tame-metering)
       run: cd packages/tame-metering && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-    - name: yarn test (transform-eventual-send)
-      run: cd packages/transform-eventual-send && yarn test
       env:
         ESM_DISABLE_CACHE: true
     - name: yarn test (transform-metering)

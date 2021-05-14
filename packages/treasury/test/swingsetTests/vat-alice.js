@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X, q } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;
@@ -18,8 +18,8 @@ const build = async (log, zoe, brands, payments, timer) => {
     const loanSeat = await E(zoe).offer(
       E(treasury).makeLoanInvitation(),
       harden({
-        give: { Collateral: amountMath.make(moolaBrand, 100n) },
-        want: { RUN: amountMath.make(runBrand, 500000n) },
+        give: { Collateral: AmountMath.make(moolaBrand, 100n) },
+        want: { RUN: AmountMath.make(runBrand, 500000n) },
       }),
       harden({
         Collateral: moolaPayment,

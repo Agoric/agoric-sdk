@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
 
@@ -22,8 +22,8 @@ const setupMixed = () => {
   const moolaIssuer = issuers.get('moola');
   const ccMint = mints.get('cc');
   const moolaMint = mints.get('moola');
-  const cryptoCats = value => amountMath.make(value, allBundles.cc.brand);
-  const moola = value => amountMath.make(value, allBundles.moola.brand);
+  const cryptoCats = value => AmountMath.make(value, allBundles.cc.brand);
+  const moola = value => AmountMath.make(value, allBundles.moola.brand);
 
   const zoe = makeZoe(fakeVatAdmin);
   return {

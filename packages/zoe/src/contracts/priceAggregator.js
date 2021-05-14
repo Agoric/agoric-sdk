@@ -5,7 +5,7 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
@@ -28,10 +28,10 @@ const start = async zcf => {
     timer: rawTimer,
     POLL_INTERVAL,
     brands: { In: brandIn, Out: brandOut },
-    unitAmountIn = amountMath.make(1n, brandIn),
+    unitAmountIn = AmountMath.make(1n, brandIn),
   } = zcf.getTerms();
 
-  const unitIn = amountMath.getValue(unitAmountIn, brandIn);
+  const unitIn = AmountMath.getValue(unitAmountIn, brandIn);
 
   /** @type {TimerService} */
   const timer = rawTimer;
@@ -53,7 +53,7 @@ const start = async zcf => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
-    const quoteAmount = amountMath.make(quote, quoteKit.brand);
+    const quoteAmount = AmountMath.make(quote, quoteKit.brand);
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
@@ -118,8 +118,8 @@ const start = async zcf => {
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
-        const valueIn = amountMath.getValue(amountIn, brandIn);
-        return amountMath.make(
+        const valueIn = AmountMath.getValue(amountIn, brandIn);
+        return AmountMath.make(
           floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
           brandOut,
         );
@@ -130,8 +130,8 @@ const start = async zcf => {
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
-        const valueOut = amountMath.getValue(amountOut, brandOut);
-        return amountMath.make(
+        const valueOut = AmountMath.getValue(amountOut, brandOut);
+        return AmountMath.make(
           ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
           brandIn,
         );
@@ -148,8 +148,8 @@ const start = async zcf => {
         amountOut,
         timestamp: theirTimestamp = timestamp,
       } = quote;
-      amountMath.coerce(amountIn, brandIn);
-      amountMath.coerce(amountOut, brandOut);
+      AmountMath.coerce(amountIn, brandIn);
+      AmountMath.coerce(amountOut, brandOut);
       if (theirTimestamp !== undefined) {
         return authenticateQuote([
           { amountIn, amountOut, timer, timestamp: theirTimestamp },
@@ -177,7 +177,7 @@ const start = async zcf => {
       return;
     }
 
-    const amountOut = amountMath.make(median, brandOut);
+    const amountOut = AmountMath.make(median, brandOut);
 
     /** @type {PriceDescription} */
     const quote = {

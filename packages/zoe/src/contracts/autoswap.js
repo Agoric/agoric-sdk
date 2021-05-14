@@ -2,7 +2,7 @@
 
 import { Far } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
-import { amountMath, isNatValue } from '@agoric/ertp';
+import { AmountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -133,7 +133,7 @@ const start = async zcf => {
   const swapInHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !amountMath.isEmpty(getPoolAmount(brands.Central)),
+      !AmountMath.isEmpty(getPoolAmount(brands.Central)),
       `Pool not initialized`,
     );
 
@@ -149,7 +149,7 @@ const start = async zcf => {
       getPoolAmount(amountIn.brand).value,
       getPoolAmount(wantedAmountOut.brand).value,
     );
-    const tradeAmountOut = amountMath.make(outputValue, wantedAmountOut.brand);
+    const tradeAmountOut = AmountMath.make(outputValue, wantedAmountOut.brand);
     return consummate(amountIn, tradeAmountOut, swapSeat);
   };
 
@@ -163,7 +163,7 @@ const start = async zcf => {
   const swapOutHandler = swapSeat => {
     assertSwapProposal(swapSeat);
     assert(
-      !amountMath.isEmpty(getPoolAmount(brands.Central)),
+      !AmountMath.isEmpty(getPoolAmount(brands.Central)),
       'Pool not initialized',
     );
 
@@ -180,7 +180,7 @@ const start = async zcf => {
       getPoolAmount(wantedAmountOut.brand).value,
     );
     assert(tradePrice <= amountIn.value, 'amountIn insufficient');
-    const tradeAmountIn = amountMath.make(tradePrice, amountIn.brand);
+    const tradeAmountIn = AmountMath.make(tradePrice, amountIn.brand);
 
     return consummate(tradeAmountIn, wantedAmountOut, swapSeat);
   };
@@ -194,7 +194,7 @@ const start = async zcf => {
       centralIn,
       centralPool,
     );
-    const liquidityAmountOut = amountMath.make(
+    const liquidityAmountOut = AmountMath.make(
       liquidityValueOut,
       liquidityBrand,
     );
@@ -206,7 +206,7 @@ const start = async zcf => {
       {
         seat: poolSeat,
         gains: {
-          Central: amountMath.make(centralIn, brands.Central),
+          Central: AmountMath.make(centralIn, brands.Central),
           Secondary: secondaryAmount,
         },
       },
@@ -239,7 +239,7 @@ const start = async zcf => {
       give: { Central: null, Secondary: null },
       want: { Liquidity: null },
     });
-    if (amountMath.isEmpty(getPoolAmount(brands.Central))) {
+    if (AmountMath.isEmpty(getPoolAmount(brands.Central))) {
       return initiateLiquidity(liqSeat);
     }
 
@@ -251,7 +251,7 @@ const start = async zcf => {
 
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
-    const secondaryOut = amountMath.make(
+    const secondaryOut = AmountMath.make(
       calcSecondaryRequired(
         userAllocation.Central.value,
         getPoolAmount(brands.Central).value,
@@ -263,7 +263,7 @@ const start = async zcf => {
 
     // Central was specified precisely so offer must provide enough secondary.
     assert(
-      amountMath.isGTE(secondaryIn, secondaryOut),
+      AmountMath.isGTE(secondaryIn, secondaryOut),
       'insufficient Secondary deposited',
     );
 
@@ -281,7 +281,7 @@ const start = async zcf => {
     const liquidityValueIn = userAllocation.Liquidity.value;
     assert(isNatValue(liquidityValueIn));
 
-    const newUserCentralAmount = amountMath.make(
+    const newUserCentralAmount = AmountMath.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Central).value,
@@ -289,7 +289,7 @@ const start = async zcf => {
       ),
       brands.Central,
     );
-    const newUserSecondaryAmount = amountMath.make(
+    const newUserSecondaryAmount = AmountMath.make(
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Secondary).value,
@@ -343,15 +343,15 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
     const outputReserve = getPoolAmount(brandOut).value;
     assert(isNatValue(amountIn.value));
-    if (amountMath.isEmpty(amountIn)) {
-      return amountMath.makeEmpty(brandOut);
+    if (AmountMath.isEmpty(amountIn)) {
+      return AmountMath.makeEmpty(brandOut);
     }
     const outputValue = getInputPrice(
       amountIn.value,
       inputReserve,
       outputReserve,
     );
-    return amountMath.make(outputValue, brandOut);
+    return AmountMath.make(outputValue, brandOut);
   };
 
   /**
@@ -365,15 +365,15 @@ const start = async zcf => {
     const inputReserve = getPoolAmount(brandIn).value;
     const outputReserve = getPoolAmount(amountOut.brand).value;
     assert(isNatValue(amountOut.value));
-    if (amountMath.isEmpty(amountOut)) {
-      return amountMath.makeEmpty(brandIn);
+    if (AmountMath.isEmpty(amountOut)) {
+      return AmountMath.makeEmpty(brandIn);
     }
     const outputValue = getOutputPrice(
       amountOut.value,
       inputReserve,
       outputReserve,
     );
-    return amountMath.make(outputValue, brandIn);
+    return AmountMath.make(outputValue, brandIn);
   };
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;

@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '../src/contractSupport';
 import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers';
@@ -164,8 +164,8 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
 
       const centralBrand = await E(centralIssuer).getBrand();
       const secondaryBrand = await E(secondaryIssuer).getBrand();
-      const central = value => amountMath.make(value, centralBrand);
-      const secondary = value => amountMath.make(value, secondaryBrand);
+      const central = value => AmountMath.make(value, centralBrand);
+      const secondary = value => AmountMath.make(value, secondaryBrand);
 
       const poolPre = await getPoolAllocation(secondaryIssuer);
       t.deepEqual(poolPre.Central, central(cPoolPre), `central before swap`);
@@ -211,9 +211,9 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const centralBrand = await E(centralIssuer).getBrand();
       const secondaryBrand = await E(secondaryIssuer).getBrand();
       const liquidityBrand = await E(liquidityIssuer).getBrand();
-      const central = value => amountMath.make(value, centralBrand);
-      const secondary = value => amountMath.make(value, secondaryBrand);
-      const liquidity = value => amountMath.make(value, liquidityBrand);
+      const central = value => AmountMath.make(value, centralBrand);
+      const secondary = value => AmountMath.make(value, secondaryBrand);
+      const liquidity = value => AmountMath.make(value, liquidityBrand);
 
       const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
       const { cAmount, sAmount, lAmount = liquidity(0) } = details;
@@ -294,9 +294,9 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const centralBrand = await E(centralIssuer).getBrand();
       const secondaryBrand = await E(secondaryIssuer).getBrand();
       const liquidityBrand = await E(liquidityIssuer).getBrand();
-      const central = value => amountMath.make(value, centralBrand);
-      const secondary = value => amountMath.make(value, secondaryBrand);
-      const liquidity = value => amountMath.make(value, liquidityBrand);
+      const central = value => AmountMath.make(value, centralBrand);
+      const secondary = value => AmountMath.make(value, secondaryBrand);
+      const liquidity = value => AmountMath.make(value, liquidityBrand);
 
       const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
       const { cAmount, sAmount, lAmount = liquidity(0) } = details;
@@ -365,9 +365,9 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const centralBrand = await E(centralIssuer).getBrand();
       const secondaryBrand = await E(secondaryIssuer).getBrand();
       const liquidityBrand = await E(liquidityIssuer).getBrand();
-      const central = value => amountMath.make(value, centralBrand);
-      const secondary = value => amountMath.make(value, secondaryBrand);
-      const liquidity = value => amountMath.make(value, liquidityBrand);
+      const central = value => AmountMath.make(value, centralBrand);
+      const secondary = value => AmountMath.make(value, secondaryBrand);
+      const liquidity = value => AmountMath.make(value, liquidityBrand);
 
       const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
       const { cAmount, sAmount, lAmount = liquidity(0) } = details;

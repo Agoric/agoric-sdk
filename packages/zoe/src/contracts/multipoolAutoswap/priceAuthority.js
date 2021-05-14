@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
@@ -21,7 +21,7 @@ export const makePriceAuthority = (
 
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
-    const quoteAmount = amountMath.make(quote, brand);
+    const quoteAmount = AmountMath.make(quote, brand);
     const quotePayment = quoteIssuerKit.mint.mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };

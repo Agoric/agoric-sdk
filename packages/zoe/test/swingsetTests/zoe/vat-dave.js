@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
@@ -114,14 +114,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
         X`wrong underlying asset`,
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),

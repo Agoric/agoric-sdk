@@ -1,4 +1,4 @@
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePrintLog } from './printLog';
 
@@ -28,7 +28,7 @@ function makeVats(vats, zoe, installations, startingValues) {
   const { mints, issuers, brands } = setupBasicMints();
   // prettier-ignore
   function makePayments(values) {
-    return mints.map((mint, i) => mint.mintPayment(amountMath.make(brands[i], values[i])));
+    return mints.map((mint, i) => mint.mintPayment(AmountMath.make(brands[i], values[i])));
   }
   const [aliceValues, bobValues] = startingValues;
 

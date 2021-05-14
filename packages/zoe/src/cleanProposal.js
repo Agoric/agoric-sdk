@@ -3,7 +3,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
-import { amountMath, getAssetKind } from '@agoric/ertp';
+import { AmountMath, getAssetKind } from '@agoric/ertp';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
@@ -69,8 +69,8 @@ const coerceAmountKeywordRecord = (
   keywords.forEach(assertKeywordName);
 
   const amounts = Object.values(allegedAmountKeywordRecord);
-  // Check that each value can be coerced using the amountMath
-  // indicated by brand. `amountMath.coerce` throws if coercion fails.
+  // Check that each value can be coerced using the AmountMath
+  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
   const coercedAmounts = amounts.map(amount => {
     const brandAssetKind = getAssetKindByBrand(amount.brand);
     const assetKind = getAssetKind(amount);
@@ -80,7 +80,7 @@ const coerceAmountKeywordRecord = (
       assetKind === brandAssetKind,
       X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
     );
-    return amountMath.coerce(amount, amount.brand);
+    return AmountMath.coerce(amount, amount.brand);
   });
 
   // Recreate the amountKeywordRecord with coercedAmounts.

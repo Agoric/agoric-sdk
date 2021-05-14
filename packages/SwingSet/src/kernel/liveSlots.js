@@ -792,9 +792,6 @@ function build(
     syscall.dropImports([slot]);
   }
 
-  // vats which use D are in: acorn-eventual-send, cosmic-swingset
-  // (bootstrap, bridge, vat-http), swingset
-
   const vatGlobals = harden({
     makeWeakStore,
     makeKind,
@@ -804,6 +801,7 @@ function build(
     assert(!didRoot);
     didRoot = true;
 
+    // vats which use D are: (bootstrap, bridge, vat-http), swingset
     const vpow = {
       D,
       exitVat,

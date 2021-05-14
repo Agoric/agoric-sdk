@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * Helper to perform satisfiesWant and satisfiesGive. Is
@@ -18,7 +18,7 @@ const satisfiesInternal = (giveOrWant = {}, allocation) => {
       return false;
     }
     const allocationAmount = allocation[keyword];
-    return amountMath.isGTE(allocationAmount, requiredAmount);
+    return AmountMath.isGTE(allocationAmount, requiredAmount);
   };
   return Object.entries(giveOrWant).every(isGTEByKeyword);
 };

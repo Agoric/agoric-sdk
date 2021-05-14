@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape, trade } from '../../contractSupport';
 
@@ -108,28 +108,28 @@ export const makeMakeSwapInvitation = (
 
       const seatStaging = seat.stage(
         harden({
-          In: amountMath.subtract(amountIn, reducedAmountIn),
+          In: AmountMath.subtract(amountIn, reducedAmountIn),
           Out: amountOut,
         }),
       );
 
       const poolBrandInStaging = brandInPool.stageSeat({
-        Secondary: amountMath.add(
+        Secondary: AmountMath.add(
           brandInPool.getSecondaryAmount(),
           reducedAmountIn,
         ),
-        Central: amountMath.subtract(
+        Central: AmountMath.subtract(
           brandInPool.getCentralAmount(),
           reducedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.stageSeat({
-        Central: amountMath.add(
+        Central: AmountMath.add(
           brandOutPool.getCentralAmount(),
           reducedCentralAmount,
         ),
-        Secondary: amountMath.subtract(
+        Secondary: AmountMath.subtract(
           brandOutPool.getSecondaryAmount(),
           amountOut,
         ),
@@ -169,7 +169,7 @@ export const makeMakeSwapInvitation = (
         amountOut: improvedAmountOut,
       } = pool.getPriceGivenRequiredOutput(brandIn, amountOut);
 
-      if (!amountMath.isGTE(offeredAmountIn, amountIn)) {
+      if (!AmountMath.isGTE(offeredAmountIn, amountIn)) {
         const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
         throw seat.fail(Error(reason));
       }
@@ -227,24 +227,24 @@ export const makeMakeSwapInvitation = (
       const seatStaging = seat.stage(
         harden({
           In: amountIn,
-          Out: amountMath.subtract(improvedAmountOut, amountOut),
+          Out: AmountMath.subtract(improvedAmountOut, amountOut),
         }),
       );
 
       const poolBrandInStaging = brandInPool.stageSeat({
-        Secondary: amountMath.add(brandInPool.getSecondaryAmount(), amountIn),
-        Central: amountMath.subtract(
+        Secondary: AmountMath.add(brandInPool.getSecondaryAmount(), amountIn),
+        Central: AmountMath.subtract(
           brandInPool.getCentralAmount(),
           improvedCentralAmount,
         ),
       });
 
       const poolBrandOutStaging = brandOutPool.stageSeat({
-        Central: amountMath.add(
+        Central: AmountMath.add(
           brandOutPool.getCentralAmount(),
           improvedCentralAmount,
         ),
-        Secondary: amountMath.subtract(
+        Secondary: AmountMath.subtract(
           brandOutPool.getSecondaryAmount(),
           improvedAmountOut,
         ),

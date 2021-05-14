@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @param {ContractFacet} zcf
@@ -14,7 +14,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   } = sellSeat.getProposal();
 
   const bidBrand = minBid.brand;
-  const emptyBid = amountMath.makeEmpty(bidBrand);
+  const emptyBid = AmountMath.makeEmpty(bidBrand);
 
   let highestBid = emptyBid;
   let secondHighestBid = emptyBid;
@@ -26,11 +26,11 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
       activeBidsCount += 1n;
       const bid = bidSeat.getAmountAllocated('Bid', bidBrand);
       // If the bid is greater than the highestBid, it's the new highestBid
-      if (amountMath.isGTE(bid, highestBid, bidBrand)) {
+      if (AmountMath.isGTE(bid, highestBid, bidBrand)) {
         secondHighestBid = highestBid;
         highestBid = bid;
         highestBidSeat = bidSeat;
-      } else if (amountMath.isGTE(bid, secondHighestBid, bidBrand)) {
+      } else if (AmountMath.isGTE(bid, secondHighestBid, bidBrand)) {
         // If the bid is not greater than the highest bid, but is greater
         // than the second highest bid, it is the new second highest bid.
         secondHighestBid = bid;
@@ -48,7 +48,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
     secondHighestBid = highestBid;
   }
 
-  const winnerRefund = amountMath.subtract(
+  const winnerRefund = AmountMath.subtract(
     highestBid,
     secondHighestBid,
     bidBrand,
@@ -58,7 +58,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   // same.
   zcf.reallocate(
     sellSeat.stage({
-      Asset: amountMath.makeEmptyFromAmount(assetAmount),
+      Asset: AmountMath.makeEmptyFromAmount(assetAmount),
       Ask: secondHighestBid,
     }),
     highestBidSeat.stage({ Asset: assetAmount, Bid: winnerRefund }),

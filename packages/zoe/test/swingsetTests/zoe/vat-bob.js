@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 
 import { showPurseBalance, setupIssuers } from '../helpers';
@@ -91,13 +91,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -157,14 +157,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong invitation`,
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
           moola(3),
         ),
         X`wrong underlying asset`,
       );
       assert(
-        amountMath.isEqual(
+        AmountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
           simoleans(7),
         ),
@@ -513,7 +513,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
-      const ticket1Amount = amountMath.make([ticket1Value], ticketBrand);
+      const ticket1Amount = AmountMath.make([ticket1Value], ticketBrand);
       const proposal = harden({
         give: { Money: terms.pricePerItem },
         want: { Items: ticket1Amount },

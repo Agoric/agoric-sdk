@@ -8,7 +8,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 
 import bundleSource from '@agoric/bundle-source';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
@@ -170,7 +170,7 @@ async function testRemotePeg(t) {
   const paymentPs = await seat.getPayouts();
   const refundAmount = await E(localIssuer).getAmountOf(paymentPs.Transfer);
 
-  const isEmptyRefund = amountMath.isEmpty(refundAmount, localBrand);
+  const isEmptyRefund = AmountMath.isEmpty(refundAmount, localBrand);
   t.assert(isEmptyRefund, 'no refund from success');
 
   const stillIsLive = await E(localIssuer).isLive(localAtoms);

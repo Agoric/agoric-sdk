@@ -18,7 +18,7 @@ import './internal-types';
  * To save an issuerRecord, pass the full record to
  * `initIssuerByRecord` (synchronous), or more commonly, pass an
  * issuer to `initIssuer` (asynchronous). `initIssuer` will make the
- * remote calls to get the brand and amountMath and save them.
+ * remote calls to get the brand and AmountMath and save them.
  */
 const makeIssuerTable = () => {
   /** @type {WeakStore<Brand,IssuerRecord>} */

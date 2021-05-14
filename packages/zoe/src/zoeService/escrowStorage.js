@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
@@ -106,7 +106,7 @@ export const makeEscrowStorage = () => {
     );
 
     const emptyAmountsForWantKeywords = wantKeywords.map(keyword =>
-      amountMath.makeEmptyFromAmount(want[keyword]),
+      AmountMath.makeEmptyFromAmount(want[keyword]),
     );
 
     const initialAllocation = arrayToObj(

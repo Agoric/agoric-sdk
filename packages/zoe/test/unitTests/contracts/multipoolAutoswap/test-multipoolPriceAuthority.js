@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeIssuerKit, amountMath, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makePriceAuthority } from '../../../../src/contracts/multipoolAutoswap/priceAuthority';
 import { setup } from '../../setupBasicMints';
 import buildManualTimer from '../../../../tools/manualTimer';
@@ -17,8 +17,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
 
   function ersatzQuote(moolaIn, simoleansOut) {
     return {
-      amountIn: amountMath.make(moolaR.brand, moolaIn),
-      amountOut: amountMath.make(simoleanR.brand, simoleansOut),
+      amountIn: AmountMath.make(moolaR.brand, moolaIn),
+      amountOut: AmountMath.make(simoleanR.brand, simoleansOut),
     };
   }
 
@@ -34,8 +34,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   );
 
   const triggerDoesNot = priceAuthority.quoteWhenLT(
-    amountMath.make(moolaR.brand, 10),
-    amountMath.make(simoleanR.brand, 20),
+    AmountMath.make(moolaR.brand, 10),
+    AmountMath.make(simoleanR.brand, 20),
   );
 
   triggerDoesNot.then(
@@ -44,8 +44,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   );
 
   const trigger = priceAuthority.quoteWhenLT(
-    amountMath.make(moolaR.brand, 10),
-    amountMath.make(simoleanR.brand, 30),
+    AmountMath.make(moolaR.brand, 10),
+    AmountMath.make(simoleanR.brand, 30),
   );
 
   trigger.then(

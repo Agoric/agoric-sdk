@@ -14,7 +14,7 @@ import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { assert, details as X } from '@agoric/assert';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
-import { amountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
 import {
@@ -192,7 +192,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
       const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
       const pmt = await E(treasuryCreator).getBootstrapPayment(
-        amountMath.make(centralBrand, bootstrapPaymentValue),
+        AmountMath.make(centralBrand, bootstrapPaymentValue),
       );
       centralBootstrapPurse = E(bank).getPurse(centralBrand);
       await E(centralBootstrapPurse).deposit(pmt);
@@ -316,7 +316,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             },
             want: {
               // We just throw away our governance tokens.
-              Governance: amountMath.makeEmpty(govBrand, AssetKind.NAT),
+              Governance: AmountMath.makeEmpty(govBrand, AssetKind.NAT),
             },
           });
           const paymentKeywords = harden({
@@ -570,7 +570,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           if (!bank || !centralBootstrapPurse) {
             return;
           }
-          const provisionAmount = amountMath.make(centralBrand, value);
+          const provisionAmount = AmountMath.make(centralBrand, value);
           const centralUserPurse = E(bank).getPurse(centralBrand);
           const centralPayment = await E(centralBootstrapPurse).withdraw(
             provisionAmount,

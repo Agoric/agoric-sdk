@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { AssetKind, amountMath, isNatValue } from '@agoric/ertp/';
+import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp/';
 import { makeNotifierKit } from '@agoric/notifier';
 
 import {
@@ -56,7 +56,7 @@ export const makeAddPool = (
         pool.getCentralAmount().value,
       );
 
-      const liquidityAmountOut = amountMath.make(
+      const liquidityAmountOut = AmountMath.make(
         liquidityValueOut,
         liquidityBrand,
       );
@@ -84,7 +84,7 @@ export const makeAddPool = (
 
     const assertPoolInitialized = pool =>
       assert(
-        !amountMath.isEmpty(pool.getSecondaryAmount()),
+        !AmountMath.isEmpty(pool.getSecondaryAmount()),
         X`pool not initialized`,
       );
 
@@ -129,10 +129,10 @@ export const makeAddPool = (
           outputBrand,
         );
         assert(isNatValue(inputAmount.value));
-        if (amountMath.isEmpty(inputAmount)) {
+        if (AmountMath.isEmpty(inputAmount)) {
           return {
-            amountOut: amountMath.makeEmpty(outputBrand),
-            amountIn: amountMath.makeEmpty(inputAmount.brand),
+            amountOut: AmountMath.makeEmpty(outputBrand),
+            amountIn: AmountMath.makeEmpty(inputAmount.brand),
           };
         }
         const valueOut = getInputPrice(
@@ -148,8 +148,8 @@ export const makeAddPool = (
           feeBP,
         );
         return {
-          amountOut: amountMath.make(valueOut, outputBrand),
-          amountIn: amountMath.make(valueIn, inputAmount.brand),
+          amountOut: AmountMath.make(valueOut, outputBrand),
+          amountIn: AmountMath.make(valueIn, inputAmount.brand),
         };
       },
 
@@ -168,10 +168,10 @@ export const makeAddPool = (
           outputAmount.brand,
         );
         assert(isNatValue(outputAmount.value));
-        if (amountMath.isEmpty(outputAmount)) {
+        if (AmountMath.isEmpty(outputAmount)) {
           return {
-            amountOut: amountMath.makeEmpty(outputAmount.brand),
-            amountIn: amountMath.makeEmpty(inputBrand),
+            amountOut: AmountMath.makeEmpty(outputAmount.brand),
+            amountIn: AmountMath.makeEmpty(inputBrand),
           };
         }
         const valueIn = getOutputPrice(
@@ -187,8 +187,8 @@ export const makeAddPool = (
           feeBP,
         );
         return {
-          amountOut: amountMath.make(valueOut, outputAmount.brand),
-          amountIn: amountMath.make(valueIn, inputBrand),
+          amountOut: AmountMath.make(valueOut, outputAmount.brand),
+          amountIn: AmountMath.make(valueIn, inputBrand),
         };
       },
       addLiquidity: zcfSeat => {
@@ -208,7 +208,7 @@ export const makeAddPool = (
 
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
-        const secondaryOut = amountMath.make(
+        const secondaryOut = AmountMath.make(
           calcSecondaryRequired(
             userAllocation.Central.value,
             centralAmount.value,
@@ -220,7 +220,7 @@ export const makeAddPool = (
 
         // Central was specified precisely so offer must provide enough secondary.
         assert(
-          amountMath.isGTE(secondaryIn, secondaryOut),
+          AmountMath.isGTE(secondaryIn, secondaryOut),
           'insufficient Secondary deposited',
         );
 
@@ -233,7 +233,7 @@ export const makeAddPool = (
         );
         const liquidityValueIn = liquidityIn.value;
         assert(isNatValue(liquidityValueIn));
-        const centralTokenAmountOut = amountMath.make(
+        const centralTokenAmountOut = AmountMath.make(
           calcValueToRemove(
             liqTokenSupply,
             pool.getCentralAmount().value,
@@ -242,7 +242,7 @@ export const makeAddPool = (
           centralBrand,
         );
 
-        const tokenKeywordAmountOut = amountMath.make(
+        const tokenKeywordAmountOut = AmountMath.make(
           calcValueToRemove(
             liqTokenSupply,
             pool.getSecondaryAmount().value,

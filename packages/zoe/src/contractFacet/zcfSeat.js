@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
 import { isOfferSafe } from './offerSafety';
@@ -170,7 +170,7 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
           X`A brand must be supplied when the keyword is not defined`,
         );
         const assetKind = getAssetKindByBrand(brand);
-        return amountMath.makeEmpty(brand, assetKind);
+        return AmountMath.makeEmpty(brand, assetKind);
       },
       getCurrentAllocation: () => getCurrentAllocation(zcfSeat),
       isOfferSafe: newAllocation => {

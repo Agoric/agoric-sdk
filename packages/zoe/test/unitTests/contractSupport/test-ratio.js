@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import '../../../src/contractSupport/types';
 
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeRatio,
   makeRatioFromAmounts,
@@ -38,7 +38,7 @@ function amountsEqual(t, a1, a2, brand) {
 test('ratio - basic', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const halfDefault = makeRatio(50n, brand);
   const halfPrecise = makeRatio(5000n, brand, 10000n);
@@ -78,7 +78,7 @@ test('ratio - multiplyBy non Amount', t => {
 test('ratio - onethird', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const oneThird = makeRatioFromAmounts(moe(1n), moe(3n));
 
@@ -88,14 +88,14 @@ test('ratio - onethird', t => {
 test('ratio - different brands', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
   const { brand: astBrand } = makeIssuerKit('ast');
   /** @param {bigint} value */
-  const ast = value => amountMath.make(value, astBrand);
+  const ast = value => AmountMath.make(value, astBrand);
 
   const convertToMoe = makeRatioFromAmounts(
     moe(1n),
-    amountMath.make(3n, astBrand),
+    AmountMath.make(3n, astBrand),
   );
   amountsEqual(t, multiplyBy(ast(10000n), convertToMoe), moe(3333n), brand);
 });
@@ -103,14 +103,14 @@ test('ratio - different brands', t => {
 test('ratio - brand mismatch', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
   const { brand: astBrand } = makeIssuerKit('ast');
   /** @param {bigint} value */
-  const ast = value => amountMath.make(value, astBrand);
+  const ast = value => AmountMath.make(value, astBrand);
 
   const convertToMoe = makeRatioFromAmounts(
     moe(1n),
-    amountMath.make(3n, astBrand),
+    AmountMath.make(3n, astBrand),
   );
   t.throws(() => divideBy(ast(10000n), convertToMoe), {
     message: /amount's brand .* must match ratio's numerator .*/,
@@ -123,14 +123,14 @@ test('ratio - brand mismatch', t => {
 test.failing('ratio - brand mismatch & details', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
   const { brand: astBrand } = makeIssuerKit('ast');
   /** @param {bigint} value */
-  const ast = value => amountMath.make(value, astBrand);
+  const ast = value => AmountMath.make(value, astBrand);
 
   const convertToMoe = makeRatioFromAmounts(
     moe(1n),
-    amountMath.make(3n, astBrand),
+    AmountMath.make(3n, astBrand),
   );
   t.throws(() => divideBy(ast(10000n), convertToMoe), {
     message: `amount's brand "ast" must match ratio's numerator "moe"`,
@@ -143,7 +143,7 @@ test.failing('ratio - brand mismatch & details', t => {
 test('ratio - larger than 100%', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const fiveThirds = makeRatioFromAmounts(moe(5n), moe(3n));
 
@@ -163,7 +163,7 @@ test('ratio - Nats', t => {
 test('ratio division', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
   amountsEqual(t, divideBy(moe(100n), twoFifths), moe(250n), brand);
@@ -174,7 +174,7 @@ test('ratio division', t => {
 test('ratio inverse', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
   const fiveHalves = invertRatio(twoFifths);
@@ -186,7 +186,7 @@ test('ratio inverse', t => {
 test('ratio bad inputs', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
   // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(-3, brand), {
     message: '-3 is negative',
@@ -218,7 +218,7 @@ test('ratio bad inputs', t => {
 test.failing('ratio bad inputs w/brand names', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
   t.throws(() => makeRatio(3n, brand, 0n), {
     message: 'No infinite ratios! Denonimator was 0/"moe"',
   });
@@ -234,7 +234,7 @@ test('multiply ratios', t => {
   const { brand } = makeIssuerKit('moe');
 
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
   const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
@@ -248,7 +248,7 @@ test('add ratios', t => {
   const { brand } = makeIssuerKit('moe');
 
   /** @param {bigint} value */
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
   const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
@@ -260,7 +260,7 @@ test('add ratios', t => {
 
 test('ratio - complement', t => {
   const { brand } = makeIssuerKit('moe');
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   const oneThird = makeRatioFromAmounts(moe(1), moe(3));
   const twoThirds = oneMinus(oneThird);

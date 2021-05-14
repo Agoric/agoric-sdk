@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/zoe/exported';
 
@@ -28,8 +28,8 @@ export async function setupPurses(zoe, issuers, payments) {
   await E(moolaPurseP).deposit(moolaPayment);
   await E(simoleanPurseP).deposit(simoleanPayment);
 
-  const moola = value => amountMath.make(moolaBrand, value);
-  const simoleans = value => amountMath.make(simoleanBrand, value);
+  const moola = value => AmountMath.make(moolaBrand, value);
+  const simoleans = value => AmountMath.make(simoleanBrand, value);
 
   return harden({
     issuers: harden([moolaIssuer, simoleanIssuer]),

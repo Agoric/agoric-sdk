@@ -1,7 +1,6 @@
 /* global __dirname */
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
-import * as babelCore from '@babel/core';
 import fs from 'fs';
 
 import { makeMeteringTransformer } from '../src/index';
@@ -9,7 +8,7 @@ import * as c from '../src/constants';
 
 test('meter transform', async t => {
   let getMeter;
-  const meteringTransform = makeMeteringTransformer(babelCore, {
+  const meteringTransform = makeMeteringTransformer(undefined, {
     overrideMeterId: '$m',
     overrideRegExpIdPrefix: '$re_',
   });

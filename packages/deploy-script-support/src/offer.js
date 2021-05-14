@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 /** @type {MakeOfferAndFindInvitationAmount} */
 export const makeOfferAndFindInvitationAmount = (
@@ -27,7 +27,7 @@ export const makeOfferAndFindInvitationAmount = (
     const matchingValue = invitationValue.find(matches);
     const value =
       matchingValue === undefined ? harden([]) : harden([matchingValue]);
-    return amountMath.make(invitationAmount.brand, value);
+    return AmountMath.make(invitationAmount.brand, value);
   };
 
   const withdrawPayments = (proposal, paymentsWithPursePetnames) => {

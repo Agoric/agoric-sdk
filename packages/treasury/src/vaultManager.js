@@ -12,7 +12,7 @@ import {
   multiplyBy,
 } from '@agoric/zoe/src/contractSupport';
 import { observeNotifier } from '@agoric/notifier';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeVaultKit } from './vault';
 import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
@@ -60,7 +60,7 @@ export function makeVaultManager(
       const displayInfo = await E(collateralBrand).getDisplayInfo();
       const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;
       return E(priceAuthority).quoteGiven(
-        amountMath.make(10n ** Nat(decimalPlaces), collateralBrand),
+        AmountMath.make(10n ** Nat(decimalPlaces), collateralBrand),
         runBrand,
       );
     },
@@ -160,17 +160,17 @@ export function makeVaultManager(
   async function chargeAllVaults(updateTime, poolIncrementSeat) {
     const poolIncrement = sortedVaultKits.reduce(
       (total, vaultPair) =>
-        amountMath.add(
+        AmountMath.add(
           total,
           vaultPair.vaultKit.accrueInterestAndAddToPool(updateTime),
         ),
-      amountMath.makeEmpty(runBrand),
+      AmountMath.makeEmpty(runBrand),
     );
     sortedVaultKits.updateAllDebts();
     reschedulePriceCheck();
     runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
     const poolStage = poolIncrementSeat.stage({
-      RUN: amountMath.makeEmpty(runBrand),
+      RUN: AmountMath.makeEmpty(runBrand),
     });
     const poolSeatStaging = stageReward(poolIncrement);
     zcf.reallocate(poolStage, poolSeatStaging);
