@@ -1389,10 +1389,12 @@ static int fxReadNetString(FILE *inStream, char** dest, size_t* len)
 		} else {
 			*(buf + *len) = 0;
 		}
-		if (code != 0) {
+		if (code == 0) {
+			*dest = buf;
+		} else {
+			*dest = 0;
 			free(buf);
 		}
-		*dest = buf;
 	}
 	return code;
 }
@@ -1497,6 +1499,7 @@ static void fx_issueCommand(xsMachine *the)
 	}
 
 	xsResult = xsArrayBuffer(buf, len);
+	free(buf);
 }
 
 
