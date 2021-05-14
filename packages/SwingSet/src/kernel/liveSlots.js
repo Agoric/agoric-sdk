@@ -424,12 +424,24 @@ function build(
   }
 
   function convertSlotToVal(slot, iface = undefined) {
+    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     const wr = slotToVal.get(slot);
     let val = wr && wr.deref();
     if (val) {
+      if (virtual) {
+        // If it's a virtual object for which we already have a representative,
+        // we are going to use that existing representative to preserve ===
+        // equality and WeakMap key usability, BUT we are going to ask the user
+        // code to make a new representative anyway (which we'll discard) so
+        // that as far as the user code is concerned we are making a new
+        // representative with each act of deserialization.  This way they can't
+        // detect reanimation by playing games inside their instanceKitMaker to
+        // try to observe when new representatives are created (e.g., by
+        // counting calls or squirreling things away in hidden WeakMaps).
+        makeVirtualObjectRepresentative(slot, true); // N.b.: throwing away the result
+      }
       return val;
     }
-    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     if (virtual) {
       // Virtual objects should never be put in the slotToVal table, as their
       // entire raison d'etre is to be absent from memory when they're not being
@@ -439,7 +451,7 @@ function build(
       // this anyway in the cases of creating virtual objects in the first place
       // and swapping them in from disk.
       assert.equal(type, 'object');
-      val = makeVirtualObjectRepresentative(slot);
+      val = makeVirtualObjectRepresentative(slot, false);
     } else {
       assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {

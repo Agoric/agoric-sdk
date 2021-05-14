@@ -198,15 +198,17 @@ export function makeVirtualObjectManager(
    * deserializing.
    *
    * @param {string} vobjID  The virtual object ID of the object being dereferenced
+   * @param {boolean} proForma  If true, representative creation is for formal
+   *   use only and result will be ignored.
    *
    * @returns {Object}  A representative of the object identified by `vobjID`
    */
-  function makeVirtualObjectRepresentative(vobjID) {
+  function makeVirtualObjectRepresentative(vobjID, proForma) {
     const { id } = parseVatSlot(vobjID);
     const kindID = `${id}`;
     const reanimator = kindTable.get(kindID);
     if (reanimator) {
-      return reanimator(vobjID);
+      return reanimator(vobjID, proForma);
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
@@ -503,12 +505,14 @@ export function makeVirtualObjectManager(
     let nextInstanceID = 1;
     const propertyNames = new Set();
 
-    function makeRepresentative(innerSelf, initializing) {
-      assert(
-        innerSelf.repCount === 0,
-        X`${innerSelf.vobjID} already has a representative`,
-      );
-      innerSelf.repCount += 1;
+    function makeRepresentative(innerSelf, initializing, proForma) {
+      if (!proForma) {
+        assert(
+          innerSelf.repCount === 0,
+          X`${innerSelf.vobjID} already has a representative`,
+        );
+        innerSelf.repCount += 1;
+      }
 
       function ensureState() {
         if (innerSelf.rawData) {
@@ -554,12 +558,17 @@ export function makeVirtualObjectManager(
       return instanceKit;
     }
 
-    function reanimate(vobjID) {
+    function reanimate(vobjID, proForma) {
       // kdebug(`vo reanimate ${vobjID}`);
       const innerSelf = cache.lookup(vobjID, false);
-      const representative = makeRepresentative(innerSelf, false).self;
-      innerSelf.representative = representative;
-      return representative;
+      const representative = makeRepresentative(innerSelf, false, proForma)
+        .self;
+      if (proForma) {
+        return null;
+      } else {
+        innerSelf.representative = representative;
+        return representative;
+      }
     }
     kindTable.set(kindID, reanimate);
 
@@ -573,7 +582,7 @@ export function makeVirtualObjectManager(
       // kdebug(`vo make ${vobjID}`);
       // prettier-ignore
       const { self: initialRepresentative, init } =
-        makeRepresentative(innerSelf, true);
+        makeRepresentative(innerSelf, true, false);
       if (init) {
         init(...args);
       }

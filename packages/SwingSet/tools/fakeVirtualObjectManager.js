@@ -4,7 +4,7 @@ import { parseVatSlot } from '../src/parseVatSlots';
 
 import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager';
 
-export function makeFakeVirtualObjectManager(cacheSize = 100) {
+export function makeFakeVirtualObjectManager(cacheSize = 100, log) {
   const fakeStore = new Map();
 
   function dumpStore() {
@@ -17,9 +17,25 @@ export function makeFakeVirtualObjectManager(cacheSize = 100) {
   }
 
   const fakeSyscall = {
-    vatstoreGet: key => fakeStore.get(key),
-    vatstoreSet: (key, value) => fakeStore.set(key, value),
-    vatstoreDelete: key => fakeStore.delete(key),
+    vatstoreGet(key) {
+      const result = fakeStore.get(key);
+      if (log) {
+        log.push(`get ${key} => ${result}`);
+      }
+      return result;
+    },
+    vatstoreSet(key, value) {
+      if (log) {
+        log.push(`set ${key} ${value}`);
+      }
+      fakeStore.set(key, value);
+    },
+    vatstoreDelete(key) {
+      if (log) {
+        log.push(`delete ${key}`);
+      }
+      fakeStore.delete(key);
+    },
   };
 
   let nextExportID = 1;

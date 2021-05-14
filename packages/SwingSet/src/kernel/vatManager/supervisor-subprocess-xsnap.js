@@ -203,7 +203,13 @@ function makeWorker(port) {
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
     };
-    const vatNS = await importBundle(bundle, { endowments });
+
+    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
+
+    const vatNS = await importBundle(bundle, {
+      endowments,
+      inescapableGlobalProperties,
+    });
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
     ls.setBuildRootObject(vatNS.buildRootObject);
     assert(ls.dispatch);
