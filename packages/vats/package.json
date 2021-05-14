@@ -42,7 +42,6 @@
     "@agoric/swingset-vat": "^0.17.2",
     "@agoric/treasury": "^0.4.2",
     "@agoric/zoe": "^0.15.7",
-    "@babel/generator": "^7.6.4",
     "esm": "^3.2.25",
     "polycrc": "https://github.com/agoric-labs/node-polycrc"
   },
