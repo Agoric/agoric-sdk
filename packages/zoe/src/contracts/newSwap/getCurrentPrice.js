@@ -61,6 +61,7 @@ export const makeGetCurrentPrice = (
         centralBrand,
         add(BASIS_POINTS, protocolFeeBP),
       );
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(amountIn, feeOverOnePlusFee);
       const poolAmountIn = AmountMath.subtract(amountIn, protocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
@@ -90,6 +91,7 @@ export const makeGetCurrentPrice = (
       const { amountOut: noFeeDeltaX } = getPool(
         brandIn,
       ).getPriceGivenAvailableInput(amountIn, brandOut, 0n);
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(noFeeDeltaX, protocolFeeRatio);
       const amountOutFinal = AmountMath.subtract(price.amountOut, protocolFee);
 
@@ -143,6 +145,7 @@ export const makeGetCurrentPrice = (
       // Now we know the amountOut that the user will receive, and can ask
       // whether it can be obtained for less.
 
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const actualFee = multiplyBy(reducedCentralAmount, protocolFeeRatio);
       const reducedCentralPlusFee = AmountMath.add(
         reducedCentralAmount,
@@ -187,6 +190,7 @@ export const makeGetCurrentPrice = (
         poolFeeBP,
       );
 
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
       return {
         amountIn: AmountMath.add(price.amountIn, protocolFee),
@@ -207,6 +211,7 @@ export const makeGetCurrentPrice = (
         centralBrand,
         subtract(BASIS_POINTS, protocolFeeBP),
       );
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(amountOut, protocolFeeMultiplier);
 
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
@@ -260,6 +265,7 @@ export const makeGetCurrentPrice = (
       );
 
       // propagate improved prices
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(
         finalCentralAmountWithFee,
         protocolFeeRatio,
