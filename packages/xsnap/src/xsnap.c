@@ -1473,12 +1473,11 @@ static void fx_issueCommand(xsMachine *the)
 
 	size_t length;
 	char* buf = NULL;
-	txSlot* arrayBuffer = &xsArg(0);
-	length = fxGetArrayBufferLength(the, arrayBuffer);
+	length = xsGetArrayBufferLength(xsArg(0));
 
 	buf = malloc(length);
 
-	fxGetArrayBufferData(the, arrayBuffer, 0, buf, length);
+	xsGetArrayBufferData(xsArg(0), 0, buf, length);
 	int writeError = fxWriteNetString(toParent, "?", buf, length);
 
 	free(buf);
