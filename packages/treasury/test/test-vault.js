@@ -10,7 +10,7 @@ import { makeLoopback } from '@agoric/captp';
 import { makeZoe } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
 
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makeTracer } from '../src/makeTracer';
@@ -57,10 +57,10 @@ async function launch(zoeP, sourceRoot) {
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = amountMath.make(50n, collaterlBrand);
+  const collateral50 = AmountMath.make(50n, collaterlBrand);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: amountMath.make(70n, runBrand) },
+    want: { RUN: AmountMath.make(70n, runBrand) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -89,25 +89,25 @@ test('first', async t => {
 
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, runBrand),
+    AmountMath.make(73n, runBrand),
     'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    amountMath.make(50n, cBrand),
+    AmountMath.make(50n, cBrand),
     'vault holds 50 Collateral',
   );
 
   // Add more collateral to an existing loan. We get nothing back but a warm
   // fuzzy feeling.
 
-  const collateralAmount = amountMath.make(20n, cBrand);
+  const collateralAmount = AmountMath.make(20n, cBrand);
   const invite = await E(creatorFacet).makeAdjustBalancesInvitation();
   const giveCollateralSeat = await E(zoe).offer(
     invite,
     harden({
       give: { Collateral: collateralAmount },
-      want: {}, // RUN: amountMath.make(2n, runBrand) },
+      want: {}, // RUN: AmountMath.make(2n, runBrand) },
     }),
     harden({
       // TODO
@@ -118,14 +118,14 @@ test('first', async t => {
   await E(giveCollateralSeat).getOfferResult();
   t.deepEqual(
     vault.getCollateralAmount(),
-    amountMath.make(70n, cBrand),
+    AmountMath.make(70n, cBrand),
     'vault holds 70 Collateral',
   );
   trace('addCollateral');
 
   // partially payback
-  const collateralWanted = amountMath.make(1n, cBrand);
-  const paybackAmount = amountMath.make(3n, runBrand);
+  const collateralWanted = AmountMath.make(1n, cBrand);
+  const paybackAmount = AmountMath.make(3n, runBrand);
   const payback = await E(creatorFacet).mintRun(paybackAmount);
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
@@ -142,17 +142,17 @@ test('first', async t => {
   const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(70n, runBrand),
+    AmountMath.make(70n, runBrand),
     'debt reduced to 70 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    amountMath.make(69n, cBrand),
+    AmountMath.make(69n, cBrand),
     'vault holds 69 Collateral',
   );
   t.deepEqual(
     returnedAmount,
-    amountMath.make(1n, cBrand),
+    AmountMath.make(1n, cBrand),
     'withdrew 1 collateral',
   );
   t.is(returnedAmount.value, 1n, 'withdrew 1 collateral');
@@ -172,20 +172,20 @@ test('bad collateral', async t => {
 
   t.deepEqual(
     vault.getCollateralAmount(),
-    amountMath.make(50n, collateralBrand),
+    AmountMath.make(50n, collateralBrand),
     'vault should hold 50 Collateral',
   );
   t.deepEqual(
     vault.getDebtAmount(),
-    amountMath.make(73n, runBrand),
+    AmountMath.make(73n, runBrand),
     'borrower owes 73 RUN',
   );
 
-  const collateralAmount = amountMath.make(2n, collateralBrand);
+  const collateralAmount = AmountMath.make(2n, collateralBrand);
 
   // adding the wrong kind of collateral should be rejected
   const { mint: wrongMint, brand: wrongBrand } = makeIssuerKit('wrong');
-  const wrongAmount = amountMath.make(2n, wrongBrand);
+  const wrongAmount = AmountMath.make(2n, wrongBrand);
   const p = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({

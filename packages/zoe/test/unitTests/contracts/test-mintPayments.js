@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
@@ -61,7 +61,7 @@ test('zoe - mint payments', async t => {
         const tokenIssuer = await E(publicFacet).getTokenIssuer();
         const tokenBrand = await E(tokenIssuer).getBrand();
 
-        const tokens1000 = await amountMath.make(1000n, tokenBrand);
+        const tokens1000 = await AmountMath.make(1000n, tokenBrand);
         const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(paymentP);
 
         // Bob got 1000 tokens
@@ -129,8 +129,8 @@ test('zoe - mint payments with unrelated give and want', async t => {
         const { instance } = invitationValue;
 
         const proposal = harden({
-          give: { Asset: amountMath.make(10n, moolaKit.brand) },
-          want: { Price: amountMath.make(100n, simoleanKit.brand) },
+          give: { Asset: AmountMath.make(10n, moolaKit.brand) },
+          want: { Price: AmountMath.make(100n, simoleanKit.brand) },
         });
         const paymentKeywordRecord = harden({
           Asset: moolaPayment,
@@ -150,7 +150,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
         const tokenIssuer = await E(publicFacet).getTokenIssuer();
         const tokenBrand = await E(tokenIssuer).getBrand();
 
-        const tokens1000 = await amountMath.make(1000n, tokenBrand);
+        const tokens1000 = await AmountMath.make(1000n, tokenBrand);
         const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(
           tokenPaymentP,
         );
@@ -161,7 +161,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
         // Got refunded all the moola given
         t.deepEqual(
           await E(moolaKit.issuer).getAmountOf(moolaRefundP),
-          amountMath.make(10n, moolaKit.brand),
+          AmountMath.make(10n, moolaKit.brand),
         );
       },
     };
@@ -176,7 +176,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
   // Setup Bob
   const bob = makeBob(
     installation,
-    moolaKit.mint.mintPayment(amountMath.make(10n, moolaKit.brand)),
+    moolaKit.mint.mintPayment(AmountMath.make(10n, moolaKit.brand)),
   );
   await bob.offer(invitation);
 });

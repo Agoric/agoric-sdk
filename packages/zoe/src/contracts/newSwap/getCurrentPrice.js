@@ -3,7 +3,7 @@
 import '../../../exported';
 
 import { assert, details as X } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 
 import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
@@ -55,7 +55,7 @@ export const makeGetCurrentPrice = (
       // prelimProtocolFee will be replaced by protocolFee once we get the final
       // value of amountIn from getPriceGivenAvailableInput.
       const prelimProtocolFee = multiplyBy(amountIn, protocolFeeRatio);
-      const poolAmountIn = amountMath.subtract(amountIn, prelimProtocolFee);
+      const poolAmountIn = AmountMath.subtract(amountIn, prelimProtocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
         poolAmountIn,
         brandOut,
@@ -66,7 +66,7 @@ export const makeGetCurrentPrice = (
       // price.amountIn is what the user pays, and includes the protocolFee. The
       // user will receive price.amountOut.
       return {
-        amountIn: amountMath.add(price.amountIn, protocolFee),
+        amountIn: AmountMath.add(price.amountIn, protocolFee),
         amountOut: price.amountOut,
         protocolFee,
       };
@@ -78,7 +78,7 @@ export const makeGetCurrentPrice = (
         poolFeeBP,
       );
       const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
-      const amountOutFinal = amountMath.subtract(price.amountOut, protocolFee);
+      const amountOutFinal = AmountMath.subtract(price.amountOut, protocolFee);
 
       // the user pays amountIn, and gets amountOutFinal. The pool pays
       // price.amountOut and gains amountIn
@@ -113,7 +113,7 @@ export const makeGetCurrentPrice = (
       // required if amountIn is spent. firstDraftFee will be replaced by
       // actualFee calculated from final central amount.
       const firstDraftFee = multiplyBy(centralAmount, protocolFeeRatio);
-      const centralAmountLessFee = amountMath.subtract(
+      const centralAmountLessFee = AmountMath.subtract(
         centralAmount,
         firstDraftFee,
       );
@@ -131,7 +131,7 @@ export const makeGetCurrentPrice = (
       // whether it can be obtained for less.
 
       const actualFee = multiplyBy(reducedCentralAmount, protocolFeeRatio);
-      const reducedCentralPlusFee = amountMath.add(
+      const reducedCentralPlusFee = AmountMath.add(
         reducedCentralAmount,
         actualFee,
       );
@@ -176,7 +176,7 @@ export const makeGetCurrentPrice = (
 
       const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
       return {
-        amountIn: amountMath.add(price.amountIn, protocolFee),
+        amountIn: AmountMath.add(price.amountIn, protocolFee),
         amountOut: price.amountOut,
         protocolFee,
       };
@@ -186,14 +186,14 @@ export const makeGetCurrentPrice = (
       const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,
-        amountMath.add(amountOut, preliminaryProtocolFee),
+        AmountMath.add(amountOut, preliminaryProtocolFee),
         poolFeeBP,
       );
 
       const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
       return {
         amountIn: price.amountIn,
-        amountOut: amountMath.subtract(price.amountOut, protocolFee),
+        amountOut: AmountMath.subtract(price.amountOut, protocolFee),
         protocolFee,
       };
     } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
@@ -228,7 +228,7 @@ export const makeGetCurrentPrice = (
         amountOut: finalCentralAmountWithFee,
       } = brandInPool.getPriceGivenRequiredOutput(
         brandIn,
-        amountMath.add(
+        AmountMath.add(
           firstCentralAmount,
           multiplyBy(firstCentralAmount, protocolFeeRatio),
         ),
@@ -244,7 +244,7 @@ export const makeGetCurrentPrice = (
         amountIn: finalCentralAmount,
         amountOut: improvedAmountOut,
       } = brandOutPool.getPriceGivenAvailableInput(
-        amountMath.subtract(finalCentralAmountWithFee, protocolFee),
+        AmountMath.subtract(finalCentralAmountWithFee, protocolFee),
         brandOut,
         halfPoolFeeBP,
       );

@@ -30,7 +30,7 @@
  * whether a keyword is valid and unique and could be added in
  * `saveIssuer`
  * @property {SaveIssuer} saveIssuer - save an issuer to ZCF and Zoe
- * and get the amountMath and brand synchronously accessible after
+ * and get the AmountMath and brand synchronously accessible after
  * saving
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown

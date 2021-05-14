@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { assert, q } from '@agoric/assert';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
@@ -39,7 +39,7 @@ test('newSwap with valid offers', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
@@ -72,7 +72,7 @@ test('newSwap with valid offers', async t => {
   );
   t.deepEqual(
     aliceInvitationAmount,
-    amountMath.make(
+    AmountMath.make(
       [
         {
           description: 'multipool autoswap add liquidity',
@@ -91,7 +91,7 @@ test('newSwap with valid offers', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
 
   const simoleanLiquidityIssuer = await E(publicFacet).addPool(
     simoleanR.issuer,
@@ -100,7 +100,7 @@ test('newSwap with valid offers', async t => {
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    amountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(value, simoleanLiquidityBrand);
 
   const { toCentral: priceAuthority } = await E(
     publicFacet,
@@ -217,7 +217,7 @@ test('newSwap with valid offers', async t => {
   assertAmountsEqual(
     t,
     getAmountOut(quoteGivenBob),
-    amountMath.make(centralR.brand, 1747n),
+    AmountMath.make(centralR.brand, 1747n),
     `expected amount of 1747, but saw ${q(getAmountOut(quoteGivenBob))}`,
   );
 
@@ -278,7 +278,7 @@ test('newSwap with valid offers', async t => {
     centralForMoolaPayments,
   );
 
-  runningFees = amountMath.add(
+  runningFees = AmountMath.add(
     runningFees,
     multiplyBy(centralTokens(700), protocolFeeRatio),
   );
@@ -299,7 +299,7 @@ test('newSwap with valid offers', async t => {
   assertAmountsEqual(
     t,
     getAmountOut(quoteBob2),
-    amountMath.make(centralR.brand, 1803n),
+    AmountMath.make(centralR.brand, 1803n),
   );
 
   const bobMoolaPayout2 = await bobSeat2.getPayout('Out');
@@ -358,7 +358,7 @@ test('newSwap with valid offers', async t => {
   assertAmountsEqual(
     t,
     getAmountOut(quoteLiquidation2),
-    amountMath.make(centralR.brand, 1803n),
+    AmountMath.make(centralR.brand, 1803n),
   );
   t.is(
     await aliceSeat2.getOfferResult(),
@@ -390,7 +390,7 @@ test('newSwap doubleSwap', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
@@ -426,7 +426,7 @@ test('newSwap doubleSwap', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
 
   const simoleanLiquidityIssuer = await E(publicFacet).addPool(
     simoleanR.issuer,
@@ -435,7 +435,7 @@ test('newSwap doubleSwap', async t => {
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    amountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(value, simoleanLiquidityBrand);
 
   const issuerKeywordRecord = zoe.getIssuers(instance);
   t.deepEqual(
@@ -547,7 +547,7 @@ test('newSwap doubleSwap', async t => {
     `bob gets 7261 moola`,
   );
 
-  let runningFees = amountMath.make(centralR.brand, 2n);
+  let runningFees = AmountMath.make(centralR.brand, 2n);
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
@@ -581,9 +581,9 @@ test('newSwap doubleSwap', async t => {
     `bob gets 2880 simoleans`,
   );
 
-  runningFees = amountMath.add(
+  runningFees = AmountMath.add(
     runningFees,
-    amountMath.make(centralR.brand, 1n),
+    AmountMath.make(centralR.brand, 1n),
   );
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
@@ -601,7 +601,7 @@ test('newSwap doubleSwap', async t => {
   await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: amountMath.makeEmpty(centralR.brand),
+    RUN: AmountMath.makeEmpty(centralR.brand),
   });
 });
 
@@ -612,7 +612,7 @@ test('newSwap with some invalid offers', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   // Setup Bob
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(17));
@@ -678,7 +678,7 @@ test('newSwap jig - swapOut uneven', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => amountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(centralTokens(30000000));
@@ -705,7 +705,7 @@ test('newSwap jig - swapOut uneven', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => amountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
 
   const simoleanLiquidityIssuer = await E(publicFacet).addPool(
     simoleanR.issuer,
@@ -714,7 +714,7 @@ test('newSwap jig - swapOut uneven', async t => {
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    amountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(value, simoleanLiquidityBrand);
   const mIssuerKeywordRecord = {
     Secondary: moolaR.issuer,
     Liquidity: moolaLiquidityIssuer,
@@ -837,7 +837,7 @@ test('newSwap jig - swapOut uneven', async t => {
   mPoolState = updatePoolState(mPoolState, expectedB);
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: amountMath.make(centralR.brand, 18n),
+    RUN: AmountMath.make(centralR.brand, 18n),
   });
 
   // trade for moola specifying 2500 moola output: central price: 496, roughly double.
@@ -878,7 +878,7 @@ test('newSwap jig - swapOut uneven', async t => {
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: amountMath.make(centralR.brand, 48n),
+    RUN: AmountMath.make(centralR.brand, 48n),
   });
 
   mPoolState = updatePoolState(mPoolState, expectedC);
@@ -896,11 +896,11 @@ test('newSwap jig - swapOut uneven', async t => {
     t,
     centralR.issuer,
     payout,
-    amountMath.make(centralR.brand, 48n),
+    AmountMath.make(centralR.brand, 48n),
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: amountMath.makeEmpty(centralR.brand),
+    RUN: AmountMath.makeEmpty(centralR.brand),
   });
 });
 

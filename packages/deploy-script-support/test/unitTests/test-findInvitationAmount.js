@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 
@@ -14,7 +14,7 @@ test('findInvitationAmount', async t => {
   const walletAdmin = {};
   const zoe = {};
 
-  const paymentAmount = amountMath.make(brand, [
+  const paymentAmount = AmountMath.make(brand, [
     { description: 'found', instance: {} },
   ]);
   const payment = mint.mintPayment(paymentAmount);
@@ -30,7 +30,7 @@ test('findInvitationAmount', async t => {
   const notFoundResult = await findInvitationAmount({
     description: 'not found',
   });
-  t.deepEqual(notFoundResult, amountMath.makeEmpty(brand, AssetKind.SET));
+  t.deepEqual(notFoundResult, AmountMath.makeEmpty(brand, AssetKind.SET));
 
   const foundResult = await findInvitationAmount({ description: 'found' });
   t.deepEqual(foundResult, paymentAmount);

@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { getInterfaceOf } from '@agoric/marshal';
-import { makeIssuerKit, amountMath } from '../../src';
+import { makeIssuerKit, AmountMath } from '../../src';
 import { ERTPKind, makeInterface } from '../../src/interfaces';
 
 test('interfaces - abstracted implementation', t => {
@@ -19,7 +19,7 @@ test('interfaces - abstracted implementation', t => {
     getInterfaceOf(depositFacet),
     makeInterface(allegedName, ERTPKind.DEPOSIT_FACET),
   );
-  const payment = mint.mintPayment(amountMath.make(2n, brand));
+  const payment = mint.mintPayment(AmountMath.make(2n, brand));
   t.is(getInterfaceOf(payment), makeInterface(allegedName, ERTPKind.PAYMENT));
 });
 
@@ -33,6 +33,6 @@ test('interfaces - particular implementation', t => {
   t.is(getInterfaceOf(purse), 'Alleged: bucks purse');
   const depositFacet = purse.getDepositFacet();
   t.is(getInterfaceOf(depositFacet), 'Alleged: bucks depositFacet');
-  const payment = mint.mintPayment(amountMath.make(2n, brand));
+  const payment = mint.mintPayment(AmountMath.make(2n, brand));
   t.is(getInterfaceOf(payment), 'Alleged: bucks payment');
 });

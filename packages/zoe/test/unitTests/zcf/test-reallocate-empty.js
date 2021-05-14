@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { setupZCFTest } from './setupZcfTest';
 
@@ -15,21 +15,21 @@ test(`zcfSeat.stage, zcf.reallocate introducing new empty amount`, async t => {
 
   // Get the amount allocated on zcfSeat1. It is empty for the RUN brand.
   const allocation = zcfSeat1.getAmountAllocated('RUN', brand);
-  t.true(amountMath.isEmpty(allocation));
+  t.true(AmountMath.isEmpty(allocation));
 
   // Stage zcfSeat2 with the allocation from zcfSeat1
   const zcfSeat2Staging = zcfSeat2.stage({ RUN: allocation });
 
   // Stage zcfSeat1 with empty
-  const zcfSeat1Staging = zcfSeat1.stage({ RUN: amountMath.makeEmpty(brand) });
+  const zcfSeat1Staging = zcfSeat1.stage({ RUN: AmountMath.makeEmpty(brand) });
 
   zcf.reallocate(zcfSeat1Staging, zcfSeat2Staging);
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
 });
 
@@ -40,15 +40,15 @@ test(`zcfSeat.stage, zcf.reallocate "dropping" empty amount`, async t => {
   const zcfMint = await zcf.makeZCFMint('RUN');
   const { brand } = zcfMint.getIssuerRecord();
 
-  zcfMint.mintGains({ RUN: amountMath.make(brand, 0n) }, zcfSeat1);
-  zcfMint.mintGains({ RUN: amountMath.make(brand, 0n) }, zcfSeat2);
+  zcfMint.mintGains({ RUN: AmountMath.make(brand, 0n) }, zcfSeat1);
+  zcfMint.mintGains({ RUN: AmountMath.make(brand, 0n) }, zcfSeat2);
 
   // Now zcfSeat1 and zcfSeat2 both have an empty allocation for RUN.
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
 
   // Stage zcfSeat1 with an entirely empty allocation
@@ -60,10 +60,10 @@ test(`zcfSeat.stage, zcf.reallocate "dropping" empty amount`, async t => {
   // Because of how we merge staged allocations with the current
   // allocation (we don't delete keys), the RUN keyword still remains:
   t.deepEqual(zcfSeat1Staging.getStagedAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
   t.deepEqual(zcfSeat2Staging.getStagedAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
 
   zcf.reallocate(zcfSeat1Staging, zcfSeat2Staging);
@@ -72,9 +72,9 @@ test(`zcfSeat.stage, zcf.reallocate "dropping" empty amount`, async t => {
   // merge new allocations with old allocations (we don't delete
   // keys), the RUN keyword still remains as is.
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    RUN: amountMath.make(0n, brand),
+    RUN: AmountMath.make(0n, brand),
   });
 });

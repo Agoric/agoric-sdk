@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { setup } from '../setupBasicMints';
 import { installationPFromSource } from '../installFromSource';
@@ -103,7 +103,7 @@ test('barter with valid offers', async t => {
 
   // Alice gets paid at least what she wanted
   t.truthy(
-    amountMath.isGTE(
+    AmountMath.isGTE(
       await simoleanIssuer.getAmountOf(aliceSimoleanPayout),
       aliceSellOrderProposal.want.Out,
     ),

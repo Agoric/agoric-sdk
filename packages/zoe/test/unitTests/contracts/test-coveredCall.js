@@ -6,7 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { amountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 
 import buildManualTimer from '../../../tools/manualTimer';
@@ -558,7 +558,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   t.deepEqual(
     await invitationIssuer.getAmountOf(bobInvitationPayout),
-    amountMath.makeEmpty(invitationBrand, AssetKind.SET),
+    AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
   t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1));
 
@@ -826,7 +826,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const invitationBrand = await E(invitationIssuer).getBrand();
   t.deepEqual(
     await invitationIssuer.getAmountOf(bobInvitationPayout),
-    amountMath.makeEmpty(invitationBrand, AssetKind.SET),
+    AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
   t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1));
 

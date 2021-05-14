@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
 import crashingAutoRefund from './bundle-crashingAutoRefund';
 /* eslint-enable import/extensions, import/no-unresolved */
@@ -28,7 +28,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) => {
-      return mint.mintPayment(amountMath.make(values[i], brands[i]));
+      return mint.mintPayment(AmountMath.make(values[i], brands[i]));
     });
 
   // Setup Alice

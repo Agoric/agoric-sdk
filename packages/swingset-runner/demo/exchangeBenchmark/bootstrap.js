@@ -1,4 +1,4 @@
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -40,7 +40,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
       function makePayments(values) {
         return mints.map((mint, i) =>
-          mint.mintPayment(amountMath.make(brands[i], values[i])),
+          mint.mintPayment(AmountMath.make(brands[i], values[i])),
         );
       }
 

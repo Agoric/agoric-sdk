@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape } from '../../contractSupport';
 
@@ -29,7 +29,7 @@ export const makeMakeSwapInvitation = (
 ) => {
   function stageProtocolSeatFee(protocolFee) {
     const protocolStage = protocolSeat.stage({
-      RUN: amountMath.add(
+      RUN: AmountMath.add(
         protocolSeat.getAmountAllocated('RUN', protocolFee.brand),
         protocolFee,
       ),
@@ -41,11 +41,11 @@ export const makeMakeSwapInvitation = (
     const pool = getPool(amountOut.brand);
     // gains (amountIn - protocolFee), loses amountOut
     return pool.stageSeat({
-      Central: amountMath.add(
+      Central: AmountMath.add(
         pool.getCentralAmount(),
-        amountMath.subtract(amountIn, protocolFee),
+        AmountMath.subtract(amountIn, protocolFee),
       ),
-      Secondary: amountMath.subtract(pool.getSecondaryAmount(), amountOut),
+      Secondary: AmountMath.subtract(pool.getSecondaryAmount(), amountOut),
     });
   }
 
@@ -53,11 +53,11 @@ export const makeMakeSwapInvitation = (
     const pool = getPool(amountIn.brand);
     // gains reducedAmountIn, loses (amountOut + protocolFee)
     return pool.stageSeat({
-      Central: amountMath.subtract(
+      Central: AmountMath.subtract(
         pool.getCentralAmount(),
-        amountMath.add(amountOut, protocolFee),
+        AmountMath.add(amountOut, protocolFee),
       ),
-      Secondary: amountMath.add(pool.getSecondaryAmount(), amountIn),
+      Secondary: AmountMath.add(pool.getSecondaryAmount(), amountIn),
     });
   }
 
@@ -70,18 +70,18 @@ export const makeMakeSwapInvitation = (
     const brandInPool = getPool(amountIn.brand);
     // gains reducedAmountIn, loses (centralAmount + protocolFee)
     const brandInStaging = brandInPool.stageSeat({
-      Secondary: amountMath.add(brandInPool.getSecondaryAmount(), amountIn),
-      Central: amountMath.subtract(
+      Secondary: AmountMath.add(brandInPool.getSecondaryAmount(), amountIn),
+      Central: AmountMath.subtract(
         brandInPool.getCentralAmount(),
-        amountMath.add(centralAmount, protocolFee),
+        AmountMath.add(centralAmount, protocolFee),
       ),
     });
 
     const brandOutPool = getPool(amountOut.brand);
     // gains centralAmount, loses amountOut
     const brandOutStaging = brandOutPool.stageSeat({
-      Central: amountMath.add(brandOutPool.getCentralAmount(), centralAmount),
-      Secondary: amountMath.subtract(
+      Central: AmountMath.add(brandOutPool.getCentralAmount(), centralAmount),
+      Secondary: AmountMath.subtract(
         brandOutPool.getSecondaryAmount(),
         amountOut,
       ),
@@ -116,7 +116,7 @@ export const makeMakeSwapInvitation = (
     stagings.push(
       seat.stage(
         harden({
-          In: amountMath.subtract(amountIn, reducedAmountIn),
+          In: AmountMath.subtract(amountIn, reducedAmountIn),
           Out: amountOut,
         }),
       ),
@@ -174,7 +174,7 @@ export const makeMakeSwapInvitation = (
       centralAmount,
     } = getPriceGivenRequiredOutput(brandIn, amountOut);
 
-    if (!amountMath.isGTE(offeredAmountIn, amountIn)) {
+    if (!AmountMath.isGTE(offeredAmountIn, amountIn)) {
       const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
       throw seat.fail(Error(reason));
     }
@@ -183,7 +183,7 @@ export const makeMakeSwapInvitation = (
     stagings.push(stageProtocolSeatFee(protocolFee));
     stagings.push(
       seat.stage({
-        In: amountMath.subtract(offeredAmountIn, amountIn),
+        In: AmountMath.subtract(offeredAmountIn, amountIn),
         Out: improvedAmountOut,
       }),
     );

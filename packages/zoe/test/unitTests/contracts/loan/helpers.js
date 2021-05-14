@@ -7,7 +7,7 @@ import '../../../../exported';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { setup } from '../../setupBasicMints';
 import { setupZCFTest } from '../../zcf/setupZcfTest';
@@ -32,7 +32,7 @@ export const checkPayout = async (
 ) => {
   const payout = await E(seat).getPayout(keyword);
   const amount = await kit.issuer.getAmountOf(payout);
-  t.truthy(amountMath.isEqual(amount, expected), message);
+  t.truthy(AmountMath.isEqual(amount, expected), message);
   t.truthy(seat.hasExited(), message);
 };
 
@@ -81,7 +81,7 @@ export const checkPayouts = async (
     const expected = expectedKeywordRecord[keyword];
     assertAmountsEqual(t, amount, expected);
     t.truthy(
-      amountMath.isEqual(amount, expected),
+      AmountMath.isEqual(amount, expected),
       `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
     );
   });
@@ -178,8 +178,8 @@ export const performAddCollateral = async (
     seat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: amountMath.makeEmpty(loanKit.brand),
-      Collateral: amountMath.makeEmpty(collateralKit.brand),
+      Loan: AmountMath.makeEmpty(loanKit.brand),
+      Collateral: AmountMath.makeEmpty(collateralKit.brand),
     },
     'addCollateralSeat',
   );
@@ -210,7 +210,7 @@ export const makeAutoswapInstance = async (
   const proposal = harden({
     give: initialLiquidityKeywordRecord,
     want: {
-      Liquidity: amountMath.makeEmpty(liquidityBrand),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
     },
   });
   const payment = harden({

@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -46,7 +46,7 @@ const start = zcf => {
         // Ensure that the amount of pixels that we want to color is
         // covered by what is actually escrowed.
         assert(
-          amountMath.isGTE(escrowedAmount, amountToColor),
+          AmountMath.isGTE(escrowedAmount, amountToColor),
           X`The pixels to color were not all escrowed. Currently escrowed: ${escrowedAmount}, amount to color: ${amountToColor}`,
         );
 

@@ -1,7 +1,7 @@
 // @ts-check
 import '../../../exported';
 
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
 import { depositToSeat } from '../../../src/contractSupport';
@@ -19,7 +19,7 @@ const start = zcf => {
 
   const throwInDepositToSeat = async seat => {
     const issuerKit = makeIssuerKit('token');
-    const tokens10 = amountMath.make(10n, issuerKit.brand);
+    const tokens10 = AmountMath.make(10n, issuerKit.brand);
     const payment = issuerKit.mint.mintPayment(tokens10);
     const amounts = harden({ Token: tokens10 });
     const payments = harden({ Tokens: payment });

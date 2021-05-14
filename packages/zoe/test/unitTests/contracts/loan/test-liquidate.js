@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '../../../../exported';
 
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { doLiquidation } from '../../../../src/contracts/loan/liquidate';
 
@@ -25,7 +25,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     harden({}),
   );
 
-  const collateral = amountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(10n, collateralKit.brand);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,
@@ -35,7 +35,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Collateral: collateralKit.mint.mintPayment(collateral) },
   );
 
-  const loan1000 = amountMath.make(1000n, loanKit.brand);
+  const loan1000 = AmountMath.make(1000n, loanKit.brand);
 
   // Setup fake autoswap
   const { zcfSeat: fakePoolSeat } = await makeSeatKit(
@@ -44,7 +44,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Central: loanKit.mint.mintPayment(loan1000) },
   );
 
-  const price = amountMath.make(20n, loanKit.brand);
+  const price = AmountMath.make(20n, loanKit.brand);
 
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
@@ -91,7 +91,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     t,
     lenderUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
-    { Loan: price, Collateral: amountMath.makeEmpty(collateralKit.brand) },
+    { Loan: price, Collateral: AmountMath.makeEmpty(collateralKit.brand) },
     'lenderSeat',
   );
 
@@ -101,8 +101,8 @@ test('test doLiquidation with mocked autoswap', async t => {
     collateralUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: amountMath.makeEmpty(loanKit.brand),
-      Collateral: amountMath.makeEmpty(collateralKit.brand),
+      Loan: AmountMath.makeEmpty(loanKit.brand),
+      Collateral: AmountMath.makeEmpty(collateralKit.brand),
     },
     'collateralSeat',
   );
@@ -120,7 +120,7 @@ test('test with malfunctioning autoswap', async t => {
     harden({}),
   );
 
-  const collateral = amountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(10n, collateralKit.brand);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,
@@ -163,7 +163,7 @@ test('test with malfunctioning autoswap', async t => {
     lenderUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: amountMath.makeEmpty(loanKit.brand),
+      Loan: AmountMath.makeEmpty(loanKit.brand),
       Collateral: collateral,
     },
     'lenderSeat',
@@ -175,8 +175,8 @@ test('test with malfunctioning autoswap', async t => {
     collateralUserSeat,
     { Loan: loanKit, Collateral: collateralKit },
     {
-      Loan: amountMath.makeEmpty(loanKit.brand),
-      Collateral: amountMath.makeEmpty(collateralKit.brand),
+      Loan: AmountMath.makeEmpty(loanKit.brand),
+      Collateral: AmountMath.makeEmpty(collateralKit.brand),
     },
     'collateralSeat',
   );

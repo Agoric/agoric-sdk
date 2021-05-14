@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import makeStore from '@agoric/store';
 
@@ -36,7 +36,7 @@ export function buildRootObject(_vatPowers) {
         return undefined;
       }
       const { mint, brand } = mintsAndBrands.get(issuerName);
-      const amount = amountMath.make(brand, value);
+      const amount = AmountMath.make(brand, value);
       return mint.mintPayment(amount);
     },
     mintInitialPayments: (issuerNames, values) =>

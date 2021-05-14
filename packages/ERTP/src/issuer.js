@@ -9,7 +9,7 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
-import { amountMath, AssetKind } from './amountMath';
+import { AmountMath, AssetKind } from './amountMath';
 import { makeFarName, ERTPKind } from './interfaces';
 import { coerceDisplayInfo } from './displayInfo';
 import { makePaymentMaker } from './payment';
@@ -48,16 +48,16 @@ function makeIssuerKit(
   });
 
   /** @type {(left: Amount, right: Amount) => Amount } */
-  const add = (left, right) => amountMath.add(left, right, brand);
+  const add = (left, right) => AmountMath.add(left, right, brand);
   /** @type {(left: Amount, right: Amount) => Amount } */
-  const subtract = (left, right) => amountMath.subtract(left, right, brand);
+  const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
-  const coerce = allegedAmount => amountMath.coerce(allegedAmount, brand);
+  const coerce = allegedAmount => AmountMath.coerce(allegedAmount, brand);
   /** @type {(left: Amount, right: Amount) => boolean } */
-  const isEqual = (left, right) => amountMath.isEqual(left, right, brand);
+  const isEqual = (left, right) => AmountMath.isEqual(left, right, brand);
 
   /** @type {Amount} */
-  const emptyAmount = amountMath.makeEmpty(brand, assetKind);
+  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
 
   const makePayment = makePaymentMaker(allegedName, brand);
 

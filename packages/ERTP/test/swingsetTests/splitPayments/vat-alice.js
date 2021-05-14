@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { amountMath } from '../../../src';
+import { AmountMath } from '../../../src';
 
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
@@ -12,7 +12,7 @@ function makeAliceMaker(log) {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
             oldPaymentP,
-            amountMath.make(10n, brand),
+            AmountMath.make(10n, brand),
           );
           log(
             'splitPayment[0] balance: ',

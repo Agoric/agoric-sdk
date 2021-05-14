@@ -1,6 +1,6 @@
 // @ts-check
 
-import { amountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
@@ -15,7 +15,7 @@ export function makeScriptedPriceAuthority(options) {
     actualBrandOut,
     priceList,
     timer,
-    unitAmountIn = amountMath.make(1n, actualBrandIn),
+    unitAmountIn = AmountMath.make(1n, actualBrandIn),
     quoteInterval = 1n,
     quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
   } = options;
@@ -24,15 +24,15 @@ export function makeScriptedPriceAuthority(options) {
 
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
-    const quoteAmount = amountMath.make(quote, brand);
+    const quoteAmount = AmountMath.make(quote, brand);
     const quotePayment = quoteMint.mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
 
   const calcAmountOut = amountIn => {
-    amountMath.coerce(actualBrandIn, amountIn);
+    AmountMath.coerce(actualBrandIn, amountIn);
 
-    return amountMath.make(
+    return AmountMath.make(
       natSafeMath.floorDivide(
         natSafeMath.multiply(currentPrice, amountIn.value),
         unitAmountIn.value,
@@ -41,8 +41,8 @@ export function makeScriptedPriceAuthority(options) {
     );
   };
   const calcAmountIn = amountOut => {
-    amountMath.coerce(actualBrandOut, amountOut);
-    return amountMath.make(
+    AmountMath.coerce(actualBrandOut, amountOut);
+    return AmountMath.make(
       natSafeMath.floorDivide(
         natSafeMath.multiply(unitAmountIn.value, amountOut.value),
         currentPrice,

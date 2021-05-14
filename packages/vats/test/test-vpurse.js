@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeVirtualPurse } from '../src/virtual-purse';
 
@@ -22,7 +22,7 @@ const setup = t => {
   /** @type {Amount} */
   let expectedAmount;
 
-  let currentBalance = amountMath.makeEmpty(brand);
+  let currentBalance = AmountMath.makeEmpty(brand);
 
   /**
    * @param {Amount} amt
@@ -53,17 +53,17 @@ const setup = t => {
     async pullAmount(amt) {
       t.is(amt.brand, brand);
       t.is(expectedType, 'pullAmount');
-      t.assert(amountMath.isEqual(amt, expectedAmount));
+      t.assert(AmountMath.isEqual(amt, expectedAmount));
       expectedType = 'none';
-      currentBalance = amountMath.subtract(currentBalance, amt);
+      currentBalance = AmountMath.subtract(currentBalance, amt);
       balanceUpdater.updateState(currentBalance);
     },
     async pushAmount(amt) {
       t.is(amt.brand, brand);
       t.is(expectedType, 'pushAmount');
-      t.assert(amountMath.isEqual(amt, expectedAmount));
+      t.assert(AmountMath.isEqual(amt, expectedAmount));
       expectedType = 'none';
-      currentBalance = amountMath.add(currentBalance, amt);
+      currentBalance = AmountMath.add(currentBalance, amt);
       balanceUpdater.updateState(currentBalance);
     },
   });
@@ -76,7 +76,7 @@ test('makeVirtualPurse', async t => {
   t.plan(16);
   const { expected, balanceUpdater, issuer, mint, brand, vpurse } = setup(t);
 
-  const payment = mint.mintPayment(amountMath.make(brand, 837n));
+  const payment = mint.mintPayment(AmountMath.make(brand, 837n));
 
   const notifier = E(vpurse).getCurrentAmountNotifier();
   let nextUpdateP = E(notifier).getUpdateSince();
@@ -84,32 +84,32 @@ test('makeVirtualPurse', async t => {
   const checkNotifier = async () => {
     const { value: balance, updateCount } = await nextUpdateP;
     t.assert(
-      amountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
       `the notifier balance is the same as the purse`,
     );
     nextUpdateP = E(notifier).getUpdateSince(updateCount);
   };
 
-  balanceUpdater.updateState(amountMath.makeEmpty(brand));
+  balanceUpdater.updateState(AmountMath.makeEmpty(brand));
   await checkNotifier();
   t.assert(
-    amountMath.isEqual(
+    AmountMath.isEqual(
       await E(vpurse).getCurrentAmount(),
-      amountMath.makeEmpty(brand),
+      AmountMath.makeEmpty(brand),
     ),
     `empty purse is empty`,
   );
   t.is(await E(vpurse).getAllegedBrand(), brand, `purse's brand is correct`);
-  const fungible837 = amountMath.make(brand, 837n);
+  const fungible837 = AmountMath.make(brand, 837n);
 
   const checkDeposit = async newPurseBalance => {
     t.assert(
-      amountMath.isEqual(newPurseBalance, fungible837),
+      AmountMath.isEqual(newPurseBalance, fungible837),
       `the amount returned is the payment amount`,
     );
     await checkNotifier();
     t.assert(
-      amountMath.isEqual(await E(vpurse).getCurrentAmount(), fungible837),
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), fungible837),
       `the new purse balance is the payment's old balance`,
     );
   };
@@ -122,15 +122,15 @@ test('makeVirtualPurse', async t => {
   const checkWithdrawal = async newPayment => {
     issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
-        amountMath.isEqual(amount, fungible837),
+        AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
       );
     });
     await checkNotifier();
     t.assert(
-      amountMath.isEqual(
+      AmountMath.isEqual(
         await E(vpurse).getCurrentAmount(),
-        amountMath.makeEmpty(brand),
+        AmountMath.makeEmpty(brand),
       ),
       `the purse is empty again`,
     );
@@ -147,10 +147,10 @@ test('makeVirtualPurse', async t => {
 test('vpurse.deposit', async t => {
   t.plan(14);
   const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
-  const fungible0 = amountMath.makeEmpty(brand);
-  const fungible17 = amountMath.make(brand, 17n);
-  const fungible25 = amountMath.make(brand, 25n);
-  const fungibleSum = amountMath.add(fungible17, fungible25);
+  const fungible0 = AmountMath.makeEmpty(brand);
+  const fungible17 = AmountMath.make(brand, 17n);
+  const fungible25 = AmountMath.make(brand, 25n);
+  const fungibleSum = AmountMath.add(fungible17, fungible25);
 
   const notifier = E(vpurse).getCurrentAmountNotifier();
   const payment17 = mint.mintPayment(fungible17);
@@ -161,7 +161,7 @@ test('vpurse.deposit', async t => {
   const checkNotifier = async () => {
     const { value: balance, updateCount } = await nextUpdate;
     t.assert(
-      amountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
       `the notifier balance is the same as the purse`,
     );
     nextUpdate = E(notifier).getUpdateSince(updateCount);
@@ -171,14 +171,14 @@ test('vpurse.deposit', async t => {
     expectedOldBalance,
     expectedNewBalance,
   ) => async depositResult => {
-    const delta = amountMath.subtract(expectedNewBalance, expectedOldBalance);
+    const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
     t.assert(
-      amountMath.isEqual(depositResult, delta),
+      AmountMath.isEqual(depositResult, delta),
       `the balance changes by the deposited amount: ${delta.value}`,
     );
     await checkNotifier();
     t.assert(
-      amountMath.isEqual(
+      AmountMath.isEqual(
         await E(vpurse).getCurrentAmount(),
         expectedNewBalance,
       ),
@@ -186,7 +186,7 @@ test('vpurse.deposit', async t => {
     );
   };
 
-  balanceUpdater.updateState(amountMath.makeEmpty(brand));
+  balanceUpdater.updateState(AmountMath.makeEmpty(brand));
   await checkNotifier();
   expected.pushAmount(fungible17);
   await E(vpurse)
@@ -201,7 +201,7 @@ test('vpurse.deposit', async t => {
 test('vpurse.deposit promise', async t => {
   t.plan(2);
   const { issuer, mint, brand, vpurse } = setup(t);
-  const fungible25 = amountMath.make(brand, 25n);
+  const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
   const exclusivePaymentP = E(issuer).claim(payment);
@@ -217,7 +217,7 @@ test('vpurse.deposit promise', async t => {
 test('vpurse.getDepositFacet', async t => {
   t.plan(8);
   const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
-  const fungible25 = amountMath.make(brand, 25n);
+  const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
   const notifier = await E(vpurse).getCurrentAmountNotifier();
@@ -227,24 +227,24 @@ test('vpurse.getDepositFacet', async t => {
     const { value: balance, updateCount } = await nextUpdate;
     nextUpdate = E(notifier).getUpdateSince(updateCount);
     t.assert(
-      amountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
       `the notifier balance is the same as the purse's`,
     );
   };
 
   const checkDeposit = async newPurseBalance => {
     t.assert(
-      amountMath.isEqual(newPurseBalance, fungible25),
+      AmountMath.isEqual(newPurseBalance, fungible25),
       `the balance returned is the purse balance`,
     );
     await checkNotifier();
     t.assert(
-      amountMath.isEqual(await E(vpurse).getCurrentAmount(), fungible25),
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), fungible25),
       `the new purse balance is the payment's old balance`,
     );
   };
 
-  balanceUpdater.updateState(amountMath.makeEmpty(brand));
+  balanceUpdater.updateState(AmountMath.makeEmpty(brand));
   await checkNotifier();
   expected.pushAmount(fungible25);
   await E(vpurse)

@@ -3,7 +3,7 @@
 import { observeNotifier } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
@@ -51,7 +51,7 @@ export function buildDistributor(treasury, bank, epochTimer, params) {
     const valuePerAccount = floorDivide(totalValue, accounts.length);
 
     const amounts = Array(accounts.length).fill(
-      amountMath.make(runBrand, valuePerAccount),
+      AmountMath.make(runBrand, valuePerAccount),
     );
     if (leftOverValue) {
       payment = E(runIssuer).combine([payment, leftOverPayment]);
@@ -60,7 +60,7 @@ export function buildDistributor(treasury, bank, epochTimer, params) {
       totalValue,
       multiply(accounts.length, valuePerAccount),
     );
-    amounts.push(amountMath.make(runBrand, leftOverValue));
+    amounts.push(AmountMath.make(runBrand, leftOverValue));
 
     const manyPayments = await E(runIssuer).splitMany(payment, amounts);
     // manyPayments is hardened, so we can't use pop()

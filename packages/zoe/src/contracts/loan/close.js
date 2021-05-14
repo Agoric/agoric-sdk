@@ -3,7 +3,7 @@
 import './types';
 
 import { assert, details as X } from '@agoric/assert';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape, trade } from '../../contractSupport';
 
@@ -34,7 +34,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
 
     // All debt must be repaid.
     assert(
-      amountMath.isGTE(repaid, debt),
+      AmountMath.isGTE(repaid, debt),
       X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
     );
 

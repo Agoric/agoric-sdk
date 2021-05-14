@@ -9,12 +9,12 @@ import { makePromiseKit } from '@agoric/promise-kit';
  *
  * Within Zoe, the assetKind of validated amounts must be consistent
  * with the brand's assetKind. This is stricter than the validation
- * provided by amountMath currently. When the brand has a
- * assetKind itself, amountMath will validate that.
+ * provided by AmountMath currently. When the brand has a
+ * assetKind itself, AmountMath will validate that.
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';
-import { makeIssuerKit, AssetKind, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -235,7 +235,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
         makeInvitation: (invitationHandle, description, customProperties) => {
-          const invitationAmount = amountMath.make(
+          const invitationAmount = AmountMath.make(
             [
               {
                 ...customProperties,

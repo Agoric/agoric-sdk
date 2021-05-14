@@ -6,7 +6,7 @@ import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { AssetKind, amountMath } from '@agoric/ertp';
+import { AssetKind, AmountMath } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
 import { objectMap } from '../objArrayConversion';
 
@@ -39,14 +39,14 @@ const getKeysSorted = obj =>
 const calcNewAllocations = (allocations, toGains, fromLosses = toGains) => {
   const subtract = (amount, amountToSubtract) => {
     if (amountToSubtract !== undefined) {
-      return amountMath.subtract(amount, amountToSubtract);
+      return AmountMath.subtract(amount, amountToSubtract);
     }
     return amount;
   };
 
   const add = (amount, amountToAdd) => {
     if (amount && amountToAdd) {
-      return amountMath.add(amount, amountToAdd);
+      return AmountMath.add(amount, amountToAdd);
     }
     return amount || amountToAdd;
   };

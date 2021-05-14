@@ -3,7 +3,7 @@
 import '../../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { liquidate } from './liquidate';
 import { getAmountIn, multiplyBy } from '../../contractSupport';
@@ -41,7 +41,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       // collateral. If the amount is wrong, we will have already
       // scheduled another liquidation for the right amount.
       const currentCollateral = collateralSeat.getAmountAllocated('Collateral');
-      if (amountMath.isEqual(amountIn, currentCollateral)) {
+      if (AmountMath.isEqual(amountIn, currentCollateral)) {
         liquidationPromiseKit.resolve(priceQuote);
         liquidate(zcf, configWithBorrower);
       }

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport';
 import { makeTracer } from './makeTracer';
 
@@ -48,10 +48,10 @@ export async function liquidate(
   const otherRunProceedsAmount = await E(liqSeat).getCurrentAllocation();
   trace('other proceeds', otherRunProceedsAmount);
 
-  const isUnderwater = !amountMath.isGTE(runProceedsAmount, runDebt);
+  const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
   burnLosses({ RUN: runToBurn }, vaultSeat);
-  vaultKit.liquidated(amountMath.subtract(runDebt, runToBurn));
+  vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
@@ -70,7 +70,7 @@ export function makeDefaultLiquidationStrategy(autoswap) {
   function makeProposal(collateral, run) {
     return harden({
       give: { In: collateral },
-      want: { Out: amountMath.makeEmptyFromAmount(run) },
+      want: { Out: AmountMath.makeEmptyFromAmount(run) },
     });
   }
 

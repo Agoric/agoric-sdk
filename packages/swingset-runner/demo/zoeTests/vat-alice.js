@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from './helpers';
 
@@ -314,7 +314,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     );
     const liquidityIssuer = E(publicFacet).getLiquidityIssuer();
     const liquidityBrand = await E(liquidityIssuer).getBrand();
-    const liquidity = value => amountMath.make(liquidityBrand, value);
+    const liquidity = value => AmountMath.make(liquidityBrand, value);
 
     // Alice adds liquidity
     // 10 moola = 5 simoleans at the time of the liquidity adding

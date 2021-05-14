@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeIssuerKit, amountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { multiplyBy } from '../../../src/contractSupport';
 import {
@@ -32,7 +32,7 @@ function amountsEqual(t, a1, a2, brand) {
 
 test('ratio - ALL', t => {
   const { brand } = makeIssuerKit('moe');
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   amountsEqual(
     t,
@@ -44,11 +44,11 @@ test('ratio - ALL', t => {
 
 test('ratio - NONE', t => {
   const { brand } = makeIssuerKit('moe');
-  const moe = value => amountMath.make(value, brand);
+  const moe = value => AmountMath.make(value, brand);
 
   amountsEqual(
     t,
-    amountMath.makeEmpty(brand),
+    AmountMath.makeEmpty(brand),
     multiplyBy(moe(100000), make0Percent(brand)),
     brand,
   );

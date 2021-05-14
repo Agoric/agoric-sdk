@@ -6,7 +6,7 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import {
   assertProposalShape,
@@ -57,7 +57,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert the required collateral was escrowed.
     const requiredMargin = multiplyBy(loanWanted, mmr);
     assert(
-      amountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
+      AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
       X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
     );
 
@@ -65,7 +65,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that the collateralGiven has not changed after the AWAIT
     assert(
-      amountMath.isEqual(
+      AmountMath.isEqual(
         collateralGiven,
         borrowerSeat.getAmountAllocated('Collateral'),
       ),
@@ -74,7 +74,7 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that loanWanted <= maxLoan
     assert(
-      amountMath.isGTE(maxLoan, loanWanted),
+      AmountMath.isGTE(maxLoan, loanWanted),
       X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
     );
 
