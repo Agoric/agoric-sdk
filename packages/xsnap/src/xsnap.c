@@ -1476,6 +1476,9 @@ static void fx_issueCommand(xsMachine *the)
 	length = xsGetArrayBufferLength(xsArg(0));
 
 	buf = malloc(length);
+	if (!buf) {
+		fxAbort(the, XS_NOT_ENOUGH_MEMORY_EXIT);
+	}
 
 	xsGetArrayBufferData(xsArg(0), 0, buf, length);
 	int writeError = fxWriteNetString(toParent, "?", buf, length);
