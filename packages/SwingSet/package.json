@@ -90,7 +90,7 @@
     "require": [
       "esm"
     ],
-    "timeout": "2m"
+    "timeout": "20m"
   },
   "prettier": {
     "trailingComma": "all",

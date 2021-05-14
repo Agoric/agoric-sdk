@@ -46,7 +46,19 @@ test('transcript-one save', async t => {
   const states2 = await buildTrace(c2, storage2);
 
   states1.forEach((s, i) => {
-    t.deepEqual(s, states2[i]);
+    // Too expensive!  If there is a difference in the 3MB data, AVA will spin
+    // for a long time trying to compute a "minimal" diff.
+    // t.deepEqual(s, states2[i]);
+
+    // Instead, we just do simple comparison.  Leave investigation to the
+    // experts.
+    const s2 = states2[i];
+    const extra = new Set(Object.keys(s2));
+    for (const k of Object.keys(s)) {
+      t.assert(s[k] === s2[k], `states[${i}][${k}] differs`);
+      extra.delete(k);
+    }
+    t.deepEqual([...extra.keys()], [], `states2[${i}] has missing keys`);
   });
 });
 
