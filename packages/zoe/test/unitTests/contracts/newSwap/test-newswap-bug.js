@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, amountMath, MathKind } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
 
@@ -21,12 +21,12 @@ const BASIS_POINTS = 10000n;
 test('test bug scenario', async t => {
   const runKit = makeIssuerKit(
     'RUN',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
   const bldKit = makeIssuerKit(
     'BLD',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
   const zoe = makeZoe(fakeVatAdmin);
@@ -52,15 +52,15 @@ test('test bug scenario', async t => {
   const bldLiquidityIssuer = await E(publicFacet).addPool(bldKit.issuer, 'BLD');
   const bldLiquidityBrand = await E(bldLiquidityIssuer).getBrand();
 
-  const bldPoolAllocation = amountMath.make(bldKit.brand, 2196247730468n);
-  const runPoolAllocation = amountMath.make(runKit.brand, 50825056949339n);
+  const bldPoolAllocation = AmountMath.make(bldKit.brand, 2196247730468n);
+  const runPoolAllocation = AmountMath.make(runKit.brand, 50825056949339n);
 
   const aliceProposal = harden({
     give: {
       Secondary: bldPoolAllocation,
       Central: runPoolAllocation,
     },
-    want: { Liquidity: amountMath.make(bldLiquidityBrand, 0n) },
+    want: { Liquidity: AmountMath.make(bldLiquidityBrand, 0n) },
   });
 
   const alicePayments = {
@@ -81,7 +81,7 @@ test('test bug scenario', async t => {
   );
 
   const priceQuote = await E(publicFacet).getPriceGivenAvailableInput(
-    amountMath.make(runKit.brand, 73000000n),
+    AmountMath.make(runKit.brand, 73000000n),
     bldKit.brand,
   );
 
@@ -108,12 +108,12 @@ test('test bug scenario', async t => {
 const conductTrade = async (t, reduceWantOutBP = 30n) => {
   const runKit = makeIssuerKit(
     'RUN',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
   const bldKit = makeIssuerKit(
     'BLD',
-    MathKind.NAT,
+    AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
   const zoe = makeZoe(fakeVatAdmin);
@@ -139,15 +139,15 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
   const bldLiquidityIssuer = await E(publicFacet).addPool(bldKit.issuer, 'BLD');
   const bldLiquidityBrand = await E(bldLiquidityIssuer).getBrand();
 
-  const bldPoolAllocation = amountMath.make(bldKit.brand, 2196247730468n);
-  const runPoolAllocation = amountMath.make(runKit.brand, 50825056949339n);
+  const bldPoolAllocation = AmountMath.make(bldKit.brand, 2196247730468n);
+  const runPoolAllocation = AmountMath.make(runKit.brand, 50825056949339n);
 
   const aliceProposal = harden({
     give: {
       Secondary: bldPoolAllocation,
       Central: runPoolAllocation,
     },
-    want: { Liquidity: amountMath.make(bldLiquidityBrand, 0n) },
+    want: { Liquidity: AmountMath.make(bldLiquidityBrand, 0n) },
   });
 
   const alicePayments = {
@@ -170,7 +170,7 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
   await addLiquiditySeat.getPayout('Liquidity');
 
   const priceQuote = await E(publicFacet).getPriceGivenAvailableInput(
-    amountMath.make(runKit.brand, 73000000n),
+    AmountMath.make(runKit.brand, 73000000n),
     bldKit.brand,
   );
 
@@ -181,7 +181,7 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
     priceQuote.amountOut.brand,
     BASIS_POINTS,
   );
-  const wantOutReduced = amountMath.subtract(
+  const wantOutReduced = AmountMath.subtract(
     priceQuote.amountOut,
     multiplyBy(priceQuote.amountOut, percentToReduceBy),
   );
