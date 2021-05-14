@@ -20,7 +20,8 @@ export function makeMeteringTransformer(
 ) {
   const parser = overrideParser
     ? overrideParser.parse || overrideParser
-    : (source, opts) => babelCore.parseSync(source, { parserOpts: opts });
+    : (source, opts = undefined) =>
+        babelCore.parseSync(source, { parserOpts: opts });
   const meterId = overrideMeterId;
   const replaceGlobalMeterId = overrideSetMeterId;
   const regexpIdPrefix = overrideRegExpIdPrefix;
@@ -180,9 +181,7 @@ const ${reid}=RegExp(${JSON.stringify(pattern)},${JSON.stringify(flags)});`);
       meter && meter[c.METER_COMPUTE](source.length);
 
       // Do the actual transform.
-      const ast = parser(source, {
-        plugins: ['bigInt'],
-      });
+      const ast = parser(source);
       const regexpList = [];
       const output = babelCore.transformFromAstSync(ast, source, {
         generatorOpts: {
