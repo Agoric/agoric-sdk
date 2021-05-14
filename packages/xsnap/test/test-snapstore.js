@@ -1,4 +1,4 @@
-/* global __dirname, __filename */
+/* global __filename */
 // @ts-check
 
 import '@agoric/install-ses';
@@ -43,9 +43,11 @@ async function bootWorker(name, handleCommand) {
 }
 
 test('build temp file; compress to cache file', async t => {
-  const pool = path.resolve(__dirname, './fixture-snap-pool/');
-  await fs.promises.mkdir(pool, { recursive: true });
-  const store = makeSnapstore(pool, {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  t.log({ pool: pool.name });
+  await fs.promises.mkdir(pool.name, { recursive: true });
+  const store = makeSnapstore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -65,7 +67,7 @@ test('build temp file; compress to cache file', async t => {
     fs.existsSync(keepTmp),
     'temp file should have been deleted after withTempName',
   );
-  const dest = path.resolve(pool, `${hash}.gz`);
+  const dest = path.resolve(pool.name, `${hash}.gz`);
   t.truthy(fs.existsSync(dest));
   const gz = fs.readFileSync(dest);
   t.is(gz.toString('hex'), '1f8b08000000000000034b4c4a0600c241243503000000');
@@ -75,10 +77,11 @@ test('bootstrap, save, compress', async t => {
   const vat = await bootWorker('ses-boot1', async m => m);
   t.teardown(() => vat.close());
 
-  const pool = path.resolve(__dirname, './fixture-snap-pool/');
-  await fs.promises.mkdir(pool, { recursive: true });
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapstore(pool, {
+  const store = makeSnapstore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -87,8 +90,6 @@ test('bootstrap, save, compress', async t => {
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
-  /** @type {(fn: string) => number} */
-  const Kb = fn => Math.round(fs.statSync(fn).size / 1024);
   /** @type {(fn: string, fullSize: number) => number} */
   const relativeSize = (fn, fullSize) =>
     Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
@@ -102,7 +103,7 @@ test('bootstrap, save, compress', async t => {
     await vat.snapshot(snapFile);
   });
 
-  const zfile = path.resolve(pool, `${h}.gz`);
+  const zfile = path.resolve(pool.name, `${h}.gz`);
   t.is(
     relativeSize(zfile, snapSize.raw),
     snapSize.compression,
@@ -111,10 +112,11 @@ test('bootstrap, save, compress', async t => {
 });
 
 test('create, save, restore, resume', async t => {
-  const pool = path.resolve(__dirname, './fixture-snap-pool/');
-  await fs.promises.mkdir(pool, { recursive: true });
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapstore(pool, {
+  const store = makeSnapstore(pool.name, {
     ...tmp,
     ...path,
     ...fs,

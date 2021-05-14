@@ -3,6 +3,8 @@
 import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import tmp from 'tmp';
 import { xsnap } from '../src/xsnap';
 import { ExitCode, ErrorCode } from '../api';
 
@@ -307,13 +309,17 @@ test('serialize concurrent messages', async t => {
 });
 
 test('write and read snapshot', async t => {
+  const work = tmp.fileSync({ postfix: '.xss' });
+  t.teardown(() => work.removeCallback());
+
   const messages = [];
   async function handleCommand(message) {
     messages.push(decoder.decode(message));
     return new Uint8Array();
   }
 
-  const snapshot = new URL('fixture-snapshot.xss', importMetaUrl).pathname;
+  const snapshot = work.name;
+  t.log({ snapshot });
 
   const vat0 = xsnap({ ...xsnapOptions, handleCommand });
   await vat0.evaluate(`
