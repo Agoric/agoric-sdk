@@ -14,11 +14,11 @@ import tmp from 'tmp';
 import { xsnap } from '../src/xsnap';
 import { makeSnapstore } from '../src/snapStore';
 
-const importModuleUrl = `file://${__filename}`;
+const importMetaUrl = new URL(`file://${__filename}`);
 
 const asset = async (...segments) =>
   fs.promises.readFile(
-    path.join(importModuleUrl.replace('file:/', ''), '..', ...segments),
+    path.join(importMetaUrl.pathname, '..', ...segments),
     'utf-8',
   );
 
