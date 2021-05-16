@@ -5,6 +5,7 @@
   "parsers": {
     "js": "mjs"
   },
+  "type": "module",
   "main": "simpleSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
@@ -20,8 +21,7 @@
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "ava": "^3.12.1"
   },
   "publishConfig": {
     "access": "public"
