@@ -55,6 +55,7 @@
     "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
     "esm": "^3.2.5",
+    "node-lmdb": "^0.9.4",
     "re2": "^1.10.5",
     "rollup": "^1.23.1",
     "rollup-plugin-node-resolve": "^5.2.0",
