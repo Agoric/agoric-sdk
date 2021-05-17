@@ -1389,10 +1389,12 @@ static int fxReadNetString(FILE *inStream, char** dest, size_t* len)
 		} else {
 			*(buf + *len) = 0;
 		}
-		if (code != 0) {
+		if (code == 0) {
+			*dest = buf;
+		} else {
+			*dest = 0;
 			free(buf);
 		}
-		*dest = buf;
 	}
 	return code;
 }
@@ -1473,12 +1475,14 @@ static void fx_issueCommand(xsMachine *the)
 
 	size_t length;
 	char* buf = NULL;
-	txSlot* arrayBuffer = &xsArg(0);
-	length = fxGetArrayBufferLength(the, arrayBuffer);
+	length = xsGetArrayBufferLength(xsArg(0));
 
 	buf = malloc(length);
+	if (!buf) {
+		fxAbort(the, XS_NOT_ENOUGH_MEMORY_EXIT);
+	}
 
-	fxGetArrayBufferData(the, arrayBuffer, 0, buf, length);
+	xsGetArrayBufferData(xsArg(0), 0, buf, length);
 	int writeError = fxWriteNetString(toParent, "?", buf, length);
 
 	free(buf);
@@ -1495,6 +1499,7 @@ static void fx_issueCommand(xsMachine *the)
 	}
 
 	xsResult = xsArrayBuffer(buf, len);
+	free(buf);
 }
 
 
