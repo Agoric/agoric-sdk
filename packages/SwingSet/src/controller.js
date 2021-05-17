@@ -5,7 +5,7 @@ import path from 'path';
 import process from 'process';
 import re2 from 're2';
 import { performance } from 'perf_hooks';
-import { spawn } from 'child_process';
+import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
@@ -46,9 +46,13 @@ function unhandledRejectionHandler(e) {
 
 /**
  * @param {{ moduleFormat: string, source: string }[]} bundles
- * @param {{ snapstorePath?: string, env: Record<string, string | undefined> }} opts
+ * @param {{
+ *   snapstorePath?: string,
+ *   spawn: typeof import('child_process').spawn
+ *   env: Record<string, string | undefined>,
+ * }} opts
  */
-export function makeStartXSnap(bundles, { snapstorePath, env }) {
+export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
@@ -119,6 +123,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
  *   slogFile?: string,
  *   testTrackDecref?: unknown,
  *   snapstorePath?: string,
+ *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
  */
@@ -139,6 +144,7 @@ export async function makeSwingsetController(
     slogCallbacks,
     slogFile,
     snapstorePath,
+    spawn = ambientSpawn,
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -273,7 +279,7 @@ export async function makeSwingsetController(
     // @ts-ignore assume supervisorBundle is set
     JSON.parse(hostStorage.get('supervisorBundle')),
   ];
-  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env });
+  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
 
   const kernelEndowments = {
     waitUntilQuiescent,

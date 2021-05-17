@@ -3,8 +3,14 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 import path from 'path';
+import { spawn } from 'child_process';
 import { initSwingStore } from '@agoric/swing-store-simple';
-import { buildVatController, loadBasedir } from '../src/index';
+import {
+  buildVatController,
+  loadBasedir,
+  makeSwingsetController,
+} from '../src/index';
+import { initializeSwingset } from '../src/initializeSwingset';
 import { checkKT } from './util';
 
 function capdata(body, slots = []) {
@@ -115,6 +121,28 @@ test('XS bootstrap', async t => {
     'xs-worker',
     'managerType gets recorded for the bootstrap vat',
   );
+});
+
+test('static vats are unmetered on XS', async t => {
+  const hostStorage = initSwingStore().storage;
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-controller-2'),
+  );
+  config.defaultManagerType = 'xs-worker';
+  await initializeSwingset(config, [], hostStorage);
+  const limited = [];
+  const c = await makeSwingsetController(
+    hostStorage,
+    {},
+    {
+      spawn(command, args, options) {
+        limited.push(args.includes('-l'));
+        return spawn(command, args, options);
+      },
+    },
+  );
+  t.deepEqual(c.dump().log, ['bootstrap called']);
+  t.deepEqual(limited, [false, false, false]);
 });
 
 test('validate config.defaultManagerType', async t => {
