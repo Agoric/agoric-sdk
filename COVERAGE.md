@@ -2,16 +2,18 @@
 
 ## Caveat
 
-Unfortunately, until we are capable of using Node.js's builtin ESM support as
-well as implementing source maps in all of our source-to-source transforms (such
-as `@agoric/bundle-source`, `@agoric/transform-metering`, and
-`@agoric/static-module-record`), the coverage line numbers will be out-of-sync
-with reality.
+Until each module can be migrated to support Node.js's builtin ESM
+implementation (`NESM`), the coverage line numbers will be out-of-sync with
+reality.
+
+In addition, we will have to implement source maps in all of our
+source-to-source transforms (such as `@agoric/bundle-source`,
+`@agoric/transform-metering`, and `@agoric/static-module-record`).
 
 ## Reports
 
-Coverage reports for the current main branch are published by CI to:
-https://agoric-sdk-coverage.netlify.app
+Coverage reports for the current main branch (whose packages support `NESM`) are
+published by CI to: https://agoric-sdk-coverage.netlify.app
 
 You can create a report in any package (including the top-level directory):
 
@@ -24,6 +26,35 @@ yarn c8 -a ava
 yarn c8 report --reporter=html-spa
 open coverage/html/index.html
 ```
+
+## NESM Support
+
+With the current `patches/esm+3.2.25.diff`, it is possible to migrate packages
+to support both RESM (`-r esm`) and NESM.  If an `agoric-sdk` package has
+dependencies that support NESM, you can attempt to make it also support NESM by:
+
+1. Make the following changes to its `package.json` (omitting comments):
+
+```json
+{
+  // Enable NESM support.
+  "type": "module",
+  "scripts": {
+    // The following line enables coverage generation from the top.
+    "test:c8": "c8 $C8_OPTIONS ava",
+  },
+  "devDependencies": {
+    // Remove:
+    // "esm": "^3.2.25"
+  }
+  "ava": {
+    // Remove:
+    // "require": ["esm"]
+  }
+}
+```
+
+2. Test that it runs correctly with both `yarn test` and `yarn test:c8`.
 
 ## Planned Implementation
 

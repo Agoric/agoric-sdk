@@ -123,7 +123,7 @@ jobs:
     strategy:
       matrix:
         node-version: ['14.x']
-    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    # TODO: if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -148,7 +148,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: generate coverage for all tests
-      run: 'yarn c8 ava --reporter=none || :'
+      run: yarn test:all-c8
     - name: generate coverage/html reports
       run: yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
     - uses: actions/upload-artifact@v2
@@ -158,12 +158,14 @@ jobs:
     - name: Find Netlify site ID
       run: |
         echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
+
     - uses: nwtgck/actions-netlify@v1.1
       with:
         # Production deployment if a commit to master.
-        production-deploy: ${{ github.ref == 'refs/heads/master' }}
+        production-deploy: ${{ github.ref != 'TODOrefs/heads/master' }}
         publish-dir: coverage/html
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # SECURITY: we don't want to hand out the Github token to this action.
+        # github-token: ${{ secrets.GITHUB_TOKEN }}
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 

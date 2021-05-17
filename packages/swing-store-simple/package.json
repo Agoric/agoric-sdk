@@ -13,6 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
@@ -29,9 +30,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   },
