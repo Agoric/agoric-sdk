@@ -20,7 +20,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: SyncHandler) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: SyncHandler, metered?: boolean) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns { VatManagerFactory }
@@ -53,6 +53,7 @@ export function makeXsSubprocessFactory({
       virtualObjectCacheSize,
       enableDisavow,
       name,
+      metered,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
@@ -101,7 +102,7 @@ export function makeXsSubprocessFactory({
     }
 
     // start the worker and establish a connection
-    const worker = await startXSnap(`${vatID}:${name}`, handleCommand);
+    const worker = await startXSnap(`${vatID}:${name}`, handleCommand, metered);
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
