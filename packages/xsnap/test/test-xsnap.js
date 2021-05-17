@@ -460,8 +460,8 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     ]) {
       test(`parser buffer size ${parserBufferSize ||
         'default'}k; rep ${qty}; debug ${debug}`, async t => {
-        const opts = options();
-        const vat = xsnap({ ...opts, debug, parserBufferSize });
+        const opts = { ...options(), meteringLimit: 1e8, debug };
+        const vat = xsnap({ ...opts, parserBufferSize });
         t.teardown(() => vat.terminate());
         const expected = failure ? [failure] : [qty * 4 + 2];
         // eslint-disable-next-line no-await-in-loop

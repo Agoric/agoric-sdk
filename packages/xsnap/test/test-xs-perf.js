@@ -23,6 +23,10 @@ export function options() {
   return { ...xsnapOptions, handleCommand, messages };
 }
 
+const { entries, fromEntries } = Object;
+
+const shape = obj => fromEntries(entries(obj).map(([p, v]) => [p, typeof v]));
+
 test('meter details', async t => {
   const opts = options();
   const vat = xsnap(opts);
@@ -42,9 +46,16 @@ test('meter details', async t => {
   const {
     meterUsage: { meterType, ...meters },
   } = result;
+
+  t.like(
+    meters,
+    { compute: 1_260_073, allocate: 42_074_144 },
+    'compute, allocate meters should be stable; update METER_TYPE?',
+  );
+
   t.log(meters);
-  const { entries, fromEntries } = Object;
   t.deepEqual(
+    shape(meters),
     {
       compute: 'number',
       allocate: 'number',
@@ -55,9 +66,9 @@ test('meter details', async t => {
       mapSetRemoveCount: 'number',
       maxBucketSize: 'number',
     },
-    fromEntries(entries(meters).map(([p, v]) => [p, typeof v])),
+    'auxiliary (non-consensus) meters are available',
   );
-  t.is(meterType, 'xs-meter-6');
+  t.is(meterType, 'xs-meter-7');
 });
 
 test('high resolution timer', async t => {
