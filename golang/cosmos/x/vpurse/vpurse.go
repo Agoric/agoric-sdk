@@ -60,8 +60,8 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 		for _, coin := range coins {
 			update := vpurseSingleBalanceUpdate{
 				Address: address,
-				Amount:  coin.Amount.String(),
 				Denom:   coin.Denom,
+				Amount:  coin.Amount.String(),
 			}
 			event.Updated = append(event.Updated, update)
 		}

@@ -3,14 +3,11 @@ module github.com/Agoric/agoric-sdk
 go 1.15
 
 require (
-	github.com/btcsuite/btcd v0.21.0-beta
-	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.42.4
-	github.com/ethereum/go-ethereum v1.9.22
 	github.com/gogo/protobuf v1.3.3
+	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3

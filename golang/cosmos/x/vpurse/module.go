@@ -138,12 +138,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	| message  | action        | multisend          |
 	| message  | sender        | {senderAddress}    |
 	*/
-	// fmt.Printf("have vpurse events: %+v\n", events)
 	for _, event := range events {
 		switch event.Type {
 		case "transfer":
-			for _, attr := range event.Attributes {
-				// fmt.Println("have transfer attr", string(attr.GetKey()), string(attr.GetValue()))
+			for _, attr := range event.GetAttributes() {
 				switch string(attr.GetKey()) {
 				case "recipient", "sender":
 					address := string(attr.GetValue())
@@ -161,7 +159,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 	if bz != nil {
-		if _, err := am.CallToController(ctx, string(bz)); err != nil {
+		_, err := am.CallToController(ctx, string(bz))
+		if err != nil {
 			panic(err)
 		}
 	}
