@@ -207,15 +207,3 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
 test('test bug scenario with 0% reduction in want', async t => {
   await conductTrade(t, 0n);
 });
-
-test('test bug scenario with 0.2% reduction in want', async t => {
-  await conductTrade(t, 20n);
-});
-
-test('test bug scenario with 0.3% reduction in want', async t => {
-  await conductTrade(t, 30n);
-});
-
-test('test bug scenario with 3% reduction in want', async t => {
-  await conductTrade(t, 300n);
-});
