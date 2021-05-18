@@ -65,6 +65,7 @@ export function makeVatManagerFactory({
       'vatParameters',
       'vatConsole',
       'name',
+      'compareSyscalls',
     ]);
     const { setup, bundle, enableSetup = false } = managerOptions;
     assert(setup || bundle);

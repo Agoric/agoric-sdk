@@ -111,10 +111,15 @@ function makeManagerKit(
   kernelKeeper,
   vatSyscallHandler,
   workerCanBlock,
+  compareSyscalls,
 ) {
   assert(kernelSlog);
   const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-  const transcriptManager = makeTranscriptManager(vatKeeper, vatID);
+  const transcriptManager = makeTranscriptManager(
+    vatKeeper,
+    vatID,
+    compareSyscalls,
+  );
 
   /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
   let deliverToWorker;
