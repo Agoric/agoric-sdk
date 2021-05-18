@@ -1,6 +1,20 @@
 import djson from '../djson';
 
-export function makeTranscriptManager(vatKeeper, vatID) {
+export function requireIdentical(vatID, originalSyscall, newSyscall) {
+  if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
+    console.log(`anachrophobia strikes vat ${vatID}`);
+    console.log(`expected:`, djson.stringify(originalSyscall));
+    console.log(`got     :`, djson.stringify(newSyscall));
+    return new Error(`historical inaccuracy in replay of ${vatID}`);
+  }
+  return undefined;
+}
+
+export function makeTranscriptManager(
+  vatKeeper,
+  vatID,
+  compareSyscalls = requireIdentical,
+) {
   let weAreInReplay = false;
   let playbackSyscalls;
   let currentEntry;
@@ -44,16 +58,11 @@ export function makeTranscriptManager(vatKeeper, vatID) {
 
   let replayError;
 
-  function simulateSyscall(scObj) {
+  function simulateSyscall(newSyscall) {
     const s = playbackSyscalls.shift();
-
-    if (djson.stringify(s.d) !== djson.stringify(scObj)) {
-      console.log(`anachrophobia strikes vat ${vatID}`);
-      console.log(`expected:`, djson.stringify(s.d));
-      console.log(`got     :`, djson.stringify(scObj));
-      if (!replayError) {
-        replayError = new Error(`historical inaccuracy in replay of ${vatID}`);
-      }
+    const newReplayError = compareSyscalls(vatID, s.d, newSyscall);
+    if (newReplayError) {
+      replayError = newReplayError;
       throw replayError;
     }
     return s.response;
