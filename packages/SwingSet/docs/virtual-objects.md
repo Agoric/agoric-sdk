@@ -94,9 +94,7 @@ Additional important details:
 
 - A virtual object's state may include references to other virtual objects. The latter objects will be persisted separately and only deserialized as needed, so "swapping in" a virtual object that references other virtual objects does not entail swapping in the entire associated object graph.
 
-- The in-memory manifestations of a virtual object (which we call its "representatives") are not necessarily (or even usually) `===` to each other, even when they represent the same object, since a new representative is created for each act of deserialization.  (Note: future implementations may remove this limitation by having at most one representative in memory for any given virtual object, at which point object identity, i.e., `===`, _will_ be usable for comparison.)  All representatives for a given object do, however, operate on the same underlying state, so changes to the state made by a method call to one representative will be visible to the other representatives.
-
-- The `self` object returned by the `instanceKitMaker` function _is_ the representative, so you can capture it inside any of the body methods (as well as the `init` function) in order to pass the virtual object to somebody else.  So you can write things like the following:
+- The `self` object returned by the `instanceKitMaker` function _is_ the in-memory representation of the virtual object, so you can capture it inside any of the body methods (as well as the `init` function) in order to pass the virtual object to somebody else.  So you can write things like the following:
 
 ```javascript
   function thingKitMaker(state) {
@@ -124,10 +122,10 @@ to obtain a new weak store instance, which you can then access using the `has`, 
 
 However, the vat secondary storage system's `makeWeakStore` augments the one provided by the `@agoric/store` package in two important ways:
 
-- Weak store operations may use virtual object representatives as keys, and if you do this the corresponding underlying virtual object instance identities will be used for indexing rather than the object identities of the representative objects (i.e., two different representives for the same underlying virtual object will operate on the same weak store entry).
+- Weak store operations may use virtual objects as keys, and if you do this the corresponding underlying virtual object instance identities will be used for indexing rather than the current in-memory object identities of the objects.
 
 - The values set for weak store entries will be saved persistently to secondary storage.  This means that such weak stores can grow to be very large without impacting the vat's memory footprint.
 
 Since weak store values are saved persistently, they must be serializable and will be hardened as soon as they are set.
 
-An important caveat is that the latter entries are currently not actually weak, in the sense that if a virtual object becomes unreferenced, any corresponding weak store entries will not go away.  This is not semantically visible to vat code, but does impact the disk storage footprint of the vat.  Since virtual object representatives may come and go depending on the working state of the vat, there is no graceful way to garbage collect the underlying objects or corresponding weak store entries; a future system which can do robust distributed garbage collection should eventually rectify this, but for now you should not rely on any such garbage collection happening.
+An important caveat is that the latter entries are currently not actually weak, in the sense that if a virtual object becomes unreferenced, any corresponding weak store entries will not go away.  This is not semantically visible to vat code, but does impact the disk storage footprint of the vat.  Since the in-memory representations of virtual objects may come and go depending on the working state of the vat, there is no graceful way to garbage collect the underlying objects or corresponding weak store entries; a future system which can do robust distributed garbage collection should eventually rectify this, but for now you should not rely on any such garbage collection happening.

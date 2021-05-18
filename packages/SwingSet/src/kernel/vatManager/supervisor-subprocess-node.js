@@ -108,14 +108,18 @@ fromParent.on('data', ([type, ...margs]) => {
       assert,
     };
 
-    importBundle(bundle, { endowments }).then(vatNS => {
-      workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
-      sendUplink(['gotBundle']);
-      ls.setBuildRootObject(vatNS.buildRootObject);
-      dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
-      workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
-      sendUplink(['dispatchReady']);
-    });
+    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
+
+    importBundle(bundle, { endowments, inescapableGlobalProperties }).then(
+      vatNS => {
+        workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
+        sendUplink(['gotBundle']);
+        ls.setBuildRootObject(vatNS.buildRootObject);
+        dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
+        workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
+        sendUplink(['dispatchReady']);
+      },
+    );
   } else if (type === 'deliver') {
     if (!dispatch) {
       workerLog(`error: deliver before dispatchReady`);
