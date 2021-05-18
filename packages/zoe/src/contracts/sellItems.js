@@ -43,7 +43,6 @@ const start = zcf => {
   assertIssuerKeywords(zcf, harden(allKeywords));
   assertNatAssetKind(zcf, pricePerItem.brand);
 
-  /** @type {undefined | ZCFSeat} */
   let sellerSeat;
 
   const { notifier: availableItemsNotifier,
