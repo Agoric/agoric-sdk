@@ -12,7 +12,7 @@ function makeAliceMaker(log) {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
             oldPaymentP,
-            AmountMath.make(10n, brand),
+            AmountMath.make(brand, 10n),
           );
           log(
             'splitPayment[0] balance: ',

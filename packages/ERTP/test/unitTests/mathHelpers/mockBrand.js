@@ -1,7 +1,11 @@
 import { Far } from '@agoric/marshal';
+import { AssetKind } from '../../../src';
 
+/** @type {Brand} */
 export const mockBrand = Far('brand', {
-  isMyIssuer: async () => false,
+  isMyIssuer: async allegedIssuer => false && allegedIssuer,
   getAllegedName: () => 'mock',
-  getDisplayInfo: () => ({}),
+  getDisplayInfo: () => ({
+    assetKind: AssetKind.NAT,
+  }),
 });

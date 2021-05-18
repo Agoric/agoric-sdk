@@ -460,7 +460,7 @@
  * @property {(left: V, right: V) => boolean} doIsEqual
  * Does left equal right?
  *
- * @property {(left: V, right: V) => Value} doAdd
+ * @property {(left: V, right: V) => V} doAdd
  * Return the left combined with the right.
  *
  * @property {(left: V, right: V) => V} doSubtract
