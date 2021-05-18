@@ -145,31 +145,36 @@ function makeManagerKit(
     return status;
   }
 
+  async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
+    transcriptManager.startReplay();
+    transcriptManager.startReplayDelivery(expectedSyscalls);
+    kernelSlog.write({
+      type: 'start-replay-delivery',
+      vatID,
+      delivery,
+      deliveryNum,
+    });
+    await deliver(delivery);
+    transcriptManager.finishReplayDelivery();
+    transcriptManager.checkReplayError();
+    transcriptManager.finishReplay();
+    kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
+  }
+
   async function replayTranscript() {
     const total = vatKeeper.vatStats().transcriptCount;
     kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-    transcriptManager.startReplay();
     let deliveryNum = 0;
     for (const t of vatKeeper.getTranscript()) {
       // if (deliveryNum % 100 === 0) {
       //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
       // }
-      transcriptManager.checkReplayError();
-      transcriptManager.startReplayDelivery(t.syscalls);
-      kernelSlog.write({
-        type: 'start-replay-delivery',
-        vatID,
-        delivery: t.d,
-        deliveryNum,
-      });
+      //
       // eslint-disable-next-line no-await-in-loop
-      await deliver(t.d);
-      transcriptManager.finishReplayDelivery();
-      kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
+      await replayOneDelivery(t.d, t.syscalls, deliveryNum);
       deliveryNum += 1;
     }
     transcriptManager.checkReplayError();
-    transcriptManager.finishReplay();
     kernelSlog.write({ type: 'finish-replay', vatID });
   }
 
@@ -212,7 +217,7 @@ function makeManagerKit(
    * @returns { VatManager }
    */
   function getManager(shutdown) {
-    return harden({ replayTranscript, deliver, shutdown });
+    return harden({ replayTranscript, replayOneDelivery, deliver, shutdown });
   }
 
   return harden({ getManager, syscallFromWorker, setDeliverToWorker });
