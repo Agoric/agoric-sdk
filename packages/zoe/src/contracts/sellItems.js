@@ -52,7 +52,7 @@ const start = zcf => {
   const sell = seat => {
     sellerSeat = seat;
     observeIteration(sellerSeat.getNotifier(), harden({
-      updateState: sellerSeatAllocation => availableItemsUpdater.updateState(sellerSeatAllocation['Items']),
+      updateState: sellerSeatAllocation => availableItemsUpdater.updateState(sellerSeatAllocation.Items),
       finish: sellerSeatAllocation => availableItemsUpdater.finish(sellerSeatAllocation['Items']),
       fail: reason => availableItemsUpdater.fail(reason),
     }));
