@@ -32,13 +32,13 @@ export async function getAccessToken(port) {
   await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.
-  const { storage, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const { kvStore, commit, close } = openSwingStore(sharedStateDir, 'state');
   const accessTokenKey = `accessToken/${port}`;
-  if (!storage.has(accessTokenKey)) {
-    storage.set(accessTokenKey, await generateAccessToken());
+  if (!kvStore.has(accessTokenKey)) {
+    kvStore.set(accessTokenKey, await generateAccessToken());
     commit();
   }
-  const accessToken = storage.get(accessTokenKey);
+  const accessToken = kvStore.get(accessTokenKey);
   close();
   return accessToken;
 }

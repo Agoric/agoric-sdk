@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 
 import {
   initializeSwingset,
@@ -19,7 +19,7 @@ test('bridge device', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const storage = initSwingStore();
+  const hostStorage = provideHostStorage();
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -41,8 +41,8 @@ test('bridge device', async t => {
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
 
-  await initializeSwingset(config, argv, storage.storage);
-  const c = await makeSwingsetController(storage.storage, deviceEndowments);
+  await initializeSwingset(config, argv, hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
 
@@ -79,7 +79,7 @@ test('bridge device', async t => {
     bridge: { ...bd2.endowments },
   };
 
-  const c2 = await makeSwingsetController(storage.storage, endowments2);
+  const c2 = await makeSwingsetController(hostStorage, endowments2);
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
   // any syscalls (they are switched off during replay), so it won't re-run
@@ -122,7 +122,7 @@ test('bridge device can return undefined', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const storage = initSwingStore();
+  const hostStorage = provideHostStorage();
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'local',
@@ -144,8 +144,8 @@ test('bridge device can return undefined', async t => {
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  await initializeSwingset(config, argv, storage.storage);
-  const c = await makeSwingsetController(storage.storage, deviceEndowments);
+  await initializeSwingset(config, argv, hostStorage);
+  const c = await makeSwingsetController(hostStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
 

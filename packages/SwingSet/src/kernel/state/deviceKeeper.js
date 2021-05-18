@@ -13,39 +13,39 @@ const FIRST_DEVICE_STATE_ID = 10n;
 /**
  * Establish a device's state.
  *
- * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} deviceID  The device ID string of the device in question
  *
  * TODO move into makeDeviceKeeper?
  */
-export function initializeDeviceState(storage, deviceID) {
-  storage.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_STATE_ID}`);
+export function initializeDeviceState(kvStore, deviceID) {
+  kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_STATE_ID}`);
 }
 
 /**
  * Produce a device keeper for a device.
  *
- * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} deviceID  The device ID string of the device in question
  * @param {*} addKernelDeviceNode  Kernel function to add a new device node to the
  *    kernel's mapping tables.
  *
  * @returns {*} an object to hold and access the kernel's state for the given device
  */
-export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
+export function makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode) {
   insistDeviceID(deviceID);
 
   function setSourceAndOptions(source, options) {
     assert.typeof(source, 'object');
     assert(source.bundle || source.bundleName);
     assert.typeof(options, 'object');
-    storage.set(`${deviceID}.source`, JSON.stringify(source));
-    storage.set(`${deviceID}.options`, JSON.stringify(options));
+    kvStore.set(`${deviceID}.source`, JSON.stringify(source));
+    kvStore.set(`${deviceID}.options`, JSON.stringify(options));
   }
 
   function getSourceAndOptions() {
-    const source = JSON.parse(storage.get(`${deviceID}.source`));
-    const options = JSON.parse(storage.get(`${deviceID}.options`));
+    const source = JSON.parse(kvStore.get(`${deviceID}.source`));
+    const options = JSON.parse(kvStore.get(`${deviceID}.options`));
     return harden({ source, options });
   }
 
@@ -64,7 +64,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
     assert.typeof(devSlot, 'string', X`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
-    if (!storage.has(devKey)) {
+    if (!kvStore.has(devKey)) {
       const { type, allocatedByVat } = parseVatSlot(devSlot);
 
       if (allocatedByVat) {
@@ -79,8 +79,8 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
           assert.fail(X`unknown type ${type}`);
         }
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
-        storage.set(kernelKey, devSlot);
-        storage.set(devKey, kernelSlot);
+        kvStore.set(kernelKey, devSlot);
+        kvStore.set(devKey, kernelSlot);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
@@ -88,7 +88,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
       }
     }
 
-    return storage.get(devKey);
+    return kvStore.get(devKey);
   }
 
   /**
@@ -105,13 +105,13 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
-    if (!storage.has(kernelKey)) {
+    if (!kvStore.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
 
       let id;
       if (type === 'object') {
-        id = Nat(BigInt(storage.get(`${deviceID}.o.nextID`)));
-        storage.set(`${deviceID}.o.nextID`, `${id + 1n}`);
+        id = Nat(BigInt(kvStore.get(`${deviceID}.o.nextID`)));
+        kvStore.set(`${deviceID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
         throw new Error('devices cannot import other device nodes');
       } else if (type === 'promise') {
@@ -122,11 +122,11 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
       const devSlot = makeVatSlot(type, false, id);
 
       const devKey = `${deviceID}.c.${devSlot}`;
-      storage.set(devKey, kernelSlot);
-      storage.set(kernelKey, devSlot);
+      kvStore.set(devKey, kernelSlot);
+      kvStore.set(kernelKey, devSlot);
     }
 
-    return storage.get(kernelKey);
+    return kvStore.get(kernelKey);
   }
 
   /**
@@ -137,8 +137,8 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   function getDeviceState() {
     // this should return an object, generally CapData, or undefined
     const key = `${deviceID}.deviceState`;
-    if (storage.has(key)) {
-      return JSON.parse(storage.get(key));
+    if (kvStore.has(key)) {
+      return JSON.parse(kvStore.get(key));
       // todo: formalize the CapData, and store .deviceState.body, and
       // .deviceState.slots as 'vatSlot[,vatSlot..]'
     }
@@ -153,7 +153,7 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
    *    codified than it is now).
    */
   function setDeviceState(value) {
-    storage.set(`${deviceID}.deviceState`, JSON.stringify(value));
+    kvStore.set(`${deviceID}.deviceState`, JSON.stringify(value));
   }
 
   /**
@@ -164,14 +164,14 @@ export function makeDeviceKeeper(storage, deviceID, addKernelDeviceNode) {
   function dumpState() {
     const res = [];
     const prefix = `${deviceID}.c.`;
-    for (const k of storage.getKeys(prefix, `${deviceID}.c/`)) {
+    for (const k of kvStore.getKeys(prefix, `${deviceID}.c/`)) {
       // The bounds passed to getKeys() here work because '/' is the next
       // character in ASCII after '.'
       if (k.startsWith(prefix)) {
         const slot = k.slice(prefix.length);
         if (!slot.startsWith('k')) {
           const devSlot = slot;
-          const kernelSlot = storage.get(k);
+          const kernelSlot = kvStore.get(k);
           res.push([kernelSlot, deviceID, devSlot]);
         }
       }

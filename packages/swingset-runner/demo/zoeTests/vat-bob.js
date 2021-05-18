@@ -99,7 +99,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           simoleans(7),
         ),
       );
-      assert(optionValue[0].expirationDate === 1, X`wrong expirationDate`);
+      assert(optionValue[0].expirationDate === 1n, X`wrong expirationDate`);
       assert(optionValue[0].timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
 
@@ -167,7 +167,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100, X`wrong expiration date`);
+      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
       assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
       assert(
         UnderlyingAsset === moolaIssuer,
@@ -457,7 +457,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob looks up how much moola he can get for 3 simoleans. It's 5
       const moolaProceeds = await E(publicFacet).getInputPrice(
         simoleans(3),
-        moola(0).brand,
+        moola(0n).brand,
       );
       log(`moola proceeds `, moolaProceeds);
 

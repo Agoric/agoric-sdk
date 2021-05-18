@@ -1,9 +1,9 @@
 /* global __dirname */
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava';
 
-import { initSwingStore } from '@agoric/swing-store-simple';
+// eslint-disable-next-line import/order
 import path from 'path';
+import { provideHostStorage } from '../src/hostStorage';
 import { buildLoopbox } from '../src/devices/loopbox';
 import {
   loadBasedir,
@@ -30,9 +30,12 @@ async function main(basedir, argv) {
     loopbox: { ...loopboxEndowments },
   };
 
-  const storage = initSwingStore().storage;
-  await initializeSwingset(config, argv, storage);
-  const controller = await makeSwingsetController(storage, deviceEndowments);
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, argv, hostStorage);
+  const controller = await makeSwingsetController(
+    hostStorage,
+    deviceEndowments,
+  );
 
   await controller.run();
   return controller.dump();

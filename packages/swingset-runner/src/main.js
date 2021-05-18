@@ -14,10 +14,7 @@ import {
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
 
-import {
-  initSwingStore as initSimpleSwingStore,
-  openSwingStore as openSimpleSwingStore,
-} from '@agoric/swing-store-simple';
+import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
   initSwingStore as initLMDBSwingStore,
   openSwingStore as openLMDBSwingStore,
@@ -52,7 +49,6 @@ FLAGS may be:
   --init           - discard any existing saved state at startup
   --initonly       - initialize the swingset but exit without running it
   --lmdb           - runs using LMDB as the data store (default)
-  --filedb         - runs using the simple file-based data store
   --memdb          - runs using the non-persistent in-memory data store
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
@@ -194,6 +190,9 @@ export async function main() {
       case '--init':
         forceReset = true;
         break;
+      case '--noinit':
+        forceReset = false;
+        break;
       case '--initonly':
         forceReset = true;
         initOnly = true;
@@ -278,7 +277,6 @@ export async function main() {
       case '--audit':
         doAudits = true;
         break;
-      case '--filedb':
       case '--memdb':
       case '--lmdb':
         dbMode = flag;
@@ -357,24 +355,17 @@ export async function main() {
     dbDir = basedir;
   }
 
-  let store;
+  let swingStore;
   const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
   switch (dbMode) {
-    case '--filedb':
-      if (forceReset) {
-        store = initSimpleSwingStore(kernelStateDBDir);
-      } else {
-        store = openSimpleSwingStore(kernelStateDBDir);
-      }
-      break;
     case '--memdb':
-      store = initSimpleSwingStore();
+      swingStore = initSimpleSwingStore();
       break;
     case '--lmdb':
       if (forceReset) {
-        store = initLMDBSwingStore(kernelStateDBDir);
+        swingStore = initLMDBSwingStore(kernelStateDBDir);
       } else {
-        store = openLMDBSwingStore(kernelStateDBDir);
+        swingStore = openLMDBSwingStore(kernelStateDBDir);
       }
       break;
     default:
@@ -400,21 +391,25 @@ export async function main() {
     }
   }
   let bootstrapResult;
+  const hostStorage = {
+    kvStore: swingStore.kvStore,
+    streamStore: swingStore.streamStore,
+  };
   if (forceReset) {
     bootstrapResult = await initializeSwingset(
       config,
       bootstrapArgv,
-      store.storage,
+      hostStorage,
       runtimeOptions,
     );
     if (initOnly) {
-      store.commit();
-      store.close();
+      swingStore.commit();
+      swingStore.close();
       return;
     }
   }
   const controller = await makeSwingsetController(
-    store.storage,
+    hostStorage,
     deviceEndowments,
     runtimeOptions,
   );
@@ -454,8 +449,8 @@ export async function main() {
     }
     case 'step': {
       const steps = await controller.step();
-      store.commit();
-      store.close();
+      swingStore.commit();
+      swingStore.close();
       log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       break;
     }
@@ -465,13 +460,13 @@ export async function main() {
         replMode: repl.REPL_MODE_STRICT,
       });
       cli.on('exit', () => {
-        store.close();
+        swingStore.close();
       });
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
         action: () => {
-          store.commit();
+          swingStore.commit();
           log('committed');
           cli.displayPrompt();
         },
@@ -531,12 +526,12 @@ export async function main() {
   }
 
   function getCrankNumber() {
-    return Number(store.storage.get('crankNumber'));
+    return Number(swingStore.kvStore.get('crankNumber'));
   }
 
   function kernelStateDump() {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
-    dumpStore(store.storage, dumpPath, rawMode);
+    dumpStore(swingStore.kvStore, dumpPath, rawMode);
   }
 
   async function runBenchmark(rounds) {
@@ -596,7 +591,7 @@ export async function main() {
         kernelStateDump();
       }
       if (doAudits) {
-        auditRefCounts(store.storage);
+        auditRefCounts(swingStore.kvStore);
       }
       if (verbose) {
         log(`===> end of crank ${crankNumber}`);
@@ -604,7 +599,7 @@ export async function main() {
     }
     const commitStartTime = readClock();
     if (doCommit) {
-      store.commit();
+      swingStore.commit();
     }
     const blockEndTime = readClock();
     if (forceGC) {
@@ -627,7 +622,7 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--lmdb' ? store.diskUsage() : 0;
+        const diskUsage = dbMode === '--lmdb' ? swingStore.diskUsage() : 0;
         data.push(diskUsage);
       }
       if (logStats) {
@@ -657,12 +652,12 @@ export async function main() {
       kernelStateDump();
     }
     if (doAudits) {
-      auditRefCounts(store.storage);
+      auditRefCounts(swingStore.kvStore);
     }
 
     let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
-      store.commit();
+      swingStore.commit();
     }
     const cranks = getCrankNumber();
     const rawStats = controller.getStats();
@@ -690,7 +685,7 @@ export async function main() {
         bootstrapResult = null;
       }
     }
-    store.close();
+    swingStore.close();
     if (statsFile) {
       outputStats(statsFile, mainStats, benchmarkStats);
     }
