@@ -1,0 +1,9 @@
+turing-node-data.json was captured on my local linux box named 'turing',
+whose /proc/cpuinfo says:
+
+   model name    : Intel(R) Xeon(R) CPU E3-1230L v3 @ 1.80GHz
+
+by running './drive-node-perf.sh > data.json' and then lightly editing
+data.json to add [] and remove a trailing comma.
+
+ -Brian Warner, 18-may-2021

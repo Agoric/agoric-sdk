@@ -1,0 +1,385 @@
+[
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "nothing",
+ "innerTime": 0.015139013528823853
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "nothing",
+ "innerTime": 0.025463998317718506
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "nothing",
+ "innerTime": 0.04666799306869507
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "nothing",
+ "innerTime": 0.2591649889945984
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "nothing",
+ "innerTime": 0.015567988157272339
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "nothing",
+ "innerTime": 0.02414599061012268
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "nothing",
+ "innerTime": 0.04937899112701416
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "nothing",
+ "innerTime": 0.26160600781440735
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "nothing",
+ "innerTime": 0.016063988208770752
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "nothing",
+ "innerTime": 0.030034005641937256
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "nothing",
+ "innerTime": 0.04615598917007446
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "nothing",
+ "innerTime": 0.2674750089645386
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "list",
+ "innerTime": 0.0301780104637146
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "list",
+ "innerTime": 0.05214598774909973
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "list",
+ "innerTime": 0.11119300127029419
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "list",
+ "innerTime": 0.7241550087928772
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "list",
+ "innerTime": 0.03141900897026062
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "list",
+ "innerTime": 0.05577901005744934
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "list",
+ "innerTime": 0.11705002188682556
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "list",
+ "innerTime": 0.654917985200882
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "list",
+ "innerTime": 0.029486000537872314
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "list",
+ "innerTime": 0.049953997135162354
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "list",
+ "innerTime": 0.11471998691558838
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "list",
+ "innerTime": 0.7028860151767731
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "hardList",
+ "innerTime": 0.5167639851570129
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "hardList",
+ "innerTime": 0.8037289977073669
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "hardList",
+ "innerTime": 3.266084998846054
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "hardList",
+ "innerTime": 30.743683993816376
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "hardList",
+ "innerTime": 0.5220690071582794
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "hardList",
+ "innerTime": 0.7623150050640106
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "hardList",
+ "innerTime": 3.2358070015907288
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "hardList",
+ "innerTime": 30.096190005540848
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "hardList",
+ "innerTime": 0.5275010168552399
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "hardList",
+ "innerTime": 0.7779809832572937
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "hardList",
+ "innerTime": 3.262690991163254
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "hardList",
+ "innerTime": 30.212065994739532
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "listHard",
+ "innerTime": 4.1926150023937225
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "listHard",
+ "innerTime": 45.1930830180645
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "listHard",
+ "innerTime": 1119.4810279905796
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "listHard",
+ "innerTime": 90814.28993099928
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "listHard",
+ "innerTime": 4.181810975074768
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "listHard",
+ "innerTime": 44.76495200395584
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "listHard",
+ "innerTime": 1029.8868469893932
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "listHard",
+ "innerTime": 90027.41138899326
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "listHard",
+ "innerTime": 4.214383006095886
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "listHard",
+ "innerTime": 51.35582000017166
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "listHard",
+ "innerTime": 1026.47445499897
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "listHard",
+ "innerTime": 91152.67771998048
+} 
+
+]

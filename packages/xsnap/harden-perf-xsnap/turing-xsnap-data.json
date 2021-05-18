@@ -1,0 +1,883 @@
+[
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 26489,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.003173828125,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 26489,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 17,
+ "innerTime": 0.004150390625,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 26489,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.0029296875,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 26589,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 18,
+ "innerTime": 0.0048828125,
+ "outerTime": 56
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 26589,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 16,
+ "innerTime": 0.00390625,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 26589,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 18,
+ "innerTime": 0.005126953125,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 37310,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3123,
+ "mapSetRemoveCount": 709,
+ "maxBucketSize": 16,
+ "innerTime": 0.14892578125,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 493504,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3778,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 17,
+ "innerTime": 4.796875,
+ "outerTime": 60
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 518671,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3864,
+ "mapSetRemoveCount": 709,
+ "maxBucketSize": 16,
+ "innerTime": 5.445068359375,
+ "outerTime": 58
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 32677,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3123,
+ "mapSetRemoveCount": 709,
+ "maxBucketSize": 16,
+ "innerTime": 0.093994140625,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 75366,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2572,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 17,
+ "innerTime": 0.6181640625,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 78015,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2658,
+ "mapSetRemoveCount": 709,
+ "maxBucketSize": 16,
+ "innerTime": 0.65087890625,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 27389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 14,
+ "innerTime": 0.007080078125,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 27389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 16,
+ "innerTime": 0.008056640625,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 27389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.0078125,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 28389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.017822265625,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 28389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 18,
+ "innerTime": 0.01708984375,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 28389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.017822265625,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 132890,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3483,
+ "mapSetRemoveCount": 799,
+ "maxBucketSize": 17,
+ "innerTime": 1.119873046875,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 6781039,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 2,
+ "mapSetAddCount": 25018,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 16,
+ "innerTime": 106.73779296875,
+ "outerTime": 163
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 7194736,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 3,
+ "mapSetAddCount": 25104,
+ "mapSetRemoveCount": 799,
+ "maxBucketSize": 16,
+ "innerTime": 167.447998046875,
+ "outerTime": 223
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 81907,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3483,
+ "mapSetRemoveCount": 799,
+ "maxBucketSize": 14,
+ "innerTime": 0.6279296875,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 118836,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2842,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 18,
+ "innerTime": 0.989013671875,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 124455,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2928,
+ "mapSetRemoveCount": 799,
+ "maxBucketSize": 16,
+ "innerTime": 1.0439453125,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 36389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 18,
+ "innerTime": 0.0419921875,
+ "outerTime": 54
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 36389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 18,
+ "innerTime": 0.040771484375,
+ "outerTime": 58
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 36389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.045166015625,
+ "outerTime": 56
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 46389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.14404296875,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 46389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 13,
+ "innerTime": 0.155029296875,
+ "outerTime": 56
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 46389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.135986328125,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "listHard",
+ "meterType": "xs-meter-7",
+ "compute": 1088690,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 7083,
+ "mapSetRemoveCount": 1699,
+ "maxBucketSize": 22,
+ "innerTime": 10.50390625,
+ "outerTime": 64
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 1000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 574207,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 7083,
+ "mapSetRemoveCount": 1699,
+ "maxBucketSize": 25,
+ "innerTime": 8.087158203125,
+ "outerTime": 66
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 1000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 553536,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 5542,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 22,
+ "innerTime": 7.427001953125,
+ "outerTime": 67
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 1000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 588855,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 5628,
+ "mapSetRemoveCount": 1699,
+ "maxBucketSize": 16,
+ "innerTime": 8.22412109375,
+ "outerTime": 63
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 126389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.3837890625,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 126389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 15,
+ "innerTime": 0.384033203125,
+ "outerTime": 55
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 126389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 0.43994140625,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 226389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 1.343017578125,
+ "outerTime": 53
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 226389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 16,
+ "innerTime": 1.404052734375,
+ "outerTime": 56
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 226389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 18,
+ "innerTime": 1.346923828125,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 10000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 5497207,
+ "allocate": 260179616,
+ "allocateChunksCalls": 53,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 2040,
+ "mapSetAddCount": 43083,
+ "mapSetRemoveCount": 10699,
+ "maxBucketSize": 93,
+ "innerTime": 6083.156005859375,
+ "outerTime": 6137
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 10000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 4900536,
+ "allocate": 260179616,
+ "allocateChunksCalls": 53,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 2044,
+ "mapSetAddCount": 32542,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 95,
+ "innerTime": 5468.64404296875,
+ "outerTime": 5525
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 10000,
+ "name": "hardList",
+ "meterType": "xs-meter-7",
+ "compute": 5232855,
+ "allocate": 260179616,
+ "allocateChunksCalls": 53,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 2044,
+ "mapSetAddCount": 32628,
+ "mapSetRemoveCount": 10699,
+ "maxBucketSize": 88,
+ "innerTime": 6396.0849609375,
+ "outerTime": 6451
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 1026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 17,
+ "innerTime": 3.56103515625,
+ "outerTime": 59
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 1026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 17,
+ "innerTime": 3.4951171875,
+ "outerTime": 57
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100000,
+ "name": "nothing",
+ "meterType": "xs-meter-7",
+ "compute": 1026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 0,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 17,
+ "innerTime": 3.821044921875,
+ "outerTime": 60
+} 
+,
+
+{
+ "branding": "BOTH",
+ "count": 100000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 2026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 1,
+ "mapSetAddCount": 3079,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 14.058837890625,
+ "outerTime": 69
+} 
+,
+
+{
+ "branding": "POSITIVE",
+ "count": 100000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 2026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 1,
+ "mapSetAddCount": 2417,
+ "mapSetRemoveCount": 0,
+ "maxBucketSize": 13,
+ "innerTime": 14.285888671875,
+ "outerTime": 70
+} 
+,
+
+{
+ "branding": "NEGATIVE",
+ "count": 100000,
+ "name": "list",
+ "meterType": "xs-meter-7",
+ "compute": 2026389,
+ "allocate": 42074144,
+ "allocateChunksCalls": 1,
+ "allocateSlotsCalls": 2,
+ "garbageCollectionCount": 1,
+ "mapSetAddCount": 2503,
+ "mapSetRemoveCount": 698,
+ "maxBucketSize": 16,
+ "innerTime": 14.050048828125,
+ "outerTime": 69
+} 
+
+]

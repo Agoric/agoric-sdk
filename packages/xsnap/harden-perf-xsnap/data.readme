@@ -1,0 +1,9 @@
+The 'turing-node-data.json' file was created by running
+
+ yarn test -v -s test/test-harden-perf.js |& tee test.out
+
+and then manually stripping out all the test-runner (ava) notes, failed
+tests, and then editing the rest to be valid JSON.
+
+This was run on my local linux box 'turing', the same as
+../harden-perf-node/turing-node-data.json .
