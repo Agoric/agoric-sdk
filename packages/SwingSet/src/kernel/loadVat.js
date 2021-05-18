@@ -202,6 +202,7 @@ export function makeVatLoader(stuff) {
       name,
       vatSourceBundle,
       managerType,
+      vatParameters,
     );
     const managerOptions = {
       managerType,
