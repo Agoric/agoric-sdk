@@ -3,7 +3,7 @@
 ## Caveat
 
 Until each module can be migrated to support Node.js's builtin ESM
-implementation (`NESM`), the coverage line numbers will be out-of-sync with
+implementation (`nesm`), the coverage line numbers will be out-of-sync with
 reality.
 
 In addition, we will have to implement source maps in all of our
@@ -12,7 +12,7 @@ source-to-source transforms (such as `@agoric/bundle-source`,
 
 ## Reports
 
-Coverage reports for the current main branch (whose packages support `NESM`) are
+Coverage reports for the current main branch (whose packages support `nesm`) are
 published by CI to: https://agoric-sdk-coverage.netlify.app
 
 You can create a report in any package (including the top-level directory):
@@ -27,34 +27,33 @@ yarn c8 report --reporter=html-spa
 open coverage/html/index.html
 ```
 
-## NESM Support
+## Node.js ESM Support
 
 With the current `patches/esm+3.2.25.diff`, it is possible to migrate packages
-to support both RESM (`-r esm`) and NESM.  If an `agoric-sdk` package has
-dependencies that support NESM, you can attempt to make it also support NESM by:
+to support both resm (`-r esm`) and nesm (Node.js ESM Support).  If an
+`agoric-sdk` package has dependencies that support nesm, you can attempt to make
+it also support nesm by:
 
-1. Make the following changes to its `package.json` (omitting comments):
+1. Create `ava-nesm.config.js` removing `"require": ["esm"]`:
+
+```sh
+../../scripts/ava-nesm.cjs > ava-nesm.config.js
+```
+
+2. Make the following changes to its `package.json` (omitting comments):
 
 ```json
 {
-  // Enable NESM support.
+  // Enable nesm support.
   "type": "module",
   "scripts": {
     // The following line enables coverage generation from the top.
-    "test:c8": "c8 $C8_OPTIONS ava",
-  },
-  "devDependencies": {
-    // Remove:
-    // "esm": "^3.2.25"
-  }
-  "ava": {
-    // Remove:
-    // "require": ["esm"]
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
   }
 }
 ```
 
-2. Test that it runs correctly with both `yarn test` and `yarn test:c8`.
+3. Test that both `yarn test` and `yarn test:c8` run correctly.
 
 ## Planned Implementation
 

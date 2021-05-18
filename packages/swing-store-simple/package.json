@@ -13,7 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
@@ -22,7 +22,8 @@
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "esm": "^3.2.25"
   },
   "publishConfig": {
     "access": "public"
@@ -30,6 +31,9 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
     ],
     "timeout": "2m"
   },

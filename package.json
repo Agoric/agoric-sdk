@@ -76,7 +76,7 @@
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
     "test": "ava",
-    "test:all-c8": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8 || :",
+    "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build",
     "postinstall": "patch-package",
