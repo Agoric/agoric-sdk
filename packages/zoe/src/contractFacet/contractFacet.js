@@ -44,7 +44,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       getAssetKindByBrand,
       getBrandForIssuer,
       getIssuerForBrand,
-    } = makeIssuerStorage(issuerStorageFromZoe);
+      instantiate: instantiateIssuerStorage,
+    } = makeIssuerStorage();
+    instantiateIssuerStorage(issuerStorageFromZoe);
 
     const {
       makeZCFSeat,
@@ -61,7 +63,9 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       addIssuerToInstanceRecord,
       getTerms,
       assertUniqueKeyword,
-    } = makeInstanceRecordStorage(instanceRecordFromZoe);
+      instantiate: instantiateInstanceRecordStorage,
+    } = makeInstanceRecordStorage();
+    instantiateInstanceRecordStorage(instanceRecordFromZoe);
 
     const recordIssuer = (keyword, issuerRecord) => {
       addIssuerToInstanceRecord(keyword, issuerRecord);
