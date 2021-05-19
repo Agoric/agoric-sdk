@@ -30,7 +30,7 @@ end note
 Zoe --\\ Zcf : <font color=gray><size:12> invitation
 Zcf --\\ contract : <font color=gray><size:12> invitation
 contract --\\ Zcf : <font color=gray><size:12> {creatorFacet, creatorInvitation, publicFacet }
-Zcf --\\ Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation, addSeatObj}
+Zcf --\\ Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation, handleOfferObj}
 Alice //-- Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation}
 
 ====
@@ -38,7 +38,7 @@ Alice //-- Zoe : <font color=gray><size:12> {creatorFacet, creatorInvitation}
 Alice -> Zoe : offer(invitation...)
 Zoe -> Zoe : makeUserSeat
 Zoe -> Alice : <font color=gray><size:12> userSeat
-Zoe -> Zcf : addSeat
+Zoe -> Zcf : handleOffer
 note left
 deposit payments
 end note

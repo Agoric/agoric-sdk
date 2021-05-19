@@ -111,11 +111,11 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       /** @type {ZCFRoot} */
       const zcfRoot = root;
 
-      /** @type {PromiseRecord<AddSeatObj>} */
-      const addSeatObjPromiseKit = makePromiseKit();
+      /** @type {PromiseRecord<HandleOfferObj>} */
+      const handleOfferObjPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
-      addSeatObjPromiseKit.promise.catch(_ => {});
+      handleOfferObjPromiseKit.promise.catch(_ => {});
       const publicFacetPromiseKit = makePromiseKit();
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
       // This does not suppress any error messages.
@@ -183,8 +183,8 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
             zoeSeatAdmins.add(zoeSeatAdmin);
 
-            E(addSeatObjPromiseKit.promise)
-              .addSeat(invitationHandle, zoeSeatAdmin, seatData)
+            E(handleOfferObjPromiseKit.promise)
+              .handleOffer(invitationHandle, zoeSeatAdmin, seatData)
               .then(({ offerResultP, exitObj }) => {
                 offerResultPromiseKit.resolve(offerResultP);
                 exitObjPromiseKit.resolve(exitObj);
@@ -272,7 +272,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         creatorFacet = Far('emptyCreatorFacet', {}),
         publicFacet = Far('emptyPublicFacet', {}),
         creatorInvitation: creatorInvitationP,
-        addSeatObj,
+        handleOfferObj,
       } = await E(zcfRoot).executeContract(
         bundle,
         zoeService,
@@ -282,7 +282,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         exportIssuerStorage(),
       );
 
-      addSeatObjPromiseKit.resolve(addSeatObj);
+      handleOfferObjPromiseKit.resolve(handleOfferObj);
       publicFacetPromiseKit.resolve(publicFacet);
 
       // creatorInvitation can be undefined, but if it is defined,
