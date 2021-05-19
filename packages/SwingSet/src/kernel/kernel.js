@@ -1,3 +1,4 @@
+// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions';
@@ -124,9 +125,24 @@ export default function buildKernel(
 
   let started = false;
 
+  /**
+   * @typedef {{
+   *   manager: VatManager,
+   *   enablePipelining: boolean,
+   *   notifyTermination: (s: boolean, info: unknown) => void,
+   *   translators: ReturnType<typeof import('./vatTranslator').makeVatTranslators>,
+   * }} VatInfo
+   * @typedef {{
+   *   manager: unknown,
+   *   translators: ReturnType<makeDeviceTranslators>,
+   * }} DeviceInfo
+   */
   const ephemeral = {
-    vats: new Map(), // vatID -> { manager, enablePipelining }
-    devices: new Map(), // deviceID -> { manager }
+    /** @type {Map<string, VatInfo> }> } key is vatID */
+    vats: new Map(),
+    /** @type { Map<string, DeviceInfo> } key is deviceID */
+    devices: new Map(),
+    /** @type {string[]} */
     log: [],
   };
 
@@ -314,6 +330,7 @@ export default function buildKernel(
   function removeVatManager(vatID, shouldReject, info) {
     insistCapData(info);
     const old = ephemeral.vats.get(vatID);
+    assert(old, `no such vat: ${vatID}`);
     ephemeral.vats.delete(vatID);
     old.notifyTermination(shouldReject, info);
     return old.manager.shutdown();
@@ -346,7 +363,10 @@ export default function buildKernel(
 
   async function deliverAndLogToVat(vatID, kernelDelivery, vatDelivery) {
     const vat = ephemeral.vats.get(vatID);
+    assert(vat);
     const crankNum = kernelKeeper.getCrankNumber();
+    /** @typedef { any } FinishFunction TODO: static types for slog? */
+    /** @type { FinishFunction } */
     const finish = kernelSlog.delivery(
       vatID,
       crankNum,
@@ -618,7 +638,6 @@ export default function buildKernel(
     kernelKeeper,
     vatEndowments,
     meterManager,
-    testLog,
     transformMetering,
     makeNodeWorker,
     startSubprocessWorkerNode,
@@ -658,6 +677,7 @@ export default function buildKernel(
         return harden(['error', problem]);
       }
 
+      /** @type { FinishFunction } */
       const finish = kernelSlog.syscall(vatID, ksc, vatSyscallObject);
       let vres;
       try {
@@ -914,6 +934,7 @@ export default function buildKernel(
       if (!vat) {
         logStartup(`skipping reload of dead vat ${vatID}`);
       } else {
+        /** @type { FinishFunction } */
         const slogDone = kernelSlog.replayVatTranscript(vatID);
         // eslint-disable-next-line no-await-in-loop
         await vat.manager.replayTranscript();

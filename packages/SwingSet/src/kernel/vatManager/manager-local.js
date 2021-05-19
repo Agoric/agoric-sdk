@@ -27,7 +27,7 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, vatSyscallHandler, meterRecord) {
+  function prepare(vatID, vatSyscallHandler, meterRecord, compareSyscalls) {
     const mtools = harden({ stopGlobalMeter, meterRecord, refillAllMeters });
     const mk = makeManagerKit(
       vatID,
@@ -35,6 +35,7 @@ export function makeLocalVatManagerFactory(tools) {
       kernelKeeper,
       vatSyscallHandler,
       true,
+      compareSyscalls,
     );
 
     function finish(dispatch) {
@@ -60,8 +61,13 @@ export function makeLocalVatManagerFactory(tools) {
     assert(!managerOptions.metered, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
 
-    const { syscall, finish } = prepare(vatID, vatSyscallHandler, null);
-    const { vatParameters } = managerOptions;
+    const { vatParameters, compareSyscalls } = managerOptions;
+    const { syscall, finish } = prepare(
+      vatID,
+      vatSyscallHandler,
+      null,
+      compareSyscalls,
+    );
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
     const state = null; // TODO remove from setup()
@@ -85,6 +91,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatConsole,
       liveSlotsConsole,
       virtualObjectCacheSize,
+      compareSyscalls,
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
@@ -101,7 +108,12 @@ export function makeLocalVatManagerFactory(tools) {
       });
     }
 
-    const { syscall, finish } = prepare(vatID, vatSyscallHandler, meterRecord);
+    const { syscall, finish } = prepare(
+      vatID,
+      vatSyscallHandler,
+      meterRecord,
+      compareSyscalls,
+    );
 
     const vatPowers = harden({
       ...baseVP,
@@ -129,6 +141,7 @@ export function makeLocalVatManagerFactory(tools) {
       assert,
     });
     const inescapableTransforms = [];
+    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
     const inescapableGlobalLexicals = {};
     if (metered) {
       const getMeter = meterRecord.getMeter;
@@ -141,6 +154,7 @@ export function makeLocalVatManagerFactory(tools) {
       endowments,
       inescapableTransforms,
       inescapableGlobalLexicals,
+      inescapableGlobalProperties,
     });
 
     let dispatch;

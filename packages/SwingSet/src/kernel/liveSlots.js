@@ -27,7 +27,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} console
- * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -342,10 +342,14 @@ function build(
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
+    RepairedWeakMap,
+    RepairedWeakSet,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
     valToSlot,
+    // eslint-disable-next-line no-use-before-define
+    registerValue,
     m,
     cacheSize,
   );
@@ -397,7 +401,7 @@ function build(
   }
 
   function registerValue(slot, val) {
-    const { type } = parseVatSlot(slot);
+    const { type, virtual } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
     if (type === 'object' || type === 'device') {
@@ -414,16 +418,30 @@ function build(
     // that test-liveslots.js test('dropImports') passes despite this,
     // because it uses a fake WeakRef that doesn't care about the strong
     // reference.
-    safetyPins.add(val);
+    if (!virtual) {
+      safetyPins.add(val);
+    }
   }
 
   function convertSlotToVal(slot, iface = undefined) {
+    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     const wr = slotToVal.get(slot);
     let val = wr && wr.deref();
     if (val) {
+      if (virtual) {
+        // If it's a virtual object for which we already have a representative,
+        // we are going to use that existing representative to preserve ===
+        // equality and WeakMap key usability, BUT we are going to ask the user
+        // code to make a new representative anyway (which we'll discard) so
+        // that as far as the user code is concerned we are making a new
+        // representative with each act of deserialization.  This way they can't
+        // detect reanimation by playing games inside their instanceKitMaker to
+        // try to observe when new representatives are created (e.g., by
+        // counting calls or squirreling things away in hidden WeakMaps).
+        makeVirtualObjectRepresentative(slot, true); // N.b.: throwing away the result
+      }
       return val;
     }
-    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     if (virtual) {
       // Virtual objects should never be put in the slotToVal table, as their
       // entire raison d'etre is to be absent from memory when they're not being
@@ -433,7 +451,7 @@ function build(
       // this anyway in the cases of creating virtual objects in the first place
       // and swapping them in from disk.
       assert.equal(type, 'object');
-      val = makeVirtualObjectRepresentative(slot);
+      val = makeVirtualObjectRepresentative(slot, false);
     } else {
       assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -459,8 +477,8 @@ function build(
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
-      registerValue(slot, val);
     }
+    registerValue(slot, val);
     return val;
   }
 
@@ -797,6 +815,11 @@ function build(
     makeKind,
   });
 
+  const inescapableGlobalProperties = harden({
+    WeakMap: RepairedWeakMap,
+    WeakSet: RepairedWeakSet,
+  });
+
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
     didRoot = true;
@@ -888,7 +911,14 @@ function build(
   harden(dispatch);
 
   // we return 'deadSet' for unit tests
-  return harden({ vatGlobals, setBuildRootObject, dispatch, m, deadSet });
+  return harden({
+    vatGlobals,
+    inescapableGlobalProperties,
+    setBuildRootObject,
+    dispatch,
+    m,
+    deadSet,
+  });
 }
 
 /**
@@ -903,7 +933,7 @@ function build(
  * @param {boolean} enableDisavow
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
- * @returns {*} { vatGlobals, dispatch, setBuildRootObject }
+ * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -951,8 +981,20 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
   );
-  const { vatGlobals, dispatch, setBuildRootObject, deadSet } = r; // omit 'm'
-  return harden({ vatGlobals, dispatch, setBuildRootObject, deadSet });
+  const {
+    vatGlobals,
+    inescapableGlobalProperties,
+    dispatch,
+    setBuildRootObject,
+    deadSet,
+  } = r; // omit 'm'
+  return harden({
+    vatGlobals,
+    inescapableGlobalProperties,
+    dispatch,
+    setBuildRootObject,
+    deadSet,
+  });
 }
 
 // for tests
