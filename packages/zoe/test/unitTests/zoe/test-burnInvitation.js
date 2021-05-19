@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { Far } from '@agoric/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
@@ -10,8 +11,8 @@ import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation';
 test('burnInvitation', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
 
-  const instanceHandle = {};
-  const invitationHandle = {};
+  const instanceHandle = Far('handle', {});
+  const invitationHandle = Far('handle', {});
 
   const invitation = mockInvitationKit.mint.mintPayment(
     AmountMath.make(mockInvitationKit.brand, [
@@ -38,8 +39,8 @@ test('burnInvitation - not an invitation', async t => {
 test('burnInvitation - invitation already used', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
 
-  const instanceHandle = {};
-  const invitationHandle = {};
+  const instanceHandle = Far('handle', {});
+  const invitationHandle = Far('handle', {});
 
   const invitation = mockInvitationKit.mint.mintPayment(
     AmountMath.make(mockInvitationKit.brand, [
@@ -57,6 +58,28 @@ test('burnInvitation - invitation already used', async t => {
     {
       message:
         'A Zoe invitation is required, not "[Alleged: mockInvitation payment]"',
+    },
+  );
+});
+
+test('burnInvitation - multiple invitations', async t => {
+  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
+
+  const instanceHandle = Far('handle', {});
+  const invitationHandle1 = Far('handle', {});
+  const invitationHandle2 = Far('handle', {});
+
+  const invitations = mockInvitationKit.mint.mintPayment(
+    AmountMath.make(mockInvitationKit.brand, [
+      { instance: instanceHandle, handle: invitationHandle1 },
+      { instance: instanceHandle, handle: invitationHandle2 },
+    ]),
+  );
+
+  await t.throwsAsync(
+    () => burnInvitation(mockInvitationKit.issuer, invitations),
+    {
+      message: 'Only one invitation can be redeemed at a time',
     },
   );
 });
