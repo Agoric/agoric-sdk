@@ -62,7 +62,7 @@
  */
 
 /**
- * @typedef {Object} AddSeatResult
+ * @typedef {Object} HandleOfferResult
  * @property {Promise<any>} offerResultP
  * @property {Object} exitObj
  */
@@ -93,11 +93,11 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} AddSeatObj
+ * @typedef {Object} HandleOfferObj
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
- *            ) => AddSeatResult} addSeat
+ *            ) => HandleOfferResult} handleOffer
  */
 
 /**
@@ -169,7 +169,7 @@
  * @property {Object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
  * @property {Object} publicFacet
- * @property {AddSeatObj} addSeatObj
+ * @property {HandleOfferObj} handleOfferObj
  *
  *
  * @callback ExecuteContract

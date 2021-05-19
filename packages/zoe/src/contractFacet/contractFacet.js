@@ -299,11 +299,11 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       },
     });
 
-    // addSeatObject gives Zoe the ability to notify ZCF when a new seat is
+    // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
     // added in offer(). ZCF responds with the exitObj and offerResult.
-    /** @type {AddSeatObj} */
-    const addSeatObj = Far('addSeatObj', {
-      addSeat: (invitationHandle, zoeSeatAdmin, seatData) => {
+    /** @type {HandleOfferObj} */
+    const handleOfferObj = Far('handleOfferObj', {
+      handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
         const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
         const offerHandler = invitationHandleToHandler.get(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
@@ -316,7 +316,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           throw zcfSeat.fail(reason);
         });
         const exitObj = makeExitObj(seatData.proposal, zcfSeat);
-        /** @type {AddSeatResult} */
+        /** @type {HandleOfferResult} */
         return harden({ offerResultP, exitObj });
       },
     });
@@ -341,7 +341,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
             creatorFacet,
             publicFacet,
             creatorInvitation,
-            addSeatObj,
+            handleOfferObj,
           });
         },
       );
