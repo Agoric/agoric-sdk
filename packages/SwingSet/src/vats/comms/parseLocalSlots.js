@@ -13,7 +13,7 @@ import { assert, details as X } from '@agoric/assert';
  *      id: Nat
  *   }
  *
- * @param {string} s  The string to be parsed, as described above.
+ * @param {unknown} s  The string to be parsed, as described above.
  *
  * @returns {{type: 'object' | 'promise', id: number}} a local slot object corresponding to the parameter.
  *

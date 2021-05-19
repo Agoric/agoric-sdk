@@ -16,16 +16,18 @@
  *   enableSetup: true,
  * }} HasSetup
  *
- * TODO: metered...
- *
+ * TODO: liveSlotsConsole...
  * See validateManagerOptions() in factory.js
+ *
  * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
  * @typedef {{
+ *   enablePipelining?: boolean,
  *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
- *   vatParameters: Record<string, unknown>,
+ *   notifyTermination?: (shouldReject: boolean, info: SwingSetCapData) => void,
  *   virtualObjectCacheSize: number,
+ *   vatParameters: Record<string, unknown>,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  * } & (HasBundle | HasSetup)} ManagerOptions
@@ -116,7 +118,7 @@
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: () => void,
+ *              replayTranscript: () => Promise<void>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { () => Promise<void> } WaitUntilQuiescent
