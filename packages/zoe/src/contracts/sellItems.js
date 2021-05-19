@@ -52,17 +52,20 @@ const start = zcf => {
 
   const sell = seat => {
     sellerSeat = seat;
-    observeIteration(sellerSeat.getNotifier(), harden({
-      updateState: sellerSeatAllocation => availableItemsUpdater.updateState(sellerSeatAllocation.Items),
-      finish:      sellerSeatAllocation => {
-        if (sellerSeatAllocation === undefined) {
-          availableItemsUpdater.finish(undefined);
-        } else {
-          availableItemsUpdater.finish(sellerSeatAllocation.Items);
-        }
-      },
-      fail: reason => availableItemsUpdater.fail(reason),
-    }));
+    observeIteration(
+      sellerSeat.getNotifier(),
+      harden({
+        updateState: sellerSeatAllocation => availableItemsUpdater.updateState(sellerSeatAllocation.Items),
+        finish: sellerSeatAllocation => {
+          if (sellerSeatAllocation === undefined) {
+            availableItemsUpdater.finish(undefined);
+          } else {
+            availableItemsUpdater.finish(sellerSeatAllocation.Items);
+          }
+        },
+        fail: reason => availableItemsUpdater.fail(reason),
+      }),
+    );
     return defaultAcceptanceMsg;
   };
 
