@@ -45,8 +45,10 @@ const start = zcf => {
 
   let sellerSeat;
 
-  const { notifier: availableItemsNotifier,
-          updater: availableItemsUpdater } = makeNotifierKit();
+  const {
+    notifier: availableItemsNotifier,
+    updater: availableItemsUpdater,
+  } = makeNotifierKit();
 
   const sell = seat => {
     sellerSeat = seat;
