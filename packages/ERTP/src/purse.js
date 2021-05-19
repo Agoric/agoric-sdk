@@ -26,9 +26,7 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
         optAmount,
       );
     },
-    withdraw: amount => {
-      return purseMethods.withdraw(currentBalance, commit, amount);
-    },
+    withdraw: amount => purseMethods.withdraw(currentBalance, commit, amount),
     getCurrentAmount: () => currentBalance,
     getCurrentAmountNotifier: () => balanceNotifier,
     getAllegedBrand: () => brand,
