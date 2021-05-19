@@ -10,7 +10,6 @@
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -25,6 +24,7 @@ import { makeIssuerRecord } from '../issuerRecord';
 import { createSeatManager } from './zcfSeat';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage';
 import { handlePWarning, handlePKitWarning } from '../handleWarning';
+import { makeOfferHandlerStorage } from './offerHandlerStorage';
 
 import '../../exported';
 import '../internal-types';
@@ -55,8 +55,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       dropAllReferences,
     } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand);
 
-    /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
-    const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
+    const { storeOfferHandler, getOfferHandler } = makeOfferHandlerStorage();
 
     // Make the instanceRecord
     const {
@@ -247,8 +246,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
           X`invitations must have a description string: ${description}`,
         );
 
-        const invitationHandle = makeHandle('Invitation');
-        invitationHandleToHandler.init(invitationHandle, offerHandler);
+        const invitationHandle = storeOfferHandler(offerHandler);
         /** @type {Promise<Payment>} */
         const invitationP = E(zoeInstanceAdmin).makeInvitation(
           invitationHandle,
@@ -306,7 +304,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const handleOfferObj = Far('handleOfferObj', {
       handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
         const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
-        const offerHandler = invitationHandleToHandler.get(invitationHandle);
+        const offerHandler = getOfferHandler(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           if (reason === undefined) {
             const newErr = new Error(
