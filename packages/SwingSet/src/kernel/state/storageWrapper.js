@@ -121,6 +121,8 @@ export function buildCrankBuffer(kvStore) {
     },
 
     *getKeys(start, end) {
+      assert.typeof(start, 'string');
+      assert.typeof(end, 'string');
       const keys = new Set(kvStore.getKeys(start, end));
       for (const k of additions.keys()) {
         keys.add(k);
@@ -129,13 +131,14 @@ export function buildCrankBuffer(kvStore) {
         keys.delete(k);
       }
       for (const k of Array.from(keys).sort()) {
-        if (start <= k && k < end) {
+        if ((start === '' || start <= k) && (end === '' || k < end)) {
           yield k;
         }
       }
     },
 
     get(key) {
+      assert.typeof(key, 'string');
       if (additions.has(key)) {
         return additions.get(key);
       }
@@ -146,11 +149,14 @@ export function buildCrankBuffer(kvStore) {
     },
 
     set(key, value) {
+      assert.typeof(key, 'string');
+      assert.typeof(value, 'string');
       additions.set(key, value);
       deletions.delete(key);
     },
 
     delete(key) {
+      assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
     },
