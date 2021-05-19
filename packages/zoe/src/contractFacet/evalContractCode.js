@@ -4,6 +4,7 @@
 
 import { importBundle } from '@agoric/import-bundle';
 import { assert } from '@agoric/assert';
+import { handlePWarning } from '../handleWarning';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {
   // Make the console more verbose.
@@ -30,9 +31,7 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const installation = importBundle(bundle, {
     endowments: fullEndowments,
   });
-  // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-  // This does not suppress any error messages.
-  installation.catch(() => {});
+  handlePWarning(installation);
   return installation;
 };
 
