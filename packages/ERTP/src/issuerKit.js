@@ -31,6 +31,14 @@ const makeIssuerKit = (
   /** @type {PromiseRecord<Issuer>} */
   const issuerPromiseKit = makePromiseKit();
 
+  /**
+   * We can define this function to use the in-scope `issuer` variable
+   * before that variable is initialized, as long as the variable is
+   * initialized before the function is called.
+   *
+   * @param {Issuer} allegedIssuer
+   * @returns {boolean}
+   */
   // eslint-disable-next-line no-use-before-define
   const isMyIssuerNow = allegedIssuer => allegedIssuer === issuer;
 
