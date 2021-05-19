@@ -31,11 +31,10 @@ const makeIssuerKit = (
   /** @type {PromiseRecord<Issuer>} */
   const issuerPromiseKit = makePromiseKit();
 
-  const brand = makeBrand(
-    allegedName,
-    issuerPromiseKit.promise,
-    cleanDisplayInfo,
-  );
+  // eslint-disable-next-line no-use-before-define
+  const isMyIssuerNow = allegedIssuer => allegedIssuer === issuer;
+
+  const brand = makeBrand(allegedName, isMyIssuerNow, cleanDisplayInfo);
 
   // Attenuate the powerful authority to mint and change balances
   const { issuer, mint } = makePaymentLedger(
