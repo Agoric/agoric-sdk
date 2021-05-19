@@ -2,7 +2,6 @@
 // @jessie-check
 
 import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
 
 import { AssetKind } from './amountMath';
 import { coerceDisplayInfo } from './displayInfo';
@@ -28,9 +27,6 @@ const makeIssuerKit = (
   // Add assetKind to displayInfo, or override if present
   const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
 
-  /** @type {PromiseRecord<Issuer>} */
-  const issuerPromiseKit = makePromiseKit();
-
   /**
    * We can define this function to use the in-scope `issuer` variable
    * before that variable is initialized, as long as the variable is
@@ -51,8 +47,6 @@ const makeIssuerKit = (
     assetKind,
     cleanDisplayInfo,
   );
-
-  issuerPromiseKit.resolve(issuer);
 
   return harden({
     brand,
