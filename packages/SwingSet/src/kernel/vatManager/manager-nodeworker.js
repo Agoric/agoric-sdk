@@ -40,6 +40,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      compareSyscalls,
     } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
@@ -53,6 +54,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       kernelKeeper,
       vatSyscallHandler,
       false,
+      compareSyscalls,
     );
 
     // start the worker and establish a connection

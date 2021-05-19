@@ -54,6 +54,7 @@ export function makeXsSubprocessFactory({
       enableDisavow,
       name,
       metered,
+      compareSyscalls,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
@@ -65,6 +66,7 @@ export function makeXsSubprocessFactory({
       kernelKeeper,
       vatSyscallHandler,
       true,
+      compareSyscalls,
     );
 
     /** @type { (item: Tagged) => unknown } */
