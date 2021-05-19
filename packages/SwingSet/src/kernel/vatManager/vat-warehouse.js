@@ -3,8 +3,8 @@ import { assert } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
 
 /**
- * @param { ReturnType<typeof import('../state/kernelKeeper').default> } kernelKeeper
- * @param { ReturnType<typeof import('../loadVat').makeVatLoader> } vatLoader
+ * @param { KernelKeeper } kernelKeeper
+ * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
  * @param {{ maxVatsOnline?: number }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler

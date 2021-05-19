@@ -10,8 +10,19 @@ import './types.js';
 import { insistStorageAPI } from './storageAPI.js';
 import { initializeKernel } from './kernel/initializeKernel.js';
 
+/**
+ * @param {X[]} xs
+ * @param {Y[]} ys
+ * @returns {[X, Y][]}
+ * @template X, Y
+ */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const { keys, values, fromEntries } = Object;
+/**
+ * @param {Record<string, Promise<V>>} obj
+ * @returns {Promise<Record<string, V>>}
+ * @template V
+ */
 const allValues = async obj =>
   fromEntries(zip(keys(obj), await Promise.all(values(obj))));
 

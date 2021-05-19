@@ -125,7 +125,7 @@ export default function buildKernel(
   } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  const { kvStore, streamStore } = hostStorage;
+  const { kvStore, streamStore } = /** @type { HostStore } */ (hostStorage);
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
   const vatAdminRootKref = kvStore.get('vatAdminRootKref');
@@ -268,13 +268,12 @@ export default function buildKernel(
    * @param {string} kref  Target of the message
    * @param {string} method  The message verb
    * @param {*} args  The message arguments
-   * @param {string} policy How the kernel should handle an eventual
+   * @param {ResolutionPolicy=} policy How the kernel should handle an eventual
    *    resolution or rejection of the message's result promise. Should be
    *    one of 'sendOnly' (don't even create a result promise), 'ignore' (do
    *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
    *    (log only rejections), or 'panic' (panic the kernel upon a
    *    rejection).
-   *
    * @returns {string?} the kpid of the sent message's result promise, if any
    */
   function queueToKref(kref, method, args, policy = 'ignore') {
@@ -336,6 +335,10 @@ export default function buildKernel(
         resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
       }
       if (isDynamic) {
+        assert(
+          vatAdminRootKref,
+          `initializeKernel did not set vatAdminRootKref`,
+        );
         notifyTermination(
           vatID,
           vatAdminRootKref,
@@ -586,6 +589,7 @@ export default function buildKernel(
     }
 
     function sendResponse(args) {
+      // @ts-ignore see assert(...) above
       queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
     }
 

@@ -30,7 +30,6 @@ const decoder = new TextDecoder();
  *
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
  * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
- * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
  */
 export function makeXsSubprocessFactory({
   kernelKeeper,
