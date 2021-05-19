@@ -1,7 +1,6 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
-
-import { markBrand } from './markObjects.js';
+import { Far } from '@agoric/marshal';
 
 /**
  * @param {string} allegedName
@@ -11,7 +10,7 @@ import { markBrand } from './markObjects.js';
  */
 export const makeBrand = (allegedName, isMyIssuerNow, displayInfo) => {
   /** @type {Brand} */
-  const brand = markBrand(allegedName, {
+  const brand = Far(`${allegedName} brand`, {
     isMyIssuer: allegedIssuerP => E.when(allegedIssuerP, isMyIssuerNow),
 
     getAllegedName: () => allegedName,

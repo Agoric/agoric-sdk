@@ -1,7 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
+import { Far } from '@agoric/marshal';
 import { AmountMath } from './amountMath';
-
-import { markDepositFacet, markPurse } from './markObjects';
 
 export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
   let currentBalance = AmountMath.makeEmpty(brand, assetKind);
@@ -18,7 +17,7 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
   };
 
   /** @type {Purse} */
-  const purse = markPurse(allegedName, {
+  const purse = Far(`${allegedName} purse`, {
     deposit: (srcPayment, optAmount = undefined) => {
       return purseMethods.deposit(
         currentBalance,
@@ -37,7 +36,7 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
     getDepositFacet: () => depositFacet,
   });
 
-  const depositFacet = markDepositFacet(allegedName, {
+  const depositFacet = Far(`${allegedName} depositFacet`, {
     receive: purse.deposit,
   });
 

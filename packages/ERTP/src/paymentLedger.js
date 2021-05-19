@@ -4,11 +4,11 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 import { AmountMath } from './amountMath';
 import { makePaymentMaker } from './payment';
 import { makePurse } from './purse';
-import { markIssuer, markMint } from './markObjects';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/store/exported';
@@ -238,7 +238,7 @@ export const makePaymentLedger = (
   };
 
   /** @type {Issuer} */
-  const issuer = markIssuer(allegedName, {
+  const issuer = Far(`${allegedName} issuer`, {
     isLive,
     getAmountOf,
     burn,
@@ -255,7 +255,7 @@ export const makePaymentLedger = (
   });
 
   /** @type {Mint} */
-  const mint = markMint(allegedName, {
+  const mint = Far(`${allegedName} mint`, {
     getIssuer: () => issuer,
     mintPayment,
   });

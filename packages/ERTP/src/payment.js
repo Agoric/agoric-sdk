@@ -1,13 +1,13 @@
 // @ts-check
 /* global makeKind */
 
-import { markPayment } from './markObjects';
+import { Far } from '@agoric/marshal';
 
 export const makePaymentMaker = (allegedName, brand) => {
   const paymentVOFactory = state => {
     return {
       init: b => (state.brand = b),
-      self: markPayment(allegedName, {
+      self: Far(`${allegedName} payment`, {
         getAllegedBrand: () => state.brand,
       }),
     };
