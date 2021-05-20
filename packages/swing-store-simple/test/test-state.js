@@ -9,7 +9,7 @@ import {
   openSwingStore,
   getAllState,
   isSwingStore,
-} from '../src/simpleSwingStore.js';
+} from '../src/simpleSwingStore';
 
 function testStorage(t, kvStore) {
   t.falsy(kvStore.has('missing'));
