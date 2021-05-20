@@ -12,7 +12,6 @@
   "scripts": {
     "build": "yarn build-zcfBundle",
     "test": "ava --verbose",
-    "test:nyc": "nyc ava",
     "test:xs": "yarn test:xs-unit",
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 test/swingsetTests/**/test-*.js",
@@ -60,7 +59,6 @@
     "@agoric/install-ses": "^0.5.13",
     "ava": "^3.12.1",
     "esm": "^3.2.25",
-    "nyc": "^15.1.0",
     "ses": "^0.12.7"
   },
   "files": [

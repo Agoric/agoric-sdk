@@ -8,7 +8,6 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
-    "test:nyc": "nyc ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
@@ -17,8 +16,7 @@
   "devDependencies": {
     "@agoric/install-ses": "^0.5.13",
     "ava": "^3.12.1",
-    "esm": "^3.2.5",
-    "nyc": "^15.1.0"
+    "esm": "^3.2.5"
   },
   "dependencies": {
     "@agoric/nat": "^4.0.0",
