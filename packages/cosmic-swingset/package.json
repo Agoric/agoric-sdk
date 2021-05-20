@@ -13,7 +13,6 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:nyc": "nyc ava",
     "test:xs": "exit 0",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -46,8 +45,7 @@
     "esm": "^3.2.25"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "nyc": "^15.1.0"
+    "ava": "^3.12.1"
   },
   "eslintConfig": {
     "extends": [

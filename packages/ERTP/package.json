@@ -15,7 +15,6 @@
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 test/swingsetTests/**/test-*.js",
-    "test:nyc": "nyc ava",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
@@ -57,8 +56,7 @@
     "@agoric/install-ses": "^0.5.13",
     "@agoric/swingset-vat": "^0.17.2",
     "ava": "^3.12.1",
-    "esm": "^3.2.25",
-    "nyc": "^15.1.0"
+    "esm": "^3.2.25"
   },
   "files": [
     "src",
