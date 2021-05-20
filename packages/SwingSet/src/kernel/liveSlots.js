@@ -98,7 +98,6 @@ function build(
   const exportedRemotables = new Set(); // objects
   const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
-  const safetyPins = new Set(); // temporary
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
   function retainExportedRemotable(vref) {
@@ -428,25 +427,13 @@ function build(
   }
 
   function registerValue(slot, val) {
-    const { type, virtual } = parseVatSlot(slot);
+    const { type } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
       deadSet.delete(slot); // might have been FINALIZED before, no longer
       droppedRegistry.register(val, slot);
-    }
-
-    // TODO: until #2724 is implemented, we cannot actually release
-    // Presences, else WeakMaps would forget their entries. I'm also
-    // uncertain about releasing Promises early. We disable GC by stashing
-    // everything in the (strong) `safetyPins` Set. Promises are deleted from
-    // this set when we retire their identifiers in retirePromiseID. Note
-    // that test-liveslots.js test('dropImports') passes despite this,
-    // because it uses a fake WeakRef that doesn't care about the strong
-    // reference.
-    if (!virtual) {
-      safetyPins.add(val);
     }
   }
 
@@ -716,7 +703,6 @@ function build(
     if (p) {
       valToSlot.delete(p);
       pendingPromises.delete(p);
-      safetyPins.delete(p);
     }
     slotToVal.delete(promiseID);
   }
