@@ -16,7 +16,7 @@ export function makeDelegator(delegatorAddr, initialStake) {
   const delegations = new Set();
 
   // unpledged is really "never pledged". Until we monitor unbondings, and
-  // respond when they mature, we qon't know how much is available to be
+  // respond when they mature, we don't know how much is available to be
   // withdrawn or delegated anew.
   let unpledgedStake = initialStake;
 
@@ -45,12 +45,12 @@ export function makeDelegator(delegatorAddr, initialStake) {
     unpledgedStake = subtract(unpledgedStake, delta);
   }
 
-  function unbond(delegation, delta, end) {
+  function unbond(delegation, delta, start, end) {
     if (!delegations.has(delegation)) {
       throw Error(`must identify one of my delegations`);
     }
 
-    const { unbonding, replacement } = delegation.unbond(delta, end);
+    const { unbonding, replacement } = delegation.unbond(delta, start, end);
     delegations.delete(delegation);
     delegations.add(unbonding);
     if (replacement) {
@@ -59,7 +59,7 @@ export function makeDelegator(delegatorAddr, initialStake) {
     return { unbonding, replacement };
   }
 
-  function redelegate(delegation, destValidator, delta, end) {
+  function redelegate(delegation, destValidator, delta, start, end) {
     if (!delegations.has(delegation)) {
       throw Error(`must identify one of my delegations`);
     }
@@ -67,6 +67,7 @@ export function makeDelegator(delegatorAddr, initialStake) {
     const { redelegation, replacement } = delegation.redelegate(
       destValidator,
       delta,
+      start,
       end,
     );
     delegations.delete(delegation);

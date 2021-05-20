@@ -40,6 +40,8 @@ export function makeValidator(validatorAddr, stakeAmount, commission = 0) {
       newSet.add(delegation);
       delegationsByDelegator.init(key, newSet);
     }
+
+    currentShares = add(currentShares, delegation.getStake());
   }
 
   function replaceDelegation(priorDelegation, newDelegation) {
@@ -56,14 +58,16 @@ export function makeValidator(validatorAddr, stakeAmount, commission = 0) {
     const delegationSet = delegationsByDelegator.get(key);
     delegationSet.delete(priorDelegation);
     delegationSet.add(newDelegation);
+    const priorStake = priorDelegation.getStake();
+    const delta = subtract(priorStake, newDelegation.getStake());
+    currentShares = subtract(currentShares, delta);
   }
 
-  function addDelegation(delegator, stake) {
+  function addDelegation(delegator, stake, start) {
     // eslint-disable-next-line no-use-before-define
-    const delegation = makeDelegation(delegator, stake, validator);
+    const delegation = makeDelegation(delegator, stake, validator, start);
     storeDelegation(delegation);
 
-    currentShares = add(currentShares, stake);
     delegator.addDelegation(delegation);
     return delegation;
   }
@@ -85,25 +89,22 @@ export function makeValidator(validatorAddr, stakeAmount, commission = 0) {
   // a delegation is partially (or wholly) unbonding
   function unbond(replacement, original, delta) {
     replaceDelegation(original, replacement);
-    currentShares = subtract(currentShares, delta);
 
     // TODO(hibbert): set a timer to clean up delegations
   }
 
   function redelegate(redelegation) {
     storeDelegation(redelegation);
-    currentShares = add(currentShares, redelegation.getStake());
   }
 
   // redelegations name two validators. The source validator reduces the stake
   // assigned to them.
-  function redelegateReduce(redelegation, original, replacement) {
+  function redelegateReduce(redelegation, original, replacement, start) {
     if (replacement) {
       replaceDelegation(original, replacement);
     } else {
-      addDelegation(original);
+      addDelegation(original, undefined, start);
     }
-    currentShares = subtract(currentShares, redelegation.getStake());
   }
 
   // The validator is unbonding through choice or dropping from the active set.

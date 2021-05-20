@@ -18,6 +18,8 @@ import { makeDelegator } from './delegator';
 const { add, subtract, multiply, floorDivide } = natSafeMath;
 const PROPOSER_SHARE = 5;
 
+const bigIntMin = (...args) => args.reduce((m, e) => (e < m ? e : m));
+
 /**
  * Track rewards for tendermint blocks.
  *
@@ -26,7 +28,8 @@ const PROPOSER_SHARE = 5;
  * @param {Timer} blockTimer
  * @param {Disburser} disburser
  * @param {Issuer} issuer
- * @param brand
+ * @param {Brand} brand
+ * @param {RelativeTime} unbondingPeriod
  * @returns {FromCosmos} apiFromCosmos
  */
 export function makeRewards(
@@ -36,11 +39,16 @@ export function makeRewards(
   disburser,
   issuer,
   brand,
+  unbondingPeriod = 5n,
 ) {
   const allValidators = [];
   const activeValidators = [];
   const validatorsByAddr = makeStore('validatorAddr');
   const delegatorsByAddr = makeStore('delegatorAddr');
+
+  // the clock advances at endBlock. staking changes at lastBlockProcessed + 1.
+  // This lets us track the current time without multiple awaits.
+  let lastBlockProcessed = 0n;
 
   function createValidator(
     commission,
@@ -81,6 +89,10 @@ export function makeRewards(
     validator.addDelegation(delegator, shares);
   }
 
+  // TODO(hibbert): this handles undelegation when the entire redelegated amount
+  //  is in the primary delegation. It needs special cases for undelegating
+  //  unbonding amounts, or when the delegations is split with different
+  //  unbonding periods or redelegation routes.
   function undelegate(
     delegatorAddr,
     validatorAddr,
@@ -91,10 +103,18 @@ export function makeRewards(
     const validator = validatorsByAddr.get(validatorAddr);
     assert(validator, X`validator is unknown: ${validatorAddr}`);
 
-    // find delegation from delegator and validator
+    // TODO(hibbert): get one delegation for now. Fix to divide up delegations later
+    // When we're doing it right, Eerror if insufficient shares to redelegate
+    const delegation = validator.getDelegation(delegator, unbondShares);
+    const delta = bigIntMin(delegation.getStake(), unbondShares);
+    const now = lastBlockProcessed + 1n;
 
-    delegator.unbond(delegation);
-    const { replacement } = delegator.unbond(delegation, delta, height);
+    const { replacement } = delegator.unbond(
+      delegation,
+      delta,
+      now,
+      now + unbondingPeriod,
+    );
     delegation.getValidator().unbond(replacement, delegation, delta);
   }
 
@@ -108,61 +128,53 @@ export function makeRewards(
     const srcValidator = validatorsByAddr.get(srcValidatorAddr);
     const dstValidator = validatorsByAddr.get(dstValidatorAddr);
     const delegator = getOrCreateDelegator(delegatorAddr);
+    const now = lastBlockProcessed + 1n;
 
     // TODO(hibbert): get one delegation for now. Fix to divide up delegations later
     // When we're doing it right, Eerror if insufficient shares to redelegate
     const delegation = srcValidator.getDelegation(delegator, shares);
-    const delta =
-      delegation.getStake() < shares ? delegation.getStake() : shares;
-
+    const delta = bigIntMin(delegation.getStake(), shares);
     const { redelegation, replacement } = delegator.redelegate(
       delegation,
       dstValidator,
       delta,
-      completionTime,
+      now,
+      now + unbondingPeriod,
     );
-    srcValidator.redelegateReduce(redelegation, delegation, replacement);
+    srcValidator.redelegateReduce(redelegation, delegation, replacement, now);
     dstValidator.redelegate(redelegation);
   }
 
-  function validatorBonded(ValidatorSigningInfo) {}
+  function validatorBonded(validatorAddr) {
+    const validator = validatorsByAddr.get(validatorAddr);
+    assert(validator, X`unknown validator ${validatorAddr}`);
 
-  function slash(validatorAddress, validatorPower, reason, jailed, fraction) {}
-
-  function validatorUnbonding(validatorAddress) {}
-  function validatorDeleted(validatorAddress) {}
-
-  function snapshotValidators(proposer, blockReward, totalPower) {
-    const now = blockTimer.getCurrentTimestamp();
-    const totalStaked = activeValidators.reduce((total, v) => {
-      return add(total, v.totalStaked());
-    }, 0);
-    assert(
-      totalStaked === totalPower,
-      X`totalStaked (${totalStaked} should equal totalPower ${totalPower}`,
-    );
-
-    const staked = AmountMath.make(brand, totalStaked);
-    const share = makeRatioFromAmounts(blockReward, staked);
-    let decliningRewardPool = blockReward;
-    activeValidators.forEach(v => {
-      const stake = v.totalStaked(now);
-      if (stake > 0 && v !== proposer) {
-        const validatorStake = AmountMath.make(brand, v.totalStaked());
-        const reward = multiplyBy(validatorStake, share);
-        decliningRewardPool = AmountMath.subtract(decliningRewardPool, reward);
-        toCosmos.rewards(reward, v);
-      }
-    });
-    toCosmos.rewards(decliningRewardPool, proposer);
+    activeValidators.push(validator);
+    validator.setBonded();
   }
+
+  function validatorUnbonding(validatorAddress) {
+    const validator = validatorsByAddr.get(validatorAddress);
+    activeValidators.splice(activeValidators.indexOf(validator), 1);
+
+    validator.startUnbonding(/* current time plus unbonding period */);
+  }
+
+  // Without indication of the block where the infraction occurred, can only
+  // slash from the current holdings.
+  function slash(validatorAddress, validatorPower, reason, jailed, fraction) {
+    const validator = validatorsByAddr.get(validatorAddress);
+    validator.slash(validatorPower, fraction, reason);
+    validator.startUnbonding(lastBlockProcessed + unbondingPeriod);
+  }
+
+  function validatorDeleted(validatorAddress) {}
 
   function validatorPowerShares() {
     const validatorToPower = [];
     let totalStaked = 0n;
-    const now = blockTimer.getCurrentTimestamp();
     activeValidators.forEach(v => {
-      const stake = v.totalStaked(now);
+      const stake = v.totalStaked(lastBlockProcessed);
       totalStaked += stake;
       validatorToPower.push({ v, stake });
     });
@@ -181,7 +193,9 @@ export function makeRewards(
     totalPower,
     communityTax,
   ) {
-    // TODO: subtract commision for each validotor; charge communityTax
+    lastBlockProcessed = await E(blockTimer).getCurrentTimestamp();
+
+    // TODO: subtract commission for each validotor; charge communityTax
     const rewardsAmount = AmountMath.make(brand, rewards);
     const proposer = validatorsByAddr.get(proposerAddr);
     if (!validatorsByAddr.has(proposer.getValidatorID())) {

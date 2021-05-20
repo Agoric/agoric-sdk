@@ -20,7 +20,7 @@ const { multiply, floorDivide, add, subtract } = natSafeMath;
  *   returned record(s) replace the record that previously was there.
  */
 
-// The current state of the code deosn't resolve unbonding because it was
+// The current state of the code doesn't resolve unbonding because it was
 // originally used in a context where we were more focused on keeping records.
 // Now that we're focused on paying the rewards, this should be cleaned up, so
 // that delegations get merged into one object when they unbond.
@@ -32,13 +32,15 @@ function slashStake(slashFactor, stake) {
 function slash(slashFactor, stake, delegator, progeny, old, next) {
   if (progeny) {
     progeny.forEach(p => p.slashed(slashFactor));
+    return false;
   } else {
     delegator.slashed(slashStake(slashFactor, stake), old, next);
     old.getValidator().slashDelegation(old, next);
+    return true;
   }
 }
 
-export function makeUnbonding(delegator, stake, validator, end) {
+export function makeUnbonding(delegator, stake, validator, start, end) {
   let progeny;
   /** @type {Delegation} */
   const unbonding = harden({
@@ -46,19 +48,25 @@ export function makeUnbonding(delegator, stake, validator, end) {
     getStake: _ => stake,
     getValidator: _ => validator,
     slashed: slashFactor => {
-      const next = makeUnbonding(delegator, slashStake(slashFactor, stake));
-      slash(slashFactor, stake, delegator, progeny, unbonding, next);
+      const next = makeUnbonding(
+        delegator,
+        slashStake(slashFactor, stake),
+        undefined,
+        start,
+      );
+      if (slash(slashFactor, stake, delegator, progeny, unbonding, next)) {
+        progeny = [next];
+      }
     },
     unbond: _ => {
       throw Error(`can't unbond an unbonding`);
     },
-    accumulateStake: soFar => soFar,
     redelegate: (dest, delta, _newEnd) => {
       if (delta > stake) {
         throw Error(`can't redelegate more than current stake`);
       }
       // eslint-disable-next-line no-use-before-define
-      const redelegation = makeRedelegation(delta, dest, unbonding, end);
+      const redelegation = makeRedelegation(delta, dest, unbonding, start, end);
       if (delta === stake) {
         progeny = [redelegation];
         return { redelegation };
@@ -67,6 +75,7 @@ export function makeUnbonding(delegator, stake, validator, end) {
           delegator,
           subtract(stake, delta),
           validator,
+          start,
           end,
         );
         progeny = [redelegation, replacement];
@@ -78,7 +87,7 @@ export function makeUnbonding(delegator, stake, validator, end) {
   return unbonding;
 }
 
-export function makeRedelegation(stake, destValidator, delegation, end) {
+export function makeRedelegation(stake, destValidator, delegation, start, end) {
   let progeny;
   /** @type {Delegation} */
   const redelegation = harden({
@@ -87,9 +96,17 @@ export function makeRedelegation(stake, destValidator, delegation, end) {
     getValidator: _ => destValidator,
     slashed: slashFactor => {
       const reduced = slashStake(slashFactor, stake);
-      const next = makeRedelegation(reduced, destValidator, delegation, end);
+      const next = makeRedelegation(
+        reduced,
+        destValidator,
+        delegation,
+        start,
+        end,
+      );
       const delegator = delegation.getDelegator();
-      slash(slashFactor, reduced, delegator, progeny, redelegation, next);
+      if (slash(slashFactor, reduced, delegator, progeny, redelegation, next)) {
+        progeny = [next];
+      }
     },
     unbond: (delta, newEnd) => {
       if (delta > stake) {
@@ -99,6 +116,7 @@ export function makeRedelegation(stake, destValidator, delegation, end) {
         delegation.getDelegator(),
         delta,
         destValidator,
+        start,
         newEnd,
       );
       if (delta === stake) {
@@ -109,24 +127,18 @@ export function makeRedelegation(stake, destValidator, delegation, end) {
           subtract(stake, delta),
           destValidator,
           delegation,
+          start,
           end,
         );
         progeny = [replacement, unbonding];
         return { replacement, unbonding };
       }
     },
-    accumulateStake: (soFar, id) => {
-      if (id === delegation.getDelegator().getDelegatorId()) {
-        return soFar;
-      } else {
-        return add(soFar, stake);
-      }
-    },
     redelegate: (dest, delta, newEnd) => {
       if (delta > stake) {
         throw Error(`can't redelegate more than current stake`);
       }
-      const redel = makeRedelegation(delta, dest, redelegation, newEnd);
+      const redel = makeRedelegation(delta, dest, redelegation, start, newEnd);
       if (delta === stake) {
         progeny = [redel];
         return { redelegation: redel };
@@ -135,6 +147,7 @@ export function makeRedelegation(stake, destValidator, delegation, end) {
           subtract(stake, delta),
           destValidator,
           delegation,
+          start,
           end,
         );
         progeny = [replacement, redel];
@@ -146,7 +159,7 @@ export function makeRedelegation(stake, destValidator, delegation, end) {
   return redelegation;
 }
 
-export function makeDelegation(delegator, stake, validator) {
+export function makeDelegation(delegator, stake, validator, start) {
   let progeny;
   /** @type {Delegation} */
   const delegation = harden({
@@ -155,14 +168,22 @@ export function makeDelegation(delegator, stake, validator) {
     getValidator: _ => validator,
     slashed: slashFactor => {
       const reduced = slashStake(slashFactor, stake);
-      const next = makeDelegation(delegator, reduced, validator);
-      slash(slashFactor, stake, delegator, progeny, delegation, next);
+      const next = makeDelegation(delegator, reduced, validator, start);
+      if (slash(slashFactor, stake, delegator, progeny, delegation, next)) {
+        progeny = [next];
+      }
     },
-    unbond: (delta, end) => {
+    unbond: (delta, startUnbonding, end) => {
       if (delta > stake) {
         throw Error(`can't unbond more than current stake`);
       }
-      const unbonding = makeUnbonding(delegator, delta, validator, end);
+      const unbonding = makeUnbonding(
+        delegator,
+        delta,
+        validator,
+        startUnbonding,
+        end,
+      );
       if (delta === stake) {
         progeny = [unbonding];
         return { unbonding };
@@ -171,17 +192,23 @@ export function makeDelegation(delegator, stake, validator) {
           delegator,
           subtract(stake, delta),
           validator,
+          start,
         );
         progeny = [unbonding, replacement];
         return { unbonding, replacement };
       }
     },
-    accumulateStake: soFar => add(stake, soFar),
     redelegate: (dest, delta, newEnd) => {
       if (delta > stake) {
         throw Error(`can't redelegate more than current stake`);
       }
-      const redelegation = makeRedelegation(delta, dest, delegation, newEnd);
+      const redelegation = makeRedelegation(
+        delta,
+        dest,
+        delegation,
+        start,
+        newEnd,
+      );
       if (delta === stake) {
         progeny = [redelegation];
         return { redelegation };
@@ -190,6 +217,7 @@ export function makeDelegation(delegator, stake, validator) {
           delegator,
           subtract(stake, delta),
           validator,
+          start,
         );
         progeny = [replacement, redelegation];
         return { redelegation, replacement };
