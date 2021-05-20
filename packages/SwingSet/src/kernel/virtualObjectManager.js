@@ -253,8 +253,8 @@ export function makeVirtualObjectManager(
     function virtualObjectKey(key) {
       const vobjID = valToSlot.get(key);
       if (vobjID) {
-        const { type, virtual } = parseVatSlot(vobjID);
-        if (type === 'object' && virtual) {
+        const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
+        if (type === 'object' && (virtual || !allocatedByVat)) {
           return `ws${storeID}.${vobjID}`;
         }
       }
@@ -320,8 +320,8 @@ export function makeVirtualObjectManager(
   function vrefKey(value) {
     const vobjID = valToSlot.get(value);
     if (vobjID) {
-      const { type, virtual } = parseVatSlot(vobjID);
-      if (type === 'object' && virtual) {
+      const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
+      if (type === 'object' && (virtual || !allocatedByVat)) {
         return vobjID;
       }
     }
@@ -333,7 +333,7 @@ export function makeVirtualObjectManager(
   const actualWeakMaps = new WeakMap();
   const virtualObjectMaps = new WeakMap();
 
-  class RepairedWeakMap {
+  class VirtualObjectAwareWeakMap {
     constructor() {
       actualWeakMaps.set(this, new WeakMap());
       virtualObjectMaps.set(this, new Map());
@@ -377,7 +377,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(RepairedWeakMap, Symbol.toStringTag, {
+  Object.defineProperty(VirtualObjectAwareWeakMap, Symbol.toStringTag, {
     value: 'WeakMap',
     writable: false,
     enumerable: false,
@@ -387,7 +387,7 @@ export function makeVirtualObjectManager(
   const actualWeakSets = new WeakMap();
   const virtualObjectSets = new WeakMap();
 
-  class RepairedWeakSet {
+  class VirtualObjectAwareWeakSet {
     constructor() {
       actualWeakSets.set(this, new WeakSet());
       virtualObjectSets.set(this, new Set());
@@ -422,7 +422,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(RepairedWeakSet, Symbol.toStringTag, {
+  Object.defineProperty(VirtualObjectAwareWeakSet, Symbol.toStringTag, {
     value: 'WeakSet',
     writable: false,
     enumerable: false,
@@ -613,8 +613,8 @@ export function makeVirtualObjectManager(
   return harden({
     makeWeakStore,
     makeKind,
-    RepairedWeakMap,
-    RepairedWeakSet,
+    VirtualObjectAwareWeakMap,
+    VirtualObjectAwareWeakSet,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
   });
