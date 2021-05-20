@@ -837,7 +837,14 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring dropExports`);
+    console.log(`-- liveslots acting upon dropExports`);
+    for (const vref of vrefs) {
+      const wr = slotToVal.get(vref);
+      const o = wr && wr.deref();
+      if (o) {
+        exportedRemotables.delete(o);
+      }
+    }
   }
 
   function retireExports(vrefs) {
