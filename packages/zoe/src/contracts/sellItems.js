@@ -55,8 +55,8 @@ const start = zcf => {
     observeIteration(
       sellerSeat.getNotifier(),
       harden({
-        updateState:
-          sellerSeatAllocation => availableItemsUpdater.updateState(sellerSeatAllocation.Items),
+        updateState: sellerSeatAllocation =>
+          availableItemsUpdater.updateState(sellerSeatAllocation.Items),
         finish: sellerSeatAllocation => {
           if (sellerSeatAllocation === undefined) {
             availableItemsUpdater.finish(undefined);
