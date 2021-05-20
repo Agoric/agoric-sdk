@@ -1045,3 +1045,58 @@ test('dropImports', async t => {
   t.deepEqual(deadSet, new Set());
   t.is(FR.countCallbacks(), 0);
 });
+
+test('GC dispatch.dropExports', async t => {
+  const { log, syscall } = buildSyscall();
+  let wr;
+  function build(_vatPowers) {
+    const root = Far('root', {
+      one() {
+        const ex1 = Far('export', {});
+        wr = new WeakRef(ex1);
+        return ex1;
+        // ex1 goes out of scope, dropping last userspace strongref
+      },
+      two() {},
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // rp1 = root~.one()
+  // ex1 = await rp1
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
+  const l1 = log.shift();
+  const ex1 = l1.resolutions[0][2].slots[0];
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+  });
+  t.deepEqual(log, []);
+
+  // the exported Remotable should be held in place by exportedRemotables
+  // until we tell the vat we don't need it any more
+  t.truthy(wr.deref());
+
+  // an intermediate message will trigger GC, but the presence is still held
+  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  t.truthy(wr.deref());
+
+  // now tell the vat we don't need a strong reference to that export.
+  await dispatch(makeDropExports(ex1));
+
+  // that should allow ex1 to be collected
+  t.falsy(wr.deref());
+
+  // and once it's collected, the vat should emit `syscall.retireExport`
+  // because nobody else will be able to recognize it again
+  const l2 = log.shift();
+  t.deepEqual(l2, {
+    type: 'retireExports',
+    slots: [ex1],
+  });
+  t.deepEqual(log, []);
+});
