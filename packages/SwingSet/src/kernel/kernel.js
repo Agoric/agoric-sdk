@@ -671,13 +671,15 @@ export default function buildKernel(
       }
       let ksc;
       try {
-        // this can fail if the vat asks for something not on their clist,
-        // which is fatal to the vat
+        // This can fail if the vat asks for something not on their clist, or
+        // their syscall doesn't make sense in some other way, or due to a
+        // kernel bug, all of which are fatal to the vat.
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
         // prettier-ignore
         kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
-        const problem = 'clist violation: prepare to die';
+        console.log(`error during syscall translation:`, vaterr);
+        const problem = 'syscall translation error: prepare to die';
         setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);
       }
