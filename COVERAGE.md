@@ -42,13 +42,13 @@ it also support nesm by:
 
 2. Make the following changes to its `package.json` (omitting comments):
 
-```json
+```js
 {
   // Enable nesm support.
   "type": "module",
   "scripts": {
     // The following line enables coverage generation from the top.
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js"
   }
 }
 ```

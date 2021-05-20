@@ -123,7 +123,7 @@ jobs:
     strategy:
       matrix:
         node-version: ['14.x']
-    # TODO: if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -162,7 +162,7 @@ jobs:
     - uses: nwtgck/actions-netlify@v1.1
       with:
         # Production deployment if a commit to master.
-        production-deploy: ${{ github.ref != 'TODOrefs/heads/master' }}
+        production-deploy: ${{ github.ref == 'refs/heads/master' }}
         publish-dir: coverage/html
         # SECURITY: we don't want to hand out the Github token to this action.
         # github-token: ${{ secrets.GITHUB_TOKEN }}
