@@ -58,10 +58,10 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { storage } = openSwingStore(stateDBDir);
+  const { kvStore } = openSwingStore(stateDBDir);
 
   function pkv(k) {
-    const value = storage.get(k);
+    const value = kvStore.get(k);
     if (raw) {
       p(value);
     } else {
@@ -70,7 +70,7 @@ function run() {
   }
 
   if (range) {
-    for (const k of storage.getKeys(`${key}.`, `${key}/`)) {
+    for (const k of kvStore.getKeys(`${key}.`, `${key}/`)) {
       pkv(k);
     }
   } else {

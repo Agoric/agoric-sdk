@@ -118,27 +118,27 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  let store;
+  let swingStore;
   switch (dbMode) {
     case '--filedb':
-      store = openSimpleSwingStore(kernelStateDBDir);
+      swingStore = openSimpleSwingStore(kernelStateDBDir);
       break;
     case '--lmdb':
-      store = openLMDBSwingStore(kernelStateDBDir);
+      swingStore = openLMDBSwingStore(kernelStateDBDir);
       break;
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
   if (justStats) {
-    const rawStats = JSON.parse(store.storage.get('kernelStats'));
-    const cranks = Number(store.storage.get('crankNumber'));
+    const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
+    const cranks = Number(swingStore.kvStore.get('crankNumber'));
     printMainStats(organizeMainStats(rawStats, cranks));
   } else {
     if (doDump) {
-      dumpStore(store.storage, outfile, rawMode);
+      dumpStore(swingStore.kvStore, outfile, rawMode);
     }
     if (refCounts) {
-      auditRefCounts(store.storage);
+      auditRefCounts(swingStore.kvStore);
     }
   }
 }

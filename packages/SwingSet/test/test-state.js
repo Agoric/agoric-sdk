@@ -65,14 +65,14 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const { storage } = initSwingStore();
-  testStorage(t, storage, () => getAllState(storage), null);
+  const { kvStore } = initSwingStore();
+  testStorage(t, kvStore, () => getAllState(kvStore), null);
 });
 
 function buildHostDBAndGetState() {
-  const { storage } = initSwingStore();
-  const hostDB = buildHostDBInMemory(storage);
-  return { hostDB, getState: () => getAllState(storage) };
+  const { kvStore } = initSwingStore();
+  const hostDB = buildHostDBInMemory(kvStore);
+  return { hostDB, getState: () => getAllState(kvStore) };
 }
 
 test('hostDBInMemory', t => {
@@ -116,15 +116,15 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const { storage } = initSwingStore();
-  const guardedHostStorage = guardStorage(storage);
-  testStorage(t, guardedHostStorage, () => getAllState(storage), null);
+  const { kvStore } = initSwingStore();
+  const guardedHostStorage = guardStorage(kvStore);
+  testStorage(t, guardedHostStorage, () => getAllState(kvStore), null);
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const { storage } = initSwingStore();
-  const { crankBuffer, commitCrank } = buildCrankBuffer(storage);
-  testStorage(t, crankBuffer, () => getAllState(storage), commitCrank);
+  const { kvStore } = initSwingStore();
+  const { crankBuffer, commitCrank } = buildCrankBuffer(kvStore);
+  testStorage(t, crankBuffer, () => getAllState(kvStore), commitCrank);
 });
 
 test('crankBuffer can abortCrank', t => {
@@ -183,8 +183,8 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const { storage } = initSwingStore();
-  const s = addHelpers(storage);
+  const { kvStore } = initSwingStore();
+  const s = addHelpers(kvStore);
 
   s.set('foo.0', 'f0');
   s.set('foo.1', 'f1');
@@ -192,7 +192,7 @@ test('storage helpers', t => {
   s.set('foo.3', 'f3');
   // omit foo.4
   s.set('foo.5', 'f5');
-  checkState(t, () => getAllState(storage), [
+  checkState(t, () => getAllState(kvStore), [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -226,26 +226,26 @@ test('storage helpers', t => {
   t.falsy(s.has('foo.3'));
   t.falsy(s.has('foo.4'));
   t.truthy(s.has('foo.5'));
-  checkState(t, () => getAllState(storage), [
+  checkState(t, () => getAllState(kvStore), [
     ['foo.0', 'f0'],
     ['foo.5', 'f5'],
   ]);
 });
 
 function buildKeeperStorageInMemory() {
-  const { storage } = initSwingStore();
-  const { enhancedCrankBuffer, commitCrank } = wrapStorage(storage);
+  const { kvStore } = initSwingStore();
+  const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
   return {
     kstorage: enhancedCrankBuffer,
-    getState: () => getAllState(storage),
+    getState: () => getAllState(kvStore),
     commitCrank,
   };
 }
 
 function duplicateKeeper(getState) {
-  const { storage } = initSwingStore();
-  setAllState(storage, getState());
-  const { enhancedCrankBuffer } = wrapStorage(storage);
+  const { kvStore } = initSwingStore();
+  setAllState(kvStore, getState());
+  const { enhancedCrankBuffer } = wrapStorage(kvStore);
   return makeKernelKeeper(enhancedCrankBuffer);
 }
 

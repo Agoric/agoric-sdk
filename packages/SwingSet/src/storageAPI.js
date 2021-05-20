@@ -5,16 +5,16 @@ import { assert, details as X } from '@agoric/assert';
  * actually implements the storage API.  It should have methods `has`,
  * `getKeys`, `get`, `set`, and `delete`.
  *
- * @param {*} storage  The object to be tested
+ * @param {*} kvStore  The object to be tested
  *
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
  * @returns {void}
  */
-export function insistStorageAPI(storage) {
+export function insistStorageAPI(kvStore) {
   for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
-    assert(n in storage, X`storage.${n} is missing, cannot use`);
+    assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
   }
 }
 
@@ -24,20 +24,20 @@ export function insistStorageAPI(storage) {
  * object that additionally has the methods `enumeratePrefixedKeys`,
  * `getPrefixedValues`, and `deletePrefixedKeys`.
  *
- * @param {*} storage  The object to be tested
+ * @param {*} kvStore  The object to be tested
  *
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
  * @returns {void}
  */
-export function insistEnhancedStorageAPI(storage) {
-  insistStorageAPI(storage);
+export function insistEnhancedStorageAPI(kvStore) {
+  insistStorageAPI(kvStore);
   for (const n of [
     'enumeratePrefixedKeys',
     'getPrefixedValues',
     'deletePrefixedKeys',
   ]) {
-    assert(n in storage, X`storage.${n} is missing, cannot use`);
+    assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
   }
 }
