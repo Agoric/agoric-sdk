@@ -550,5 +550,17 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
   const { creatorFacet: goldenTurdsMaker } = await E(zoe).startInstance(
     mintAndSellNFTInstallation,
   );
-
+  const { sellItemsCreatorSeat, sellItemsInstance } = await E(
+    goldenTurdsMaker,
+  ).sellTokens({
+    customValueProperties: {
+      description: 'A small golden turd, often considered' +
+                   ' a good luck charm in some cultures. ' +
+                   ' Manifactured by casting.',
+    },
+    count: 69,
+    moneyIssuer: moolaIssuer,
+    sellItemsInstallation,
+    pricePerItem: AmountMath.make(420n, moolaBrand),
+  });
 });
