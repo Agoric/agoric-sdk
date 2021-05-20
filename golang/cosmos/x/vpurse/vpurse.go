@@ -116,8 +116,9 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		}
 		if bz == nil {
 			ret = "true"
+		} else {
+			ret = string(bz)
 		}
-		ret = string(bz)
 
 	case "VPURSE_GIVE":
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
@@ -140,8 +141,24 @@ func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret 
 		}
 		if bz == nil {
 			ret = "true"
+		} else {
+			ret = string(bz)
 		}
-		ret = string(bz)
+
+	case "VPURSE_GIVE_TO_FEE_COLLECTOR":
+		value, ok := sdk.NewIntFromString(msg.Amount)
+		if !ok {
+			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
+		}
+		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
+		if err := keeper.SendCoinsToFeeCollector(ctx.Context, coins); err != nil {
+			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
+		}
+		if err != nil {
+			return "", err
+		}
+		// We don't supply the module balance, since the controller shouldn't know.
+		ret = "true"
 
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
