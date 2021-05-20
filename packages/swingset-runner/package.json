@@ -13,7 +13,6 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:nyc": "nyc ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "yarn lint",
@@ -39,8 +38,7 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25",
-    "nyc": "^15.1.0"
+    "esm": "^3.2.25"
   },
   "eslintConfig": {
     "extends": [

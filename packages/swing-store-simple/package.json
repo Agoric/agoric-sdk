@@ -5,6 +5,7 @@
   "parsers": {
     "js": "mjs"
   },
+  "type": "module",
   "main": "simpleSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
@@ -12,7 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:nyc": "nyc ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "eslint '**/*.js'"
@@ -22,8 +23,7 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25",
-    "nyc": "^15.1.0"
+    "esm": "^3.2.25"
   },
   "publishConfig": {
     "access": "public"

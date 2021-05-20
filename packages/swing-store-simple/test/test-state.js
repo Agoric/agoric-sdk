@@ -7,7 +7,7 @@ import {
   openSwingStore,
   getAllState,
   isSwingStore,
-} from '../simpleSwingStore';
+} from '../simpleSwingStore.js';
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));

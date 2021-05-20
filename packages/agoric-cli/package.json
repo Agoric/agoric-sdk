@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "exit 0",
-    "test": "ava --config .ava-unit-test.config.js",
+    "test": "ava",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "eslint '**/*.{js,jsx}'",
@@ -22,7 +22,6 @@
   "devDependencies": {
     "@agoric/swingset-vat": "^0.17.2",
     "ava": "^3.12.1",
-    "nyc": "^15.1.0",
     "tmp": "^0.1.0"
   },
   "dependencies": {
@@ -58,6 +57,11 @@
     "extends": [
       "@agoric"
     ]
+  },
+  "ava": {
+    "files": ["test/**/test-*.js"],
+    "require": ["esm"],
+    "timeout": "2m"
   },
   "prettier": {
     "trailingComma": "all",

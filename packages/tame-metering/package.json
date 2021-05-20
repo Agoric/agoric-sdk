@@ -8,7 +8,6 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
-    "test:nyc": "nyc ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "lint-check": "eslint '**/*.{js,jsx}'",
@@ -18,8 +17,7 @@
     "esm": "^3.2.5"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "nyc": "^15.1.0"
+    "ava": "^3.12.1"
   },
   "keywords": [],
   "files": [
