@@ -8,8 +8,8 @@ import { isNat } from '@agoric/nat';
 
 import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
 
-const { ceilDivide } = natSafeMath;
-const BASIS_POINTS = 10000;
+const { ceilDivide, add, subtract } = natSafeMath;
+const BASIS_POINTS = 10000n;
 
 /**
  * Build functions to calculate prices for multipoolAutoswap. Four methods are
@@ -52,16 +52,23 @@ export const makeGetCurrentPrice = (
       // remainder to the pool to get a quote. Then we'll add the fee to deltaX
       // before sending out the quote.
 
-      // prelimProtocolFee will be replaced by protocolFee once we get the final
-      // value of amountIn from getPriceGivenAvailableInput.
-      const prelimProtocolFee = multiplyBy(amountIn, protocolFeeRatio);
-      const poolAmountIn = AmountMath.subtract(amountIn, prelimProtocolFee);
+      // amountIn will be split into deltaX (what's added to the pool) and the
+      // protocol fee. protocolFee will be protocolFeeRatio * deltaX.
+      // Therefore, amountIn = (1 + protocolFeeRatio) * deltaX, and
+      // protocolFee =  protocolFeeRatio * amountIn / (1 + protocolFeeRatio).
+      const feeOverOnePlusFee = makeRatio(
+        protocolFeeBP,
+        centralBrand,
+        add(BASIS_POINTS, protocolFeeBP),
+      );
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
+      const protocolFee = multiplyBy(amountIn, feeOverOnePlusFee);
+      const poolAmountIn = AmountMath.subtract(amountIn, protocolFee);
       const price = getPool(brandOut).getPriceGivenAvailableInput(
         poolAmountIn,
         brandOut,
         poolFeeBP,
       );
-      const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
 
       // price.amountIn is what the user pays, and includes the protocolFee. The
       // user will receive price.amountOut.
@@ -77,7 +84,15 @@ export const makeGetCurrentPrice = (
         brandOut,
         poolFeeBP,
       );
-      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
+      // deltaY is computed based on deltaX (the amount that will be added to
+      // the pool) and the fee. In order to ensure that the poolFee and
+      // protocolFee are charged on the same base, we calculate what deltaX
+      // would be without a fee. That way both fees are based on the same deltaX
+      const { amountOut: noFeeDeltaX } = getPool(
+        brandIn,
+      ).getPriceGivenAvailableInput(amountIn, brandOut, 0n);
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
+      const protocolFee = multiplyBy(noFeeDeltaX, protocolFeeRatio);
       const amountOutFinal = AmountMath.subtract(price.amountOut, protocolFee);
 
       // the user pays amountIn, and gets amountOutFinal. The pool pays
@@ -130,6 +145,7 @@ export const makeGetCurrentPrice = (
       // Now we know the amountOut that the user will receive, and can ask
       // whether it can be obtained for less.
 
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const actualFee = multiplyBy(reducedCentralAmount, protocolFeeRatio);
       const reducedCentralPlusFee = AmountMath.add(
         reducedCentralAmount,
@@ -174,6 +190,7 @@ export const makeGetCurrentPrice = (
         poolFeeBP,
       );
 
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(price.amountIn, protocolFeeRatio);
       return {
         amountIn: AmountMath.add(price.amountIn, protocolFee),
@@ -181,16 +198,28 @@ export const makeGetCurrentPrice = (
         protocolFee,
       };
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      // We'll add the protocol fee to amountOut to get deltaY. The user will
-      // pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
-      const preliminaryProtocolFee = multiplyBy(amountOut, protocolFeeRatio);
+      // The protocolFee is feeRatio * deltaY. deltaY is amountOut + protocolFee
+      // protocolFee = amountOut / ((1/feeRatio) - 1)
+
+      // We'll subtract the protocol fee from amountIn to get deltaY. The user
+      // will pay deltaY. The Pool gains deltaY, pays amountOut plus protocolFee
+
+      // we compute protocolFee as
+      // amountOut * protocolFeeBP / (BASIS_POINTS - protocolFeeBP)
+      const protocolFeeMultiplier = makeRatio(
+        protocolFeeBP,
+        centralBrand,
+        subtract(BASIS_POINTS, protocolFeeBP),
+      );
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
+      const protocolFee = multiplyBy(amountOut, protocolFeeMultiplier);
+
       const price = getPool(brandIn).getPriceGivenRequiredOutput(
         brandIn,
-        AmountMath.add(amountOut, preliminaryProtocolFee),
+        AmountMath.add(amountOut, protocolFee),
         poolFeeBP,
       );
 
-      const protocolFee = multiplyBy(price.amountOut, protocolFeeRatio);
       return {
         amountIn: price.amountIn,
         amountOut: AmountMath.subtract(price.amountOut, protocolFee),
@@ -236,6 +265,7 @@ export const makeGetCurrentPrice = (
       );
 
       // propagate improved prices
+      // TODO(hibbert): use a multiplyBy that rounds up when we have one.
       const protocolFee = multiplyBy(
         finalCentralAmountWithFee,
         protocolFeeRatio,

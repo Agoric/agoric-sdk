@@ -800,7 +800,7 @@ test('newSwap jig - swapOut uneven', async t => {
   // Notice that it takes half as much moola as the desired Central
   const cGain = 30000n;
   // The pool will be charged the protocol fee on top of deltaY
-  const protocolFee = (cGain * 6n) / 10000n;
+  const protocolFee = (cGain * 6n) / (10000n - 6n);
   const deltaY = priceFromTargetOutput(
     cGain + protocolFee,
     mPoolState.c,
@@ -811,7 +811,6 @@ test('newSwap jig - swapOut uneven', async t => {
 
   // overpay
   const moolaIn = 16000n;
-  t.is(deltaY, 15091n);
   const tradeDetailsB = {
     inAmount: moola(moolaIn),
     outAmount: centralTokens(deltaX - protocolFee),
@@ -836,8 +835,9 @@ test('newSwap jig - swapOut uneven', async t => {
   );
   mPoolState = updatePoolState(mPoolState, expectedB);
 
+  let expectedPoolBalance = protocolFee;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, 18n),
+    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   // trade for moola specifying 2500 moola output: central price: 496, roughly double.
@@ -877,8 +877,9 @@ test('newSwap jig - swapOut uneven', async t => {
     mIssuerKeywordRecord,
   );
 
+  expectedPoolBalance += expectedProtocolCharge2;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, 48n),
+    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   mPoolState = updatePoolState(mPoolState, expectedC);
@@ -896,12 +897,128 @@ test('newSwap jig - swapOut uneven', async t => {
     t,
     centralR.issuer,
     payout,
-    AmountMath.make(centralR.brand, 48n),
+    AmountMath.make(centralR.brand, expectedPoolBalance),
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: AmountMath.makeEmpty(centralR.brand),
   });
+});
+
+test('newSwap jig - breaking scenario', async t => {
+  const { moolaR, moola, simoleanR } = setup();
+  const zoe = makeZoe(fakeVatAdmin);
+
+  // Pack the contract.
+  const bundle = await bundleSource(newSwapRoot);
+  const installation = await zoe.install(bundle);
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const centralTokens = value => AmountMath.make(value, centralR.brand);
+
+  // set up purses
+  const centralPayment = centralR.mint.mintPayment(
+    centralTokens(55825056949339n),
+  );
+  const centralPurse = centralR.issuer.makeEmptyPurse();
+  await centralPurse.deposit(centralPayment);
+  const moolaPurse = moolaR.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(2396247730468n + 4145005n)));
+
+  const fakeTimer = buildManualTimer(console.log);
+  const startRecord = await zoe.startInstance(
+    installation,
+    harden({ Central: centralR.issuer }),
+    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+  );
+
+  const {
+    /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
+  } = startRecord;
+  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
+
+  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+    simoleanR.issuer,
+    'Simoleans',
+  );
+
+  const mIssuerKeywordRecord = {
+    Secondary: moolaR.issuer,
+    Liquidity: moolaLiquidityIssuer,
+  };
+  const purses = [
+    moolaPurse,
+    moolaLiquidityIssuer.makeEmptyPurse(),
+    centralPurse,
+    simoleanLiquidityIssuer.makeEmptyPurse(),
+  ];
+  const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
+
+  let mPoolState = {
+    c: 0n,
+    s: 0n,
+    l: 0n,
+    k: 0n,
+  };
+
+  const initMoolaLiquidityDetails = {
+    cAmount: centralTokens(50825056949339n),
+    sAmount: moola(2196247730468n),
+    lAmount: moolaLiquidity(50825056949339n),
+  };
+  const initMoolaLiquidityExpected = {
+    c: 50825056949339n,
+    s: 2196247730468n,
+    l: 50825056949339n,
+    k: 50825056949339n * 2196247730468n,
+    payoutC: 0n,
+    payoutS: 0n,
+    payoutL: 50825056949339n,
+  };
+  await alice.initLiquidityAndCheck(
+    t,
+    mPoolState,
+    initMoolaLiquidityDetails,
+    initMoolaLiquidityExpected,
+    mIssuerKeywordRecord,
+  );
+  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+
+  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
+
+  const quoteFromRun = await E(publicFacet).getPriceGivenAvailableInput(
+    centralTokens(73000000n),
+    moolaR.brand,
+  );
+  t.deepEqual(quoteFromRun, {
+    amountIn: centralTokens(72999997n),
+    amountOut: moola(3145007n),
+  });
+
+  const newQuoteFromRun = await E(publicFacet).getPriceGivenAvailableInput(
+    quoteFromRun.amountIn,
+    moolaR.brand,
+  );
+
+  t.truthy(AmountMath.isGTE(quoteFromRun.amountIn, newQuoteFromRun.amountIn));
+  t.truthy(AmountMath.isGTE(newQuoteFromRun.amountOut, quoteFromRun.amountOut));
+
+  const quoteToRun = await E(publicFacet).getPriceGivenRequiredOutput(
+    moolaR.brand,
+    centralTokens(370000000n),
+  );
+  const newQuoteToRun = await E(publicFacet).getPriceGivenRequiredOutput(
+    moolaR.brand,
+    quoteToRun.amountOut,
+  );
+  t.deepEqual(quoteToRun.amountIn, newQuoteToRun.amountIn);
+  t.deepEqual(newQuoteToRun.amountOut, quoteToRun.amountOut);
 });
 
 // This demonstrates that we've worked around

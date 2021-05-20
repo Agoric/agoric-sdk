@@ -125,7 +125,9 @@ export const makeMakeSwapInvitation = (
     // central to secondary, secondary to central, or secondary to secondary
     const pools = [];
     if (isCentral(brandIn) && isSecondary(brandOut)) {
-      stagings.push(poolStagingFromCentral(amountIn, amountOut, protocolFee));
+      stagings.push(
+        poolStagingFromCentral(reducedAmountIn, amountOut, protocolFee),
+      );
       pools.push(getPool(brandOut));
     } else if (isSecondary(brandIn) && isCentral(brandOut)) {
       stagings.push(
