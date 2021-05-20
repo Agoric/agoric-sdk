@@ -536,4 +536,19 @@ test(`mint and sell opera tickets`, async t => {
 
 //
 test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
+  // Setup initial conditions
+  const zoe = makeZoe(fakeVatAdmin);
+
+  const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
+  const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
+
+  const sellItemsBundle = await bundleSource(sellItemsRoot);
+  const sellItemsInstallation = await E(zoe).install(sellItemsBundle);
+
+  const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
+
+  const { creatorFacet: goldenTurdsMaker } = await E(zoe).startInstance(
+    mintAndSellNFTInstallation,
+  );
+
 });
