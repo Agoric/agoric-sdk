@@ -533,3 +533,7 @@ test(`mint and sell opera tickets`, async t => {
   );
   await ticketSellerClosesContract(sellItemsCreatorSeat);
 });
+
+//
+test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
+});
