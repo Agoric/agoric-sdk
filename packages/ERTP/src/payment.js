@@ -4,18 +4,16 @@
 import { Far } from '@agoric/marshal';
 
 export const makePaymentMaker = (allegedName, brand) => {
-  const paymentVOFactory = state => {
+  const paymentVOFactory = _state => {
     return {
-      init: b => (state.brand = b),
+      init: () => {},
       self: Far(`${allegedName} payment`, {
-        getAllegedBrand: () => state.brand,
+        getAllegedBrand: () => brand,
       }),
     };
   };
 
-  const paymentMaker = makeKind(paymentVOFactory);
-
-  const makePayment = () => paymentMaker(brand);
+  const makePayment = makeKind(paymentVOFactory);
 
   return makePayment;
 };
