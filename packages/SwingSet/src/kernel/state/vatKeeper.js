@@ -78,23 +78,61 @@ export function makeVatKeeper(
     return harden({ source, options });
   }
 
+  function parseReachableAndVatSlot(value) {
+    assert.typeof(value, 'string', X`non-string value: ${value}`);
+    const flag = value.slice(0, 1);
+    assert.equal(value.slice(1, 2), ' ');
+    const vatSlot = value.slice(2);
+    let reachable;
+    if (flag === 'R') {
+      reachable = true;
+    } else if (flag === '_') {
+      reachable = false;
+    } else {
+      assert(`flag (${flag}) must be 'R' or '_'`);
+    }
+    return { reachable, vatSlot };
+  }
+
+  function buildReachableAndVatSlot(reachable, vatSlot) {
+    return `${reachable ? 'R' : '_'} ${vatSlot}`;
+  }
+
+  function getReachableAndVatSlot(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    return parseReachableAndVatSlot(kvStore.get(kernelKey));
+  }
+
+  function setReachableFlag(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    kvStore.set(kernelKey, buildReachableAndVatSlot(true, vatSlot));
+  }
+
+  function clearReachableFlag(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+  }
+
   /**
-   * Provide the kernel slot corresponding to a given vat slot, creating the
-   * kernel slot if it doesn't already exist.
+   * Provide the kernel slot corresponding to a given vat slot, allocating a
+   * new one (for exports only) if it doesn't already exist. If we're allowed
+   * to allocate, we also ensure the 'reachable' flag is set on it (whether
+   * we allocated a new one or used an existing one). If we're not allowed to
+   * allocate, we insist that the reachable flag was already set.
    *
    * @param {string} vatSlot  The vat slot of interest
-   *
+   * @param {bool} setReachable Set the 'reachable' flag on vat exports.
    * @returns {string} the kernel slot that vatSlot maps to
-   *
    * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
-   *    or is otherwise invalid.
+   * or is otherwise invalid.
    */
-  function mapVatSlotToKernelSlot(vatSlot) {
+  function mapVatSlotToKernelSlot(vatSlot, setReachable = true) {
     assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
+    const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!kvStore.has(vatKey)) {
-      const { type, allocatedByVat } = parseVatSlot(vatSlot);
-
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
@@ -109,7 +147,10 @@ export function makeVatKeeper(
         incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         incStat('clistEntries');
-        kvStore.set(kernelKey, vatSlot);
+        // we add the key as "unreachable", and then rely on
+        // setReachableFlag() at the end to both mark it reachable and to
+        // update any necessary refcounts consistently
+        kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
         kvStore.set(vatKey, kernelSlot);
         kernelSlog &&
           kernelSlog.changeCList(
@@ -126,8 +167,19 @@ export function makeVatKeeper(
         assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
       }
     }
+    const kernelSlot = kvStore.get(vatKey);
 
-    return kvStore.get(vatKey);
+    if (setReachable) {
+      if (allocatedByVat) {
+        // exports are marked as reachable, if they weren't already
+        setReachableFlag(kernelSlot);
+      } else {
+        // imports must be reachable
+        const { reachable } = getReachableAndVatSlot(kernelSlot);
+        assert(reachable, X`vat tried to access unreachable import`);
+      }
+    }
+    return kernelSlot;
   }
 
   /**
@@ -135,13 +187,12 @@ export function makeVatKeeper(
    * creating the vat slot if it doesn't already exist.
    *
    * @param {string} kernelSlot  The kernel slot of interest
-   *
+   * @param {bool} setReachable Set the 'reachable' flag on vat imports.
    * @returns {string} the vat slot kernelSlot maps to
-   *
    * @throws {Error} if kernelSlot is not a kind of thing that can be imported by vats
-   *    or is otherwise invalid.
+   * or is otherwise invalid.
    */
-  function mapKernelSlotToVatSlot(kernelSlot) {
+  function mapKernelSlotToVatSlot(kernelSlot, setReachable = true) {
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     if (!kvStore.has(kernelKey)) {
@@ -166,7 +217,7 @@ export function makeVatKeeper(
       const vatKey = `${vatID}.c.${vatSlot}`;
       incStat('clistEntries');
       kvStore.set(vatKey, kernelSlot);
-      kvStore.set(kernelKey, vatSlot);
+      kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
       kernelSlog &&
         kernelSlog.changeCList(
           vatID,
@@ -178,7 +229,19 @@ export function makeVatKeeper(
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
-    return kvStore.get(kernelKey);
+    const { reachable, vatSlot } = getReachableAndVatSlot(kernelSlot);
+    const { allocatedByVat } = parseVatSlot(vatSlot);
+    if (setReachable) {
+      if (!allocatedByVat) {
+        // imports are marked as reachable, if they weren't already
+        setReachableFlag(kernelSlot);
+      } else {
+        // if the kernel is sending non-reachable exports back into
+        // exporting vat, that's a kernel bug
+        assert(reachable, X`kernel sent unreachable export`);
+      }
+    }
+    return vatSlot;
   }
 
   /**
@@ -293,6 +356,8 @@ export function makeVatKeeper(
     getSourceAndOptions,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
+    setReachableFlag,
+    clearReachableFlag,
     hasCListEntry,
     deleteCListEntry,
     deleteCListEntriesForKernelSlots,

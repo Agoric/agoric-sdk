@@ -47,6 +47,9 @@ function testStorage(t, s, getState, commit) {
   s.set('foo3', 'f3');
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
+  t.deepEqual(Array.from(s.getKeys('', '')), ['foo', 'foo1', 'foo2', 'foo3']);
+  t.deepEqual(Array.from(s.getKeys('foo1', '')), ['foo1', 'foo2', 'foo3']);
+  t.deepEqual(Array.from(s.getKeys('', 'foo2')), ['foo', 'foo1']);
 
   s.delete('foo2');
   t.falsy(s.has('foo2'));
@@ -250,21 +253,15 @@ function duplicateKeeper(getState) {
 }
 
 test('hostStorage param guards', async t => {
-  const { kstorage, commitCrank } = buildKeeperStorageInMemory();
-  kstorage.set('foo', true);
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.set(true, 'foo');
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.has(true);
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.getKeys('foo', true);
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.getKeys(true, 'foo');
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.get(true);
-  t.throws(commitCrank, { message: /must be a string/ });
-  kstorage.delete(true);
-  t.throws(commitCrank, { message: /must be a string/ });
+  const { kstorage } = buildKeeperStorageInMemory();
+  const exp = { message: /true must be a string/ };
+  t.throws(() => kstorage.set('foo', true), exp);
+  t.throws(() => kstorage.set(true, 'foo'), exp);
+  t.throws(() => kstorage.has(true), exp);
+  t.throws(() => Array.from(kstorage.getKeys('foo', true)), exp);
+  t.throws(() => Array.from(kstorage.getKeys(true, 'foo')), exp);
+  t.throws(() => kstorage.get(true), exp);
+  t.throws(() => kstorage.delete(true), exp);
 });
 
 test('kernel state', async t => {

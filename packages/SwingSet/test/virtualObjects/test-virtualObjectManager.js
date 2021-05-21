@@ -343,8 +343,8 @@ test('virtualized weak collection operations', t => {
   // collections
 
   const {
-    RepairedWeakMap,
-    RepairedWeakSet,
+    VirtualObjectAwareWeakMap,
+    VirtualObjectAwareWeakSet,
     makeKind,
   } = makeFakeVirtualObjectManager(3);
 
@@ -359,8 +359,8 @@ test('virtualized weak collection operations', t => {
   const zot3 = zotMaker(3, 'z3');
   const zot4 = zotMaker(4, 'z4');
 
-  const wm1 = new RepairedWeakMap();
-  const wm2 = new RepairedWeakMap();
+  const wm1 = new VirtualObjectAwareWeakMap();
+  const wm2 = new VirtualObjectAwareWeakMap();
   const nv1 = {};
   const nv2 = { a: 47 };
   wm1.set(zot1, 'zot #1');
@@ -385,8 +385,8 @@ test('virtualized weak collection operations', t => {
   wm1.set(nv2, 'non-virtual object #2 revised');
   t.is(wm1.get(nv2), 'non-virtual object #2 revised');
 
-  const ws1 = new RepairedWeakSet();
-  const ws2 = new RepairedWeakSet();
+  const ws1 = new VirtualObjectAwareWeakSet();
+  const ws2 = new VirtualObjectAwareWeakSet();
   ws1.add(zot1);
   ws2.add(zot2);
   ws1.add(zot3);

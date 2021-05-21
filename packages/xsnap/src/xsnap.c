@@ -1111,9 +1111,15 @@ void fxRunLoop(txMachine* the)
 	txJob** address;
 	for (;;) {
 		while (the->promiseJobs) {
-			the->promiseJobs = 0;
-			fxRunPromiseJobs(the);
+			while (the->promiseJobs) {
+				the->promiseJobs = 0;
+				fxRunPromiseJobs(the);
+			}
+			// give finalizers a chance to run after the promise queue is empty
+			fxEndJob(the);
+			// if that added to the promise queue, start again
 		}
+		// at this point the promise queue is empty
 		c_gettimeofday(&tv, NULL);
 		when = ((txNumber)(tv.tv_sec) * 1000.0) + ((txNumber)(tv.tv_usec) / 1000.0);
 		address = (txJob**)&(the->timerJobs);

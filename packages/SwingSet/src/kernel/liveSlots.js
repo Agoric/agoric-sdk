@@ -342,8 +342,8 @@ function build(
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
-    RepairedWeakMap,
-    RepairedWeakSet,
+    VirtualObjectAwareWeakMap,
+    VirtualObjectAwareWeakSet,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -816,8 +816,8 @@ function build(
   });
 
   const inescapableGlobalProperties = harden({
-    WeakMap: RepairedWeakMap,
-    WeakSet: RepairedWeakSet,
+    WeakMap: VirtualObjectAwareWeakMap,
+    WeakSet: VirtualObjectAwareWeakSet,
   });
 
   function setBuildRootObject(buildRootObject) {
