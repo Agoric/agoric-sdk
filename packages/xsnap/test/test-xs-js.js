@@ -88,3 +88,54 @@ test('keyword in destructuring', async t => {
   `);
   t.deepEqual(opts.messages, ['{"d":1,"i":2}']);
 });
+
+test('round-trip byte sequences via JSON including string literals', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+
+  // Appease typescript.
+  const send = _val => /* dummy */ {};
+  function checkStrings() {
+    const octets = new Array(256).fill(0).map((_, i) => i);
+    // We receive some external JSON data (from Golang) in the following format:
+    const bstring1 = String.fromCharCode.apply(null, octets);
+    send(bstring1.length === 256);
+
+    // Test evaled string.
+    const joctets = new Array(256)
+      .fill(0)
+      .map((_, i) => `\\x${i.toString(16).padStart(2, '0')}`)
+      .join('');
+    // eslint-disable-next-line no-eval
+    const bstring2 = (1, eval)(`"${joctets}"`);
+    send(bstring1 === bstring2);
+
+    // Test JSON.stringify.
+    const jstring1 = JSON.stringify(bstring1);
+    const jstring2 = JSON.stringify(bstring2);
+    send(jstring1 === jstring2);
+
+    // Test JSON.parse.
+    const bstring3 = JSON.parse(jstring1);
+    send(bstring1 === bstring3);
+
+    // We want to extract the octets:
+    const octets2 = bstring3.split('').map(c => c.charCodeAt(0));
+    send(octets2.length === 256);
+
+    // And to be able to reencode them:
+    const bstring4 = String.fromCharCode.apply(null, octets2);
+    send(bstring1 === bstring4);
+  }
+  await vat.evaluate(`\
+  const encoder = new TextEncoder();
+  const send = it => issueCommand(encoder.encode(JSON.stringify(it)).buffer);
+  ${checkStrings}
+`);
+  await vat.evaluate(`checkStrings()`);
+  t.deepEqual(
+    opts.messages.map(s => JSON.parse(s)),
+    [true, true, true, true, true, true],
+  );
+});
