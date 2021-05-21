@@ -197,6 +197,30 @@ export function makeVirtualObjectManager(
   const kindTable = new Map();
 
   /**
+   * Set of all Remotables which are reachable by our virtualized data, e.g.
+   * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
+   * remotable`. The serialization process stores the Remotable's vref to
+   * disk, but doesn't actually retain the Remotable. To correctly
+   * unserialize that offline data later, we must ensure the Remotable
+   * remains alive. This Set keeps a strong reference to the Remotable. We
+   * currently never remove anything from the set, but eventually refcounts
+   * will let us discover when it is no longer reachable, and we'll drop the
+   * strong reference.
+   */
+  /** @type {Set<Object>} of Remotables */
+  const reachableRemotables = new Set();
+  function addReachableRemotable(vref) {
+    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    if (type === 'object' && !virtual && allocatedByVat) {
+      // exported non-virtual object: Remotable
+      const remotable = getValForSlot(vref);
+      assert(remotable, X`no remotable for ${vref}`);
+      // console.log(`adding ${vref} to reachableRemotables`);
+      reachableRemotables.add(remotable);
+    }
+  }
+
+  /**
    * Produce a representative given a virtual object ID.  Used for
    * deserializing.
    *
@@ -280,7 +304,9 @@ export function makeVirtualObjectManager(
             !syscall.vatstoreGet(vkey),
             X`${q(keyName)} already registered: ${key}`,
           );
-          syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(value)));
+          const data = m.serialize(value);
+          data.slots.map(addReachableRemotable);
+          syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
           assertKeyDoesNotExist(key);
           backingMap.set(key, value);
@@ -301,7 +327,9 @@ export function makeVirtualObjectManager(
         const vkey = virtualObjectKey(key);
         if (vkey) {
           assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
-          syscall.vatstoreSet(vkey, JSON.stringify(m.serialize(harden(value))));
+          const data = m.serialize(harden(value));
+          data.slots.map(addReachableRemotable);
+          syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
           assertKeyExists(key);
           backingMap.set(key, value);
@@ -538,6 +566,7 @@ export function makeVirtualObjectManager(
             },
             set: value => {
               const serializedValue = m.serialize(value);
+              serializedValue.slots.map(addReachableRemotable);
               ensureState();
               innerSelf.rawData[prop] = serializedValue;
               innerSelf.dirty = true;
@@ -595,7 +624,9 @@ export function makeVirtualObjectManager(
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
-          rawData[prop] = m.serialize(initialData[prop]);
+          const data = m.serialize(initialData[prop]);
+          data.slots.map(addReachableRemotable);
+          rawData[prop] = data;
         } catch (e) {
           console.error(`state property ${String(prop)} is not serializable`);
           throw e;
