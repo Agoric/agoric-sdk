@@ -42,7 +42,9 @@ const enableKernelPromiseGC = true;
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
 // v$NN.d.nextID = $NN
-// v$NN.c.$kernelSlot = $vatSlot = o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
+// v$NN.c.$kernelSlot = '$R $vatSlot'
+//   $R is 'R' when reachable, '_' when merely recognizable
+//   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.t.$NN = JSON(transcript entry)
 // v$NN.t.nextID = $NN
