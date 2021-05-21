@@ -511,3 +511,28 @@ test('property name space exhaustion: orderly fail-stop', async t => {
     });
   }
 })();
+
+test('round-trip byte sequences from golang for dynamic IBC', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+
+  await vat.evaluate(`
+    globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  `);
+  function checkStrings() {
+    const octets = new Array(256).fill(0).map((_, i) => i);
+    // We receive some external JSON data (from Golang) in the following format:
+    const bstring1 = String.fromCharCode.apply(null, octets);
+    const bstring2 = JSON.parse(JSON.stringify(bstring1));
+    send(bstring1 === bstring2);
+    // We want to extract the octets:
+    const octets2 = bstring2.split('').map(c => c.charCodeAt(0));
+    // And to be able to reencode them:
+    const bstring3 = String.fromCharCode.apply(null, octets2);
+    send(bstring2 === bstring3);
+  }
+  await vat.evaluate(`${checkStrings}`);
+  await vat.evaluate(`checkStrings()`);
+  t.deepEqual(opts.messages.map(JSON.parse), [true, true]);
+});
