@@ -122,7 +122,15 @@
 /**
  * The `assert.typeof` method
  *
- * @typedef {AssertTypeofBigint & AssertTypeofBoolean & AssertTypeofFunction & AssertTypeofNumber & AssertTypeofObject & AssertTypeofString & AssertTypeofSymbol & AssertTypeofUndefined} AssertTypeof
+ * @typedef { AssertTypeofBigint &
+ *   AssertTypeofBoolean &
+ *   AssertTypeofFunction &
+ *   AssertTypeofNumber &
+ *   AssertTypeofObject &
+ *   AssertTypeofString &
+ *   AssertTypeofSymbol &
+ *   AssertTypeofUndefined
+ * } AssertTypeof
  */
 
 /**
@@ -148,6 +156,33 @@
  * @param {Error} error
  * @param {Details} detailsNote
  * @returns {void}
+ */
+
+/**
+ * @callback Commit
+ */
+
+/**
+ * @callback AtomicAction
+ * @param {Commit} commit
+ */
+
+/**
+ * The `assert.atomic` method
+ *
+ * @callback Atomic
+ * Calls back to `action` once, passing it a no-argument `commit` function
+ * which `action` should call to mark its *commit point*. If `action` returns
+ * or throws before the commit point, that outcome is just propagated (with
+ * an added error note on a throw). If `action` returns after the commit
+ * point, that returned value is just propagated.
+ *
+ * However, if `action` throws after that commit point, that becomes an
+ * `assert.fail` for this `assert` instance, terminating / abandoning whatever
+ * unit of computation this `assert` instance does on failure. For example,
+ * `zcf.assert.atomic(f)` will immediately shut down that `zcf`'s contract
+ * if `f` throws after the commit point.
+ * @param {AtomicAction} action
  */
 
 // /////////////////////////////////////////////////////////////////////////////

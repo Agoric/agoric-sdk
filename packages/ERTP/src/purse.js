@@ -2,7 +2,13 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 import { AmountMath } from './amountMath';
 
-export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
+export const makePurse = (
+  allegedName,
+  assetKind,
+  brand,
+  purseMethods,
+  atomic = assert.atomic,
+) => {
   let currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
   /** @type {NotifierRecord<Amount>} */
@@ -18,16 +24,25 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
 
   /** @type {Purse} */
   const purse = Far(`${allegedName} purse`, {
-    deposit: (srcPayment, optAmount = undefined) => {
-      return purseMethods.deposit(
-        currentBalance,
-        updatePurseBalance,
-        srcPayment,
-        optAmount,
-      );
-    },
+    deposit: (srcPayment, optAmount = undefined) =>
+      atomic(commit =>
+        purseMethods.depositAction(
+          commit,
+          currentBalance,
+          updatePurseBalance,
+          srcPayment,
+          optAmount,
+        ),
+      ),
     withdraw: amount =>
-      purseMethods.withdraw(currentBalance, updatePurseBalance, amount),
+      atomic(commit =>
+        purseMethods.withdrawAction(
+          commit,
+          currentBalance,
+          updatePurseBalance,
+          amount,
+        ),
+      ),
     getCurrentAmount: () => currentBalance,
     getCurrentAmountNotifier: () => balanceNotifier,
     getAllegedBrand: () => brand,

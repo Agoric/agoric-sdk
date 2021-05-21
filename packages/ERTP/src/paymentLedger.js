@@ -21,6 +21,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
+ * @param {Atomic=} atomic
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -28,6 +29,7 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
+  atomic = assert.atomic,
 ) => {
   /** @type {WeakStore<Payment, Amount>} */
   const paymentLedger = makeWeakStore('payment');
@@ -71,11 +73,12 @@ export const makePaymentLedger = (
    * `purse.deposit` and `purse.withdraw` move assets between a purse and
    * a payment, and so must also enforce conservation there.
    *
+   * @param {Commit} commit
    * @param {Payment[]} payments
    * @param {Amount[]} newPaymentBalances
    * @returns {Payment[]}
    */
-  const reallocate = (payments, newPaymentBalances) => {
+  const reallocateAction = (commit, payments, newPaymentBalances) => {
     // There may be zero, one, or many payments as input to
     // reallocate. We want to protect against someone passing in
     // what appears to be multiple payments that turn out to actually
@@ -104,7 +107,7 @@ export const makePaymentLedger = (
       X`rights were not conserved: ${total} vs ${newTotal}`,
     );
 
-    // commit point
+    commit();
     payments.forEach(payment => paymentLedger.delete(payment));
 
     const newPayments = newPaymentBalances.map(balance => {
@@ -130,66 +133,83 @@ export const makePaymentLedger = (
   };
 
   const burn = (paymentP, optAmount = undefined) => {
-    return E.when(paymentP, payment => {
-      assertLivePayment(payment);
-      const paymentBalance = paymentLedger.get(payment);
-      assertAmountConsistent(paymentBalance, optAmount);
-      // Commit point.
-      paymentLedger.delete(payment);
-      return paymentBalance;
-    });
+    return E.when(paymentP, payment =>
+      atomic(commit => {
+        assertLivePayment(payment);
+        const paymentBalance = paymentLedger.get(payment);
+        assertAmountConsistent(paymentBalance, optAmount);
+        commit();
+        paymentLedger.delete(payment);
+        return paymentBalance;
+      }),
+    );
   };
 
   const claim = (paymentP, optAmount = undefined) => {
-    return E.when(paymentP, srcPayment => {
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountConsistent(srcPaymentBalance, optAmount);
-      // Commit point.
-      const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
-      return payment;
-    });
+    return E.when(paymentP, srcPayment =>
+      atomic(commit => {
+        assertLivePayment(srcPayment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        assertAmountConsistent(srcPaymentBalance, optAmount);
+
+        const [payment] = reallocateAction(
+          commit,
+          [srcPayment],
+          [srcPaymentBalance],
+        );
+        return payment;
+      }),
+    );
   };
 
   // Payments in `fromPaymentsPArray` must be distinct. Alias
   // checking is delegated to the `reallocate` function.
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
-    return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-      fromPaymentsArray.every(assertLivePayment);
-      const totalPaymentsBalance = fromPaymentsArray
-        .map(paymentLedger.get)
-        .reduce(add, emptyAmount);
-      assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Commit point.
-      const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
-      return payment;
-    });
+    return Promise.all(fromPaymentsPArray).then(fromPaymentsArray =>
+      atomic(commit => {
+        fromPaymentsArray.every(assertLivePayment);
+        const totalPaymentsBalance = fromPaymentsArray
+          .map(paymentLedger.get)
+          .reduce(add, emptyAmount);
+        assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
+
+        const [payment] = reallocateAction(commit, fromPaymentsArray, [
+          totalPaymentsBalance,
+        ]);
+        return payment;
+      }),
+    );
   };
 
   // payment to two payments, A and B
   const split = (paymentP, paymentAmountA) => {
-    return E.when(paymentP, srcPayment => {
-      paymentAmountA = coerce(paymentAmountA);
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Commit point
-      const newPayments = reallocate(
-        [srcPayment],
-        [paymentAmountA, paymentAmountB],
-      );
-      return newPayments;
-    });
+    return E.when(paymentP, srcPayment =>
+      atomic(commit => {
+        paymentAmountA = coerce(paymentAmountA);
+        assertLivePayment(srcPayment);
+        const srcPaymentBalance = paymentLedger.get(srcPayment);
+        const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
+
+        const newPayments = reallocateAction(
+          commit,
+          [srcPayment],
+          [paymentAmountA, paymentAmountB],
+        );
+        return newPayments;
+      }),
+    );
   };
 
   const splitMany = (paymentP, amounts) => {
-    return E.when(paymentP, srcPayment => {
-      assertLivePayment(srcPayment);
-      amounts = amounts.map(coerce);
-      // Commit point
-      const newPayments = reallocate([srcPayment], amounts);
-      return newPayments;
-    });
+    return E.when(paymentP, srcPayment =>
+      atomic(commit => {
+        assertLivePayment(srcPayment);
+        amounts = amounts.map(coerce);
+
+        const newPayments = reallocateAction(commit, [srcPayment], amounts);
+        return newPayments;
+      }),
+    );
   };
 
   const mintPayment = newAmount => {
@@ -199,7 +219,8 @@ export const makePaymentLedger = (
     return payment;
   };
 
-  const deposit = (
+  const depositAction = (
+    commit,
     currentBalance,
     updatePurseBalance,
     srcPayment,
@@ -215,7 +236,7 @@ export const makePaymentLedger = (
     // Note: this does not guarantee that optAmount itself is a valid stable amount
     assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
-    // Commit point
+    commit();
     // Move the assets in `srcPayment` into this purse, using up the
     // source payment, such that total assets are conserved.
     paymentLedger.delete(srcPayment);
@@ -223,11 +244,16 @@ export const makePaymentLedger = (
     return srcPaymentBalance;
   };
 
-  const withdraw = (currentBalance, updatePurseBalance, amount) => {
+  const withdrawAction = (
+    commit,
+    currentBalance,
+    updatePurseBalance,
+    amount,
+  ) => {
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
     const payment = makePayment();
-    // Commit point
+    commit();
     // Move the withdrawn assets from this purse into a new payment
     // which is returned. Total assets must remain conserved.
     updatePurseBalance(newPurseBalance);
@@ -236,8 +262,8 @@ export const makePaymentLedger = (
   };
 
   const purseMethods = {
-    deposit,
-    withdraw,
+    depositAction,
+    withdrawAction,
   };
 
   /** @type {Issuer} */
@@ -254,7 +280,7 @@ export const makePaymentLedger = (
     getAssetKind: () => assetKind,
     getDisplayInfo: () => displayInfo,
     makeEmptyPurse: () =>
-      makePurse(allegedName, assetKind, brand, purseMethods),
+      makePurse(allegedName, assetKind, brand, purseMethods, atomic),
   });
 
   /** @type {Mint} */

@@ -317,6 +317,7 @@
  * @param {string} allegedName
  * @param {AssetKind} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {Atomic=} atomic
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The

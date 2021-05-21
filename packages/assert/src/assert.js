@@ -32,6 +32,7 @@ if (globalAssert === undefined) {
 }
 
 const missing = [
+  'error',
   'fail',
   'equal',
   'typeof',
@@ -40,6 +41,7 @@ const missing = [
   'details',
   'quote',
   'makeAssert',
+  'atomic',
 ].filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
   throw new Error(
