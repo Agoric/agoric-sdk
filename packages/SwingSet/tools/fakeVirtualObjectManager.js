@@ -1,3 +1,4 @@
+/* global WeakRef */
 import { makeMarshal } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../src/parseVatSlots';
@@ -5,7 +6,7 @@ import { parseVatSlot } from '../src/parseVatSlots';
 import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager';
 
 export function makeFakeVirtualObjectManager(options = {}) {
-  const { cacheSize = 100, log } = options;
+  const { cacheSize = 100, log, weak = false } = options;
   const fakeStore = new Map();
 
   function dumpStore() {
@@ -46,6 +47,10 @@ export function makeFakeVirtualObjectManager(options = {}) {
     return exportID;
   }
 
+  // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
+  // and the WeakRef may or may not contain the target value. Use
+  // options={weak:true} to match that behavior, or the default weak:false to
+  // keep strong references.
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
 
@@ -54,12 +59,12 @@ export function makeFakeVirtualObjectManager(options = {}) {
   }
 
   function setValForSlot(slot, val) {
-    slotToVal.set(slot, val);
+    slotToVal.set(slot, weak ? new WeakRef(val) : val);
   }
 
   function getValForSlot(slot) {
     const d = slotToVal.get(slot);
-    return d;
+    return d && (weak ? d.deref() : d);
   }
 
   function fakeConvertValToSlot(val) {
