@@ -35,13 +35,13 @@ async function run() {
   const stateDBDir = argv.shift();
   const srcPath = argv.shift();
 
-  const { storage, commit } = openSwingStore(stateDBDir);
+  const { kvStore, commit } = openSwingStore(stateDBDir);
   log(`will use ${srcPath} in ${stateDBDir} for ${bundleName}`);
 
   if (bundleName === 'kernel') {
     bundleName = 'kernelBundle';
   } else {
-    const vatID = storage.get(`vat.name.${bundleName}`);
+    const vatID = kvStore.get(`vat.name.${bundleName}`);
     if (vatID) {
       bundleName = `${vatID}.source`;
     }
@@ -50,7 +50,7 @@ async function run() {
     bundleBundle = false;
   }
 
-  const oldBundleStr = storage.get(bundleName);
+  const oldBundleStr = kvStore.get(bundleName);
   log(`old bundle is ${oldBundleStr.length} bytes`);
   let bundle = await bundleSource(srcPath);
   if (bundleBundle) {
@@ -58,7 +58,7 @@ async function run() {
   }
   const newBundleStr = JSON.stringify(bundle);
   log(`new bundle is ${newBundleStr.length} bytes`);
-  storage.set(bundleName, newBundleStr);
+  kvStore.set(bundleName, newBundleStr);
   commit();
   log(`bundle ${bundleName} replaced`);
 }

@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 import { initializeSwingset, makeSwingsetController } from '../src/index';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
 
@@ -25,7 +25,7 @@ test('vattp', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(config, ['1'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
@@ -85,7 +85,7 @@ test('vattp 2', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(config, ['2'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);

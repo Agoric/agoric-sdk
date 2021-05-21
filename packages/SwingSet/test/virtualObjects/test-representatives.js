@@ -1,10 +1,10 @@
 /* global __dirname */
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava';
 
+// eslint-disable-next-line import/order
 import path from 'path';
 
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../../src/hostStorage';
 import {
   buildVatController,
   initializeSwingset,
@@ -173,15 +173,16 @@ test('exercise cache', async t => {
 
   const log = [];
 
-  const storage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
+  const kvStore = hostStorage.kvStore;
   function vsKey(key) {
     return key.match(/^\w+\.vs\./);
   }
-  const loggingStorage = {
-    has: key => storage.has(key),
-    getKeys: (start, end) => storage.getKeys(start, end),
+  const loggingKVStore = {
+    has: key => kvStore.has(key),
+    getKeys: (start, end) => kvStore.getKeys(start, end),
     get(key) {
-      const result = storage.get(key);
+      const result = kvStore.get(key);
       if (vsKey(key)) {
         log.push(['get', key, result]);
       }
@@ -191,18 +192,26 @@ test('exercise cache', async t => {
       if (vsKey(key)) {
         log.push(['set', key, value]);
       }
-      storage.set(key, value);
+      kvStore.set(key, value);
     },
     delete(key) {
       if (vsKey(key)) {
         log.push(['delete', key]);
       }
-      storage.delete(key);
+      kvStore.delete(key);
     },
   };
+  const loggingHostStorage = {
+    ...hostStorage,
+    kvStore: loggingKVStore,
+  };
 
-  const bootstrapResult = await initializeSwingset(config, [], loggingStorage);
-  const c = await makeSwingsetController(loggingStorage, {});
+  const bootstrapResult = await initializeSwingset(
+    config,
+    [],
+    loggingHostStorage,
+  );
+  const c = await makeSwingsetController(loggingHostStorage, {});
 
   const nextLog = makeNextLog(c);
 

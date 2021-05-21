@@ -460,7 +460,7 @@
  * @property {(left: V, right: V) => boolean} doIsEqual
  * Does left equal right?
  *
- * @property {(left: V, right: V) => Value} doAdd
+ * @property {(left: V, right: V) => V} doAdd
  * Return the left combined with the right.
  *
  * @property {(left: V, right: V) => V} doSubtract
@@ -482,36 +482,4 @@
 
 /**
  * @typedef {MathHelpers<SetValue>} SetMathHelpers
- */
-
-/**
- * @typedef {{ISSUER: 'issuer', BRAND: 'brand', PURSE: 'purse', PAYMENT:
- * 'payment', MINT: 'mint', DEPOSIT_FACET: 'depositFacet' }} ERTPKind
- */
-
-/**
- * @callback MakeInterface
- * Make the interface using the allegedName and kind. The particular
- * structure may change in the future to be more sophisticated.
- * Therefore, ERTP and Zoe should not depend on this particular
- * implementation.
- *
- * @param {string} allegedName The allegedName, as passed to
- *  `makeIssuerKit`
- * @param {string} kind The ERTPKind
- * @returns {InterfaceSpec}
- */
-
-/**
- * @callback MakeFarName
- * Make the farName using the allegedName and kind. The particular
- * structure may change in the future to be more sophisticated.
- * Therefore, ERTP and Zoe should not depend on this particular
- * implementation. `makeFar` converts its farName argument into
- * the iface argument it passes to `Remotable`.
- *
- * @param {string} allegedName The allegedName, as passed to
- *  `makeIssuerKit`
- * @param {string} kind The ERTPKind
- * @returns {string}
  */
