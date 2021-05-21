@@ -154,7 +154,7 @@ jobs:
     - name: generate coverage for all tests
       run: 'yarn test:c8-all || :'
     - name: generate coverage/html reports
-      run: yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
+      run: mkdir -p coverage/tmp && yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
     - uses: actions/upload-artifact@v2
       with:
         name: coverage
