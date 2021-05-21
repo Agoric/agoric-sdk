@@ -49,11 +49,24 @@ export function makeFakeVirtualObjectManager(options = {}) {
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
 
+  function getSlotForVal(val) {
+    return valToSlot.get(val);
+  }
+
+  function setValForSlot(slot, val) {
+    slotToVal.set(slot, val);
+  }
+
+  function getValForSlot(slot) {
+    const d = slotToVal.get(slot);
+    return d;
+  }
+
   function fakeConvertValToSlot(val) {
     if (!valToSlot.has(val)) {
       const slot = `o+${fakeAllocateExportID()}`;
       valToSlot.set(val, slot);
-      slotToVal.set(slot, val);
+      setValForSlot(slot, val);
     }
     return valToSlot.get(val);
   }
@@ -65,16 +78,21 @@ export function makeFakeVirtualObjectManager(options = {}) {
       // eslint-disable-next-line no-use-before-define
       return makeVirtualObjectRepresentative(slot);
     } else {
-      return slotToVal.get(slot);
+      return getValForSlot(slot);
     }
   }
 
   // eslint-disable-next-line no-use-before-define
   const fakeMarshal = makeMarshal(fakeConvertValToSlot, fakeConvertSlotToVal);
 
-  function fakeRegisterValue(slot, val) {
-    slotToVal.set(slot, val);
+  function registerEntry(slot, val) {
+    setValForSlot(slot, val);
     valToSlot.set(val, slot);
+  }
+
+  function deleteEntry(slot, val) {
+    slotToVal.delete(slot);
+    valToSlot.delete(val);
   }
 
   const {
@@ -87,20 +105,28 @@ export function makeFakeVirtualObjectManager(options = {}) {
   } = makeVirtualObjectManager(
     fakeSyscall,
     fakeAllocateExportID,
-    valToSlot,
-    fakeRegisterValue,
+    getSlotForVal,
+    getValForSlot,
+    registerEntry,
     fakeMarshal,
     cacheSize,
   );
 
-  return {
+  const normalVOM = {
     makeKind,
     makeWeakStore,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    valToSlot,
-    slotToVal,
+  };
+
+  const debugTools = {
+    getValForSlot,
+    setValForSlot,
+    registerEntry,
+    deleteEntry,
     flushCache,
     dumpStore,
   };
+
+  return harden({ ...normalVOM, ...debugTools });
 }

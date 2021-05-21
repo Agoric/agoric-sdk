@@ -121,9 +121,11 @@ export function makeCache(size, fetch, store) {
  *   and `vatstoreSet` operations.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {*} valToSlot  The vat's table that maps object identities to
+ * @param { (val: Object) => string} getSlotForVal  A function that returns the object ID (vref) for a given object, if any.
  *   their corresponding export IDs
- * @param {*} registerValue  Function to register a new value in liveSlot's
+ * @param { (slot: string) => Object} getValForSlot  A function that converts an object ID (vref) to an
+ *   object, if any, else undefined.
+ * @param {*} registerEntry  Function to register a new slot+value in liveSlot's
  *   various tables
  * @param {*} m The vat's marshaler.
  * @param {number} cacheSize How many virtual objects this manager should cache
@@ -140,7 +142,7 @@ export function makeCache(size, fetch, store) {
  *    object type on demand.
  *
  * - `makeWeakStore` creates an instance of WeakStore that can be keyed by these
-     virtual objects.
+ *    virtual objects.
  *
  * - `flushCache` will empty the object manager's cache of in-memory object
  *    instances, writing any changed state to the persistent store.  This
@@ -158,8 +160,9 @@ export function makeCache(size, fetch, store) {
 export function makeVirtualObjectManager(
   syscall,
   allocateExportID,
-  valToSlot,
-  registerValue,
+  getSlotForVal,
+  getValForSlot,
+  registerEntry,
   m,
   cacheSize,
 ) {
@@ -251,7 +254,7 @@ export function makeVirtualObjectManager(
     }
 
     function virtualObjectKey(key) {
-      const vobjID = valToSlot.get(key);
+      const vobjID = getSlotForVal(key);
       if (vobjID) {
         const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
         if (type === 'object' && (virtual || !allocatedByVat)) {
@@ -318,7 +321,7 @@ export function makeVirtualObjectManager(
   }
 
   function vrefKey(value) {
-    const vobjID = valToSlot.get(value);
+    const vobjID = getSlotForVal(value);
     if (vobjID) {
       const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
       if (type === 'object' && (virtual || !allocatedByVat)) {
@@ -587,7 +590,7 @@ export function makeVirtualObjectManager(
         init(...args);
       }
       innerSelf.representative = initialRepresentative;
-      registerValue(vobjID, initialRepresentative);
+      registerEntry(vobjID, initialRepresentative);
       initializationsInProgress.delete(initialData);
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {

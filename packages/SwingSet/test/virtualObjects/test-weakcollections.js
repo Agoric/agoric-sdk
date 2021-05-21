@@ -91,18 +91,16 @@ test('weakMap vref handling', async t => {
   const {
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    valToSlot,
-    slotToVal,
+    registerEntry,
+    deleteEntry,
   } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   function addCListEntry(slot, val) {
-    slotToVal.set(slot, val);
-    valToSlot.set(val, slot);
+    registerEntry(slot, val);
   }
 
   function removeCListEntry(slot, val) {
-    slotToVal.delete(slot);
-    valToSlot.delete(val);
+    deleteEntry(slot, val);
   }
 
   const weakMap = new VirtualObjectAwareWeakMap();
