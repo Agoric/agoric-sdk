@@ -106,6 +106,7 @@ export function makeFakeVirtualObjectManager(options = {}) {
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    isVrefReachable,
     flushCache,
   } = makeVirtualObjectManager(
     fakeSyscall,
@@ -122,6 +123,7 @@ export function makeFakeVirtualObjectManager(options = {}) {
     makeWeakStore,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    isVrefReachable,
   };
 
   const debugTools = {
