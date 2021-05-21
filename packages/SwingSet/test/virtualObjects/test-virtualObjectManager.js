@@ -84,7 +84,7 @@ function zotVal(arbitrary, name, tag, count) {
 // prettier-ignore
 test('virtual object operations', t => {
   const log = [];
-  const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager(3, log);
+  const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   const thingMaker = makeKind(makeThingInstance);
   const zotMaker = makeKind(makeZotInstance);
@@ -298,7 +298,9 @@ test('virtual object operations', t => {
 });
 
 test('weak store operations', t => {
-  const { makeWeakStore, makeKind } = makeFakeVirtualObjectManager(3);
+  const { makeWeakStore, makeKind } = makeFakeVirtualObjectManager({
+    cacheSize: 3,
+  });
 
   const thingMaker = makeKind(makeThingInstance);
   const zotMaker = makeKind(makeZotInstance);
@@ -346,7 +348,7 @@ test('virtualized weak collection operations', t => {
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     makeKind,
-  } = makeFakeVirtualObjectManager(3);
+  } = makeFakeVirtualObjectManager({ cacheSize: 3 });
 
   const thingMaker = makeKind(makeThingInstance);
   const zotMaker = makeKind(makeZotInstance);
