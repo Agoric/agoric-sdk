@@ -18,38 +18,39 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // make
   t.deepEqual(
-    m.make([a], mockBrand),
+    m.make(mockBrand, [a]),
     { brand: mockBrand, value: [a] },
     `[a] is a valid set`,
   );
   t.deepEqual(
-    m.make([a, b], mockBrand),
+    m.make(mockBrand, [a, b]),
     { brand: mockBrand, value: [a, b] },
     `[a, b] is a valid set`,
   );
   t.deepEqual(
-    m.make([], mockBrand),
+    m.make(mockBrand, []),
     { brand: mockBrand, value: [] },
     `[] is a valid set`,
   );
   t.throws(
-    () => m.make([a, a], mockBrand),
+    () => m.make(mockBrand, [a, a]),
     { message: /value has duplicates/ },
     `duplicates in make should throw`,
   );
   t.deepEqual(
-    m.make(['a', 'b'], mockBrand),
+    m.make(mockBrand, ['a', 'b']),
     { brand: mockBrand, value: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
-    () => m.make('a', mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.make(mockBrand, 'a'),
     { message: /value .* must be a Nat or an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
     t.throws(
-      () => m.make([a, a2], mockBrand),
+      () => m.make(mockBrand, [a, a2]),
       { message: /value has duplicates/ },
       `data identity throws`,
     );
@@ -57,38 +58,39 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // coerce
   t.deepEqual(
-    m.coerce({ brand: mockBrand, value: [a] }, mockBrand),
+    m.coerce(mockBrand, { brand: mockBrand, value: [a] }),
     { brand: mockBrand, value: [a] },
     `[a] is a valid set`,
   );
   t.deepEqual(
-    m.coerce({ brand: mockBrand, value: [a, b] }, mockBrand),
+    m.coerce(mockBrand, { brand: mockBrand, value: [a, b] }),
     { brand: mockBrand, value: [a, b] },
     `[a, b] is a valid set`,
   );
   t.deepEqual(
-    m.coerce({ brand: mockBrand, value: [] }, mockBrand),
+    m.coerce(mockBrand, { brand: mockBrand, value: [] }),
     { brand: mockBrand, value: [] },
     `[] is a valid set`,
   );
   t.throws(
-    () => m.coerce(m.make([a, a], mockBrand), mockBrand),
+    () => m.coerce(mockBrand, m.make(mockBrand, [a, a])),
     { message: /value has duplicates/ },
     `duplicates in coerce should throw`,
   );
   t.deepEqual(
-    m.coerce(m.make(['a', 'b'], mockBrand), mockBrand),
+    m.coerce(mockBrand, m.make(mockBrand, ['a', 'b'])),
     { brand: mockBrand, value: ['a', 'b'] },
     'anything comparable is a valid element',
   );
   t.throws(
-    () => m.coerce({ brand: mockBrand, value: 'a' }, mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.coerce(mockBrand, { brand: mockBrand, value: 'a' }),
     { message: /value .* must be a Nat or an array/ },
     'strings are not valid',
   );
   if (a2 !== undefined) {
     t.throws(
-      () => m.coerce({ brand: mockBrand, value: [a, a2] }, mockBrand),
+      () => m.coerce(mockBrand, { brand: mockBrand, value: [a, a2] }),
       { message: /value has duplicates/ },
       `data identity throws`,
     );
@@ -96,7 +98,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // m.getValue(
   t.deepEqual(
-    m.getValue({ brand: mockBrand, value: [a] }, mockBrand),
+    m.getValue(mockBrand, { brand: mockBrand, value: [a] }),
     [a],
     `m.getValue( of m.make([a]) is [a]`,
   );
@@ -110,24 +112,25 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
 
   // isEmpty
   t.assert(
-    m.isEmpty(m.make([], mockBrand), mockBrand),
+    m.isEmpty(m.make(mockBrand, []), mockBrand),
     `m.isEmpty([]) is true`,
   );
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty({ brand: mockBrand, value: harden({}) }),
     { message: /value .* must be a Nat or an array/ },
     `m.isEmpty({}) throws`,
   );
-  t.falsy(m.isEmpty(m.make(['abc'], mockBrand)), `m.isEmpty(['abc']) is false`);
-  t.falsy(m.isEmpty(m.make([a], mockBrand)), `m.isEmpty([a]) is false`);
+  t.falsy(m.isEmpty(m.make(mockBrand, ['abc'])), `m.isEmpty(['abc']) is false`);
+  t.falsy(m.isEmpty(m.make(mockBrand, [a])), `m.isEmpty([a]) is false`);
   t.throws(
     () => m.isEmpty({ brand: mockBrand, value: [a, a] }),
     { message: /value has duplicates/ },
     `duplicates in value in isEmpty throw because of coercion`,
   );
-  t.assert(m.isEmpty(m.make([], mockBrand)), `m.isEmpty([]) is true`);
-  t.falsy(m.isEmpty(m.make(['abc'], mockBrand)), `m.isEmpty(['abc']) is false`);
-  t.falsy(m.isEmpty(m.make([a], mockBrand)), `m.isEmpty([a]) is false`);
+  t.assert(m.isEmpty(m.make(mockBrand, [])), `m.isEmpty([]) is true`);
+  t.falsy(m.isEmpty(m.make(mockBrand, ['abc'])), `m.isEmpty(['abc']) is false`);
+  t.falsy(m.isEmpty(m.make(mockBrand, [a])), `m.isEmpty([a]) is false`);
   if (a2 !== undefined) {
     t.throws(
       () => m.isEmpty({ brand: mockBrand, value: [a, a2] }),

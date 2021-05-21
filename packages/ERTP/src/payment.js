@@ -2,21 +2,18 @@
 /* global makeKind */
 
 import { Far } from '@agoric/marshal';
-import { makeFarName, ERTPKind } from './interfaces';
 
 export const makePaymentMaker = (allegedName, brand) => {
-  const paymentVOFactory = state => {
+  const paymentVOFactory = _state => {
     return {
-      init: b => (state.brand = b),
-      self: Far(makeFarName(allegedName, ERTPKind.PAYMENT), {
-        getAllegedBrand: () => state.brand,
+      init: () => {},
+      self: Far(`${allegedName} payment`, {
+        getAllegedBrand: () => brand,
       }),
     };
   };
 
-  const paymentMaker = makeKind(paymentVOFactory);
-
-  const makePayment = () => paymentMaker(brand);
+  const makePayment = makeKind(paymentVOFactory);
 
   return makePayment;
 };
