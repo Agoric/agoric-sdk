@@ -9,7 +9,9 @@
 import './install-ses-debug';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager';
 
-const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager(3);
+const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager({
+  cacheSize: 3,
+});
 
 globalThis.makeKind = makeKind;
 globalThis.makeWeakStore = makeWeakStore;

@@ -4,7 +4,8 @@ import { parseVatSlot } from '../src/parseVatSlots';
 
 import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager';
 
-export function makeFakeVirtualObjectManager(cacheSize = 100, log) {
+export function makeFakeVirtualObjectManager(options = {}) {
+  const { cacheSize = 100, log } = options;
   const fakeStore = new Map();
 
   function dumpStore() {

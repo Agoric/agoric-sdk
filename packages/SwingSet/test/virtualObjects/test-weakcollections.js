@@ -93,7 +93,7 @@ test('weakMap vref handling', async t => {
     VirtualObjectAwareWeakSet,
     valToSlot,
     slotToVal,
-  } = makeFakeVirtualObjectManager(3, log);
+  } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   function addCListEntry(slot, val) {
     slotToVal.set(slot, val);
