@@ -8,7 +8,7 @@ import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank';
 
 test('communication', async t => {
-  t.plan(24);
+  t.plan(29);
   const bankVat = E(buildRootObject)();
 
   /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
@@ -51,6 +51,15 @@ test('communication', async t => {
           t.is(amount, '14');
           t.deepEqual(rest, {});
           ret = amount;
+          break;
+        }
+
+        case 'VPURSE_GIVE_TO_FEE_COLLECTOR': {
+          const { amount, denom, type: _type, ...rest } = obj;
+          t.is(denom, 'ufee');
+          t.is(amount, '12');
+          t.deepEqual(rest, {});
+          ret = true;
           break;
         }
 
@@ -131,4 +140,16 @@ test('communication', async t => {
       AmountMath.make(kit.brand, BigInt(balance.amount)),
     ),
   );
+
+  const { mint, ...feeKit } = makeIssuerKit('fee', AssetKind.NAT, {
+    decimalPlaces: 6,
+  });
+
+  // Try sending in some fees.
+  const feeAmount = AmountMath.make(feeKit.brand, 12n);
+  const feePayment = mint.mintPayment(feeAmount);
+  const feeReceived = await E(
+    E(bankMgr).getFeeCollectorDepositFacet('ufee', feeKit),
+  ).receive(feePayment);
+  t.assert(AmountMath.isEqual(feeReceived, feeAmount));
 });

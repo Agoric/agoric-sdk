@@ -47,14 +47,14 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { storage, commit } = openSwingStore(stateDBDir);
+  const { kvStore, commit } = openSwingStore(stateDBDir);
 
   if (range) {
-    for (const k of storage.getKeys(`${key}.`, `${key}/`)) {
-      storage.delete(k);
+    for (const k of kvStore.getKeys(`${key}.`, `${key}/`)) {
+      kvStore.delete(k);
     }
   } else {
-    storage.delete(key);
+    kvStore.delete(key);
   }
   commit();
 }

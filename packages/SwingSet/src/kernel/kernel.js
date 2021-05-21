@@ -110,10 +110,9 @@ export default function buildKernel(
   const { verbose, defaultManagerType = 'local' } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  insistStorageAPI(hostStorage);
-  const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(
-    hostStorage,
-  );
+  const { kvStore } = hostStorage;
+  insistStorageAPI(kvStore);
+  const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
 
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
@@ -230,7 +229,7 @@ export default function buildKernel(
 
   const kernelSyscallHandler = makeKernelSyscallHandler({
     kernelKeeper,
-    storage: enhancedCrankBuffer,
+    kvStore: enhancedCrankBuffer,
     ephemeral,
     // eslint-disable-next-line no-use-before-define
     notify,

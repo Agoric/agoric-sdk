@@ -1,3 +1,5 @@
+import '@agoric/install-ses';
+
 import fs from 'fs';
 import path from 'path';
 
@@ -7,42 +9,42 @@ import {
   openSwingStore,
   getAllState,
   isSwingStore,
-} from '../simpleSwingStore';
+} from '../src/simpleSwingStore';
 
-function testStorage(t, storage) {
-  t.falsy(storage.has('missing'));
-  t.is(storage.get('missing'), undefined);
+function testStorage(t, kvStore) {
+  t.falsy(kvStore.has('missing'));
+  t.is(kvStore.get('missing'), undefined);
 
-  storage.set('foo', 'f');
-  t.truthy(storage.has('foo'));
-  t.is(storage.get('foo'), 'f');
+  kvStore.set('foo', 'f');
+  t.truthy(kvStore.has('foo'));
+  t.is(kvStore.get('foo'), 'f');
 
-  storage.set('foo2', 'f2');
-  storage.set('foo1', 'f1');
-  storage.set('foo3', 'f3');
-  t.deepEqual(Array.from(storage.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(storage.getKeys('foo1', 'foo4')), [
+  kvStore.set('foo2', 'f2');
+  kvStore.set('foo1', 'f1');
+  kvStore.set('foo3', 'f3');
+  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
+  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), [
     'foo1',
     'foo2',
     'foo3',
   ]);
 
-  storage.delete('foo2');
-  t.falsy(storage.has('foo2'));
-  t.is(storage.get('foo2'), undefined);
-  t.deepEqual(Array.from(storage.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
+  kvStore.delete('foo2');
+  t.falsy(kvStore.has('foo2'));
+  t.is(kvStore.get('foo2'), undefined);
+  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   const reference = {
     foo: 'f',
     foo1: 'f1',
     foo3: 'f3',
   };
-  t.deepEqual(getAllState(storage), reference, 'check state after changes');
+  t.deepEqual(getAllState(kvStore), reference, 'check state after changes');
 }
 
 test('storageInMemory', t => {
-  const { storage } = initSwingStore();
-  testStorage(t, storage);
+  const { kvStore } = initSwingStore();
+  testStorage(t, kvStore);
 });
 
 test('storageInFile', t => {
@@ -50,14 +52,14 @@ test('storageInFile', t => {
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const { storage, commit, close } = initSwingStore(dbDir);
-  testStorage(t, storage);
+  const { kvStore, commit, close } = initSwingStore(dbDir);
+  testStorage(t, kvStore);
   commit();
-  const before = getAllState(storage);
+  const before = getAllState(kvStore);
   close();
   t.is(isSwingStore(dbDir), true);
 
-  const { storage: after } = openSwingStore(dbDir);
+  const { kvStore: after } = openSwingStore(dbDir);
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
 });

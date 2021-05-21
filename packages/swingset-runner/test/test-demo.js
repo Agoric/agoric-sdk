@@ -40,10 +40,6 @@ test('run encouragmentBot demo with memdb', async t => {
   await innerTest(t, '--memdb');
 });
 
-test('run encouragmentBot demo with filedb', async t => {
-  await innerTest(t, '--filedb', 'filetest');
-});
-
 test('run encouragmentBot demo with lmdb', async t => {
   await innerTest(t, '--lmdb', 'lmdbtest');
 });

@@ -31,7 +31,7 @@ const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
-  storage,
+  hostStorage,
   vatconfig,
   argv,
   { debugName = undefined, slogCallbacks, slogFile },
@@ -68,16 +68,17 @@ async function buildSwingset(
   }
 
   async function ensureSwingsetInitialized() {
-    if (swingsetIsInitialized(storage)) {
+    if (swingsetIsInitialized(hostStorage)) {
       return;
     }
-    await initializeSwingset(config, argv, storage, { debugPrefix });
+    await initializeSwingset(config, argv, hostStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
-  const controller = await makeSwingsetController(storage, deviceEndowments, {
-    slogCallbacks,
-    slogFile,
-  });
+  const controller = await makeSwingsetController(
+    hostStorage,
+    deviceEndowments,
+    { slogCallbacks, slogFile },
+  );
 
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (-1) or in endBlock).
@@ -99,7 +100,11 @@ export async function launch(
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
-  const { storage, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const hostStorage = {
+    kvStore,
+    streamStore,
+  };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
@@ -114,7 +119,7 @@ export async function launch(
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
-    storage,
+    hostStorage,
     vatconfig,
     argv,
     {
@@ -173,7 +178,7 @@ export async function launch(
   }
 
   async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
-    storage.set(
+    kvStore.set(
       SWING_STORE_META_KEY,
       JSON.stringify([savedHeight, savedActions, savedChainSends]),
     );
@@ -204,7 +209,7 @@ export async function launch(
   }
 
   const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    storage.get(SWING_STORE_META_KEY) || '[-1, [], []]',
+    kvStore.get(SWING_STORE_META_KEY) || '[-1, [], []]',
   );
   bootstrapBlock = savedHeight < 0;
 

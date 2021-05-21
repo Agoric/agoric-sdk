@@ -14,7 +14,6 @@ import { tmpName } from 'tmp';
 import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
-import { initSwingStore } from '@agoric/swing-store-simple';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
@@ -24,6 +23,7 @@ import { waitUntilQuiescent } from './waitUntilQuiescent';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
+import { provideHostStorage } from './hostStorage';
 import {
   swingsetIsInitialized,
   initializeSwingset,
@@ -114,7 +114,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
 
 /**
  *
- * @param {SwingStore} hostStorage
+ * @param {HostStore} hostStorage
  * @param {Record<string, unknown>} deviceEndowments
  * @param {{
  *   verbose?: boolean,
@@ -128,11 +128,12 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
-  hostStorage = initSwingStore().storage,
+  hostStorage = provideHostStorage(),
   deviceEndowments = {},
   runtimeOptions = {},
 ) {
-  insistStorageAPI(hostStorage);
+  const kvStore = hostStorage.kvStore;
+  insistStorageAPI(kvStore);
 
   // Use ambient process.env only if caller did not specify.
   const { env = process.env } = runtimeOptions;
@@ -203,7 +204,7 @@ export async function makeSwingsetController(
     }
   }
   // @ts-ignore assume kernelBundle is set
-  const kernelBundle = JSON.parse(hostStorage.get('kernelBundle'));
+  const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel/...',
@@ -275,9 +276,9 @@ export async function makeSwingsetController(
 
   const bundles = [
     // @ts-ignore assume lockdownBundle is set
-    JSON.parse(hostStorage.get('lockdownBundle')),
+    JSON.parse(kvStore.get('lockdownBundle')),
     // @ts-ignore assume supervisorBundle is set
-    JSON.parse(hostStorage.get('supervisorBundle')),
+    JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
 
@@ -385,7 +386,7 @@ export async function makeSwingsetController(
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {{
- *   hostStorage?: SwingStore,
+ *   hostStorage?: HostStore,
  *   verbose?: boolean,
  *   kernelBundles?: Record<string, string>,
  *   debugPrefix?: string,
@@ -393,7 +394,7 @@ export async function makeSwingsetController(
  *   testTrackDecref?: unknown,
  *   snapstorePath?: string,
  * }} runtimeOptions
- * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  */
 export async function buildVatController(
   config,
@@ -401,7 +402,7 @@ export async function buildVatController(
   runtimeOptions = {},
 ) {
   const {
-    hostStorage = initSwingStore().storage,
+    hostStorage = provideHostStorage(),
     verbose,
     kernelBundles,
     debugPrefix,

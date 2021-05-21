@@ -172,12 +172,6 @@ export function buildRootObject(_vatPowers) {
       /** @type {Store<string, Bank>} */
       const addressToBank = makeStore('address');
 
-      /** @type {NotifierRecord<string[]>} */
-      const {
-        notifier: accountsNotifier,
-        updater: accountsUpdater,
-      } = makeNotifierKit([...addressToBank.keys()]);
-
       /**
        * Create a new personal bank interface for a given address.
        *
@@ -257,21 +251,8 @@ export function buildRootObject(_vatPowers) {
           },
         });
         addressToBank.init(address, bank);
-        accountsUpdater.updateState([...addressToBank.keys()]);
         return bank;
       };
-
-      const bankDepositFacet = Far('bankDepositFacet', {
-        getAccountsNotifier() {
-          return accountsNotifier;
-        },
-        deposit(brand, account, payment) {
-          // The purse will do the proper verification as part of deposit.
-          const bank = getBankForAddress(account);
-          const purse = bank.getPurse(brand);
-          return E(purse).deposit(payment);
-        },
-      });
 
       return Far('bankManager', {
         /**
@@ -282,9 +263,38 @@ export function buildRootObject(_vatPowers) {
         getAssetSubscription() {
           return harden(assetSubscription);
         },
-        getDepositFacet() {
-          return bankDepositFacet;
+        /**
+         * @param {string} denom
+         * @param {AssetIssuerKit} feeKit
+         * @returns {import('@agoric/eventual-send').EOnly<DepositFacet>}
+         */
+        getFeeCollectorDepositFacet(denom, feeKit) {
+          if (!bankCall) {
+            throw Error(`Bank doesn't implement fee collectors`);
+          }
+
+          /** @type {VirtualPurseController} */
+          const feeVpc = harden({
+            async *getBalances(_brand) {
+              // Never resolve!
+              yield new Promise(_ => {});
+            },
+            async pullAmount(_amount) {
+              throw Error(`Cannot pull from fee collector`);
+            },
+            async pushAmount(amount) {
+              const value = AmountMath.getValue(feeKit.brand, amount);
+              await bankCall({
+                type: 'VPURSE_GIVE_TO_FEE_COLLECTOR',
+                denom,
+                amount: `${value}`,
+              });
+            },
+          });
+          const vp = makeVirtualPurse(feeVpc, feeKit);
+          return E(vp).getDepositFacet();
         },
+
         /**
          * Add an asset to the bank, and publish it to the subscriptions.
          *

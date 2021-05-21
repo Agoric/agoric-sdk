@@ -3,11 +3,8 @@ import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
-import {
-  initSwingStore,
-  getAllState,
-  setAllState,
-} from '@agoric/swing-store-simple';
+import { getAllState, setAllState } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../../src/hostStorage';
 import { buildKernelBundles, buildVatController } from '../../src';
 
 function capdata(body, slots = []) {
@@ -41,10 +38,11 @@ test('replay bundleSource-based dynamic vat', async t => {
     bootstrap: 'bootstrap',
   };
 
-  const { storage: storage1 } = initSwingStore();
+  // XXX TODO: also copy and check transcripts
+  const hostStorage1 = provideHostStorage();
   {
     const c1 = await buildVatController(copy(config), [], {
-      hostStorage: storage1,
+      hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     const r1 = c1.queueToVatExport(
@@ -62,12 +60,12 @@ test('replay bundleSource-based dynamic vat', async t => {
   // we could re-use the Storage object, but I'll be paranoid and create a
   // new one.
 
-  const state1 = getAllState(storage1);
-  const { storage: storage2 } = initSwingStore();
-  setAllState(storage2, state1);
+  const state1 = getAllState(hostStorage1.kvStore);
+  const hostStorage2 = provideHostStorage();
+  setAllState(hostStorage2.kvStore, state1);
   {
     const c2 = await buildVatController(copy(config), [], {
-      hostStorage: storage2,
+      hostStorage: hostStorage2,
     });
     const r2 = c2.queueToVatExport(
       'bootstrap',
@@ -92,10 +90,11 @@ test('replay bundleName-based dynamic vat', async t => {
     bootstrap: 'bootstrap',
   };
 
-  const { storage: storage1 } = initSwingStore();
+  // XXX TODO: also copy and check transcripts
+  const hostStorage1 = provideHostStorage();
   {
     const c1 = await buildVatController(copy(config), [], {
-      hostStorage: storage1,
+      hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     const r1 = c1.queueToVatExport(
@@ -109,12 +108,12 @@ test('replay bundleName-based dynamic vat', async t => {
     t.deepEqual(c1.kpResolution(r1), capargs('created'));
   }
 
-  const state1 = getAllState(storage1);
-  const { storage: storage2 } = initSwingStore();
-  setAllState(storage2, state1);
+  const state1 = getAllState(hostStorage1.kvStore);
+  const hostStorage2 = provideHostStorage();
+  setAllState(hostStorage2.kvStore, state1);
   {
     const c2 = await buildVatController(copy(config), [], {
-      hostStorage: storage2,
+      hostStorage: hostStorage2,
     });
     const r2 = c2.queueToVatExport(
       'bootstrap',

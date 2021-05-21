@@ -1,10 +1,18 @@
+// @ts-check
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import Readlines from 'n-readlines';
 
 import lmdb from 'node-lmdb';
 
-const { details: X } = assert;
+import { assert, details as X } from '@agoric/assert';
+
+/**
+ * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
+ * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ */
 
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
@@ -12,11 +20,7 @@ const { details: X } = assert;
  * @param {string} dirPath  Path to a directory in which database files may be kept.
  * @param {boolean} forceReset  If true, initialize the database to an empty state
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted changes
- * }
+ * @returns {SwingStore}
  */
 function makeSwingStore(dirPath, forceReset = false) {
   let txn = null;
@@ -42,6 +46,9 @@ function makeSwingStore(dirPath, forceReset = false) {
     name: 'swingset-kernel-state',
     create: true,
   });
+
+  const activeStreamFds = new Set();
+  const streamFds = new Map();
 
   function ensureTxn() {
     if (!txn) {
@@ -85,7 +92,7 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @param {string} end  End of the key range of interest (exclusive).  An empty string
    *    indicates a range through the end of the key set.
    *
-   * @yields an iterator for the keys from start <= key < end
+   * @yields {string} an iterator for the keys from start <= key < end
    *
    * @throws if either parameter is not a string.
    */
@@ -149,7 +156,7 @@ function makeSwingStore(dirPath, forceReset = false) {
     }
   }
 
-  const storage = {
+  const kvStore = {
     has,
     getKeys,
     get,
@@ -158,10 +165,68 @@ function makeSwingStore(dirPath, forceReset = false) {
   };
 
   /**
+   * Generator function that returns an iterator over the items in a stream.
+   *
+   * @param {string} streamName  The stream to read
+   *
+   * @yields {string} an iterator for the items in the named stream
+   */
+  function* readStream(streamName) {
+    try {
+      const fd = fs.openSync(`${dirPath}/${streamName}`, 'r');
+      if (fd) {
+        const reader = new Readlines(fd);
+        while (true) {
+          const line = /** @type {string|false} */ (reader.next());
+          if (line) {
+            yield line;
+          } else {
+            break;
+          }
+        }
+        fs.closeSync(fd);
+      }
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
+  }
+
+  /**
+   * Append an item to a stream.
+   *
+   * @param {string} streamName  The stream to append to
+   * @param {string} item  The item to append to it
+   */
+  function appendItem(streamName, item) {
+    assert.typeof(
+      streamName,
+      'string',
+      X`non-string stream name ${streamName}`,
+    );
+    assert(streamName.match(/^[-\w]+$/));
+    let fd = streamFds.get(streamName);
+    if (!fd) {
+      fd = fs.openSync(`${dirPath}/${streamName}`, 'a');
+      streamFds.set(streamName, fd);
+    }
+    activeStreamFds.add(fd);
+    fs.writeSync(fd, item);
+    fs.writeSync(fd, '\n');
+  }
+
+  const streamStore = { appendItem, readStream };
+
+  /**
    * Commit unsaved changes.
    */
   function commit() {
     if (txn) {
+      for (const fd of activeStreamFds) {
+        fs.fsyncSync(fd);
+      }
+      activeStreamFds.clear();
       txn.commit();
       txn = null;
     }
@@ -180,9 +245,13 @@ function makeSwingStore(dirPath, forceReset = false) {
     dbi = null;
     lmdbEnv.close();
     lmdbEnv = null;
+
+    for (const fd of streamFds.values()) {
+      fs.closeSync(fd);
+    }
   }
 
-  return { storage, commit, close, diskUsage };
+  return { kvStore, streamStore, commit, close, diskUsage };
 }
 
 /**
@@ -194,12 +263,7 @@ function makeSwingStore(dirPath, forceReset = false) {
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ * @returns {SwingStore}
  */
 export function initSwingStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
@@ -217,12 +281,7 @@ export function initSwingStore(dirPath) {
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ * @returns {SwingStore}
  */
 export function openSwingStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
