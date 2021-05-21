@@ -1,10 +1,10 @@
 // @ts-check
-/* global makeWeakStore */
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
+import { makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath';
 import { makePaymentMaker } from './payment';
@@ -49,7 +49,7 @@ export const makePaymentLedger = (
   // Methods like deposit() have an optional second parameter `amount`
   // which, if present, is supposed to be equal to the balance of the
   // payment. This helper function does that check.
-  const assertAmountEqual = (paymentBalance, amount) => {
+  const assertAmountConsistent = (paymentBalance, amount) => {
     if (amount !== undefined) {
       assert(
         isEqual(amount, paymentBalance),
@@ -58,7 +58,7 @@ export const makePaymentLedger = (
     }
   };
 
-  const assertKnownPayment = payment => {
+  const assertLivePayment = payment => {
     assert(paymentLedger.has(payment), X`payment not found for ${allegedName}`);
   };
 
@@ -85,12 +85,12 @@ export const makePaymentLedger = (
     // other uses.
 
     if (payments.length > 1) {
-      const antiAliasingStore = makeWeakStore('payment');
+      const antiAliasingStore = new Set();
       payments.forEach(payment => {
         if (antiAliasingStore.has(payment)) {
           throw Error('same payment seen twice');
         }
-        antiAliasingStore.init(payment, undefined);
+        antiAliasingStore.add(payment);
       });
     }
 
@@ -99,7 +99,10 @@ export const makePaymentLedger = (
     const newTotal = newPaymentBalances.reduce(add, emptyAmount);
 
     // Invariant check
-    assert(isEqual(total, newTotal), 'rights were not conserved');
+    assert(
+      isEqual(total, newTotal),
+      X`rights were not conserved: ${total} vs ${newTotal}`,
+    );
 
     // commit point
     payments.forEach(payment => paymentLedger.delete(payment));
@@ -121,16 +124,16 @@ export const makePaymentLedger = (
 
   const getAmountOf = paymentP => {
     return E.when(paymentP, payment => {
-      assertKnownPayment(payment);
+      assertLivePayment(payment);
       return paymentLedger.get(payment);
     });
   };
 
   const burn = (paymentP, optAmount = undefined) => {
     return E.when(paymentP, payment => {
-      assertKnownPayment(payment);
+      assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
-      assertAmountEqual(paymentBalance, optAmount);
+      assertAmountConsistent(paymentBalance, optAmount);
       // Commit point.
       paymentLedger.delete(payment);
       return paymentBalance;
@@ -139,9 +142,9 @@ export const makePaymentLedger = (
 
   const claim = (paymentP, optAmount = undefined) => {
     return E.when(paymentP, srcPayment => {
-      assertKnownPayment(srcPayment);
+      assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountEqual(srcPaymentBalance, optAmount);
+      assertAmountConsistent(srcPaymentBalance, optAmount);
       // Commit point.
       const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
       return payment;
@@ -152,11 +155,11 @@ export const makePaymentLedger = (
   // checking is delegated to the `reallocate` function.
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
     return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-      fromPaymentsArray.every(assertKnownPayment);
+      fromPaymentsArray.every(assertLivePayment);
       const totalPaymentsBalance = fromPaymentsArray
         .map(paymentLedger.get)
         .reduce(add, emptyAmount);
-      assertAmountEqual(totalPaymentsBalance, optTotalAmount);
+      assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
       // Commit point.
       const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
       return payment;
@@ -167,7 +170,7 @@ export const makePaymentLedger = (
   const split = (paymentP, paymentAmountA) => {
     return E.when(paymentP, srcPayment => {
       paymentAmountA = coerce(paymentAmountA);
-      assertKnownPayment(srcPayment);
+      assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
       // Commit point
@@ -181,7 +184,7 @@ export const makePaymentLedger = (
 
   const splitMany = (paymentP, amounts) => {
     return E.when(paymentP, srcPayment => {
-      assertKnownPayment(srcPayment);
+      assertLivePayment(srcPayment);
       amounts = amounts.map(coerce);
       // Commit point
       const newPayments = reallocate([srcPayment], amounts);
@@ -198,36 +201,36 @@ export const makePaymentLedger = (
 
   const deposit = (
     currentBalance,
-    commit,
+    updatePurseBalance,
     srcPayment,
     optAmount = undefined,
   ) => {
     if (isPromise(srcPayment)) {
       throw TypeError(
-        `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+        `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
       );
     }
-    assertKnownPayment(srcPayment);
+    assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
     // Note: this does not guarantee that optAmount itself is a valid stable amount
-    assertAmountEqual(srcPaymentBalance, optAmount);
+    assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
     // Commit point
     // Move the assets in `srcPayment` into this purse, using up the
     // source payment, such that total assets are conserved.
     paymentLedger.delete(srcPayment);
-    commit(newPurseBalance);
+    updatePurseBalance(newPurseBalance);
     return srcPaymentBalance;
   };
 
-  const withdraw = (currentBalance, commit, amount) => {
+  const withdraw = (currentBalance, updatePurseBalance, amount) => {
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
     const payment = makePayment();
     // Commit point
     // Move the withdrawn assets from this purse into a new payment
     // which is returned. Total assets must remain conserved.
-    commit(newPurseBalance);
+    updatePurseBalance(newPurseBalance);
     paymentLedger.init(payment, amount);
     return payment;
   };

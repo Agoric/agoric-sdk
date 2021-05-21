@@ -11,7 +11,7 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
     updater: balanceUpdater,
   } = makeNotifierKit(currentBalance);
 
-  const commit = newPurseBalance => {
+  const updatePurseBalance = newPurseBalance => {
     currentBalance = newPurseBalance;
     balanceUpdater.updateState(currentBalance);
   };
@@ -21,12 +21,13 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
     deposit: (srcPayment, optAmount = undefined) => {
       return purseMethods.deposit(
         currentBalance,
-        commit,
+        updatePurseBalance,
         srcPayment,
         optAmount,
       );
     },
-    withdraw: amount => purseMethods.withdraw(currentBalance, commit, amount),
+    withdraw: amount =>
+      purseMethods.withdraw(currentBalance, updatePurseBalance, amount),
     getCurrentAmount: () => currentBalance,
     getCurrentAmountNotifier: () => balanceNotifier,
     getAllegedBrand: () => brand,
