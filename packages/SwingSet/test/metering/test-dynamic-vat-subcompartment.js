@@ -1,4 +1,7 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';

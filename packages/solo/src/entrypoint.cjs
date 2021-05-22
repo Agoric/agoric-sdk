@@ -6,6 +6,10 @@ const esmRequire = require('esm')(module);
 // import node-lmdb early to work around SES incompatibility
 require('node-lmdb');
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+esmRequire('@agoric/babel-standalone');
+
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)
 esmRequire('@agoric/install-metering-and-ses');

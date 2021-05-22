@@ -53,6 +53,10 @@ const testRequire = function require(specifier) {
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');
       return undefined;
+    // TODO Remove babel-standalone preinitialization
+    // https://github.com/endojs/endo/issues/768
+    case '@agoric/babel-standalone':
+      return undefined;
     case '@agoric/bundle-source':
       return bundleSource;
     default:

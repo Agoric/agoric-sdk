@@ -1,6 +1,9 @@
 /* global __dirname */
 // @ts-check
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/install-metering-and-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies

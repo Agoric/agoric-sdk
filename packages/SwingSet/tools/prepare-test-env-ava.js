@@ -4,6 +4,10 @@
  * `test` function.
  */
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
+
 // eslint thinks these are extraneous dependencies because this file
 // is in the tools/ directory rather than the test/ directory.
 // TODO How do we tell eslint that tools/ is dev-only? Either

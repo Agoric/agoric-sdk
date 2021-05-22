@@ -4,5 +4,8 @@
 // local tweaked version of same that scans the command line to decide if it is
 // going to install global metering or not.
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import './install-optional-global-metering';
 import '@agoric/install-ses';
