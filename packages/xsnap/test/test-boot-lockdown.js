@@ -67,3 +67,25 @@ test('SES deep stacks work on xsnap', async t => {
   t.is(typeof msg, 'string');
   t.assert(msg.length >= 1);
 });
+
+test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
+  const vat = xsnap(opts);
+  await vat.evaluate(bootScript);
+  await vat.evaluate(`
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+
+    const string = '0123456789';
+    const bytes = encoder.encode(string).subarray(1, 4);
+    send(bytes instanceof Uint8Array);
+    send(ArrayBuffer.isView(bytes));
+    const restring = decoder.decode(bytes);
+    send(restring === string.slice(1, 4));
+  `);
+  for (const pass of opts.messages.map(s => JSON.parse(s))) {
+    t.assert(pass);
+  }
+});

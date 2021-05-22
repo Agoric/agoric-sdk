@@ -13,8 +13,16 @@ class TextEncoder {
 }
 
 class TextDecoder {
-  decode(bs) {
-    return fromArrayBuffer(bs);
+  decode(bytes) {
+    // TODO: the following condition can be removed in a future update of XS.
+    // https://github.com/Agoric/agoric-sdk/issues/3362
+    if (ArrayBuffer.isView(bytes)) {
+      bytes = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      );
+    }
+    return fromArrayBuffer(bytes);
   }
 }
 
