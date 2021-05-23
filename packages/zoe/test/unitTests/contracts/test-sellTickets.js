@@ -554,9 +554,10 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
     goldenTurdsMaker,
   ).sellTokens({
     customValueProperties: {
-      description: 'A small golden turd, often considered' +
-                   ' a good luck charm in some cultures. ' +
-                   ' Manifactured by casting.',
+      description:
+       ('A small golden turd, often considered' +
+        ' a good luck charm in some cultures. ' +
+        ' Manifactured by casting.'),
     },
     count: 69,
     moneyIssuer: moolaIssuer,
