@@ -573,5 +573,7 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
   const turdIssuerP = E(goldenTurdMaker).getIssuer();
   const turdBrand = await E(turdIssuerP).getBrand();
   const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
-  const turdsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
+  const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
+  const turdsForSaleNotifier = await E(turdSalesPublicFacet).getAvailableItemsNotifier();
+  // .merki.
 });
