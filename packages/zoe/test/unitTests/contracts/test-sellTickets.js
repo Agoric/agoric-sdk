@@ -564,4 +564,14 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
     sellItemsInstallation,
     pricePerItem: AmountMath.make(420n, moolaBrand),
   });
+  t.is(
+    await sellItemsCreatorSeat.getOfferResult(),
+    defaultAcceptanceMsg,
+    `escrowTurdsOutcome is default acceptance message`,
+  );
+
+  const turdIssuerP = E(goldenTurdMaker).getIssuer();
+  const turdBrand = await E(turdIssuerP).getBrand();
+  const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
+  const turdsForSale = await E(ticketSalesPublicFacet).getAvailableItems();
 });
