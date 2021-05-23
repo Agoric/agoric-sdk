@@ -43,6 +43,7 @@ function makeVattpFrom(vats) {
   });
 }
 
+const CENTRAL_DENOM_NAME = 'urun';
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
@@ -163,17 +164,27 @@ export function buildRootObject(vatPowers, vatParameters) {
     const epochTimerService = chainTimerService;
     const distributorParams = {
       epochInterval: 60n * 60n, // 1 hour
-      runIssuer: centralIssuer,
-      runBrand: centralBrand,
     };
-    E(vats.distributeFees)
-      .buildDistributor(
-        E(vats.distributeFees).makeTreasuryFeeCollector(zoe, treasuryCreator),
-        E(bankManager).getDepositFacet(),
-        epochTimerService,
-        harden(distributorParams),
-      )
-      .catch(e => console.error('Error distributing fees', e));
+    const feeCollectorDepositFacet = await E(bankManager)
+      .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+        issuer: centralIssuer,
+        brand: centralBrand,
+      })
+      .catch(e => {
+        console.error('Cannot create fee collector', e);
+        return undefined;
+      });
+    if (feeCollectorDepositFacet) {
+      // Only distribute fees if there is a collector.
+      E(vats.distributeFees)
+        .buildDistributor(
+          E(vats.distributeFees).makeTreasuryFeeCollector(zoe, treasuryCreator),
+          feeCollectorDepositFacet,
+          epochTimerService,
+          harden(distributorParams),
+        )
+        .catch(e => console.error('Error distributing fees', e));
+    }
 
     /** @type {undefined | import('@agoric/eventual-send').EOnly<Purse>} */
     let centralBootstrapPurse;
@@ -185,7 +196,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         return;
       }
       await E(bankManager).addAsset(
-        'urun',
+        CENTRAL_DENOM_NAME,
         CENTRAL_ISSUER_NAME,
         'Agoric RUN currency',
         harden({ issuer: centralIssuer, brand: centralBrand }),

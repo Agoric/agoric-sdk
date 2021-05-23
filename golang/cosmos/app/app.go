@@ -365,7 +365,7 @@ func NewAgoricApp(
 
 	app.VpurseKeeper = vpurse.NewKeeper(
 		appCodec, keys[vpurse.StoreKey],
-		app.BankKeeper,
+		app.BankKeeper, authtypes.FeeCollectorName,
 		callToController,
 	)
 	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)

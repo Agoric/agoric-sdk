@@ -20,21 +20,21 @@ const FIRST_TRANSCRIPT_ID = 0n;
 /**
  * Establish a vat's state.
  *
- * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
-export function initializeVatState(storage, vatID) {
-  storage.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
-  storage.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
-  storage.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
-  storage.set(`${vatID}.t.nextID`, `${FIRST_TRANSCRIPT_ID}`);
+export function initializeVatState(kvStore, vatID) {
+  kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
+  kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
+  kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.t.nextID`, `${FIRST_TRANSCRIPT_ID}`);
 }
 
 /**
  * Produce a vat keeper for a vat.
  *
- * @param {*} storage  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
@@ -49,7 +49,7 @@ export function initializeVatState(storage, vatID) {
  * @returns {*} an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
-  storage,
+  kvStore,
   kernelSlog,
   vatID,
   addKernelObject,
@@ -68,33 +68,71 @@ export function makeVatKeeper(
     assert.typeof(source, 'object');
     assert(source.bundle || source.bundleName);
     assert.typeof(options, 'object');
-    storage.set(`${vatID}.source`, JSON.stringify(source));
-    storage.set(`${vatID}.options`, JSON.stringify(options));
+    kvStore.set(`${vatID}.source`, JSON.stringify(source));
+    kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
   function getSourceAndOptions() {
-    const source = JSON.parse(storage.get(`${vatID}.source`));
-    const options = JSON.parse(storage.get(`${vatID}.options`));
+    const source = JSON.parse(kvStore.get(`${vatID}.source`));
+    const options = JSON.parse(kvStore.get(`${vatID}.options`));
     return harden({ source, options });
   }
 
+  function parseReachableAndVatSlot(value) {
+    assert.typeof(value, 'string', X`non-string value: ${value}`);
+    const flag = value.slice(0, 1);
+    assert.equal(value.slice(1, 2), ' ');
+    const vatSlot = value.slice(2);
+    let reachable;
+    if (flag === 'R') {
+      reachable = true;
+    } else if (flag === '_') {
+      reachable = false;
+    } else {
+      assert(`flag (${flag}) must be 'R' or '_'`);
+    }
+    return { reachable, vatSlot };
+  }
+
+  function buildReachableAndVatSlot(reachable, vatSlot) {
+    return `${reachable ? 'R' : '_'} ${vatSlot}`;
+  }
+
+  function getReachableAndVatSlot(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    return parseReachableAndVatSlot(kvStore.get(kernelKey));
+  }
+
+  function setReachableFlag(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    kvStore.set(kernelKey, buildReachableAndVatSlot(true, vatSlot));
+  }
+
+  function clearReachableFlag(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+  }
+
   /**
-   * Provide the kernel slot corresponding to a given vat slot, creating the
-   * kernel slot if it doesn't already exist.
+   * Provide the kernel slot corresponding to a given vat slot, allocating a
+   * new one (for exports only) if it doesn't already exist. If we're allowed
+   * to allocate, we also ensure the 'reachable' flag is set on it (whether
+   * we allocated a new one or used an existing one). If we're not allowed to
+   * allocate, we insist that the reachable flag was already set.
    *
    * @param {string} vatSlot  The vat slot of interest
-   *
+   * @param {bool} setReachable Set the 'reachable' flag on vat exports.
    * @returns {string} the kernel slot that vatSlot maps to
-   *
    * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
-   *    or is otherwise invalid.
+   * or is otherwise invalid.
    */
-  function mapVatSlotToKernelSlot(vatSlot) {
+  function mapVatSlotToKernelSlot(vatSlot, setReachable = true) {
     assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
+    const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
-    if (!storage.has(vatKey)) {
-      const { type, allocatedByVat } = parseVatSlot(vatSlot);
-
+    if (!kvStore.has(vatKey)) {
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
@@ -109,8 +147,11 @@ export function makeVatKeeper(
         incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         incStat('clistEntries');
-        storage.set(kernelKey, vatSlot);
-        storage.set(vatKey, kernelSlot);
+        // we add the key as "unreachable", and then rely on
+        // setReachableFlag() at the end to both mark it reachable and to
+        // update any necessary refcounts consistently
+        kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+        kvStore.set(vatKey, kernelSlot);
         kernelSlog &&
           kernelSlog.changeCList(
             vatID,
@@ -126,8 +167,19 @@ export function makeVatKeeper(
         assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
       }
     }
+    const kernelSlot = kvStore.get(vatKey);
 
-    return storage.get(vatKey);
+    if (setReachable) {
+      if (allocatedByVat) {
+        // exports are marked as reachable, if they weren't already
+        setReachableFlag(kernelSlot);
+      } else {
+        // imports must be reachable
+        const { reachable } = getReachableAndVatSlot(kernelSlot);
+        assert(reachable, X`vat tried to access unreachable import`);
+      }
+    }
+    return kernelSlot;
   }
 
   /**
@@ -135,28 +187,27 @@ export function makeVatKeeper(
    * creating the vat slot if it doesn't already exist.
    *
    * @param {string} kernelSlot  The kernel slot of interest
-   *
+   * @param {bool} setReachable Set the 'reachable' flag on vat imports.
    * @returns {string} the vat slot kernelSlot maps to
-   *
    * @throws {Error} if kernelSlot is not a kind of thing that can be imported by vats
-   *    or is otherwise invalid.
+   * or is otherwise invalid.
    */
-  function mapKernelSlotToVatSlot(kernelSlot) {
+  function mapKernelSlotToVatSlot(kernelSlot, setReachable = true) {
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
-    if (!storage.has(kernelKey)) {
+    if (!kvStore.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
 
       let id;
       if (type === 'object') {
-        id = Nat(BigInt(storage.get(`${vatID}.o.nextID`)));
-        storage.set(`${vatID}.o.nextID`, `${id + 1n}`);
+        id = Nat(BigInt(kvStore.get(`${vatID}.o.nextID`)));
+        kvStore.set(`${vatID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        id = Nat(BigInt(storage.get(`${vatID}.d.nextID`)));
-        storage.set(`${vatID}.d.nextID`, `${id + 1n}`);
+        id = Nat(BigInt(kvStore.get(`${vatID}.d.nextID`)));
+        kvStore.set(`${vatID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        id = Nat(BigInt(storage.get(`${vatID}.p.nextID`)));
-        storage.set(`${vatID}.p.nextID`, `${id + 1n}`);
+        id = Nat(BigInt(kvStore.get(`${vatID}.p.nextID`)));
+        kvStore.set(`${vatID}.p.nextID`, `${id + 1n}`);
       } else {
         assert.fail(X`unknown type ${type}`);
       }
@@ -165,8 +216,8 @@ export function makeVatKeeper(
 
       const vatKey = `${vatID}.c.${vatSlot}`;
       incStat('clistEntries');
-      storage.set(vatKey, kernelSlot);
-      storage.set(kernelKey, vatSlot);
+      kvStore.set(vatKey, kernelSlot);
+      kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
       kernelSlog &&
         kernelSlog.changeCList(
           vatID,
@@ -178,7 +229,19 @@ export function makeVatKeeper(
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
-    return storage.get(kernelKey);
+    const { reachable, vatSlot } = getReachableAndVatSlot(kernelSlot);
+    const { allocatedByVat } = parseVatSlot(vatSlot);
+    if (setReachable) {
+      if (!allocatedByVat) {
+        // imports are marked as reachable, if they weren't already
+        setReachableFlag(kernelSlot);
+      } else {
+        // if the kernel is sending non-reachable exports back into
+        // exporting vat, that's a kernel bug
+        assert(reachable, X`kernel sent unreachable export`);
+      }
+    }
+    return vatSlot;
   }
 
   /**
@@ -189,7 +252,7 @@ export function makeVatKeeper(
    * @returns {boolean} true iff this vat has a c-list entry mapping for `slot`.
    */
   function hasCListEntry(slot) {
-    return storage.has(`${vatID}.c.${slot}`);
+    return kvStore.has(`${vatID}.c.${slot}`);
   }
 
   /**
@@ -212,11 +275,11 @@ export function makeVatKeeper(
         kernelSlot,
         vatSlot,
       );
-    if (storage.has(kernelKey)) {
+    if (kvStore.has(kernelKey)) {
       decrementRefCount(kernelSlot, `${vatID}|del|clist`);
       decStat('clistEntries');
-      storage.delete(kernelKey);
-      storage.delete(vatKey);
+      kvStore.delete(kernelKey);
+      kvStore.delete(vatKey);
     }
   }
 
@@ -231,7 +294,7 @@ export function makeVatKeeper(
    * Generator function to return the vat's transcript, one entry at a time.
    */
   function* getTranscript() {
-    for (const value of storage.getPrefixedValues(`${vatID}.t.`)) {
+    for (const value of kvStore.getPrefixedValues(`${vatID}.t.`)) {
       yield JSON.parse(value);
     }
   }
@@ -242,14 +305,14 @@ export function makeVatKeeper(
    * @param {string} msg  The message to append.
    */
   function addToTranscript(msg) {
-    const id = Nat(BigInt(storage.get(`${vatID}.t.nextID`)));
-    storage.set(`${vatID}.t.nextID`, `${id + 1n}`);
-    storage.set(`${vatID}.t.${id}`, JSON.stringify(msg));
+    const id = Nat(BigInt(kvStore.get(`${vatID}.t.nextID`)));
+    kvStore.set(`${vatID}.t.nextID`, `${id + 1n}`);
+    kvStore.set(`${vatID}.t.${id}`, JSON.stringify(msg));
   }
 
   function vatStats() {
     function getCount(key, first) {
-      const id = Nat(BigInt(storage.get(key)));
+      const id = Nat(BigInt(kvStore.get(key)));
       return id - Nat(first);
     }
 
@@ -275,12 +338,12 @@ export function makeVatKeeper(
   function dumpState() {
     const res = [];
     const prefix = `${vatID}.c.`;
-    for (const k of storage.getKeys(prefix, `${vatID}.c/`)) {
+    for (const k of kvStore.getKeys(prefix, `${vatID}.c/`)) {
       if (k.startsWith(prefix)) {
         const slot = k.slice(prefix.length);
         if (!slot.startsWith('k')) {
           const vatSlot = slot;
-          const kernelSlot = storage.get(k);
+          const kernelSlot = kvStore.get(k);
           res.push([kernelSlot, vatID, vatSlot]);
         }
       }
@@ -293,6 +356,8 @@ export function makeVatKeeper(
     getSourceAndOptions,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
+    setReachableFlag,
+    clearReachableFlag,
     hasCListEntry,
     deleteCListEntry,
     deleteCListEntriesForKernelSlots,

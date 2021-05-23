@@ -55,14 +55,21 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       UnderlyingAsset: moolaIssuer,
       StrikePrice: simoleanIssuer,
     });
-    const { creatorInvitation: writeCallInvitation } = await E(
+    const { creatorInvitation: writeCallInvitation, adminFacet } = await E(
       zoe,
     ).startInstance(installation, issuerKeywordRecord);
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        completion => log(`covered call was shut down due to "${completion}"`),
+        reason => log(`covered call failed due to "${reason}"`),
+      );
 
     const proposal = harden({
       give: { UnderlyingAsset: moola(3) },
       want: { StrikePrice: simoleans(7) },
-      exit: { afterDeadline: { deadline: 1, timer } },
+      exit: { afterDeadline: { deadline: 1n, timer } },
     });
 
     const paymentKeywordRecord = { UnderlyingAsset: moolaPayment };
@@ -98,7 +105,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       want: { StrikePrice: simoleans(7) },
       exit: {
         afterDeadline: {
-          deadline: 100,
+          deadline: 100n,
           timer,
         },
       },
@@ -130,7 +137,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const now = await E(timer).getCurrentTimestamp();
-    const terms = harden({ timeAuthority: timer, closesAfter: now + 1 });
+    const terms = harden({ timeAuthority: timer, closesAfter: now + 1n });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(
@@ -346,7 +353,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
       give: { Liquidity: liquidity(10) },
-      want: { Central: moola(0), Secondary: simoleans(0) },
+      want: { Central: moola(0n), Secondary: simoleans(0) },
     });
 
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(

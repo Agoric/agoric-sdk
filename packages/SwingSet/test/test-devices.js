@@ -3,7 +3,8 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 import bundleSource from '@agoric/bundle-source';
-import { initSwingStore, getAllState } from '@agoric/swing-store-simple';
+import { getAllState } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 
 import {
   initializeSwingset,
@@ -57,7 +58,7 @@ test.serial('d0', async t => {
       },
     },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
   await c.step();
@@ -108,7 +109,7 @@ test.serial('d1', async t => {
     },
   };
 
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.step();
@@ -140,7 +141,7 @@ async function test2(t, mode) {
       },
     },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, [mode], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
   await c.step();
@@ -213,7 +214,7 @@ test.serial('d2.5', async t => {
 });
 
 test.serial('device state', async t => {
-  const { storage } = initSwingStore();
+  const hostStorage = provideHostStorage();
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -231,12 +232,12 @@ test.serial('device state', async t => {
 
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
-  await initializeSwingset(config, ['write+read'], storage, t.context.data);
-  const c1 = await makeSwingsetController(storage, {});
+  await initializeSwingset(config, ['write+read'], hostStorage, t.context.data);
+  const c1 = await makeSwingsetController(hostStorage, {});
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
-  const s = getAllState(storage);
+  const s = getAllState(hostStorage.kvStore);
   t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), capargs({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 });
@@ -261,7 +262,7 @@ test.serial('mailbox outbound', async t => {
     mailbox: { ...mb.endowments },
   };
 
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['mailbox1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
@@ -311,7 +312,7 @@ test.serial('mailbox inbound', async t => {
 
   let rc;
 
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['mailbox2'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
@@ -433,7 +434,7 @@ test.serial('command broadcast', async t => {
     command: { ...cm.endowments },
   };
 
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['command1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
@@ -459,7 +460,7 @@ test.serial('command deliver', async t => {
     command: { ...cm.endowments },
   };
 
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['command2'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.run();
@@ -498,9 +499,9 @@ test.serial('liveslots throws when D() gets promise', async t => {
       },
     },
   };
-  const storage = initSwingStore().storage;
-  await initializeSwingset(config, ['promise1'], storage, t.context.data);
-  const c = await makeSwingsetController(storage, {});
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, ['promise1'], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, {});
   await c.step();
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
@@ -534,9 +535,9 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
       },
     },
   };
-  const storage = initSwingStore().storage;
-  await initializeSwingset(config, [], storage, t.context.data);
-  const c = await makeSwingsetController(storage, {});
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage, t.context.data);
+  const c = await makeSwingsetController(hostStorage, {});
   await c.step();
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);

@@ -16,7 +16,8 @@ type Keeper struct {
 	storeKey sdk.StoreKey
 	cdc      codec.Marshaler
 
-	bankKeeper bankkeeper.Keeper
+	bankKeeper       bankkeeper.Keeper
+	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
 	CallToController func(ctx sdk.Context, str string) (string, error)
@@ -26,6 +27,7 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.Marshaler, key sdk.StoreKey,
 	bankKeeper bankkeeper.Keeper,
+	feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -33,6 +35,7 @@ func NewKeeper(
 		storeKey:         key,
 		cdc:              cdc,
 		bankKeeper:       bankKeeper,
+		feeCollectorName: feeCollectorName,
 		CallToController: callToController,
 	}
 }
@@ -56,6 +59,13 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 
 func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.bankKeeper.GetAllBalances(ctx, addr)
+}
+
+func (k Keeper) SendCoinsToFeeCollector(ctx sdk.Context, amt sdk.Coins) error {
+	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
+		return err
+	}
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.feeCollectorName, amt)
 }
 
 func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {

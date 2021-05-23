@@ -338,16 +338,26 @@ function build(
       console.info('Logging sent error stack', err),
   });
 
+  function getSlotForVal(val) {
+    return valToSlot.get(val);
+  }
+
+  function getValForSlot(slot) {
+    const wr = slotToVal.get(slot);
+    return wr && wr.deref();
+  }
+
   const {
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
-    RepairedWeakMap,
-    RepairedWeakSet,
+    VirtualObjectAwareWeakMap,
+    VirtualObjectAwareWeakSet,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
-    valToSlot,
+    getSlotForVal,
+    getValForSlot,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m,
@@ -816,8 +826,8 @@ function build(
   });
 
   const inescapableGlobalProperties = harden({
-    WeakMap: RepairedWeakMap,
-    WeakSet: RepairedWeakSet,
+    WeakMap: VirtualObjectAwareWeakMap,
+    WeakSet: VirtualObjectAwareWeakSet,
   });
 
   function setBuildRootObject(buildRootObject) {

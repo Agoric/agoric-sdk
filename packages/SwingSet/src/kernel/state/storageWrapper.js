@@ -20,15 +20,15 @@ import { insistStorageAPI } from '../../storageAPI';
  * thrown errors and ensures that any return values that are supposed to be
  * strings actually are.
  *
- * @param {*} hostStorage  Alleged host storage object to be wrapped this way.
+ * @param {*} kvStore  Alleged host storage object to be wrapped this way.
  *
- * @returns {*} a hardened version of hostStorage wrapped as described.
+ * @returns {*} a hardened version of kvStore wrapped as described.
  */
-export function guardStorage(hostStorage) {
-  insistStorageAPI(hostStorage);
+export function guardStorage(kvStore) {
+  insistStorageAPI(kvStore);
 
   function callAndWrapError(method, ...args) {
-    // This is based on the one in SES, but hostStorage is not supposed to
+    // This is based on the one in SES, but kvStore is not supposed to
     // throw any exceptions, so we don't need to retain error types or stack
     // traces: just log the full exception, and return a stripped down
     // kernel-realm Error to the caller.
@@ -37,10 +37,10 @@ export function guardStorage(hostStorage) {
     // exposing host-realm Error objects to kernel realm callers.
 
     try {
-      return hostStorage[method](...args);
+      return kvStore[method](...args);
     } catch (err) {
-      console.error(`error invoking hostStorage.${method}(${args})`, err);
-      assert.fail(X`error invoking hostStorage.${method}(${args}): ${err}`);
+      console.error(`error invoking kvStore.${method}(${args})`, err);
+      assert.fail(X`error invoking kvStore.${method}(${args}): ${err}`);
     }
   }
 
@@ -49,23 +49,20 @@ export function guardStorage(hostStorage) {
     return !!callAndWrapError('has', key);
   }
 
-  // hostStorage.getKeys returns a host-realm Generator, so we return a
+  // kvStore.getKeys returns a host-realm Generator, so we return a
   // kernel-realm wrapper generator that returns the same contents, and guard
   // against the host-realm Generator throwing any new errors as it runs
   function* getKeys(start, end) {
     assert.typeof(start, 'string');
     assert.typeof(end, 'string');
     try {
-      for (const key of hostStorage.getKeys(start, end)) {
+      for (const key of kvStore.getKeys(start, end)) {
         yield key;
       }
     } catch (err) {
-      console.error(
-        `error invoking hostStorage.getKeys(${start}, ${end})`,
-        err,
-      );
+      console.error(`error invoking kvStore.getKeys(${start}, ${end})`, err);
       throw new Error(
-        `error invoking hostStorage.getKeys(${start}, ${end}): ${err}`,
+        `error invoking kvStore.getKeys(${start}, ${end}): ${err}`,
       );
     }
   }
@@ -97,16 +94,16 @@ export function guardStorage(hostStorage) {
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
- * @param {*} storage  The storage object that this crank buffer will be based on.
+ * @param {*} kvStore  The storage object that this crank buffer will be based on.
  *
  * @returns {*} an object {
- *   crankBuffer,  // crank buffer as described, wrapping `storage`
- *   commitCrank,  // function to save buffered mutations to `storage`
+ *   crankBuffer,  // crank buffer as described, wrapping `kvStore`
+ *   commitCrank,  // function to save buffered mutations to `kvStore`
  *   abortCrank,   // function to discard buffered mutations
  * }
  */
-export function buildCrankBuffer(storage) {
-  insistStorageAPI(storage);
+export function buildCrankBuffer(kvStore) {
+  insistStorageAPI(kvStore);
 
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();
@@ -120,11 +117,13 @@ export function buildCrankBuffer(storage) {
       if (deletions.has(key)) {
         return false;
       }
-      return storage.has(key);
+      return kvStore.has(key);
     },
 
     *getKeys(start, end) {
-      const keys = new Set(storage.getKeys(start, end));
+      assert.typeof(start, 'string');
+      assert.typeof(end, 'string');
+      const keys = new Set(kvStore.getKeys(start, end));
       for (const k of additions.keys()) {
         keys.add(k);
       }
@@ -132,28 +131,32 @@ export function buildCrankBuffer(storage) {
         keys.delete(k);
       }
       for (const k of Array.from(keys).sort()) {
-        if (start <= k && k < end) {
+        if ((start === '' || start <= k) && (end === '' || k < end)) {
           yield k;
         }
       }
     },
 
     get(key) {
+      assert.typeof(key, 'string');
       if (additions.has(key)) {
         return additions.get(key);
       }
       if (deletions.has(key)) {
         return undefined;
       }
-      return storage.get(key);
+      return kvStore.get(key);
     },
 
     set(key, value) {
+      assert.typeof(key, 'string');
+      assert.typeof(value, 'string');
       additions.set(key, value);
       deletions.delete(key);
     },
 
     delete(key) {
+      assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
     },
@@ -164,10 +167,10 @@ export function buildCrankBuffer(storage) {
    */
   function commitCrank() {
     for (const [key, value] of additions) {
-      storage.set(key, value);
+      kvStore.set(key, value);
     }
     for (const key of deletions) {
-      storage.delete(key);
+      kvStore.delete(key);
     }
     additions.clear();
     deletions.clear();
@@ -184,9 +187,9 @@ export function buildCrankBuffer(storage) {
   return harden({ crankBuffer, commitCrank, abortCrank });
 }
 
-export function addHelpers(storage) {
+export function addHelpers(kvStore) {
   // these functions are built on top of the DB interface
-  insistStorageAPI(storage);
+  insistStorageAPI(kvStore);
 
   // NOTE: awkward naming: the thing that returns a stream of keys is named
   // "enumerate..." while the thing that returns a stream of values is named
@@ -199,7 +202,7 @@ export function addHelpers(storage) {
     // incorrectly.
     for (let i = start; true; i += 1) {
       const key = `${prefix}${i}`;
-      if (storage.has(key)) {
+      if (kvStore.has(key)) {
         yield key;
       } else {
         return;
@@ -209,7 +212,7 @@ export function addHelpers(storage) {
 
   function* getPrefixedValues(prefix, start = 0) {
     for (const key of enumeratePrefixedKeys(prefix, start)) {
-      yield storage.get(key);
+      yield kvStore.get(key);
     }
   }
 
@@ -218,7 +221,7 @@ export function addHelpers(storage) {
     // efficiently without backend DB support because it only looks at
     // numeric suffixes, in sequential order.
     for (const key of enumeratePrefixedKeys(prefix, start)) {
-      storage.delete(key);
+      kvStore.delete(key);
     }
   }
 
@@ -226,7 +229,7 @@ export function addHelpers(storage) {
     enumeratePrefixedKeys,
     getPrefixedValues,
     deletePrefixedKeys,
-    ...storage,
+    ...kvStore,
   });
 }
 
@@ -237,10 +240,10 @@ export function addHelpers(storage) {
 // write-back buffer wrapper (the CrankBuffer), but the keeper is unaware of
 // that.
 
-export function wrapStorage(hostStorage) {
-  const guardedHostStorage = guardStorage(hostStorage);
+export function wrapStorage(kvStore) {
+  const guardedKVStore = guardStorage(kvStore);
   const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
-    guardedHostStorage,
+    guardedKVStore,
   );
   const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };

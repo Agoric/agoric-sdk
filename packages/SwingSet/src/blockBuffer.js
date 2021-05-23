@@ -43,7 +43,7 @@ export function buildBlockBuffer(hostDB) {
         keys.delete(k);
       }
       for (const k of Array.from(keys).sort()) {
-        if (start <= k && k < end) {
+        if ((start === '' || start <= k) && (end === '' || k < end)) {
           yield k;
         }
       }

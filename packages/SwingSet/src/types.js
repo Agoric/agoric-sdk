@@ -120,7 +120,6 @@
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { () => Promise<void> } WaitUntilQuiescent
- *
  */
 
 /**
@@ -159,5 +158,12 @@
  */
 
 /**
+ * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
  * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ *
+ * @typedef {{
+ *   kvStore: KVStore,
+ *   streamStore: StreamStore,
+ * }} HostStore
  */

@@ -5,7 +5,6 @@ import path from 'path';
 
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
-import { initSwingStore } from '@agoric/swing-store-simple';
 
 import './types';
 import { insistStorageAPI } from './storageAPI';
@@ -200,25 +199,26 @@ export function loadSwingsetConfigFile(configPath) {
   }
 }
 
-export function swingsetIsInitialized(storage) {
-  return !!storage.get('initialized');
+export function swingsetIsInitialized(hostStorage) {
+  return !!hostStorage.kvStore.get('initialized');
 }
 
 /**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {SwingStore} hostStorage
+ * @param {HostStore} hostStorage
  * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
   argv = [],
-  hostStorage = initSwingStore().storage,
+  hostStorage,
   initializationOptions = {},
   runtimeOptions = {},
 ) {
-  insistStorageAPI(hostStorage);
+  const kvStore = hostStorage.kvStore;
+  insistStorageAPI(kvStore);
 
   assert(
     !swingsetIsInitialized(hostStorage),
@@ -256,9 +256,9 @@ export async function initializeSwingset(
 
   const { kernelBundles = await buildKernelBundles() } = initializationOptions;
 
-  hostStorage.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
-  hostStorage.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
-  hostStorage.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
+  kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
+  kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
+  kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 
   if (config.bootstrap && argv) {
     const bootConfig = config.vats[config.bootstrap];

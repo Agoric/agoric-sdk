@@ -26,7 +26,7 @@ export function doSend(kernelKeeper, target, msg) {
 export function makeKernelSyscallHandler(tools) {
   const {
     kernelKeeper,
-    storage,
+    kvStore,
     ephemeral,
     notify,
     doResolve,
@@ -52,7 +52,7 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreGet');
-    const value = storage.get(actualKey);
+    const value = kvStore.get(actualKey);
     return harden(['ok', value || null]);
   }
 
@@ -60,7 +60,7 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreSet');
-    storage.set(actualKey, value);
+    kvStore.set(actualKey, value);
     return OKNULL;
   }
 
@@ -68,7 +68,7 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreDelete');
-    storage.delete(actualKey);
+    kvStore.delete(actualKey);
     return OKNULL;
   }
 

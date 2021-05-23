@@ -2,11 +2,9 @@
 import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';
-import {
-  initSwingStore,
-  getAllState,
-  setAllState,
-} from '@agoric/swing-store-simple';
+import { getAllState, setAllState } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../../../src/hostStorage';
+
 import {
   buildVatController,
   loadSwingsetConfigFile,
@@ -119,10 +117,10 @@ test('dispatches to the dead do not harm kernel', async t => {
   const configPath = path.resolve(__dirname, 'swingset-speak-to-dead.json');
   const config = loadSwingsetConfigFile(configPath);
 
-  const { storage: storage1 } = initSwingStore();
+  const hostStorage1 = provideHostStorage();
   {
     const c1 = await buildVatController(config, [], {
-      hostStorage: storage1,
+      hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
@@ -135,12 +133,13 @@ test('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const state1 = getAllState(storage1);
-  const { storage: storage2 } = initSwingStore();
-  setAllState(storage2, state1);
+  const state1 = getAllState(hostStorage1.kvStore);
+  const hostStorage2 = provideHostStorage();
+  // XXX TODO also copy transcripts
+  setAllState(hostStorage2.kvStore, state1);
   {
     const c2 = await buildVatController(config, [], {
-      hostStorage: storage2,
+      hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
     const r2 = c2.queueToVatExport(
@@ -165,10 +164,10 @@ test('replay does not resurrect dead vat', async t => {
   const configPath = path.resolve(__dirname, 'swingset-no-zombies.json');
   const config = loadSwingsetConfigFile(configPath);
 
-  const { storage: storage1 } = initSwingStore();
+  const hostStorage1 = provideHostStorage();
   {
     const c1 = await buildVatController(config, [], {
-      hostStorage: storage1,
+      hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
@@ -177,12 +176,13 @@ test('replay does not resurrect dead vat', async t => {
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
 
-  const state1 = getAllState(storage1);
-  const { storage: storage2 } = initSwingStore();
-  setAllState(storage2, state1);
+  const state1 = getAllState(hostStorage1.kvStore);
+  const hostStorage2 = provideHostStorage();
+  // XXX TODO also copy transcripts
+  setAllState(hostStorage2.kvStore, state1);
   {
     const c2 = await buildVatController(config, [], {
-      hostStorage: storage2,
+      hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
     await c2.run();
@@ -194,10 +194,10 @@ test('replay does not resurrect dead vat', async t => {
 test('dead vat state removed', async t => {
   const configPath = path.resolve(__dirname, 'swingset-die-cleanly.json');
   const config = loadSwingsetConfigFile(configPath);
-  const { storage } = initSwingStore();
+  const hostStorage = provideHostStorage();
 
   const controller = await buildVatController(config, [], {
-    hostStorage: storage,
+    hostStorage,
     kernelBundles: t.context.data.kernelBundles,
   });
   await controller.run();
@@ -205,13 +205,14 @@ test('dead vat state removed', async t => {
     controller.kpResolution(controller.bootstrapResult),
     capargs('bootstrap done'),
   );
-  t.is(storage.get('vat.dynamicIDs'), '["v6"]');
-  t.is(storage.get('ko26.owner'), 'v6');
-  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 9);
+  const kvStore = hostStorage.kvStore;
+  t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
+  t.is(kvStore.get('ko26.owner'), 'v6');
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 9);
 
   controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
   await controller.run();
-  t.is(storage.get('vat.dynamicIDs'), '[]');
-  t.is(storage.get('ko26.owner'), undefined);
-  t.is(Array.from(storage.getKeys('v6.', 'v6/')).length, 0);
+  t.is(kvStore.get('vat.dynamicIDs'), '[]');
+  t.is(kvStore.get('ko26.owner'), undefined);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 0);
 });

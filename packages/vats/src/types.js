@@ -1,6 +1,11 @@
 // @ts-check
 
 /**
+ * @template T
+ * @typedef {import('@agoric/eventual-send').EOnly<T>} EOnly
+ */
+
+/**
  * @typedef {Object} Board
  * @property {(id: string) => any} getValue
  * @property {(value: any) => string} getId
@@ -51,19 +56,10 @@
  */
 
 /**
- * @typedef {Object} BankDepositFacet
- *
- * @property {(brand: Brand, account: string, payment: Payment) => Promise<Amount>} deposit
- * @property {() => Notifier<string[]>} getAccountsNotifier
- */
-
-/**
  * @typedef {Object} DistributorParams
  *
  * @property {bigint} [epochInterval=1n] - parameter to the epochTimer
  *  controlling the interval at which rewards should be sent to the bank.
- * @property {Issuer} runIssuer
- * @property {Brand} runBrand
  */
 
 /**
@@ -72,8 +68,7 @@
  * @param {ERef<FeeCollector>} treasuryCollector - an object with a
  *  collectFees() method, which will return a payment. can be populated with
  *  makeTreasuryFeeCollector(zoe, treasuryCreatorFacet)
- * @param {ERef<BankDepositFacet>} bank - object with getAccountsNotifier() and
- *  deposit()
+ * @param {EOnly<DepositFacet>} feeDepositFacet - object with receive()
  * @param {ERef<TimerService>} epochTimer - timer that notifies at the end of
  *  each Epoch. The epochInterval parameter controls the interval.
  * @param {DistributorParams} params

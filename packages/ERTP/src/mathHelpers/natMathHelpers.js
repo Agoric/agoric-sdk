@@ -18,7 +18,7 @@ const identity = 0n;
  *
  * @type {NatMathHelpers}
  */
-const natMathHelpers = harden({
+const natMathHelpers = {
   doCoerce: Nat,
   doMakeEmpty: _ => identity,
   doIsEmpty: nat => nat === identity,
@@ -27,7 +27,7 @@ const natMathHelpers = harden({
   // BigInts don't observably overflow
   doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
-});
+};
 
 harden(natMathHelpers);
 export default natMathHelpers;

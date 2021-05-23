@@ -181,6 +181,7 @@ const AmountMath = {
       assertLooksLikeBrand(brand);
     }
     assertLooksLikeValue(allegedValue);
+    // @ts-ignore Needs better typing to express Value to Helpers relationship
     const value = getHelpersFromValue(allegedValue).doCoerce(allegedValue);
     return harden({ brand, value });
   },
@@ -199,7 +200,6 @@ const AmountMath = {
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedAmount.value);
   },
-  // @ts-ignore TODO Why doesn't this type correctly?
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   makeEmpty: (brand, assetKind = AssetKind.NAT) => {
     assert(

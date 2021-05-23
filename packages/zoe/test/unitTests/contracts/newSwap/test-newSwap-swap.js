@@ -1021,14 +1021,13 @@ test('newSwap jig - breaking scenario', async t => {
   t.deepEqual(newQuoteToRun.amountOut, quoteToRun.amountOut);
 });
 
-// This demonstrates that we've worked around
-// https://github.com/Agoric/agoric-sdk/issues/3033.  When that is fixed, the
-// work-around in collectFees should be cleaned up.
-test('newSwap workaround zoe Bug', async t => {
+// This demonstrates that Zoe can reallocate empty amounts. i.e. that
+// https://github.com/Agoric/agoric-sdk/issues/3033 stays fixed
+test('zoe allow empty reallocations', async t => {
   const zoe = makeZoe(fakeVatAdmin);
 
   // Set up central token
-  const centralR = makeIssuerKit('central');
+  const { issuer, brand } = makeIssuerKit('central');
 
   // Alice creates an autoswap instance
   const bundle = await bundleSource(newSwapRoot);
@@ -1038,7 +1037,7 @@ test('newSwap workaround zoe Bug', async t => {
   const fakeTimer = buildManualTimer(console.log, 30n);
   const { creatorFacet } = await zoe.startInstance(
     installation,
-    harden({ Central: centralR.issuer }),
+    harden({ Central: issuer }),
     { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
   );
 
@@ -1052,6 +1051,6 @@ test('newSwap workaround zoe Bug', async t => {
   const payout = await E(collectFeesSeat2).getPayout('RUN');
   const result = await E(collectFeesSeat2).getOfferResult();
 
-  t.deepEqual(payout, undefined);
   t.deepEqual(result, 'paid out 0');
+  await assertPayoutAmount(t, issuer, payout, AmountMath.makeEmpty(brand));
 });

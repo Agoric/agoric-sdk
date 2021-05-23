@@ -30,13 +30,13 @@ export function getBestSwingStore(tempdir) {
 
   try {
     const tdb1 = openSwingStoreLMDB(tempdir);
-    tdb1.storage.set('test key', 'test value');
+    tdb1.kvStore.set('test key', 'test value');
     tdb1.commit();
     tdb1.close();
 
     const tdb2 = openSwingStoreLMDB(tempdir);
-    assert(tdb2.storage.has('test key'), X`LMDB test disavows test key`);
-    const val = tdb2.storage.get('test key');
+    assert(tdb2.kvStore.has('test key'), X`LMDB test disavows test key`);
+    const val = tdb2.kvStore.get('test key');
     assert(
       val === 'test value',
       X`LMDB test returned '${val}', not 'test value'`,
@@ -51,8 +51,8 @@ export function getBestSwingStore(tempdir) {
     console.log(`LMDB does not work, falling back to Simple DB`, e);
     // see https://github.com/Agoric/agoric-sdk/issues/950 for details
     return {
-      openSwingStore: openSwingStoreSimple,
-      initSwingStore: initSwingStoreSimple,
+      openSwingStore: () => openSwingStoreSimple(),
+      initSwingStore: () => initSwingStoreSimple(),
     };
   } finally {
     fs.rmdirSync(tempdir, { recursive: true });

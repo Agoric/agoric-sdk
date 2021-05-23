@@ -1,8 +1,8 @@
 /* global require */
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
-import { initSwingStore } from '@agoric/swing-store-simple';
 import test from 'ava';
+import { provideHostStorage } from '../../src/hostStorage';
 import { buildKernelBundles, buildVatController } from '../../src/index';
 import makeNextLog from '../make-nextlog';
 
@@ -41,9 +41,10 @@ async function runOneTest(t, explosion, managerType) {
       },
     },
   };
-  const { storage } = initSwingStore();
+  const hostStorage = provideHostStorage();
+  const kvStore = hostStorage.kvStore;
   const c = await buildVatController(config, [], {
-    hostStorage: storage,
+    hostStorage,
     kernelBundles,
   });
   const nextLog = makeNextLog(c);
@@ -62,11 +63,11 @@ async function runOneTest(t, explosion, managerType) {
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // extract the vatID for the newly-created dynamic vat
-  const dynamicVatIDs = JSON.parse(storage.get('vat.dynamicIDs'));
+  const dynamicVatIDs = JSON.parse(kvStore.get('vat.dynamicIDs'));
   t.is(dynamicVatIDs.length, 1);
   const vatID = dynamicVatIDs[0];
   // and it's root object, by peeking into its c-list
-  const root = storage.get(`${vatID}.c.o+0`);
+  const root = kvStore.get(`${vatID}.c.o+0`);
 
   // and grab a kpid that won't be resolved until the vat dies
   const r = c.queueToVatExport('bootstrap', 'o+0', 'getNever', capargs([]));
@@ -77,11 +78,11 @@ async function runOneTest(t, explosion, managerType) {
   // First, send a message to the dynamic vat that runs normally
   c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
   await c.run();
-  t.is(JSON.parse(storage.get('vat.dynamicIDs')).length, 1);
-  t.is(storage.get(`${root}.owner`), vatID);
-  t.is(Array.from(storage.getKeys(`${vatID}`, `${vatID}/`)).length, 12);
+  t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
+  t.is(kvStore.get(`${root}.owner`), vatID);
+  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 12);
   // neverKPID should still be unresolved
-  t.is(storage.get(`${neverKPID}.state`), 'unresolved');
+  t.is(kvStore.get(`${neverKPID}.state`), 'unresolved');
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
 
@@ -91,13 +92,13 @@ async function runOneTest(t, explosion, managerType) {
   // from the kernel state store.
   c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs([explosion]));
   await c.run();
-  t.is(JSON.parse(storage.get('vat.dynamicIDs')).length, 0);
-  t.is(storage.get(`${root}.owner`), undefined);
-  t.is(Array.from(storage.getKeys(`${vatID}`, `${vatID}/`)).length, 0);
+  t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 0);
+  t.is(kvStore.get(`${root}.owner`), undefined);
+  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 0);
   // neverKPID should be rejected
-  t.is(storage.get(`${neverKPID}.state`), 'rejected');
+  t.is(kvStore.get(`${neverKPID}.state`), 'rejected');
   t.is(
-    storage.get(`${neverKPID}.data.body`),
+    kvStore.get(`${neverKPID}.data.body`),
     JSON.stringify({
       '@qclass': 'error',
       name: 'Error',
@@ -105,7 +106,7 @@ async function runOneTest(t, explosion, managerType) {
     }),
   );
   // TODO: the rejection shouldn't reveal the reason, maybe use this instead:
-  // t.is(storage.get(`${neverKPID}.data.body`),
+  // t.is(kvStore.get(`${neverKPID}.data.body`),
   //      JSON.stringify('vat terminated'));
 
   const expected = {

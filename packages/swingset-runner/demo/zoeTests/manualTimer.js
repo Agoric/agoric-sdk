@@ -1,13 +1,18 @@
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Nat } from '@agoric/nat';
 
 // A fake clock that also logs progress in tests.
-export default function buildManualTimer(log, startValue = 0) {
-  let ticks = startValue;
+export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
+  let ticks = Nat(startValue);
   const schedule = new Map();
   return harden({
     setWakeup(deadline, handler) {
       assert.typeof(deadline, 'bigint');
+      assert(
+        deadline % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${deadline} is not divisible`,
+      );
       if (deadline <= ticks) {
         log(`&& task was past its deadline when scheduled: ${deadline} &&`);
         handler.wake(ticks);
@@ -22,7 +27,7 @@ export default function buildManualTimer(log, startValue = 0) {
     },
     // This function will only be called in testing code to advance the clock.
     tick(msg) {
-      ticks += 1;
+      ticks += timeStep;
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         for (const h of schedule.get(ticks)) {
