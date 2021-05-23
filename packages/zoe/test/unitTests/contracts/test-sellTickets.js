@@ -9,6 +9,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { observeIteration } from '@agoric/notifier';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -535,7 +536,7 @@ test(`mint and sell opera tickets`, async t => {
 });
 
 //
-test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
+test.skip('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -575,5 +576,6 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()' async t => {
   const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
   const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
   const turdsForSaleNotifier = await E(turdSalesPublicFacet).getAvailableItemsNotifier();
-  // .merki.
+  
+  // const { promise: turdsForSale .merki.
 });
