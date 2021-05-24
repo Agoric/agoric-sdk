@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
-import { makePromise } from '@agoric/makePromise';
+import { makePromise } from '@agoric/make-promise';
 import { observeIteration } from '@agoric/notifier';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
@@ -556,11 +556,11 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     goldenTurdsMaker,
   ).sellTokens({
     customValueProperties: {
-      description:
-        ''.concat(
-          'A small golden turd, often considered',
-          ' a good luck charm in some cultures. ',
-          ' Manifactured by casting.'),
+      description: ''.concat(
+        'A small golden turd, often considered',
+        ' a good luck charm in some cultures. ',
+        ' Manifactured by casting.'
+      ),
     },
     count: 69,
     moneyIssuer: moolaIssuer,
@@ -591,6 +591,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     fail: reason => turdsForSalePrej(reason),
   };
   observeIteration(turdsForSaleNotifier, turdsForSaleObserverOne);
-  t.is(turdsForSale, await turdsForSaleP);
+  const turdsForSalePresolved = await turdsForSaleP;
+  t.is(turdsForSale, turdsForSalePresolved);
   t.is(turdsForSale.brand, turdBrand);
 });
