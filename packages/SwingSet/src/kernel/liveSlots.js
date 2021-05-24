@@ -25,7 +25,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
  * @param {Console} console
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *

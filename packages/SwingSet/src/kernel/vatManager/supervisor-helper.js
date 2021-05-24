@@ -18,11 +18,9 @@ import '../../types';
  * manager process.
  *
  * @param { VatDispatcherSyncAsync } dispatch
- * @param { WaitUntilQuiescent } waitUntilQuiescent
  * @returns { VatDispatcher }
  */
-function makeSupervisorDispatch(dispatch, waitUntilQuiescent) {
-  assert.typeof(waitUntilQuiescent, 'function');
+function makeSupervisorDispatch(dispatch) {
   /**
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<VatDeliveryResult> }

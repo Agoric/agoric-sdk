@@ -105,6 +105,7 @@ export default function buildKernel(
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
+    gcAndFinalize,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const { verbose, defaultManagerType = 'local' } = kernelOptions;
@@ -631,7 +632,12 @@ export default function buildKernel(
     }
   }
 
-  const gcTools = harden({ WeakRef, FinalizationRegistry, waitUntilQuiescent });
+  const gcTools = harden({
+    WeakRef,
+    FinalizationRegistry,
+    waitUntilQuiescent,
+    gcAndFinalize,
+  });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,

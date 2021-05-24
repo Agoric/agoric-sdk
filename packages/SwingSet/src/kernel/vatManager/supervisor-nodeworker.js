@@ -10,6 +10,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
+import { gcAndFinalize } from '../../gc';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 import {
@@ -78,6 +79,7 @@ parentPort.on('message', ([type, ...margs]) => {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
+      gcAndFinalize,
     });
     const ls = makeLiveSlots(
       syscall,
@@ -102,7 +104,7 @@ parentPort.on('message', ([type, ...margs]) => {
         workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
         sendUplink(['gotBundle']);
         ls.setBuildRootObject(vatNS.buildRootObject);
-        dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
+        dispatch = makeSupervisorDispatch(ls.dispatch);
         workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
         sendUplink(['dispatchReady']);
       },

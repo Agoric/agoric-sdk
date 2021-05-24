@@ -811,12 +811,15 @@ function makeMockGC() {
     return allFRs;
   }
 
+  function mockGCAndFinalize() {}
+
   return harden({
     WeakRef: mockWeakRef,
     FinalizationRegistry: mockFinalizationRegistry,
     kill,
     getAllFRs,
     waitUntilQuiescent,
+    gcAndFinalize: mockGCAndFinalize,
   });
 }
 
