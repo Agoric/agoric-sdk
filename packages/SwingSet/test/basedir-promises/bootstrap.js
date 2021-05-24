@@ -58,9 +58,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
         const { promise: p1, resolve: r1 } = makePromiseKit();
-        console.log(`here1`, Object.isFrozen(p1));
         const p2 = E(vats.left).takePromise(p1);
-        console.log(`here2`);
         p2.then(x => log(`b.resolved ${x}`));
         r1(t1);
         log(`b.send-promise1.finish`);
