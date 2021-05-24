@@ -16,7 +16,7 @@ export const makeOfferHandlerStorage = () => {
   };
 
   /** @type {(invitationHandle: InvitationHandle) => OfferHandler} */
-  const getOfferHandler = invitationHandle => {
+  const takeOfferHandler = invitationHandle => {
     const offerHandler = invitationHandleToHandler.get(invitationHandle);
     invitationHandleToHandler.delete(invitationHandle);
     return offerHandler;
@@ -24,6 +24,6 @@ export const makeOfferHandlerStorage = () => {
 
   return harden({
     storeOfferHandler,
-    getOfferHandler,
+    takeOfferHandler,
   });
 };

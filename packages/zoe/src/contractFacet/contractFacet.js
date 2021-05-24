@@ -55,7 +55,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       dropAllReferences,
     } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand);
 
-    const { storeOfferHandler, getOfferHandler } = makeOfferHandlerStorage();
+    const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
 
     // Make the instanceRecord
     const {
@@ -304,7 +304,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     const handleOfferObj = Far('handleOfferObj', {
       handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
         const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
-        const offerHandler = getOfferHandler(invitationHandle);
+        const offerHandler = takeOfferHandler(invitationHandle);
         const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
           if (reason === undefined) {
             const newErr = new Error(
