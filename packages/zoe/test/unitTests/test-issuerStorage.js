@@ -20,7 +20,8 @@ const setupIssuersForTest = () => {
 };
 
 test('storeIssuer, getAssetKindByBrand', async t => {
-  const { storeIssuer, getAssetKindByBrand } = makeIssuerStorage();
+  const { storeIssuer, getAssetKindByBrand, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
@@ -45,7 +46,8 @@ test('storeIssuer, getAssetKindByBrand', async t => {
 });
 
 test('storeIssuer, same issuer twice', async t => {
-  const { storeIssuer } = makeIssuerStorage();
+  const { storeIssuer, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
@@ -55,7 +57,8 @@ test('storeIssuer, same issuer twice', async t => {
 });
 
 test('storeIssuer, promise for issuer', async t => {
-  const { storeIssuer } = makeIssuerStorage();
+  const { storeIssuer, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(
@@ -72,7 +75,8 @@ test('storeIssuer, promise for issuer', async t => {
 });
 
 test(`getAssetKindByBrand - brand isn't stored`, t => {
-  const { getAssetKindByBrand } = makeIssuerStorage();
+  const { getAssetKindByBrand, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
   t.throws(() => getAssetKindByBrand(currencyKit.brand), {
     message: '"brand" not found: "[Alleged: currency brand]"',
@@ -80,7 +84,8 @@ test(`getAssetKindByBrand - brand isn't stored`, t => {
 });
 
 test(`storeIssuerKeywordRecord, twice`, async t => {
-  const { storeIssuerKeywordRecord } = makeIssuerStorage();
+  const { storeIssuerKeywordRecord, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const issuerKeywordRecord = harden({
@@ -107,7 +112,12 @@ test(`storeIssuerKeywordRecord, twice`, async t => {
 });
 
 test(`storeIssuerRecord`, async t => {
-  const { storeIssuerRecord, getAssetKindByBrand } = makeIssuerStorage();
+  const {
+    storeIssuerRecord,
+    getAssetKindByBrand,
+    instantiate,
+  } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
 
   const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
@@ -122,8 +132,34 @@ test(`storeIssuerRecord`, async t => {
   t.is(getAssetKindByBrand(currencyKit.brand), AssetKind.NAT);
 });
 
+test(`storeIssuerRecord twice`, async t => {
+  const {
+    storeIssuerRecord,
+    getAssetKindByBrand,
+    instantiate,
+  } = makeIssuerStorage();
+  instantiate();
+  const { currencyKit } = setupIssuersForTest();
+
+  const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
+    decimalPlaces: 18,
+    assetKind: AssetKind.NAT,
+  });
+
+  const returnedIssuerRecord = await storeIssuerRecord(issuerRecord);
+
+  t.deepEqual(returnedIssuerRecord, issuerRecord);
+
+  t.is(getAssetKindByBrand(currencyKit.brand), AssetKind.NAT);
+
+  const returnedIssuerRecord2 = await storeIssuerRecord(issuerRecord);
+
+  t.deepEqual(returnedIssuerRecord2, issuerRecord);
+});
+
 test('getBrandForIssuer', async t => {
-  const { storeIssuer, getBrandForIssuer } = makeIssuerStorage();
+  const { storeIssuer, getBrandForIssuer, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
 
   await storeIssuer(currencyKit.issuer);
@@ -132,7 +168,8 @@ test('getBrandForIssuer', async t => {
 });
 
 test('getIssuerForBrand', async t => {
-  const { storeIssuer, getIssuerForBrand } = makeIssuerStorage();
+  const { storeIssuer, getIssuerForBrand, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit } = setupIssuersForTest();
 
   await storeIssuer(currencyKit.issuer);
@@ -141,7 +178,8 @@ test('getIssuerForBrand', async t => {
 });
 
 test('exportIssuerStorage', async t => {
-  const { storeIssuer, exportIssuerStorage } = makeIssuerStorage();
+  const { storeIssuer, exportIssuerStorage, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
@@ -154,7 +192,8 @@ test('exportIssuerStorage', async t => {
 });
 
 test('use exportedIssuerStorage', async t => {
-  const { storeIssuer, exportIssuerStorage } = makeIssuerStorage();
+  const { storeIssuer, exportIssuerStorage, instantiate } = makeIssuerStorage();
+  instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
   const currencyIssuerRecord = await storeIssuer(currencyKit.issuer);
@@ -166,9 +205,11 @@ test('use exportedIssuerStorage', async t => {
   t.deepEqual(exportedIssuerStorage, [currencyIssuerRecord]);
 
   // SecondIssuerStorage
-  const { exportIssuerStorage: exportIssuerStorage2 } = makeIssuerStorage(
-    exportedIssuerStorage,
-  );
+  const {
+    exportIssuerStorage: exportIssuerStorage2,
+    instantiate: instantiate2,
+  } = makeIssuerStorage();
+  instantiate2(exportedIssuerStorage);
 
   const exportedIssuerStorage2 = exportIssuerStorage2([currencyKit.issuer]);
   t.deepEqual(exportedIssuerStorage2, [currencyIssuerRecord]);
