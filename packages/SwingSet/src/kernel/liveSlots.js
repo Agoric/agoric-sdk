@@ -73,9 +73,9 @@ function build(
    * additional table (importedPromisesByPromiseID) to handle a future
    * incoming resolution message. We retain a weak reference to the Presence,
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
-   * we can notify the kernel. We retain strong references to Promises, for
-   * now, via the `safetyPins` Set until we figure out a better GC approach.
-   * When an import is added, the finalizer is added to `droppedRegistry`.
+   * we can notify the kernel. We retain strong references to unresolved
+   * Promises. When an import is added, the finalizer is added to
+   * `droppedRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
@@ -96,6 +96,7 @@ function build(
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
+  const pendingPromises = new Set(); // Promises
   const safetyPins = new Set(); // temporary
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
@@ -282,6 +283,7 @@ function build(
       },
     });
     importedPromisesByPromiseID.set(vpid, pRec);
+    pendingPromises.add(p);
 
     return harden(p);
   }
@@ -382,6 +384,7 @@ function build(
       // lsdebug('must be a new export', JSON.stringify(val));
       if (isPromise(val)) {
         slot = exportPromise(val);
+        pendingPromises.add(val); // keep it alive until resolved
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -581,8 +584,8 @@ function build(
 
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
+    pendingPromises.add(returnedP);
     // we do not use droppedRegistry for promises, even result promises
-    exportedRemotables.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -694,6 +697,7 @@ function build(
     const p = wr && wr.deref();
     if (p) {
       valToSlot.delete(p);
+      pendingPromises.delete(p);
       safetyPins.delete(p);
     }
     slotToVal.delete(promiseID);
