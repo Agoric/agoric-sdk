@@ -8,9 +8,9 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
+import { makePromise } from '@agoric/promise';
 import { observeIteration } from '@agoric/notifier';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
-
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -572,7 +572,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     `escrowTurdsOutcome is default acceptance message`,
   );
 
-  const turdIssuerP = E(goldenTurdMaker).getIssuer();
+  const turdIssuerP = E(goldenTurdsMaker).getIssuer();
   const turdBrand = await E(turdIssuerP).getBrand();
   const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
   const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
@@ -591,4 +591,5 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   };
   observeIteration(turdsForSaleNotifier, turdsForSaleObserverOne);
   t.is(turdsForSale, await turdsForSaleP);
+  t.is(turdsForSale.brand, turdBrand);
 });
