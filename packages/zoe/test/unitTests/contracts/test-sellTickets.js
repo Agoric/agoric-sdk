@@ -594,7 +594,6 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   });
   observeIteration(turdsForSaleNotifier, turdsForSaleObserver);
   const turdsForSalePresolved = await turdsForSaleP;
-  t.log(' .merki. ');
   t.is(turdsForSale, turdsForSalePresolved);
   t.is(turdsForSale.brand, turdBrand);
   t.is(turdsForSalePresolved.brand, turdBrand);
