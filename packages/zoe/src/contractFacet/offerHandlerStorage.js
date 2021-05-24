@@ -1,9 +1,11 @@
+// @ts-check
+
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 
 import { makeHandle } from '../makeHandle';
 
 export const makeOfferHandlerStorage = () => {
-  /** @type {WeakStore<InvitationHandle, (seat: ZCFSeat) => unknown>} */
+  /** @type {WeakStore<InvitationHandle, OfferHandler>} */
   const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
 
   /** @type {(offerHandler: OfferHandler) => InvitationHandle} */
