@@ -370,8 +370,12 @@ async function doResultPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
+    let pin;
     return Far('root', {
       async run(target1) {
+        // inhibit GC of the Presence, so the tests see stable syscalls
+        // eslint-disable-next-line no-unused-vars
+        pin = target1;
         const p1 = E(target1).getTarget2();
         hush(p1);
         const p2 = E(p1).one();
@@ -684,14 +688,20 @@ test('liveslots retains device nodes', async t => {
   t.deepEqual(success, [true]);
 });
 
-test('GC operations', async t => {
+test('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
-
+  let wr;
   function build(_vatPowers) {
-    const ex1 = Far('export', {});
+    let presence1;
     const root = Far('root', {
-      one(_arg) {
-        return ex1;
+      one(arg) {
+        presence1 = arg;
+        wr = new WeakRef(arg);
+      },
+      two() {},
+      three() {
+        // eslint-disable-next-line no-unused-vars
+        presence1 = undefined; // drops the import
       },
     });
     return root;
@@ -701,10 +711,91 @@ test('GC operations', async t => {
   const rootA = 'o+0';
   const arg = 'o-1';
 
+  // tell the vat make a Presence and hold it for a moment
   // rp1 = root~.one(arg)
+  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg)));
+  t.truthy(wr.deref());
+
+  // an intermediate message will trigger GC, but the presence is still held
+  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  t.truthy(wr.deref());
+
+  // now tell the vat to drop the 'arg' presence we gave them earlier
+  await dispatch(makeMessage(rootA, 'three', capargs([]), null));
+
+  // the presence itself should be gone
+  t.falsy(wr.deref());
+
+  // since nothing else is holding onto it, the vat should emit a dropImports
+  const l2 = log.shift();
+  t.deepEqual(l2, {
+    type: 'dropImports',
+    slots: [arg],
+  });
+
+  const todo = false; // enable this once we have VOM.vrefIsRecognizable
+  if (todo) {
+    // and since the vat never used the Presence in a WeakMap/WeakSet, they
+    // cannot recognize it either, and will emit retireImports
+    const l3 = log.shift();
+    t.deepEqual(l3, {
+      type: 'retireImports',
+      slots: [arg],
+    });
+  }
+
+  t.deepEqual(log, []);
+});
+
+test('GC dispatch.retireImports', async t => {
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    let presence1;
+    const root = Far('root', {
+      one(arg) {
+        // eslint-disable-next-line no-unused-vars
+        presence1 = arg;
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+  const arg = 'o-1';
+
+  // tell the vat make a Presence and hold it
+  // rp1 = root~.one(arg)
+  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg)));
+
+  // when the upstream export goes away, the kernel will send a
+  // dispatch.retireImport into the vat
+  await dispatch(makeRetireImports(arg));
+  // for now, we only care that it doesn't crash
+  t.deepEqual(log, []);
+
+  // when we implement VOM.vrefIsRecognizable, this test might do more
+});
+
+test('GC dispatch.retireExports', async t => {
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    const ex1 = Far('export', {});
+    const root = Far('root', {
+      one() {
+        return ex1;
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // rp1 = root~.one()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg), rp1));
+  await dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
@@ -713,22 +804,17 @@ test('GC operations', async t => {
   });
   t.deepEqual(log, []);
 
-  // now tell the vat we don't need a strong reference to that export
-  // for now, all that we care about is that liveslots doesn't crash
+  // All other vats drop the export, but since the vat holds it strongly, the
+  // vat says nothing
   await dispatch(makeDropExports(ex1));
+  t.deepEqual(log, []);
 
-  // and release its identity too
+  // Also, all other vats cease to be able to recognize it, which will delete
+  // the clist entry and allows the vat to delete some slotToVal tables. The
+  // vat does not need to react, but we want to make sure the dispatch
+  // doesn't crash anything.
   await dispatch(makeRetireExports(ex1));
-
-  // Sending retireImport into a vat that hasn't yet emitted dropImport is
-  // rude, and would only happen if the exporter unilaterally revoked the
-  // object's identity. Normally the kernel would only send retireImport
-  // after receiving dropImport (and sending a dropExport into the exporter,
-  // and getting a retireExport from the exporter, gracefully terminating the
-  // object's identity). We do it the rude way because it's good enough to
-  // test that liveslots can tolerate it, but we may have to update this when
-  // we implement retireImport for real.
-  await dispatch(makeRetireImports(arg));
+  t.deepEqual(log, []);
 });
 
 // Create a WeakRef/FinalizationRegistry pair that can be manipulated for
