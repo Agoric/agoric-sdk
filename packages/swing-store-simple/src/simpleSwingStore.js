@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import Readlines from 'n-readlines';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 
 /**
  * @typedef {{
@@ -15,8 +15,18 @@ import { assert, details as X } from '@agoric/assert';
  * }} KVStore
  *
  * @typedef {{
- *   appendItem: (name: string, item: string) => void,
- *   readStream: (name: string) => Iterable<string>,
+ *   offset?: number,
+ *   itemCount?: number,
+ * }} StreamPosition
+ *
+ * @typedef {{
+ *   (item: string, position: StreamPosition|null): StreamPosition
+ * }} StreamWriter
+ *
+ * @typedef {{
+ *   openWriteStream: (name: string) => StreamWriter,
+ *   openReadStream: (name: string, endPosition: StreamPosition, startPosition?: StreamPosition) => Iterable<string>,
+ *   closeStream: (name: string) => void,
  * }} StreamStore
  *
  * @typedef {{
@@ -63,9 +73,7 @@ function makeStorageInMemory() {
    * @throws if key is not a string.
    */
   function has(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string');
     return state.has(key);
   }
 
@@ -86,12 +94,8 @@ function makeStorageInMemory() {
    * @throws if either parameter is not a string.
    */
   function* getKeys(start, end) {
-    if (`${start}` !== start) {
-      throw new Error(`non-string start ${start}`);
-    }
-    if (`${end}` !== end) {
-      throw new Error(`non-string end ${end}`);
-    }
+    assert.typeof(start, 'string');
+    assert.typeof(end, 'string');
 
     const keys = Array.from(state.keys()).sort();
     for (const k of keys) {
@@ -112,9 +116,7 @@ function makeStorageInMemory() {
    * @throws if key is not a string.
    */
   function get(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string');
     return state.get(key);
   }
 
@@ -128,12 +130,8 @@ function makeStorageInMemory() {
    * @throws if either parameter is not a string.
    */
   function set(key, value) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
-    if (`${value}` !== value) {
-      throw new Error(`non-string value ${value}`);
-    }
+    assert.typeof(key, 'string');
+    assert.typeof(value, 'string');
     state.set(key, value);
   }
 
@@ -146,9 +144,7 @@ function makeStorageInMemory() {
    * @throws if key is not a string.
    */
   function del(key) {
-    if (`${key}` !== key) {
-      throw new Error(`non-string key ${key}`);
-    }
+    assert.typeof(key, 'string');
     state.delete(key);
   }
 
@@ -232,49 +228,97 @@ function makeSwingStore(dirPath, forceReset = false) {
 
   /** @type {Map<string, Array<string>>} */
   const streams = new Map();
+  /** @type {Map<string, string>} */
+  const streamStatus = new Map();
+
+  function insistStreamName(streamName) {
+    assert.typeof(streamName, 'string');
+    assert(
+      streamName.match(/^[-\w]+$/),
+      X`invalid stream name ${q(streamName)}`,
+    );
+  }
 
   /**
    * Generator function that returns an iterator over the items in a stream.
    *
    * @param {string} streamName  The stream to read
+   * @param {Object} endPosition  The position of the end of the stream
+   * @param {Object?} startPosition  Optional position to start reading from
    *
    * @yields {string} an iterator for the items in the named stream
    */
-  function* readStream(streamName) {
-    /** @type {Array<string>|undefined} */
-    const stream = streams.get(streamName);
-    if (stream) {
-      let pos = 0;
-      while (pos < stream.length) {
-        const result = stream[pos];
-        pos += 1;
-        yield result;
-      }
+  function* openReadStream(streamName, endPosition, startPosition) {
+    insistStreamName(streamName);
+    const stream = streams.get(streamName) || [];
+    const status = streamStatus.get(streamName);
+    assert(
+      status === 'unused' || !status,
+      // prettier-ignore
+      X`can't read stream ${q(streamName)} because it's already being used for ${q(status)}`,
+    );
+    assert(endPosition.itemCount > 0);
+    streamStatus.set(streamName, 'read');
+    stream.length = endPosition.itemCount;
+    let pos = 0;
+    if (startPosition) {
+      pos += startPosition.itemCount;
     }
+    while (pos < stream.length) {
+      const result = stream[pos];
+      pos += 1;
+      yield result;
+    }
+    streamStatus.set(streamName, 'unused');
   }
 
   /**
-   * Append an item to a stream.
+   * Obtain a writer for a stream.
    *
-   * @param {string} streamName  The stream to append to
-   * @param {string} item  The item to append to it
+   * @param {string} streamName  The stream to be written
    */
-  function appendItem(streamName, item) {
-    assert.typeof(
-      streamName,
-      'string',
-      X`non-string stream name ${streamName}`,
-    );
-    assert(streamName.match(/^[-\w]+$/));
-    let stream = streams.get(streamName);
-    if (!stream) {
-      stream = [];
-      streams.set(streamName, stream);
+  function openWriteStream(streamName) {
+    insistStreamName(streamName);
+    let streamTemp = streams.get(streamName);
+    if (!streamTemp) {
+      streamTemp = [];
+      streams.set(streamName, streamTemp);
+      streamStatus.set(streamName, 'write');
+    } else {
+      const status = streamStatus.get(streamName);
+      assert(
+        status === 'unused',
+        // prettier-ignore
+        X`can't write stream ${q(streamName)} because it's already being used for ${q(status)}`,
+      );
     }
-    stream.push(item);
+    const stream = streamTemp;
+    streamStatus.set(streamName, 'write');
+
+    /**
+     * Write to a stream.
+     *
+     * @param {string} item  The item to write
+     * @param {Object|null} position  The position to write the item
+     *
+     * @returns {Object} the new position after writing
+     */
+    function write(item, position) {
+      if (!position) {
+        position = { itemCount: 0 };
+      }
+      stream[position.itemCount] = item;
+      return { itemCount: position.itemCount + 1 };
+    }
+    return write;
   }
 
-  const streamStore = { appendItem, readStream };
+  function closeStream(streamName) {
+    insistStreamName(streamName);
+    streamStatus.set(streamName, 'unused');
+  }
+
+  const streamStore = { openReadStream, openWriteStream, closeStream };
 
   return { kvStore, streamStore, commit, close };
 }
@@ -312,9 +356,7 @@ export function initSwingStore(dirPath) {
  * @returns {SwingStore}
  */
 export function openSwingStore(dirPath) {
-  if (`${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string');
-  }
+  assert.typeof(dirPath, 'string');
   return makeSwingStore(dirPath, false);
 }
 
@@ -369,9 +411,7 @@ export function setAllState(kvStore, stuff) {
  *
  */
 export function isSwingStore(dirPath) {
-  if (`${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string');
-  }
+  assert.typeof(dirPath, 'string');
   if (fs.existsSync(dirPath)) {
     const storeFile = path.resolve(dirPath, 'swingset-kernel-state.jsonlines');
     if (fs.existsSync(storeFile)) {
