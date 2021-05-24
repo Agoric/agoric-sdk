@@ -587,17 +587,14 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     reject:  turdsForSalePrej,
   } = makePromise();
 
-  const turdsForSaleObserverOne = harden({
+  const turdsForSaleObserver = harden({
     updateState: itemsAmount => turdsForSalePres(itemsAmount),
     finish: () => { },
     fail: reason => turdsForSalePrej(reason),
   });
-  observeIteration(turdsForSaleNotifier, turdsForSaleObserverOne);
+  observeIteration(turdsForSaleNotifier, turdsForSaleObserver);
   const turdsForSalePresolved = await turdsForSaleP;
   t.is(turdsForSale, turdsForSalePresolved);
   t.is(turdsForSale.brand, turdBrand);
   t.is(turdsForSalePresolved.brand, turdBrand);
-
-  // const turdsForSaleObserverTwo = harden({
-  // });
 });
