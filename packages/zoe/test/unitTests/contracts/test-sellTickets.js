@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
-import { makePromise } from '@agoric/make-promise';
+import { makePromise } from '@agoric/promise-kit';
 import { observeIteration } from '@agoric/notifier';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
