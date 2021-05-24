@@ -584,7 +584,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   } = makePromise();
 
   const turdsForSaleObserverOne = {
-    updateState: itemsAmount => turdsForSalePresmitemsAmount),
+    updateState: itemsAmount => turdsForSalePres(itemsAmount),
     finish: () => { },
     fail: reason => turdsForSalePrej(reason),
   };
