@@ -191,7 +191,7 @@
 /**
  * @callback OfferHandler
  * @param {ZCFSeat} seat
- * @returns any
+ * @returns {unknown}
  */
 
 /**
