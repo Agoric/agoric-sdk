@@ -54,7 +54,7 @@ const start = zcf => {
     sellerSeat = seat;
     // toBeDetermined: is this „prime the pump“ actually required here?
     //                 should it not be in zoe seat handling instead?
-    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation('Items));
+    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
     observeIteration(
       sellerSeat.getNotifier(),
       harden({
