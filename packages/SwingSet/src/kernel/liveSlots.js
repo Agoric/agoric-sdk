@@ -97,6 +97,7 @@ function build(
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
   const pendingPromises = new Set(); // Promises
+  const importedDevices = new Set(); // device nodes
   const safetyPins = new Set(); // temporary
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
@@ -487,6 +488,7 @@ function build(
         }
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
+        importedDevices.add(val);
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }

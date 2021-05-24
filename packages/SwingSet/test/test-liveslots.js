@@ -656,6 +656,34 @@ test('disavow', async t => {
   t.deepEqual(log, []);
 });
 
+test('liveslots retains device nodes', async t => {
+  const { syscall } = buildSyscall();
+  let watch;
+  const recognize = new WeakSet(); // real WeakSet
+  const success = [];
+  function build(_vatPowers) {
+    const root = Far('root', {
+      first(dn) {
+        watch = new WeakRef(dn);
+        recognize.add(dn);
+      },
+      second(dn) {
+        success.push(recognize.has(dn));
+      },
+    });
+    return root;
+  }
+
+  const dispatch = makeDispatch(syscall, build);
+  const rootA = 'o+0';
+  const device = 'd-1';
+  await dispatch(makeMessage(rootA, 'first', capargsOneSlot(device)));
+  await gcAndFinalize();
+  t.truthy(watch.deref(), 'Device node not retained');
+  await dispatch(makeMessage(rootA, 'second', capargsOneSlot(device)));
+  t.deepEqual(success, [true]);
+});
+
 test('GC operations', async t => {
   const { log, syscall } = buildSyscall();
 
