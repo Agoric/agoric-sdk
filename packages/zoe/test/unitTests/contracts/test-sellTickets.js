@@ -577,21 +577,27 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const turdBrand = await E(turdIssuerP).getBrand();
   const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
   const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
-  const turdsForSaleNotifier = await E(turdSalesPublicFacet).getAvailableItemsNotifier();
-  
+  const turdsForSaleNotifier = await E(
+    turdSalesPublicFacet,
+  ).getAvailableItemsNotifier();
+
   const {
     promise: turdsForSaleP,
     resolve: turdsForSalePres,
     reject:  turdsForSalePrej,
   } = makePromise();
 
-  const turdsForSaleObserverOne = {
+  const turdsForSaleObserverOne = harden({
     updateState: itemsAmount => turdsForSalePres(itemsAmount),
     finish: () => { },
     fail: reason => turdsForSalePrej(reason),
-  };
+  });
   observeIteration(turdsForSaleNotifier, turdsForSaleObserverOne);
   const turdsForSalePresolved = await turdsForSaleP;
   t.is(turdsForSale, turdsForSalePresolved);
   t.is(turdsForSale.brand, turdBrand);
+  t.is(turdsForSalePresolved.brand, turdBrand);
+
+  // const turdsForSaleObserverTwo = harden({
+  // });
 });
