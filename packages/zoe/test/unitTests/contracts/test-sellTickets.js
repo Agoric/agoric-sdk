@@ -586,7 +586,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     resolve: turdsForSalePres,
     reject: turdsForSalePrej,
   } = makePromiseKit();
-  test.log(' .merki. ');
+  t.log(' .merki. ');
 
   const turdsForSaleObserver = harden({
     updateState: itemsAmount => turdsForSalePres(itemsAmount),
