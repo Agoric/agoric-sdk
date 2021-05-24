@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   trade,
@@ -54,8 +54,8 @@ const start = zcf => {
     sellerSeat = seat;
     // toBeDetermined: is this „prime the pump“ actually required here?
     //                 should it not be in zoe seat handling instead?
-    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
-    observeIteration(
+    // availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
+    observeNotifier(
       sellerSeat.getNotifier(),
       harden({
         updateState: sellerSeatAllocation =>
