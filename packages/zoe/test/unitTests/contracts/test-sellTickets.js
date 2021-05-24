@@ -584,12 +584,12 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const {
     promise: turdsForSaleP,
     resolve: turdsForSalePres,
-    reject:  turdsForSalePrej,
+    reject: turdsForSalePrej,
   } = makePromise();
 
   const turdsForSaleObserver = harden({
     updateState: itemsAmount => turdsForSalePres(itemsAmount),
-    finish: () => { },
+    finish: () => {},
     fail: reason => turdsForSalePrej(reason),
   });
   observeIteration(turdsForSaleNotifier, turdsForSaleObserver);
