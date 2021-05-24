@@ -536,7 +536,7 @@ test(`mint and sell opera tickets`, async t => {
 });
 
 //
-test.skip('Testing publicFacet.getAvailableItemsNotifier()', async t => {
+test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
   const zoe = makeZoe(fakeVatAdmin);
 
@@ -577,5 +577,17 @@ test.skip('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
   const turdsForSaleNotifier = await E(turdSalesPublicFacet).getAvailableItemsNotifier();
   
-  // const { promise: turdsForSale .merki.
+  const {
+    promise: turdsForSaleP,
+    resolve: turdsForSalePres,
+    reject:  turdsForSalePrej,
+  } = makePromise();
+
+  const turdsForSaleObserverOne = {
+    updateState: itemsAmount => turdsForSalePresmitemsAmount),
+    finish: () => { },
+    fail: reason => turdsForSalePrej(reason),
+  };
+  observeIteration(turdsForSaleNotifier, turdsForSaleObserverOne);
+  t.is(turdsForSale, await turdsForSaleP);
 });
