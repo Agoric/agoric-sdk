@@ -559,7 +559,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
       description: ''.concat(
         'A small golden turd, often considered',
         ' a good luck charm in some cultures. ',
-        ' Manifactured by casting.'
+        ' Manifactured by casting.',
       ),
     },
     count: 69,
