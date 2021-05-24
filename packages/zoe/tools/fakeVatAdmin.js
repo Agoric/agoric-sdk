@@ -6,6 +6,7 @@ import { Far } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode';
+import { handlePKitWarning } from '../src/handleWarning';
 
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
@@ -42,9 +43,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         adminNode: Far('adminNode', {
           done: () => {
             const kit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            kit.promise.catch(_ => {});
+            handlePKitWarning(kit);
             return kit.promise;
           },
           terminateWithFailure: () => {},

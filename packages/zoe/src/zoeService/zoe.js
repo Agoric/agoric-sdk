@@ -27,6 +27,7 @@ import { makeInstallationStorage } from './installationStorage';
 import { makeZoeStorageManager } from './zoeStorageManager';
 import { makeOffer } from './offer/offer';
 import { makeInvitationQueryFns } from './invitationQueries';
+import { handlePKitWarning } from '../handleWarning';
 
 /**
  * Create an instance of Zoe.
@@ -113,13 +114,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
       /** @type {PromiseRecord<HandleOfferObj>} */
       const handleOfferObjPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-      // This does not suppress any error messages.
-      handleOfferObjPromiseKit.promise.catch(_ => {});
+      handlePKitWarning(handleOfferObjPromiseKit);
       const publicFacetPromiseKit = makePromiseKit();
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-      // This does not suppress any error messages.
-      publicFacetPromiseKit.promise.catch(_ => {});
+      handlePKitWarning(publicFacetPromiseKit);
 
       const makeInstanceAdmin = () => {
         /** @type {Set<ZoeSeatAdmin>} */
@@ -153,13 +150,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           stopAcceptingOffers: () => (acceptingOffers = false),
           makeUserSeat: (invitationHandle, initialAllocation, proposal) => {
             const offerResultPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            offerResultPromiseKit.promise.catch(_ => {});
+            handlePKitWarning(offerResultPromiseKit);
             const exitObjPromiseKit = makePromiseKit();
-            // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-            // This does not suppress any error messages.
-            exitObjPromiseKit.promise.catch(_ => {});
+            handlePKitWarning(exitObjPromiseKit);
             const seatHandle = makeHandle('SeatHandle');
 
             const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
