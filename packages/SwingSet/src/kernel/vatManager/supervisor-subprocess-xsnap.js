@@ -6,6 +6,7 @@ import { makeMarshal } from '@agoric/marshal';
 import '../../types';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
+import { gcAndFinalize } from '../../gc';
 import { insistVatDeliveryObject, insistVatSyscallResult } from '../../message';
 
 import { makeLiveSlots } from '../liveSlots';
@@ -184,6 +185,7 @@ function makeWorker(port) {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
+      gcAndFinalize,
     });
 
     const ls = makeLiveSlots(
@@ -213,7 +215,7 @@ function makeWorker(port) {
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
     ls.setBuildRootObject(vatNS.buildRootObject);
     assert(ls.dispatch);
-    dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
+    dispatch = makeSupervisorDispatch(ls.dispatch);
     workerLog(`got dispatch`);
     return ['dispatchReady'];
   }

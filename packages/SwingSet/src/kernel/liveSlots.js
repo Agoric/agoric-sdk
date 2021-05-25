@@ -25,7 +25,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
  * @param {Console} console
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
@@ -45,7 +45,7 @@ function build(
   gcTools,
   console,
 ) {
-  const { WeakRef, FinalizationRegistry, waitUntilQuiescent } = gcTools;
+  const { WeakRef, FinalizationRegistry } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -176,6 +176,58 @@ function build(
     }
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
+
+  function processDroppedRepresentative(_vref) {
+    // no-op, to be implemented by virtual object manager
+    return false;
+  }
+
+  function processDeadSet() {
+    let doMore = false;
+    const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
+
+    for (const vref of deadSet) {
+      const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+      assert(type === 'object', `unprepared to track ${type}`);
+      if (virtual) {
+        // Representative: send nothing, but perform refcount checking
+        doMore = doMore || processDroppedRepresentative(vref);
+      } else if (allocatedByVat) {
+        // Remotable: send retireExport
+        exportsToRetire.push(vref);
+      } else {
+        // Presence: send dropImport unless reachable by VOM
+        // eslint-disable-next-line no-lonely-if, no-use-before-define
+        if (!isVrefReachable(vref)) {
+          importsToDrop.push(vref);
+          // and retireExport if unrecognizable (TODO: needs
+          // VOM.vrefIsRecognizable)
+          // if (!vrefIsRecognizable(vref)) {
+          //   importsToRetire.push(vref);
+          // }
+        }
+      }
+    }
+    deadSet.clear();
+
+    if (importsToDrop.length) {
+      importsToDrop.sort();
+      syscall.dropImports(importsToDrop);
+    }
+    if (importsToRetire.length) {
+      importsToRetire.sort();
+      syscall.retireImports(importsToRetire);
+    }
+    if (exportsToRetire.length) {
+      exportsToRetire.sort();
+      syscall.retireExports(exportsToRetire);
+    }
+
+    // TODO: doMore=true when we've done something that might free more local
+    // objects, which probably won't happen until we sense entire WeakMaps
+    // going away or something involving virtual collections
+    return doMore;
+  }
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
    * to them */
@@ -366,6 +418,7 @@ function build(
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    isVrefReachable,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -906,6 +959,8 @@ function build(
     }
   }
 
+  const { waitUntilQuiescent, gcAndFinalize } = gcTools;
+
   /**
    * This low-level liveslots code is responsible for deciding when userspace
    * is done with a crank. Userspace code can use Promises, so it can add as
@@ -926,9 +981,23 @@ function build(
       .catch(err =>
         console.log(`liveslots error ${err} during delivery ${delivery}`),
       );
+
     // Instead, we wait for userspace to become idle by draining the promise
     // queue.
-    return waitUntilQuiescent();
+    await waitUntilQuiescent();
+    // Userspace will not get control again within this crank.
+
+    // Now that userspace is idle, we can drive GC until we think we've
+    // stopped.
+    async function finish() {
+      await gcAndFinalize();
+      const doMore = processDeadSet();
+      if (doMore) {
+        return finish();
+      }
+      return undefined;
+    }
+    return finish();
   }
   harden(dispatch);
 
