@@ -1,10 +1,13 @@
+/* global WeakRef */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { gcAndFinalize } from '../src/gc';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 import { buildSyscall, makeDispatch } from './liveslots-helpers';
 import {
@@ -319,6 +322,43 @@ test('liveslots retires outbound promise IDs after reject', async t => {
   await doOutboundPromise(t, 'reject');
 });
 
+test('liveslots retains pending exported promise', async t => {
+  const { log, syscall } = buildSyscall();
+  let watch;
+  const success = [];
+  function build(_vatPowers) {
+    const root = Far('root', {
+      make() {
+        const pk = makePromiseKit();
+        watch = new WeakRef(pk.promise);
+        // we export the Promise, but do not retain resolve/reject
+        return [pk.promise];
+      },
+      // if liveslots fails to keep a strongref to the Promise, it will have
+      // been collected by now, and calling check() will fail, because
+      // liveslots can't create a new Promise import when the allocatedByVat
+      // says it was an export
+      check(_p) {
+        success.push('yes');
+      },
+    });
+    return root;
+  }
+
+  const dispatch = makeDispatch(syscall, build);
+  const rootA = 'o+0';
+  const resultP = 'p-1';
+  await dispatch(makeMessage(rootA, 'make', capargs([]), resultP));
+  await gcAndFinalize();
+  t.truthy(watch.deref(), 'Promise not retained');
+  t.is(log[0].type, 'resolve');
+  const res0 = log[0].resolutions[0];
+  t.is(res0[0], resultP);
+  const exportedVPID = res0[2].slots[0]; // currently p+5
+  await dispatch(makeMessage(rootA, 'check', capargsOneSlot(exportedVPID)));
+  t.deepEqual(success, ['yes']);
+});
+
 function hush(p) {
   p.then(
     () => undefined,
@@ -614,6 +654,34 @@ test('disavow', async t => {
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
   t.deepEqual(log.shift(), 'tried to send to disavowed');
   t.deepEqual(log, []);
+});
+
+test('liveslots retains device nodes', async t => {
+  const { syscall } = buildSyscall();
+  let watch;
+  const recognize = new WeakSet(); // real WeakSet
+  const success = [];
+  function build(_vatPowers) {
+    const root = Far('root', {
+      first(dn) {
+        watch = new WeakRef(dn);
+        recognize.add(dn);
+      },
+      second(dn) {
+        success.push(recognize.has(dn));
+      },
+    });
+    return root;
+  }
+
+  const dispatch = makeDispatch(syscall, build);
+  const rootA = 'o+0';
+  const device = 'd-1';
+  await dispatch(makeMessage(rootA, 'first', capargsOneSlot(device)));
+  await gcAndFinalize();
+  t.truthy(watch.deref(), 'Device node not retained');
+  await dispatch(makeMessage(rootA, 'second', capargsOneSlot(device)));
+  t.deepEqual(success, [true]);
 });
 
 test('GC operations', async t => {

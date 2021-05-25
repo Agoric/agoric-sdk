@@ -73,9 +73,9 @@ function build(
    * additional table (importedPromisesByPromiseID) to handle a future
    * incoming resolution message. We retain a weak reference to the Presence,
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
-   * we can notify the kernel. We retain strong references to Promises, for
-   * now, via the `safetyPins` Set until we figure out a better GC approach.
-   * When an import is added, the finalizer is added to `droppedRegistry`.
+   * we can notify the kernel. We retain strong references to unresolved
+   * Promises. When an import is added, the finalizer is added to
+   * `droppedRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
@@ -96,8 +96,21 @@ function build(
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
+  const pendingPromises = new Set(); // Promises
+  const importedDevices = new Set(); // device nodes
   const safetyPins = new Set(); // temporary
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
+
+  function retainExportedRemotable(vref) {
+    // if the vref corresponds to a Remotable, keep a strong reference to it
+    // until the kernel tells us to release it
+    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+    if (type === 'object' && allocatedByVat && !virtual) {
+      const remotable = slotToVal.get(vref).deref();
+      assert(remotable, X`somehow lost Remotable for ${vref}`);
+      exportedRemotables.add(remotable);
+    }
+  }
 
   /*
     Imports are in one of 5 states: UNKNOWN, REACHABLE, UNREACHABLE,
@@ -282,6 +295,7 @@ function build(
       },
     });
     importedPromisesByPromiseID.set(vpid, pRec);
+    pendingPromises.add(p);
 
     return harden(p);
   }
@@ -382,6 +396,7 @@ function build(
       // lsdebug('must be a new export', JSON.stringify(val));
       if (isPromise(val)) {
         slot = exportPromise(val);
+        pendingPromises.add(val); // keep it alive until resolved
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -391,11 +406,13 @@ function build(
         assert.equal(passStyleOf(val), 'remotable');
         slot = exportPassByPresence();
       }
-      parseVatSlot(slot); // assertion
+      const { type } = parseVatSlot(slot); // also used as assertion
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
-      // we do not use droppedRegistry for exports
-      exportedRemotables.add(val); // keep it alive until kernel tells us to release it
+      if (type === 'object') {
+        deadSet.delete(slot);
+        droppedRegistry.register(val, slot);
+      }
     }
     return valToSlot.get(val);
   }
@@ -414,10 +431,10 @@ function build(
     const { type, virtual } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
-    if (type === 'object' || type === 'device') {
-      // we don't dropImports on promises, to avoid interaction with retire
-      droppedRegistry.register(val, slot);
+    // we don't dropImports on promises, to avoid interaction with retire
+    if (type === 'object') {
       deadSet.delete(slot); // might have been FINALIZED before, no longer
+      droppedRegistry.register(val, slot);
     }
 
     // TODO: until #2724 is implemented, we cannot actually release
@@ -484,6 +501,7 @@ function build(
         }
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
+        importedDevices.add(val);
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
@@ -516,6 +534,7 @@ function build(
     function collect(promiseID, rejected, value) {
       doneResolutions.add(promiseID);
       const valueSer = m.serialize(value);
+      valueSer.slots.map(retainExportedRemotable);
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
     }
@@ -547,6 +566,7 @@ function build(
     }
 
     const serArgs = m.serialize(harden(args));
+    serArgs.slots.map(retainExportedRemotable);
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
@@ -581,8 +601,8 @@ function build(
 
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
+    pendingPromises.add(returnedP);
     // we do not use droppedRegistry for promises, even result promises
-    exportedRemotables.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -604,6 +624,7 @@ function build(
         }
         return (...args) => {
           const serArgs = m.serialize(harden(args));
+          serArgs.slots.map(retainExportedRemotable);
           forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
@@ -694,6 +715,7 @@ function build(
     const p = wr && wr.deref();
     if (p) {
       valToSlot.delete(p);
+      pendingPromises.delete(p);
       safetyPins.delete(p);
     }
     slotToVal.delete(promiseID);
@@ -796,11 +818,15 @@ function build(
   // TODO: when we add notifyForward, guard against cycles
 
   function exitVat(completion) {
-    syscall.exit(false, m.serialize(harden(completion)));
+    const args = m.serialize(harden(completion));
+    args.slots.map(retainExportedRemotable);
+    syscall.exit(false, args);
   }
 
   function exitVatWithFailure(reason) {
-    syscall.exit(true, m.serialize(harden(reason)));
+    const args = m.serialize(harden(reason));
+    args.slots.map(retainExportedRemotable);
+    syscall.exit(true, args);
   }
 
   function disavow(presence) {
@@ -852,8 +878,8 @@ function build(
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
+    retainExportedRemotable(rootSlot);
     // we do not use droppedRegistry for exports
-    exportedRemotables.add(rootObject);
   }
 
   /**
