@@ -21,24 +21,20 @@ In any case, for now, you will be needing to build the solo node from the source
 
 ### Build from source
 
-If you want to build and install from sources, you need to install
-- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-- [node.js](https://nodejs.org/en/) (version 12.14.1 or higher). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
-    - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
+To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisities.
+
+- **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
+
+You'll then need to install the following additional software:
 - [Golang](https://golang.org/doc/install) (you need at least version 1.15)
 - (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)
 - (scenarios 1 and 0) python3-venv
 - (scenarios 1 only) [terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
 - (scenarios 1 only) [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
-
-
+Build the cosmic-swingset with:
 ```sh
-git clone https://github.com/Agoric/agoric-sdk
-cd agoric-sdk
-yarn install
-yarn build
-cd packages/cosmic-swingset
+cd agoric-sdk/packages/cosmic-swingset
 npm install
 npm run build
 ```
