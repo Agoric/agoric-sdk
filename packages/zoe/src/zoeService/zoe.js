@@ -102,7 +102,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       );
       // AWAIT ///
 
-      const { adminNode, root } = await createZCFVat();
+      const {
+        adminNode,
+        root,
+      } = await zoeInstanceStorageManager.createZCFVat();
       /** @type {ZCFRoot} */
       const zcfRoot = root;
 
