@@ -13,7 +13,7 @@ Purse operations which change the balance result in a downcall to this module to
 Upon an `EndBlock()` call, the module will scan the block for all `MsgSend` and `MsgMultiSend` events (see `cosmos-sdk/x/bank/spec/04_events.md`) and perform a `VPURSE_BALANCE_UPDATE` upcall for all denominations held in all mentioned accounts.
 
 The following fields are common to the Vpurse messages:
-- `"address"`, '`"recipient"`, `"sender"`: account address as a bech32-encoded string
+- `"address"`, `"recipient"`, `"sender"`: account address as a bech32-encoded string
 - `"amount"`: either amount to transfer or account balance, as an integer string
 - `"denom"`: denomination as a string
 - `"nonce"`: unique integer, as a number
