@@ -6,6 +6,8 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
+import { handlePKitWarning } from '../handleWarning';
+
 import '../types';
 import '../internal-types';
 
@@ -32,9 +34,7 @@ export const makeZoeSeatAdminKit = (
   offerResult,
 ) => {
   const payoutPromiseKit = makePromiseKit();
-  // Don't trigger Node.js's UnhandledPromiseRejectionWarning.
-  // This does not suppress any error messages.
-  payoutPromiseKit.promise.catch(_ => {});
+  handlePKitWarning(payoutPromiseKit);
   const { notifier, updater } = makeNotifierKit();
 
   let currentAllocation = initialAllocation;
