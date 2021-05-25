@@ -10,24 +10,78 @@ import { makeIssuerStorage } from '../issuerStorage';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
 import { makeEscrowStorage } from './escrowStorage';
+import { makeInstanceAdminStorage } from './instanceAdminStorage';
+import { makeInstallationStorage } from './installationStorage';
 
+/**
+ * The Zoe Storage Manager encapsulates and composes important
+ * capabilities, such as the ability to create a new purse and deposit
+ * and withdraw into a purse, according to the Principle of Least
+ * Authority. The code for these capabilities is imported from smaller
+ * files which should have unit tests. After composing, Zoe Storage
+ * Manager divides up the resulting capabilities between those needed
+ * by a new contract instance (returned as the result of
+ * `makeZoeInstanceStorageManager`) and those needed for other purposes.
+ */
+
+/**
+ * @returns {ZoeStorageManager}
+ */
 export const makeZoeStorageManager = () => {
+  // issuerStorage contains the issuers that the ZoeService knows
+  // about, as well as information about them such as their brand,
+  // mathKind, and displayInfo
   const issuerStorage = makeIssuerStorage();
   issuerStorage.instantiate();
+
+  // EscrowStorage holds the purses that Zoe uses for escrow. This
+  // object should be closely held and tracked: all of the digital
+  // assets that users escrow are contained within these purses.
   const escrowStorage = makeEscrowStorage();
 
+  // Every new instance of a contract creates a corresponding
+  // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
+  // that particular instance. This code manages the storage of those
+  // instanceAdmins
+  const {
+    getPublicFacet,
+    getBrands,
+    getIssuers,
+    getTerms,
+    getInstanceAdmin,
+    initInstanceAdmin,
+    deleteInstanceAdmin,
+  } = makeInstanceAdminStorage();
+
+  // Zoe stores "installations" - identifiable bundles of contract
+  // code that can be reused again and again to create new contract
+  // instances
+  const { install, unwrapInstallation } = makeInstallationStorage();
+
+  /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,
   ) => {
+    // Clean the issuerKeywordRecord we receive in `startInstance`
+    // from the user, and save the issuers in Zoe if they are not
+    // already stored there
     const { issuers, brands } = await issuerStorage.storeIssuerKeywordRecord(
       uncleanIssuerKeywordRecord,
     );
+
+    // Create purses for the issuers if they do not already exist
     Object.entries(issuers).forEach(([keyword, issuer]) =>
       escrowStorage.createPurse(issuer, brands[keyword]),
     );
 
+    // The instanceRecord is what the contract code is parameterized
+    // with: the particular terms, issuers, and brands used in a
+    // contract instance based on the installation. A user can query
+    // Zoe to find out the installation, terms, issuers, and brands
+    // for a contract instance. Contract code has similar query
+    // capabilities from the ZCF side.
     const instanceRecordManager = makeAndStoreInstanceRecord(
       installation,
       customTerms,
@@ -84,9 +138,13 @@ export const makeZoeStorageManager = () => {
       return zoeMint;
     };
 
-    /** @returns {ExportedIssuerStorage} */
+    /** @type {ExportIssuerStorage} */
     const exportIssuerStorage = () =>
       issuerStorage.exportIssuerStorage(
+        // the issuerStorage is a weakStore, so we cannot iterate over
+        // it directly. Additionally, we only want to export the
+        // issuers used in this contract instance specifically, not
+        // all issuers.
         Object.values(
           instanceRecordManager.exportInstanceRecord().terms.issuers,
         ),
@@ -101,6 +159,8 @@ export const makeZoeStorageManager = () => {
       exportInstanceRecord: instanceRecordManager.exportInstanceRecord,
       exportIssuerStorage,
       withdrawPayments: escrowStorage.withdrawPayments,
+      initInstanceAdmin,
+      deleteInstanceAdmin,
     });
   };
 
@@ -108,5 +168,12 @@ export const makeZoeStorageManager = () => {
     makeZoeInstanceStorageManager,
     getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
+    install,
+    getPublicFacet,
+    getBrands,
+    getIssuers,
+    getTerms,
+    getInstanceAdmin,
+    unwrapInstallation,
   };
 };

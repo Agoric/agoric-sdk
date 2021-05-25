@@ -302,7 +302,7 @@
  */
 
 /**
- * @callback ExportIssuerStorage
+ * @callback IssuerStorageExportIssuerStorage
  * @param {Issuer[]} issuers
  * @returns {ExportedIssuerStorage}
  */

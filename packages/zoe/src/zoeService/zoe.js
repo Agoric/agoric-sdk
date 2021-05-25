@@ -23,7 +23,6 @@ import { Far } from '@agoric/marshal';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import zcfContractBundle from '../../bundles/bundle-contractFacet';
 import { makeHandle } from '../makeHandle';
-import { makeInstallationStorage } from './installationStorage';
 import { makeZoeStorageManager } from './zoeStorageManager';
 import { makeOffer } from './offer/offer';
 import { makeInvitationQueryFns } from './invitationQueries';
@@ -40,9 +39,6 @@ import { handlePKitWarning } from '../handleWarning';
 function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const invitationKit = makeIssuerKit('Zoe Invitation', AssetKind.SET);
 
-  /** @type {WeakStore<Instance,InstanceAdmin>} */
-  const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
-
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
@@ -56,13 +52,18 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     depositPayments,
     getAssetKindByBrand,
     makeZoeInstanceStorageManager,
+    install,
+    unwrapInstallation,
+    getPublicFacet,
+    getBrands,
+    getIssuers,
+    getTerms,
+    getInstanceAdmin,
   } = makeZoeStorageManager();
-
-  const { install, unwrapInstallation } = makeInstallationStorage();
 
   const offer = makeOffer(
     invitationKit.issuer,
-    instanceToInstanceAdmin,
+    getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
   );
@@ -71,11 +72,10 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   const zoeService = Far('zoeService', {
     getInvitationIssuer: () => invitationKit.issuer,
     install,
-    getPublicFacet: instance =>
-      instanceToInstanceAdmin.get(instance).getPublicFacet(),
-    getBrands: instance => instanceToInstanceAdmin.get(instance).getBrands(),
-    getIssuers: instance => instanceToInstanceAdmin.get(instance).getIssuers(),
-    getTerms: instance => instanceToInstanceAdmin.get(instance).getTerms(),
+    getPublicFacet,
+    getBrands,
+    getIssuers,
+    getTerms,
     getInstance,
     getInstallation,
     getInvitationDetails,
@@ -90,18 +90,20 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       const instance = makeHandle('Instance');
 
       const {
-        getTerms,
-        getIssuers,
-        getBrands,
+        getTerms: getInstanceTerms,
+        getIssuers: getInstanceIssuers,
+        getBrands: getInstanceBrands,
         saveIssuer,
         makeZoeMint,
         exportInstanceRecord,
         exportIssuerStorage,
         withdrawPayments,
+        initInstanceAdmin,
       } = await makeZoeInstanceStorageManager(
         installation,
         customTerms,
         uncleanIssuerKeywordRecord,
+        instance,
       );
       // AWAIT ///
 
@@ -130,9 +132,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         /** @type {InstanceAdmin} */
         const instanceAdmin = Far('instanceAdmin', {
           getPublicFacet: () => publicFacetPromiseKit.promise,
-          getTerms,
-          getIssuers,
-          getBrands,
+          getTerms: getInstanceTerms,
+          getIssuers: getInstanceIssuers,
+          getBrands: getInstanceBrands,
           getInstance: () => instance,
           assertAcceptingOffers: () => {
             assert(acceptingOffers, `No further offers are accepted`);
@@ -209,7 +211,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
       };
 
       const instanceAdmin = makeInstanceAdmin();
-      instanceToInstanceAdmin.init(instance, instanceAdmin);
+      initInstanceAdmin(instance, instanceAdmin);
 
       E(adminNode)
         .done()
