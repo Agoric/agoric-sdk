@@ -78,6 +78,8 @@
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {CreateZCFVat} createZCFVat
+ * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
+ * @property {Issuer} invitationIssuer
  */
 
 /**
@@ -99,6 +101,7 @@
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
+ * @property {Issuer} invitationIssuer
  * @property {Install} install
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
