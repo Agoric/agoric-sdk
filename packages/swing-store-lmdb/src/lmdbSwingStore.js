@@ -171,6 +171,9 @@ function makeSwingStore(dirPath, forceReset = false) {
   const streamFds = new Map();
   /** @type {Map<string, string>} */
   const streamStatus = new Map();
+  let statusCounter = 0;
+
+  const STREAM_START = harden({ offset: 0, itemCount: 0 });
 
   function insistStreamName(streamName) {
     assert.typeof(streamName, 'string');
@@ -180,6 +183,33 @@ function makeSwingStore(dirPath, forceReset = false) {
     );
   }
 
+  function closefd(fd) {
+    try {
+      fs.closeSync(fd);
+    } catch (e) {
+      // closing an already closed fd is OK, but any other errors are probably bad
+      if (e.code !== 'EBADF') {
+        throw e;
+      }
+    }
+  }
+
+  /**
+   * Close a stream that's open for read or write.
+   *
+   * @param {string} streamName  The stream to close
+   */
+  function closeStream(streamName) {
+    insistStreamName(streamName);
+    const fd = streamFds.get(streamName);
+    if (fd) {
+      closefd(fd);
+      streamFds.delete(streamName);
+      activeStreamFds.delete(fd);
+      streamStatus.set(streamName, 'unused');
+    }
+  }
+
   /**
    * Generator function that returns an iterator over the items in a stream.
    *
@@ -187,68 +217,88 @@ function makeSwingStore(dirPath, forceReset = false) {
    * @param {Object} endPosition  The position of the end of the stream
    * @param {Object?} startPosition  Optional position to start reading from
    *
-   * @yields {string} an iterator for the items in the named stream
+   * @returns {Iterable<string>} an iterator for the items in the named stream
    */
-  function* openReadStream(streamName, endPosition, startPosition) {
+  function openReadStream(streamName, endPosition, startPosition) {
     insistStreamName(streamName);
     const status = streamStatus.get(streamName);
     assert(
       status === 'unused' || !status,
-      // prettier-ignore
-      X`can't read stream ${q(streamName)} because it's already being used for ${q(status)}`,
+      X`can't read stream ${q(streamName)} because it's already in use`,
     );
     let itemCount = endPosition.itemCount;
     if (endPosition.offset === 0) {
       assert(itemCount === 0);
+      return [];
     } else {
       assert(itemCount > 0);
       assert(endPosition.offset > 0);
-      let fd;
-      try {
-        streamStatus.set(streamName, 'read');
-        const filePath = `${dirPath}/${streamName}`;
-        fs.truncateSync(filePath, endPosition.offset);
-        fd = fs.openSync(filePath, 'r');
-        // let startOffset = 0;
-        let skipCount = 0;
-        if (startPosition) {
-          itemCount -= startPosition.itemCount;
-          // startOffset = startPosition.offset;
-          skipCount = startPosition.itemCount;
-        }
-        const reader = new Readlines(fd);
-        // We would like to be able to seek Readlines to a particular position
-        // in the file before it starts reading.  Unfortunately, it is hardcoded
-        // to reset to 0 at the start and then manually walk itself through the
-        // file, ignoring whatever current position that the fd is set to.
-        // Investigation has revealed that giving it a 'position' option for
-        // where to start reading is trivial (~4 lines of code) change, but that
-        // would cause us to diverge from the official npm version.  There are
-        // even a couple of forks on NPM that do this, but they have like 2
-        // downloads per week so I don't trust them.  Until this is resolved,
-        // the only way to realize a different starting point than 0 is to
-        // simply read and ignore some number of records, which the following
-        // code does.  It's ideal, but it works.
-        while (skipCount > 0) {
-          reader.next();
-          skipCount -= 1;
-        }
-        // const reader = new Readlines(fd, { position: startOffset });
-        while (true) {
-          const line = /** @type {string|false} */ (reader.next());
-          if (line) {
-            itemCount -= 1;
-            assert(itemCount >= 0);
-            const result = line.toString();
-            yield result;
-          } else {
-            break;
-          }
-        }
-      } finally {
-        streamStatus.set(streamName, 'unused');
-        assert(itemCount === 0, X`leftover item count ${q(itemCount)}`);
+      const filePath = `${dirPath}/${streamName}`;
+      fs.truncateSync(filePath, endPosition.offset);
+      const fd = fs.openSync(filePath, 'r');
+      streamFds.set(streamName, fd);
+      activeStreamFds.add(fd);
+
+      const readStatus = `read-${statusCounter}`;
+      statusCounter += 1;
+      streamStatus.set(streamName, readStatus);
+      // let startOffset = 0;
+      let skipCount = 0;
+      if (startPosition) {
+        // itemCount -= startPosition.itemCount;
+        // startOffset = startPosition.offset;
+        skipCount = startPosition.itemCount;
+        assert(skipCount <= endPosition.itemCount);
       }
+      // We would like to be able to seek Readlines to a particular position
+      // in the file before it starts reading.  Unfortunately, it is hardcoded
+      // to reset to 0 at the start and then manually walk itself through the
+      // file, ignoring whatever current position the fd is set to.
+      // Investigation has revealed that giving the Readlines constructor a
+      // 'position' option for where to start reading is a trivial (~4 lines
+      // of code) change, but that would cause us to diverge from the official
+      // npm version.  There are even a couple of forks on NPM that do this,
+      // but they have like 2 downloads per week so I don't trust them.  Until
+      // this is resolved, the only way to realize a different starting point
+      // than 0 is to simply ignore records that are read until we catch up to
+      // where we really want to start, which the following code does.  It's
+      // not ideal, but it works.
+      //
+      // const innerReader = new Readlines(fd, { position: startOffset });
+      const innerReader = new Readlines(fd);
+      function* reader() {
+        try {
+          while (true) {
+            const statusInner = streamStatus.get(streamName);
+            assert(
+              statusInner === readStatus,
+              X`can't read stream ${q(streamName)}, it's been closed`,
+            );
+            const line = /** @type {string|false} */ (innerReader.next());
+            if (line) {
+              itemCount -= 1;
+              assert(itemCount >= 0);
+              const result = line.toString();
+              if (skipCount > 0) {
+                skipCount -= 1;
+              } else {
+                yield result;
+              }
+            } else {
+              break;
+            }
+          }
+        } finally {
+          const statusEnd = streamStatus.get(streamName);
+          assert(
+            statusEnd === readStatus,
+            X`can't read stream ${q(streamName)}, it's been closed`,
+          );
+          closeStream(streamName);
+          assert(itemCount === 0, X`leftover item count ${q(itemCount)}`);
+        }
+      }
+      return reader();
     }
   }
 
@@ -264,8 +314,7 @@ function makeSwingStore(dirPath, forceReset = false) {
     const status = streamStatus.get(streamName);
     assert(
       status === 'unused' || !status,
-      // prettier-ignore
-      X`can't write stream ${q(streamName)} because it's already being used for ${q(status)}`,
+      X`can't write stream ${q(streamName)} because it's already in use`,
     );
     streamStatus.set(streamName, 'write');
 
@@ -293,10 +342,10 @@ function makeSwingStore(dirPath, forceReset = false) {
       assert.typeof(item, 'string');
       assert(
         streamFds.get(streamName) === fd,
-        X`write to closed stream ${q(streamName)}`,
+        X`can't write to closed stream ${q(streamName)}`,
       );
       if (!position) {
-        position = { offset: 0, itemCount: 0 };
+        position = STREAM_START;
       }
       const buf = encoder.encode(`${item}\n`);
       fs.writeSync(fd, buf, 0, buf.length, position.offset);
@@ -309,23 +358,12 @@ function makeSwingStore(dirPath, forceReset = false) {
     return write;
   }
 
-  /**
-   * Close a stream.
-   *
-   * @param {string} streamName  The stream to close
-   */
-  function closeStream(streamName) {
-    insistStreamName(streamName);
-    const fd = streamFds.get(streamName);
-    if (fd) {
-      fs.closeSync(fd);
-      streamFds.delete(streamName);
-      activeStreamFds.delete(fd);
-      streamStatus.set(streamName, 'unused');
-    }
-  }
-
-  const streamStore = { openReadStream, openWriteStream, closeStream };
+  const streamStore = {
+    openReadStream,
+    openWriteStream,
+    closeStream,
+    STREAM_START,
+  };
 
   /**
    * Commit unsaved changes.
@@ -333,7 +371,7 @@ function makeSwingStore(dirPath, forceReset = false) {
   function commit() {
     if (txn) {
       for (const fd of activeStreamFds) {
-        fs.closeSync(fd);
+        closefd(fd);
       }
       activeStreamFds.clear();
       txn.commit();
@@ -356,8 +394,10 @@ function makeSwingStore(dirPath, forceReset = false) {
     lmdbEnv = null;
 
     for (const fd of streamFds.values()) {
-      fs.closeSync(fd);
+      closefd(fd);
     }
+    streamFds.clear();
+    activeStreamFds.clear();
   }
 
   return { kvStore, streamStore, commit, close, diskUsage };

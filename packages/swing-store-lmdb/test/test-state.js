@@ -110,6 +110,25 @@ test('streamStore read/write', t => {
   }
   t.deepEqual(reads1alt, ['third', 'fourth']);
 
+  const writerEmpty = streamStore.openWriteStream('empty');
+  const emptyPos = writerEmpty('filler');
+  streamStore.closeStream('empty');
+  const readerEmpty = streamStore.openReadStream('empty', emptyPos, emptyPos);
+  const readsEmpty = [];
+  for (const item of readerEmpty) {
+    readsEmpty.push(item);
+  }
+  t.deepEqual(readsEmpty, []);
+  const readerEmpty2 = streamStore.openReadStream(
+    'empty',
+    streamStore.STREAM_START,
+  );
+  const readsEmpty2 = [];
+  for (const item of readerEmpty2) {
+    readsEmpty2.push(item);
+  }
+  t.deepEqual(readsEmpty2, []);
+
   commit();
   close();
 });
@@ -121,18 +140,29 @@ test('streamStore mode interlock', t => {
   t.is(isSwingStore(dbDir), false);
   const { streamStore, commit, close } = initSwingStore(dbDir);
 
-  const writer1 = streamStore.openWriteStream('st1');
-  const s1pos = writer1('first');
-  const reader1 = streamStore.openReadStream('st1', s1pos);
-  t.throws(() => reader1.next(), {
-    message: `can't read stream "st1" because it's already being used for "write"`,
+  const writer = streamStore.openWriteStream('st1');
+  const s1pos = writer('first');
+  t.throws(() => streamStore.openReadStream('st1', s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
+  });
+  t.throws(() => streamStore.openWriteStream('st1', s1pos), {
+    message: `can't write stream "st1" because it's already in use`,
   });
   streamStore.closeStream('st1');
+  t.throws(() => writer('second'), {
+    message: `can't write to closed stream "st1"`,
+  });
 
-  const reader1a = streamStore.openReadStream('st1', s1pos);
-  reader1a.next();
+  const reader = streamStore.openReadStream('st1', s1pos);
+  t.throws(() => streamStore.openReadStream('st1', s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
+  });
   t.throws(() => streamStore.openWriteStream('st1'), {
-    message: `can't write stream "st1" because it's already being used for "read"`,
+    message: `can't write stream "st1" because it's already in use`,
+  });
+  streamStore.closeStream('st1');
+  t.throws(() => reader.next(), {
+    message: `can't read stream "st1", it's been closed`,
   });
 
   commit();

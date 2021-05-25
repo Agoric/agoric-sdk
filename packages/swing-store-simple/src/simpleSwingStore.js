@@ -27,6 +27,7 @@ import { assert, details as X, q } from '@agoric/assert';
  *   openWriteStream: (name: string) => StreamWriter,
  *   openReadStream: (name: string, endPosition: StreamPosition, startPosition?: StreamPosition) => Iterable<string>,
  *   closeStream: (name: string) => void,
+ *   STREAM_START: StreamPosition,
  * }} StreamStore
  *
  * @typedef {{
@@ -230,6 +231,9 @@ function makeSwingStore(dirPath, forceReset = false) {
   const streams = new Map();
   /** @type {Map<string, string>} */
   const streamStatus = new Map();
+  let statusCounter = 0;
+
+  const STREAM_START = harden({ itemCount: 0 });
 
   function insistStreamName(streamName) {
     assert.typeof(streamName, 'string');
@@ -237,6 +241,16 @@ function makeSwingStore(dirPath, forceReset = false) {
       streamName.match(/^[-\w]+$/),
       X`invalid stream name ${q(streamName)}`,
     );
+  }
+
+  /**
+   * Close a stream that's open for read or write.
+   *
+   * @param {string} streamName  The stream to close
+   */
+  function closeStream(streamName) {
+    insistStreamName(streamName);
+    streamStatus.set(streamName, 'unused');
   }
 
   /**
@@ -248,28 +262,47 @@ function makeSwingStore(dirPath, forceReset = false) {
    *
    * @yields {string} an iterator for the items in the named stream
    */
-  function* openReadStream(streamName, endPosition, startPosition) {
+  function openReadStream(streamName, endPosition, startPosition) {
     insistStreamName(streamName);
     const stream = streams.get(streamName) || [];
     const status = streamStatus.get(streamName);
     assert(
       status === 'unused' || !status,
       // prettier-ignore
-      X`can't read stream ${q(streamName)} because it's already being used for ${q(status)}`,
+      X`can't read stream ${q(streamName)} because it's already in use`,
     );
-    assert(endPosition.itemCount > 0);
-    streamStatus.set(streamName, 'read');
-    stream.length = endPosition.itemCount;
-    let pos = 0;
-    if (startPosition) {
-      pos += startPosition.itemCount;
+    assert(endPosition.itemCount >= 0);
+    if (endPosition.itemCount === 0) {
+      return [];
+    } else {
+      const readStatus = `read-${statusCounter}`;
+      statusCounter += 1;
+      streamStatus.set(streamName, readStatus);
+      stream.length = endPosition.itemCount;
+      let pos = 0;
+      if (startPosition) {
+        pos += startPosition.itemCount;
+      }
+      function* reader() {
+        while (pos < stream.length) {
+          const statusInner = streamStatus.get(streamName);
+          assert(
+            statusInner === readStatus,
+            X`can't read stream ${q(streamName)}, it's been closed`,
+          );
+          const result = stream[pos];
+          pos += 1;
+          yield result;
+        }
+        const statusEnd = streamStatus.get(streamName);
+        assert(
+          statusEnd === readStatus,
+          X`can't read stream ${q(streamName)}, it's been closed`,
+        );
+        streamStatus.set(streamName, 'unused');
+      }
+      return reader();
     }
-    while (pos < stream.length) {
-      const result = stream[pos];
-      pos += 1;
-      yield result;
-    }
-    streamStatus.set(streamName, 'unused');
   }
 
   /**
@@ -288,12 +321,13 @@ function makeSwingStore(dirPath, forceReset = false) {
       const status = streamStatus.get(streamName);
       assert(
         status === 'unused',
-        // prettier-ignore
-        X`can't write stream ${q(streamName)} because it's already being used for ${q(status)}`,
+        X`can't write stream ${q(streamName)} because it's already in use`,
       );
     }
     const stream = streamTemp;
-    streamStatus.set(streamName, 'write');
+    const writeStatus = `write-${statusCounter}`;
+    statusCounter += 1;
+    streamStatus.set(streamName, writeStatus);
 
     /**
      * Write to a stream.
@@ -304,8 +338,14 @@ function makeSwingStore(dirPath, forceReset = false) {
      * @returns {Object} the new position after writing
      */
     function write(item, position) {
+      const status = streamStatus.get(streamName);
+      assert(
+        status === writeStatus,
+        X`can't write to closed stream ${q(streamName)}`,
+      );
+
       if (!position) {
-        position = { itemCount: 0 };
+        position = STREAM_START;
       }
       stream[position.itemCount] = item;
       return { itemCount: position.itemCount + 1 };
@@ -313,12 +353,12 @@ function makeSwingStore(dirPath, forceReset = false) {
     return write;
   }
 
-  function closeStream(streamName) {
-    insistStreamName(streamName);
-    streamStatus.set(streamName, 'unused');
-  }
-
-  const streamStore = { openReadStream, openWriteStream, closeStream };
+  const streamStore = {
+    openReadStream,
+    openWriteStream,
+    closeStream,
+    STREAM_START,
+  };
 
   return { kvStore, streamStore, commit, close };
 }
