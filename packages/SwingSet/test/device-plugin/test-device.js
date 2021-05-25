@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../../src/hostStorage';
 
 import {
   swingsetIsInitialized,
@@ -13,8 +13,7 @@ import { buildBridge } from '../../src/devices/bridge';
 import { buildPlugin } from '../../src/devices/plugin';
 
 test.before('initialize storage', t => {
-  const { storage } = initSwingStore(null);
-  t.context.storage = storage;
+  t.context.hostStorage = provideHostStorage();
 });
 
 async function setupVatController(t) {
@@ -35,7 +34,7 @@ async function setupVatController(t) {
     bridge: { ...bridge.endowments },
   };
 
-  if (!swingsetIsInitialized(t.context.storage)) {
+  if (!swingsetIsInitialized(t.context.hostStorage)) {
     const config = {
       bootstrap: 'bootstrap',
       vats: {
@@ -55,9 +54,12 @@ async function setupVatController(t) {
         },
       },
     };
-    await initializeSwingset(config, ['plugin'], t.context.storage);
+    await initializeSwingset(config, ['plugin'], t.context.hostStorage);
   }
-  const c = await makeSwingsetController(t.context.storage, deviceEndowments);
+  const c = await makeSwingsetController(
+    t.context.hostStorage,
+    deviceEndowments,
+  );
   const cycle = async () => {
     await c.run();
     while (inputQueue.length) {

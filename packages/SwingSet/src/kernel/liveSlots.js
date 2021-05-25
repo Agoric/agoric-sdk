@@ -25,7 +25,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
  * @param {Console} console
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
@@ -45,7 +45,7 @@ function build(
   gcTools,
   console,
 ) {
-  const { WeakRef, FinalizationRegistry, waitUntilQuiescent } = gcTools;
+  const { WeakRef, FinalizationRegistry } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -73,9 +73,9 @@ function build(
    * additional table (importedPromisesByPromiseID) to handle a future
    * incoming resolution message. We retain a weak reference to the Presence,
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
-   * we can notify the kernel. We retain strong references to Promises, for
-   * now, via the `safetyPins` Set until we figure out a better GC approach.
-   * When an import is added, the finalizer is added to `droppedRegistry`.
+   * we can notify the kernel. We retain strong references to unresolved
+   * Promises. When an import is added, the finalizer is added to
+   * `droppedRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
@@ -96,8 +96,20 @@ function build(
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
-  const safetyPins = new Set(); // temporary
+  const pendingPromises = new Set(); // Promises
+  const importedDevices = new Set(); // device nodes
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
+
+  function retainExportedRemotable(vref) {
+    // if the vref corresponds to a Remotable, keep a strong reference to it
+    // until the kernel tells us to release it
+    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+    if (type === 'object' && allocatedByVat && !virtual) {
+      const remotable = slotToVal.get(vref).deref();
+      assert(remotable, X`somehow lost Remotable for ${vref}`);
+      exportedRemotables.add(remotable);
+    }
+  }
 
   /*
     Imports are in one of 5 states: UNKNOWN, REACHABLE, UNREACHABLE,
@@ -164,6 +176,58 @@ function build(
     }
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
+
+  function processDroppedRepresentative(_vref) {
+    // no-op, to be implemented by virtual object manager
+    return false;
+  }
+
+  function processDeadSet() {
+    let doMore = false;
+    const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
+
+    for (const vref of deadSet) {
+      const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+      assert(type === 'object', `unprepared to track ${type}`);
+      if (virtual) {
+        // Representative: send nothing, but perform refcount checking
+        doMore = doMore || processDroppedRepresentative(vref);
+      } else if (allocatedByVat) {
+        // Remotable: send retireExport
+        exportsToRetire.push(vref);
+      } else {
+        // Presence: send dropImport unless reachable by VOM
+        // eslint-disable-next-line no-lonely-if, no-use-before-define
+        if (!isVrefReachable(vref)) {
+          importsToDrop.push(vref);
+          // and retireExport if unrecognizable (TODO: needs
+          // VOM.vrefIsRecognizable)
+          // if (!vrefIsRecognizable(vref)) {
+          //   importsToRetire.push(vref);
+          // }
+        }
+      }
+    }
+    deadSet.clear();
+
+    if (importsToDrop.length) {
+      importsToDrop.sort();
+      syscall.dropImports(importsToDrop);
+    }
+    if (importsToRetire.length) {
+      importsToRetire.sort();
+      syscall.retireImports(importsToRetire);
+    }
+    if (exportsToRetire.length) {
+      exportsToRetire.sort();
+      syscall.retireExports(exportsToRetire);
+    }
+
+    // TODO: doMore=true when we've done something that might free more local
+    // objects, which probably won't happen until we sense entire WeakMaps
+    // going away or something involving virtual collections
+    return doMore;
+  }
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
    * to them */
@@ -282,6 +346,7 @@ function build(
       },
     });
     importedPromisesByPromiseID.set(vpid, pRec);
+    pendingPromises.add(p);
 
     return harden(p);
   }
@@ -338,16 +403,27 @@ function build(
       console.info('Logging sent error stack', err),
   });
 
+  function getSlotForVal(val) {
+    return valToSlot.get(val);
+  }
+
+  function getValForSlot(slot) {
+    const wr = slotToVal.get(slot);
+    return wr && wr.deref();
+  }
+
   const {
     makeVirtualObjectRepresentative,
     makeWeakStore,
     makeKind,
-    RepairedWeakMap,
-    RepairedWeakSet,
+    VirtualObjectAwareWeakMap,
+    VirtualObjectAwareWeakSet,
+    isVrefReachable,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
-    valToSlot,
+    getSlotForVal,
+    getValForSlot,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m,
@@ -372,6 +448,7 @@ function build(
       // lsdebug('must be a new export', JSON.stringify(val));
       if (isPromise(val)) {
         slot = exportPromise(val);
+        pendingPromises.add(val); // keep it alive until resolved
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -381,11 +458,13 @@ function build(
         assert.equal(passStyleOf(val), 'remotable');
         slot = exportPassByPresence();
       }
-      parseVatSlot(slot); // assertion
+      const { type } = parseVatSlot(slot); // also used as assertion
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
-      // we do not use droppedRegistry for exports
-      exportedRemotables.add(val); // keep it alive until kernel tells us to release it
+      if (type === 'object') {
+        deadSet.delete(slot);
+        droppedRegistry.register(val, slot);
+      }
     }
     return valToSlot.get(val);
   }
@@ -401,25 +480,13 @@ function build(
   }
 
   function registerValue(slot, val) {
-    const { type, virtual } = parseVatSlot(slot);
+    const { type } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
-    if (type === 'object' || type === 'device') {
-      // we don't dropImports on promises, to avoid interaction with retire
-      droppedRegistry.register(val, slot);
+    // we don't dropImports on promises, to avoid interaction with retire
+    if (type === 'object') {
       deadSet.delete(slot); // might have been FINALIZED before, no longer
-    }
-
-    // TODO: until #2724 is implemented, we cannot actually release
-    // Presences, else WeakMaps would forget their entries. I'm also
-    // uncertain about releasing Promises early. We disable GC by stashing
-    // everything in the (strong) `safetyPins` Set. Promises are deleted from
-    // this set when we retire their identifiers in retirePromiseID. Note
-    // that test-liveslots.js test('dropImports') passes despite this,
-    // because it uses a fake WeakRef that doesn't care about the strong
-    // reference.
-    if (!virtual) {
-      safetyPins.add(val);
+      droppedRegistry.register(val, slot);
     }
   }
 
@@ -474,6 +541,7 @@ function build(
         }
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
+        importedDevices.add(val);
       } else {
         assert.fail(X`unrecognized slot type '${type}'`);
       }
@@ -506,6 +574,7 @@ function build(
     function collect(promiseID, rejected, value) {
       doneResolutions.add(promiseID);
       const valueSer = m.serialize(value);
+      valueSer.slots.map(retainExportedRemotable);
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
     }
@@ -537,6 +606,7 @@ function build(
     }
 
     const serArgs = m.serialize(harden(args));
+    serArgs.slots.map(retainExportedRemotable);
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
@@ -571,8 +641,8 @@ function build(
 
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
+    pendingPromises.add(returnedP);
     // we do not use droppedRegistry for promises, even result promises
-    exportedRemotables.add(returnedP); // TODO: revisit, can we GC these? when?
 
     return p;
   }
@@ -594,6 +664,7 @@ function build(
         }
         return (...args) => {
           const serArgs = m.serialize(harden(args));
+          serArgs.slots.map(retainExportedRemotable);
           forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
@@ -684,7 +755,7 @@ function build(
     const p = wr && wr.deref();
     if (p) {
       valToSlot.delete(p);
-      safetyPins.delete(p);
+      pendingPromises.delete(p);
     }
     slotToVal.delete(promiseID);
   }
@@ -766,7 +837,14 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring dropExports`);
+    console.log(`-- liveslots acting upon dropExports`);
+    for (const vref of vrefs) {
+      const wr = slotToVal.get(vref);
+      const o = wr && wr.deref();
+      if (o) {
+        exportedRemotables.delete(o);
+      }
+    }
   }
 
   function retireExports(vrefs) {
@@ -786,11 +864,15 @@ function build(
   // TODO: when we add notifyForward, guard against cycles
 
   function exitVat(completion) {
-    syscall.exit(false, m.serialize(harden(completion)));
+    const args = m.serialize(harden(completion));
+    args.slots.map(retainExportedRemotable);
+    syscall.exit(false, args);
   }
 
   function exitVatWithFailure(reason) {
-    syscall.exit(true, m.serialize(harden(reason)));
+    const args = m.serialize(harden(reason));
+    args.slots.map(retainExportedRemotable);
+    syscall.exit(true, args);
   }
 
   function disavow(presence) {
@@ -816,8 +898,8 @@ function build(
   });
 
   const inescapableGlobalProperties = harden({
-    WeakMap: RepairedWeakMap,
-    WeakSet: RepairedWeakSet,
+    WeakMap: VirtualObjectAwareWeakMap,
+    WeakSet: VirtualObjectAwareWeakSet,
   });
 
   function setBuildRootObject(buildRootObject) {
@@ -842,8 +924,8 @@ function build(
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
+    retainExportedRemotable(rootSlot);
     // we do not use droppedRegistry for exports
-    exportedRemotables.add(rootObject);
   }
 
   /**
@@ -884,6 +966,8 @@ function build(
     }
   }
 
+  const { waitUntilQuiescent, gcAndFinalize } = gcTools;
+
   /**
    * This low-level liveslots code is responsible for deciding when userspace
    * is done with a crank. Userspace code can use Promises, so it can add as
@@ -904,9 +988,23 @@ function build(
       .catch(err =>
         console.log(`liveslots error ${err} during delivery ${delivery}`),
       );
+
     // Instead, we wait for userspace to become idle by draining the promise
     // queue.
-    return waitUntilQuiescent();
+    await waitUntilQuiescent();
+    // Userspace will not get control again within this crank.
+
+    // Now that userspace is idle, we can drive GC until we think we've
+    // stopped.
+    async function finish() {
+      await gcAndFinalize();
+      const doMore = processDeadSet();
+      if (doMore) {
+        return finish();
+      }
+      return undefined;
+    }
+    return finish();
   }
   harden(dispatch);
 

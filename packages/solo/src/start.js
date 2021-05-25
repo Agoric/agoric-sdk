@@ -136,15 +136,22 @@ async function buildSwingset(
 
   const tempdir = path.resolve(kernelStateDBDir, 'check-lmdb-tempdir');
   const { openSwingStore } = getBestSwingStore(tempdir);
-  const { storage, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const hostStorage = {
+    kvStore,
+    streamStore,
+  };
 
-  if (!swingsetIsInitialized(storage)) {
+  if (!swingsetIsInitialized(hostStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
-    await initializeSwingset(config, argv, storage);
+    await initializeSwingset(config, argv, hostStorage);
   }
-  const controller = await makeSwingsetController(storage, deviceEndowments);
+  const controller = await makeSwingsetController(
+    hostStorage,
+    deviceEndowments,
+  );
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());

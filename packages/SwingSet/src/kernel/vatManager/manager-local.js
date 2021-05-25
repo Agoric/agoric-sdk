@@ -20,7 +20,6 @@ export function makeLocalVatManagerFactory(tools) {
     kernelSlog,
   } = tools;
 
-  const { waitUntilQuiescent } = gcTools;
   const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
@@ -42,7 +41,7 @@ export function makeLocalVatManagerFactory(tools) {
       assert.typeof(dispatch, 'function');
       // this 'deliverToWorker' never throws, even if liveslots has an internal error
       const deliverToWorker = makeMeteredDispatch(
-        makeSupervisorDispatch(dispatch, waitUntilQuiescent),
+        makeSupervisorDispatch(dispatch),
         mtools,
       );
       mk.setDeliverToWorker(deliverToWorker);

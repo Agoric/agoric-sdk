@@ -13,7 +13,7 @@ import test from 'ava';
 
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 import {
   initializeSwingset,
   makeSwingsetController,
@@ -143,7 +143,7 @@ export async function runVatsInComms(t, name) {
   const deviceEndowments = {
     loopbox: { ...loopboxEndowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   await initializeSwingset(config, [name], hostStorage, { kernelBundles });
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   t.teardown(c.shutdown);

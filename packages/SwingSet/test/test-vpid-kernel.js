@@ -2,10 +2,10 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 import anylogger from 'anylogger';
-import { initSwingStore } from '@agoric/swing-store-simple';
 import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { provideHostStorage } from '../src/hostStorage';
 
 import buildKernel from '../src/kernel/index';
 import { initializeKernel } from '../src/kernel/initializeKernel';
@@ -36,7 +36,7 @@ function makeConsole(tag) {
 function makeEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: initSwingStore().storage,
+    hostStorage: provideHostStorage(),
     runEndOfCrank: () => {},
     makeConsole,
     WeakRef,

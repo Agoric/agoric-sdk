@@ -33,9 +33,9 @@ function run() {
   const key = argv.shift();
   const value = argv.shift();
 
-  const { storage, commit } = openSwingStore(stateDBDir);
+  const { kvStore, commit } = openSwingStore(stateDBDir);
 
-  storage.set(key, value);
+  kvStore.set(key, value);
   commit();
 }
 

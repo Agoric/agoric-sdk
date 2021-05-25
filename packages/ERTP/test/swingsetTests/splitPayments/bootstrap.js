@@ -11,7 +11,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   function testSplitPayments(aliceMaker) {
     vatPowers.testLog('start test splitPayments');
     const { mint: moolaMint, issuer, brand } = makeIssuerKit('moola');
-    const moolaPayment = moolaMint.mintPayment(AmountMath.make(1000n, brand));
+    const moolaPayment = moolaMint.mintPayment(AmountMath.make(brand, 1000n));
 
     const aliceP = E(aliceMaker).make(issuer, brand, moolaPayment);
     return E(aliceP).testSplitPayments();

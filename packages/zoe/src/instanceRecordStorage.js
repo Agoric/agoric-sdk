@@ -30,20 +30,19 @@ import { assertKeywordName, getKeywords } from './cleanProposal';
  */
 
 /**
- * @typedef {{ addIssuerToInstanceRecord: AddIssuerToInstanceRecord,
- * getInstanceRecord: GetInstanceRecord,
- * getTerms: () => Terms,
- * getIssuers: () => IssuerKeywordRecord,
- * getBrands: () => BrandKeywordRecord,
- * assertUniqueKeyword: (keyword: Keyword) => void }} InstanceRecordManager
- */
-
-/**
- * @param {InstanceRecord} instanceRecord
  * @returns {InstanceRecordManager}
  */
-export const makeInstanceRecordStorage = instanceRecord => {
+export const makeInstanceRecordStorage = () => {
+  let instanceRecord;
+
+  const assertInstantiated = () =>
+    assert(
+      instanceRecord !== 'undefined',
+      X`instanceRecord has not been instantiated`,
+    );
+
   const addIssuerToInstanceRecord = (keyword, issuerRecord) => {
+    assertInstantiated();
     instanceRecord = {
       ...instanceRecord,
       terms: {
@@ -60,12 +59,26 @@ export const makeInstanceRecordStorage = instanceRecord => {
     };
   };
 
-  const getInstanceRecord = () => harden(instanceRecord);
-  const getTerms = () => instanceRecord.terms;
-  const getIssuers = () => instanceRecord.terms.issuers;
-  const getBrands = () => instanceRecord.terms.brands;
+  /** @type {ExportInstanceRecord} */
+  const exportInstanceRecord = () => {
+    assertInstantiated();
+    return harden(instanceRecord);
+  };
+  const getTerms = () => {
+    assertInstantiated();
+    return instanceRecord.terms;
+  };
+  const getIssuers = () => {
+    assertInstantiated();
+    return instanceRecord.terms.issuers;
+  };
+  const getBrands = () => {
+    assertInstantiated();
+    return instanceRecord.terms.brands;
+  };
 
   const assertUniqueKeyword = keyword => {
+    assertInstantiated();
     assertKeywordName(keyword);
     assert(
       !getKeywords(instanceRecord.terms.issuers).includes(keyword),
@@ -73,13 +86,22 @@ export const makeInstanceRecordStorage = instanceRecord => {
     );
   };
 
+  const instantiate = startingInstanceRecord => {
+    assert(
+      instanceRecord === undefined,
+      X`instanceRecord ${instanceRecord} can only be instantiated once`,
+    );
+    instanceRecord = startingInstanceRecord;
+  };
+
   return harden({
     addIssuerToInstanceRecord,
-    getInstanceRecord,
+    exportInstanceRecord,
     getTerms,
     getIssuers,
     getBrands,
     assertUniqueKeyword,
+    instantiate,
   });
 };
 
@@ -107,5 +129,7 @@ export const makeAndStoreInstanceRecord = (
     },
   });
 
-  return makeInstanceRecordStorage(instanceRecord);
+  const instanceRecordStorage = makeInstanceRecordStorage();
+  instanceRecordStorage.instantiate(instanceRecord);
+  return instanceRecordStorage;
 };

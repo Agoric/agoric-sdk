@@ -13,6 +13,7 @@ import { makeEscrowStorage } from './escrowStorage';
 
 export const makeZoeStorageManager = () => {
   const issuerStorage = makeIssuerStorage();
+  issuerStorage.instantiate();
   const escrowStorage = makeEscrowStorage();
 
   const makeZoeInstanceStorageManager = async (
@@ -86,7 +87,9 @@ export const makeZoeStorageManager = () => {
     /** @returns {ExportedIssuerStorage} */
     const exportIssuerStorage = () =>
       issuerStorage.exportIssuerStorage(
-        Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
+        Object.values(
+          instanceRecordManager.exportInstanceRecord().terms.issuers,
+        ),
       );
 
     return harden({
@@ -95,7 +98,7 @@ export const makeZoeStorageManager = () => {
       getBrands: instanceRecordManager.getBrands,
       saveIssuer,
       makeZoeMint,
-      exportInstanceRecord: instanceRecordManager.getInstanceRecord,
+      exportInstanceRecord: instanceRecordManager.exportInstanceRecord,
       exportIssuerStorage,
       withdrawPayments: escrowStorage.withdrawPayments,
     });

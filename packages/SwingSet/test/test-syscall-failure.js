@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 import { buildVatController } from '../src';
 
 async function vatSyscallFailure(t, beDynamic) {
@@ -26,33 +26,34 @@ async function vatSyscallFailure(t, beDynamic) {
       },
     },
   };
-  const { storage } = initSwingStore();
+  const hostStorage = provideHostStorage();
   const controller = await buildVatController(config, [], {
-    hostStorage: storage,
+    hostStorage,
   });
-  const badVatID = storage.get('vat.name.badvatStatic');
-  const badVatRootObject = storage.get(`${badVatID}.c.o+0`);
+  const kvStore = hostStorage.kvStore;
+  const badVatID = kvStore.get('vat.name.badvatStatic');
+  const badVatRootObject = kvStore.get(`${badVatID}.c.o+0`);
   if (!beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
-      storage.get('vat.names'),
+      kvStore.get('vat.names'),
       '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
     );
-    t.is(storage.get(`${badVatRootObject}.owner`), badVatID);
-    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 8);
-    t.is(storage.get('vat.name.badvatStatic'), badVatID);
+    t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
+    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 8);
+    t.is(kvStore.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();
   if (!beDynamic) {
     // verify that the bad static vat's state is gone (bad *dynamic* vat cleanup
     // is verified by other, more complicated tests)
     t.is(
-      storage.get('vat.names'),
+      kvStore.get('vat.names'),
       '["bootstrap","vatAdmin","comms","vattp","timer"]',
     );
-    t.is(storage.get(`${badVatID}.owner`), undefined);
-    t.is(Array.from(storage.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
-    t.is(storage.get('vat.name.badvatStatic'), undefined);
+    t.is(kvStore.get(`${badVatID}.owner`), undefined);
+    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
+    t.is(kvStore.get('vat.name.badvatStatic'), undefined);
   }
   const log = controller.dump().log;
   t.deepEqual(log, [

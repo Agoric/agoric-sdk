@@ -269,3 +269,40 @@
     reallocateInternal: ReallocateInternal,
     dropAllReferences: DropAllReferences }}
  */
+
+/**
+ * @callback InstanceRecordManagerGetTerms
+ * @returns {Terms}
+ */
+
+/**
+ * @callback InstanceRecordGetIssuers
+ * @returns {IssuerKeywordRecord}
+ */
+
+/**
+ * @callback InstanceRecordGetBrands
+ * @returns {BrandKeywordRecord}
+ */
+
+/**
+ * @typedef {Object} InstanceRecordManager
+ * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
+ * @property {ExportInstanceRecord} exportInstanceRecord
+ * @property {InstanceRecordManagerGetTerms} getTerms
+ * @property {InstanceRecordGetIssuers} getIssuers
+ * @property {InstanceRecordGetBrands} getBrands
+ * @property {(keyword: Keyword) => void} assertUniqueKeyword
+ * @property {(startingInstanceRecord: InstanceRecord) => void} instantiate
+ */
+
+/**
+ * @callback ExportInstanceRecord
+ * @returns {InstanceRecord}
+ */
+
+/**
+ * @callback ExportIssuerStorage
+ * @param {Issuer[]} issuers
+ * @returns {ExportedIssuerStorage}
+ */
