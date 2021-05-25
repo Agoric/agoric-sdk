@@ -197,6 +197,32 @@ export function makeVirtualObjectManager(
   const kindTable = new Map();
 
   /**
+   * Set of all import vrefs which are reachable from our virtualized data.
+   * These were Presences at one point. We add to this set whenever we store
+   * a Presence into the state of a virtual object, or the value of a
+   * makeWeakStore() instance. We currently never remove anything from the
+   * set, but eventually we'll use refcounts within virtual data to figure
+   * out when the vref becomes unreachable, allowing the vat do send a
+   * dropImport into the kernel and release the object.
+   *
+   */
+  /** @type {Set<string>} of vrefs */
+  const reachableVrefs = new Set();
+
+  // We track imports, to preserve their vrefs against syscall.dropImport
+  // when the Presence goes away.
+  function addReachablePresence(vref) {
+    const { type, allocatedByVat } = parseVatSlot(vref);
+    if (type === 'object' && !allocatedByVat) {
+      reachableVrefs.add(vref);
+    }
+  }
+
+  function isVrefReachable(vref) {
+    return reachableVrefs.has(vref);
+  }
+
+  /**
    * Set of all Remotables which are reachable by our virtualized data, e.g.
    * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
    * remotable`. The serialization process stores the Remotable's vref to
@@ -305,6 +331,7 @@ export function makeVirtualObjectManager(
             X`${q(keyName)} already registered: ${key}`,
           );
           const data = m.serialize(value);
+          data.slots.map(addReachablePresence);
           data.slots.map(addReachableRemotable);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
@@ -328,6 +355,7 @@ export function makeVirtualObjectManager(
         if (vkey) {
           assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
           const data = m.serialize(harden(value));
+          data.slots.map(addReachablePresence);
           data.slots.map(addReachableRemotable);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
@@ -566,6 +594,7 @@ export function makeVirtualObjectManager(
             },
             set: value => {
               const serializedValue = m.serialize(value);
+              serializedValue.slots.map(addReachablePresence);
               serializedValue.slots.map(addReachableRemotable);
               ensureState();
               innerSelf.rawData[prop] = serializedValue;
@@ -625,6 +654,7 @@ export function makeVirtualObjectManager(
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
           const data = m.serialize(initialData[prop]);
+          data.slots.map(addReachablePresence);
           data.slots.map(addReachableRemotable);
           rawData[prop] = data;
         } catch (e) {
@@ -649,6 +679,7 @@ export function makeVirtualObjectManager(
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    isVrefReachable,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
   });

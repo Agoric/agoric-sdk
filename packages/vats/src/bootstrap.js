@@ -171,7 +171,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         brand: centralBrand,
       })
       .catch(e => {
-        console.error('Cannot create fee collector', e);
+        console.log('Cannot create fee collector', e);
         return undefined;
       });
     if (feeCollectorDepositFacet) {

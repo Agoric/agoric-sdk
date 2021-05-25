@@ -20,6 +20,7 @@ import { xsnap, makeSnapstore } from '@agoric/xsnap';
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
+import { gcAndFinalize } from './gc';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -271,7 +272,8 @@ export async function makeSwingsetController(
     const supercode = require.resolve(
       './kernel/vatManager/supervisor-subprocess-node.js',
     );
-    return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
+    const args = ['--expose-gc', '-r', 'esm', supercode];
+    return startSubprocessWorker(process.execPath, args);
   }
 
   const bundles = [
@@ -297,6 +299,7 @@ export async function makeSwingsetController(
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
+    gcAndFinalize,
   };
 
   const kernelOptions = { verbose };
@@ -314,6 +317,8 @@ export async function makeSwingsetController(
     log(str) {
       kernel.log(str);
     },
+
+    writeSlogObject,
 
     dump() {
       return JSON.parse(JSON.stringify(kernel.dump()));
