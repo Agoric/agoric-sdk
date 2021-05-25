@@ -27,3 +27,80 @@
  * @param {PaymentPKeywordRecord} payments
  * @returns {Promise<Allocation>}
  */
+
+/**
+ * @callback InitInstanceAdmin
+ * @param {Instance} instance
+ * @param {InstanceAdmin} InstanceAdmin
+ * @returns {void}
+ */
+
+/**
+ * @callback GetInstanceAdmin
+ * @param {Instance} instance
+ * @returns {InstanceAdmin}
+ */
+
+/**
+ * @callback DeleteInstanceAdmin
+ * @param {Instance} instance
+ * @returns {void}
+ */
+
+/**
+ * @callback UnwrapInstallation
+ *
+ * Assert the installation is known, and return the bundle and
+ * installation
+ *
+ * @param {ERef<Installation>} installationP
+ * @returns {Promise<{ bundle: SourceBundle, installation:
+ * Installation }>}
+ */
+
+/**
+ * @callback ExportIssuerStorage
+ * @returns {ExportedIssuerStorage}
+ */
+
+/**
+ * @typedef {Object} ZoeInstanceStorageManager
+ * @property {InstanceRecordManagerGetTerms} getTerms
+ * @property {InstanceRecordGetIssuers} getIssuers
+ * @property {InstanceRecordGetBrands} getBrands
+ * @property {SaveIssuer} saveIssuer
+ * @property {MakeZoeMint} makeZoeMint
+ * @property {ExportInstanceRecord} exportInstanceRecord
+ * @property {ExportIssuerStorage} exportIssuerStorage
+ * @property {WithdrawPayments} withdrawPayments
+ * @property {InitInstanceAdmin} initInstanceAdmin
+ * @property {DeleteInstanceAdmin} deleteInstanceAdmin
+ */
+
+/**
+ * Create a storage manager for a particular contract instance. The
+ * ZoeInstanceStorageManager encapsulates access to the
+ * issuerStorage and escrowStorage from Zoe, and stores the
+ * instance-specific terms
+ *
+ * @callback MakeZoeInstanceStorageManager
+ * @param {Installation} installation
+ * @param {Object} customTerms
+ * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
+ * @param {Instance} instance
+ * @returns {ZoeInstanceStorageManager}
+ */
+
+/**
+ * @typedef ZoeStorageManager
+ * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
+ * @property {GetAssetKindByBrand} getAssetKindByBrand
+ * @property {DepositPayments} depositPayments
+ * @property {Install} install
+ * @property {GetPublicFacet} getPublicFacet
+ * @property {GetBrands} getBrands
+ * @property {GetIssuers} getIssuers
+ * @property {GetTerms} getTerms
+ * @property {GetInstanceAdmin} getInstanceAdmin
+ * @property {UnwrapInstallation} unwrapInstallation
+ */
