@@ -14,7 +14,6 @@ import { makePromiseKit } from '@agoric/promise-kit';
  */
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 import '../internal-types';
@@ -37,8 +36,6 @@ import { setupCreateZCFVat } from './createZCFVat';
  * @returns {ZoeService} The created Zoe service.
  */
 function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
-  const invitationKit = makeIssuerKit('Zoe Invitation', AssetKind.SET);
-
   /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
@@ -46,12 +43,6 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
-
-  const {
-    getInstance,
-    getInstallation,
-    getInvitationDetails,
-  } = makeInvitationQueryFns(invitationKit.issuer);
 
   const {
     depositPayments,
@@ -64,10 +55,17 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
     getIssuers,
     getTerms,
     getInstanceAdmin,
+    invitationIssuer,
   } = makeZoeStorageManager(createZCFVat);
 
+  const {
+    getInstance,
+    getInstallation,
+    getInvitationDetails,
+  } = makeInvitationQueryFns(invitationIssuer);
+
   const offer = makeOffer(
-    invitationKit.issuer,
+    invitationIssuer,
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
@@ -75,7 +73,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
 
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
-    getInvitationIssuer: () => invitationKit.issuer,
+    getInvitationIssuer: () => invitationIssuer,
     install,
     getPublicFacet,
     getBrands,
@@ -215,30 +213,9 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
           reason => instanceAdmin.failAllSeats(reason),
         );
 
-      // Unpack the invitationKit.
-      const {
-        issuer: invitationIssuer,
-        mint: invitationMint,
-        brand: invitationBrand,
-      } = invitationKit;
-
       /** @type {ZoeInstanceAdmin} */
       const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
-        makeInvitation: (invitationHandle, description, customProperties) => {
-          const invitationAmount = AmountMath.make(
-            [
-              {
-                ...customProperties,
-                description,
-                handle: invitationHandle,
-                instance,
-                installation,
-              },
-            ],
-            invitationBrand,
-          );
-          return invitationMint.mintPayment(invitationAmount);
-        },
+        makeInvitation: zoeInstanceStorageManager.makeInvitation,
         // checks of keyword done on zcf side
         saveIssuer: zoeInstanceStorageManager.saveIssuer,
         // A Seat requested by the contract without any payments to escrow
