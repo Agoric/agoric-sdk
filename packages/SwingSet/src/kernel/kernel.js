@@ -252,7 +252,8 @@ export default function buildKernel(
   // error at the first opportunity
   let kernelPanic = null;
 
-  function panic(problem, err) {
+  /** @type {(problem: unknown, err?: Error) => void } */
+  function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || new Error(`kernel panic ${problem}`);
   }
@@ -458,13 +459,13 @@ export default function buildKernel(
           const s = `data is not callable, has no method ${msg.method}`;
           // TODO: maybe replicate whatever happens with {}.foo() or 3.foo()
           // etc: "TypeError: {}.foo is not a function"
-          await resolveToError(msg.result, makeError(s));
+          resolveToError(msg.result, makeError(s));
         }
         // else { todo: maybe log error? }
       } else if (kp.state === 'rejected') {
         // TODO would it be simpler to redirect msg.kpid to kp?
         if (msg.result) {
-          await resolveToError(msg.result, kp.data);
+          resolveToError(msg.result, kp.data);
         }
       } else if (kp.state === 'unresolved') {
         if (!kp.decider) {
