@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
 import { arrayToObj } from './objArrayConversion';
@@ -9,16 +9,17 @@ import { cleanKeywords } from './cleanProposal';
 import { makeIssuerRecord } from './issuerRecord';
 
 /**
- *  Make the Issuer Storage. If `exportedIssuerStorage` is defined,
- *  then use it as the starting state.
- *
- * @param {ExportedIssuerStorage=} exportedIssuerStorage
+ *  Make the Issuer Storage.
  */
-export const makeIssuerStorage = exportedIssuerStorage => {
+export const makeIssuerStorage = () => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = makeNonVOWeakStore('brand');
   /** @type {WeakStore<Issuer,IssuerRecord>} */
   const issuerToIssuerRecord = makeNonVOWeakStore('issuer');
+
+  let instantiated = false;
+  const assertInstantiated = () =>
+    assert(instantiated, X`issuerStorage has not been instantiated`);
 
   /**
    * If we already know the entire issuer record, such as for a
@@ -52,6 +53,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    * @returns {IssuerRecord}
    */
   const storeIssuerRecord = issuerRecord => {
+    assertInstantiated();
     const { brand, issuer } = issuerRecord;
     if (issuerToIssuerRecord.has(issuer)) {
       return issuerToIssuerRecord.get(issuer);
@@ -62,11 +64,10 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     return issuerToIssuerRecord.get(issuer);
   };
 
-  if (exportedIssuerStorage !== undefined) {
-    exportedIssuerStorage.forEach(storeIssuerRecord);
-  }
-
-  const getByBrand = brandToIssuerRecord.get;
+  const getByBrand = brand => {
+    assertInstantiated();
+    return brandToIssuerRecord.get(brand);
+  };
 
   /**
    * If the issuer is already stored, return the issuerRecord.
@@ -76,6 +77,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    * @returns {Promise<IssuerRecord>}
    */
   const storeIssuer = async issuerP => {
+    assertInstantiated();
     const brandP = E(issuerP).getBrand();
     const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
     const displayInfoP = E(brandP).getDisplayInfo();
@@ -112,10 +114,16 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     return getByBrand(brand);
   };
 
-  const storeIssuers = issuers => Promise.all(issuers.map(storeIssuer));
+  const storeIssuers = issuers => {
+    assertInstantiated();
+    return Promise.all(issuers.map(storeIssuer));
+  };
 
   /** @type {GetAssetKindByBrand} */
-  const getAssetKindByBrand = brand => getByBrand(brand).assetKind;
+  const getAssetKindByBrand = brand => {
+    assertInstantiated();
+    return getByBrand(brand).assetKind;
+  };
 
   /**
    *
@@ -124,6 +132,7 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    *                     brands: BrandKeywordRecord }>}
    */
   const storeIssuerKeywordRecord = async uncleanIssuerKeywordRecord => {
+    assertInstantiated();
     const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
     const issuerPs = keywords.map(
       keyword => uncleanIssuerKeywordRecord[keyword],
@@ -152,19 +161,34 @@ export const makeIssuerStorage = exportedIssuerStorage => {
    * @param {Issuer} issuer
    * @returns {Brand}
    */
-  const getBrandForIssuer = issuer => issuerToIssuerRecord.get(issuer).brand;
+  const getBrandForIssuer = issuer => {
+    assertInstantiated();
+    return issuerToIssuerRecord.get(issuer).brand;
+  };
 
   /**
    * @param {Brand} brand
    * @returns {Issuer}
    */
-  const getIssuerForBrand = brand => brandToIssuerRecord.get(brand).issuer;
+  const getIssuerForBrand = brand => {
+    assertInstantiated();
+    return brandToIssuerRecord.get(brand).issuer;
+  };
 
-  /**
-   * @param {Issuer[]} issuers
-   * @returns {ExportedIssuerStorage}
-   */
-  const exportIssuerStorage = issuers => issuers.map(issuerToIssuerRecord.get);
+  /** @type {ExportIssuerStorage} */
+  const exportIssuerStorage = issuers => {
+    assertInstantiated();
+    return issuers.map(issuerToIssuerRecord.get);
+  };
+
+  const instantiate = (exportedIssuerStorage = []) => {
+    assert(
+      instantiated === false,
+      X`issuerStorage can only be instantiated once`,
+    );
+    instantiated = true;
+    exportedIssuerStorage.forEach(storeIssuerRecord);
+  };
 
   return {
     storeIssuerKeywordRecord,
@@ -174,5 +198,6 @@ export const makeIssuerStorage = exportedIssuerStorage => {
     getBrandForIssuer,
     getIssuerForBrand,
     exportIssuerStorage,
+    instantiate,
   };
 };
