@@ -77,6 +77,7 @@
  * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
+ * @property {CreateZCFVat} createZCFVat
  */
 
 /**
