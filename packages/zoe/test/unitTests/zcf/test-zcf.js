@@ -16,7 +16,7 @@ import { assertAmountsEqual } from '../../zoeTestHelpers';
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const zoeService = zcf.getZoeService();
-  t.is(zoeService, zoe);
+  t.is(await zoeService, zoe);
 });
 
 test(`zcf.getInvitationIssuer`, async t => {
