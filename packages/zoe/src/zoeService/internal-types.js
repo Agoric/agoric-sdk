@@ -106,3 +106,11 @@
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  */
+
+/**
+ * Use VatAdminSvc to create a new vat, but only with the code of the
+ * ZCF bundle
+ *
+ * @callback CreateZCFVat
+ * @returns {Promise<RootAndAdminNode>}
+ */

@@ -22,12 +22,12 @@ import { makeInstallationStorage } from './installationStorage';
  * Manager divides up the resulting capabilities between those needed
  * by a new contract instance (returned as the result of
  * `makeZoeInstanceStorageManager`) and those needed for other purposes.
- */
-
-/**
+ *
+ * @param {CreateZCFVat} createZCFVat - the ability to create a new
+ * ZCF Vat
  * @returns {ZoeStorageManager}
  */
-export const makeZoeStorageManager = () => {
+export const makeZoeStorageManager = createZCFVat => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
   // mathKind, and displayInfo
@@ -159,6 +159,7 @@ export const makeZoeStorageManager = () => {
       withdrawPayments: escrowStorage.withdrawPayments,
       initInstanceAdmin,
       deleteInstanceAdmin,
+      createZCFVat,
     });
   };
 
