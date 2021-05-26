@@ -6,7 +6,7 @@ import { makeMarshal } from '@agoric/marshal';
 import '../../types';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-import { gcAndFinalize } from '../../gc';
+import { gcAndFinalize } from '../../gc-and-finalize';
 import { insistVatDeliveryObject, insistVatSyscallResult } from '../../message';
 
 import { makeLiveSlots } from '../liveSlots';

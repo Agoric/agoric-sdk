@@ -8,7 +8,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { gcAndFinalize } from '../../gc';
+import { gcAndFinalize } from '../../gc-and-finalize';
 import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
 import {
   netstringEncoderStream,

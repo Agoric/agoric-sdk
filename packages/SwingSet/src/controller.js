@@ -20,7 +20,7 @@ import { xsnap, makeSnapstore } from '@agoric/xsnap';
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
-import { gcAndFinalize } from './gc';
+import { gcAndFinalize } from './gc-and-finalize';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';

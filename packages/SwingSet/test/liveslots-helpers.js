@@ -1,6 +1,6 @@
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { gcAndFinalize } from '../src/gc';
+import { gcAndFinalize } from '../src/gc-and-finalize';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 export function buildSyscall() {
