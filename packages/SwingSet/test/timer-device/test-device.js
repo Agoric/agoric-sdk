@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../../src/hostStorage';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index';
 import { buildTimer } from '../../src/devices/timer';
@@ -28,7 +28,7 @@ test('wake', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(timerConfig, ['timer'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
@@ -44,7 +44,7 @@ test('repeater', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
@@ -64,7 +64,7 @@ test('repeater2', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
@@ -87,7 +87,7 @@ test('repeaterZero', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
 
   await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);

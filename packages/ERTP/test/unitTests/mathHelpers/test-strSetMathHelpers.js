@@ -10,18 +10,19 @@ import { mockBrand } from './mockBrand';
 // correctly.
 
 test('set with strings make', t => {
-  t.notThrows(() => m.make(['1'], mockBrand), `['1'] is a valid string array`);
+  t.notThrows(() => m.make(mockBrand, ['1']), `['1'] is a valid string array`);
   t.notThrows(
-    () => m.make([6], mockBrand),
+    () => m.make(mockBrand, [6]),
     `[6] is a valid set even though it isn't a string`,
   );
   t.throws(
-    () => m.make('abc', mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.make(mockBrand, 'abc'),
     { message: /value .* must be a Nat or an array/ },
     `'abc' is not a valid string array`,
   );
   t.throws(
-    () => m.make(['a', 'a'], mockBrand),
+    () => m.make(mockBrand, ['a', 'a']),
     { message: /value has duplicates/ },
     `duplicates in make throw`,
   );
@@ -29,29 +30,30 @@ test('set with strings make', t => {
 
 test('set with strings coerce', t => {
   t.deepEqual(
-    m.coerce({ brand: mockBrand, value: ['1'] }, mockBrand),
+    m.coerce(mockBrand, { brand: mockBrand, value: ['1'] }),
     { brand: mockBrand, value: ['1'] },
     `coerce({ brand, value: ['1']}) is a valid amount`,
   );
   t.notThrows(
-    () => m.coerce({ brand: mockBrand, value: [6] }, mockBrand),
+    () => m.coerce(mockBrand, { brand: mockBrand, value: [6] }),
     `[6] is a valid set`,
   );
   t.throws(
-    () => m.coerce({ brand: mockBrand, value: '6' }, mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.coerce(mockBrand, { brand: mockBrand, value: '6' }),
     { message: /value .* must be a Nat or an array/ },
     `'6' is not a valid array`,
   );
   t.throws(
-    () => m.coerce({ brand: mockBrand, value: ['a', 'a'] }, mockBrand),
+    () => m.coerce(mockBrand, { brand: mockBrand, value: ['a', 'a'] }),
     { message: /value has duplicates/ },
     `duplicates should throw`,
   );
 });
 
 test('set with strings getValue', t => {
-  t.deepEqual(m.getValue({ brand: mockBrand, value: ['1'] }, mockBrand), ['1']);
-  t.deepEqual(m.getValue(m.make(['1'], mockBrand), mockBrand), ['1']);
+  t.deepEqual(m.getValue(mockBrand, { brand: mockBrand, value: ['1'] }), ['1']);
+  t.deepEqual(m.getValue(mockBrand, m.make(mockBrand, ['1'])), ['1']);
 });
 
 test('set with strings makeEmpty', t => {

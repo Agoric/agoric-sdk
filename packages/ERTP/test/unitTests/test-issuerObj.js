@@ -72,7 +72,7 @@ test('issuer.makeEmptyPurse', async t => {
   t.plan(9);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const purse = issuer.makeEmptyPurse();
-  const payment = mint.mintPayment(AmountMath.make(837n, brand));
+  const payment = mint.mintPayment(AmountMath.make(brand, 837n));
 
   const notifier = purse.getCurrentAmountNotifier();
   let nextUpdate = notifier.getUpdateSince();
@@ -92,7 +92,7 @@ test('issuer.makeEmptyPurse', async t => {
   );
   await checkNotifier();
   t.is(purse.getAllegedBrand(), brand, `purse's brand is correct`);
-  const fungible837 = AmountMath.make(837n, brand);
+  const fungible837 = AmountMath.make(brand, 837n);
 
   const checkDeposit = async newPurseBalance => {
     t.assert(
@@ -133,8 +133,8 @@ test('purse.deposit', async t => {
   t.plan(7);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const fungible0 = AmountMath.makeEmpty(brand);
-  const fungible17 = AmountMath.make(17n, brand);
-  const fungible25 = AmountMath.make(25n, brand);
+  const fungible17 = AmountMath.make(brand, 17n);
+  const fungible25 = AmountMath.make(brand, 25n);
   const fungibleSum = AmountMath.add(fungible17, fungible25);
 
   const purse = issuer.makeEmptyPurse();
@@ -181,7 +181,7 @@ test('purse.deposit', async t => {
 test('purse.deposit promise', async t => {
   t.plan(1);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
-  const fungible25 = AmountMath.make(25n, brand);
+  const fungible25 = AmountMath.make(brand, 25n);
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
@@ -198,7 +198,7 @@ test('purse.deposit promise', async t => {
 test('purse.getDepositFacet', async t => {
   t.plan(4);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
-  const fungible25 = AmountMath.make(25n, brand);
+  const fungible25 = AmountMath.make(brand, 25n);
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
@@ -236,14 +236,14 @@ test('purse.getDepositFacet', async t => {
 test('issuer.burn', async t => {
   t.plan(2);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
-  const payment1 = mint.mintPayment(AmountMath.make(837n, brand));
+  const payment1 = mint.mintPayment(AmountMath.make(brand, 837n));
 
   const burntBalance = await E(issuer).burn(
     payment1,
-    AmountMath.make(837n, brand),
+    AmountMath.make(brand, 837n),
   );
   t.assert(
-    AmountMath.isEqual(burntBalance, AmountMath.make(837n, brand)),
+    AmountMath.isEqual(burntBalance, AmountMath.make(brand, 837n)),
     `entire minted payment was burnt`,
   );
   await t.throwsAsync(() => issuer.getAmountOf(payment1), {
@@ -254,13 +254,13 @@ test('issuer.burn', async t => {
 test('issuer.claim', async t => {
   t.plan(3);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
-  const payment1 = mint.mintPayment(AmountMath.make(2n, brand));
+  const payment1 = mint.mintPayment(AmountMath.make(brand, 2n));
   await E(issuer)
-    .claim(payment1, AmountMath.make(2n, brand))
+    .claim(payment1, AmountMath.make(brand, 2n))
     .then(async newPayment1 => {
       await issuer.getAmountOf(newPayment1).then(amount => {
         t.assert(
-          AmountMath.isEqual(amount, AmountMath.make(2n, brand)),
+          AmountMath.isEqual(amount, AmountMath.make(brand, 2n)),
           `new payment has equal balance to old payment`,
         );
         t.not(
@@ -278,8 +278,8 @@ test('issuer.claim', async t => {
 
 test('issuer.splitMany bad amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const payment = mint.mintPayment(AmountMath.make(1000n, brand));
-  const badAmounts = Array(2).fill(AmountMath.make(10n, brand));
+  const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
+  const badAmounts = Array(2).fill(AmountMath.make(brand, 10n));
   await t.throwsAsync(
     _ => E(issuer).splitMany(payment, badAmounts),
     { message: /rights were not conserved/ },
@@ -290,8 +290,8 @@ test('issuer.splitMany bad amount', async t => {
 test('issuer.splitMany good amount', async t => {
   t.plan(11);
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const oldPayment = mint.mintPayment(AmountMath.make(100n, brand));
-  const goodAmounts = Array(10).fill(AmountMath.make(10n, brand));
+  const oldPayment = mint.mintPayment(AmountMath.make(brand, 100n));
+  const goodAmounts = Array(10).fill(AmountMath.make(brand, 10n));
 
   const checkPayments = async splitPayments => {
     const amounts = await Promise.all(
@@ -300,7 +300,7 @@ test('issuer.splitMany good amount', async t => {
     for (const amount of amounts) {
       t.deepEqual(
         amount,
-        AmountMath.make(10n, brand),
+        AmountMath.make(brand, 10n),
         `split payment has right balance`,
       );
     }
@@ -319,9 +319,9 @@ test('issuer.splitMany good amount', async t => {
 test('issuer.split bad amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const { brand: otherBrand } = makeIssuerKit('other fungible');
-  const payment = mint.mintPayment(AmountMath.make(1000n, brand));
+  const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   await t.throwsAsync(
-    _ => E(issuer).split(payment, AmountMath.make(10n, otherBrand)),
+    _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
     {
       message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
@@ -332,7 +332,7 @@ test('issuer.split bad amount', async t => {
 test('issuer.split good amount', async t => {
   t.plan(3);
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const oldPayment = mint.mintPayment(AmountMath.make(20n, brand));
+  const oldPayment = mint.mintPayment(AmountMath.make(brand, 20n));
 
   const checkPayments = async splitPayments => {
     const amounts = await Promise.all(
@@ -341,7 +341,7 @@ test('issuer.split good amount', async t => {
     for (const amount of amounts) {
       t.deepEqual(
         amount,
-        AmountMath.make(10n, brand),
+        AmountMath.make(brand, 10n),
         `split payment has right balance`,
       );
     }
@@ -353,7 +353,7 @@ test('issuer.split good amount', async t => {
   };
 
   await E(issuer)
-    .split(oldPayment, AmountMath.make(10n, brand))
+    .split(oldPayment, AmountMath.make(brand, 10n))
     .then(checkPayments);
 });
 
@@ -362,14 +362,14 @@ test('issuer.combine good payments', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
-    payments.push(mint.mintPayment(AmountMath.make(1n, brand)));
+    payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
   }
 
   const checkCombinedPayment = async combinedPayment => {
     const amount = await issuer.getAmountOf(combinedPayment);
     t.deepEqual(
       amount,
-      AmountMath.make(100n, brand),
+      AmountMath.make(brand, 100n),
       `combined payment equal to the original payments total`,
     );
 
@@ -393,7 +393,7 @@ test('issuer.combine array of promises', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const paymentsP = [];
   for (let i = 0; i < 100; i += 1) {
-    const freshPayment = mint.mintPayment(AmountMath.make(1n, brand));
+    const freshPayment = mint.mintPayment(AmountMath.make(brand, 1n));
     const paymentP = issuer.claim(freshPayment);
     paymentsP.push(paymentP);
   }
@@ -416,21 +416,15 @@ test('issuer.combine bad payments', async t => {
   );
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
-    payments.push(mint.mintPayment(AmountMath.make(1n, brand)));
+    payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
   }
-  const otherPayment = otherMint.mintPayment(AmountMath.make(10n, otherBrand));
+  const otherPayment = otherMint.mintPayment(AmountMath.make(otherBrand, 10n));
   payments.push(otherPayment);
 
   await t.throwsAsync(
     () => E(issuer).combine(payments),
     {
-      message:
-        // Should be able to use more informative error once SES double
-        // disclosure bug is fixed. See
-        // https://github.com/endojs/endo/pull/640
-        //
-        // /"payment" not found/
-        /.* not found/,
+      message: '"payment" not found: "[Alleged: other fungible payment]"',
     },
     'payment from other mint is not found',
   );

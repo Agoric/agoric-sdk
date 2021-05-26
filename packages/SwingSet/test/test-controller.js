@@ -4,13 +4,13 @@ import { test } from '../tools/prepare-test-env-ava';
 
 import path from 'path';
 import { spawn } from 'child_process';
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { provideHostStorage } from '../src/hostStorage';
 import {
   buildVatController,
   loadBasedir,
+  initializeSwingset,
   makeSwingsetController,
 } from '../src/index';
-import { initializeSwingset } from '../src/initializeSwingset';
 import { checkKT } from './util';
 
 function capdata(body, slots = []) {
@@ -106,16 +106,16 @@ test('XS bootstrap', async t => {
     path.resolve(__dirname, 'basedir-controller-2'),
   );
   config.defaultManagerType = 'xs-worker';
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.is(
-    hostStorage.get('kernel.defaultManagerType'),
+    hostStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
     'defaultManagerType is saved by kernelKeeper',
   );
   const vatID = c.vatNameToID('bootstrap');
-  const options = JSON.parse(hostStorage.get(`${vatID}.options`));
+  const options = JSON.parse(hostStorage.kvStore.get(`${vatID}.options`));
   t.is(
     options.managerType,
     'xs-worker',
@@ -124,7 +124,7 @@ test('XS bootstrap', async t => {
 });
 
 test('static vats are unmetered on XS', async t => {
-  const hostStorage = initSwingStore().storage;
+  const hostStorage = provideHostStorage();
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-controller-2'),
   );

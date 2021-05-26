@@ -11,17 +11,20 @@ import { mockBrand } from './mockBrand';
 // correctly.
 
 test('natMathHelpers make', t => {
-  t.deepEqual(m.make(4n, mockBrand), { brand: mockBrand, value: 4n });
-  t.deepEqual(m.make(4, mockBrand), { brand: mockBrand, value: 4n });
+  t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
+  // @ts-ignore deliberate invalid arguments for testing
+  t.deepEqual(m.make(mockBrand, 4), { brand: mockBrand, value: 4n });
   t.throws(
-    () => m.make('abc', mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.make(mockBrand, 'abc'),
     {
       message: /value .* must be a Nat or an array/,
     },
     `'abc' is not a nat`,
   );
   t.throws(
-    () => m.make(-1, mockBrand),
+    // @ts-ignore deliberate invalid arguments for testing
+    () => m.make(mockBrand, -1),
     { message: /value .* must be a Nat or an array/ },
     `- 1 is not a valid Nat`,
   );
@@ -29,6 +32,7 @@ test('natMathHelpers make', t => {
 
 test('natMathHelpers make no brand', t => {
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.make(4n),
     {
       message: /The brand "\[4n\]" doesn't look like a brand./,
@@ -39,7 +43,7 @@ test('natMathHelpers make no brand', t => {
 
 test('natMathHelpers coerce', t => {
   t.deepEqual(
-    m.coerce({ brand: mockBrand, value: 4n }, mockBrand),
+    m.coerce(mockBrand, { brand: mockBrand, value: 4n }),
     {
       brand: mockBrand,
       value: 4n,
@@ -48,23 +52,21 @@ test('natMathHelpers coerce', t => {
   );
   t.throws(
     () =>
-      m.coerce(
-        {
-          brand: Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({}),
-          }),
-          value: 4n,
-        },
-        mockBrand,
-      ),
+      m.coerce(mockBrand, {
+        brand: Far('otherBrand', {
+          getAllegedName: () => 'somename',
+          isMyIssuer: async () => false,
+          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+        }),
+        value: 4n,
+      }),
     {
       message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
     `coerce can't take the wrong brand`,
   );
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(3n, mockBrand),
     {
       message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
@@ -85,8 +87,9 @@ test('natMathHelpers coerce no brand', t => {
 });
 
 test('natMathHelpers getValue', t => {
-  t.is(m.getValue(m.make(4n, mockBrand), mockBrand), 4n);
-  t.is(m.getValue(m.make(4, mockBrand), mockBrand), 4n);
+  t.is(m.getValue(mockBrand, m.make(mockBrand, 4n)), 4n);
+  // @ts-ignore deliberate invalid arguments for testing
+  t.is(m.getValue(mockBrand, m.make(mockBrand, 4)), 4n);
 });
 
 test('natMathHelpers getValue no brand', t => {
@@ -101,7 +104,7 @@ test('natMathHelpers getValue no brand', t => {
 });
 
 test('natMathHelpers makeEmpty', t => {
-  const empty = m.make(0n, mockBrand);
+  const empty = m.make(mockBrand, 0n);
 
   t.deepEqual(m.makeEmpty(mockBrand), empty, `empty is 0`);
 });
@@ -120,9 +123,10 @@ test('natMathHelpers makeEmpty no brand', t => {
 test('natMathHelpers isEmpty', t => {
   t.assert(m.isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
   t.falsy(m.isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
-  t.assert(m.isEmpty(m.make(0n, mockBrand)), `isEmpty(0) is true`);
-  t.falsy(m.isEmpty(m.make(6n, mockBrand)), `isEmpty(6) is false`);
+  t.assert(m.isEmpty(m.make(mockBrand, 0n)), `isEmpty(0) is true`);
+  t.falsy(m.isEmpty(m.make(mockBrand, 6n)), `isEmpty(6) is false`);
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty('abc'),
     {
       message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
@@ -130,6 +134,7 @@ test('natMathHelpers isEmpty', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty({ brand: mockBrand, value: 'abc' }),
     {
       message: /value .* must be a Nat or an array/,
@@ -137,6 +142,7 @@ test('natMathHelpers isEmpty', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
+    // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty(0n),
     {
       message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
@@ -146,8 +152,8 @@ test('natMathHelpers isEmpty', t => {
 });
 
 test('natMathHelpers isGTE', t => {
-  t.assert(m.isGTE(m.make(5n, mockBrand), m.make(3n, mockBrand)), `5 >= 3`);
-  t.assert(m.isGTE(m.make(3n, mockBrand), m.make(3n, mockBrand)), `3 >= 3`);
+  t.assert(m.isGTE(m.make(mockBrand, 5n), m.make(mockBrand, 3n)), `5 >= 3`);
+  t.assert(m.isGTE(m.make(mockBrand, 3n), m.make(mockBrand, 3n)), `3 >= 3`);
   t.falsy(
     m.isGTE({ brand: mockBrand, value: 3n }, { brand: mockBrand, value: 4n }),
     `3 < 4`,
@@ -156,7 +162,18 @@ test('natMathHelpers isGTE', t => {
 
 test('natMathHelpers isGTE mixed brands', t => {
   t.throws(
-    () => m.isGTE(m.make(5n, Far('otherBrand', {})), m.make(3n, mockBrand)),
+    () =>
+      m.isGTE(
+        m.make(
+          Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          }),
+          5n,
+        ),
+        m.make(mockBrand, 3n),
+      ),
     {
       message: /Brands in left .* and right .* should match but do not/,
     },
@@ -167,9 +184,13 @@ test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
   t.throws(
     () =>
       m.isGTE(
-        m.make(5n, mockBrand),
-        m.make(3n, mockBrand),
-        Far('otherBrand', {}),
+        m.make(mockBrand, 5n),
+        m.make(mockBrand, 3n),
+        Far('otherBrand', {
+          getAllegedName: () => 'somename',
+          isMyIssuer: async () => false,
+          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+        }),
       ),
     {
       message: /amount's brand .* did not match expected brand .*/,
@@ -179,18 +200,29 @@ test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
 
 test('natMathHelpers isEqual', t => {
   t.assert(
-    m.isEqual(m.make(4n, mockBrand), m.make(4n, mockBrand)),
+    m.isEqual(m.make(mockBrand, 4n), m.make(mockBrand, 4n)),
     `4 equals 4`,
   );
   t.falsy(
-    m.isEqual(m.make(4n, mockBrand), m.make(5n, mockBrand)),
+    m.isEqual(m.make(mockBrand, 4n), m.make(mockBrand, 5n)),
     `4 does not equal 5`,
   );
 });
 
 test('natMathHelpers isEqual mixed brands', t => {
   t.throws(
-    () => m.isEqual(m.make(4n, Far('otherBrand', {})), m.make(4n, mockBrand)),
+    () =>
+      m.isEqual(
+        m.make(
+          Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          }),
+          4n,
+        ),
+        m.make(mockBrand, 4n),
+      ),
     {
       message: /Brands in left .* and right .* should match but do not/,
     },
@@ -201,9 +233,13 @@ test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
   t.throws(
     () =>
       m.isEqual(
-        m.make(4n, mockBrand),
-        m.make(4n, mockBrand),
-        Far('otherBrand', {}),
+        m.make(mockBrand, 4n),
+        m.make(mockBrand, 4n),
+        Far('otherBrand', {
+          getAllegedName: () => 'somename',
+          isMyIssuer: async () => false,
+          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+        }),
       ),
     {
       message: /amount's brand .* did not match expected brand .*/,
@@ -213,15 +249,26 @@ test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
 
 test('natMathHelpers add', t => {
   t.deepEqual(
-    m.add(m.make(5n, mockBrand), m.make(9n, mockBrand)),
-    m.make(14n, mockBrand),
+    m.add(m.make(mockBrand, 5n), m.make(mockBrand, 9n)),
+    m.make(mockBrand, 14n),
     `5 + 9 = 14`,
   );
 });
 
 test('natMathHelpers add mixed brands', t => {
   t.throws(
-    () => m.add(m.make(5n, Far('otherBrand', {})), m.make(9n, mockBrand)),
+    () =>
+      m.add(
+        m.make(
+          Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          }),
+          5n,
+        ),
+        m.make(mockBrand, 9n),
+      ),
     {
       message: /Brands in left .* and right .* should match but do not/,
     },
@@ -232,9 +279,13 @@ test(`natMathHelpers add - brands don't match objective brand`, t => {
   t.throws(
     () =>
       m.add(
-        m.make(5n, mockBrand),
-        m.make(9n, mockBrand),
-        Far('otherBrand', {}),
+        m.make(mockBrand, 5n),
+        m.make(mockBrand, 9n),
+        Far('otherBrand', {
+          getAllegedName: () => 'somename',
+          isMyIssuer: async () => false,
+          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+        }),
       ),
     {
       message: /amount's brand .* did not match expected brand .*/,
@@ -244,15 +295,26 @@ test(`natMathHelpers add - brands don't match objective brand`, t => {
 
 test('natMathHelpers subtract', t => {
   t.deepEqual(
-    m.subtract(m.make(6n, mockBrand), m.make(1n, mockBrand)),
-    m.make(5n, mockBrand),
+    m.subtract(m.make(mockBrand, 6n), m.make(mockBrand, 1n)),
+    m.make(mockBrand, 5n),
     `6 - 1 = 5`,
   );
 });
 
 test('natMathHelpers subtract mixed brands', t => {
   t.throws(
-    () => m.subtract(m.make(6n, Far('otherBrand', {})), m.make(1n, mockBrand)),
+    () =>
+      m.subtract(
+        m.make(
+          Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          }),
+          6n,
+        ),
+        m.make(mockBrand, 1n),
+      ),
     {
       message: /Brands in left .* and right .* should match but do not/,
     },
@@ -263,9 +325,13 @@ test(`natMathHelpers subtract brands don't match brand`, t => {
   t.throws(
     () =>
       m.subtract(
-        m.make(6n, mockBrand),
-        m.make(1n, mockBrand),
-        Far('otherBrand', {}),
+        m.make(mockBrand, 6n),
+        m.make(mockBrand, 1n),
+        Far('otherBrand', {
+          getAllegedName: () => 'somename',
+          isMyIssuer: async () => false,
+          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+        }),
       ),
     {
       message: /amount's brand .* did not match expected brand .*/,

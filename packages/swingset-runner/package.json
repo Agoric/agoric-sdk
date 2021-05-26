@@ -26,6 +26,7 @@
     "@agoric/eventual-send": "^0.13.14",
     "@agoric/install-ses": "^0.5.13",
     "@agoric/marshal": "^0.4.11",
+    "@agoric/nat": "^4.0.0",
     "@agoric/same-structure": "^0.1.13",
     "@agoric/stat-logger": "^0.4.9",
     "@agoric/swing-store-lmdb": "^0.4.12",

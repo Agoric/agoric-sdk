@@ -3,8 +3,29 @@ import fs from 'fs';
 import path from 'path';
 import Readlines from 'n-readlines';
 
+import { assert, details as X } from '@agoric/assert';
+
 /**
- * @typedef {ReturnType<typeof makeStorageInMemory>['storage']} SwingStore
+ * @typedef {{
+ *   has: (key: string) => boolean,
+ *   getKeys: (start: string, end: string) => Iterable<string>,
+ *   get: (key: string) => string | undefined,
+ *   set: (key: string, value: string) => void,
+ *   delete: (key: string) => void,
+ * }} KVStore
+ *
+ * @typedef {{
+ *   appendItem: (name: string, item: string) => void,
+ *   readStream: (name: string) => Iterable<string>,
+ * }} StreamStore
+ *
+ * @typedef {{
+ *   kvStore: KVStore, // a key-value storage API object to load and store data
+ *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
+ *   commit: () => void,  // commit changes made since the last commit
+ *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ *   diskUsage?: () => number, // optional stats method
+ * }} SwingStore
  */
 
 function safeUnlink(filePath) {
@@ -24,10 +45,10 @@ function safeUnlink(filePath) {
  * that work on string keys and accept string values.  A lot of kernel-side
  * code expects to get an object that implements the Storage API.
  *
- * returns an object: {
- *   storage,  // the storage API object itself
- *   state     // the underlying map that holds the state in memory
- * }
+ * @returns {{
+ *   kvStore: KVStore,  // the storage API object itself
+ *   state: any,     // the underlying map that holds the state in memory
+ * }}
  */
 function makeStorageInMemory() {
   const state = new Map();
@@ -60,7 +81,7 @@ function makeStorageInMemory() {
    * @param {string} end  End of the key range of interest (exclusive).  An empty string
    *    indicates a range through the end of the key set.
    *
-   * @yields an iterator for the keys from start <= key < end
+   * @yields {string} an iterator for the keys from start <= key < end
    *
    * @throws if either parameter is not a string.
    */
@@ -131,7 +152,7 @@ function makeStorageInMemory() {
     state.delete(key);
   }
 
-  const storage = {
+  const kvStore = {
     has,
     getKeys,
     get,
@@ -139,7 +160,7 @@ function makeStorageInMemory() {
     delete: del,
   };
 
-  return { storage, state };
+  return { kvStore, state };
 }
 
 /**
@@ -149,14 +170,10 @@ function makeStorageInMemory() {
  *   null.
  * @param {boolean} [forceReset]  If true, initialize the database to an empty state
  *
- * @returns {{
- *   storage: SwingStore, // a storage API object to load and store data
- *   commit: () => void,  // commit changes made since the last commit
- *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
- * }}
+ * @returns {SwingStore}
  */
 function makeSwingStore(dirPath, forceReset = false) {
-  const { storage, state } = makeStorageInMemory();
+  const { kvStore, state } = makeStorageInMemory();
 
   let storeFile;
   if (dirPath) {
@@ -180,7 +197,7 @@ function makeSwingStore(dirPath, forceReset = false) {
         while (line) {
           // @ts-ignore JSON.parse can take a Buffer
           const [key, value] = JSON.parse(line);
-          storage.set(key, value);
+          kvStore.set(key, value);
           line = lines.next();
         }
       }
@@ -213,7 +230,53 @@ function makeSwingStore(dirPath, forceReset = false) {
     // Nothing to do here.
   }
 
-  return { storage, commit, close };
+  /** @type {Map<string, Array<string>>} */
+  const streams = new Map();
+
+  /**
+   * Generator function that returns an iterator over the items in a stream.
+   *
+   * @param {string} streamName  The stream to read
+   *
+   * @yields {string} an iterator for the items in the named stream
+   */
+  function* readStream(streamName) {
+    /** @type {Array<string>|undefined} */
+    const stream = streams.get(streamName);
+    if (stream) {
+      let pos = 0;
+      while (pos < stream.length) {
+        const result = stream[pos];
+        pos += 1;
+        yield result;
+      }
+    }
+  }
+
+  /**
+   * Append an item to a stream.
+   *
+   * @param {string} streamName  The stream to append to
+   * @param {string} item  The item to append to it
+   */
+  function appendItem(streamName, item) {
+    assert.typeof(
+      streamName,
+      'string',
+      X`non-string stream name ${streamName}`,
+    );
+    assert(streamName.match(/^[-\w]+$/));
+    let stream = streams.get(streamName);
+    if (!stream) {
+      stream = [];
+      streams.set(streamName, stream);
+    }
+    stream.push(item);
+  }
+
+  const streamStore = { appendItem, readStream };
+
+  return { kvStore, streamStore, commit, close };
 }
 
 /**
@@ -227,12 +290,7 @@ function makeSwingStore(dirPath, forceReset = false) {
  *   swing store instance.  If this is nullish, the swing store created will
  *   have no backing store and thus be non-persistent.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ * @returns {SwingStore}
  */
 export function initSwingStore(dirPath) {
   if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
@@ -251,12 +309,7 @@ export function initSwingStore(dirPath) {
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ * @returns {SwingStore}
  */
 export function openSwingStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
@@ -273,17 +326,17 @@ export function openSwingStore(dirPath) {
  * stupidest possible way, hence it is likely to be a performance and memory
  * hog if you attempt to use it on anything real.
  *
- * @param {SwingStore} storage  The swing storage whose state is to be extracted.
+ * @param {KVStore} kvStore  The swing storage whose state is to be extracted.
  *
- * @returns {Record<string, string>} an array representing all the current state in `storage`, one
+ * @returns {Record<string, string>} an array representing all the current state in `kvStore`, one
  *    element of the form [key, value] per key/value pair.
  */
-export function getAllState(storage) {
+export function getAllState(kvStore) {
   /** @type { Record<string, string> } */
   const stuff = {};
-  for (const key of Array.from(storage.getKeys('', ''))) {
+  for (const key of Array.from(kvStore.getKeys('', ''))) {
     // @ts-ignore get(key) of key from getKeys() is not undefined
-    stuff[key] = storage.get(key);
+    stuff[key] = kvStore.get(key);
   }
   return stuff;
 }
@@ -295,12 +348,12 @@ export function getAllState(storage) {
  * general store initialization mechanism.  In particular, note that it does
  * not bother to remove any existing state in the store that it is given.
  *
- * @param {SwingStore} storage  The swing storage whose state is to be set.
+ * @param {KVStore} kvStore  The swing storage whose state is to be set.
  * @param {Array<[string, string]>} stuff  An array of key/value pairs, each element of the form [key, value]
  */
-export function setAllState(storage, stuff) {
+export function setAllState(kvStore, stuff) {
   for (const k of Object.getOwnPropertyNames(stuff)) {
-    storage.set(k, stuff[k]);
+    kvStore.set(k, stuff[k]);
   }
 }
 

@@ -1,4 +1,9 @@
-import { initSwingStore } from '@agoric/swing-store-simple';
+// @ts-check
+import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
+import {
+  initSwingStore as initLMDBSwingStore,
+  openSwingStore as openLMDBSwingStore,
+} from '@agoric/swing-store-lmdb';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -24,12 +29,12 @@ directly.
 /**
  * Create a new instance of a bare-bones implementation of the HostDB API.
  *
- * @param {Storage} storage Storage object that the new HostDB object will be based on.
+ * @param {KVStore} kvStore Storage object that the new HostDB object will be based on.
  *    If omitted, defaults to a new in memory store.
  */
-export function buildHostDBInMemory(storage) {
-  if (!storage) {
-    storage = initSwingStore().store;
+export function buildHostDBInMemory(kvStore) {
+  if (!kvStore) {
+    kvStore = initSimpleSwingStore().kvStore;
   }
 
   /**
@@ -40,7 +45,7 @@ export function buildHostDBInMemory(storage) {
    * @returns {boolean} true if a value is stored for the key, false if not.
    */
   function has(key) {
-    return storage.has(key);
+    return kvStore.has(key);
   }
 
   /**
@@ -52,7 +57,7 @@ export function buildHostDBInMemory(storage) {
    * @returns {Iterable<string>} an iterator for the keys from start <= key < end
    */
   function getKeys(start, end) {
-    return storage.getKeys(start, end);
+    return kvStore.getKeys(start, end);
   }
 
   /**
@@ -64,20 +69,28 @@ export function buildHostDBInMemory(storage) {
    *    such value.
    */
   function get(key) {
-    return storage.get(key);
+    return kvStore.get(key);
   }
 
   /**
-   * @typedef {Object} SetOperation
-   * @property {'set'} op
-   * @property {string} key
-   * @property {string} value
-   */
-
-  /**
-   * @typedef {Object} DeleteOperation
-   * @property {'delete'} op
-   * @property {string} key
+   * @typedef {{
+   *   op: 'set',
+   *   key: string,
+   *   value: string,
+   * }} SetOperation
+   *
+   * @typedef {{
+   *   op: 'delete',
+   *   key: string,
+   * }} DeleteOperation
+   *
+   * @typedef {{
+   *   op: Exclude<string, 'set' | 'delete'>,
+   *   key: string,
+   * }} UnknownOperation
+   *
+   * @typedef {SetOperation | DeleteOperation} BatchOperation
+   * x typedef {Exclude<AnyOperation, BatchOperation>} UnknownOperation
    */
 
   /**
@@ -90,7 +103,8 @@ export function buildHostDBInMemory(storage) {
    * { op: 'delete', key: <KEY> }
    * which describe a set or delete operation respectively.
    *
-   * @param {Array<SetOperation|DeleteOperation>} changes  An array of the changes to be applied in order.
+   * @param {Array<BatchOperation>} changes  An array of the changes to be
+   *    applied in order.
    * @throws {Error} if any of the changes are not well formed.
    */
   function applyBatch(changes) {
@@ -101,13 +115,16 @@ export function buildHostDBInMemory(storage) {
     for (const c of changes) {
       assert(`${c.op}` === c.op, X`non-string c.op ${c.op}`);
       assert(`${c.key}` === c.key, X`non-string c.key ${c.key}`);
-      if (c.op === 'set') {
-        assert(`${c.value}` === c.value, X`non-string c.value ${c.value}`);
-        storage.set(c.key, c.value);
-      } else if (c.op === 'delete') {
-        storage.delete(c.key);
-      } else {
-        assert.fail(X`unknown c.op ${c.op}`);
+      switch (c.op) {
+        case 'set':
+          assert(`${c.value}` === c.value, X`non-string c.value ${c.value}`);
+          kvStore.set(c.key, c.value);
+          break;
+        case 'delete':
+          kvStore.delete(c.key);
+          break;
+        default:
+          assert.fail(X`unknown c.op ${/** @type {*} */ (c).op}`);
       }
     }
   }
@@ -120,4 +137,33 @@ export function buildHostDBInMemory(storage) {
   };
 
   return harden(hostDB);
+}
+
+/**
+ * Helper function to initialize the appropriate storage objects for the kernel
+ *
+ * @param {boolean} initialize  If true, initialize a new store; if false, open an existing one
+ * @param {string|undefined} kernelStateDBDir Pathname to the LMDB database
+ *    directory or undefined to create a volatile in-memory store
+ *
+ * @returns {HostStore} a host store as described by the parameters
+ */
+export function provideHostStorage(
+  initialize = true,
+  kernelStateDBDir = undefined,
+) {
+  let swingStore;
+  if (kernelStateDBDir) {
+    if (initialize) {
+      swingStore = initLMDBSwingStore(kernelStateDBDir);
+    } else {
+      swingStore = openLMDBSwingStore(kernelStateDBDir);
+    }
+  } else {
+    swingStore = initSimpleSwingStore();
+  }
+  return {
+    kvStore: swingStore.kvStore,
+    streamStore: swingStore.streamStore,
+  };
 }
