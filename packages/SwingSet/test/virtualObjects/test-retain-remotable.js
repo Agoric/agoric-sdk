@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava';
 // eslint-disable-next-line import/order
 import { Far } from '@agoric/marshal';
 
-import { gcAndFinalize } from '../../src/gc';
+import { gcAndFinalize } from '../../src/gc-and-finalize';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
 
 // empty object, used as makeWeakStore() key

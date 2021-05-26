@@ -5,7 +5,7 @@ import { test } from '../tools/prepare-test-env-ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '@agoric/xsnap';
-import { gcAndFinalize } from '../src/gc';
+import { gcAndFinalize } from '../src/gc-and-finalize';
 
 test(`have gc() on Node.js`, async t => {
   t.is(typeof gc, 'function', 'environment is missing top-level gc()');

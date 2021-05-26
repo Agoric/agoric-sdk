@@ -7,7 +7,7 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { gcAndFinalize } from '../src/gc';
+import { gcAndFinalize } from '../src/gc-and-finalize';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 import { buildSyscall, makeDispatch } from './liveslots-helpers';
 import {
