@@ -13,6 +13,7 @@ const encoder = new util.TextEncoder();
 
 /**
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store-simple').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
  * @typedef { import('@agoric/swing-store-simple').StreamWriter } StreamWriter
  * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
@@ -183,6 +184,13 @@ function makeSwingStore(dirPath, forceReset = false) {
     );
   }
 
+  function insistStreamPosition(position) {
+    assert.typeof(position.itemCount, 'number');
+    assert(position.itemCount >= 0);
+    assert.typeof(position.offset, 'number');
+    assert(position.offset >= 0);
+  }
+
   function closefd(fd) {
     try {
       fs.closeSync(fd);
@@ -206,7 +214,7 @@ function makeSwingStore(dirPath, forceReset = false) {
       closefd(fd);
       streamFds.delete(streamName);
       activeStreamFds.delete(fd);
-      streamStatus.set(streamName, 'unused');
+      streamStatus.delete(streamName);
     }
   }
 
@@ -214,25 +222,27 @@ function makeSwingStore(dirPath, forceReset = false) {
    * Generator function that returns an iterator over the items in a stream.
    *
    * @param {string} streamName  The stream to read
+   * @param {Object} startPosition  The position to start reading from
    * @param {Object} endPosition  The position of the end of the stream
-   * @param {Object?} startPosition  Optional position to start reading from
    *
    * @returns {Iterable<string>} an iterator for the items in the named stream
    */
-  function openReadStream(streamName, endPosition, startPosition) {
+  function openReadStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
     const status = streamStatus.get(streamName);
     assert(
-      status === 'unused' || !status,
+      !status,
       X`can't read stream ${q(streamName)} because it's already in use`,
     );
+    insistStreamPosition(startPosition);
+    insistStreamPosition(endPosition);
+    assert(startPosition.itemCount <= endPosition.itemCount);
+
     let itemCount = endPosition.itemCount;
     if (endPosition.offset === 0) {
       assert(itemCount === 0);
       return [];
     } else {
-      assert(itemCount > 0);
-      assert(endPosition.offset > 0);
       const filePath = `${dirPath}/${streamName}`;
       fs.truncateSync(filePath, endPosition.offset);
       const fd = fs.openSync(filePath, 'r');
@@ -243,13 +253,11 @@ function makeSwingStore(dirPath, forceReset = false) {
       statusCounter += 1;
       streamStatus.set(streamName, readStatus);
       // let startOffset = 0;
-      let skipCount = 0;
-      if (startPosition) {
-        // itemCount -= startPosition.itemCount;
-        // startOffset = startPosition.offset;
-        skipCount = startPosition.itemCount;
-        assert(skipCount <= endPosition.itemCount);
-      }
+      let skipCount = startPosition.itemCount;
+
+      // itemCount -= startPosition.itemCount;
+      // startOffset = startPosition.offset;
+
       // We would like to be able to seek Readlines to a particular position
       // in the file before it starts reading.  Unfortunately, it is hardcoded
       // to reset to 0 at the start and then manually walk itself through the
@@ -288,6 +296,8 @@ function makeSwingStore(dirPath, forceReset = false) {
               break;
             }
           }
+        } catch (e) {
+          console.log(e);
         } finally {
           const statusEnd = streamStatus.get(streamName);
           assert(
@@ -313,7 +323,7 @@ function makeSwingStore(dirPath, forceReset = false) {
     insistStreamName(streamName);
     const status = streamStatus.get(streamName);
     assert(
-      status === 'unused' || !status,
+      !status,
       X`can't write stream ${q(streamName)} because it's already in use`,
     );
     streamStatus.set(streamName, 'write');
@@ -334,7 +344,7 @@ function makeSwingStore(dirPath, forceReset = false) {
      * Write to a stream.
      *
      * @param {string} item  The item to write
-     * @param {Object|null} position  The position to write the item
+     * @param {Object} position  The position to write the item
      *
      * @returns {Object} the new position after writing
      */
@@ -344,39 +354,36 @@ function makeSwingStore(dirPath, forceReset = false) {
         streamFds.get(streamName) === fd,
         X`can't write to closed stream ${q(streamName)}`,
       );
-      if (!position) {
-        position = STREAM_START;
-      }
+      insistStreamPosition(position);
       const buf = encoder.encode(`${item}\n`);
       fs.writeSync(fd, buf, 0, buf.length, position.offset);
-      fs.fsyncSync(fd);
-      return {
+      return harden({
         offset: position.offset + buf.length,
         itemCount: position.itemCount + 1,
-      };
+      });
     }
     return write;
   }
 
-  const streamStore = {
+  const streamStore = harden({
     openReadStream,
     openWriteStream,
     closeStream,
     STREAM_START,
-  };
+  });
 
   /**
    * Commit unsaved changes.
    */
   function commit() {
     if (txn) {
-      for (const fd of activeStreamFds) {
-        closefd(fd);
-      }
-      activeStreamFds.clear();
       txn.commit();
       txn = null;
     }
+    for (const fd of activeStreamFds) {
+      fs.fsyncSync(fd);
+    }
+    activeStreamFds.clear();
   }
 
   /**
@@ -400,7 +407,7 @@ function makeSwingStore(dirPath, forceReset = false) {
     activeStreamFds.clear();
   }
 
-  return { kvStore, streamStore, commit, close, diskUsage };
+  return harden({ kvStore, streamStore, commit, close, diskUsage });
 }
 
 /**
