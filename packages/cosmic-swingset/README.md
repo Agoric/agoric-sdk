@@ -21,34 +21,27 @@ In any case, for now, you will be needing to build the solo node from the source
 
 ### Build from source
 
-If you want to build and install from sources, you need to install
-- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-- [node.js](https://nodejs.org/en/) (you need at least version 11). This installs 2 binaries named `node` (JavaScript runtime) and `npm` (JavaScript package manager)
-    - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
+To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisities.
+
+- **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
+
+You'll then need to install the following additional software:
 - [Golang](https://golang.org/doc/install) (you need at least version 1.15)
-    - **(optional)** If installing the GO language didn't setup a `$GOPATH` variable, you'll need to find the directory and set the variable. Typically `GOPATH="$HOME/go"`
 - (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)
 - (scenarios 1 and 0) python3-venv
 - (scenarios 1 only) [terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
 - (scenarios 1 only) [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
-
-
+Build the cosmic-swingset with:
 ```sh
-git clone git@github.com:Agoric/cosmic-swingset.git
-cd cosmic-swingset
+cd agoric-sdk/packages/cosmic-swingset
 npm install
 npm run build
 ```
 
-Make a symbolic link somewhere in your `$PATH` (such as `/usr/local/bin`) as below: 
+Add `$GOPATH/bin` (or `~/go/bin` if `GOPATH` is unset) to your shell's  `PATH`.
 
-```sh
-ln -s $PWD/bin/ag-chain-cosmos /usr/local/bin/
-ln -s $GOPATH/bin/ag-cosmos-helper /usr/local/bin/
-```
-
-Test that the link works with:
+Test that the utilities work with:
 
 ```sh
 ag-chain-cosmos --help
