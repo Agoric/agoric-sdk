@@ -40,48 +40,51 @@ function makeError(message, name = 'Error') {
 
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
-function doAddExport(kernelKeeper, fromVatID, vatSlot) {
+/*
+ * Pretend that a vat just exported an object
+ */
+export function doAddExport(kernelKeeper, fromVatID, vref) {
   insistVatID(fromVatID);
-  assert(parseVatSlot(vatSlot).allocatedByVat);
+  assert(parseVatSlot(vref).allocatedByVat);
   const vatKeeper = kernelKeeper.getVatKeeper(fromVatID);
-  return vatKeeper.mapVatSlotToKernelSlot(vatSlot);
+  const kref = vatKeeper.mapVatSlotToKernelSlot(vref);
+  return kref;
 }
 
 /**
- * Enqueue a message to some object exported by a vat, as if the message had
- * been sent by some other vat.
+ * Enqueue a message to some kernel object, as if the message had been sent
+ * by some other vat. This requires a kref as a target, so use e.g.
+ * doAddExport to acquire one and increment its refcount to keep it alive.
  *
  * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state
- * @param {string} vatID  The vat to which the message is to be delivered
- * @param {string} vatSlot  That vat's ID for the object to deliver to
+ * @param {string} kref  Target of the message
  * @param {string} method  The message verb
  * @param {*} args  The message arguments
- * @param {string}  policy How the kernel should handle an eventual resolution or
- *    rejection of the message's result promise.  Should be one of 'ignore' (do
- *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure' (log
- *    only rejections), or 'panic' (panic the kernel upon a rejection).
+ * @param {string} policy How the kernel should handle an eventual resolution
+ *    or rejection of the message's result promise. Should be one of
+ *    'sendOnly' (don't even create a result promise), 'ignore' (do nothing),
+ *    'logAlways' (log the resolution or rejection), 'logFailure' (log only
+ *    rejections), or 'panic' (panic the kernel upon a rejection).
  *
- * @returns {string} the kpid of the sent message's result promise
+ * @returns {string?} the kpid of the sent message's result promise
  */
-export function doQueueToExport(
+export function doQueueToKref(
   kernelKeeper,
-  vatID,
-  vatSlot,
+  kref,
   method,
   args,
   policy = 'ignore',
 ) {
-  // queue a message on the end of the queue, with 'absolute' kernelSlots.
+  // queue a message on the end of the queue, with 'absolute' krefs.
   // Use 'step' or 'run' to execute it
-  insistVatID(vatID);
-  parseVatSlot(vatSlot);
   insistCapData(args);
   args.slots.forEach(s => parseKernelSlot(s));
-
-  const resultKPID = kernelKeeper.addKernelPromise(policy);
+  let resultKPID;
+  if (policy !== 'none') {
+    resultKPID = kernelKeeper.addKernelPromise(policy);
+  }
   const msg = harden({ method, args, result: resultKPID });
-  const kernelSlot = doAddExport(kernelKeeper, vatID, vatSlot);
-  doSend(kernelKeeper, kernelSlot, msg);
+  doSend(kernelKeeper, kref, msg);
   return resultKPID;
 }
 
@@ -114,6 +117,7 @@ export default function buildKernel(
   const { kvStore, streamStore } = hostStorage;
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
+  const vatAdminRootKref = kvStore.get('vatAdminRootKref');
 
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
@@ -153,7 +157,7 @@ export default function buildKernel(
   // This is a low-level output-only string logger used by old unit tests to
   // see whether vats made progress or not. The array it appends to is
   // available as c.dump().log . New unit tests should instead use the
-  // 'result' value returned by c.queueToExport()
+  // 'result' value returned by c.queueToKref()
   function testLog(...args) {
     const rendered = args.map(arg =>
       typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
@@ -254,23 +258,23 @@ export default function buildKernel(
   }
 
   /**
-   * Enqueue a message to some object exported by a vat, as if the message had
-   * been sent by some other vat.
+   * Enqueue a message to some kernel object, as if the message had been sent
+   * by some other vat.
    *
-   * @param {string} vatID  The vat to which the message is to be delivered
-   * @param {string} vatSlot  That vat's ID for the object to deliver to
+   * @param {string} kref  Target of the message
    * @param {string} method  The message verb
    * @param {*} args  The message arguments
-   * @param {string} policy  How the kernel should handle an eventual resolution
-   *    or rejection of the message's result promise.  Should be one of 'ignore'
-   *    (do nothing), 'logAlways' (log the resolution or rejection),
-   *    'logFailure' (log only rejections), or 'panic' (panic the kernel upon a
+   * @param {string} policy How the kernel should handle an eventual
+   *    resolution or rejection of the message's result promise. Should be
+   *    one of 'sendOnly' (don't even create a result promise), 'ignore' (do
+   *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
+   *    (log only rejections), or 'panic' (panic the kernel upon a
    *    rejection).
    *
-   * @returns {string} the kpid of the sent message's result promise
+   * @returns {string?} the kpid of the sent message's result promise, if any
    */
-  function queueToExport(vatID, vatSlot, method, args, policy = 'ignore') {
-    return doQueueToExport(kernelKeeper, vatID, vatSlot, method, args, policy);
+  function queueToKref(kref, method, args, policy = 'ignore') {
+    return doQueueToKref(kernelKeeper, kref, method, args, policy);
   }
 
   function notify(vatID, kpid) {
@@ -518,6 +522,7 @@ export default function buildKernel(
   }
 
   async function processCreateVat(message) {
+    assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
@@ -550,15 +555,7 @@ export default function buildKernel(
     }
 
     function sendResponse(args) {
-      const vatAdminVatId = vatNameToID('vatAdmin');
-      const vatAdminRootObjectSlot = makeVatRootObjectSlot();
-      queueToExport(
-        vatAdminVatId,
-        vatAdminRootObjectSlot,
-        'newVatCallback',
-        args,
-        'logFailure',
-      );
+      queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
     }
 
     // eslint-disable-next-line no-use-before-define
@@ -754,15 +751,15 @@ export default function buildKernel(
     recreateStaticVat,
     loadTestVat,
   } = makeVatLoader({
-    vatNameToID,
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
     addVatManager,
-    queueToExport,
+    queueToKref,
     kernelKeeper,
     panic,
     buildVatSyscallHandler,
+    vatAdminRootKref,
   });
 
   /**
@@ -1069,7 +1066,7 @@ export default function buildKernel(
     addExport,
     vatNameToID,
     deviceNameToID,
-    queueToExport,
+    queueToKref,
     kpRegisterInterest,
     kpStatus,
     kpResolution,

@@ -365,14 +365,8 @@ export async function makeSwingsetController(
       parseVatSlot(exportID);
       assert.typeof(method, 'string');
       insistCapData(args);
-      kernel.addExport(vatID, exportID);
-      const kpid = kernel.queueToExport(
-        vatID,
-        exportID,
-        method,
-        args,
-        resultPolicy,
-      );
+      const kref = kernel.addExport(vatID, exportID);
+      const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
       kernel.kpRegisterInterest(kpid);
       return kpid;
     },
