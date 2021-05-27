@@ -60,13 +60,20 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     const translators = findOrCreateTranslators(vatID);
 
-    const createVat =
-      (!recreate && vatLoader.createVatDynamically) ||
-      (kernelKeeper.getDynamicVats().includes(vatID)
-        ? vatLoader.recreateDynamicVat
-        : vatLoader.recreateStaticVat);
+    const chooseLoader = () => {
+      if (recreate) {
+        const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
+        if (isDynamic) {
+          return vatLoader.recreateDynamicVat;
+        } else {
+          return vatLoader.recreateStaticVat;
+        }
+      } else {
+        return vatLoader.createVatDynamically;
+      }
+    };
     // console.log('provide: creating from bundle', vatID);
-    const manager = await createVat(vatID, source, translators, options);
+    const manager = await chooseLoader()(vatID, source, translators, options);
 
     const { enablePipelining = false } = options;
 
@@ -94,6 +101,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function start(logStartup) {
     const recreate = true; // note: PANIC on failure to recreate
 
+    // NOTE: OPTIMIZATION OPPORTUNITY: replay vats in parallel
+
     // instantiate all static vats
     for (const [name, vatID] of kernelKeeper.getStaticVats()) {
       logStartup(`allocateVatKeeper for vat ${name} as vat ${vatID}`);
@@ -115,7 +124,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    *  | void // undefined if the vat is dead or never initialized
    * }
    */
-  const lookup = vatID => {
+  function lookup(vatID) {
     const liveInfo = ephemeral.vats.get(vatID);
     if (liveInfo) {
       const { enablePipelining } = liveInfo;
@@ -129,7 +138,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       return { enablePipelining };
     }
     return undefined;
-  };
+  }
 
   /**
    *
