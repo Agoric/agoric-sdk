@@ -14,7 +14,7 @@ import { makeVatTranslators } from '../vatTranslator';
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { sizeHint = 20 } = policyOptions || {};
+  const { sizeHint = 50 } = policyOptions || {};
 
   /**
    * @typedef {{
