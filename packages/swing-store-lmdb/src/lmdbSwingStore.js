@@ -15,7 +15,6 @@ const encoder = new util.TextEncoder();
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  * @typedef { import('@agoric/swing-store-simple').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
- * @typedef { import('@agoric/swing-store-simple').StreamWriter } StreamWriter
  * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
  */
 
@@ -227,11 +226,10 @@ function makeSwingStore(dirPath, forceReset = false) {
    *
    * @returns {Iterable<string>} an iterator for the items in the named stream
    */
-  function openReadStream(streamName, startPosition, endPosition) {
+  function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
-    const status = streamStatus.get(streamName);
     assert(
-      !status,
+      !streamStatus.get(streamName),
       X`can't read stream ${q(streamName)} because it's already in use`,
     );
     insistStreamPosition(startPosition);
@@ -277,9 +275,8 @@ function makeSwingStore(dirPath, forceReset = false) {
       function* reader() {
         try {
           while (true) {
-            const statusInner = streamStatus.get(streamName);
             assert(
-              statusInner === readStatus,
+              streamStatus.get(streamName) === readStatus,
               X`can't read stream ${q(streamName)}, it's been closed`,
             );
             const line = /** @type {string|false} */ (innerReader.next());
@@ -299,9 +296,8 @@ function makeSwingStore(dirPath, forceReset = false) {
         } catch (e) {
           console.log(e);
         } finally {
-          const statusEnd = streamStatus.get(streamName);
           assert(
-            statusEnd === readStatus,
+            streamStatus.get(streamName) === readStatus,
             X`can't read stream ${q(streamName)}, it's been closed`,
           );
           closeStream(streamName);
@@ -313,61 +309,49 @@ function makeSwingStore(dirPath, forceReset = false) {
   }
 
   /**
-   * Obtain a writer for a stream.
+   * Write to a stream.
    *
    * @param {string} streamName  The stream to be written
+   * @param {string} item  The item to write
+   * @param {Object} position  The position to write the item
    *
-   * @returns {StreamWriter} a writer for the named stream
+   * @returns {Object} the new position after writing
    */
-  function openWriteStream(streamName) {
+  function writeStreamItem(streamName, item, position) {
     insistStreamName(streamName);
-    const status = streamStatus.get(streamName);
-    assert(
-      !status,
-      X`can't write stream ${q(streamName)} because it's already in use`,
-    );
-    streamStatus.set(streamName, 'write');
+    insistStreamPosition(position);
 
-    // XXX fdTemp is a workaround for a flaw in TypeScript's type inference
-    // It should be fd, which it should be changed to when and if they fix tsc.
-    let fdTemp = streamFds.get(streamName);
-    if (!fdTemp) {
+    let fd = streamFds.get(streamName);
+    if (!fd) {
       const filePath = `${dirPath}/${streamName}`;
       const mode = fs.existsSync(filePath) ? 'r+' : 'w';
-      fdTemp = fs.openSync(filePath, mode);
-      streamFds.set(streamName, fdTemp);
+      fd = fs.openSync(filePath, mode);
+      streamFds.set(streamName, fd);
+      streamStatus.set(streamName, 'write');
+    } else {
+      const status = streamStatus.get(streamName);
+      if (!status) {
+        streamStatus.set(streamName, 'write');
+      } else {
+        assert(
+          status === 'write',
+          X`can't write stream ${q(streamName)} because it's already in use`,
+        );
+      }
     }
-    const fd = fdTemp;
     activeStreamFds.add(fd);
 
-    /**
-     * Write to a stream.
-     *
-     * @param {string} item  The item to write
-     * @param {Object} position  The position to write the item
-     *
-     * @returns {Object} the new position after writing
-     */
-    function write(item, position) {
-      assert.typeof(item, 'string');
-      assert(
-        streamFds.get(streamName) === fd,
-        X`can't write to closed stream ${q(streamName)}`,
-      );
-      insistStreamPosition(position);
-      const buf = encoder.encode(`${item}\n`);
-      fs.writeSync(fd, buf, 0, buf.length, position.offset);
-      return harden({
-        offset: position.offset + buf.length,
-        itemCount: position.itemCount + 1,
-      });
-    }
-    return write;
+    const buf = encoder.encode(`${item}\n`);
+    fs.writeSync(fd, buf, 0, buf.length, position.offset);
+    return harden({
+      offset: position.offset + buf.length,
+      itemCount: position.itemCount + 1,
+    });
   }
 
   const streamStore = harden({
-    openReadStream,
-    openWriteStream,
+    readStream,
+    writeStreamItem,
     closeStream,
     STREAM_START,
   });

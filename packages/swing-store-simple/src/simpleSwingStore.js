@@ -20,13 +20,9 @@ import { assert, details as X, q } from '@agoric/assert';
  * }} StreamPosition
  *
  * @typedef {{
- *   (item: string, position: StreamPosition): StreamPosition
- * }} StreamWriter
- *
- * @typedef {{
- *   openWriteStream: (name: string) => StreamWriter,
- *   openReadStream: (name: string, startPosition: StreamPosition, endPosition: StreamPosition) => Iterable<string>,
- *   closeStream: (name: string) => void,
+ *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
+ *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => Iterable<string>,
+ *   closeStream: (streamName: string) => void,
  *   STREAM_START: StreamPosition,
  * }} StreamStore
  *
@@ -267,12 +263,11 @@ function makeSwingStore(dirPath, forceReset = false) {
    *
    * @yields {string} an iterator for the items in the named stream
    */
-  function openReadStream(streamName, startPosition, endPosition) {
+  function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
     const stream = streams.get(streamName) || [];
-    const status = streamStatus.get(streamName);
     assert(
-      !status,
+      !streamStatus.get(streamName),
       X`can't read stream ${q(streamName)} because it's already in use`,
     );
     insistStreamPosition(startPosition);
@@ -289,18 +284,16 @@ function makeSwingStore(dirPath, forceReset = false) {
       let pos = startPosition.itemCount;
       function* reader() {
         while (pos < stream.length) {
-          const statusInner = streamStatus.get(streamName);
           assert(
-            statusInner === readStatus,
+            streamStatus.get(streamName) === readStatus,
             X`can't read stream ${q(streamName)}, it's been closed`,
           );
           const result = stream[pos];
           pos += 1;
           yield result;
         }
-        const statusEnd = streamStatus.get(streamName);
         assert(
-          statusEnd === readStatus,
+          streamStatus.get(streamName) === readStatus,
           X`can't read stream ${q(streamName)}, it's been closed`,
         );
         streamStatus.delete(streamName);
@@ -310,53 +303,40 @@ function makeSwingStore(dirPath, forceReset = false) {
   }
 
   /**
-   * Obtain a writer for a stream.
+   * Write to a stream.
    *
    * @param {string} streamName  The stream to be written
+   * @param {string} item  The item to write
+   * @param {Object} position  The position to write the item
+   *
+   * @returns {Object} the new position after writing
    */
-  function openWriteStream(streamName) {
+  function writeStreamItem(streamName, item, position) {
     insistStreamName(streamName);
-    let streamTemp = streams.get(streamName);
-    if (!streamTemp) {
-      streamTemp = [];
-      streams.set(streamName, streamTemp);
+    insistStreamPosition(position);
+    let stream = streams.get(streamName);
+    if (!stream) {
+      stream = [];
       streamStatus.set(streamName, 'write');
+      streams.set(streamName, stream);
     } else {
       const status = streamStatus.get(streamName);
-      assert(
-        !status,
-        X`can't write stream ${q(streamName)} because it's already in use`,
-      );
+      if (!status) {
+        streamStatus.set(streamName, 'write');
+      } else {
+        assert(
+          status === 'write',
+          X`can't write stream ${q(streamName)} because it's already in use`,
+        );
+      }
     }
-    const stream = streamTemp;
-    const writeStatus = `write-${statusCounter}`;
-    statusCounter += 1;
-    streamStatus.set(streamName, writeStatus);
-
-    /**
-     * Write to a stream.
-     *
-     * @param {string} item  The item to write
-     * @param {Object} position  The position to write the item
-     *
-     * @returns {Object} the new position after writing
-     */
-    function write(item, position) {
-      const status = streamStatus.get(streamName);
-      assert(
-        status === writeStatus,
-        X`can't write to closed stream ${q(streamName)}`,
-      );
-      insistStreamPosition(position);
-      stream[position.itemCount] = item;
-      return harden({ itemCount: position.itemCount + 1 });
-    }
-    return write;
+    stream[position.itemCount] = item;
+    return harden({ itemCount: position.itemCount + 1 });
   }
 
   const streamStore = harden({
-    openReadStream,
-    openWriteStream,
+    readStream,
+    writeStreamItem,
     closeStream,
     STREAM_START,
   });

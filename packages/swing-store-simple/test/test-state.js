@@ -76,72 +76,37 @@ test('rejectLMDB', t => {
 test('streamStore read/write', t => {
   const { streamStore, commit, close } = initSwingStore();
 
-  let s1pos = streamStore.STREAM_START;
-  const writer1 = streamStore.openWriteStream('st1');
-  s1pos = writer1('first', s1pos);
-  s1pos = writer1('second', s1pos);
+  const start = streamStore.STREAM_START;
+  let s1pos = start;
+  s1pos = streamStore.writeStreamItem('st1', 'first', s1pos);
+  s1pos = streamStore.writeStreamItem('st1', 'second', s1pos);
   const s1posAlt = { ...s1pos };
-  const writer2 = streamStore.openWriteStream('st2');
-  s1pos = writer1('third', s1pos);
-  let s2pos = { itemCount: 0 };
-  s2pos = writer2('oneth', s2pos);
-  s1pos = writer1('fourth', s1pos);
-  s2pos = writer2('twoth', s2pos);
+  s1pos = streamStore.writeStreamItem('st1', 'third', s1pos);
+  let s2pos = streamStore.STREAM_START;
+  s2pos = streamStore.writeStreamItem('st2', 'oneth', s2pos);
+  s1pos = streamStore.writeStreamItem('st1', 'fourth', s1pos);
+  s2pos = streamStore.writeStreamItem('st2', 'twoth', s2pos);
   const s2posAlt = { ...s2pos };
-  s2pos = writer2('threeth', s2pos);
-  s2pos = writer2('fourst', s2pos);
+  s2pos = streamStore.writeStreamItem('st2', 'threeth', s2pos);
+  s2pos = streamStore.writeStreamItem('st2', 'fourst', s2pos);
   streamStore.closeStream('st1');
   streamStore.closeStream('st2');
-  const reader1 = streamStore.openReadStream(
-    'st1',
-    streamStore.STREAM_START,
-    s1pos,
-  );
-  const reads1 = [];
-  for (const item of reader1) {
-    reads1.push(item);
-  }
-  t.deepEqual(reads1, ['first', 'second', 'third', 'fourth']);
-  const writer2alt = streamStore.openWriteStream('st2');
-  s2pos = writer2alt('re3', s2posAlt);
+  const reader1 = streamStore.readStream('st1', start, s1pos);
+  t.deepEqual(Array.from(reader1), ['first', 'second', 'third', 'fourth']);
+  s2pos = streamStore.writeStreamItem('st2', 're3', s2posAlt);
   streamStore.closeStream('st2');
-  const reader2 = streamStore.openReadStream(
-    'st2',
-    streamStore.STREAM_START,
-    s2pos,
-  );
-  const reads2 = [];
-  for (const item of reader2) {
-    reads2.push(item);
-  }
-  t.deepEqual(reads2, ['oneth', 'twoth', 're3']);
+  const reader2 = streamStore.readStream('st2', start, s2pos);
+  t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 're3']);
 
-  const reader1alt = streamStore.openReadStream('st1', s1posAlt, s1pos);
-  const reads1alt = [];
-  for (const item of reader1alt) {
-    reads1alt.push(item);
-  }
-  t.deepEqual(reads1alt, ['third', 'fourth']);
+  const reader1alt = streamStore.readStream('st1', s1posAlt, s1pos);
+  t.deepEqual(Array.from(reader1alt), ['third', 'fourth']);
 
-  const writerEmpty = streamStore.openWriteStream('empty');
-  const emptyPos = writerEmpty('filler', streamStore.STREAM_START);
+  const emptyPos = streamStore.writeStreamItem('empty', 'filler', start);
   streamStore.closeStream('empty');
-  const readerEmpty = streamStore.openReadStream('empty', emptyPos, emptyPos);
-  const readsEmpty = [];
-  for (const item of readerEmpty) {
-    readsEmpty.push(item);
-  }
-  t.deepEqual(readsEmpty, []);
-  const readerEmpty2 = streamStore.openReadStream(
-    'empty',
-    streamStore.STREAM_START,
-    streamStore.STREAM_START,
-  );
-  const readsEmpty2 = [];
-  for (const item of readerEmpty2) {
-    readsEmpty2.push(item);
-  }
-  t.deepEqual(readsEmpty2, []);
+  const readerEmpty = streamStore.readStream('empty', emptyPos, emptyPos);
+  t.deepEqual(Array.from(readerEmpty), []);
+  const readerEmpty2 = streamStore.readStream('empty', start, start);
+  t.deepEqual(Array.from(readerEmpty2), []);
 
   commit();
   close();
@@ -149,36 +114,20 @@ test('streamStore read/write', t => {
 
 test('streamStore mode interlock', t => {
   const { streamStore, commit, close } = initSwingStore();
+  const start = streamStore.STREAM_START;
 
-  const writer = streamStore.openWriteStream('st1');
-  const s1pos = writer('first', streamStore.STREAM_START);
+  const s1pos = streamStore.writeStreamItem('st1', 'first', start);
 
-  t.throws(
-    () => streamStore.openReadStream('st1', streamStore.STREAM_START, s1pos),
-    {
-      message: `can't read stream "st1" because it's already in use`,
-    },
-  );
-  t.throws(() => streamStore.openWriteStream('st1', s1pos), {
-    message: `can't write stream "st1" because it's already in use`,
+  t.throws(() => streamStore.readStream('st1', start, s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
   });
   streamStore.closeStream('st1');
-  t.throws(() => writer('second', streamStore.STREAM_START), {
-    message: `can't write to closed stream "st1"`,
-  });
 
-  const reader = streamStore.openReadStream(
-    'st1',
-    streamStore.STREAM_START,
-    s1pos,
-  );
-  t.throws(
-    () => streamStore.openReadStream('st1', streamStore.STREAM_START, s1pos),
-    {
-      message: `can't read stream "st1" because it's already in use`,
-    },
-  );
-  t.throws(() => streamStore.openWriteStream('st1'), {
+  const reader = streamStore.readStream('st1', start, s1pos);
+  t.throws(() => streamStore.readStream('st1', start, s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
+  });
+  t.throws(() => streamStore.writeStreamItem('st1', start, s1pos), {
     message: `can't write stream "st1" because it's already in use`,
   });
   streamStore.closeStream('st1');
