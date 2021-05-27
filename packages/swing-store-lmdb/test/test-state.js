@@ -15,7 +15,7 @@ import {
   isSwingStore,
 } from '../src/lmdbSwingStore';
 
-function testStorage(t, kvStore) {
+function testKVStore(t, kvStore) {
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -52,15 +52,92 @@ test('storageInLMDB under SES', t => {
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
   const { kvStore, commit, close } = initSwingStore(dbDir);
-  testStorage(t, kvStore);
+  testKVStore(t, kvStore);
   commit();
   const before = getAllState(kvStore);
   close();
   t.is(isSwingStore(dbDir), true);
 
-  const { kvStore: after } = openSwingStore(dbDir);
+  const { kvStore: after, close: close2 } = openSwingStore(dbDir);
   t.deepEqual(getAllState(after), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
+  close2();
+});
+
+test('streamStore read/write', t => {
+  const dbDir = 'testdb';
+  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
+  fs.rmdirSync(dbDir, { recursive: true });
+  t.is(isSwingStore(dbDir), false);
+  const { streamStore, commit, close } = initSwingStore(dbDir);
+
+  const start = streamStore.STREAM_START;
+  let s1pos = start;
+  s1pos = streamStore.writeStreamItem('st1', 'first', s1pos);
+  s1pos = streamStore.writeStreamItem('st1', 'second', s1pos);
+  const s1posAlt = { ...s1pos };
+  s1pos = streamStore.writeStreamItem('st1', 'third', s1pos);
+  let s2pos = streamStore.STREAM_START;
+  s2pos = streamStore.writeStreamItem('st2', 'oneth', s2pos);
+  s1pos = streamStore.writeStreamItem('st1', 'fourth', s1pos);
+  s2pos = streamStore.writeStreamItem('st2', 'twoth', s2pos);
+  const s2posAlt = { ...s2pos };
+  s2pos = streamStore.writeStreamItem('st2', 'threeth', s2pos);
+  s2pos = streamStore.writeStreamItem('st2', 'fourst', s2pos);
+  streamStore.closeStream('st1');
+  streamStore.closeStream('st2');
+  const reader1 = streamStore.readStream('st1', start, s1pos);
+  t.deepEqual(Array.from(reader1), ['first', 'second', 'third', 'fourth']);
+  s2pos = streamStore.writeStreamItem('st2', 're3', s2posAlt);
+  streamStore.closeStream('st2');
+  const reader2 = streamStore.readStream('st2', start, s2pos);
+  t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 're3']);
+
+  const reader1alt = streamStore.readStream('st1', s1posAlt, s1pos);
+  t.deepEqual(Array.from(reader1alt), ['third', 'fourth']);
+
+  const emptyPos = streamStore.writeStreamItem('empty', 'filler', start);
+  streamStore.closeStream('empty');
+  const readerEmpty = streamStore.readStream('empty', emptyPos, emptyPos);
+  t.deepEqual(Array.from(readerEmpty), []);
+  const readerEmpty2 = streamStore.readStream('empty', start, start);
+  t.deepEqual(Array.from(readerEmpty2), []);
+
+  commit();
+  close();
+});
+
+test('streamStore mode interlock', t => {
+  const dbDir = 'testdb';
+  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
+  fs.rmdirSync(dbDir, { recursive: true });
+  t.is(isSwingStore(dbDir), false);
+  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const start = streamStore.STREAM_START;
+
+  const s1pos = streamStore.writeStreamItem('st1', 'first', start);
+
+  t.throws(() => streamStore.readStream('st1', start, s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
+  });
+  streamStore.closeStream('st1');
+
+  const reader = streamStore.readStream('st1', start, s1pos);
+  t.throws(() => streamStore.readStream('st1', start, s1pos), {
+    message: `can't read stream "st1" because it's already in use`,
+  });
+  t.throws(() => streamStore.writeStreamItem('st1', start, s1pos), {
+    message: `can't write stream "st1" because it's already in use`,
+  });
+  streamStore.closeStream('st1');
+  t.throws(() => reader.next(), {
+    message: `can't read stream "st1", it's been closed`,
+  });
+
+  streamStore.closeStream('nonexistent');
+
+  commit();
+  close();
 });
 
 test('rejectSimple under SES', t => {
