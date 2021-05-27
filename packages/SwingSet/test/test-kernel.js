@@ -100,7 +100,8 @@ test('simple call', async t => {
   t.deepEqual(data.log, []);
   t.deepEqual(log, []);
 
-  kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args'));
+  const o1 = kernel.addExport(vat1, 'o+1');
+  kernel.queueToKref(o1, 'foo', capdata('args'));
   t.deepEqual(kernel.dump().runQueue, [
     {
       type: 'send',
@@ -157,13 +158,14 @@ test('vat store', async t => {
   await kernel.createTestVat('vat', setup);
   const vat = kernel.vatNameToID('vat');
 
-  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
-  kernel.queueToExport(vat, 'o+1', 'store', capdata('first value'));
-  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
-  kernel.queueToExport(vat, 'o+1', 'store', capdata('second value'));
-  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
-  kernel.queueToExport(vat, 'o+1', 'delete', capdata('[]'));
-  kernel.queueToExport(vat, 'o+1', 'get', capdata('[]'));
+  const o1 = kernel.addExport(vat, 'o+1');
+  kernel.queueToKref(o1, 'get', capdata('[]'));
+  kernel.queueToKref(o1, 'store', capdata('first value'));
+  kernel.queueToKref(o1, 'get', capdata('[]'));
+  kernel.queueToKref(o1, 'store', capdata('second value'));
+  kernel.queueToKref(o1, 'get', capdata('[]'));
+  kernel.queueToKref(o1, 'delete', capdata('[]'));
+  kernel.queueToKref(o1, 'get', capdata('[]'));
   t.deepEqual(log, []);
   await kernel.run();
   t.deepEqual(log, [
@@ -200,13 +202,14 @@ test('map inbound', async t => {
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(log, []);
 
+  const o1 = kernel.addExport(vat1, 'o+1');
   const koFor5 = kernel.addExport(vat1, 'o+5');
   const koFor6 = kernel.addExport(vat2, 'o+6');
-  kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args', [koFor5, koFor6]));
+  kernel.queueToKref(o1, 'foo', capdata('args', [koFor5, koFor6]));
   t.deepEqual(kernel.dump().runQueue, [
     {
       type: 'send',
-      target: 'ko22',
+      target: o1,
       msg: {
         method: 'foo',
         args: capdata('args', [koFor5, koFor6]),
@@ -218,10 +221,10 @@ test('map inbound', async t => {
   await kernel.run();
   t.deepEqual(log, [['o+1', 'foo', capdata('args', ['o+5', 'o-50'])]]);
   t.deepEqual(kernel.dump().kernelTable, [
+    [o1, vat1, 'o+1'],
     [koFor5, vat1, 'o+5'],
     [koFor6, vat1, 'o-50'],
     [koFor6, vat2, 'o+6'],
-    ['ko22', vat1, 'o+1'],
     ['kp40', vat1, 'p-60'],
   ]);
 });
@@ -309,7 +312,8 @@ test('outbound call', async t => {
   t.deepEqual(log, []);
 
   // o1!foo(args)
-  kernel.queueToExport(vat1, 'o+1', 'foo', capdata('args'));
+  const o1 = kernel.addExport(vat1, 'o+1');
+  kernel.queueToKref(o1, 'foo', capdata('args'));
   t.deepEqual(log, []);
   t.deepEqual(kernel.dump().runQueue, [
     {
@@ -531,7 +535,8 @@ test('three-party', async t => {
   checkKT(t, kernel, kt);
   t.deepEqual(log, []);
 
-  kernel.queueToExport(vatA, 'o+4', 'foo', capdata('args'));
+  const o4 = kernel.addExport(vatA, 'o+4');
+  kernel.queueToKref(o4, 'foo', capdata('args'));
   await kernel.step();
 
   t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', capdata('args')]);
@@ -974,12 +979,7 @@ test('transcript', async t => {
   const bob = kernel.addExport(vatB, 'o+2');
   const bobForAlice = kernel.addImport(vatA, bob);
 
-  kernel.queueToExport(
-    vatA,
-    aliceForAlice,
-    'store',
-    capdata('args string', [alice, bob]),
-  );
+  kernel.queueToKref(alice, 'store', capdata('args string', [alice, bob]));
   await kernel.step();
 
   // the transcript records vat-specific import/export slots

@@ -61,8 +61,11 @@ async function simpleCall(t) {
     { vatID: vattpVatID, state: { transcript: [] } },
     { vatID: timerVatID, state: { transcript: [] } },
   ]);
-  t.deepEqual(data.kernelTable, []);
+  // the vatAdmin root is pre-registered
+  const vatAdminRoot = ['ko20', adminVatID, 'o+0'];
+  t.deepEqual(data.kernelTable, [vatAdminRoot]);
 
+  // vat1:o+1 will map to ko21
   controller.queueToVatExport('vat1', 'o+1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
     {
@@ -71,7 +74,7 @@ async function simpleCall(t) {
         args: capdata('args'),
         result: 'kp40',
       },
-      target: 'ko20',
+      target: 'ko21',
       type: 'send',
     },
   ]);
@@ -175,12 +178,12 @@ test('bootstrap export', async t => {
   // better test, probably by sorting the list of vats by their vatID, and
   // then asserting that their root objects are assigned `koNN` numbers in
   // matching order.
-  const boot0 = 'ko20';
-  const comms0 = 'ko21';
-  const left0 = 'ko22';
-  const right0 = 'ko23';
-  const timer0 = 'ko24';
-  const vatAdminSvc = 'ko25';
+  const vatAdminSvc = 'ko20';
+  const boot0 = 'ko21';
+  const comms0 = 'ko22';
+  const left0 = 'ko23';
+  const right0 = 'ko24';
+  const timer0 = 'ko25';
   const vattp0 = 'ko26';
   const adminDev = 'kd30';
   const kt = [

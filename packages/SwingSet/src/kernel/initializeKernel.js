@@ -8,7 +8,7 @@ import { makeVatSlot } from '../parseVatSlots';
 import { insistStorageAPI } from '../storageAPI';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
-import { doQueueToExport } from './kernel';
+import { doAddExport, doQueueToKref } from './kernel';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -32,6 +32,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       kernelKeeper.addBundle(name, config.bundles[name].bundle);
     }
   }
+
+  let gotVatAdminRootKref;
 
   // generate the genesis vats
   if (config.vats) {
@@ -76,7 +78,18 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
       const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
+      if (name === 'vatAdmin') {
+        // Create a kref for the vatAdmin root, so the kernel can tell it
+        // about creation/termination of dynamic vats. doAddExport will
+        // increment the refcount so it won't go away, despite being
+        // unreferenced by any other vat.
+        const rootVref = makeVatRootObjectSlot();
+        const kref = doAddExport(kernelKeeper, vatID, rootVref);
+        kvStore.set('vatAdminRootKref', kref);
+        gotVatAdminRootKref = true;
+      }
     }
+    assert(gotVatAdminRootKref, X`a vat admin vat is required`);
   }
 
   // generate the devices
@@ -177,12 +190,12 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       errorIdNum: 60000,
     });
     const args = harden([vatObj0s, deviceObj0s]);
-    // queueToExport() takes kernel-refs (ko+NN, kd+NN) in s.slots
-    const rootSlot = makeVatRootObjectSlot();
-    const resultKpid = doQueueToExport(
+    // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
+    const rootVref = makeVatRootObjectSlot();
+    const rootKref = doAddExport(kernelKeeper, bootstrapVatID, rootVref);
+    const resultKpid = doQueueToKref(
       kernelKeeper,
-      bootstrapVatID,
-      rootSlot,
+      rootKref,
       'bootstrap',
       m.serialize(args),
       'panic',
