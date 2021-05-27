@@ -23,9 +23,14 @@ export const assertSubset = (whole, part) => {
   });
 };
 
-// Assert that the keys of `record` are all in `allowedKeys`. If a key
-// of `record` is not in `allowedKeys`, throw an error. If a key in
-// `allowedKeys` is not a key of record, we do not throw an error.
+/**
+ * Assert that the keys of `record` are all in `allowedKeys`. If a key
+ * of `record` is not in `allowedKeys`, throw an error. If a key in
+ * `allowedKeys` is not a key of record, we do not throw an error.
+ *
+ * @param {string[]} allowedKeys
+ * @param {Object} record
+ */
 export const assertKeysAllowed = (allowedKeys, record) => {
   const keys = Object.getOwnPropertyNames(record);
   assertSubset(allowedKeys, keys);

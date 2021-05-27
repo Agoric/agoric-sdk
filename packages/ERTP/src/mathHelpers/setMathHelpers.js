@@ -8,8 +8,13 @@ import '../types';
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
+/** @type {SetValue} */
 const identity = harden([]);
 
+/**
+ * @param {Object} record
+ * @returns {string}
+ */
 const getKeyForRecord = record => {
   const keys = Object.getOwnPropertyNames(record);
   keys.sort();
@@ -20,9 +25,14 @@ const getKeyForRecord = record => {
   return [...keys, ...values].join();
 };
 
-// Cut down the number of sameStructure comparisons to only the ones
-// that don't fail basic equality tests
-// TODO: better name?
+/**
+ * Cut down the number of sameStructure comparisons to only the ones
+ * that don't fail basic equality tests
+ * TODO: better name?
+ *
+ * @param {SetValueElem} thing
+ * @returns {SetValueElem}
+ */
 const hashBadly = thing => {
   const type = typeof thing;
   const allowableNonObjectValues = ['string', 'number', 'bigint', 'boolean'];
@@ -40,6 +50,14 @@ const hashBadly = thing => {
   );
 };
 
+/**
+ * @typedef {Map<SetValueElem, SetValueElem[]>} Buckets
+ */
+
+/**
+ * @param {SetValueElem[]} list
+ * @returns {Buckets}
+ */
 const makeBuckets = list => {
   const buckets = new Map();
   list.forEach(elem => {
@@ -53,7 +71,11 @@ const makeBuckets = list => {
   return buckets;
 };
 
-// Based on bucket sort
+/**
+ * Based on bucket sort
+ *
+ * @param {Buckets} buckets
+ */
 const checkForDupes = buckets => {
   for (const maybeMatches of buckets.values()) {
     for (let i = 0; i < maybeMatches.length; i += 1) {
@@ -67,12 +89,19 @@ const checkForDupes = buckets => {
   }
 };
 
+/**
+ *
+ * @param {Buckets} buckets
+ * @param {SetValueElem} elem
+ * @returns {boolean}
+ */
 const hasElement = (buckets, elem) => {
   const badHash = hashBadly(elem);
   if (!buckets.has(badHash)) {
     return false;
   }
   const maybeMatches = buckets.get(badHash);
+  assert(maybeMatches);
   return maybeMatches.some(maybeMatch => sameStructure(maybeMatch, elem));
 };
 
@@ -91,7 +120,7 @@ const setMathHelpers = harden({
     checkForDupes(makeBuckets(list));
     return list;
   },
-  doMakeEmpty: _ => identity,
+  doMakeEmpty: () => identity,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
     const leftBuckets = makeBuckets(left);
@@ -114,6 +143,10 @@ const setMathHelpers = harden({
         X`right element ${rightElem} was not in left`,
       );
     });
+    /**
+     * @param {SetValueElem} leftElem
+     * @returns {boolean}
+     */
     const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);
     return harden(left.filter(leftElemNotInRight));
   },
