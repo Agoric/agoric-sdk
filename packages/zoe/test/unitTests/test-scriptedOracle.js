@@ -101,8 +101,18 @@ test('pay bounty', async t => {
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50n));
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Bounty'), moola(0n));
+  const promise1 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    funderSeat.getPayout('Fee'),
+    moola(50n),
+  );
+  const promise2 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    funderSeat.getPayout('Bounty'),
+    moola(0n),
+  );
 
   // Bob buys the bounty invitation
   const bountySeat = await E(zoe).offer(
@@ -115,8 +125,13 @@ test('pay bounty', async t => {
       Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0n));
-  assertPayoutAmount(
+  const promise3 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    bountySeat.getPayout('Fee'),
+    moola(0n),
+  );
+  const promise4 = assertPayoutAmount(
     t,
     moolaIssuer,
     bountySeat.getPayout('Bounty'),
@@ -127,6 +142,7 @@ test('pay bounty', async t => {
   await E(timer).tick();
   await E(timer).tick();
   await E(timer).tick();
+  await Promise.all([promise1, promise2, promise3, promise4]);
 });
 
 test('pay no bounty', async t => {

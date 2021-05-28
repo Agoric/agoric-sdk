@@ -17,7 +17,6 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { cleanProposal } from '../cleanProposal';
 import { evalContractBundle } from './evalContractCode';
 import { makeExitObj } from './exit';
-import { objectMap } from '../objArrayConversion';
 import { makeHandle } from '../makeHandle';
 import { makeIssuerStorage } from '../issuerStorage';
 import { makeIssuerRecord } from '../issuerRecord';
@@ -103,6 +102,15 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       return { zcfSeat, userSeat: userSeatPromiseKit.promise };
     };
 
+    const assertAmountKeywordRecord = (amountKeywordRecord, name) => {
+      assert.typeof(
+        amountKeywordRecord,
+        'object',
+        X`${name} ${amountKeywordRecord} must be an amountKeywordRecord`,
+      );
+      assert(amountKeywordRecord !== null, X`${name} cannot be null`);
+    };
+
     /** @type {MakeZCFMint} */
     const makeZCFMint = async (
       keyword,
@@ -129,86 +137,45 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       );
       recordIssuer(keyword, mintyIssuerRecord);
 
+      const empty = AmountMath.makeEmpty(mintyBrand, assetKind);
+      const add = (total, amountToAdd) => {
+        return AmountMath.add(total, amountToAdd, mintyBrand);
+      };
+
       /** @type {ZCFMint} */
       const zcfMint = Far('zcfMint', {
         getIssuerRecord: () => {
           return mintyIssuerRecord;
         },
         mintGains: (gains, zcfSeat = undefined) => {
-          assert.typeof(
-            gains,
-            'object',
-            X`gains ${gains} must be an amountKeywordRecord`,
-          );
-          assert(gains !== null, X`gains cannot be null`);
+          assertAmountKeywordRecord(gains, 'gains');
           if (zcfSeat === undefined) {
             zcfSeat = makeEmptySeatKit().zcfSeat;
           }
-          let totalToMint = AmountMath.makeEmpty(mintyBrand, assetKind);
-          const oldAllocation = zcfSeat.getCurrentAllocation();
-          const updates = objectMap(gains, ([seatKeyword, amountToAdd]) => {
-            assert(
-              totalToMint.brand === amountToAdd.brand,
-              X`Only digital assets of brand ${totalToMint.brand} can be minted in this call. ${amountToAdd} has the wrong brand.`,
-            );
-            totalToMint = AmountMath.add(totalToMint, amountToAdd);
-            const oldAmount = oldAllocation[seatKeyword];
-            // oldAmount being absent is equivalent to empty.
-            const newAmount = oldAmount
-              ? AmountMath.add(oldAmount, amountToAdd)
-              : amountToAdd;
-            return [seatKeyword, newAmount];
-          });
-          const newAllocation = harden({
-            ...oldAllocation,
-            ...updates,
-          });
+          const totalToMint = Object.values(gains).reduce(add, empty);
+          zcfSeat.incrementBy(gains);
           // verifies offer safety
-          const seatStaging = zcfSeat.stage(newAllocation);
+          assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
           // No effects above. COMMIT POINT. The following two steps
           // *should* be committed atomically, but it is not a
           // disaster if they are not. If we minted only, no one would
           // ever get those invisibly-minted assets.
           E(zoeMintP).mintAndEscrow(totalToMint);
-          reallocateInternal([seatStaging]);
+          reallocateInternal([zcfSeat]);
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
-          assert.typeof(
-            losses,
-            'object',
-            X`losses ${losses} must be an amountKeywordRecord`,
-          );
-          assert(losses !== null, X`losses cannot be null`);
-          let totalToBurn = AmountMath.makeEmpty(mintyBrand, assetKind);
-          const oldAllocation = zcfSeat.getCurrentAllocation();
-          const updates = objectMap(
-            losses,
-            ([seatKeyword, amountToSubtract]) => {
-              assert(
-                totalToBurn.brand === amountToSubtract.brand,
-                X`Only digital assets of brand ${totalToBurn.brand} can be burned in this call. ${amountToSubtract} has the wrong brand.`,
-              );
-              totalToBurn = AmountMath.add(totalToBurn, amountToSubtract);
-              const oldAmount = oldAllocation[seatKeyword];
-              const newAmount = AmountMath.subtract(
-                oldAmount,
-                amountToSubtract,
-              );
-              return [seatKeyword, newAmount];
-            },
-          );
-          const newAllocation = harden({
-            ...oldAllocation,
-            ...updates,
-          });
+          assertAmountKeywordRecord(losses, 'losses');
+          const totalToBurn = Object.values(losses).reduce(add, empty);
+          zcfSeat.decrementBy(losses);
           // verifies offer safety
-          const seatStaging = zcfSeat.stage(newAllocation);
+          assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
           // No effects above. Commit point. The following two steps
           // *should* be committed atomically, but it is not a
-          // disaster if they are not. If we only commit the staging,
-          // no one would ever get the unburned assets.
-          reallocateInternal([seatStaging]);
+          // disaster if they are not. If we only commit the
+          // stagedAllocation no one would ever get the unburned
+          // assets.
+          reallocateInternal([zcfSeat]);
           E(zoeMintP).withdrawAndBurn(totalToBurn);
         },
       });

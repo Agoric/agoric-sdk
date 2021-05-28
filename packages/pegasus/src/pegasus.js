@@ -498,16 +498,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
         winner,
       ) => {
         // Transfer the amount to our backing seat.
-        const currentLoser = loser.getAmountAllocated(loserKeyword, localBrand);
-        const currentWinner = winner.getAmountAllocated(
-          winnerKeyword,
-          localBrand,
-        );
-        const newLoser = AmountMath.subtract(currentLoser, amount);
-        const newWinner = AmountMath.add(currentWinner, amount);
-        const loserStage = loser.stage({ [loserKeyword]: newLoser });
-        const winnerStage = winner.stage({ [winnerKeyword]: newWinner });
-        zcf.reallocate(loserStage, winnerStage);
+        winner.incrementBy({ [winnerKeyword]: amount });
+        loser.decrementBy({ [loserKeyword]: amount });
+        zcf.reallocate(loser, winner);
       };
 
       // Describe how to retain/redeem real local erights.

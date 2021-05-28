@@ -17,7 +17,7 @@ import { AmountMath } from '@agoric/ertp';
 import { assertProposalShape } from '../../src/contractSupport';
 
 const start = async zcf => {
-  const { oracle, deadline, condition, timer, fee, brands } = zcf.getTerms();
+  const { oracle, deadline, condition, timer, fee } = zcf.getTerms();
 
   /** @type {OfferHandler} */
   function funder(funderSeat) {
@@ -27,10 +27,11 @@ const start = async zcf => {
     assertProposalShape(funderSeat, endowBounty);
 
     function payOffBounty(seat) {
-      zcf.reallocate(
-        funderSeat.stage({ Bounty: AmountMath.makeEmpty(brands.Bounty) }),
-        seat.stage({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
+      funderSeat.decrementBy(
+        seat.incrementBy({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
       );
+
+      zcf.reallocate(funderSeat, seat);
       seat.exit();
       funderSeat.exit();
       zcf.shutdown('bounty was paid');
@@ -56,10 +57,8 @@ const start = async zcf => {
       );
 
       // The funder gets the fee regardless of the outcome.
-      zcf.reallocate(
-        funderSeat.stage({ Fee: feeAmount }),
-        bountySeat.stage({ Fee: AmountMath.makeEmpty(brands.Fee) }),
-      );
+      bountySeat.decrementBy(funderSeat.incrementBy({ Fee: feeAmount }));
+      zcf.reallocate(funderSeat, bountySeat);
 
       const wakeHandler = Far('wakeHandler', {
         wake: async () => {

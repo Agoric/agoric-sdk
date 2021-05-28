@@ -2,18 +2,6 @@
 /// <reference types="ses"/>
 
 /**
- * @callback Trade
- * Trade between left and right so that left and right end up with
- * the declared gains and losses.
- * @param {ContractFacet} zcf
- * @param {SeatGainsLossesRecord} left
- * @param {SeatGainsLossesRecord} right
- * @param {string} [leftHasExitedMsg] A custom error message if
- * the left seat has been exited already
- * @param {string} [rightHasExitedMsg] A custom error message if the
- * right seat has been exited already
- * @returns {void}
- *
  * @typedef {Object} SeatGainsLossesRecord
  * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
@@ -45,8 +33,6 @@
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} leftSeat
  * @param {ZCFSeat} rightSeat
- * @param {string} [leftHasExitedMsg]
- * @param {string} [rightHasExitedMsg]
  * @returns {string}
  */
 
@@ -95,7 +81,7 @@
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
- * @returns {OfferToReturns}
+ * @returns {Promise<OfferToReturns>}
  */
 
 /**

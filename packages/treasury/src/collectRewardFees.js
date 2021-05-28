@@ -1,6 +1,5 @@
 // @ts-check
 
-import { AmountMath } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport';
 import { E } from '@agoric/eventual-send';
 
@@ -17,16 +16,17 @@ export const makeMakeCollectFeesInvitation = (
     const { zcfSeat: transferSeat } = zcf.makeEmptySeatKit();
     await E.get(offerTo(zcf, invitation, {}, {}, transferSeat)).deposited;
 
-    const totalTransferred = AmountMath.add(
-      feeSeat.getAmountAllocated('RUN', runBrand),
-      transferSeat.getAmountAllocated('RUN', runBrand),
+    feeSeat.decrementBy(
+      seat.incrementBy({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
     );
-    const emptyRunAllocation = { RUN: AmountMath.makeEmpty(runBrand) };
-    zcf.reallocate(
-      transferSeat.stage(emptyRunAllocation),
-      feeSeat.stage(emptyRunAllocation),
-      seat.stage({ RUN: totalTransferred }),
+    transferSeat.decrementBy(
+      seat.incrementBy({
+        RUN: transferSeat.getAmountAllocated('RUN', runBrand),
+      }),
     );
+    const totalTransferred = seat.getStagedAllocation().RUN;
+
+    zcf.reallocate(transferSeat, feeSeat, seat);
     seat.exit();
     transferSeat.exit();
 

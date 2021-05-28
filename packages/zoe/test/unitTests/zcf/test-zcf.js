@@ -399,7 +399,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
-    message: /gains "\[undefined\]" must be an amountKeywordRecord/,
+    message: '"gains" "[undefined]" must be an amountKeywordRecord',
   });
 });
 
@@ -424,7 +424,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1696
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
-    message: /gains "\[undefined\]" must be an amountKeywordRecord/,
+    message: '"gains" "[undefined]" must be an amountKeywordRecord',
   });
 });
 
@@ -433,7 +433,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
-    message: /losses "\[undefined\]" must be an amountKeywordRecord/,
+    message: '"losses" "[undefined]" must be an amountKeywordRecord',
   });
 });
 
@@ -443,7 +443,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
-    message: /losses "\[undefined\]" must be an amountKeywordRecord/,
+    message: '"losses" "[undefined]" must be an amountKeywordRecord',
   });
 });
 
@@ -454,7 +454,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
-    message: /Only digital assets of brand .* can be minted in this call. .* has the wrong brand./,
+    message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
 
@@ -465,7 +465,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
-    message: /Only digital assets of brand .* can be burned in this call. .* has the wrong brand./,
+    message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
 
@@ -618,16 +618,20 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
     'fail',
     'getAmountAllocated',
     'getCurrentAllocation',
+    'getStagedAllocation',
     'getNotifier',
     'getProposal',
     'hasExited',
     'isOfferSafe',
-    'stage',
+    'incrementBy',
+    'decrementBy',
+    'clear',
+    'hasStagedAllocation',
   ];
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(Object.getOwnPropertyNames(seat).sort(), expectedMethods);
+  t.deepEqual(Object.getOwnPropertyNames(seat).sort(), expectedMethods.sort());
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
@@ -805,20 +809,17 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   });
 });
 
-test(`zcfSeat.stage, zcf.reallocate from zcf.makeEmptySeatKit`, async t => {
+test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
   const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
 
   const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6);
-  const staging1 = zcfSeat1.stage({
-    A: AmountMath.make(0n, issuerRecord1.brand),
-  });
-  const staging2 = zcfSeat2.stage({
-    B: AmountMath.make(6n, issuerRecord1.brand),
-  });
+  const six = AmountMath.make(6n, issuerRecord1.brand);
+  zcfSeat1.decrementBy({ A: six });
+  zcfSeat2.incrementBy({ B: six });
 
-  zcf.reallocate(staging1, staging2);
+  zcf.reallocate(zcfSeat1, zcfSeat2);
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
     A: AmountMath.make(0n, issuerRecord1.brand),
@@ -1089,22 +1090,14 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
     }),
   );
 
-  const staging1 = zcfSeat1.stage({
-    A: simoleans(2),
-    B: moola(0n),
-  });
+  zcfSeat3.incrementBy({ Whatever: moola(1) });
+  zcfSeat2.incrementBy({ Whatever: moola(2) });
+  zcfSeat1.decrementBy({ B: moola(3n) });
 
-  const staging2 = zcfSeat2.stage({
-    Whatever: moola(2),
-    Whatever2: simoleans(0),
-  });
+  zcfSeat1.incrementBy({ A: simoleans(2) });
+  zcfSeat2.decrementBy({ Whatever2: simoleans(2) });
 
-  const staging3 = zcfSeat3.stage({
-    Whatever: moola(1),
-    Whatever2: simoleans(0),
-  });
-
-  zcf.reallocate(staging1, staging2, staging3);
+  zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3);
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
     A: simoleans(2),
     B: moola(0n),
@@ -1117,8 +1110,58 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
 
   t.deepEqual(zcfSeat3.getCurrentAllocation(), {
     Whatever: moola(1),
-    Whatever2: simoleans(0),
   });
+});
+
+test(`zcf.reallocate 3 seats, some not staged`, async t => {
+  const { moolaKit, simoleanKit, moola, simoleans } = setup();
+  const { zoe, zcf } = await setupZCFTest({
+    Moola: moolaKit.issuer,
+    Simoleans: simoleanKit.issuer,
+  });
+
+  const { zcfSeat: zcfSeat1 } = await makeOffer(
+    zoe,
+    zcf,
+    harden({ want: { A: simoleans(2) }, give: { B: moola(3) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+  );
+  const { zcfSeat: zcfSeat2 } = await makeOffer(
+    zoe,
+    zcf,
+    harden({
+      want: { Whatever: moola(2) },
+      give: { Whatever2: simoleans(2) },
+    }),
+    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2)) }),
+  );
+
+  const { zcfSeat: zcfSeat3 } = await makeOffer(
+    zoe,
+    zcf,
+    harden({
+      want: { Whatever: moola(1) },
+    }),
+  );
+
+  zcfSeat1.incrementBy({
+    A: simoleans(100),
+  });
+
+  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
+    message:
+      'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
+  });
+
+  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
+    A: simoleans(0),
+    B: moola(3),
+  });
+  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
+    Whatever: moola(0n),
+    Whatever2: simoleans(2),
+  });
+  t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
 });
 
 test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
@@ -1152,22 +1195,14 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
     }),
   );
 
-  const staging1 = zcfSeat1.stage({
+  // This does not conserve rights in the slightest
+  zcfSeat1.incrementBy({
     A: simoleans(100),
-    B: moola(0n),
   });
+  zcfSeat2.decrementBy({ Whatever2: simoleans(2) });
+  zcfSeat3.incrementBy({ Whatever: moola(1) });
 
-  const staging2 = zcfSeat2.stage({
-    Whatever: moola(2),
-    Whatever2: simoleans(0),
-  });
-
-  const staging3 = zcfSeat3.stage({
-    Whatever: moola(1),
-    Whatever2: simoleans(0),
-  });
-
-  t.throws(() => zcf.reallocate(staging1, staging2, staging3), {
+  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
     message: /rights were not conserved for brand .*/,
   });
 

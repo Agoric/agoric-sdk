@@ -55,10 +55,10 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       // collateral is on the collateral seat. If an error occurs, we
       // reallocate the collateral to the lender and shutdown the
       // contract, kicking out any remaining seats.
-      zcf.reallocate(
-        lenderSeat.stage({ Collateral: allCollateral }),
-        collateralSeat.stage({}),
+      collateralSeat.decrementBy(
+        lenderSeat.incrementBy({ Collateral: allCollateral }),
       );
+      zcf.reallocate(lenderSeat, collateralSeat);
       zcf.shutdownWithFailure(err);
       throw err;
     });

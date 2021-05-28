@@ -10,7 +10,6 @@ import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
-  trade,
   assertNatAssetKind,
 } from '../../contractSupport';
 import { makePayoffHandler } from './payoffHandler';
@@ -111,18 +110,16 @@ const start = async zcf => {
         give: { Collateral: null },
         want: { LongOption: null, ShortOption: null },
       });
-
-      trade(
-        zcf,
-        {
-          seat: collateralSeat,
-          gains: { Collateral: settlementAmount },
-        },
-        {
-          seat: creatorSeat,
-          gains: { LongOption: longAmount, ShortOption: shortAmount },
-        },
+      creatorSeat.decrementBy(
+        collateralSeat.incrementBy({ Collateral: settlementAmount }),
       );
+      collateralSeat.decrementBy(
+        creatorSeat.incrementBy({
+          LongOption: longAmount,
+          ShortOption: shortAmount,
+        }),
+      );
+      zcf.reallocate(collateralSeat, creatorSeat);
       payoffHandler.schedulePayoffs();
       creatorSeat.exit();
     };

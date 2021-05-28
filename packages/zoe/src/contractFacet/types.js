@@ -49,24 +49,24 @@
  */
 
 /**
- * @typedef {(seatStaging1: SeatStaging, seatStaging2: SeatStaging,
- * ...seatStagingRest: Array<SeatStaging>) => void} Reallocate
+ * @typedef {(seat1: ZCFSeat, seat2: ZCFSeat, ...seatRest:
+ * Array<ZCFSeat>) => void} Reallocate
  *
- * The contract can reallocate over seatStagings, which are
- * associations of seats with reallocations.
+ * The contract can reallocate over seats, by committing the staged
+ * allocation for each seat.
  *
  * The reallocation will only succeed if the reallocation 1) conserves
  * rights (the amounts specified have the same total value as the
  * current total amount), and 2) is 'offer-safe' for all parties
- * involved. Offer safety is checked at the staging step.
+ * involved.
  *
  * The reallocation is partial, meaning that it applies only to the
- * seats associated with the seatStagings. By induction, if rights
- * conservation and offer safety hold before, they will hold after a
- * safe reallocation, even though we only re-validate for the seats
- * whose allocations will change. Since rights are conserved for the
- * change, overall rights will be unchanged, and a reallocation can
- * only effect offer safety for seats whose allocations change.
+ * seats passed in as arguments. By induction, if rights conservation
+ * and offer safety hold before, they will hold after a safe
+ * reallocation, even though we only re-validate for the seats whose
+ * allocations will change. Since rights are conserved for the change,
+ * overall rights will be unchanged, and a reallocation can only
+ * effect offer safety for seats whose allocations change.
  */
 
 /**
@@ -174,14 +174,11 @@
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
- * @property {(newAllocation: Allocation) => boolean} isOfferSafe
- * @property {(newAllocation: Allocation) => SeatStaging} stage
- */
-
-/**
- * @typedef {Object} SeatStaging
- * @property {() => ZCFSeat} getSeat
  * @property {() => Allocation} getStagedAllocation
+ * @property {(newAllocation: Allocation) => boolean} isOfferSafe
+ * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
+ * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
+ * @property {() => void} clear
  */
 
 /**

@@ -2,7 +2,7 @@
 
 import '../../../exported';
 
-import { assertProposalShape, trade } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport';
 
 import { scheduleLiquidation } from './scheduleLiquidation';
 
@@ -20,19 +20,13 @@ export const makeAddCollateralInvitation = (zcf, config) => {
       want: {},
     });
 
-    trade(
-      zcf,
-      {
-        seat: collateralSeat,
-        gains: {
-          Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
-        },
-      },
-      {
-        seat: addCollateralSeat,
-        gains: {},
-      },
+    addCollateralSeat.decrementBy(
+      collateralSeat.incrementBy({
+        Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
+      }),
     );
+
+    zcf.reallocate(collateralSeat, addCollateralSeat);
     addCollateralSeat.exit();
 
     // Schedule the new liquidation trigger. The old one will have an

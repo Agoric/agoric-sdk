@@ -4,15 +4,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { Far } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
-import { makeNotifier } from '@agoric/notifier';
 import { setup } from '../setupBasicMints';
-import { createSeatManager } from '../../../src/contractFacet/zcfSeat';
 
-import {
-  defaultAcceptanceMsg,
-  satisfies,
-  trade,
-} from '../../../src/contractSupport';
+import { defaultAcceptanceMsg, satisfies } from '../../../src/contractSupport';
 
 test('ZoeHelpers messages', t => {
   t.is(
@@ -109,120 +103,4 @@ test('ZoeHelpers satisfies() with give', t => {
     satisfies(mockZCF, fakeZcfSeat, { Desire: bucks(40), Charge: moola(3) }),
     `providing what's wanted makes it possible to reduce give`,
   );
-});
-
-const makeMockZcfSeatAdmin = (
-  proposal,
-  initialAllocation,
-  getAssetKindByBrand,
-) => {
-  const mockZoeSeatAdmin = Far('mockZoeSeatAdmin', {});
-  const notifier = makeNotifier();
-  const seatHandle = {};
-  const zoeInstanceAdmin = Far('mockZoeInstanceAdmin', {});
-
-  const { makeZCFSeat } = createSeatManager(
-    zoeInstanceAdmin,
-    getAssetKindByBrand,
-  );
-  const actual = makeZCFSeat(mockZoeSeatAdmin, {
-    proposal,
-    initialAllocation,
-    notifier,
-    seatHandle,
-  });
-  let hasExited = false;
-  const mockSeat = Far('mockSeat', {
-    isOfferSafe: actual.isOfferSafe,
-    getCurrentAllocation: actual.getCurrentAllocation,
-    getProposal: () => proposal,
-    stage: actual.stage,
-    hasExited: () => hasExited,
-    exit: () => {
-      hasExited = true;
-    },
-  });
-  return mockSeat;
-};
-
-test('ZoeHelpers trade ok', t => {
-  const { moola, simoleans } = setup();
-  const leftProposal = {
-    give: { Asset: moola(10) },
-    want: { Bid: simoleans(4) },
-    exit: { onDemand: null },
-  };
-  const leftAlloc = { Asset: moola(10) };
-  const leftZcfSeat = makeMockZcfSeatAdmin(leftProposal, leftAlloc);
-  const rightProposal = {
-    give: { Money: simoleans(6) },
-    want: { Items: moola(7) },
-    exit: { onDemand: null },
-  };
-
-  const rightAlloc = { Money: simoleans(6) };
-  const rightZcfSeat = makeMockZcfSeatAdmin(rightProposal, rightAlloc);
-  const mockZCFBuilder = makeMockTradingZcfBuilder();
-  const mockZCF = mockZCFBuilder.build();
-  t.notThrows(() =>
-    trade(
-      mockZCF,
-      {
-        seat: leftZcfSeat,
-        gains: { Bid: simoleans(4) },
-        losses: { Asset: moola(7) },
-      },
-      {
-        seat: rightZcfSeat,
-        gains: { Items: moola(7) },
-        losses: { Money: simoleans(4) },
-      },
-    ),
-  );
-  t.deepEqual(mockZCF.getReallocatedStagings().length, 2, `both reallocated`);
-  t.deepEqual(
-    mockZCF.getReallocatedStagings()[0].getStagedAllocation(),
-    { Asset: moola(3), Bid: simoleans(4) },
-    'left gets what she wants',
-  );
-  t.deepEqual(
-    mockZCF.getReallocatedStagings()[1].getStagedAllocation(),
-    { Items: moola(7), Money: simoleans(2) },
-    'right gets what he wants',
-  );
-  t.not(leftZcfSeat.hasExited(), 'Trade should not cause seats to exit');
-  t.not(rightZcfSeat.hasExited(), 'Trade should not cause seats to exit');
-});
-
-test('ZoeHelpers trade same seat', t => {
-  const { moola, simoleans } = setup();
-  const leftProposal = {
-    give: { Asset: moola(10) },
-    want: { Bid: simoleans(4) },
-    exit: { onDemand: null },
-  };
-  const leftAlloc = { Asset: moola(10) };
-  const leftZcfSeat = makeMockZcfSeatAdmin(leftProposal, leftAlloc);
-
-  const mockZCFBuilder = makeMockTradingZcfBuilder();
-  const mockZCF = mockZCFBuilder.build();
-  t.throws(
-    () =>
-      trade(
-        mockZCF,
-        {
-          seat: leftZcfSeat,
-          gains: { Bid: simoleans(4) },
-          losses: { Asset: moola(7) },
-        },
-        {
-          seat: leftZcfSeat,
-          gains: { Items: moola(7) },
-          losses: { Money: simoleans(4) },
-        },
-      ),
-    { message: 'a seat cannot trade with itself' },
-    'seats must be different',
-  );
-  t.not(leftZcfSeat.hasExited(), 'Trade should not cause seats to exit');
 });

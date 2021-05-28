@@ -33,7 +33,7 @@ export function makeVaultManager(
   collateralBrand,
   priceAuthority,
   rates,
-  stageReward,
+  transferReward,
   timerService,
   loanParams,
   liquidationStrategy,
@@ -64,7 +64,7 @@ export function makeVaultManager(
         runBrand,
       );
     },
-    stageReward,
+    transferReward,
   };
 
   // A Map from vaultKits to their most recent ratio of debt to
@@ -169,11 +169,7 @@ export function makeVaultManager(
     sortedVaultKits.updateAllDebts();
     reschedulePriceCheck();
     runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
-    const poolStage = poolIncrementSeat.stage({
-      RUN: AmountMath.makeEmpty(runBrand),
-    });
-    const poolSeatStaging = stageReward(poolIncrement);
-    zcf.reallocate(poolStage, poolSeatStaging);
+    transferReward(poolIncrement, poolIncrementSeat);
   }
 
   const periodNotifier = E(timerService).makeNotifier(

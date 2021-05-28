@@ -6,73 +6,13 @@ import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { AssetKind, AmountMath } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety';
-import { objectMap } from '../objArrayConversion';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
-
-/**
- * Given toGains (an AmountKeywordRecord), and allocations (a pair,
- * 'to' and 'from', of Allocations), all the entries in
- * toGains will be added to 'to'. If fromLosses is defined, all the
- * entries in fromLosses are subtracted from 'from'. (If fromLosses
- * is not defined, toGains is subtracted from 'from'.)
- *
- * @param {FromToAllocations} allocations - the 'to' and 'from'
- * allocations
- * @param {AmountKeywordRecord} toGains - what should be gained in
- * the 'to' allocation
- * @param {AmountKeywordRecord} [fromLosses=toGains] - what should be lost in
- * the 'from' allocation. If not defined, fromLosses is equal to
- * toGains. Note that the total amounts should always be equal; it
- * is the keywords that might be different.
- * @returns {FromToAllocations} allocations - new allocations
- *
- * @typedef FromToAllocations
- * @property {Allocation} from
- * @property {Allocation} to
- */
-const calcNewAllocations = (allocations, toGains, fromLosses = toGains) => {
-  const subtract = (amount, amountToSubtract) => {
-    if (amountToSubtract !== undefined) {
-      return AmountMath.subtract(amount, amountToSubtract);
-    }
-    return amount;
-  };
-
-  const add = (amount, amountToAdd) => {
-    if (amount && amountToAdd) {
-      return AmountMath.add(amount, amountToAdd);
-    }
-    return amount || amountToAdd;
-  };
-
-  const newFromAllocation = objectMap(
-    allocations.from,
-    ([keyword, allocAmount]) => [
-      keyword,
-      subtract(allocAmount, fromLosses[keyword]),
-    ],
-  );
-
-  const allToKeywords = Object.keys({ ...allocations.to, ...toGains });
-
-  const newToAllocation = Object.fromEntries(
-    allToKeywords.map(keyword => [
-      keyword,
-      add(allocations.to[keyword], toGains[keyword]),
-    ]),
-  );
-
-  return harden({
-    from: newFromAllocation,
-    to: newToAllocation,
-  });
-};
 
 export const assertIssuerKeywords = (zcf, expected) => {
   const { issuers } = zcf.getTerms();
@@ -111,100 +51,16 @@ export const satisfies = (zcf, seat, update) => {
   return satisfiesWant(proposal, newAllocation);
 };
 
-/** @type {Trade} */
-export const trade = (
-  zcf,
-  left,
-  right,
-  leftHasExitedMsg = 'the left seat has exited',
-  rightHasExitedMsg = 'the right seat has exited',
-) => {
-  assert(left.seat !== right.seat, X`a seat cannot trade with itself`);
-  assert(!left.seat.hasExited(), leftHasExitedMsg);
-  assert(!right.seat.hasExited(), rightHasExitedMsg);
-  let leftAllocation = left.seat.getCurrentAllocation();
-  let rightAllocation = right.seat.getCurrentAllocation();
-  try {
-    // for all the keywords and amounts in left.gains, transfer from
-    // right to left
-    ({ from: rightAllocation, to: leftAllocation } = calcNewAllocations(
-      { from: rightAllocation, to: leftAllocation },
-      left.gains,
-      right.losses,
-    ));
-    // For all the keywords and amounts in right.gains, transfer from
-    // left to right
-    ({ from: leftAllocation, to: rightAllocation } = calcNewAllocations(
-      { from: leftAllocation, to: rightAllocation },
-      right.gains,
-      left.losses,
-    ));
-  } catch (err) {
-    const newErr = new Error(
-      `The trade between left ${left} and right ${right} failed.`,
-    );
-    assert.note(newErr, X`due to ${err}`);
-    throw newErr;
-  }
-
-  // Check whether reallocate would error before calling. If
-  // it would error, log information and throw.
-  const offerSafeForLeft = left.seat.isOfferSafe(leftAllocation);
-  const offerSafeForRight = right.seat.isOfferSafe(rightAllocation);
-  if (!(offerSafeForLeft && offerSafeForRight)) {
-    console.log(`currentLeftAllocation`, left.seat.getCurrentAllocation());
-    console.log(`currentRightAllocation`, right.seat.getCurrentAllocation());
-    console.log(`proposed left reallocation`, leftAllocation);
-    console.log(`proposed right reallocation`, rightAllocation);
-    // show the constraints
-    console.log(`left want`, left.seat.getProposal().want);
-    console.log(`right want`, right.seat.getProposal().want);
-
-    if (!offerSafeForLeft) {
-      console.log(`offer not safe for left`);
-    }
-    if (!offerSafeForRight) {
-      console.log(`offer not safe for right`);
-    }
-    throw new Error(
-      `The trade between left ${left} and right ${right} failed offer safety. Please check the log for more information`,
-    );
-  }
-
-  try {
-    zcf.reallocate(
-      left.seat.stage(leftAllocation),
-      right.seat.stage(rightAllocation),
-    );
-  } catch (err) {
-    const newErr = Error(`The reallocation failed to conserve rights.`);
-    assert.note(newErr, X`due to ${err}`);
-    throw newErr;
-  }
-};
-
 /** @type {Swap} */
-export const swap = (
-  zcf,
-  leftSeat,
-  rightSeat,
-  leftHasExitedMsg = 'the left seat in swap() has exited',
-  rightHasExitedMsg = 'the right seat in swap() has exited',
-) => {
+export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    trade(
-      zcf,
-      {
-        seat: leftSeat,
-        gains: leftSeat.getProposal().want,
-      },
-      {
-        seat: rightSeat,
-        gains: rightSeat.getProposal().want,
-      },
-      leftHasExitedMsg,
-      rightHasExitedMsg,
-    );
+    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(leftSeat.getProposal().want);
+
+    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(rightSeat.getProposal().want);
+
+    zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
     leftSeat.fail(err);
     rightSeat.fail(err);
@@ -223,29 +79,15 @@ export const swap = (
  * seat wants everything that the other seat has. The benefit of using
  * this method is that the keywords of each seat do not matter.
  */
-export const swapExact = (
-  zcf,
-  leftSeat,
-  rightSeat,
-  leftHasExitedMsg = 'the left seat in swapExact() has exited',
-  rightHasExitedMsg = 'the right seat in swapExact() has exited',
-) => {
+export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    trade(
-      zcf,
-      {
-        seat: leftSeat,
-        gains: leftSeat.getProposal().want,
-        losses: leftSeat.getProposal().give,
-      },
-      {
-        seat: rightSeat,
-        gains: rightSeat.getProposal().want,
-        losses: rightSeat.getProposal().give,
-      },
-      leftHasExitedMsg,
-      rightHasExitedMsg,
-    );
+    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(rightSeat.getProposal().give);
+
+    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(leftSeat.getProposal().give);
+
+    zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
     leftSeat.fail(err);
     rightSeat.fail(err);
@@ -342,11 +184,9 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
     // offerResult resolves.
-    trade(
-      zcf,
-      { seat: tempSeat, gains: {} },
-      { seat: recipientSeat, gains: amounts },
-    );
+    tempSeat.decrementBy(amounts);
+    recipientSeat.incrementBy(amounts);
+    zcf.reallocate(tempSeat, recipientSeat);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
   }
@@ -379,7 +219,9 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
 export async function withdrawFromSeat(zcf, seat, amounts) {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
-  trade(zcf, { seat: tempSeat, gains: amounts }, { seat, gains: {} });
+  tempSeat.incrementBy(amounts);
+  seat.decrementBy(amounts);
+  zcf.reallocate(tempSeat, seat);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
 }
@@ -482,17 +324,17 @@ export const offerTo = async (
  * before performing a reallocation.
  *
  * @param {ContractFacet} zcf
- * @param {(stagings: SeatStaging[]) => void} assertFn - an assertion
+ * @param {(seats: ZCFSeat[]) => void} assertFn - an assertion
  * that must be true for the reallocate to occur
  * @returns {ContractFacet}
  */
 export const checkZCF = (zcf, assertFn) => {
   const checkedZCF = harden({
     ...zcf,
-    reallocate: (...stagings) => {
-      assertFn(stagings);
+    reallocate: (...seats) => {
+      assertFn(seats);
       // @ts-ignore The types aren't right for spreading
-      zcf.reallocate(...stagings);
+      zcf.reallocate(...seats);
     },
   });
   return checkedZCF;

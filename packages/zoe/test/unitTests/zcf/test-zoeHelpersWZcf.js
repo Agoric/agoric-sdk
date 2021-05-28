@@ -80,8 +80,7 @@ test(`zoeHelper with zcf - swap no match`, async t => {
   t.throws(
     () => swap(zcf, aZcfSeat, bZcfSeat),
     {
-      message:
-        'The trade between left [object Object] and right [object Object] failed.',
+      message: '-15 is negative',
     },
     'mismatched offers',
   );
@@ -398,7 +397,7 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'The reallocation failed to conserve rights.',
+    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0n));
@@ -444,7 +443,7 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'The reallocation failed to conserve rights.',
+    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(t, moolaIssuer, await userSeatA.getPayout('A'), moola(0n));
@@ -490,7 +489,7 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'The reallocation failed to conserve rights.',
+    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   assertPayoutAmount(

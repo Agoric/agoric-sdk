@@ -4,7 +4,6 @@ import '@agoric/zoe/exported';
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import {
-  trade,
   assertProposalShape,
   divideBy,
   multiplyBy,
@@ -165,17 +164,13 @@ export function makeVaultKit(
     // take more than you owe
     assert(AmountMath.isGTE(runReturned, runDebt));
 
-    trade(
-      zcf,
-      {
-        seat: vaultSeat,
-        gains: { RUN: runDebt }, // return any overpayment
-      },
-      {
-        seat,
-        gains: { Collateral: getCollateralAllocated(vaultSeat) },
-      },
+    // Return any overpayment
+    seat.decrementBy(vaultSeat.incrementBy({ RUN: runDebt }));
+    vaultSeat.decrementBy(
+      seat.incrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
     );
+    zcf.reallocate(seat, vaultSeat);
+
     seat.exit();
     runDebt = AmountMath.makeEmpty(runBrand);
     active = false;
@@ -351,8 +346,8 @@ export function makeVaultKit(
         Collateral: collateralAfter.client,
         RUN: runAfter.client,
       }),
-      manager.stageReward(fee),
     );
+    manager.transferReward(fee, vaultSeat);
 
     runDebt = newDebt;
     runMint.burnLosses({ RUN: runAfter.vault }, vaultSeat);
@@ -395,18 +390,11 @@ export function makeVaultKit(
     await assertSufficientCollateral(collateralAmount, runDebt);
 
     runMint.mintGains({ RUN: runDebt }, vaultSeat);
-    const priorCollateral = getCollateralAllocated(vaultSeat);
 
-    const collateralSeatStaging = vaultSeat.stage({
-      Collateral: AmountMath.add(priorCollateral, collateralAmount),
-      RUN: AmountMath.makeEmpty(runBrand),
-    });
-    const loanSeatStaging = seat.stage({
-      RUN: wantedRun,
-      Collateral: AmountMath.makeEmpty(collateralBrand),
-    });
-    const stageReward = manager.stageReward(fee);
-    zcf.reallocate(collateralSeatStaging, loanSeatStaging, stageReward);
+    vaultSeat.decrementBy(seat.incrementBy({ RUN: wantedRun }));
+    seat.decrementBy(vaultSeat.incrementBy({ Collateral: collateralAmount }));
+    zcf.reallocate(vaultSeat, seat);
+    manager.transferReward(fee, vaultSeat);
 
     updateUiState();
 
