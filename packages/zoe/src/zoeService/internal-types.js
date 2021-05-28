@@ -70,7 +70,7 @@
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
- * @property {ExportInstanceRecord} exportInstanceRecord
+ * @property {GetInstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
  * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin

@@ -175,7 +175,7 @@ export const makeIssuerStorage = () => {
     return brandToIssuerRecord.get(brand).issuer;
   };
 
-  /** @type {GetIssuerRecords} */
+  /** @type {IssuerStorageGetIssuerRecords} */
   const getIssuerRecords = issuers => {
     assertInstantiated();
     return issuers.map(issuerToIssuerRecord.get);

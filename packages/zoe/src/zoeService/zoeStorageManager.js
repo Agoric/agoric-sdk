@@ -145,9 +145,7 @@ export const makeZoeStorageManager = () => {
         // it directly. Additionally, we only want to export the
         // issuers used in this contract instance specifically, not
         // all issuers.
-        Object.values(
-          instanceRecordManager.exportInstanceRecord().terms.issuers,
-        ),
+        Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
       );
 
     return harden({
@@ -156,7 +154,7 @@ export const makeZoeStorageManager = () => {
       getBrands: instanceRecordManager.getBrands,
       saveIssuer,
       makeZoeMint,
-      exportInstanceRecord: instanceRecordManager.exportInstanceRecord,
+      getInstanceRecord: instanceRecordManager.getInstanceRecord,
       getIssuerRecords,
       withdrawPayments: escrowStorage.withdrawPayments,
       initInstanceAdmin,
