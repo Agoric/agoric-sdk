@@ -95,7 +95,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         getBrands: getInstanceBrands,
         saveIssuer,
         makeZoeMint,
-        exportInstanceRecord,
+        getInstanceRecord,
         getIssuerRecords,
         withdrawPayments,
         initInstanceAdmin,
@@ -273,7 +273,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         zoeService,
         invitationIssuer,
         zoeInstanceAdminForZcf,
-        exportInstanceRecord(),
+        getInstanceRecord(),
         getIssuerRecords(),
       );
 

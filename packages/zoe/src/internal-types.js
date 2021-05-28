@@ -288,7 +288,7 @@
 /**
  * @typedef {Object} InstanceRecordManager
  * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
- * @property {ExportInstanceRecord} exportInstanceRecord
+ * @property {GetInstanceRecord} getInstanceRecord
  * @property {InstanceRecordManagerGetTerms} getTerms
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
@@ -297,12 +297,12 @@
  */
 
 /**
- * @callback ExportInstanceRecord
+ * @callback GetInstanceRecord
  * @returns {InstanceRecord}
  */
 
 /**
- * @callback GetIssuerRecords
+ * @callback IssuerStorageGetIssuerRecords
  * @param {Issuer[]} issuers
  * @returns {IssuerRecords}
  */
