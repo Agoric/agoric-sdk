@@ -8,7 +8,7 @@ import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank';
 
 test('communication', async t => {
-  t.plan(29);
+  t.plan(38);
   const bankVat = E(buildRootObject)();
 
   /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
@@ -28,9 +28,14 @@ test('communication', async t => {
         case 'VPURSE_GET_BALANCE': {
           const { address, denom, type: _type, ...rest } = obj;
           t.is(address, 'agoricfoo');
-          t.is(denom, 'ubld');
           t.deepEqual(rest, {});
-          ret = '11993';
+          if (denom === 'ubld') {
+            ret = '11993';
+          } else if (denom === 'ufee') {
+            ret = '34';
+          } else {
+            t.fail(`unrecognized denomination ${denom}`);
+          }
           break;
         }
 
@@ -47,10 +52,20 @@ test('communication', async t => {
         case 'VPURSE_GRAB': {
           const { amount, denom, sender, type: _type, ...rest } = obj;
           t.is(sender, 'agoricfoo');
-          t.is(denom, 'ubld');
-          t.is(amount, '14');
           t.deepEqual(rest, {});
-          ret = amount;
+          if (denom === 'ubld') {
+            t.is(amount, '14');
+            ret = amount;
+          } else if (denom === 'ufee') {
+            if (BigInt(amount) > 35n) {
+              throw Error('insufficient ufee funds');
+            } else {
+              t.is(amount, '35');
+              ret = amount;
+            }
+          } else {
+            t.fail(`unrecognized denomination ${denom}`);
+          }
           break;
         }
 
@@ -144,6 +159,19 @@ test('communication', async t => {
   const { mint, ...feeKit } = makeIssuerKit('fee', AssetKind.NAT, {
     decimalPlaces: 6,
   });
+
+  const backingFee = mint.mintPayment(AmountMath.make(feeKit.brand, 20000000n));
+  await E(bankMgr).addAsset('ufee', 'FEE', 'ERTP Fees', {
+    ...feeKit,
+    payment: backingFee,
+  });
+
+  const feePurse = await E(bank).getPurse(feeKit.brand);
+  await E(feePurse).withdraw(AmountMath.make(feeKit.brand, 35n));
+  await t.throwsAsync(
+    () => E(feePurse).withdraw(AmountMath.make(feeKit.brand, 99n)),
+    { instanceOf: Error, message: 'insufficient ufee funds' },
+  );
 
   // Try sending in some fees.
   const feeAmount = AmountMath.make(feeKit.brand, 12n);
