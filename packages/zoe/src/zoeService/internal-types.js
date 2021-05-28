@@ -54,8 +54,10 @@
  * installation
  *
  * @param {ERef<Installation>} installationP
- * @returns {Promise<{ bundle: SourceBundle, installation:
- * Installation }>}
+ * @returns {Promise<{
+ *   bundle: SourceBundle,
+ *   installation:Installation
+ * }>}
  */
 
 /**
