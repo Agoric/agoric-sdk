@@ -41,7 +41,7 @@ test('makeAndStoreInstanceRecord', async t => {
   });
   const {
     addIssuerToInstanceRecord,
-    exportInstanceRecord,
+    getInstanceRecord,
     getTerms,
     getIssuers,
     getBrands,
@@ -53,7 +53,7 @@ test('makeAndStoreInstanceRecord', async t => {
     brands,
   );
 
-  t.deepEqual(exportInstanceRecord(), {
+  t.deepEqual(getInstanceRecord(), {
     installation: fakeInstallation,
     terms: { time: 2n, issuers, brands },
   });
@@ -92,7 +92,7 @@ test('makeInstanceRecordStorage', async t => {
   });
   const {
     addIssuerToInstanceRecord,
-    exportInstanceRecord,
+    getInstanceRecord,
     getTerms,
     getIssuers,
     getBrands,
@@ -104,7 +104,7 @@ test('makeInstanceRecordStorage', async t => {
     terms: { time: 2n, issuers, brands },
   });
 
-  t.deepEqual(exportInstanceRecord(), {
+  t.deepEqual(getInstanceRecord(), {
     installation: fakeInstallation,
     terms: { time: 2n, issuers, brands },
   });

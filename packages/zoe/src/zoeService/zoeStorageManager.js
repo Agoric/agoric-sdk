@@ -138,16 +138,14 @@ export const makeZoeStorageManager = () => {
       return zoeMint;
     };
 
-    /** @type {ExportIssuerStorage} */
-    const exportIssuerStorage = () =>
-      issuerStorage.exportIssuerStorage(
+    /** @type {GetIssuerRecords} */
+    const getIssuerRecords = () =>
+      issuerStorage.getIssuerRecords(
         // the issuerStorage is a weakStore, so we cannot iterate over
         // it directly. Additionally, we only want to export the
         // issuers used in this contract instance specifically, not
         // all issuers.
-        Object.values(
-          instanceRecordManager.exportInstanceRecord().terms.issuers,
-        ),
+        Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
       );
 
     return harden({
@@ -156,8 +154,8 @@ export const makeZoeStorageManager = () => {
       getBrands: instanceRecordManager.getBrands,
       saveIssuer,
       makeZoeMint,
-      exportInstanceRecord: instanceRecordManager.exportInstanceRecord,
-      exportIssuerStorage,
+      getInstanceRecord: instanceRecordManager.getInstanceRecord,
+      getIssuerRecords,
       withdrawPayments: escrowStorage.withdrawPayments,
       initInstanceAdmin,
       deleteInstanceAdmin,
