@@ -82,7 +82,7 @@ const makePurseController = (
  */
 
 /**
- * @typedef {AssetIssuerKit & { denom: string }} AssetRecord
+ * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
  */
 
 /**
@@ -301,7 +301,7 @@ export function buildRootObject(_vatPowers) {
          * @param {string} denom lower-level denomination string
          * @param {string} issuerName
          * @param {string} proposedName
-         * @param {AssetIssuerKit} kit ERTP issuer kit (mint, brand, issuer)
+         * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer kit (mint, brand, issuer)
          */
         async addAsset(denom, issuerName, proposedName, kit) {
           assert.typeof(denom, 'string');
@@ -316,7 +316,18 @@ export function buildRootObject(_vatPowers) {
             `Only fungible assets are allowed, not ${assetKind}`,
           );
 
-          const assetRecord = harden({ ...kit, denom, brand });
+          // Create an escrow purse for this asset, seeded with the payment.
+          const escrowPurse = E(kit.issuer).makeEmptyPurse();
+          const payment = await kit.payment;
+          await (payment && E(escrowPurse).deposit(payment));
+
+          const assetRecord = harden({
+            escrowPurse,
+            issuer: kit.issuer,
+            mint: kit.mint,
+            denom,
+            brand,
+          });
           brandToAssetRecord.init(brand, assetRecord);
           denomToAddressUpdater.init(denom, makeStore('address'));
           assetPublication.updateState(
