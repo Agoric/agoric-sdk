@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { createHash } from 'crypto';
 
 import {
+  CENTRAL_DENOM,
   STAKING_DENOM,
   finishTendermintConfig,
   finishCosmosGenesis,
@@ -12,8 +13,9 @@ import {
 
 import { makePspawn } from './helpers';
 
-const PROVISION_COINS = `100000000${STAKING_DENOM},100provisionpass,100sendpacketpass`;
+const PROVISION_COINS = `100000000${STAKING_DENOM},50000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
+const SOLO_COINS = `13000000${STAKING_DENOM},5000000${CENTRAL_DENOM}`;
 const CHAIN_ID = 'agoric';
 
 const FAKE_CHAIN_DELAY =
@@ -39,7 +41,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const SDK_IMAGE = `agoric/agoric-sdk:${opts.dockerTag}`;
   const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
-  const pspawnEnv = { ...process.env };
+  const pspawnEnv = {
+    ...process.env,
+    // TODO: We'd love to --expose-gc in this environment variable,
+    // but Node.js rejects it.
+    // NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --expose-gc`,
+  };
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
 
   let keysSpawn;
@@ -344,7 +351,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return chainSpawn(
       [...debugOpts, 'start'],
       {
-        env: { ...pspawnEnv, ROLE: 'two_chain' },
+        env: {
+          ...pspawnEnv,
+          ROLE: 'two_chain',
+        },
       },
       // Accessible via either localhost or host.docker.internal
       [`--publish=127.0.0.1:${portNum}:${portNum}`, `--name=agoric-n0`],
@@ -468,9 +478,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           `--node=tcp://${rpcAddr}`,
         ]);
         if (exitStatus) {
-          // We need to provision our address.
-          const capret = capture(
-            keysSpawn,
+          const provCmds = [
+            // We need to provision our address.
             [
               'tx',
               'swingset',
@@ -487,20 +496,41 @@ export default async function startMain(progname, rawArgs, powers, opts) {
               soloAddr,
               ...provisionPowers,
             ],
-            true,
-          );
-          // eslint-disable-next-line no-await-in-loop
-          exitStatus = await capret[0];
-          if (!exitStatus) {
-            const json = capret[1].replace(/^gas estimate: \d+$/m, '');
-            try {
-              const ret = JSON.parse(json);
-              if (ret.code !== 0) {
-                exitStatus = 2;
+            // Then send it some coins.
+            [
+              'tx',
+              'bank',
+              'send',
+              '--keyring-backend=test',
+              '--gas=auto',
+              '--gas-adjustment=1.2',
+              '--broadcast-mode=block',
+              '--yes',
+              `--chain-id=${CHAIN_ID}`,
+              `--node=tcp://${rpcAddr}`,
+              'provision',
+              soloAddr,
+              SOLO_COINS,
+            ],
+          ];
+          for (const cmd of provCmds) {
+            const capret = capture(keysSpawn, cmd, true);
+            // eslint-disable-next-line no-await-in-loop
+            exitStatus = await capret[0];
+            if (!exitStatus) {
+              const json = capret[1].replace(/^gas estimate: \d+$/m, '');
+              try {
+                const ret = JSON.parse(json);
+                if (ret.code !== 0) {
+                  exitStatus = 2;
+                }
+              } catch (e) {
+                console.error(`Cannot parse JSON:`, e, json);
+                exitStatus = 99;
               }
-            } catch (e) {
-              console.error(`Cannot parse JSON:`, e, json);
-              exitStatus = 99;
+            }
+            if (exitStatus) {
+              break;
             }
           }
         }

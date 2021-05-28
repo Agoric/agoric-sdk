@@ -203,30 +203,117 @@
  */
 
 /**
- * @typedef {ERef<Payment>} PaymentP
- */
-
-/**
  * @callback IssuerBurn
- * @param {PaymentP} payment
+ *
+ * Burn all of the digital assets in the
+ * payment. `optAmount` is optional. If `optAmount` is present, the
+ * code will insist that the amount of the digital assets in the
+ * payment is equal to `optAmount`, to prevent sending the wrong
+ * payment and other confusion.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
  * @param {Amount=} optAmount
  * @returns {Promise<Amount>}
  */
 
 /**
  * @callback IssuerClaim
- * @param {PaymentP} payment
+ *
+ * Transfer all digital assets from the payment to a new payment and
+ * delete the original. `optAmount` is optional. If `optAmount` is
+ * present, the code will insist that the amount of digital assets in
+ * the payment is equal to `optAmount`, to prevent sending the wrong
+ * payment and other confusion.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
  * @param {Amount=} optAmount
  * @returns {Promise<Payment>}
  */
 
 /**
- * @typedef {Object} Issuer The issuer cannot mint a new amount, but
- * it can create empty purses and payments. The issuer can also
- * transform payments (splitting payments, combining payments, burning
- * payments, and claiming payments exclusively). The issuer should be
- * gotten from a trusted source and then relied upon as the decider of
- * whether an untrusted payment is valid.
+ * @callback IssuerIsLive
+ *
+ * Return true if the payment continues to exist.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
+ * @returns {Promise<boolean>}
+ */
+
+/**
+ * @callback IssuerGetAmountOf
+ *
+ * Get the amount of digital assets in the payment. Because the
+ * payment is not trusted, we cannot call a method on it directly, and
+ * must use the issuer instead.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>}
+ * @returns {Promise<Amount>}
+ *
+ */
+
+/**
+ * @callback IssuerCombine
+ *
+ * Combine multiple payments into one payment.
+ *
+ * If any of the payments is a promise, the operation will proceed
+ * upon resolution.
+ *
+ * @param {ERef<Payment>[]} paymentsArray
+ * @param {Amount=} optTotalAmount
+ * @returns {Promise<Payment>}
+ */
+
+/**
+ * @callback IssuerSplit
+ *
+ * Split a single payment into two payments,
+ * A and B, according to the paymentAmountA passed in.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
+ * @param {Amount} paymentAmountA
+ * @returns {Promise<Payment[]>}
+ */
+
+/**
+ * @callback IssuerSplitMany
+ *
+ * Split a single payment into many payments, according to the amounts
+ * passed in.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
+ * @param {Amount[]} amounts
+ * @returns {Promise<Payment[]>}
+ *
+ */
+
+/**
+ * @typedef {Object} Issuer
+ *
+ * The issuer cannot mint a new amount, but it can create empty purses
+ * and payments. The issuer can also transform payments (splitting
+ * payments, combining payments, burning payments, and claiming
+ * payments exclusively). The issuer should be gotten from a trusted
+ * source and then relied upon as the decider of whether an untrusted
+ * payment is valid.
  *
  * @property {() => Brand} getBrand Get the Brand for this Issuer. The
  * Brand indicates the type of digital asset and is shared by the
@@ -243,57 +330,13 @@
  *  on how to display amounts for this issuer.
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this
  * brand.
- * @property {(payment: PaymentP) => Promise<boolean>} isLive Return
- * true if the payment continues to exist.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @property {(payment: PaymentP) => Promise<Amount>} getAmountOf Get
- * the amount of digital assets in the payment. Because the payment is
- * not trusted, we cannot call a method on it directly, and must use
- * the issuer instead.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @property {IssuerBurn} burn Burn all of the digital assets in the
- * payment. `optAmount` is optional. If `optAmount` is present, the
- * code will insist that the amount of the digital assets in the
- * payment is equal to `optAmount`, to prevent sending the wrong
- * payment and other confusion.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @property {IssuerClaim} claim Transfer all digital assets from the
- * payment to a new payment and delete the original. `optAmount` is
- * optional. If `optAmount` is present, the code will insist that the
- * amount of digital assets in the payment is equal to `optAmount`, to
- * prevent sending the wrong  payment and other confusion.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @property {(paymentsArray: PaymentP[]) => Promise<Payment>} combine
- * Combine multiple payments into one payment.
- *
- * If any of the payments is a promise, the operation will proceed
- * upon resolution.
- *
- * @property {(payment: PaymentP, paymentAmountA: Amount) =>
- * Promise<Payment[]>} split Split a single payment into two payments,
- * A and B, according to the paymentAmountA passed in.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @property {(payment: PaymentP, amounts: Amount[]) =>
- * Promise<Payment[]>} splitMany Split a single payment into many
- * payments, according to the amounts passed in.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
+ * @property {IssuerIsLive} isLive
+ * @property {IssuerGetAmountOf} getAmountOf
+ * @property {IssuerBurn} burn
+ * @property {IssuerClaim} claim
+ * @property {IssuerCombine} combine
+ * @property {IssuerSplit} split
+ * @property {IssuerSplitMany} splitMany
  */
 
 /**
@@ -340,13 +383,21 @@
  */
 
 /**
+ * @callback MintPayment
+ *
+ * Creates a new Payment containing newly minted amount.
+ *
+ * @param {Amount} newAmount
+ * @returns {Payment}
+ */
+
+/**
  * @typedef {Object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
  * @property {() => Issuer} getIssuer Gets the Issuer for this mint.
- * @property {(newAmount: Amount) => Payment} mintPayment
- * Creates a new Payment containing newly minted amount.
+ * @property {MintPayment} mintPayment
  */
 
 /**
@@ -473,7 +524,11 @@
  */
 
 /**
- * @typedef {Array<Comparable>} SetValue
+ * @typedef {Comparable} SetValueElem
+ */
+
+/**
+ * @typedef {Array<SetValueElem>} SetValue
  */
 
 /**

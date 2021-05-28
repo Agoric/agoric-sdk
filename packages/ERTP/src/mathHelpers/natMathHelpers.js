@@ -20,7 +20,7 @@ const identity = 0n;
  */
 const natMathHelpers = {
   doCoerce: Nat,
-  doMakeEmpty: _ => identity,
+  doMakeEmpty: () => identity,
   doIsEmpty: nat => nat === identity,
   doIsGTE: (left, right) => left >= right,
   doIsEqual: (left, right) => left === right,

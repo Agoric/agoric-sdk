@@ -177,8 +177,8 @@ test('getIssuerForBrand', async t => {
   t.is(currencyKit.issuer, getIssuerForBrand(currencyKit.brand));
 });
 
-test('exportIssuerStorage', async t => {
-  const { storeIssuer, exportIssuerStorage, instantiate } = makeIssuerStorage();
+test('getIssuerRecords', async t => {
+  const { storeIssuer, getIssuerRecords, instantiate } = makeIssuerStorage();
   instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
@@ -186,13 +186,13 @@ test('exportIssuerStorage', async t => {
   await storeIssuer(ticketKit.issuer);
 
   // Note that only the currencyIssuer is going to be exported
-  const exportedIssuerStorage = exportIssuerStorage([currencyKit.issuer]);
+  const issuerRecords = getIssuerRecords([currencyKit.issuer]);
 
-  t.deepEqual(exportedIssuerStorage, [currencyIssuerRecord]);
+  t.deepEqual(issuerRecords, [currencyIssuerRecord]);
 });
 
-test('use exportedIssuerStorage', async t => {
-  const { storeIssuer, exportIssuerStorage, instantiate } = makeIssuerStorage();
+test('use issuerRecords', async t => {
+  const { storeIssuer, getIssuerRecords, instantiate } = makeIssuerStorage();
   instantiate();
   const { currencyKit, ticketKit } = setupIssuersForTest();
 
@@ -200,17 +200,17 @@ test('use exportedIssuerStorage', async t => {
   await storeIssuer(ticketKit.issuer);
 
   // Note that only the currencyIssuer is going to be exported
-  const exportedIssuerStorage = exportIssuerStorage([currencyKit.issuer]);
+  const issuerRecords = getIssuerRecords([currencyKit.issuer]);
 
-  t.deepEqual(exportedIssuerStorage, [currencyIssuerRecord]);
+  t.deepEqual(issuerRecords, [currencyIssuerRecord]);
 
   // SecondIssuerStorage
   const {
-    exportIssuerStorage: exportIssuerStorage2,
+    getIssuerRecords: getIssuerRecords2,
     instantiate: instantiate2,
   } = makeIssuerStorage();
-  instantiate2(exportedIssuerStorage);
+  instantiate2(issuerRecords);
 
-  const exportedIssuerStorage2 = exportIssuerStorage2([currencyKit.issuer]);
+  const exportedIssuerStorage2 = getIssuerRecords2([currencyKit.issuer]);
   t.deepEqual(exportedIssuerStorage2, [currencyIssuerRecord]);
 });

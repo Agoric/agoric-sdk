@@ -10,7 +10,6 @@ import { AmountMath } from './amountMath';
 import { makePaymentMaker } from './payment';
 import { makePurse } from './purse';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/store/exported';
 
 /**
@@ -46,9 +45,15 @@ export const makePaymentLedger = (
 
   const makePayment = makePaymentMaker(allegedName, brand);
 
-  // Methods like deposit() have an optional second parameter `amount`
-  // which, if present, is supposed to be equal to the balance of the
-  // payment. This helper function does that check.
+  /**
+   * Methods like deposit() have an optional second parameter `amount`
+   * which, if present, is supposed to be equal to the balance of the
+   * payment. This helper function does that check.
+   *
+   * @param {Amount} paymentBalance
+   * @param {Amount | undefined} amount
+   * @returns {void}
+   */
   const assertAmountConsistent = (paymentBalance, amount) => {
     if (amount !== undefined) {
       assert(
@@ -58,6 +63,10 @@ export const makePaymentLedger = (
     }
   };
 
+  /**
+   * @param {Payment} payment
+   * @returns {void}
+   */
   const assertLivePayment = payment => {
     assert(paymentLedger.has(payment), X`payment not found for ${allegedName}`);
   };
@@ -116,12 +125,14 @@ export const makePaymentLedger = (
     return harden(newPayments);
   };
 
+  /** @type {IssuerIsLive} */
   const isLive = paymentP => {
     return E.when(paymentP, payment => {
       return paymentLedger.has(payment);
     });
   };
 
+  /** @type {IssuerGetAmountOf} */
   const getAmountOf = paymentP => {
     return E.when(paymentP, payment => {
       assertLivePayment(payment);
@@ -129,6 +140,7 @@ export const makePaymentLedger = (
     });
   };
 
+  /** @type {IssuerBurn} */
   const burn = (paymentP, optAmount = undefined) => {
     return E.when(paymentP, payment => {
       assertLivePayment(payment);
@@ -140,6 +152,7 @@ export const makePaymentLedger = (
     });
   };
 
+  /** @type {IssuerClaim} */
   const claim = (paymentP, optAmount = undefined) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
@@ -151,9 +164,10 @@ export const makePaymentLedger = (
     });
   };
 
-  // Payments in `fromPaymentsPArray` must be distinct. Alias
-  // checking is delegated to the `reallocate` function.
+  /** @type {IssuerCombine} */
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
+    // Payments in `fromPaymentsPArray` must be distinct. Alias
+    // checking is delegated to the `reallocate` function.
     return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
       fromPaymentsArray.every(assertLivePayment);
       const totalPaymentsBalance = fromPaymentsArray
@@ -166,6 +180,7 @@ export const makePaymentLedger = (
     });
   };
 
+  /** @type {IssuerSplit} */
   // payment to two payments, A and B
   const split = (paymentP, paymentAmountA) => {
     return E.when(paymentP, srcPayment => {
@@ -182,6 +197,7 @@ export const makePaymentLedger = (
     });
   };
 
+  /** @type {IssuerSplitMany} */
   const splitMany = (paymentP, amounts) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
@@ -192,6 +208,7 @@ export const makePaymentLedger = (
     });
   };
 
+  /** @type {MintPayment} */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
     const payment = makePayment();
@@ -199,6 +216,17 @@ export const makePaymentLedger = (
     return payment;
   };
 
+  /**
+   * Used by the purse code to implement purse.deposit
+   *
+   * @param {Amount} currentBalance - the current balance of the purse
+   * before a deposit
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
+   * commit the purse balance
+   * @param {Payment} srcPayment
+   * @param {Amount=} optAmount
+   * @returns {Amount}
+   */
   const deposit = (
     currentBalance,
     updatePurseBalance,
@@ -223,6 +251,16 @@ export const makePaymentLedger = (
     return srcPaymentBalance;
   };
 
+  /**
+   * Used by the purse code to implement purse.withdraw
+   *
+   * @param {Amount} currentBalance - the current balance of the purse
+   * before a withdrawal
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
+   * commit the purse balance
+   * @param {Amount} amount - the amount to be withdrawn
+   * @returns {Payment}
+   */
   const withdraw = (currentBalance, updatePurseBalance, amount) => {
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);

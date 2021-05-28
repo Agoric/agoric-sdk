@@ -6,6 +6,7 @@ FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
 DELEGATE_COINS=62000000ubld,93000000urun
+SOLO_COINS=5000000urun
 
 OP=$1
 shift
@@ -38,11 +39,20 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
     add-egress)
       NAME=$1
       ADDR=$2
-      exec ag-cosmos-helper --home=$FAUCET_HOME \
+      if ag-cosmos-helper query swingset egress "$ADDR" --chain-id=$chainName; then
+        # Already provisioned.
+        exit 1
+      fi
+      ag-cosmos-helper --home=$FAUCET_HOME \
         tx swingset provision-one \
         --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
         --yes --broadcast-mode=block \
         --from=faucet -- "$NAME" "$ADDR"
+      exec ag-cosmos-helper --home=$FAUCET_HOME \
+        tx bank send \
+        --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
+        --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=block \
+        -- faucet "$ADDR" "$SOLO_COINS"
       ;;
     add-delegate)
       UNIQUE=yes

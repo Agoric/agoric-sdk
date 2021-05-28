@@ -175,19 +175,19 @@ export const makeIssuerStorage = () => {
     return brandToIssuerRecord.get(brand).issuer;
   };
 
-  /** @type {ExportIssuerStorage} */
-  const exportIssuerStorage = issuers => {
+  /** @type {IssuerStorageGetIssuerRecords} */
+  const getIssuerRecords = issuers => {
     assertInstantiated();
     return issuers.map(issuerToIssuerRecord.get);
   };
 
-  const instantiate = (exportedIssuerStorage = []) => {
+  const instantiate = (issuerRecords = []) => {
     assert(
       instantiated === false,
       X`issuerStorage can only be instantiated once`,
     );
     instantiated = true;
-    exportedIssuerStorage.forEach(storeIssuerRecord);
+    issuerRecords.forEach(storeIssuerRecord);
   };
 
   return {
@@ -197,7 +197,7 @@ export const makeIssuerStorage = () => {
     getAssetKindByBrand,
     getBrandForIssuer,
     getIssuerForBrand,
-    exportIssuerStorage,
+    getIssuerRecords,
     instantiate,
   };
 };

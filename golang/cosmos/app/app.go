@@ -503,14 +503,12 @@ func NewAgoricApp(
 }
 
 type cosmosInitAction struct {
-	Type             string `json:"type"`
-	IBCPort          int    `json:"ibcPort"`
-	StoragePort      int    `json:"storagePort"`
-	VPursePort       int    `json:"vpursePort"`
-	ChainID          string `json:"chainID"`
-	BootstrapAddress string `json:"bootstrapAddress"`
-	BootstrapValue   string `json:"bootstrapValue"`
-	DonationValue    string `json:"donationValue"`
+	Type        string    `json:"type"`
+	ChainID     string    `json:"chainID"`
+	IBCPort     int       `json:"ibcPort"`
+	StoragePort int       `json:"storagePort"`
+	SupplyCoins sdk.Coins `json:"supplyCoins"`
+	VPursePort  int       `json:"vpursePort"`
 }
 
 // MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
@@ -530,27 +528,14 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	}
 	app.controllerInited = true
 
-	var bootstrapAddr sdk.AccAddress
-	gs := app.VpurseKeeper.GetGenesis(ctx)
-	if len(gs.BootstrapAddress) > 0 {
-		ba, err := sdk.AccAddressFromBech32(gs.BootstrapAddress)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Cannot get bootstrap addr", err)
-			os.Exit(1)
-		}
-		bootstrapAddr = ba
-	}
-
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		Type:             "AG_COSMOS_INIT",
-		VPursePort:       app.vpursePort,
-		IBCPort:          app.ibcPort,
-		StoragePort:      swingset.GetPort("storage"),
-		ChainID:          ctx.ChainID(),
-		BootstrapAddress: bootstrapAddr.String(),
-		BootstrapValue:   gs.BootstrapValue.String(),
-		DonationValue:    gs.DonationValue.String(),
+		Type:        "AG_COSMOS_INIT",
+		ChainID:     ctx.ChainID(),
+		IBCPort:     app.ibcPort,
+		StoragePort: swingset.GetPort("storage"),
+		SupplyCoins: app.BankKeeper.GetSupply(ctx).GetTotal(),
+		VPursePort:  app.vpursePort,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {

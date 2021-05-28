@@ -154,6 +154,12 @@ const assertLooksLikeAmount = amount => {
   assertLooksLikeValue(amount.value);
 };
 
+/**
+ * @param {Amount} leftAmount
+ * @param {Amount} rightAmount
+ * @param {Brand | undefined} brand
+ * @returns {NatMathHelpers | SetMathHelpers }
+ */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   assertLooksLikeAmount(leftAmount);
   assertLooksLikeAmount(rightAmount);
@@ -167,12 +173,21 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   return getHelpers(leftAmount, rightAmount);
 };
 
+/**
+ * @param {MathHelpers<Value>} h
+ * @param {Amount} leftAmount
+ * @param {Amount} rightAmount
+ * @returns {[Value, Value]}
+ */
 const coerceLR = (h, leftAmount, rightAmount) => {
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
 };
 
 /** @type {AmountMath} */
 const AmountMath = {
+  // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
+  // @ts-ignore The brand can be the second argument, but this is deprecated
   make: (brand, allegedValue) => {
     if (looksLikeBrand(allegedValue)) {
       // Swap to support deprecated reverse argument order
@@ -185,6 +200,9 @@ const AmountMath = {
     const value = getHelpersFromValue(allegedValue).doCoerce(allegedValue);
     return harden({ brand, value });
   },
+  // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
+  // @ts-ignore The brand can be the second argument, but this is deprecated
   coerce: (brand, allegedAmount) => {
     if (looksLikeBrand(allegedAmount)) {
       // Swap to support deprecated reverse argument order
@@ -200,6 +218,9 @@ const AmountMath = {
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedAmount.value);
   },
+  // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
+  // @ts-ignore The brand can be the second argument, but this is deprecated
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   makeEmpty: (brand, assetKind = AssetKind.NAT) => {
     assert(
