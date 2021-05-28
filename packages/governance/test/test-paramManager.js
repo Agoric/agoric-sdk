@@ -11,6 +11,7 @@ import { buildParamManager, ParamType } from '../src/paramManager';
 const BASIS_POINTS = 10_000;
 
 test('params one Nat', async t => {
+
   const numberKey = 'Number';
   const numberDescription = {
     name: numberKey,
