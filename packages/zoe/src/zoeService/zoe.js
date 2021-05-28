@@ -96,7 +96,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         saveIssuer,
         makeZoeMint,
         exportInstanceRecord,
-        exportIssuerStorage,
+        getIssuerRecords,
         withdrawPayments,
         initInstanceAdmin,
       } = await makeZoeInstanceStorageManager(
@@ -274,7 +274,7 @@ function makeZoe(vatAdminSvc, zcfBundleName = undefined) {
         invitationIssuer,
         zoeInstanceAdminForZcf,
         exportInstanceRecord(),
-        exportIssuerStorage(),
+        getIssuerRecords(),
       );
 
       handleOfferObjPromiseKit.resolve(handleOfferObj);

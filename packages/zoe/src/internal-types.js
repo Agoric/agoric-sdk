@@ -178,7 +178,7 @@
  * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
- * @param {ExportedIssuerStorage} issuerStorageFromZoe
+ * @param {IssuerRecords} issuerStorageFromZoe
  * @returns {Promise<ExecuteContractResult>}
  *
  */
@@ -232,7 +232,7 @@
  */
 
 /**
- * @typedef {Array<IssuerRecord>} ExportedIssuerStorage
+ * @typedef {Array<IssuerRecord>} IssuerRecords
  */
 
 /**
@@ -257,13 +257,13 @@
  */
 
 /**
- * 
+ *
  * @callback CreateSeatManager
  * The SeatManager holds the active zcfSeats and seatStagings and can
  * reallocate and make new zcfSeats.
  *
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin 
- * @param {GetAssetKindByBrand} getAssetKindByBrand 
+ * @param {ZoeInstanceAdmin} zoeInstanceAdmin
+ * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,
@@ -302,7 +302,7 @@
  */
 
 /**
- * @callback IssuerStorageExportIssuerStorage
+ * @callback GetIssuerRecords
  * @param {Issuer[]} issuers
- * @returns {ExportedIssuerStorage}
+ * @returns {IssuerRecords}
  */

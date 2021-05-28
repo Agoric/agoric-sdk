@@ -59,8 +59,8 @@
  */
 
 /**
- * @callback ExportIssuerStorage
- * @returns {ExportedIssuerStorage}
+ * @callback GetIssuerRecords
+ * @returns {IssuerRecords}
  */
 
 /**
@@ -71,7 +71,7 @@
  * @property {SaveIssuer} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {ExportInstanceRecord} exportInstanceRecord
- * @property {ExportIssuerStorage} exportIssuerStorage
+ * @property {GetIssuerRecords} getIssuerRecords
  * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
