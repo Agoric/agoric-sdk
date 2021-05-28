@@ -52,25 +52,18 @@ const start = zcf => {
 
   const sell = seat => {
     sellerSeat = seat;
-    // toBeDetermined: is this „prime the pump“ actually required here?
-    //                 should it not be in zoe seat handling instead?
-    // if it should be in zoe seat handling add these lines in at line 40 in
-    // $git-root$/packages/zoe/src/zoeService/zoeSeat.js
-    //   // Prime the notifier:
-    //   updater.updateState(initialAllocation);
 
-    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
     observeNotifier(
       sellerSeat.getNotifier(),
       harden({
         updateState: sellerSeatAllocation =>
-          availableItemsUpdater.updateState(sellerSeatAllocation.Items),
+          availableItemsUpdater.updateState(
+            sellerSeatAllocation && sellerSeatAllocation.Items,
+          ),
         finish: sellerSeatAllocation => {
-          if (sellerSeatAllocation === undefined) {
-            availableItemsUpdater.finish(undefined);
-          } else {
-            availableItemsUpdater.finish(sellerSeatAllocation.Items);
-          }
+          availableItemsUpdater.finish(
+            sellerSeatAllocation && sellerSeatAllocation.Items,
+          );
         },
         fail: reason => availableItemsUpdater.fail(reason),
       }),

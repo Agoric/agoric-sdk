@@ -8,8 +8,6 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { observeIteration } from '@agoric/notifier';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
 
 // noinspection ES6PreferShortImport
@@ -549,52 +547,40 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
 
   const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
 
-  const { creatorFacet: goldenTurdsMaker } = await E(zoe).startInstance(
+  const { creatorFacet: goldenBirdsMaker } = await E(zoe).startInstance(
     mintAndSellNFTInstallation,
   );
   const { sellItemsCreatorSeat, sellItemsInstance } = await E(
-    goldenTurdsMaker,
+    goldenBirdsMaker,
   ).sellTokens({
     customValueProperties: {
       description: ''.concat(
-        'A small golden turd, often considered',
+        'A small golden bird, often considered',
         ' a good luck charm in some cultures. ',
-        ' Manifactured by casting.',
+        ' Manufactured by casting.',
       ),
     },
-    count: 69,
+    count: 23,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: AmountMath.make(420n, moolaBrand),
+    pricePerItem: AmountMath.make(634n, moolaBrand),
   });
   t.is(
     await sellItemsCreatorSeat.getOfferResult(),
     defaultAcceptanceMsg,
-    `escrowTurdsOutcome is default acceptance message`,
+    `escrowBirdsOutcome is default acceptance message`,
   );
 
-  const turdIssuerP = E(goldenTurdsMaker).getIssuer();
-  const turdBrand = await E(turdIssuerP).getBrand();
-  const turdSalesPublicFacet = await E(zoe).getPublicFacet(sellItemsInstance);
-  const turdsForSale = await E(turdSalesPublicFacet).getAvailableItems();
-  const turdsForSaleNotifier = await E(
-    turdSalesPublicFacet,
+  const birdIssuerP = E(goldenBirdsMaker).getIssuer();
+  const birdBrand = await E(birdIssuerP).getBrand();
+  const birdSalesPublicFacet = E(zoe).getPublicFacet(sellItemsInstance);
+  const birdsForSale = await E(birdSalesPublicFacet).getAvailableItems();
+  const birdsForSaleNotifier = E(
+    birdSalesPublicFacet,
   ).getAvailableItemsNotifier();
 
-  const {
-    promise: turdsForSaleP,
-    resolve: turdsForSalePres,
-    reject: turdsForSalePrej,
-  } = makePromiseKit();
-
-  const turdsForSaleObserver = harden({
-    updateState: itemsAmount => turdsForSalePres(itemsAmount),
-    finish: () => {},
-    fail: reason => turdsForSalePrej(reason),
-  });
-  observeIteration(turdsForSaleNotifier, turdsForSaleObserver);
-  const turdsForSalePresolved = await turdsForSaleP;
-  t.is(turdsForSale, turdsForSalePresolved);
-  t.is(turdsForSale.brand, turdBrand);
-  t.is(turdsForSalePresolved.brand, turdBrand);
+  const birdsForSalePresolved = await E(birdsForSaleNotifier).getUpdateSince();
+  t.is(birdsForSale, birdsForSalePresolved.value);
+  t.is(birdsForSale.brand, birdBrand);
+  t.is(birdsForSalePresolved.value.brand, birdBrand);
 });
