@@ -90,7 +90,7 @@ proto-check-breaking: proto-tools
 	buf check breaking --against-input '.git#branch=master'
 
 TMVER = v0.34.3
-COSMOSVER = v0.41.0
+COSMOSVER = v0.42.4
 
 TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/$(TMVER)/proto/tendermint
 GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos

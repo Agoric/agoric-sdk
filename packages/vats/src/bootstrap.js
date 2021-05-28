@@ -15,6 +15,7 @@ import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager'
 import { assert, details as X } from '@agoric/assert';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, AssetKind } from '@agoric/ertp';
+import { Nat } from '@agoric/nat';
 import { makeBridgeManager } from './bridge';
 import { makeNameHubKit } from './nameHub';
 import {
@@ -140,12 +141,29 @@ export function buildRootObject(vatPowers, vatParameters) {
       return treasuryCreator;
     }
 
-    const { bootstrapAddress, donationValue = '0', bootstrapValue = '0' } =
+    // We'll usually have something like:
+    // {
+    //   type: 'AG_COSMOS_INIT',
+    //   ibcPort: 2,
+    //   storagePort: 1,
+    //   vpursePort: 3,
+    //   chainID: 'agoric',
+    //   supplyCoins: [
+    //     { denom: 'provisionpass', amount: '100' },
+    //     { denom: 'sendpacketpass', amount: '100' },
+    //     { denom: 'ubld', amount: '1000000000000000' },
+    //     { denom: 'urun', amount: '50000000000' }
+    //   ]
+    // }
+    const { supplyCoins = [] } =
       (vatParameters && vatParameters.argv && vatParameters.argv.bootMsg) || {};
-    const bootstrapPaymentValue = BigInt(bootstrapValue);
-    const donationPaymentValue = BigInt(donationValue);
+
+    const centralBootstrapSupply = supplyCoins.find(
+      ({ denom }) => denom === CENTRAL_DENOM_NAME,
+    ) || { amount: '0' };
 
     // Now we can bootstrap the economy!
+    const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
     const treasuryCreator = await installEconomy(bootstrapPaymentValue);
 
     const [
@@ -186,29 +204,20 @@ export function buildRootObject(vatPowers, vatParameters) {
         .catch(e => console.error('Error distributing fees', e));
     }
 
-    /** @type {undefined | import('@agoric/eventual-send').EOnly<Purse>} */
-    let centralBootstrapPurse;
-
-    // We just transfer the bootstrapValue in central tokens to the low-level
-    // bootstrapAddress.
-    async function depositCentralBootstrapPayment() {
-      if (!bootstrapAddress || !bootstrapPaymentValue) {
-        return;
-      }
+    // We just transfer the bootstrapValue in central tokens to the escrow
+    // purse.
+    async function depositCentralSupplyPayment() {
+      const payment = await E(treasuryCreator).getBootstrapPayment(
+        AmountMath.make(centralBrand, bootstrapPaymentValue),
+      );
       await E(bankManager).addAsset(
         CENTRAL_DENOM_NAME,
         CENTRAL_ISSUER_NAME,
         'Agoric RUN currency',
-        harden({ issuer: centralIssuer, brand: centralBrand }),
+        harden({ issuer: centralIssuer, brand: centralBrand, payment }),
       );
-      const bank = await E(bankManager).getBankForAddress(bootstrapAddress);
-      const pmt = await E(treasuryCreator).getBootstrapPayment(
-        AmountMath.make(centralBrand, bootstrapPaymentValue),
-      );
-      centralBootstrapPurse = E(bank).getPurse(centralBrand);
-      await E(centralBootstrapPurse).deposit(pmt);
     }
-    await depositCentralBootstrapPayment();
+    await depositCentralSupplyPayment();
 
     /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
     const CENTRAL_ISSUER_ENTRY = [
@@ -488,7 +497,11 @@ export function buildRootObject(vatPowers, vatParameters) {
           ['vattp', () => makeVattpFrom(vats)],
         ];
         for (const [flag, value] of powerFlagConfig) {
-          if (powerFlags && powerFlags.includes(`agoric.${flag}`)) {
+          if (
+            powerFlags &&
+            (powerFlags.includes(`agoric.${flag}`) ||
+              powerFlags.includes('agoric.ALL_THE_POWERS'))
+          ) {
             const power = typeof value === 'function' ? value() : value;
             additionalPowers[flag] = power;
           }
@@ -575,22 +588,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             return address;
           },
         };
-
-        /** @param {NatValue} value */
-        async function donateCentralFromBootstrap(value) {
-          if (!bank || !centralBootstrapPurse) {
-            return;
-          }
-          const provisionAmount = AmountMath.make(centralBrand, value);
-          const centralUserPurse = E(bank).getPurse(centralBrand);
-          const centralPayment = await E(centralBootstrapPurse).withdraw(
-            provisionAmount,
-          );
-          await E(centralUserPurse).deposit(
-            /** @type {Payment} */ (centralPayment),
-          );
-        }
-        await donateCentralFromBootstrap(donationPaymentValue);
 
         const bundle = harden({
           ...additionalPowers,
@@ -913,13 +910,7 @@ export function buildRootObject(vatPowers, vatParameters) {
                 return chainBundler.createUserBundle(
                   nickname,
                   `agoric1admin${nonce}`,
-                  [
-                    'agoric.agoricNamesAdmin',
-                    'agoric.pegasusConnections',
-                    'agoric.priceAuthorityAdmin',
-                    'agoric.treasuryCreator',
-                    'agoric.vattp',
-                  ],
+                  ['agoric.ALL_THE_POWERS'],
                 );
               }
               return chainBundler.createUserBundle(

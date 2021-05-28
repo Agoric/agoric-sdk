@@ -7,7 +7,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeVirtualPurse } from '../src/virtual-purse';
 
-const setup = t => {
+const setup = (t, escrowValue = 0n) => {
   const kit = makeIssuerKit('fungible');
   const { brand } = kit;
 
@@ -21,8 +21,6 @@ const setup = t => {
   let expectedType = 'none';
   /** @type {Amount} */
   let expectedAmount;
-
-  let currentBalance = AmountMath.makeEmpty(brand);
 
   /**
    * @param {Amount} amt
@@ -55,6 +53,8 @@ const setup = t => {
       t.is(expectedType, 'pullAmount');
       t.assert(AmountMath.isEqual(amt, expectedAmount));
       expectedType = 'none';
+      const bal = await balanceNotifier.getUpdateSince();
+      let currentBalance = bal.value;
       currentBalance = AmountMath.subtract(currentBalance, amt);
       balanceUpdater.updateState(currentBalance);
     },
@@ -63,10 +63,24 @@ const setup = t => {
       t.is(expectedType, 'pushAmount');
       t.assert(AmountMath.isEqual(amt, expectedAmount));
       expectedType = 'none';
+      const bal = await balanceNotifier.getUpdateSince();
+      let currentBalance = bal.value;
       currentBalance = AmountMath.add(currentBalance, amt);
       balanceUpdater.updateState(currentBalance);
     },
   });
+
+  const vpkit = { brand: kit.brand, issuer: kit.issuer };
+  if (escrowValue) {
+    const escrowPurse = kit.issuer.makeEmptyPurse();
+    const escrowPayment = kit.mint.mintPayment(
+      AmountMath.make(kit.brand, escrowValue),
+    );
+    escrowPurse.deposit(escrowPayment);
+    vpkit.escrowPurse = escrowPurse;
+  } else {
+    vpkit.mint = kit.mint;
+  }
 
   const vpurse = makeVirtualPurse(vpcontroller, kit);
   return { ...kit, balanceUpdater, vpurse, expected };
@@ -142,6 +156,66 @@ test('makeVirtualPurse', async t => {
     .then(checkDeposit)
     .then(performWithdrawal)
     .then(checkWithdrawal);
+});
+
+test('makeVirtualPurse withdraw from escrowPurse', async t => {
+  t.plan(11);
+  const { expected, balanceUpdater, issuer, brand, vpurse } = setup(
+    t,
+    987654321n,
+  );
+
+  const notifier = E(vpurse).getCurrentAmountNotifier();
+  let nextUpdateP = E(notifier).getUpdateSince();
+
+  const checkNotifier = async () => {
+    const { value: balance, updateCount } = await nextUpdateP;
+    t.assert(
+      AmountMath.isEqual(await E(vpurse).getCurrentAmount(), balance),
+      `the notifier balance is the same as the purse`,
+    );
+    nextUpdateP = E(notifier).getUpdateSince(updateCount);
+  };
+
+  balanceUpdater.updateState(AmountMath.makeEmpty(brand));
+  await checkNotifier();
+  t.assert(
+    AmountMath.isEqual(
+      await E(vpurse).getCurrentAmount(),
+      AmountMath.makeEmpty(brand),
+    ),
+    `empty purse is empty`,
+  );
+  t.is(await E(vpurse).getAllegedBrand(), brand, `purse's brand is correct`);
+  const fungible837 = AmountMath.make(brand, 837n);
+
+  // Synthesize the balance update.
+  balanceUpdater.updateState(fungible837);
+  await checkNotifier();
+
+  const performWithdrawal = () => {
+    expected.pullAmount(fungible837);
+    return E(vpurse).withdraw(fungible837);
+  };
+
+  const checkWithdrawal = async newPayment => {
+    issuer.getAmountOf(newPayment).then(amount => {
+      t.assert(
+        AmountMath.isEqual(amount, fungible837),
+        `the withdrawn payment has the right balance`,
+      );
+    });
+    await checkNotifier();
+    t.assert(
+      AmountMath.isEqual(
+        await E(vpurse).getCurrentAmount(),
+        AmountMath.makeEmpty(brand),
+      ),
+      `the purse is empty again`,
+    );
+  };
+
+  await performWithdrawal().then(checkWithdrawal);
 });
 
 test('vpurse.deposit', async t => {

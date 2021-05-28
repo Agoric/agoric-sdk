@@ -1,12 +1,10 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
+export const CENTRAL_DENOM = 'urun';
 export const MINT_DENOM = 'ubld';
 export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
-
-export const DEFAULT_BOOTSTRAP_VALUE = 50000n * 10n ** 6n;
-export const DEFAULT_DONATION_VALUE = 5n * 10n ** 6n;
 
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 
@@ -96,13 +94,7 @@ export function finishTendermintConfig({
 }
 
 // Rewrite/import the genesis.json.
-export function finishCosmosGenesis({
-  genesisJson,
-  exportedGenesisJson,
-  bootstrapAddress,
-  bootstrapValue,
-  donationValue,
-}) {
+export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   const genesis = JSON.parse(genesisJson);
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
@@ -132,12 +124,6 @@ export function finishCosmosGenesis({
   genesis.app_state.mint.minter.inflation = '0.0';
   genesis.app_state.mint.params.inflation_rate_change = '0.0';
   genesis.app_state.mint.params.inflation_min = '0.0';
-
-  genesis.app_state.vpurse.bootstrap_address = bootstrapAddress;
-  genesis.app_state.vpurse.bootstrap_value = `${bootstrapValue ||
-    DEFAULT_BOOTSTRAP_VALUE}`;
-  genesis.app_state.vpurse.donation_value = `${donationValue ||
-    DEFAULT_DONATION_VALUE}`;
 
   // Set the denomination for different modules.
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;

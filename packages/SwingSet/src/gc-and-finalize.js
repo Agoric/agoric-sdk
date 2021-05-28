@@ -63,11 +63,18 @@
  * dummy pre-resolved Promise.
  */
 
+let alreadyWarned = false;
 export async function gcAndFinalize() {
   if (typeof gc !== 'function') {
-    console.log(`unable to gc(), skipping`);
+    if (!alreadyWarned) {
+      alreadyWarned = true;
+      console.warn(
+        Error(`no gc() function; disabling deterministic finalizers`),
+      );
+    }
     return;
   }
+
   // on Node.js, GC seems to work better if the promise queue is empty first
   await new Promise(setImmediate);
   // on xsnap, we must do it twice for some reason

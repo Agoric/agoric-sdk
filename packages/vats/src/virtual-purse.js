@@ -33,7 +33,8 @@ import '@agoric/notifier/exported';
 /**
  * @param {ERef<VirtualPurseController>} vpc the controller that represents the
  * "other side" of this purse.
- * @param {{ issuer: ERef<Issuer>, brand: Brand, mint?: ERef<Mint> }} kit
+ * @param {{ issuer: ERef<Issuer>, brand: Brand, mint?: ERef<Mint>,
+ * escrowPurse?: ERef<Purse> }} kit
  * the contents of the issuer kit for "us".
  *
  * If the mint is not specified, then the virtual purse will escrow local assets
@@ -47,7 +48,7 @@ import '@agoric/notifier/exported';
  * conceal the methods that are returning promises instead of synchronously).
  */
 function makeVirtualPurse(vpc, kit) {
-  const { brand, issuer, mint } = kit;
+  const { brand, issuer, mint, escrowPurse } = kit;
 
   /** @type {(amt: Amount) => Promise<Payment>} */
   let redeem;
@@ -59,9 +60,10 @@ function makeVirtualPurse(vpc, kit) {
     redeem = amount => E(mint).mintPayment(amount);
   } else {
     // If we can't mint, then we need to escrow.
-    const escrowPurse = E(issuer).makeEmptyPurse();
-    retain = (payment, optAmount) => E(escrowPurse).deposit(payment, optAmount);
-    redeem = amount => E(escrowPurse).withdraw(amount);
+    const myEscrowPurse = escrowPurse || E(issuer).makeEmptyPurse();
+    retain = (payment, optAmount) =>
+      E(myEscrowPurse).deposit(payment, optAmount);
+    redeem = amount => E(myEscrowPurse).withdraw(amount);
   }
 
   /** @type {NotifierRecord<Amount>} */
