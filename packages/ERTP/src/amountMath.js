@@ -186,6 +186,7 @@ const coerceLR = (h, leftAmount, rightAmount) => {
 /** @type {AmountMath} */
 const AmountMath = {
   // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
   // @ts-ignore The brand can be the second argument, but this is deprecated
   make: (brand, allegedValue) => {
     if (looksLikeBrand(allegedValue)) {
@@ -200,6 +201,7 @@ const AmountMath = {
     return harden({ brand, value });
   },
   // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
   // @ts-ignore The brand can be the second argument, but this is deprecated
   coerce: (brand, allegedAmount) => {
     if (looksLikeBrand(allegedAmount)) {
@@ -217,6 +219,7 @@ const AmountMath = {
     return AmountMath.make(brand, allegedAmount.value);
   },
   // TODO: remove when the deprecated order is no longer allowed.
+  // https://github.com/Agoric/agoric-sdk/issues/3202
   // @ts-ignore The brand can be the second argument, but this is deprecated
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   makeEmpty: (brand, assetKind = AssetKind.NAT) => {
