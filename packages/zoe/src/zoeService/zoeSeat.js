@@ -37,6 +37,9 @@ export const makeZoeSeatAdminKit = (
   handlePKitWarning(payoutPromiseKit);
   const { notifier, updater } = makeNotifierKit();
 
+  // Prime the notifier with the initial allocation.
+  updater.updateState(initialAllocation);
+
   let currentAllocation = initialAllocation;
 
   const doExit = zoeSeatAdmin => {
