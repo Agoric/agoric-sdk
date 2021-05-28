@@ -59,8 +59,8 @@ export const makeInstanceRecordStorage = () => {
     };
   };
 
-  /** @type {ExportInstanceRecord} */
-  const exportInstanceRecord = () => {
+  /** @type {GetInstanceRecord} */
+  const getInstanceRecord = () => {
     assertInstantiated();
     return harden(instanceRecord);
   };
@@ -96,7 +96,7 @@ export const makeInstanceRecordStorage = () => {
 
   return harden({
     addIssuerToInstanceRecord,
-    exportInstanceRecord,
+    getInstanceRecord,
     getTerms,
     getIssuers,
     getBrands,

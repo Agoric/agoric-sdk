@@ -10,14 +10,14 @@ import '../internal-types';
 
 /**
  * @param {Issuer} invitationIssuer
- * @param {WeakStore<Instance,InstanceAdmin>} instanceToInstanceAdmin
+ * @param {GetInstanceAdmin} getInstanceAdmin
  * @param {DepositPayments} depositPayments
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {Offer}
  */
 export const makeOffer = (
   invitationIssuer,
-  instanceToInstanceAdmin,
+  getInstanceAdmin,
   depositPayments,
   getAssetKindByBrand,
 ) => {
@@ -32,7 +32,7 @@ export const makeOffer = (
       invitation,
     );
     // AWAIT ///
-    const instanceAdmin = instanceToInstanceAdmin.get(instanceHandle);
+    const instanceAdmin = getInstanceAdmin(instanceHandle);
     instanceAdmin.assertAcceptingOffers();
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
