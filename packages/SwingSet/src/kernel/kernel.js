@@ -111,7 +111,7 @@ export default function buildKernel(
   const { verbose, defaultManagerType = 'local' } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  const { kvStore } = hostStorage;
+  const { kvStore, streamStore } = hostStorage;
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
 
@@ -119,7 +119,11 @@ export default function buildKernel(
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole);
 
-  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(
+    enhancedCrankBuffer,
+    streamStore,
+    kernelSlog,
+  );
 
   const meterManager = makeMeterManager(replaceGlobalMeter);
 

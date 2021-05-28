@@ -237,7 +237,7 @@ test.serial('device state', async t => {
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
-  const s = getAllState(hostStorage.kvStore);
+  const s = getAllState(hostStorage).kvStuff;
   t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), capargs({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 });

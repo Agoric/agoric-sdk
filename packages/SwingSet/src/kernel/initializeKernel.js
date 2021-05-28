@@ -17,11 +17,11 @@ function makeVatRootObjectSlot() {
 export function initializeKernel(config, hostStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
 
-  const { kvStore } = hostStorage;
+  const { kvStore, streamStore } = hostStorage;
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
 
-  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
+  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer, streamStore);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);

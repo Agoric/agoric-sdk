@@ -1,3 +1,5 @@
+// XXX this is wrong; it needs to use the swingstore instead of opening the LMDB
+// file directly, then use stream store reads to get the transcript entries.
 import lmdb from 'node-lmdb';
 import process from 'process';
 import fs from 'fs';

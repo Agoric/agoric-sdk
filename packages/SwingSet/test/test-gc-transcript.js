@@ -20,6 +20,7 @@ function setup(storedTranscript = []) {
     getTranscript() {
       return storedTranscript;
     },
+    closeTranscript() {},
   };
   const kernelKeeper = {
     getVatKeeper() {

@@ -8,9 +8,10 @@ import { wrapStorage } from '../src/kernel/state/storageWrapper';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
-  const { enhancedCrankBuffer: s } = wrapStorage(initSwingStore().kvStore);
+  const hostStorage = initSwingStore();
+  const { enhancedCrankBuffer: s } = wrapStorage(hostStorage.kvStore);
 
-  const kk = makeKernelKeeper(s, slog);
+  const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
   kk.createStartingKernelState('local');
   const vatID = kk.allocateUnusedVatID();
   const vk = kk.allocateVatKeeper(vatID);

@@ -46,8 +46,7 @@ const enableKernelPromiseGC = true;
 //   $R is 'R' when reachable, '_' when merely recognizable
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
-// v$NN.t.$NN = JSON(transcript entry)
-// v$NN.t.nextID = $NN
+// v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 
 // d$NN.o.nextID = $NN
@@ -100,7 +99,7 @@ const FIRST_DEVNODE_ID = 30n;
 const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
 
-export default function makeKernelKeeper(kvStore, kernelSlog) {
+export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   insistEnhancedStorageAPI(kvStore);
 
   function getRequired(key) {
@@ -668,11 +667,12 @@ export default function makeKernelKeeper(kvStore, kernelSlog) {
   function allocateVatKeeper(vatID) {
     insistVatID(vatID);
     if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, vatID);
+      initializeVatState(kvStore, streamStore, vatID);
     }
     assert(!ephemeral.vatKeepers.has(vatID), X`vatID ${vatID} already defined`);
     const vk = makeVatKeeper(
       kvStore,
+      streamStore,
       kernelSlog,
       vatID,
       addKernelObject,
@@ -757,6 +757,7 @@ export default function makeKernelKeeper(kvStore, kernelSlog) {
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
+        vk.closeTranscript();
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },

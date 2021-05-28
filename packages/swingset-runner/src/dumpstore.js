@@ -2,7 +2,8 @@ import fs from 'fs';
 import process from 'process';
 
 /* eslint-disable no-use-before-define */
-export function dumpStore(store, outfile, rawMode) {
+export function dumpStore(swingStore, outfile, rawMode) {
+  const streamStore = swingStore.streamStore;
   let out;
   if (outfile) {
     out = fs.createWriteStream(outfile);
@@ -11,8 +12,8 @@ export function dumpStore(store, outfile, rawMode) {
   }
 
   const state = new Map();
-  for (const key of store.getKeys('', '~')) {
-    const value = store.get(key);
+  for (const key of swingStore.kvStore.getKeys('', '~')) {
+    const value = swingStore.kvStore.get(key);
     if (rawMode) {
       pkv(key, value);
     } else {
@@ -117,7 +118,7 @@ export function dumpStore(store, outfile, rawMode) {
   pgroup('kp');
   gap();
 
-  const transcript = [];
+  const vatInfo = [];
   let starting = true;
   for (const [vn, v] of vats.entries()) {
     if (starting) {
@@ -131,37 +132,40 @@ export function dumpStore(store, outfile, rawMode) {
     popt(`${v}.d.nextID`);
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
-    popt(`${v}.t.nextID`);
+    const endPos = JSON.parse(popt(`${v}.t.endPosition`));
+    vatInfo.push([v, vn, endPos]);
     for (const key of groupKeys(`${v}.c.kd`)) {
       const val = popt(key);
-      popt(`${v}.c.${val}`);
+      popt(`${v}.c.${val.slice(2)}`);
     }
     for (const key of groupKeys(`${v}.c.ko`)) {
       const val = popt(key);
-      popt(`${v}.c.${val}`);
+      popt(`${v}.c.${val.slice(2)}`);
     }
     for (const key of groupKeys(`${v}.c.kp`)) {
       const val = popt(key);
-      popt(`${v}.c.${val}`);
+      popt(`${v}.c.${val.slice(2)}`);
     }
     for (const key of groupKeys(`${v}.vs`)) {
       popt(key);
     }
-    for (const key of groupKeys(`${v}.t.`)) {
-      transcript.push([key, eat(key)]);
-    }
   }
-
-  if (transcript.length > 0) {
+  for (const info of vatInfo) {
+    const [v, vn, endPos] = info;
     gap();
-    p('// transcript');
-    transcript.sort((a, b) => {
-      const aEntry = JSON.parse(a[1]);
-      const bEntry = JSON.parse(b[1]);
-      return aEntry.crankNumber - bEntry.crankNumber;
-    });
-    for (let i = 0; i < transcript.length; i += 1) {
-      pkv(transcript[i][0], transcript[i][1]);
+    p(`// transcript of vat ${v} (${vn})`);
+    if (endPos) {
+      let idx = 1;
+      for (const item of streamStore.readStream(
+        `transcript-${v}`,
+        streamStore.STREAM_START,
+        endPos,
+      )) {
+        pkvBig('transcript', `${v}.${idx}`, item, 500);
+        idx += 1;
+      }
+    } else {
+      p(`// (no transcript)`);
     }
   }
 
@@ -263,14 +267,18 @@ export function dumpStore(store, outfile, rawMode) {
     return value;
   }
 
+  function pkvBig(tag, key, value, maxWidth = 50) {
+    if (value.length > maxWidth) {
+      pkv(key, `<<${tag} ${value.length}>>`);
+    } else {
+      pkv(key, value);
+    }
+  }
+
   function poptBig(tag, key) {
     const value = eat(key);
     if (value) {
-      if (value.length > 50) {
-        pkv(key, `<<${tag} ${value.length}>>`);
-      } else {
-        pkv(key, value);
-      }
+      pkvBig(tag, key, value);
     }
   }
 }

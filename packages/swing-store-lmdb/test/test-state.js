@@ -15,7 +15,8 @@ import {
   isSwingStore,
 } from '../src/lmdbSwingStore';
 
-function testKVStore(t, kvStore) {
+function testKVStore(t, store) {
+  const kvStore = store.kvStore;
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -39,11 +40,14 @@ function testKVStore(t, kvStore) {
   t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
   const reference = {
-    foo: 'f',
-    foo1: 'f1',
-    foo3: 'f3',
+    kvStuff: {
+      foo: 'f',
+      foo1: 'f1',
+      foo3: 'f3',
+    },
+    streamStuff: new Map(),
   };
-  t.deepEqual(getAllState(kvStore), reference, 'check state after changes');
+  t.deepEqual(getAllState(store), reference, 'check state after changes');
 }
 
 test('storageInLMDB under SES', t => {
@@ -51,15 +55,17 @@ test('storageInLMDB under SES', t => {
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const { kvStore, commit, close } = initSwingStore(dbDir);
-  testKVStore(t, kvStore);
+  const store = initSwingStore(dbDir);
+  const { commit, close } = store;
+  testKVStore(t, store);
   commit();
-  const before = getAllState(kvStore);
+  const before = getAllState(store);
   close();
   t.is(isSwingStore(dbDir), true);
 
-  const { kvStore: after, close: close2 } = openSwingStore(dbDir);
-  t.deepEqual(getAllState(after), before, 'check state after reread');
+  const store2 = openSwingStore(dbDir);
+  const { close: close2 } = store2;
+  t.deepEqual(getAllState(store2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
   close2();
 });

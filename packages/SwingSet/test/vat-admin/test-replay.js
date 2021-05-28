@@ -60,9 +60,9 @@ test('replay bundleSource-based dynamic vat', async t => {
   // we could re-use the Storage object, but I'll be paranoid and create a
   // new one.
 
-  const state1 = getAllState(hostStorage1.kvStore);
+  const state1 = getAllState(hostStorage1);
   const hostStorage2 = provideHostStorage();
-  setAllState(hostStorage2.kvStore, state1);
+  setAllState(hostStorage2, state1);
   {
     const c2 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage2,
@@ -108,9 +108,9 @@ test('replay bundleName-based dynamic vat', async t => {
     t.deepEqual(c1.kpResolution(r1), capargs('created'));
   }
 
-  const state1 = getAllState(hostStorage1.kvStore);
+  const state1 = getAllState(hostStorage1);
   const hostStorage2 = provideHostStorage();
-  setAllState(hostStorage2.kvStore, state1);
+  setAllState(hostStorage2, state1);
   {
     const c2 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage2,

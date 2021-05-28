@@ -531,7 +531,7 @@ export async function main() {
 
   function kernelStateDump() {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
-    dumpStore(swingStore.kvStore, dumpPath, rawMode);
+    dumpStore(swingStore, dumpPath, rawMode);
   }
 
   async function runBenchmark(rounds) {

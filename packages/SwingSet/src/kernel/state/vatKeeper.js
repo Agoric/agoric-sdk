@@ -15,26 +15,30 @@ import { kdebug } from '../kdebug';
 const FIRST_OBJECT_ID = 50n;
 const FIRST_PROMISE_ID = 60n;
 const FIRST_DEVICE_ID = 70n;
-const FIRST_TRANSCRIPT_ID = 0n;
 
 /**
  * Establish a vat's state.
  *
- * @param {*} kvStore  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The key-value store in which the persistent state will be kept
+ * @param {*} streamStore  Accompanying stream store
  * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
-export function initializeVatState(kvStore, vatID) {
+export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
-  kvStore.set(`${vatID}.t.nextID`, `${FIRST_TRANSCRIPT_ID}`);
+  kvStore.set(
+    `${vatID}.t.endPosition`,
+    `${JSON.stringify(streamStore.STREAM_START)}`,
+  );
 }
 
 /**
  * Produce a vat keeper for a vat.
  *
- * @param {*} kvStore  The storage in which the persistent state will be kept
+ * @param {*} kvStore  The keyValue store in which the persistent state will be kept
+ * @param {*} streamStore  Accompanying stream store, for the transcripts
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
@@ -50,6 +54,7 @@ export function initializeVatState(kvStore, vatID) {
  */
 export function makeVatKeeper(
   kvStore,
+  streamStore,
   kernelSlog,
   vatID,
   addKernelObject,
@@ -61,6 +66,7 @@ export function makeVatKeeper(
   getCrankNumber,
 ) {
   insistVatID(vatID);
+  const transcriptStream = `transcript-${vatID}`;
 
   function setSourceAndOptions(source, options) {
     // take care with API change
@@ -292,22 +298,42 @@ export function makeVatKeeper(
 
   /**
    * Generator function to return the vat's transcript, one entry at a time.
+   *
+   * @param {Object?} startPos  Optional position to begin reading from
+   *
+   * @yields {string} a stream of transcript entries
    */
-  function* getTranscript() {
-    for (const value of kvStore.getPrefixedValues(`${vatID}.t.`)) {
-      yield JSON.parse(value);
+  function* getTranscript(startPos = streamStore.STREAM_START) {
+    const endPos = JSON.parse(kvStore.get(`${vatID}.t.endPosition`));
+    for (const entry of streamStore.readStream(
+      transcriptStream,
+      startPos,
+      endPos,
+    )) {
+      yield JSON.parse(entry);
     }
   }
 
   /**
-   * Append a message to the vat's transcript.
+   * Append an entry to the vat's transcript.
    *
-   * @param {string} msg  The message to append.
+   * @param {Object} entry  The transcript entry to append.
    */
-  function addToTranscript(msg) {
-    const id = Nat(BigInt(kvStore.get(`${vatID}.t.nextID`)));
-    kvStore.set(`${vatID}.t.nextID`, `${id + 1n}`);
-    kvStore.set(`${vatID}.t.${id}`, JSON.stringify(msg));
+  function addToTranscript(entry) {
+    const oldPos = JSON.parse(kvStore.get(`${vatID}.t.endPosition`));
+    const newPos = streamStore.writeStreamItem(
+      transcriptStream,
+      JSON.stringify(entry),
+      oldPos,
+    );
+    kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
+  }
+
+  /**
+   * Cease writing to the vat's transcript.
+   */
+  function closeTranscript() {
+    streamStore.closeStream(transcriptStream);
   }
 
   function vatStats() {
@@ -319,7 +345,8 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const transcriptCount = getCount(`${vatID}.t.nextID`, FIRST_TRANSCRIPT_ID);
+    const transcriptCount = JSON.parse(kvStore.get(`${vatID}.t.endPosition`))
+      .itemCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({
@@ -363,6 +390,7 @@ export function makeVatKeeper(
     deleteCListEntriesForKernelSlots,
     getTranscript,
     addToTranscript,
+    closeTranscript,
     vatStats,
     dumpState,
   });
