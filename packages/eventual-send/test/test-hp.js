@@ -472,7 +472,8 @@ test('resolveWithPresence test nr 5', async t => {
     pr.resolveWithPresence = resolveWithPresence;
   });
   await Promise.resolve();
-  let revoker = () => {};
+  /** @type {() => void} */
+  let revoker;
   pr.resolveWithPresence(presenceEventualHandler, {
     proxy: {
       handler: presenceImmediateHandler,
@@ -520,6 +521,15 @@ test('resolveWithPresence test nr 5', async t => {
   t.not(log[5][1], undefined);
   //
   t.is(log[6][0], 'doing stuff there');
+
+  revoker();
+  t.throws(
+    () =>
+      presence.there(() => {
+        t.fail('unexpected after revoke!');
+      }),
+    { instanceOf: Error, message: /been revoked/ },
+  );
 });
 
 test('resolveWithPresence test nr 6', async t => {
@@ -659,14 +669,10 @@ test('resolveWithPresence test nr 6', async t => {
     pr.resolveWithPresence = resolveWithPresence;
   });
   await Promise.resolve();
-  let revoker = () => {};
   pr.resolveWithPresence(presenceEventualHandler, {
     proxy: {
       handler: presenceImmediateHandler,
       target: proxyTarget,
-      revokerCallback: r => {
-        revoker = r;
-      },
     },
   });
   await pr.promise
@@ -681,7 +687,6 @@ test('resolveWithPresence test nr 6', async t => {
     })
     .catch(problem => t.log('.then callback got problem:', problem));
   const presence = await pr.promise;
-  revoker();
   await Promise.resolve();
   // l('log: ', log); // smá tilraun, nú á réttum stað
   t.is(log[0][0], 'get');
