@@ -4,6 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   trade,
@@ -44,8 +45,29 @@ const start = zcf => {
 
   let sellerSeat;
 
+  const {
+    notifier: availableItemsNotifier,
+    updater: availableItemsUpdater,
+  } = makeNotifierKit();
+
   const sell = seat => {
     sellerSeat = seat;
+
+    observeNotifier(
+      sellerSeat.getNotifier(),
+      harden({
+        updateState: sellerSeatAllocation =>
+          availableItemsUpdater.updateState(
+            sellerSeatAllocation && sellerSeatAllocation.Items,
+          ),
+        finish: sellerSeatAllocation => {
+          availableItemsUpdater.finish(
+            sellerSeatAllocation && sellerSeatAllocation.Items,
+          );
+        },
+        fail: reason => availableItemsUpdater.fail(reason),
+      }),
+    );
     return defaultAcceptanceMsg;
   };
 
@@ -53,6 +75,8 @@ const start = zcf => {
     assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
     return sellerSeat.getAmountAllocated('Items');
   };
+
+  const getAvailableItemsNotifier = () => availableItemsNotifier;
 
   const buy = buyerSeat => {
     assertProposalShape(buyerSeat, {
@@ -115,6 +139,7 @@ const start = zcf => {
   /** @type {SellItemsPublicFacet} */
   const publicFacet = Far('SellItemsPublicFacet', {
     getAvailableItems,
+    getAvailableItemsNotifier,
     getItemsIssuer: () => issuers.Items,
     makeBuyerInvitation,
   });

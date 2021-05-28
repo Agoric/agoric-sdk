@@ -533,3 +533,54 @@ test(`mint and sell opera tickets`, async t => {
   );
   await ticketSellerClosesContract(sellItemsCreatorSeat);
 });
+
+//
+test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
+  // Setup initial conditions
+  const zoe = makeZoe(fakeVatAdmin);
+
+  const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
+  const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
+
+  const sellItemsBundle = await bundleSource(sellItemsRoot);
+  const sellItemsInstallation = await E(zoe).install(sellItemsBundle);
+
+  const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
+
+  const { creatorFacet: goldenBirdsMaker } = await E(zoe).startInstance(
+    mintAndSellNFTInstallation,
+  );
+  const { sellItemsCreatorSeat, sellItemsInstance } = await E(
+    goldenBirdsMaker,
+  ).sellTokens({
+    customValueProperties: {
+      description: ''.concat(
+        'A small golden bird, often considered',
+        ' a good luck charm in some cultures. ',
+        ' Manufactured by casting.',
+      ),
+    },
+    count: 23,
+    moneyIssuer: moolaIssuer,
+    sellItemsInstallation,
+    pricePerItem: AmountMath.make(634n, moolaBrand),
+  });
+  t.is(
+    await sellItemsCreatorSeat.getOfferResult(),
+    defaultAcceptanceMsg,
+    `escrowBirdsOutcome is default acceptance message`,
+  );
+
+  const birdIssuerP = E(goldenBirdsMaker).getIssuer();
+  const birdBrand = await E(birdIssuerP).getBrand();
+  const birdSalesPublicFacet = E(zoe).getPublicFacet(sellItemsInstance);
+  const birdsForSale = await E(birdSalesPublicFacet).getAvailableItems();
+  const birdsForSaleNotifier = E(
+    birdSalesPublicFacet,
+  ).getAvailableItemsNotifier();
+
+  const birdsForSalePresolved = await E(birdsForSaleNotifier).getUpdateSince();
+  t.is(birdsForSale, birdsForSalePresolved.value);
+  t.is(birdsForSale.brand, birdBrand);
+  t.is(birdsForSalePresolved.value.brand, birdBrand);
+});
