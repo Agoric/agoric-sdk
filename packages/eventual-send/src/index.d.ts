@@ -27,21 +27,16 @@ interface EHandler<T> {
 type HandledExecutor<R> = (
   resolveHandled: (value?: R) => void,
   rejectHandled: (reason?: unknown) => void,
-  resolveWithPresence: (presenceHandler: EHandler<{}>, options: resolveWithPresenceOptionsBag<{}>) => object,
+  resolveWithPresence: (presenceHandler: EHandler<{}>, options?: ResolveWithPresenceOptionsBag<{}>) => object,
 ) => void;
 
-type resolveWithPresenceOptionsBag<R> = (
-  proxy?: proxyOptionsBag,
-) => void;
-
-/*
- * @typedef { import("https://github.com/microsoft/TypeScript/blob/master/lib/lib.es2015.proxy.d.ts").ProxyHandler } ProxyHandler
- */
-type proxyOptionsBag = (
-  handler: ProxyHandler<{}>,
-  target: unknown,
-  revokerCallback?: (revoker: () => void) => void,
-);
+type ResolveWithPresenceOptionsBag<T> = {
+  proxy?: {
+    handler: ProxyHandler<T>,
+    target: unknown,
+    revokerCallback?: (revoker: () => void) => void,
+  },
+};
 
 declare interface HandledPromiseConstructor extends PromiseConstructor {
   new <R>(
