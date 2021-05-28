@@ -1,8 +1,7 @@
 /* global __dirname process */
 import { Command } from 'commander';
 
-import { assert, details as X, quote as q } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { assert, details as X } from '@agoric/assert';
 import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';
@@ -32,15 +31,6 @@ const main = async (progname, rawArgs, powers) => {
     }
     return true;
   }
-
-  const makeParseNatValue = flag => value => {
-    try {
-      const bi = BigInt(value);
-      return Nat(bi);
-    } catch (e) {
-      assert.fail(X`${q(flag)} must be a natural number, not ${value}; ${e}`);
-    }
-  };
 
   function subMain(fn, args, options) {
     return fn(progname, args, powers, options).then(
@@ -121,23 +111,6 @@ const main = async (progname, rawArgs, powers) => {
   program
     .command('set-defaults <program> <config-dir>')
     .description('update the configuration files for <program> in <config-dir>')
-    .option(
-      '--bootstrap-address <bech32>',
-      'the chain address which should receive urun',
-      '',
-    )
-    .option(
-      '--bootstrap-value <number>',
-      'the amount of urun to give to bootstrap-address',
-      makeParseNatValue('bootstrap-value'),
-      0n,
-    )
-    .option(
-      '--donation-value <number>',
-      'the amount of urun to transfer from bootsrtap-address to each client',
-      makeParseNatValue('donation-value'),
-      0n,
-    )
     .option(
       '--export-metrics',
       'open ports to export Prometheus metrics',
