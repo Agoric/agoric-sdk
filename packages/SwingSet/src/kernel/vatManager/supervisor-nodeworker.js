@@ -9,8 +9,9 @@ import '../../types';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
+import engineGC from '../../engine-gc';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { gcAndFinalize } from '../../gc-and-finalize';
+import { makeGcAndFinalize } from '../../gc-and-finalize';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent';
 import { makeLiveSlots } from '../liveSlots';
 import {
@@ -79,7 +80,7 @@ parentPort.on('message', ([type, ...margs]) => {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      gcAndFinalize,
+      gcAndFinalize: makeGcAndFinalize(engineGC),
     });
     const ls = makeLiveSlots(
       syscall,

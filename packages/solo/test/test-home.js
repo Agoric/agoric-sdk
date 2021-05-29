@@ -169,7 +169,7 @@ test.serial('home.localTimerService makeRepeater', async t => {
   const notifier = E(localTimerService).makeNotifier(1, 1);
   await E(notifier).getUpdateSince();
 
-  t.is(1, handler.getCalls());
+  t.truthy(handler.getCalls() >= 1);
   t.truthy(handler.getArgs()[0] > timestamp);
 });
 

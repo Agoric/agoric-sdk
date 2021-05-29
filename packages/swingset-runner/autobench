@@ -35,7 +35,7 @@ for (const suite of SUITES) {
     }
   }
   spawnNodeSync([
-    '--expose-gc', '-r', 'esm', 'bin/runner', '--init',
+    '-r', 'esm', 'bin/runner', '--init',
     '--benchmark', brounds, '--statsfile', benchstats, ...configFlags,
     'run', `demo/${suite}`, '--quiet', '--prime',
   ]);
