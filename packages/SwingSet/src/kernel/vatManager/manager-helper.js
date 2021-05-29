@@ -159,11 +159,15 @@ function makeManagerKit(
       delivery,
       deliveryNum,
     });
-    await deliver(delivery);
+    const dr = await deliver(delivery);
+    if (dr[0] !== 'ok') {
+      throw Error(`delivery failed: ${dr[1]}`);
+    }
     transcriptManager.finishReplayDelivery();
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
     kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
+    return dr;
   }
 
   async function replayTranscript() {
