@@ -66,8 +66,11 @@ async function replay(transcriptFile, worker = 'xs-worker') {
       JSON.parse(fs.readFileSync('supervisor-bundle')),
     ];
     const snapstorePath = undefined;
-    const env = {};
-    const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+    const env = { XSNAP_DEBUG: !true };
+    let bin;
+    //bin = '/home/warner/stuff/agoric/agoric-sdk/packages/SwingSet/3085-segfault/xsnap-binaries-agorictest-12/lin/release/xsnap';
+    //bin = '/home/warner/stuff/agoric/agoric-sdk/packages/SwingSet/3085-segfault/xsnap-pub-binaries-ava/lin/release/xsnap';
+    const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn, bin });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
@@ -136,6 +139,11 @@ async function replay(transcriptFile, worker = 'xs-worker') {
         vatSyscallHandler,
       );
       console.log(`manager created`);
+      if (0) { // enable to catch child xsnap process with gdb
+        console.log(`sleeping 30s`);
+        await new Promise(resolve => setTimeout(resolve, 30*1000));
+        console.log(`resuming`);
+      }
     } else {
       const { d: delivery, syscalls } = data;
       // syscalls = [{ d, response }, ..]
@@ -148,8 +156,10 @@ async function replay(transcriptFile, worker = 'xs-worker') {
       //   s.response = 'nope';
       //   console.log(` syscall:`, s.d, s.response);
       // }
-      await manager.replayOneDelivery(delivery, syscalls);
-      // console.log(`dr`, dr);
+      const dr = await manager.replayOneDelivery(delivery, syscalls);
+      if (lineNumber > 4300) {
+        console.log(`dr`, dr);
+      }
     }
   }
 
@@ -167,7 +177,7 @@ async function run() {
   }
   const [transcriptFile] = args;
   console.log(`using transcript ${transcriptFile}`);
-  await replay(transcriptFile, 'local');
+  await replay(transcriptFile, 'xs-worker');
 }
 
 run().catch(err => console.log('RUN ERR', err));
