@@ -81,10 +81,11 @@ export function xsnap(options) {
     throw new Error(`xsnap does not support platform ${os}`);
   }
 
-  let bin = new URL(
+  let bin = options.bin || new URL(
     `../build/bin/${platform}/${debug ? 'debug' : 'release'}/xsnap`,
     importMetaUrl,
   ).pathname;
+  console.log(`using xsnap binary ${bin}`);
 
   /** @type {Deferred<void>} */
   const vatExit = defer();
@@ -105,6 +106,7 @@ export function xsnap(options) {
     bin = 'rr';
     console.log('XSNAP_DEBUG_RR', { bin, args });
   }
+  console.log(`running xsnap with args: ${args}`);
   const xsnapProcess = spawn(bin, args, {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });

@@ -49,7 +49,7 @@ function unhandledRejectionHandler(e) {
  * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{ snapstorePath?: string, env: Record<string, string | undefined> }} opts
  */
-export function makeStartXSnap(bundles, { snapstorePath, env }) {
+export function makeStartXSnap(bundles, { snapstorePath, env, bin }) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
@@ -57,6 +57,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env }) {
     stdout: 'inherit',
     stderr: 'inherit',
     debug: !!env.XSNAP_DEBUG,
+    bin,
   };
 
   /** @type { ReturnType<typeof makeSnapstore> } */
