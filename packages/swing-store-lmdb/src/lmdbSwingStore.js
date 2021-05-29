@@ -32,7 +32,7 @@ function makeSwingStore(dirPath, forceReset = false) {
   if (forceReset) {
     fs.rmdirSync(dirPath, { recursive: true });
   }
-  fs.mkdirSync(dirPath, { recursive: true });
+  fs.mkdirSync(`${dirPath}/streams`, { recursive: true });
 
   let lmdbEnv = new lmdb.Env();
   lmdbEnv.open({
@@ -241,7 +241,7 @@ function makeSwingStore(dirPath, forceReset = false) {
       assert(itemCount === 0);
       return [];
     } else {
-      const filePath = `${dirPath}/${streamName}`;
+      const filePath = `${dirPath}/streams/${streamName}.sss`;
       fs.truncateSync(filePath, endPosition.offset);
       const fd = fs.openSync(filePath, 'r');
       streamFds.set(streamName, fd);
@@ -280,9 +280,12 @@ function makeSwingStore(dirPath, forceReset = false) {
               X`can't read stream ${q(streamName)}, it's been closed`,
             );
             const line = /** @type {string|false} */ (innerReader.next());
-            if (line) {
+            // N.b.: since uncommitted writes may leave an overhang of data in
+            // the stream file, the itemCount is the true indicator of the end
+            // of the stream, not the point at which the line reader reaches the
+            // end-of-file.
+            if (line && itemCount > 0) {
               itemCount -= 1;
-              assert(itemCount >= 0);
               const result = line.toString();
               if (skipCount > 0) {
                 skipCount -= 1;
@@ -290,6 +293,7 @@ function makeSwingStore(dirPath, forceReset = false) {
                 yield result;
               }
             } else {
+              closefd(fd);
               break;
             }
           }
@@ -323,7 +327,7 @@ function makeSwingStore(dirPath, forceReset = false) {
 
     let fd = streamFds.get(streamName);
     if (!fd) {
-      const filePath = `${dirPath}/${streamName}`;
+      const filePath = `${dirPath}/streams/${streamName}.sss`;
       const mode = fs.existsSync(filePath) ? 'r+' : 'w';
       fd = fs.openSync(filePath, mode);
       streamFds.set(streamName, fd);

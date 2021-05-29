@@ -156,6 +156,8 @@ function makeStorageInMemory() {
   return harden({ kvStore, state });
 }
 
+const streamPeek = new WeakMap(); // for tests to get raw access to the streams
+
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
@@ -341,6 +343,8 @@ function makeSwingStore(dirPath, forceReset = false) {
     STREAM_START,
   });
 
+  streamPeek.set(streamStore, streams);
+
   return harden({ kvStore, streamStore, commit, close });
 }
 
@@ -389,19 +393,29 @@ export function openSwingStore(dirPath) {
  * stupidest possible way, hence it is likely to be a performance and memory
  * hog if you attempt to use it on anything real.
  *
- * @param {KVStore} kvStore  The swing storage whose state is to be extracted.
+ * @param {SwingStore} swingStore  The swing storage whose state is to be extracted.
  *
- * @returns {Record<string, string>} an array representing all the current state in `kvStore`, one
- *    element of the form [key, value] per key/value pair.
+ * @returns {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<string>>,
+ * }}  A crude representation of all of the state of `swingStore`
  */
-export function getAllState(kvStore) {
+export function getAllState(swingStore) {
+  const { kvStore, streamStore } = swingStore;
   /** @type { Record<string, string> } */
-  const stuff = {};
+  const kvStuff = {};
   for (const key of Array.from(kvStore.getKeys('', ''))) {
     // @ts-ignore get(key) of key from getKeys() is not undefined
-    stuff[key] = kvStore.get(key);
+    kvStuff[key] = kvStore.get(key);
   }
-  return stuff;
+  const streamStuff = new Map();
+  const peek = streamPeek.get(streamStore);
+  if (peek) {
+    for (const [streamName, stream] of peek.entries()) {
+      streamStuff.set(streamName, Array.from(stream));
+    }
+  }
+  return { kvStuff, streamStuff };
 }
 
 /**
@@ -411,12 +425,24 @@ export function getAllState(kvStore) {
  * general store initialization mechanism.  In particular, note that it does
  * not bother to remove any existing state in the store that it is given.
  *
- * @param {KVStore} kvStore  The swing storage whose state is to be set.
- * @param {Array<[string, string]>} stuff  An array of key/value pairs, each element of the form [key, value]
+ * @param {SwingStore} swingStore  The swing storage whose state is to be set.
+ * @param {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<string>>,
+ * }} stuff  The state to stuff into `swingStore`
  */
-export function setAllState(kvStore, stuff) {
-  for (const k of Object.getOwnPropertyNames(stuff)) {
-    kvStore.set(k, stuff[k]);
+export function setAllState(swingStore, stuff) {
+  const { kvStore, streamStore } = swingStore;
+  const { kvStuff, streamStuff } = stuff;
+  for (const k of Object.getOwnPropertyNames(kvStuff)) {
+    kvStore.set(k, kvStuff[k]);
+  }
+  for (const [streamName, stream] of streamStuff.entries()) {
+    let pos = streamStore.STREAM_START;
+    for (const item of stream) {
+      pos = streamStore.writeStreamItem(streamName, item, pos);
+    }
+    streamStore.closeStream(streamName);
   }
 }
 

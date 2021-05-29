@@ -68,14 +68,14 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const { kvStore } = initSwingStore();
-  testStorage(t, kvStore, () => getAllState(kvStore), null);
+  const store = initSwingStore();
+  testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
 function buildHostDBAndGetState() {
-  const { kvStore } = initSwingStore();
-  const hostDB = buildHostDBInMemory(kvStore);
-  return { hostDB, getState: () => getAllState(kvStore) };
+  const store = initSwingStore();
+  const hostDB = buildHostDBInMemory(store.kvStore);
+  return { hostDB, getState: () => getAllState(store).kvStuff };
 }
 
 test('hostDBInMemory', t => {
@@ -119,15 +119,15 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const { kvStore } = initSwingStore();
-  const guardedHostStorage = guardStorage(kvStore);
-  testStorage(t, guardedHostStorage, () => getAllState(kvStore), null);
+  const store = initSwingStore();
+  const guardedHostStorage = guardStorage(store.kvStore);
+  testStorage(t, guardedHostStorage, () => getAllState(store).kvStuff, null);
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const { kvStore } = initSwingStore();
-  const { crankBuffer, commitCrank } = buildCrankBuffer(kvStore);
-  testStorage(t, crankBuffer, () => getAllState(kvStore), commitCrank);
+  const store = initSwingStore();
+  const { crankBuffer, commitCrank } = buildCrankBuffer(store.kvStore);
+  testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
 });
 
 test('crankBuffer can abortCrank', t => {
@@ -186,8 +186,8 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const { kvStore } = initSwingStore();
-  const s = addHelpers(kvStore);
+  const store = initSwingStore();
+  const s = addHelpers(store.kvStore);
 
   s.set('foo.0', 'f0');
   s.set('foo.1', 'f1');
@@ -195,7 +195,7 @@ test('storage helpers', t => {
   s.set('foo.3', 'f3');
   // omit foo.4
   s.set('foo.5', 'f5');
-  checkState(t, () => getAllState(kvStore), [
+  checkState(t, () => getAllState(store).kvStuff, [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -229,44 +229,52 @@ test('storage helpers', t => {
   t.falsy(s.has('foo.3'));
   t.falsy(s.has('foo.4'));
   t.truthy(s.has('foo.5'));
-  checkState(t, () => getAllState(kvStore), [
+  checkState(t, () => getAllState(store).kvStuff, [
     ['foo.0', 'f0'],
     ['foo.5', 'f5'],
   ]);
 });
 
 function buildKeeperStorageInMemory() {
-  const { kvStore } = initSwingStore();
+  const store = initSwingStore();
+  const { kvStore, streamStore } = store;
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
   return {
-    kstorage: enhancedCrankBuffer,
-    getState: () => getAllState(kvStore),
+    kvStore: enhancedCrankBuffer,
+    streamStore,
+    getState: () => getAllState(store).kvStuff,
     commitCrank,
   };
 }
 
 function duplicateKeeper(getState) {
-  const { kvStore } = initSwingStore();
-  setAllState(kvStore, getState());
+  const store = initSwingStore();
+  const { kvStore, streamStore } = store;
+  setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   const { enhancedCrankBuffer } = wrapStorage(kvStore);
-  return makeKernelKeeper(enhancedCrankBuffer);
+  return makeKernelKeeper(enhancedCrankBuffer, streamStore);
 }
 
 test('hostStorage param guards', async t => {
-  const { kstorage } = buildKeeperStorageInMemory();
+  const { kvStore } = buildKeeperStorageInMemory();
   const exp = { message: /true must be a string/ };
-  t.throws(() => kstorage.set('foo', true), exp);
-  t.throws(() => kstorage.set(true, 'foo'), exp);
-  t.throws(() => kstorage.has(true), exp);
-  t.throws(() => Array.from(kstorage.getKeys('foo', true)), exp);
-  t.throws(() => Array.from(kstorage.getKeys(true, 'foo')), exp);
-  t.throws(() => kstorage.get(true), exp);
-  t.throws(() => kstorage.delete(true), exp);
+  t.throws(() => kvStore.set('foo', true), exp);
+  t.throws(() => kvStore.set(true, 'foo'), exp);
+  t.throws(() => kvStore.has(true), exp);
+  t.throws(() => Array.from(kvStore.getKeys('foo', true)), exp);
+  t.throws(() => Array.from(kvStore.getKeys(true, 'foo')), exp);
+  t.throws(() => kvStore.get(true), exp);
+  t.throws(() => kvStore.delete(true), exp);
 });
 
 test('kernel state', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   t.truthy(!k.getInitialized());
   k.createStartingKernelState('local');
   k.setInitialized();
@@ -289,8 +297,13 @@ test('kernel state', async t => {
 });
 
 test('kernelKeeper vat names', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
@@ -331,8 +344,13 @@ test('kernelKeeper vat names', async t => {
 });
 
 test('kernelKeeper device names', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
@@ -373,8 +391,13 @@ test('kernelKeeper device names', async t => {
 });
 
 test('kernelKeeper runQueue', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   t.truthy(k.isRunQueueEmpty());
@@ -409,8 +432,13 @@ test('kernelKeeper runQueue', async t => {
 });
 
 test('kernelKeeper promises', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -524,8 +552,8 @@ test('kernelKeeper promises', async t => {
 });
 
 test('kernelKeeper promise resolveToData', async t => {
-  const { kstorage } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -545,8 +573,8 @@ test('kernelKeeper promise resolveToData', async t => {
 });
 
 test('kernelKeeper promise reject', async t => {
-  const { kstorage } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -566,8 +594,13 @@ test('kernelKeeper promise reject', async t => {
 });
 
 test('vatKeeper', async t => {
-  const { kstorage, getState, commitCrank } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const {
+    kvStore,
+    streamStore,
+    getState,
+    commitCrank,
+  } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
@@ -598,8 +631,8 @@ test('vatKeeper', async t => {
 });
 
 test('XS vatKeeper defaultManagerType', async t => {
-  const { kstorage } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kstorage);
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('xs-worker');
   t.is(k.getDefaultManagerType(), 'xs-worker');
 });

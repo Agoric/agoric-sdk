@@ -9,14 +9,13 @@ import { provideHostStorage } from '../src/hostStorage';
 import { buildVatController, loadBasedir } from '../src/index';
 
 async function buildTrace(c, storage) {
-  // XXX TODO also copy transcript
   const states = [];
   while (c.dump().runQueue.length) {
-    states.push(getAllState(storage.kvStore));
+    states.push(getAllState(storage));
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push(getAllState(storage.kvStore));
+  states.push(getAllState(storage));
   return states;
 }
 
@@ -51,12 +50,13 @@ test('transcript-one save', async t => {
     // Instead, we just do simple comparison.  Leave investigation to the
     // experts.
     const s2 = states2[i];
-    const extra = new Set(Object.keys(s2));
-    for (const k of Object.keys(s)) {
-      t.assert(s[k] === s2[k], `states[${i}][${k}] differs`);
+    const extra = new Set(Object.keys(s2.kvStuff));
+    for (const k of Object.keys(s.kvStuff)) {
+      t.assert(s.kvStuff[k] === s2.kvStuff[k], `states[${i}][${k}] differs`);
       extra.delete(k);
     }
     t.deepEqual([...extra.keys()], [], `states2[${i}] has missing keys`);
+    t.deepEqual(s.streamStuff, s2.streamStuff);
   });
 });
 
@@ -77,7 +77,7 @@ test('transcript-one load', async t => {
       path.resolve(__dirname, 'basedir-transcript'),
     );
     const s = provideHostStorage();
-    setAllState(s.kvStore, states[i]);
+    setAllState(s, states[i]);
     // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, ['one'], { hostStorage: s });
     // eslint-disable-next-line no-await-in-loop

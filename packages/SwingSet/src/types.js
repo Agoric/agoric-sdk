@@ -103,7 +103,7 @@
  *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { { getTranscript: () => TranscriptEntry[],
+ * @typedef { { getTranscript: (startPos?: Object) => TranscriptEntry[],
  *              vatStats: () => VatStats,
  *             } } VatKeeper
  * @typedef { { getVatKeeper: (vatID: string) => VatKeeper } } KernelKeeper

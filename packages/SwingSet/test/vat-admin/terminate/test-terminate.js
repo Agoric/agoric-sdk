@@ -133,10 +133,10 @@ test('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const state1 = getAllState(hostStorage1.kvStore);
+  const state1 = getAllState(hostStorage1);
   const hostStorage2 = provideHostStorage();
   // XXX TODO also copy transcripts
-  setAllState(hostStorage2.kvStore, state1);
+  setAllState(hostStorage2, state1);
   {
     const c2 = await buildVatController(config, [], {
       hostStorage: hostStorage2,
@@ -176,10 +176,10 @@ test('replay does not resurrect dead vat', async t => {
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
 
-  const state1 = getAllState(hostStorage1.kvStore);
+  const state1 = getAllState(hostStorage1);
   const hostStorage2 = provideHostStorage();
   // XXX TODO also copy transcripts
-  setAllState(hostStorage2.kvStore, state1);
+  setAllState(hostStorage2, state1);
   {
     const c2 = await buildVatController(config, [], {
       hostStorage: hostStorage2,
@@ -208,7 +208,7 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 9);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 8);
 
   controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
   await controller.run();

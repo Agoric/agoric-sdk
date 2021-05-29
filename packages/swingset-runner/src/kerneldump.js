@@ -135,7 +135,7 @@ export function main() {
     printMainStats(organizeMainStats(rawStats, cranks));
   } else {
     if (doDump) {
-      dumpStore(swingStore.kvStore, outfile, rawMode);
+      dumpStore(swingStore, outfile, rawMode);
     }
     if (refCounts) {
       auditRefCounts(swingStore.kvStore);
