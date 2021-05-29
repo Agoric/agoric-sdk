@@ -1,4 +1,4 @@
-/* global globalThis __dirname */
+/* global __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';

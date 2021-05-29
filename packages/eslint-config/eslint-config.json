@@ -81,6 +81,7 @@
     "jsdoc/valid-types": "off"
   },
   "ignorePatterns": [
+    "coverage/**",
     "**/output/**",
     "bundles/**",
     "dist/**",
