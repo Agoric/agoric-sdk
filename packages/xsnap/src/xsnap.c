@@ -8,6 +8,23 @@
 # error "You must define XSNAP_VERSION in the right Makefile"
 #endif
 
+#ifndef XSNAP_TEST_RECORD
+#define XSNAP_TEST_RECORD 1
+#endif
+
+#if XSNAP_TEST_RECORD
+enum {
+	mxTestRecordJS = 0,
+	mxTestRecordJSON = 1,
+	mxTestRecordParam = 2,
+	mxTestRecordReply = 4,
+};
+int gxTestRecordParamIndex = 0;
+int gxTestRecordReplyIndex = 0;
+static void fxTestRecordArgs(int argc, char* argv[]);
+static void fxTestRecord(int flags, void* buffer, size_t length);
+#endif
+
 extern txScript* fxLoadScript(txMachine* the, txString path, txUnsigned flags);
 
 typedef struct sxAliasIDLink txAliasIDLink;
@@ -236,6 +253,10 @@ ExitCode main(int argc, char* argv[])
 	char *path;
 	char* dot;
 
+#if XSNAP_TEST_RECORD
+	fxTestRecordArgs(argc, argv);
+#endif
+
 	for (argi = 1; argi < argc; argi++) {
 		if (argv[argi][0] != '-')
 			continue;
@@ -379,9 +400,15 @@ ExitCode main(int argc, char* argv[])
 					xsVars(3);
 					xsTry {
 						if (command == '?') {
+							#if XSNAP_TEST_RECORD
+								fxTestRecord(mxTestRecordJSON | mxTestRecordParam, nsbuf + 1, nslen - 1);
+							#endif
 							xsVar(0) = xsArrayBuffer(nsbuf + 1, nslen - 1);
 							xsVar(1) = xsCall1(xsGlobal, xsID("handleCommand"), xsVar(0));
 						} else {
+							#if XSNAP_TEST_RECORD
+								fxTestRecord(mxTestRecordJS | mxTestRecordParam, nsbuf + 1, nslen - 1);
+							#endif
 							xsVar(0) = xsStringBuffer(nsbuf + 1, nslen - 1);
 							xsVar(1) = xsCall1(xsGlobal, xsID("eval"), xsVar(0));
 						}
@@ -1475,9 +1502,63 @@ static void fx_issueCommand(xsMachine *the)
 		xsUnknownError(fxReadNetStringError(readError));
 	}
 
+#if XSNAP_TEST_RECORD
+	fxTestRecord(mxTestRecordJSON | mxTestRecordReply, buf, len);
+#endif
 	xsResult = xsArrayBuffer(buf, len);
 	free(buf);
 }
+
+#if XSNAP_TEST_RECORD
+
+static char directory[PATH_MAX];
+void fxTestRecordArgs(int argc, char* argv[])
+{
+	struct timeval tv;
+	struct tm* tm_info;
+	gettimeofday(&tv, NULL);
+	char path[PATH_MAX];
+	FILE* file;
+	mkdir("xsnap-tests", 0755);
+	tm_info = localtime(&tv.tv_sec);
+	strftime(path, sizeof(path), "%Y-%m-%d-%H-%M-%S", tm_info);
+	sprintf(directory, "xsnap-tests/%s-%3.3ld", path, tv.tv_usec / 1000);
+	mkdir(directory, 0755);
+	sprintf(path, "%s/args.sh", directory);
+	file = fopen(path, "w");
+	if (file) {
+		int argi;
+		for (argi = 0; argi < argc; argi++)
+			fprintf(file, " %s", argv[argi]);
+		fprintf(file, "\n");
+		fclose(file);
+	}
+}
+
+void fxTestRecord(int flags, void* buffer, size_t length)
+{
+	char path[PATH_MAX];
+	FILE* file;
+	if (flags & mxTestRecordParam) {
+		sprintf(path, "%s/param-%d", directory, gxTestRecordReplyIndex);
+		gxTestRecordReplyIndex++;
+	}
+	else {
+		sprintf(path, "%s/reply-%d", directory, gxTestRecordParamIndex);
+		gxTestRecordParamIndex++;
+	}
+	if (flags & mxTestRecordJSON)
+		strcat(path, ".json");
+	else
+		strcat(path, ".js");
+	file = fopen(path, "wb");
+	if (file) {
+		fwrite(buffer, 1, length, file);
+		fclose(file);
+	}
+}
+
+#endif
 
 
 void adjustSpaceMeter(txMachine* the, txSize theSize)
