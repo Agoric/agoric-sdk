@@ -26,6 +26,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/access-token": "^0.4.0",
     "@agoric/assert": "^0.2.12",
     "@agoric/captp": "^1.7.13",
     "@agoric/cosmic-swingset": "^0.31.0",
