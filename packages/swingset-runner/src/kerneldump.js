@@ -2,8 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
-import { openSwingStore as openLMDBSwingStore } from '@agoric/swing-store-lmdb';
-import { openSwingStore as openSimpleSwingStore } from '@agoric/swing-store-simple';
+import { openSwingStore } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
@@ -17,10 +16,8 @@ Command line:
 FLAGS may be:
   --raw       - dump the kernel state database as key/value pairs,
                 alphabetically without annotation
-  --lmdb      - read an LMDB state database (default)
   --refcounts - audit kernel promise reference counts
   --auditonly - only audit, don't dump
-  --filedb    - read a simple file-based (aka .jsonlines) data store
   --help      - print this helpful usage information
   --out PATH  - output dump to PATH ("-" indicates stdout, the default)
   --stats     - just print summary stats and exit
@@ -59,8 +56,6 @@ export function main() {
   let refCounts = false;
   let justStats = false;
   let doDump = true;
-  let dbMode = '--lmdb';
-  let dbSuffix = '.mdb';
   let outfile;
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -82,14 +77,6 @@ export function main() {
         usage();
         process.exit(0);
         break;
-      case '--filedb':
-        dbMode = '--filedb';
-        dbSuffix = '.jsonlines';
-        break;
-      case '--lmdb':
-        dbMode = '--lmdb';
-        dbSuffix = '.mdb';
-        break;
       case '-o':
       case '--out':
         outfile = argv.shift();
@@ -105,6 +92,7 @@ export function main() {
 
   const target = argv.shift();
   let kernelStateDBDir;
+  const dbSuffix = '.mdb';
   if (target.endsWith(dbSuffix)) {
     kernelStateDBDir = path.dirname(target);
   } else if (dirContains(target, dbSuffix)) {
@@ -118,17 +106,7 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  let swingStore;
-  switch (dbMode) {
-    case '--filedb':
-      swingStore = openSimpleSwingStore(kernelStateDBDir);
-      break;
-    case '--lmdb':
-      swingStore = openLMDBSwingStore(kernelStateDBDir);
-      break;
-    default:
-      fail(`invalid database mode ${dbMode}`, true);
-  }
+  const swingStore = openSwingStore(kernelStateDBDir);
   if (justStats) {
     const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
     const cranks = Number(swingStore.kvStore.get('crankNumber'));
