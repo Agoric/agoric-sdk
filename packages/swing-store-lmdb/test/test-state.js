@@ -4,7 +4,6 @@ import 'node-lmdb';
 import '@agoric/install-ses';
 
 import fs from 'fs';
-import path from 'path';
 
 import test from 'ava';
 import { getAllState } from '@agoric/swing-store-simple';
@@ -144,15 +143,4 @@ test('streamStore mode interlock', t => {
 
   commit();
   close();
-});
-
-test('rejectSimple under SES', t => {
-  const simpleDir = 'testdb-simple';
-  t.teardown(() => fs.rmdirSync(simpleDir, { recursive: true }));
-  fs.mkdirSync(simpleDir, { recursive: true });
-  fs.writeFileSync(
-    path.resolve(simpleDir, 'swingset-kernel-state.jsonlines'),
-    'some data\n',
-  );
-  t.is(isSwingStore(simpleDir), false);
 });

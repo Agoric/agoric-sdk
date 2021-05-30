@@ -1,18 +1,12 @@
 import '@agoric/install-ses';
 
-import fs from 'fs';
-import path from 'path';
-
 import test from 'ava';
-import {
-  initSwingStore,
-  openSwingStore,
-  getAllState,
-  isSwingStore,
-} from '../src/simpleSwingStore';
+import { initSwingStore, getAllState } from '../src/simpleSwingStore';
 
-function testKVStore(t, store) {
+test('kvStore read/write', t => {
+  const store = initSwingStore();
   const kvStore = store.kvStore;
+
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -44,38 +38,6 @@ function testKVStore(t, store) {
     streamStuff: new Map(),
   };
   t.deepEqual(getAllState(store), reference, 'check state after changes');
-}
-
-test('storageInMemory', t => {
-  const store = initSwingStore();
-  testKVStore(t, store);
-});
-
-test('storageInFile', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
-  t.is(isSwingStore(dbDir), false);
-  const store = initSwingStore(dbDir);
-  const { commit, close } = store;
-  testKVStore(t, store);
-  commit();
-  const before = getAllState(store);
-  close();
-  t.is(isSwingStore(dbDir), true);
-
-  const afterStore = openSwingStore(dbDir);
-  t.deepEqual(getAllState(afterStore), before, 'check state after reread');
-  t.is(isSwingStore(dbDir), true);
-});
-
-test('rejectLMDB', t => {
-  const notSimpleDir = 'testdb-lmdb';
-  t.teardown(() => fs.rmdirSync(notSimpleDir, { recursive: true }));
-  fs.mkdirSync(notSimpleDir, { recursive: true });
-  fs.writeFileSync(path.resolve(notSimpleDir, 'data.mdb'), 'some data\n');
-  fs.writeFileSync(path.resolve(notSimpleDir, 'lock.mdb'), 'lock stuff\n');
-  t.is(isSwingStore(notSimpleDir), false);
 });
 
 test('streamStore read/write', t => {

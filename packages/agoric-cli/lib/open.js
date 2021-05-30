@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import path from 'path';
 import os from 'os';
 
-import { openSwingStore } from '@agoric/swing-store-simple';
+import { openSwingStore } from '@agoric/swing-store-lmdb';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -43,7 +43,7 @@ export async function getAccessToken(port, powers = {}) {
   await fs.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.
-  const { kvStore, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const { kvStore, commit, close } = openSwingStore(sharedStateDir);
   const accessTokenKey = `accessToken/${port}`;
   if (!kvStore.has(accessTokenKey)) {
     kvStore.set(accessTokenKey, await generateAccessToken());
