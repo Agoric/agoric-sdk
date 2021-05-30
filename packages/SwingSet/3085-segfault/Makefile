@@ -1,7 +1,7 @@
 
 setup:
 	cd ../../.. && git submodule update --init && yarn
-	cd ../../xsnap/moddable && git add remote moddable https://github.com/Moddable-OpenSource/moddable
+	cd ../../xsnap/moddable && git remote add moddable https://github.com/Moddable-OpenSource/moddable
 	cd ../../xsnap/moddable && git remote update
 	cd ../../xsnap && yarn build
 
