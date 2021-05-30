@@ -1,0 +1,46 @@
+{
+  "name": "@agoric/access-token",
+  "version": "0.4.0",
+  "description": "Persistent credentials for Agoric users, backed by a simple JSON file",
+  "main": "src/access-token.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-check": "eslint '**/*.js'"
+  },
+  "dependencies": {
+    "@agoric/assert": "^0.2.12",
+    "n-readlines": "^1.0.0"
+  },
+  "devDependencies": {
+    "@agoric/install-ses": "^0.5.13",
+    "ava": "^3.12.1",
+    "esm": "^3.2.25"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "2m"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
+}
