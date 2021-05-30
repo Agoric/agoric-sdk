@@ -7,7 +7,7 @@ import express from 'express';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
 
-import { getAccessToken } from './access-token';
+import { getAccessToken } from '@agoric/access-token';
 
 // We need to CommonJS require morgan or else it warns, until:
 // https://github.com/expressjs/morgan/issues/190
