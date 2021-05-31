@@ -178,15 +178,22 @@ export function makeVatLoader(stuff) {
       : `from bundleName: ${source.bundleName}`;
     const description = `${options.description || ''} (${sourceDesc})`.trim();
 
-    kernelSlog.addVat(
-      vatID,
-      isDynamic,
-      description,
-      name,
-      vatSourceBundle,
-      managerType,
-      vatParameters,
-    );
+    let newSlog = false;
+    try {
+      kernelSlog.addVat(
+        vatID,
+        isDynamic,
+        description,
+        name,
+        vatSourceBundle,
+        managerType,
+        vatParameters,
+      );
+      newSlog = true;
+    } catch (_already) {
+      // kernelSlog already has that vat
+    }
+
     const managerOptions = {
       managerType,
       bundle: vatSourceBundle,
@@ -203,13 +210,15 @@ export function makeVatLoader(stuff) {
 
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
 
-    const finish = kernelSlog.startup(vatID);
+    const finish = newSlog && kernelSlog.startup(vatID);
     const manager = await vatManagerFactory(
       vatID,
       managerOptions,
       vatSyscallHandler,
     );
-    finish();
+    if (newSlog) {
+      finish();
+    }
     return manager;
   }
 
