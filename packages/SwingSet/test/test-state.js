@@ -283,6 +283,7 @@ test('kernel state', async t => {
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -314,6 +315,7 @@ test('kernelKeeper vat names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
@@ -361,6 +363,7 @@ test('kernelKeeper device names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -539,6 +542,7 @@ test('kernelKeeper promises', async t => {
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '20'],

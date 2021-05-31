@@ -57,6 +57,7 @@ const enableKernelPromiseGC = true;
 // d$NN.options = JSON
 
 // runQueue = JSON(runQueue) // usually empty on disk
+// gcActions = JSON(gcActions) // usually empty on disk
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
@@ -203,6 +204,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
     kvStore.set('kd.nextID', `${FIRST_DEVNODE_ID}`);
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
+    kvStore.set('gcActions', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
@@ -218,6 +220,32 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function getBundle(name) {
     return harden(JSON.parse(kvStore.get(`bundle.${name}`)));
+  }
+
+  function getGCActions() {
+    return new Set(JSON.parse(kvStore.get(`gcActions`)));
+  }
+
+  function setGCActions(actions) {
+    const a = Array.from(actions);
+    a.sort();
+    kvStore.set('gcActions', JSON.stringify(a));
+  }
+
+  function addGCActions(newActions) {
+    const actions = getGCActions();
+    for (const action of newActions) {
+      assert.typeof(action, 'string', 'addGCActions given bad action');
+      const [vatID, type, koid] = action.split(' ');
+      insistVatID(vatID);
+      assert(
+        ['dropExport', 'retireExport', 'retireImport'].includes(type),
+        `bad GCAction ${action} (type='${type}')`,
+      );
+      insistKernelType('object', koid);
+      actions.add(action);
+    }
+    setGCActions(actions);
   }
 
   function addKernelObject(ownerID) {
@@ -808,12 +836,16 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
+    const gcActions = Array.from(getGCActions());
+    gcActions.sort();
+
     const runQueue = JSON.parse(getRequired('runQueue'));
 
     return harden({
       vatTables,
       kernelTable,
       promises,
+      gcActions,
       runQueue,
     });
   }
@@ -835,6 +867,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     saveStats,
     loadStats,
     getStats,
+
+    getGCActions,
+    setGCActions,
+    addGCActions,
 
     ownerOfKernelObject,
     ownerOfKernelDevice,
