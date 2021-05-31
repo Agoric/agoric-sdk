@@ -113,7 +113,11 @@ export default function buildKernel(
     gcAndFinalize,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
-  const { verbose, defaultManagerType = 'local' } = kernelOptions;
+  const {
+    verbose,
+    defaultManagerType = 'local',
+    warehousePolicy,
+  } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
   const { kvStore, streamStore } = hostStorage;
@@ -744,7 +748,11 @@ export default function buildKernel(
     vatAdminRootKref,
   });
 
-  const vatWarehouse = makeVatWarehouse(kernelKeeper, vatLoader);
+  const vatWarehouse = makeVatWarehouse(
+    kernelKeeper,
+    vatLoader,
+    warehousePolicy,
+  );
 
   /**
    * Create a dynamically generated vat for testing purposes.  Such vats are

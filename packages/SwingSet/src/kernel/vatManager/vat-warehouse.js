@@ -5,7 +5,7 @@ import { makeVatTranslators } from '../vatTranslator';
 /**
  * @param { ReturnType<typeof import('../state/kernelKeeper').default> } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat').makeVatLoader> } vatLoader
- * @param {{ sizeHint?: number }=} policyOptions
+ * @param {{ maxVatsOnline?: number }=} policyOptions
  *
  * @typedef { ReturnType<typeof import('@agoric/swing-store-simple').initSwingStore> } SwingStore
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
@@ -14,7 +14,7 @@ import { makeVatTranslators } from '../vatTranslator';
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { sizeHint = 50 } = policyOptions || {};
+  const { maxVatsOnline = 50 } = policyOptions || {};
 
   /**
    * @typedef {{
@@ -178,11 +178,11 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // console.log('applyAvailabilityPolicy', currentVatID, recent);
     const pos = recent.indexOf(currentVatID);
     // already most recently used
-    if (pos + 1 === sizeHint) return;
+    if (pos + 1 === maxVatsOnline) return;
     if (pos >= 0) recent.splice(pos, 1);
     recent.push(currentVatID);
     // not yet full
-    if (recent.length <= sizeHint) return;
+    if (recent.length <= maxVatsOnline) return;
     const [lru] = recent.splice(0, 1);
     await evict(lru);
   }
