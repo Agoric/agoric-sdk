@@ -593,7 +593,9 @@ export default function buildKernel(
       terminationTrigger = null;
       if (message.type === 'send') {
         kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
-        kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+        if (message.msg.result) {
+          kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+        }
         let idx = 0;
         for (const argSlot of message.msg.args.slots) {
           kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
