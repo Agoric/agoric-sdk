@@ -387,6 +387,8 @@ export default function buildKernel(
       finish(deliveryResult);
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
+        // probably a metering fault, or a bug in the vat's dispatch()
+        console.log(`delivery problem, terminating vat ${vatID}`, problem);
         setTerminationTrigger(vatID, true, true, makeError(problem));
       }
     } catch (e) {
