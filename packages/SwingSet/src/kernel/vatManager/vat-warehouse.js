@@ -15,11 +15,12 @@ import { makeVatTranslators } from '../vatTranslator';
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   const { maxVatsOnline = 50 } = policyOptions || {};
+  // console.debug('makeVatWarehouse', { policyOptions });
 
   /**
    * @typedef {{
    *   manager: VatManager,
-   *   enablePipelining: boolean, //@@@put in DB. avoid spinning up a vat that isn't pipelined, in some cases.
+   *   enablePipelining: boolean,
    * }} VatInfo
    * @typedef { ReturnType<typeof import('../vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -34,10 +35,10 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   function findOrCreateTranslators(vatID) {
     let translators = xlate.get(vatID);
     if (!translators) {
-      // @@@ document pre-condition makeVatTranslators needs vatKeeper?
+      const todo = `document pre-condition makeVatTranslators needs vatKeeper?
       // or pass in the vatKeeper too;
       // grep for getVatKeeper and avoid this pattern.
-      // remove ephemeral table from kernelKeeper@@@
+      // remove ephemeral table from kernelKeeper`;
       translators = makeVatTranslators(vatID, kernelKeeper);
       xlate.set(vatID, translators);
     }
@@ -53,10 +54,11 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
-    // @@@getVatKeeper -> provideVatKeeper?
+    const todo = 'refactor getVatKeeper -> provideVatKeeper?';
     const vatKeeper =
       kernelKeeper.getVatKeeper(vatID) || kernelKeeper.allocateVatKeeper(vatID);
-    const { source, options } = vatKeeper.getSourceAndOptions(); // @@@comms vat source repeated?
+    const todo2 = `comms vat source repeated?`;
+    const { source, options } = vatKeeper.getSourceAndOptions();
 
     const translators = findOrCreateTranslators(vatID);
 
@@ -74,7 +76,10 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     };
     // console.log('provide: creating from bundle', vatID);
     const manager = await chooseLoader()(vatID, source, translators, options);
+    assert(manager, `no vat manager; kernel panic?`);
 
+    const todo3 =
+      "put in DB. avoid spinning up a vat that isn't pipelined, in some cases.";
     const { enablePipelining = false } = options;
 
     // TODO: load from snapshot
@@ -154,8 +159,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
 
-    // TODO@@@?: add a way to remove a vatKeeper from ephemeral in kernel.js
-    // so that we can get rid of a vatKeeper when we evict its vat.
+    const todo = `add a way to remove a vatKeeper from ephemeral in kernel.js
+    // so that we can get rid of a vatKeeper when we evict its vat?`;
 
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();
@@ -177,6 +182,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function applyAvailabilityPolicy(currentVatID) {
     // console.log('applyAvailabilityPolicy', currentVatID, recent);
     const pos = recent.indexOf(currentVatID);
+    // console.debug('applyAvailabilityPolicy', { currentVatID, recent, pos });
     // already most recently used
     if (pos + 1 === maxVatsOnline) return;
     if (pos >= 0) recent.splice(pos, 1);
@@ -184,6 +190,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // not yet full
     if (recent.length <= maxVatsOnline) return;
     const [lru] = recent.splice(0, 1);
+    // console.debug('evicting', { lru });
     await evict(lru);
   }
 
