@@ -35,10 +35,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   function findOrCreateTranslators(vatID) {
     let translators = xlate.get(vatID);
     if (!translators) {
-      const todo = `document pre-condition makeVatTranslators needs vatKeeper?
-      // or pass in the vatKeeper too;
-      // grep for getVatKeeper and avoid this pattern.
-      // remove ephemeral table from kernelKeeper`;
+      // NOTE: makeVatTranslators assumes
+      // vatKeeper for this vatID is available.
       translators = makeVatTranslators(vatID, kernelKeeper);
       xlate.set(vatID, translators);
     }
@@ -54,10 +52,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
-    const todo = 'refactor getVatKeeper -> provideVatKeeper?';
     const vatKeeper =
       kernelKeeper.getVatKeeper(vatID) || kernelKeeper.allocateVatKeeper(vatID);
-    const todo2 = `comms vat source repeated?`;
     const { source, options } = vatKeeper.getSourceAndOptions();
 
     const translators = findOrCreateTranslators(vatID);
@@ -78,8 +74,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const manager = await chooseLoader()(vatID, source, translators, options);
     assert(manager, `no vat manager; kernel panic?`);
 
-    const todo3 =
-      "put in DB. avoid spinning up a vat that isn't pipelined, in some cases.";
+    // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
     // TODO: load from snapshot
@@ -158,9 +153,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     if (!info) return undefined;
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
-
-    const todo = `add a way to remove a vatKeeper from ephemeral in kernel.js
-    // so that we can get rid of a vatKeeper when we evict its vat?`;
 
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();
