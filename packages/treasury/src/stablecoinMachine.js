@@ -83,8 +83,7 @@ export async function start(zcf) {
    * @type {TransferReward}
    */
   function transferReward(amount, fromSeat) {
-    fromSeat.decrementBy(
-      rewardPoolSeat.incrementBy({
+    rewardPoolSeat.incrementBy(fromSeat.decrementBy({
         RUN: amount,
       }),
     );
@@ -159,7 +158,7 @@ export async function start(zcf) {
 
       // trade the governance tokens for collateral, putting the
       // collateral on Secondary to be positioned for Autoswap
-      govSeat.decrementBy(seat.incrementBy({ Governance: govAmount }));
+      seat.incrementBy(govSeat.decrementBy({ Governance: govAmount }));
       govSeat.incrementBy({ Secondary: collateralIn });
       seat.decrementBy({ Collateral: collateralIn });
 

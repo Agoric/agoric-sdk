@@ -197,8 +197,8 @@ const start = async zcf => {
       Central: AmountMath.make(centralIn, brands.Central),
       Secondary: secondaryAmount,
     };
-    seat.decrementBy(poolSeat.incrementBy(liquidityDeposited));
-    poolSeat.decrementBy(seat.incrementBy({ Liquidity: liquidityAmountOut }));
+    poolSeat.incrementBy(seat.decrementBy(liquidityDeposited));
+    seat.incrementBy(poolSeat.decrementBy({ Liquidity: liquidityAmountOut }));
 
     zcf.reallocate(poolSeat, seat);
 
@@ -294,11 +294,10 @@ const start = async zcf => {
       Secondary: newUserSecondaryAmount,
     };
 
-    removeLiqSeat.decrementBy(
-      poolSeat.incrementBy({ Liquidity: userAllocation.Liquidity }),
+    poolSeat.incrementBy(removeLiqSeat.decrementBy({ Liquidity: userAllocation.Liquidity }),
     );
 
-    poolSeat.decrementBy(removeLiqSeat.incrementBy(liquidityRemoved));
+    removeLiqSeat.incrementBy(poolSeat.decrementBy(liquidityRemoved));
 
     zcf.reallocate(poolSeat, removeLiqSeat);
 

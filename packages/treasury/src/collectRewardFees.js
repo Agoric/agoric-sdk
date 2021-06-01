@@ -16,11 +16,9 @@ export const makeMakeCollectFeesInvitation = (
     const { zcfSeat: transferSeat } = zcf.makeEmptySeatKit();
     await E.get(offerTo(zcf, invitation, {}, {}, transferSeat)).deposited;
 
-    feeSeat.decrementBy(
-      seat.incrementBy({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
+    seat.incrementBy(feeSeat.decrementBy({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
     );
-    transferSeat.decrementBy(
-      seat.incrementBy({
+    seat.incrementBy(transferSeat.decrementBy({
         RUN: transferSeat.getAmountAllocated('RUN', runBrand),
       }),
     );

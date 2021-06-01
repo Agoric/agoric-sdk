@@ -27,8 +27,7 @@ const start = async zcf => {
     assertProposalShape(funderSeat, endowBounty);
 
     function payOffBounty(seat) {
-      funderSeat.decrementBy(
-        seat.incrementBy({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
+      seat.incrementBy(funderSeat.decrementBy({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
       );
 
       zcf.reallocate(funderSeat, seat);
@@ -57,7 +56,7 @@ const start = async zcf => {
       );
 
       // The funder gets the fee regardless of the outcome.
-      bountySeat.decrementBy(funderSeat.incrementBy({ Fee: feeAmount }));
+      funderSeat.incrementBy(bountySeat.decrementBy({ Fee: feeAmount }));
       zcf.reallocate(funderSeat, bountySeat);
 
       const wakeHandler = Far('wakeHandler', {

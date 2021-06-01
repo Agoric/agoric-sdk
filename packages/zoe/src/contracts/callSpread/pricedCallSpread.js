@@ -134,9 +134,8 @@ const start = zcf => {
         X`wanted option not a match`,
       );
 
-      collateralSeat.decrementBy(depositSeat.incrementBy(spreadAmount));
-      depositSeat.decrementBy(
-        collateralSeat.incrementBy({ Collateral: newCollateral }),
+      depositSeat.incrementBy(collateralSeat.decrementBy(spreadAmount));
+      collateralSeat.incrementBy(depositSeat.decrementBy({ Collateral: newCollateral }),
       );
 
       zcf.reallocate(collateralSeat, depositSeat);

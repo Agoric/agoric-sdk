@@ -165,9 +165,8 @@ export function makeVaultKit(
     assert(AmountMath.isGTE(runReturned, runDebt));
 
     // Return any overpayment
-    seat.decrementBy(vaultSeat.incrementBy({ RUN: runDebt }));
-    vaultSeat.decrementBy(
-      seat.incrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
+    vaultSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
+    seat.incrementBy(vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
     );
     zcf.reallocate(seat, vaultSeat);
 
@@ -236,12 +235,10 @@ export function makeVaultKit(
   function stageCollateral(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.Collateral) {
-      vaultSeat.decrementBy(
-        seat.incrementBy({ Collateral: proposal.want.Collateral }),
+      seat.incrementBy(vaultSeat.decrementBy({ Collateral: proposal.want.Collateral }),
       );
     } else if (proposal.give.Collateral) {
-      seat.decrementBy(
-        vaultSeat.incrementBy({ Collateral: proposal.give.Collateral }),
+      vaultSeat.incrementBy(seat.decrementBy({ Collateral: proposal.give.Collateral }),
       );
     }
   }
@@ -282,14 +279,14 @@ export function makeVaultKit(
   function stageRun(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
-      vaultSeat.decrementBy(seat.incrementBy({ RUN: proposal.want.RUN }));
+      seat.incrementBy(vaultSeat.decrementBy({ RUN: proposal.want.RUN }));
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
         ? runDebt
         : proposal.give.RUN;
 
-      seat.decrementBy(vaultSeat.incrementBy({ RUN: acceptedRun }));
+      vaultSeat.incrementBy(seat.decrementBy({ RUN: acceptedRun }));
     }
   }
 
@@ -411,8 +408,8 @@ export function makeVaultKit(
 
     runMint.mintGains({ RUN: runDebt }, vaultSeat);
 
-    vaultSeat.decrementBy(seat.incrementBy({ RUN: wantedRun }));
-    seat.decrementBy(vaultSeat.incrementBy({ Collateral: collateralAmount }));
+    seat.incrementBy(vaultSeat.decrementBy({ RUN: wantedRun }));
+    vaultSeat.incrementBy(seat.decrementBy({ Collateral: collateralAmount }));
     zcf.reallocate(vaultSeat, seat);
     manager.transferReward(fee, vaultSeat);
 
