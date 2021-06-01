@@ -1,14 +1,13 @@
 // @ts-check
 
 import { insistCapData } from '../capdata';
-import { makeVatRootObjectSlot } from './loadVat';
 
 /**
  * @param {string} vatID
  * @param {string} vatAdminRootKref
  * @param {boolean} shouldReject
  * @param {CapData<unknown>} info
- * @param {(vatID: string, vatSlot: string, method: string, args: unknown, policy?: string) => string?} queueToKref
+ * @param {(kref: string, method: string, args: unknown, policy?: string) => void} queueToKref
  */
 export function notifyTermination(
   vatID,
@@ -18,7 +17,6 @@ export function notifyTermination(
   queueToKref,
 ) {
   insistCapData(info);
-  const vatAdminRootObjectSlot = makeVatRootObjectSlot();
 
   // Embedding the info capdata into the arguments list, taking advantage of
   // the fact that neither vatID (which is a string) nor shouldReject (which
@@ -28,11 +26,5 @@ export function notifyTermination(
     slots: info.slots,
   };
 
-  queueToKref(
-    vatAdminRootKref,
-    vatAdminRootObjectSlot,
-    'vatTerminated',
-    args,
-    'logFailure',
-  );
+  queueToKref(vatAdminRootKref, 'vatTerminated', args, 'logFailure');
 }
