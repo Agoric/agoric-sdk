@@ -33,8 +33,8 @@ import { setupCreateZCFVat } from './createZCFVat';
  * @returns {ZoeService} The created Zoe service.
  */
 const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
-  // We must use the ZoeService before it is defined. See below where
-  // the promise is resolved.
+  // We must pass the ZoeService to `makeStartInstance` before it is
+  // defined. See below where the promise is resolved.
   /** @type {PromiseRecord<ZoeService>} */
   const zoeServicePromiseKit = makePromiseKit();
 
@@ -100,7 +100,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getInvitationDetails,
   });
 
-  // startInstance must pass the ZoeService to the newly recreated ZCF
+  // startInstance must pass the ZoeService to the newly created ZCF
   // vat, but the zoeService is not yet defined when startInstance is
   // defined. So, we pass a promise and then resolve the promise here.
   zoeServicePromiseKit.resolve(zoeService);
