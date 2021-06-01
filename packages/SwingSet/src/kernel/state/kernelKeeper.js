@@ -992,6 +992,17 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
+    const objects = [];
+    const nextObjectID = Nat(BigInt(getRequired('ko.nextID')));
+    for (let i = FIRST_OBJECT_ID; i < nextObjectID; i += 1n) {
+      const koid = makeKernelSlot('object', i);
+      if (kvStore.has(`${koid}.owner`)) {
+        const owner = kvStore.get(`${koid}.owner`);
+        const { reachable, recognizable } = getObjectRefCount(koid);
+        objects.push([koid, owner, reachable, recognizable]);
+      }
+    }
+
     const gcActions = Array.from(getGCActions());
     gcActions.sort();
 
@@ -1001,6 +1012,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       vatTables,
       kernelTable,
       promises,
+      objects,
       gcActions,
       runQueue,
     });
