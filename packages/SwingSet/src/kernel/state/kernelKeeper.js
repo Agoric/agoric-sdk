@@ -2,6 +2,7 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
+import { parseReachableAndVatSlot } from './reachable';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
 import {
   insistKernelType,
@@ -246,6 +247,11 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       actions.add(action);
     }
     setGCActions(actions);
+  }
+
+  function getReachableAndVatSlot(vatID, kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    return parseReachableAndVatSlot(kvStore.get(kernelKey));
   }
 
   function addKernelObject(ownerID) {
@@ -707,6 +713,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       addKernelPromiseForVat,
       incrementRefCount,
       decrementRefCount,
+      getReachableAndVatSlot,
       incStat,
       decStat,
       getCrankNumber,
