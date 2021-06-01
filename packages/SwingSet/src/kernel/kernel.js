@@ -963,6 +963,13 @@ export default function buildKernel(
     kernelKeeper.incrementCrankNumber();
   }
 
+  function getNextMessage() {
+    if (!kernelKeeper.isRunQueueEmpty()) {
+      return kernelKeeper.getNextMsg();
+    }
+    return undefined;
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -971,8 +978,9 @@ export default function buildKernel(
       throw new Error('must do kernel.start() before step()');
     }
     // process a single message
-    if (!kernelKeeper.isRunQueueEmpty()) {
-      await processQueueMessage(kernelKeeper.getNextMsg());
+    const message = getNextMessage();
+    if (message) {
+      await processQueueMessage(message);
       if (kernelPanic) {
         throw kernelPanic;
       }
@@ -990,9 +998,13 @@ export default function buildKernel(
       throw new Error('must do kernel.start() before run()');
     }
     let count = 0;
-    while (!kernelKeeper.isRunQueueEmpty()) {
+    for (;;) {
+      const message = getNextMessage();
+      if (!message) {
+        break;
+      }
       // eslint-disable-next-line no-await-in-loop
-      await processQueueMessage(kernelKeeper.getNextMsg());
+      await processQueueMessage(message);
       if (kernelPanic) {
         throw kernelPanic;
       }
