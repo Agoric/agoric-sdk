@@ -788,6 +788,22 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return harden(deviceIDs);
   }
 
+  function getImporters(koid) {
+    // TODO maintain an index instead of scanning every single vat
+    const importers = [];
+    function doesImport(vatID) {
+      return getVatKeeper(vatID).importsKernelSlot(koid);
+    }
+    importers.push(...getDynamicVats().filter(doesImport));
+    importers.push(
+      ...getStaticVats()
+        .map(nameAndVatID => nameAndVatID[1])
+        .filter(doesImport),
+    );
+    importers.sort();
+    return importers;
+  }
+
   // used for debugging, and tests. This returns a JSON-serializable object.
   // It includes references to live (mutable) kernel state, so don't mutate
   // the pieces, and be sure to serialize/deserialize before passing it
@@ -891,6 +907,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     addKernelObject,
     ownerOfKernelObject,
     ownerOfKernelDevice,
+    getImporters,
     deleteKernelObject,
 
     addKernelPromise,

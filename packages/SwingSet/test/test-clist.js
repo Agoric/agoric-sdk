@@ -91,3 +91,43 @@ test(`clist reachability`, async t => {
   t.is(vk.mapVatSlotToKernelSlot('o+3', false), 'ko22');
   t.is(s.get(`${vatID}.c.ko22`), '_ o+3');
 });
+
+test('getImporters', async t => {
+  const slog = makeDummySlogger({});
+  const hostStorage = initSimpleSwingStore();
+  const { enhancedCrankBuffer: s } = wrapStorage(hostStorage.kvStore);
+
+  const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
+  kk.createStartingKernelState('local');
+  const vatID1 = kk.allocateUnusedVatID();
+  kk.addDynamicVatID(vatID1);
+  const vk1 = kk.allocateVatKeeper(vatID1);
+  const vatID2 = kk.allocateUnusedVatID();
+  kk.addDynamicVatID(vatID2);
+  const vk2 = kk.allocateVatKeeper(vatID2);
+  const vatID3 = kk.allocateUnusedVatID();
+  kk.addDynamicVatID(vatID3);
+  const vk3 = kk.allocateVatKeeper(vatID3);
+
+  const kref = kk.addKernelObject('v1', 1);
+  t.deepEqual(kk.getImporters(kref), []);
+
+  const vref1 = vk1.mapKernelSlotToVatSlot(kref);
+  t.deepEqual(kk.getImporters(kref), [vatID1]);
+
+  // add 3 before 2 to check that the result is really sorted
+  const vref3 = vk3.mapKernelSlotToVatSlot(kref);
+  t.deepEqual(kk.getImporters(kref), [vatID1, vatID3]);
+
+  const vref2 = vk2.mapKernelSlotToVatSlot(kref);
+  t.deepEqual(kk.getImporters(kref), [vatID1, vatID2, vatID3]);
+
+  vk3.deleteCListEntry(kref, vref3);
+  t.deepEqual(kk.getImporters(kref), [vatID1, vatID2]);
+
+  vk1.deleteCListEntry(kref, vref1);
+  t.deepEqual(kk.getImporters(kref), [vatID2]);
+
+  vk2.deleteCListEntry(kref, vref2);
+  t.deepEqual(kk.getImporters(kref), []);
+});

@@ -118,6 +118,19 @@ export function makeVatKeeper(
     kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
   }
 
+  function importsKernelSlot(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const data = kvStore.get(kernelKey);
+    if (data) {
+      const { vatSlot } = parseReachableAndVatSlot(data);
+      const { allocatedByVat } = parseVatSlot(vatSlot);
+      if (!allocatedByVat) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Provide the kernel slot corresponding to a given vat slot, allocating a
    * new one (for exports only) if it doesn't already exist. If we're allowed
@@ -378,6 +391,7 @@ export function makeVatKeeper(
   return harden({
     setSourceAndOptions,
     getSourceAndOptions,
+    importsKernelSlot,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
     getReachableFlag,
