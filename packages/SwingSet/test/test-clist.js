@@ -16,9 +16,11 @@ test(`clist reachability`, async t => {
   const vatID = kk.allocateUnusedVatID();
   const vk = kk.allocateVatKeeper(vatID);
 
-  t.is(vk.mapKernelSlotToVatSlot('ko1'), 'o-50');
-  t.is(vk.mapKernelSlotToVatSlot('ko2'), 'o-51');
-  t.is(vk.mapKernelSlotToVatSlot('ko1'), 'o-50');
+  const ko1 = kk.addKernelObject('v1', 1);
+  t.is(vk.mapKernelSlotToVatSlot(ko1), 'o-50');
+  const ko2 = kk.addKernelObject('v1', 2);
+  t.is(vk.mapKernelSlotToVatSlot(ko2), 'o-51');
+  t.is(vk.mapKernelSlotToVatSlot(ko1), 'o-50');
 
   t.is(vk.mapVatSlotToKernelSlot('o+1'), 'ko20');
   t.is(vk.mapVatSlotToKernelSlot('o+2'), 'ko21');
@@ -31,7 +33,7 @@ test(`clist reachability`, async t => {
   t.is(s.get(`${vatID}.c.ko1`), 'R o-50');
   // now pretend that the vat drops its o-50 import: the syscall.dropImport
   // will cause the kernel to clear the reachability flag
-  vk.clearReachableFlag('ko1');
+  vk.clearReachableFlag(ko1);
   t.is(s.get(`${vatID}.c.ko1`), '_ o-50');
   // while dropped, the vat may not access the import
   t.throws(() => vk.mapVatSlotToKernelSlot('o-50'), {
@@ -40,10 +42,10 @@ test(`clist reachability`, async t => {
 
   // now the kernel sends a new message that references ko1, causing a
   // re-import
-  vk.setReachableFlag('ko1');
+  vk.setReachableFlag(ko1);
   t.is(s.get(`${vatID}.c.ko1`), 'R o-50');
   // re-import without intervening dropImport is idempotent
-  vk.setReachableFlag('ko1');
+  vk.setReachableFlag(ko1);
   t.is(s.get(`${vatID}.c.ko1`), 'R o-50');
 
   // test the same thing for exports
@@ -68,14 +70,15 @@ test(`clist reachability`, async t => {
   // syscall.dropImport to talk about an import without claiming it's
   // reachable or causing it to become reachable
 
-  t.is(vk.mapKernelSlotToVatSlot('ko3'), 'o-52');
-  vk.clearReachableFlag('ko3');
+  const ko3 = kk.addKernelObject('v1', 3);
+  t.is(vk.mapKernelSlotToVatSlot(ko3), 'o-52');
+  vk.clearReachableFlag(ko3);
   t.is(s.get(`${vatID}.c.ko3`), '_ o-52');
   t.throws(() => vk.mapVatSlotToKernelSlot('o-52'), {
     message: /vat tried to access unreachable import/,
   });
-  t.is(vk.mapVatSlotToKernelSlot('o-52', false), 'ko3');
-  t.is(vk.mapKernelSlotToVatSlot('ko3', false), 'o-52');
+  t.is(vk.mapVatSlotToKernelSlot('o-52', false), ko3);
+  t.is(vk.mapKernelSlotToVatSlot(ko3, false), 'o-52');
   t.is(s.get(`${vatID}.c.ko3`), '_ o-52');
 
   t.is(vk.mapVatSlotToKernelSlot('o+3'), 'ko22');

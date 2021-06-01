@@ -254,11 +254,14 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return parseReachableAndVatSlot(kvStore.get(kernelKey));
   }
 
-  function addKernelObject(ownerID) {
+  function addKernelObject(ownerID, id = undefined) {
+    // providing id= is only for unit tests
     insistVatID(ownerID);
-    const id = Nat(BigInt(getRequired('ko.nextID')));
+    if (id === undefined) {
+      id = Nat(BigInt(getRequired('ko.nextID')));
+      kvStore.set('ko.nextID', `${id + 1n}`);
+    }
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
-    kvStore.set('ko.nextID', `${id + 1n}`);
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
     incStat('kernelObjects');
@@ -272,6 +275,12 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       insistVatID(owner);
     }
     return owner;
+  }
+
+  function deleteKernelObject(koid) {
+    kvStore.delete(`${koid}.owner`);
+    kvStore.delete(`${koid}.refCount`);
+    // TODO: decref auxdata slots and delete auxdata, when #2069 is added
   }
 
   function addKernelDeviceNode(deviceID) {
@@ -879,8 +888,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     setGCActions,
     addGCActions,
 
+    addKernelObject,
     ownerOfKernelObject,
     ownerOfKernelDevice,
+    deleteKernelObject,
 
     addKernelPromise,
     addKernelPromiseForVat,
