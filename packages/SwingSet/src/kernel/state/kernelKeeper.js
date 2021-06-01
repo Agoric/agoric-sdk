@@ -818,7 +818,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
           }
         }
       }
-      // setGCActions(actions); // disabled for now
+      setGCActions(actions);
     }
     maybeFreeKrefs.clear();
   }

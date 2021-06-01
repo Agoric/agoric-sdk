@@ -837,7 +837,7 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots acting upon dropExports`);
+    console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
     for (const vref of vrefs) {
       const wr = slotToVal.get(vref);
       const o = wr && wr.deref();
@@ -851,14 +851,14 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireExports`);
+    console.log(`-- liveslots ignoring retireExports ${vrefs.join(',')}`);
   }
 
   function retireImports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireImports`);
+    console.log(`-- liveslots ignoring retireImports ${vrefs.join(',')}`);
   }
 
   // TODO: when we add notifyForward, guard against cycles

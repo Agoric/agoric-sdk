@@ -117,19 +117,31 @@ export function makeKernelSyscallHandler(tools) {
 
   function dropImports(koids) {
     assert(Array.isArray(koids), X`dropImports given non-Array ${koids}`);
-    console.log(`-- kernel ignoring dropImports ${koids.join(',')}`);
+    // all the work was done during translation, there's nothing to do here
+    console.log(`-- kernel did dropImports ${koids.join(',')}`);
     return OKNULL;
   }
 
   function retireImports(koids) {
     assert(Array.isArray(koids), X`retireImports given non-Array ${koids}`);
-    console.log(`-- kernel ignoring retireImports ${koids.join(',')}`);
+    // all the work was done during translation, there's nothing to do here
+    console.log(`-- kernel did retireImports ${koids.join(',')}`);
     return OKNULL;
   }
 
   function retireExports(koids) {
     assert(Array.isArray(koids), X`retireExports given non-Array ${koids}`);
-    console.log(`-- kernel ignoring retireExports ${koids.join(',')}`);
+    console.log(`-- kernel doing retireExports ${koids.join(',')}`);
+    const newActions = [];
+    for (const koid of koids) {
+      const importers = kernelKeeper.getImporters(koid);
+      for (const vatID of importers) {
+        newActions.push(`${vatID} retireImport ${koid}`);
+        // TODO: decref and delete any #2069 auxdata
+        kernelKeeper.deleteKernelObject(koid);
+      }
+    }
+    kernelKeeper.addGCActions(newActions);
     return OKNULL;
   }
 
