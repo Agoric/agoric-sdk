@@ -51,7 +51,10 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * kernel's mapping tables.
  * @param {*} incrementRefCount
  * @param {*} decrementRefCount
+ * @param {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
+ * @param {(kernelSlot: string, { reachable: Number, recognizable: Number }) => undefined} setObjectRefCount
  * @param {(vatID: string, kernelSlot: string) => {reachable: boolean, vatSlot: string}} getReachableAndVatSlot
+ * @param {(kernelSlot: string) => undefined} addMaybeFreeKref
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
@@ -66,7 +69,10 @@ export function makeVatKeeper(
   addKernelPromiseForVat,
   incrementRefCount,
   decrementRefCount,
+  getObjectRefCount,
+  setObjectRefCount,
   getReachableAndVatSlot,
+  addMaybeFreeKref,
   incStat,
   decStat,
   getCrankNumber,
@@ -103,19 +109,40 @@ export function makeVatKeeper(
   }
 
   function setReachableFlag(kernelSlot) {
-    // const { type } = parseKernelSlot(kernelSlot);
+    const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
-    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
-    // const { allocatedByVat } = parseVatSlot(vatSlot);
+    const { isReachable, vatSlot } = parseReachableAndVatSlot(
+      kvStore.get(kernelKey),
+    );
+    const { allocatedByVat } = parseVatSlot(vatSlot);
     kvStore.set(kernelKey, buildReachableAndVatSlot(true, vatSlot));
+    // increment 'reachable' part of refcount, but only for object imports
+    if (!isReachable && type === 'object' && !allocatedByVat) {
+      // eslint-disable-next-line prefer-const
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      reachable += 1;
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
+    }
   }
 
   function clearReachableFlag(kernelSlot) {
-    // const { type } = parseKernelSlot(kernelSlot);
+    const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
-    const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
-    // const { allocatedByVat } = parseVatSlot(vatSlot);
+    const { isReachable, vatSlot } = parseReachableAndVatSlot(
+      kvStore.get(kernelKey),
+    );
+    const { allocatedByVat } = parseVatSlot(vatSlot);
     kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+    // decrement 'reachable' part of refcount, but only for object imports
+    if (isReachable && type === 'object' && !allocatedByVat) {
+      // eslint-disable-next-line prefer-const
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      reachable -= 1;
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
+      if (reachable === 0) {
+        addMaybeFreeKref(kernelSlot);
+      }
+    }
   }
 
   function importsKernelSlot(kernelSlot) {
@@ -152,6 +179,7 @@ export function makeVatKeeper(
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
+          // this sets the initial refcount to reachable:0 recognizable:0
           kernelSlot = addKernelObject(vatID);
         } else if (type === 'device') {
           assert.fail(X`normal vats aren't allowed to export device nodes`);
@@ -160,15 +188,18 @@ export function makeVatKeeper(
         } else {
           assert.fail(X`unknown type ${type}`);
         }
-        incrementRefCount(kernelSlot, `${vatID}|vk|clist`);
+        // now increment the refcount with isExport=true and
+        // onlyRecognizable=true, which will skip object exports (we only
+        // count imports) and leave the reachability count at zero
+        incrementRefCount(kernelSlot, `${vatID}|vk|clist`, true, true);
         const kernelKey = `${vatID}.c.${kernelSlot}`;
         incStat('clistEntries');
-        // we add the key as "unreachable", and then rely on
-        // setReachableFlag() at the end to both mark it reachable and to
+        // we add the key as "unreachable" but "recognizable", and then rely
+        // on setReachableFlag() at the end to both mark it reachable and to
         // update any necessary refcounts consistently
         kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
         kvStore.set(vatKey, kernelSlot);
-        kernelSlog &&
+        if (kernelSlog) {
           kernelSlog.changeCList(
             vatID,
             getCrankNumber(),
@@ -176,6 +207,7 @@ export function makeVatKeeper(
             kernelSlot,
             vatSlot,
           );
+        }
         kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
@@ -227,14 +259,16 @@ export function makeVatKeeper(
       } else {
         assert.fail(X`unknown type ${type}`);
       }
-      incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
+      // use isExport=false, since this is an import, and leave reachable
+      // alone to defer to setReachableFlag below
+      incrementRefCount(kernelSlot, `${vatID}|vk|clist`, false, true);
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;
       incStat('clistEntries');
       kvStore.set(vatKey, kernelSlot);
       kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
-      kernelSlog &&
+      if (kernelSlog) {
         kernelSlog.changeCList(
           vatID,
           getCrankNumber(),
@@ -242,6 +276,7 @@ export function makeVatKeeper(
           kernelSlot,
           vatSlot,
         );
+      }
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
@@ -276,14 +311,16 @@ export function makeVatKeeper(
    *
    * @param {string} kernelSlot  The kernel slot being removed
    * @param {string} vatSlot  The vat slot being removed
+   * @param {boolean} decref Decrement the related refcounts. Use 'false' when the object is already deleted.
    */
-  function deleteCListEntry(kernelSlot, vatSlot) {
-    parseKernelSlot(kernelSlot);
-    parseVatSlot(vatSlot);
+  function deleteCListEntry(kernelSlot, vatSlot, decref) {
+    parseKernelSlot(kernelSlot); // used for its assert()
+    const { allocatedByVat } = parseVatSlot(vatSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const vatKey = `${vatID}.c.${vatSlot}`;
+    assert(kvStore.has(kernelKey));
     kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
-    kernelSlog &&
+    if (kernelSlog) {
       kernelSlog.changeCList(
         vatID,
         getCrankNumber(),
@@ -291,18 +328,25 @@ export function makeVatKeeper(
         kernelSlot,
         vatSlot,
       );
-    if (kvStore.has(kernelKey)) {
-      decrementRefCount(kernelSlot, `${vatID}|del|clist`);
-      decStat('clistEntries');
-      kvStore.delete(kernelKey);
-      kvStore.delete(vatKey);
     }
+    if (decref) {
+      const isExport = allocatedByVat;
+      // First, make sure the reachable flag is clear, which might reduce the
+      // reachable refcount. Note that we need the clist entry to find this,
+      // so decref before delete.
+      clearReachableFlag(kernelSlot);
+      // then decrementRefCount only the recognizable portion of the refcount
+      decrementRefCount(kernelSlot, `${vatID}|del|clist`, isExport, true);
+    }
+    decStat('clistEntries');
+    kvStore.delete(kernelKey);
+    kvStore.delete(vatKey);
   }
 
   function deleteCListEntriesForKernelSlots(kernelSlots) {
     for (const kernelSlot of kernelSlots) {
       const vatSlot = mapKernelSlotToVatSlot(kernelSlot);
-      deleteCListEntry(kernelSlot, vatSlot);
+      deleteCListEntry(kernelSlot, vatSlot, true);
     }
   }
 

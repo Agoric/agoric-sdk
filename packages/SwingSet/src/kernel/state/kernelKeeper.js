@@ -17,7 +17,7 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '../metrics';
 
-const enableKernelPromiseGC = true;
+const enableKernelGC = true;
 
 // Kernel state lives in a key-value store. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
@@ -62,6 +62,7 @@ const enableKernelPromiseGC = true;
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
+// ko$NN.refCount = $NN,$MM  // reachable count, recognizable count
 // kd.nextID = $NN
 // kd$NN.owner = $vatID
 // kp.nextID = $NN
@@ -254,6 +255,31 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return parseReachableAndVatSlot(kvStore.get(kernelKey));
   }
 
+  function getObjectRefCount(kernelSlot) {
+    const data = kvStore.get(`${kernelSlot}.refCount`);
+    assert(data, `getObjectRefCount(${kernelSlot}) was missing`);
+    const [reachable, recognizable] = commaSplit(data).map(Number);
+    assert(
+      reachable <= recognizable,
+      `refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`,
+    );
+    return { reachable, recognizable };
+  }
+
+  function setObjectRefCount(kernelSlot, { reachable, recognizable }) {
+    assert.typeof(reachable, 'number');
+    assert.typeof(recognizable, 'number');
+    assert(
+      reachable >= 0 && recognizable >= 0,
+      `${kernelSlot} underflow ${reachable},${recognizable}`,
+    );
+    assert(
+      reachable <= recognizable,
+      `refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`,
+    );
+    kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
+  }
+
   function addKernelObject(ownerID, id = undefined) {
     // providing id= is only for unit tests
     insistVatID(ownerID);
@@ -264,6 +290,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
+    setObjectRefCount(s, { reachable: 0, recognizable: 0 });
     incStat('kernelObjects');
     return s;
   }
@@ -637,69 +664,163 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return JSON.parse(getRequired('vat.dynamicIDs'));
   }
 
-  const deadKernelPromises = new Set();
+  // As refcounts are decremented, we accumulate a set of krefs for which
+  // action might need to be taken:
+  //   * promises which are now resolved and unreferenced can be deleted
+  //   * objects which are no longer reachable: export can be dropped
+  //   * objects which are no longer recognizable: export can be retired
+
+  // This set is ephemeral: it lives in RAM, grows as deliveries and syscalls
+  // cause decrefs, and is harvested by processRefcounts(). This needs to be
+  // called in the same transaction window as the syscalls/etc which prompted
+  // the change, else removals might be lost (not performed during the next
+  // replay).
+
+  const maybeFreeKrefs = new Set();
+  function addMaybeFreeKref(kref) {
+    insistKernelType('object', kref);
+    maybeFreeKrefs.add(kref);
+  }
 
   /**
    * Increment the reference count associated with some kernel object.
    *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all objects with kernel slots.
+   * We track references to promises and objects, but not devices. Promises
+   * have only a "reachable" count, whereas objects track both "reachable"
+   * and "recognizable" counts.
    *
    * @param {string} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {string} _tag
+   * @param {string?} tag  Debugging note with rough source of the reference.
+   * @param {boolean?} isExport The reference comes from a clist export, which counts for promises but not objects.
+   * @param {boolean?} onlyRecognizable The reference provides only recognition, not reachability
    */
-  function incrementRefCount(kernelSlot, _tag) {
-    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+  function incrementRefCount(
+    kernelSlot,
+    tag,
+    isExport = false,
+    onlyRecognizable = false,
+  ) {
+    assert(
+      kernelSlot,
+      `incrementRefCount called with empty kernelSlot, tag=${tag}`,
+    );
+    const { type } = parseKernelSlot(kernelSlot);
+    if (type === 'promise') {
       const refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`))) + 1n;
       // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
+    }
+    if (type === 'object' && !isExport) {
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      if (!onlyRecognizable) {
+        reachable += 1;
+      }
+      recognizable += 1;
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
 
   /**
    * Decrement the reference count associated with some kernel object.
    *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all objects with kernel slots.
+   * We track references to promises and objects.
    *
    * @param {string} kernelSlot  The kernel slot whose refcount is to be decremented.
    * @param {string} tag
+   * @param {boolean?} isExport  The reference comes from a clist export, which counts for promises but not objects.
+   * @param {boolean?} onlyRecognizable The reference being deleted only provided recognition, not reachability
    * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
    */
-  function decrementRefCount(kernelSlot, tag) {
-    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+  function decrementRefCount(
+    kernelSlot,
+    tag,
+    isExport = false,
+    onlyRecognizable = false,
+  ) {
+    assert(
+      kernelSlot,
+      `decrementRefCount called with empty kernelSlot, tag=${tag}`,
+    );
+    const { type } = parseKernelSlot(kernelSlot);
+    if (type === 'promise') {
       let refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`)));
       assert(refCount > 0n, X`refCount underflow {kernelSlot} ${tag}`);
       refCount -= 1n;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
       if (refCount === 0n) {
-        deadKernelPromises.add(kernelSlot);
+        maybeFreeKrefs.add(kernelSlot);
         return true;
       }
     }
+    if (type === 'object' && !isExport) {
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      if (!onlyRecognizable) {
+        reachable -= 1;
+      }
+      recognizable -= 1;
+      maybeFreeKrefs.add(kernelSlot);
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
+    }
+
     return false;
   }
 
-  function purgeDeadKernelPromises() {
-    if (enableKernelPromiseGC) {
-      for (const kpid of deadKernelPromises.values()) {
-        const kp = getKernelPromise(kpid);
-        if (kp.refCount === 0) {
-          let idx = 0;
-          for (const slot of kp.data.slots) {
-            // Note: the following decrement can result in an addition to the
-            // deadKernelPromises set, which we are in the midst of iterating.
-            // TC39 went to a lot of trouble to ensure that this is kosher.
-            decrementRefCount(slot, `gc|${kpid}|s${idx}`);
-            idx += 1;
+  function decrementRecognizableCount(kernelSlot) {
+    // eslint-disable-next-line prefer-const
+    let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+    recognizable -= 1;
+    setObjectRefCount(kernelSlot, { reachable, recognizable });
+  }
+
+  function processRefcounts() {
+    if (enableKernelGC) {
+      const actions = getGCActions(); // local cache
+      // TODO (else buggy): change the iteration to handle krefs that get
+      // added multiple times (while we're iterating), because we might do
+      // different work the second time around. Something like an ordered
+      // Set, and a loop that: pops the first kref off, processes it (maybe
+      // adding more krefs), repeats until the thing is empty.
+      for (const kref of maybeFreeKrefs.values()) {
+        const { type } = parseKernelSlot(kref);
+        if (type === 'promise') {
+          const kpid = kref;
+          const kp = getKernelPromise(kpid);
+          if (kp.refCount === 0) {
+            let idx = 0;
+            for (const slot of kp.data.slots) {
+              // Note: the following decrement can result in an addition to the
+              // maybeFreeKrefs set, which we are in the midst of iterating.
+              // TC39 went to a lot of trouble to ensure that this is kosher.
+              decrementRefCount(slot, `gc|${kpid}|s${idx}`);
+              idx += 1;
+            }
+            deleteKernelPromise(kpid);
           }
-          deleteKernelPromise(kpid);
+        }
+        if (type === 'object') {
+          const { reachable, recognizable } = getObjectRefCount(kref);
+          if (reachable === 0) {
+            const ownerVatID = ownerOfKernelObject(kref);
+            // eslint-disable-next-line no-use-before-define
+            const vatKeeper = getVatKeeper(ownerVatID);
+            const isReachable = vatKeeper.getReachableFlag(kref);
+            if (isReachable) {
+              // the reachable count is zero, but the vat doesn't realize it
+              actions.add(`${ownerVatID} dropExport ${kref}`);
+            }
+            if (recognizable === 0) {
+              // TODO: rethink this
+              // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
+              actions.add(`${ownerVatID} retireExport ${kref}`);
+            }
+          }
         }
       }
+      // setGCActions(actions); // disabled for now
     }
-    deadKernelPromises.clear();
+    maybeFreeKrefs.clear();
   }
 
   function getVatKeeper(vatID) {
@@ -722,7 +843,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       addKernelPromiseForVat,
       incrementRefCount,
       decrementRefCount,
+      getObjectRefCount,
+      setObjectRefCount,
       getReachableAndVatSlot,
+      addMaybeFreeKref,
       incStat,
       decStat,
       getCrankNumber,
@@ -892,7 +1016,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
     getCrankNumber,
     incrementCrankNumber,
-    purgeDeadKernelPromises,
+    processRefcounts,
 
     incStat,
     decStat,
@@ -922,6 +1046,8 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     clearDecider,
     incrementRefCount,
     decrementRefCount,
+    getObjectRefCount,
+    decrementRecognizableCount,
 
     addToRunQueue,
     isRunQueueEmpty,
