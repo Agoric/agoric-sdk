@@ -23,12 +23,15 @@ import { Position } from './position';
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;
 
+const evaluateInvitationInput = x =>
+  Number(x).toString().length < 4 ? (x * BASIS_POINTS) / PERCENT_BASE : x;
+
 /**
  * This contract implements a fully collateralized call spread. This is a
  * combination of a call option bought at one strike price and a second call
  * option sold at a higher price. The invitations are produced in pairs. The
- * creatorFacet has a method makeInvitationPair(longCollateralShare) whose
- * argument must be a number between 0 and 100. makeInvitationPair() returns two
+ * creatorFacet has a method makeInvitations(longCollateralShare) whose
+ * argument must be a number between 0 and 100. makeInvitations() returns two
  * invitations which require depositing amounts summing to the settlement amount
  * in the proportions longCollateralShare and (100 - longCollateralShare) to
  * redeem the respective options/invitations. (They are returned under the
@@ -154,14 +157,9 @@ const start = zcf => {
     });
   }
 
-  // TODO(2282): change the API so the caller can provide share in basis points
-  //  rather than percent
-  function makeInvitationPair(longCollateralShare) {
-    const longPercent = makeRatio(
-      (longCollateralShare * BASIS_POINTS) / PERCENT_BASE,
-      brands.Collateral,
-      BASIS_POINTS,
-    );
+  function makeInvitations(longCollateralShare) {
+    const numerator = evaluateInvitationInput(longCollateralShare);
+    const longPercent = makeRatio(numerator, brands.Collateral, BASIS_POINTS);
 
     const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
     const shortInvitation = makeOptionInvitation(
@@ -172,7 +170,7 @@ const start = zcf => {
     return { longInvitation, shortInvitation };
   }
 
-  const creatorFacet = Far('creatorFacet', { makeInvitationPair });
+  const creatorFacet = Far('creatorFacet', { makeInvitations });
   return harden({ creatorFacet });
 };
 
