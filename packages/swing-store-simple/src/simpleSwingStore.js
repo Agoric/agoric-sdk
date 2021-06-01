@@ -286,8 +286,10 @@ function makeSwingStore() {
  */
 export function initSwingStore(dirPath) {
   if (dirPath) {
-    console.log(
-      `Warning: initSwingStore ignoring dirPath, simpleStore is memory only`,
+    console.error(
+      Error(
+        `Warning: initSwingStore ignoring dirPath, simpleStore is memory only`,
+      ),
     );
   }
   return makeSwingStore();
@@ -309,8 +311,10 @@ export function initSwingStore(dirPath) {
  */
 export function openSwingStore(dirPath) {
   if (dirPath) {
-    console.log(
-      `Warning: openSwingStore ignoring dirPath, simpleStore is memory only`,
+    console.error(
+      Error(
+        `Warning: initSwingStore ignoring dirPath, simpleStore is memory only`,
+      ),
     );
   }
   return makeSwingStore();
