@@ -6,7 +6,7 @@
  * A note about ERTP AssetKinds: Within Zoe, the assetKind of
  * validated amounts must be consistent with the brand's assetKind.
  * This is stricter than the validation provided by AmountMath
- * currently. When the brand has a assetKind itself, AmountMath will
+ * currently. When the brand has an assetKind itself, AmountMath will
  * validate that.
  */
 import '@agoric/ertp/exported';
