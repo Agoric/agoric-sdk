@@ -10,10 +10,10 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet';
  * @param {string=} zcfBundleName
  * @returns {CreateZCFVat}
  */
-export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName) => {
+export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName = undefined) => {
   /** @type {CreateZCFVat} */
   const createZCFVat = () =>
-    zcfBundleName
+    typeof zcfBundleName === 'string'
       ? E(vatAdminSvc).createVatByName(zcfBundleName)
       : E(vatAdminSvc).createVat(zcfContractBundle);
   return createZCFVat;
