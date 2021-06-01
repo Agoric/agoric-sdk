@@ -294,7 +294,8 @@ const start = async zcf => {
       Secondary: newUserSecondaryAmount,
     };
 
-    poolSeat.incrementBy(removeLiqSeat.decrementBy({ Liquidity: userAllocation.Liquidity }),
+    poolSeat.incrementBy(
+      removeLiqSeat.decrementBy({ Liquidity: userAllocation.Liquidity }),
     );
 
     removeLiqSeat.incrementBy(poolSeat.decrementBy(liquidityRemoved));

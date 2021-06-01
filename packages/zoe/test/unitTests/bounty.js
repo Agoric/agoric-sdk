@@ -27,7 +27,10 @@ const start = async zcf => {
     assertProposalShape(funderSeat, endowBounty);
 
     function payOffBounty(seat) {
-      seat.incrementBy(funderSeat.decrementBy({ Bounty: funderSeat.getCurrentAllocation().Bounty }),
+      seat.incrementBy(
+        funderSeat.decrementBy({
+          Bounty: funderSeat.getCurrentAllocation().Bounty,
+        }),
       );
 
       zcf.reallocate(funderSeat, seat);

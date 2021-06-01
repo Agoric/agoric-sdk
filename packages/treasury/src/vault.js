@@ -166,7 +166,8 @@ export function makeVaultKit(
 
     // Return any overpayment
     vaultSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
-    seat.incrementBy(vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
+    seat.incrementBy(
+      vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
     );
     zcf.reallocate(seat, vaultSeat);
 
@@ -235,10 +236,12 @@ export function makeVaultKit(
   function stageCollateral(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.Collateral) {
-      seat.incrementBy(vaultSeat.decrementBy({ Collateral: proposal.want.Collateral }),
+      seat.incrementBy(
+        vaultSeat.decrementBy({ Collateral: proposal.want.Collateral }),
       );
     } else if (proposal.give.Collateral) {
-      vaultSeat.incrementBy(seat.decrementBy({ Collateral: proposal.give.Collateral }),
+      vaultSeat.incrementBy(
+        seat.decrementBy({ Collateral: proposal.give.Collateral }),
       );
     }
   }

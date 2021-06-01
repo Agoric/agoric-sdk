@@ -110,9 +110,11 @@ const start = async zcf => {
         give: { Collateral: null },
         want: { LongOption: null, ShortOption: null },
       });
-      collateralSeat.incrementBy(creatorSeat.decrementBy({ Collateral: settlementAmount }),
+      collateralSeat.incrementBy(
+        creatorSeat.decrementBy({ Collateral: settlementAmount }),
       );
-      creatorSeat.incrementBy(collateralSeat.decrementBy({
+      creatorSeat.incrementBy(
+        collateralSeat.decrementBy({
           LongOption: longAmount,
           ShortOption: shortAmount,
         }),

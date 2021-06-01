@@ -135,7 +135,8 @@ const start = zcf => {
       );
 
       depositSeat.incrementBy(collateralSeat.decrementBy(spreadAmount));
-      collateralSeat.incrementBy(depositSeat.decrementBy({ Collateral: newCollateral }),
+      collateralSeat.incrementBy(
+        depositSeat.decrementBy({ Collateral: newCollateral }),
       );
 
       zcf.reallocate(collateralSeat, depositSeat);

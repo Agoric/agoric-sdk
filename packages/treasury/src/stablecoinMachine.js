@@ -83,7 +83,8 @@ export async function start(zcf) {
    * @type {TransferReward}
    */
   function transferReward(amount, fromSeat) {
-    rewardPoolSeat.incrementBy(fromSeat.decrementBy({
+    rewardPoolSeat.incrementBy(
+      fromSeat.decrementBy({
         RUN: amount,
       }),
     );

@@ -40,7 +40,8 @@ export async function start(zcf) {
   };
 
   function transferReward(amount, fromSeat) {
-    stableCoinSeat.incrementBy(fromSeat.decrementBy({
+    stableCoinSeat.incrementBy(
+      fromSeat.decrementBy({
         RUN: amount,
       }),
     );

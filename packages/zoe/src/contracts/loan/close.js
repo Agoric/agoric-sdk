@@ -42,7 +42,8 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     // Transfer the repaid loan amount to the lender
 
-    repaySeat.incrementBy(collateralSeat.decrementBy({
+    repaySeat.incrementBy(
+      collateralSeat.decrementBy({
         Collateral: collateralSeat.getAmountAllocated(
           'Collateral',
           collateralBrand,
