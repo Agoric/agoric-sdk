@@ -7,46 +7,15 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
   integrity sha512-3FQC3eP2hekhz1zn+2LcSL7tAG2dGgSqbmCeRfIFqhVS8bbE1hR7EvrC6jYlvqdU6yzlly43VykyRy9MHBvUAw==
 
-"@agoric/babel-standalone@^7.9.5":
-  version "7.9.5"
-  resolved "https://registry.yarnpkg.com/@agoric/babel-standalone/-/babel-standalone-7.9.5.tgz#1ca0c17844924199d31e49d6b67e8b2a629b8599"
-  integrity sha512-1Aa23oPuRi4kywUyZODo8zey9Gq2NpD2xUnNvgJLoT8orMQRlVOtvbG3JeHq5sjJERlF/q6csg4/P8t8/5IABA==
-
-"@agoric/compartment-mapper@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@agoric/compartment-mapper/-/compartment-mapper-0.2.3.tgz#f0f9d048528a98d99329c593ff813952c9e7de29"
-  integrity sha512-2xTFCMLhbT1aiClD3GpEDcPilczM5je2sSyAZPqrguciIXgdQVb/qF6uLFj/L9gVL2LS2yrPV4ZC8B+xRn7YpQ==
-  dependencies:
-    ses "^0.11.0"
-
-"@agoric/compartment-mapper@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@agoric/compartment-mapper/-/compartment-mapper-0.2.4.tgz#db78b3d3c34db2204aba6eaa29155a3e0a371e73"
-  integrity sha512-HppJtvTQP9R/a55dX+7H4xXYlj6oPmvN9xVvWVk+BDEq0//AiS1/3qpV+R6B34raNvBPatsBzYuhZQjdHSw3+A==
-  dependencies:
-    ses "^0.12.6"
-
-"@agoric/make-hardener@^0.1.0", "@agoric/make-hardener@^0.1.2":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@agoric/make-hardener/-/make-hardener-0.1.3.tgz#807b0072bef95d935c3370d406d9dfeb719f69ee"
-  integrity sha512-rc9M2ErE/Zu822OLCnAltr957ZVTsBvVZ7KA2unqDpjo3q7PqZF2hWFB1xXD2Qkfwt5exQ3BjFbkj+NUaTg4gA==
+"@agoric/babel-standalone@^7.14.3":
+  version "7.14.3"
+  resolved "https://registry.yarnpkg.com/@agoric/babel-standalone/-/babel-standalone-7.14.3.tgz#1bf201417481d37d2797dd3283590dcbef775b4d"
+  integrity sha512-Rdlxts19kvxHsqTjTrhGJv0yKgCyjCSVgXoLBZf9dZ7lyo/j+6xFQBiWjP03bXve3X74wUvA1QU55wVey8DEiQ==
 
 "@agoric/nat@^4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.0.0.tgz#330dcde37fcf8882dbc5012a3b2c4c135eee4930"
   integrity sha512-zlTe14g0PGfONO0+TdhLv8k4IZH040ojvBZuNrcQSV+l8HlFTZ/IKzI5HorlCVDDBU7riykAb/6MaTgMRbYp3w==
-
-"@agoric/ses-ava@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@agoric/ses-ava/-/ses-ava-0.1.1.tgz#b288e9237130658f970cbfb942416e9240ffa78a"
-  integrity sha512-jJFdL9YorroklEnu29CQb1ED4UUlYnKnh8VxBwlvTzo4zJlr2H5fqzM4M20WWxo6cHnmwFv7Q9B/bQvC2q7rMQ==
-  dependencies:
-    ses "^0.12.7"
-
-"@agoric/transform-module@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@agoric/transform-module/-/transform-module-0.4.1.tgz#9fb152364faf372e1bda535cb4ef89717724f57c"
-  integrity sha512-4TJJHXeXAWu1FCA7yXCAZmhBNoGTB/BEAe2pv+J2X8W/mJTr9b395OkDCSRMpzvmSshLfBx6wT0D7dqWIWEC1w==
 
 "@babel/cli@^7.12.13":
   version "7.13.10"
@@ -1290,10 +1259,51 @@
   resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"
   integrity sha512-kBJtf7PH6aWwZ6fka3zQ0p6SBYzx4fl1LoZXE2RrnYST9Xljm7WfKJrU4g/Xr3Beg72MLrp1AWNUmuYJTL7Cow==
 
-"@endo/base64@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.1.0.tgz#d321d5b36f16648f0b0b05d96f93501d6a461501"
-  integrity sha512-wVBsKkVV3t3mGT1XVoQAYkBpnum/OEJ0kBka3s7PSQnAne0aFmi1P9IIWyHzsoIgdai7ONTpGSgBZIk6X9dOrw==
+"@endo/base64@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.1.tgz#82702f4b51121e608175df0021430d510010d0c5"
+  integrity sha512-JhI1tCdQm5fxx7wgrJVmK3SWLcA8zRR0SiELEt2QRmy/pdH5vQELTWbFGWT2laFPy4zkQ2MVhQBvOjGXW3dENg==
+
+"@endo/cjs-module-analyzer@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.0.tgz#b267ee176cd598abaa5e8b9c7fcbcc3549e96005"
+  integrity sha512-REro+ZgLgJ3k2TtfRDRU/i5r4jdmK66n4903jfrlD2RdqbU6AUZ2CTQUPuZ9KZoH1avG/pMnhr0btXCCDrkJaQ==
+
+"@endo/compartment-mapper@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@endo/compartment-mapper/-/compartment-mapper-0.3.0.tgz#444a02e4eece43fc078076578d78ef2bcd853bf2"
+  integrity sha512-J8dHGwuzrEB7WoPyyVjhYXe+5grD12bklTX7ckXmpirRAaPPMp8Rq6MFwuyCt5dq/2/J0FqM0GninLAQ3zFp1g==
+  dependencies:
+    "@endo/cjs-module-analyzer" "^0.2.0"
+    "@endo/static-module-record" "^0.5.0"
+    "@endo/zip" "^0.2.0"
+    ses "^0.13.0"
+
+"@endo/ses-ava@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.0.tgz#581918f992f9647802895417e86c6fb9c0565ac4"
+  integrity sha512-m2xK7/JfcPdb17bol9yUnx0H03tMLxZz/j0D5HbRJfcFsCMKQoPgIb7nXeCUYVs8D3RAG339GptM1KdT7UJVWQ==
+  dependencies:
+    ses "^0.13.0"
+
+"@endo/ses-ava@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.1.tgz#614c15f22ae806fc88ca32959230a47df9bb2853"
+  integrity sha512-01wk45X4A6GR0bsA1TmNZuvqz3iYijBY5FFlsRkx+dlAfChKApyz+d9cf91S2cs0Y4+aXcSDaChYi1agg1xJ8Q==
+  dependencies:
+    ses "^0.13.1"
+
+"@endo/static-module-record@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@endo/static-module-record/-/static-module-record-0.5.0.tgz#b39e4a7976227bcabe9b27523633809fd0fd0c83"
+  integrity sha512-J151BaKZAs7/IosRa+q7BDMYgJgYLopIs3OlfW2OE0M5pd6e8oaR92wwXBODr7AuC6NfqTm4iTLkodS0V4Wm5A==
+  dependencies:
+    "@agoric/babel-standalone" "^7.14.3"
+
+"@endo/zip@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-0.2.0.tgz#7327bbd78781ed68907dd32c7637ca04a081efc0"
+  integrity sha512-6npBFv3swvMCC284Bm+vIfRDRm+gy2QLZnR9HH9xBOdsJ2Usa34uQ6RwJNtpmy0fRzoDa38AvmhnIY37kB0U/Q==
 
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"
@@ -11239,32 +11249,15 @@ serve-static@1.14.1:
     parseurl "~1.3.3"
     send "0.17.1"
 
-ses@^0.11.0:
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.11.0.tgz#1e470112ed320d169f0b850525858129c0be0881"
-  integrity sha512-3HH+23C4bijk9VegfiP+cBMqkGim/TMsj/DK5nh/pJFiNrCMfi5euvVluIV66ry202+uckg7nXKrgrEcBwU8SA==
-  dependencies:
-    "@agoric/babel-standalone" "^7.9.5"
-    "@agoric/make-hardener" "^0.1.0"
-    "@agoric/transform-module" "^0.4.1"
+ses@^0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.13.0.tgz#d036a499e03bc9e184131dee10c1a5e4346d36ba"
+  integrity sha512-eJ75ldhV2UyKy4H4eVFzoAL5ib27WXksuDRqekZUgL32O+0y4PMgHDnBGavUZFqBXJbK9EqicAnwGHQ+7Y+ytQ==
 
-ses@^0.12.6:
-  version "0.12.6"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.6.tgz#397f2818ec2c8d33d61bb42aaaac3a9d8e7d9eae"
-  integrity sha512-NXV6K/6nxqnORv0/Kc+HtdIubdPZr6EXNUu/TMeNla69rSxhhAH7huKKaG8GBOhX87RyiDYz/31IlJR+1xUbdg==
-  dependencies:
-    "@agoric/babel-standalone" "^7.9.5"
-    "@agoric/make-hardener" "^0.1.2"
-    "@agoric/transform-module" "^0.4.1"
-
-ses@^0.12.7:
-  version "0.12.7"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.12.7.tgz#b795b76a8672fc12659c363dd777e06878394638"
-  integrity sha512-o6eTkzKNqfEtmNfA3j2F6xdL6W/f+HwtXiRWF7ebx4seQBn+3AnFnEIxQTvxShGTGvFH6sDl78YiJeT9N7e9UA==
-  dependencies:
-    "@agoric/babel-standalone" "^7.9.5"
-    "@agoric/make-hardener" "^0.1.2"
-    "@agoric/transform-module" "^0.4.1"
+ses@^0.13.1:
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.13.1.tgz#edc4e2ef05b3be2d01ed035312cf7b1ebb6c3985"
+  integrity sha512-P+3EjNsDLommNnu5i9MpqFqF/4p0/fgpdl3pLy2RZBUxPX79J9TA5qjjcjpPFQ0Sp9LMTuKJoaNnvWYQ4folIA==
 
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
