@@ -29,14 +29,7 @@ export const makeInstallationStorage = () => {
       X`${installation} was not a valid installation`,
     );
 
-  /**
-   *  Assert the installation is known, and return the bundle and
-   * installation
-   *
-   * @param {ERef<Installation>} installationP
-   * @returns {Promise<{ bundle: SourceBundle, installation:
-   * Installation }>}
-   */
+  /** @type {UnwrapInstallation} */
   const unwrapInstallation = installationP => {
     return E.when(installationP, installation => {
       assertInstallation(installation);

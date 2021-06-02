@@ -54,7 +54,6 @@
  * @property {ZoeSeatAdminExit} exit
  * @property {(reason: TerminationReason) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
- * @property {() => Allocation} getCurrentAllocation
  */
 
 /**
@@ -77,15 +76,15 @@
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
  *     proposal: ProposalRecord) => UserSeat } makeUserSeat
- * @property {MakeNoEscrowSeat} makeNoEscrowSeat
- * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {(reason: TerminationReason) => void} failAllSeats
- * @property {() => void} stopAcceptingOffers
+ * @property {() => Promise<{creatorFacet: Object,
+          creatorInvitation: Invitation,
+          publicFacet: Object}>} executeContract
  */
 
 /**
@@ -102,9 +101,9 @@
 
 /**
  * @callback ZoeInstanceAdminMakeInvitation
- * @param invitationHandle: InvitationHandle,
- * @param description: string,
- * @param customProperties: Record<string, any>=,
+ * @param {InvitationHandle} invitationHandle
+ * @param {string} description
+ * @param {Record<string, any>=} customProperties
  * @returns {Payment}
  */
 
@@ -262,8 +261,8 @@
  * The SeatManager holds the active zcfSeats and seatStagings and can
  * reallocate and make new zcfSeats.
  *
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin
- * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin 
+ * @param {GetAssetKindByBrand} getAssetKindByBrand 
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,

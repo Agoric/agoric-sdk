@@ -131,12 +131,23 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
     zoeSeatAdmin,
     { proposal, notifier, initialAllocation, seatHandle },
   ) => {
+    const stagingsForSeat = new Set();
+
+    const deleteStagingsForSeat = () => {
+      stagingsForSeat.forEach(staging => {
+        if (seatStagingToSeatHandle.has(staging)) {
+          seatStagingToSeatHandle.delete(staging);
+        }
+      });
+    };
+
     /** @type {ZCFSeat} */
     const zcfSeat = Far('zcfSeat', {
       getNotifier: () => notifier,
       getProposal: () => proposal,
       exit: completion => {
         doExitSeat(zcfSeat);
+        deleteStagingsForSeat();
         E(zoeSeatAdmin).exit(completion);
       },
       fail: (
@@ -153,6 +164,7 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
         }
         if (!hasExited(zcfSeat)) {
           doExitSeat(zcfSeat);
+          deleteStagingsForSeat();
           E(zoeSeatAdmin).fail(harden(reason));
         }
         return reason;
@@ -202,6 +214,7 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
           getStagedAllocation: () => allocation,
         };
         seatStagingToSeatHandle.init(seatStaging, seatHandle);
+        stagingsForSeat.add(seatStaging);
         return seatStaging;
       },
     });
