@@ -334,11 +334,14 @@ export default function buildKernel(
     doResolve(expectedDecider, [[kpid, true, errorData]]);
   }
 
-  /*
-   * delete vat DB state,
-   * resolve orphaned promises,
-   * notify parent,
-   * shutdown worker
+  /**
+   * Terminate a vat; that is: delete vat DB state,
+   * resolve orphaned promises, notify parent, and
+   * shutdown worker.
+   *
+   * @param {string} vatID
+   * @param {boolean} shouldReject
+   * @param {SwingSetCapData} info
    */
   function terminateVat(vatID, shouldReject, info) {
     insistCapData(info);
