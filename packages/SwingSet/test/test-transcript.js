@@ -24,24 +24,38 @@ test('transcript-one save', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
+  // config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
+  // try {
+  //   fs.rmSync('kdata-one-save-s1.slog');
+  // } catch (e) {}
+  // try {
+  //   fs.rmSync('kdata-one-save-s2.slog');
+  // } catch (e) {}
   const c1 = await buildVatController(config, ['one'], {
     hostStorage,
+    // slogFile: 'kdata-one-save-s1.slog',
   });
   const states1 = await buildTrace(c1, hostStorage);
-  /*
-  states1.forEach( (s, i) =>
-    fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
-  ); */
+
+  // states1.forEach( (s, i) =>
+  //   fs.writeFileSync(`kdata-one-save-s1-${i}.json`, JSON.stringify(s))
+  // );
 
   const config2 = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
+  // config2.defaultManagerType = 'xs-worker';
   const hostStorage2 = provideHostStorage();
   const c2 = await buildVatController(config2, ['one'], {
     hostStorage: hostStorage2,
+    // slogFile: 'kdata-one-save-s2.slog',
   });
   const states2 = await buildTrace(c2, hostStorage2);
+
+  // states2.forEach( (s, i) =>
+  //   fs.writeFileSync(`kdata-one-save-s2-${i}.json`, JSON.stringify(s))
+  // );
 
   states1.forEach((s, i) => {
     // Too expensive!  If there is a difference in the 3MB data, AVA will spin
@@ -65,27 +79,38 @@ test('transcript-one load', async t => {
   const config = await loadBasedir(
     path.resolve(__dirname, 'basedir-transcript'),
   );
+  // config.defaultManagerType = 'xs-worker';
   const s0 = provideHostStorage();
-  const c0 = await buildVatController(config, ['one'], { hostStorage: s0 });
+  // try {
+  //   fs.rmSync('kdata-one-load-sN.slog');
+  // } catch (e) {}
+  const c0 = await buildVatController(config, ['one'], {
+    hostStorage: s0,
+    // slogFile: 'kdata-one-load-sN.slog',
+  });
   const states = await buildTrace(c0, s0);
   // states.forEach((s,j) =>
-  //               fs.writeFileSync(`kdata-${j}.json`,
-  //                                JSON.stringify(states[j])));
+  //   fs.writeFileSync(`kdata-one-load-${j}.json`,
+  //                    JSON.stringify(states[j])));
 
   for (let i = 0; i < states.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     const cfg = await loadBasedir(
       path.resolve(__dirname, 'basedir-transcript'),
     );
+    // cfg.defaultManagerType = 'xs-worker';
     const s = provideHostStorage();
     setAllState(s, states[i]);
     // eslint-disable-next-line no-await-in-loop
-    const c = await buildVatController(cfg, ['one'], { hostStorage: s });
+    const c = await buildVatController(cfg, ['one'], {
+      hostStorage: s,
+      // slogFile: path.resolve(__dirname, `kdata-one-load-s${i}.slog`),
+    });
     // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c, s);
     // newstates.forEach((s,j) =>
-    //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`,
-    //                                   JSON.stringify(newstates[j])));
+    //   fs.writeFileSync(`kdata-one-load-${i+j}-${i}+${j}.json`,
+    //                    JSON.stringify(newstates[j])));
     t.deepEqual(states.slice(i), newstates);
   }
 });
