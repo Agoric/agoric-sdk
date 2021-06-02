@@ -36,7 +36,7 @@
  * @property {(completion: Completion) => void} shutdown
  * @property {(reason: TerminationReason) => void} shutdownWithFailure
  * @property {Assert} assert
- * @property {() => ZoeService} getZoeService
+ * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => Terms} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
