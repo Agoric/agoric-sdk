@@ -393,6 +393,7 @@ export async function makeSwingsetController(
  *   slogCallbacks?: unknown,
  *   testTrackDecref?: unknown,
  *   snapstorePath?: string,
+ *   slogFile?: string,
  * }} runtimeOptions
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  */
@@ -408,12 +409,14 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     snapstorePath,
+    slogFile,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
     slogCallbacks,
     snapstorePath,
+    slogFile,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
