@@ -77,6 +77,9 @@
  * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
+ * @property {CreateZCFVat} createZCFVat
+ * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
+ * @property {Issuer} invitationIssuer
  */
 
 /**
@@ -98,6 +101,7 @@
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
+ * @property {Issuer} invitationIssuer
  * @property {Install} install
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
@@ -105,4 +109,12 @@
  * @property {GetTerms} getTerms
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
+ */
+
+/**
+ * Use VatAdminSvc to create a new vat, but only with the code of the
+ * ZCF bundle
+ *
+ * @callback CreateZCFVat
+ * @returns {Promise<RootAndAdminNode>}
  */
