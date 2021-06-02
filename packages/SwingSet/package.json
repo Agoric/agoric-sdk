@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@agoric/install-metering-and-ses": "^0.2.13",
-    "@agoric/ses-ava": "^0.1.1",
+    "@endo/ses-ava": "^0.2.1",
     "ava": "^3.12.1"
   },
   "dependencies": {
@@ -49,14 +49,14 @@
     "@agoric/tame-metering": "^1.3.9",
     "@agoric/transform-metering": "^1.4.12",
     "@agoric/xsnap": "^0.6.2",
-    "@endo/base64": "^0.1.0",
+    "@endo/base64": "^0.2.1",
     "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
     "esm": "agoric-labs/esm#Agoric-built",
     "node-lmdb": "^0.9.4",
     "re2": "^1.10.5",
     "semver": "^6.3.0",
-    "ses": "^0.12.7",
+    "ses": "^0.13.1",
     "tmp": "^0.2.1"
   },
   "files": [
