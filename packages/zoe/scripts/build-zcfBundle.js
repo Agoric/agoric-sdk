@@ -14,7 +14,7 @@ async function writeSourceBundle(contractFilename, outputPath) {
 }
 
 async function main() {
-  const contractFilename = `${__dirname}/../src/contractFacet/contractFacet.js`;
+  const contractFilename = `${__dirname}/../src/contractFacet/vatRoot.js`;
   const outputPath = `${__dirname}/../bundles/bundle-contractFacet.js`;
   await writeSourceBundle(contractFilename, outputPath);
 }
