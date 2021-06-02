@@ -1,12 +1,12 @@
-/* global gc FinalizationRegistry WeakRef */
+/* global FinalizationRegistry WeakRef */
 import test from 'ava';
 
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '../src/xsnap';
-import { gcAndFinalize } from './gc';
+import { makeGcAndFinalize } from './gc';
 
-function setup() {
+function makeVictim() {
   const victim = { doomed: 'oh no' };
   const finalized = ['finalizer not called'];
   const fr = new FinalizationRegistry(_tag => {
@@ -17,13 +17,15 @@ function setup() {
   return { finalized, fr, wr };
 }
 
-async function provokeGC() {
-  // the transition from REACHABLE to UNREACHABLE happens as soon as setup()
+async function provokeGC(myGC) {
+  // eslint-disable-next-line no-undef
+  const gcAndFinalize = makeGcAndFinalize(myGC);
+  // the transition from REACHABLE to UNREACHABLE happens as soon as makeVictim()
   // finishes, and the local 'victim' binding goes out of scope
 
   // we must retain the FinalizationRegistry to let the callback fire
   // eslint-disable-next-line no-unused-vars
-  const { finalized, fr, wr } = setup();
+  const { finalized, fr, wr } = makeVictim();
 
   // the transition from UNREACHABLE to COLLECTED can happen at any moment,
   // but is far more likely to happen if we force it
@@ -57,10 +59,10 @@ test(`can provoke gc on xsnap`, async t => {
   const opts = options();
   const vat = xsnap(opts);
   const code = `
-${gcAndFinalize}
-${setup}
+${makeGcAndFinalize}
+${makeVictim}
 ${provokeGC}
-provokeGC().then(data => issueCommand(ArrayBuffer.fromString(JSON.stringify(data))));
+provokeGC(globalThis.gc).then(data => issueCommand(ArrayBuffer.fromString(JSON.stringify(data))));
 `;
   await vat.evaluate(code);
   await vat.close();

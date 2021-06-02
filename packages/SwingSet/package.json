@@ -87,9 +87,6 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "nodeArguments": [
-      "--expose-gc"
-    ],
     "require": [
       "esm"
     ],

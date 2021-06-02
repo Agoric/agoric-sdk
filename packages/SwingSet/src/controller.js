@@ -17,10 +17,11 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
+import engineGC from './engine-gc';
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
-import { gcAndFinalize } from './gc-and-finalize';
+import { makeGcAndFinalize } from './gc-and-finalize';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -272,7 +273,7 @@ export async function makeSwingsetController(
     const supercode = require.resolve(
       './kernel/vatManager/supervisor-subprocess-node.js',
     );
-    const args = ['--expose-gc', '-r', 'esm', supercode];
+    const args = ['-r', 'esm', supercode];
     return startSubprocessWorker(process.execPath, args);
   }
 
@@ -299,7 +300,7 @@ export async function makeSwingsetController(
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
-    gcAndFinalize,
+    gcAndFinalize: makeGcAndFinalize(engineGC),
   };
 
   const kernelOptions = { verbose };

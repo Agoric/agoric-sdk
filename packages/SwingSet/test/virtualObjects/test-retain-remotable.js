@@ -4,7 +4,8 @@ import { test } from '../../tools/prepare-test-env-ava';
 // eslint-disable-next-line import/order
 import { Far } from '@agoric/marshal';
 
-import { gcAndFinalize } from '../../src/gc-and-finalize';
+import engineGC from '../../src/engine-gc';
+import { makeGcAndFinalize } from '../../src/gc-and-finalize';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
 
 // empty object, used as makeWeakStore() key
@@ -76,6 +77,7 @@ function stashRemotableFour(holderMaker) {
 }
 
 test('remotables retained by virtualized data', async t => {
+  const gcAndFinalize = makeGcAndFinalize(engineGC);
   const vomOptions = { cacheSize: 3, weak: true };
   const vom = makeFakeVirtualObjectManager(vomOptions);
   const { makeWeakStore, makeKind } = vom;

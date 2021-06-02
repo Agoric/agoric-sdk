@@ -1,4 +1,4 @@
-/* global gc setImmediate */
+/* global setImmediate */
 
 // This is a copy of a utility from packages/SwingSet/src/gc.js, which
 // swingset uses to force GC in the middle of a crank. We copy it into xsnap
@@ -38,9 +38,10 @@
  * The transition from UNREACHABLE to COLLECTED can happen spontaneously, as
  * the JS engine decides it wants to perform GC. It will also happen
  * deliberately if we provoke a GC call with a magic function like `gc()`
- * (when Node.js is run with `--expose-gc`, or when XS is configured to
- * provide it as a C-level callback). We can force GC, but we cannot prevent
- * it from happening at other times.
+ * (when Node.js imports `engine-gc`, which is morally-equivalent to
+ * running with `--expose-gc`, or when XS is configured to provide it as a
+ * C-level callback). We can force GC, but we cannot prevent it from happening
+ * at other times.
  *
  * FinalizationRegistry callbacks are defined to run on their own turn, so
  * the transition from COLLECTED to FINALIZED occurs at a turn boundary.
@@ -68,22 +69,23 @@
  * dummy pre-resolved Promise.
  */
 
-let alreadyWarned = false;
-export async function gcAndFinalize() {
-  if (typeof gc !== 'function') {
-    if (!alreadyWarned) {
-      alreadyWarned = true;
-      console.warn(
-        Error(`no gc() function; disabling deterministic finalizers`),
-      );
-    }
-    return;
+export function makeGcAndFinalize(gcPower) {
+  if (typeof gcPower !== 'function') {
+    console.warn(
+      Error(`no gcPower() function; skipping finalizer provocation`),
+    );
   }
-  // on Node.js, GC seems to work better if the promise queue is empty first
-  await new Promise(setImmediate);
-  // on xsnap, we must do it twice for some reason
-  await new Promise(setImmediate);
-  gc();
-  // this gives finalizers a chance to run
-  await new Promise(setImmediate);
+  return async function gcAndFinalize() {
+    if (typeof gcPower !== 'function') {
+      return;
+    }
+
+    // on Node.js, GC seems to work better if the promise queue is empty first
+    await new Promise(setImmediate);
+    // on xsnap, we must do it twice for some reason
+    await new Promise(setImmediate);
+    gcPower();
+    // this gives finalizers a chance to run
+    await new Promise(setImmediate);
+  };
 }

@@ -1,4 +1,4 @@
-/* global globalThis __dirname */
+/* global __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';
@@ -13,6 +13,7 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
+import engineGC from '@agoric/swingset-vat/src/engine-gc';
 
 import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
@@ -313,11 +314,6 @@ export async function main() {
   }
 
   if (forceGC) {
-    if (!globalThis.gc) {
-      fail(
-        'To use --forcegc you must start node with the --expose-gc command line option',
-      );
-    }
     if (!logMem) {
       log('Warning: --forcegc without --logmem may be a mistake');
     }
@@ -603,7 +599,7 @@ export async function main() {
     }
     const blockEndTime = readClock();
     if (forceGC) {
-      globalThis.gc();
+      engineGC();
     }
     if (statLogger) {
       blockNumber += 1;
