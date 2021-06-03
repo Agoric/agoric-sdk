@@ -622,7 +622,7 @@ test('vatKeeper', async t => {
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
 
-  const kernelImport2 = 'ko25';
+  const kernelImport2 = k.addKernelObject('v1', 25);
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);
   t.is(vatImport2, 'o-50');
   t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);

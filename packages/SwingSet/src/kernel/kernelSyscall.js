@@ -11,7 +11,9 @@ export function doSend(kernelKeeper, target, msg) {
   insistMessage(msg);
   const m = harden({ type: 'send', target, msg });
   kernelKeeper.incrementRefCount(target, `enq|msg|t`);
-  kernelKeeper.incrementRefCount(msg.result, `enq|msg|r`);
+  if (msg.result) {
+    kernelKeeper.incrementRefCount(msg.result, `enq|msg|r`);
+  }
   kernelKeeper.incStat('syscalls');
   kernelKeeper.incStat('syscallSend');
   let idx = 0;

@@ -593,7 +593,9 @@ export default function buildKernel(
       terminationTrigger = null;
       if (message.type === 'send') {
         kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
-        kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+        if (message.msg.result) {
+          kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+        }
         let idx = 0;
         for (const argSlot of message.msg.args.slots) {
           kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
@@ -961,6 +963,13 @@ export default function buildKernel(
     kernelKeeper.incrementCrankNumber();
   }
 
+  function getNextMessage() {
+    if (!kernelKeeper.isRunQueueEmpty()) {
+      return kernelKeeper.getNextMsg();
+    }
+    return undefined;
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -969,8 +978,9 @@ export default function buildKernel(
       throw new Error('must do kernel.start() before step()');
     }
     // process a single message
-    if (!kernelKeeper.isRunQueueEmpty()) {
-      await processQueueMessage(kernelKeeper.getNextMsg());
+    const message = getNextMessage();
+    if (message) {
+      await processQueueMessage(message);
       if (kernelPanic) {
         throw kernelPanic;
       }
@@ -988,9 +998,13 @@ export default function buildKernel(
       throw new Error('must do kernel.start() before run()');
     }
     let count = 0;
-    while (!kernelKeeper.isRunQueueEmpty()) {
+    for (;;) {
+      const message = getNextMessage();
+      if (!message) {
+        break;
+      }
       // eslint-disable-next-line no-await-in-loop
-      await processQueueMessage(kernelKeeper.getNextMsg());
+      await processQueueMessage(message);
       if (kernelPanic) {
         throw kernelPanic;
       }
