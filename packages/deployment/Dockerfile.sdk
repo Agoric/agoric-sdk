@@ -13,7 +13,7 @@ RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
-FROM node:12-buster AS build-js
+FROM node:14.15-buster AS build-js
 ARG MODDABLE_COMMIT_HASH
 ARG MODDABLE_URL
 
@@ -39,7 +39,7 @@ RUN yarn install --frozen-lockfile --production
 
 ###############################
 # The install container.
-FROM node:12-buster AS install
+FROM node:14.15-buster AS install
 
 # Install some conveniences.
 RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y

@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { assert, details as X } from '@agoric/assert';
+import { dirname, basename } from 'path';
 import { doInit } from './init';
 import { shellMetaRegexp, shellEscape } from './run';
 import { streamFromString } from './files';
@@ -200,6 +201,7 @@ show-config      display the client connection parameters
           default: {
             'boot-tokens': DEFAULT_BOOT_TOKENS,
           },
+          string: ['bump', 'import-from', 'genesis'],
           stopEarly: true,
         },
       );
@@ -246,7 +248,7 @@ show-config      display the client connection parameters
         case undefined: {
           await wr.createFile('boot-tokens.txt', bootTokens);
           const bootOpts = [];
-          for (const propagate of ['bump', 'import-from']) {
+          for (const propagate of ['bump', 'import-from', 'genesis']) {
             const val = subOpts[propagate];
             if (val !== undefined) {
               bootOpts.push(`--${propagate}=${val}`);
@@ -309,7 +311,7 @@ show-config      display the client connection parameters
       await inited();
       // eslint-disable-next-line no-unused-vars
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        string: ['bump', 'import-from'],
+        string: ['bump', 'import-from', 'genesis'],
         stopEarly: true,
       });
 
@@ -339,9 +341,18 @@ show-config      display the client connection parameters
       await guardFile(`chain-version.txt`, makeFile => makeFile('1'));
 
       // Assign the chain name.
-      const networkName = await trimReadFile('network.txt');
-      const chainVersion = await trimReadFile('chain-version.txt');
-      const chainName = `${networkName}-${chainVersion}`;
+      let chainName;
+      let genJSON;
+      if (subOpts.genesis) {
+        // Fetch the specified genesis, don't generate it.
+        genJSON = await trimReadFile(subOpts.genesis);
+        const genesis = JSON.parse(genJSON);
+        chainName = genesis.chain_id;
+      } else {
+        const networkName = await trimReadFile('network.txt');
+        const chainVersion = await trimReadFile('chain-version.txt');
+        chainName = `${networkName}-${chainVersion}`;
+      }
       const currentChainName = await trimReadFile(
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(_ => undefined);
@@ -363,14 +374,25 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/prepare.stamp`, () =>
         needReMain(['play', 'prepare-cosmos']),
       );
-      await guardFile(`${COSMOS_DIR}/genesis.stamp`, () =>
-        needReMain(['play', 'cosmos-genesis']),
-      );
+
+      // If the canonical genesis exists, use it.
+      await guardFile(`${COSMOS_DIR}/genesis.stamp`, async () => {
+        await wr.mkdir(`${COSMOS_DIR}/data`, { recursive: true });
+        if (genJSON) {
+          await wr.createFile(`${COSMOS_DIR}/data/genesis.json`, genJSON);
+        } else {
+          await guardFile(`${COSMOS_DIR}/data/genesis.json`, async () => {
+            await needReMain(['play', 'cosmos-genesis']);
+            // Don't overwrite the data/genesis.json.
+            return true;
+          });
+        }
+      });
 
       await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
         await needReMain(['play', 'cosmos-clone-config']);
 
-        const agoricCli = rd.resolve(__dirname, `../agoric-cli/bin/agoric`);
+        const agoricCli = rd.resolve(__dirname, `../../agoric-cli/bin/agoric`);
 
         // Apply the Agoric set-defaults to all the .dst dirs.
         const files = await rd.readdir(`${COSMOS_DIR}/data`);
@@ -397,13 +419,19 @@ show-config      display the client connection parameters
               ...importFlags,
               `${COSMOS_DIR}/data/${dst}`,
             ]);
-            if (i === 0) {
-              // Make a canonical copy of the genesis.json.
-              const data = await rd.readFile(
-                `${COSMOS_DIR}/data/${dst}/genesis.json`,
-              );
-              await wr.createFile(`${COSMOS_DIR}/data/genesis.json`, data);
+            if (i !== 0) {
+              return;
             }
+            await guardFile(
+              `${COSMOS_DIR}/data/genesis.json`,
+              async makeGenesis => {
+                // Make a canonical copy of the genesis.json if there isn't one.
+                const data = await rd.readFile(
+                  `${COSMOS_DIR}/data/${dst}/genesis.json`,
+                );
+                await makeGenesis(data);
+              },
+            );
           }),
         );
       });
@@ -862,6 +890,10 @@ ${name}:
         if (!addRole[role]) {
           addRole[role] = makeGroup(role, 4);
         }
+        const keyFile = rd.resolve(
+          dirname(SSH_PRIVATE_KEY_FILE),
+          `${provider}-${basename(SSH_PRIVATE_KEY_FILE)}`,
+        );
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
           const node = `${role}${offset + instance}`;
@@ -877,7 +909,7 @@ ${name}:
 ${node}:${roleParams}
   ansible_host: ${ip}
   ansible_ssh_user: root
-  ansible_ssh_private_key_file: '${SSH_PRIVATE_KEY_FILE}'
+  ansible_ssh_private_key_file: '${keyFile}'
   ansible_python_interpreter: /usr/bin/python`;
           addProvider(host);
 

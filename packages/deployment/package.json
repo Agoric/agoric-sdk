@@ -6,7 +6,10 @@
     "js": "mjs"
   },
   "private": true,
-  "main": "main.js",
+  "main": "src/main.js",
+  "bin": {
+    "ag-setup-cosmos": "src/entrypoint.cjs"
+  },
   "scripts": {
     "test": "exit 0",
     "test:xs": "exit 0",
