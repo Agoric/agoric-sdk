@@ -19,7 +19,7 @@
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer} invitationIssuer
- * @param {SetTestJig | undefined} testJigSetter
+ * @param {Function | undefined} testJigSetter
  * @returns {ZCFZygote}
  */
 

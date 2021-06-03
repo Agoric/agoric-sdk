@@ -17,7 +17,7 @@ import { makeZCFZygote } from './zcfZygote';
 /**
  * @param {VatPowers} powers
  * @param {undefined} _params
- * @param {SetTestJig | undefined} testJigSetter
+ * @param {Function | undefined} testJigSetter
  * @returns {{ executeContract: ExecuteContract}}
  */
 export function buildRootObject(powers, _params, testJigSetter = undefined) {
