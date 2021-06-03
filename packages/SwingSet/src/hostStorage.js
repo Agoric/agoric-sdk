@@ -1,8 +1,8 @@
 // @ts-check
-import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
+import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
-  initSwingStore as initLMDBSwingStore,
-  openSwingStore as openLMDBSwingStore,
+  initLMDBSwingStore,
+  openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
 import { assert, details as X } from '@agoric/assert';

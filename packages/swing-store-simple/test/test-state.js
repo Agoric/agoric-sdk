@@ -1,10 +1,10 @@
 import '@agoric/install-ses';
 
 import test from 'ava';
-import { initSwingStore, getAllState } from '../src/simpleSwingStore';
+import { initSimpleSwingStore, getAllState } from '../src/simpleSwingStore';
 
 test('kvStore read/write', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const kvStore = store.kvStore;
 
   t.falsy(kvStore.has('missing'));
@@ -41,7 +41,7 @@ test('kvStore read/write', t => {
 });
 
 test('streamStore read/write', t => {
-  const { streamStore, commit, close } = initSwingStore();
+  const { streamStore, commit, close } = initSimpleSwingStore();
 
   const start = streamStore.STREAM_START;
   let s1pos = start;
@@ -80,7 +80,7 @@ test('streamStore read/write', t => {
 });
 
 test('streamStore mode interlock', t => {
-  const { streamStore, commit, close } = initSwingStore();
+  const { streamStore, commit, close } = initSimpleSwingStore();
   const start = streamStore.STREAM_START;
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);

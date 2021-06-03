@@ -12,7 +12,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -97,7 +97,7 @@ export async function launch(
 ) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
   const hostStorage = {
     kvStore,
     streamStore,

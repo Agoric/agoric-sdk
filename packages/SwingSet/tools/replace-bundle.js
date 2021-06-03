@@ -2,7 +2,7 @@
 
 import '@agoric/install-ses';
 import process from 'process';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import bundleSource from '@agoric/bundle-source';
 
 const log = console.log;
@@ -35,7 +35,7 @@ async function run() {
   const stateDBDir = argv.shift();
   const srcPath = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kvStore, commit } = openLMDBSwingStore(stateDBDir);
   log(`will use ${srcPath} in ${stateDBDir} for ${bundleName}`);
 
   if (bundleName === 'kernel') {

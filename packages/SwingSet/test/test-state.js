@@ -2,7 +2,7 @@ import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
 import {
-  initSwingStore,
+  initSimpleSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -68,12 +68,12 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
 function buildHostDBAndGetState() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const hostDB = buildHostDBInMemory(store.kvStore);
   return { hostDB, getState: () => getAllState(store).kvStuff };
 }
@@ -119,13 +119,13 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const guardedHostStorage = guardStorage(store.kvStore);
   testStorage(t, guardedHostStorage, () => getAllState(store).kvStuff, null);
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(store.kvStore);
   testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
 });
@@ -186,7 +186,7 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const s = addHelpers(store.kvStore);
 
   s.set('foo.0', 'f0');
@@ -236,7 +236,7 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
   return {
@@ -248,7 +248,7 @@ function buildKeeperStorageInMemory() {
 }
 
 function duplicateKeeper(getState) {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   const { enhancedCrankBuffer } = wrapStorage(kvStore);

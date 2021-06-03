@@ -19,14 +19,15 @@ const encoder = new util.TextEncoder();
  */
 
 /**
- * Do the work of `initSwingStore` and `openSwingStore`.
+ * Do the work of `initLMDBSwingStore` and `openLMDBSwingStore`.
  *
  * @param {string} dirPath  Path to a directory in which database files may be kept.
  * @param {boolean} forceReset  If true, initialize the database to an empty state
+ * @param {Object} options  Configuration options
  *
  * @returns {SwingStore}
  */
-function makeSwingStore(dirPath, forceReset = false) {
+function makeLMDBSwingStore(dirPath, forceReset, options) {
   let txn = null;
 
   if (forceReset) {
@@ -34,10 +35,11 @@ function makeSwingStore(dirPath, forceReset = false) {
   }
   fs.mkdirSync(`${dirPath}/streams`, { recursive: true });
 
+  const { mapSize = 2 * 1024 * 1024 * 1024 } = options;
   let lmdbEnv = new lmdb.Env();
   lmdbEnv.open({
     path: dirPath,
-    mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
+    mapSize,
     // Turn off useWritemap on the Mac.  The userWritemap option is currently
     // required for LMDB to function correctly on Linux running under WSL, but
     // we don't yet have a convenient recipe to probe our environment at
@@ -406,12 +408,13 @@ function makeSwingStore(dirPath, forceReset = false) {
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
+ * @param {Object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
-export function initSwingStore(dirPath) {
+export function initLMDBSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');
-  return makeSwingStore(dirPath, true);
+  return makeLMDBSwingStore(dirPath, true, options);
 }
 
 /**
@@ -422,12 +425,13 @@ export function initSwingStore(dirPath) {
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
+ * @param {Object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
-export function openSwingStore(dirPath) {
+export function openLMDBSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');
-  return makeSwingStore(dirPath, false);
+  return makeLMDBSwingStore(dirPath, false, options);
 }
 
 /**
@@ -437,8 +441,8 @@ export function openSwingStore(dirPath) {
  *   This directory need not actually exist
  *
  * @returns {boolean}
- *   If the directory is present and contains the files created by initSwingStore
- *   or openSwingStore, returns true. Else returns false.
+ *   If the directory is present and contains the files created by initLMDBSwingStore
+ *   or openLMDBSwingStore, returns true. Else returns false.
  *
  */
 export function isSwingStore(dirPath) {

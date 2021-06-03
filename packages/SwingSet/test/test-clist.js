@@ -1,14 +1,14 @@
 import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
-import { initSwingStore } from '@agoric/swing-store-simple';
+import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import { makeDummySlogger } from '../src/kernel/slogger';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
 import { wrapStorage } from '../src/kernel/state/storageWrapper';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSwingStore();
+  const hostStorage = initSimpleSwingStore();
   const { enhancedCrankBuffer: s } = wrapStorage(hostStorage.kvStore);
 
   const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
