@@ -1,10 +1,9 @@
 import { Far } from '@agoric/marshal';
 
-export function buildRootObject({ testLog }, _vatParameters) {
+export function buildRootObject(_vatPowers, _vatParameters) {
   const contents = [];
   function append(thing) {
     contents.push(thing);
-    testLog('contents:', [...contents]);
     return harden([...contents]);
   }
 
