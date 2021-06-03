@@ -265,13 +265,21 @@ const askProvider = ({ inquirer }) => PROVIDERS => {
   return inquirer.prompt(questions);
 };
 
-const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
-  progname,
-  args,
-) => {
+const doInit = ({
+  env,
+  rd,
+  wr,
+  running,
+  setup,
+  inquirer,
+  fetch,
+  parseArgs,
+}) => async (progname, args) => {
   const { needDoRun, cwd, chdir } = running;
   const PROVIDERS = makeProviders({ env, inquirer, wr, setup, fetch });
-  let [dir, overrideNetworkName] = args.slice(1);
+  let {
+    _: [dir, overrideNetworkName],
+  } = parseArgs(args.slice(1));
   if (!dir) {
     dir = setup.SETUP_HOME;
   }

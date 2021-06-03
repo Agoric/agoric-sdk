@@ -345,7 +345,14 @@ show-config      display the client connection parameters
       let genJSON;
       if (subOpts.genesis) {
         // Fetch the specified genesis, don't generate it.
-        genJSON = await trimReadFile(subOpts.genesis);
+        const loc = new URL(subOpts.genesis, `file://${cwd()}`);
+        if (loc.protocol === 'file') {
+          genJSON = await trimReadFile(loc.pathname);
+        } else {
+          const res = await fetch(subOpts.genesis);
+          genJSON = await res.text();
+        }
+
         const genesis = JSON.parse(genJSON);
         chainName = genesis.chain_id;
       } else {
@@ -833,7 +840,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     }
 
     case 'init': {
-      await doInit({ env, rd, wr, running, setup, inquirer, fetch })(
+      await doInit({ env, rd, wr, running, setup, inquirer, fetch, parseArgs })(
         progname,
         args,
       );
