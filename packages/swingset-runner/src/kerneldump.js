@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
@@ -106,7 +106,7 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  const swingStore = openSwingStore(kernelStateDBDir);
+  const swingStore = openLMDBSwingStore(kernelStateDBDir);
   if (justStats) {
     const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
     const cranks = Number(swingStore.kvStore.get('crankNumber'));

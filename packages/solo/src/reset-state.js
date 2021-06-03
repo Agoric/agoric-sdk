@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
-import { initSwingStore } from '@agoric/swing-store-lmdb';
+import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
 export default async function resetState(basedir) {
   const mailboxStateFile = path.resolve(
@@ -10,7 +10,7 @@ export default async function resetState(basedir) {
   );
   fs.writeFileSync(mailboxStateFile, `{}\n`);
   const kernelStateDBDir = path.join(basedir, 'swingset-kernel-state');
-  const { commit, close } = initSwingStore(kernelStateDBDir);
+  const { commit, close } = initLMDBSwingStore(kernelStateDBDir);
   commit();
   close();
 }
