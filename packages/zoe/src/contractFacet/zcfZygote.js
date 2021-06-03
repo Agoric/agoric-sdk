@@ -264,22 +264,7 @@ export const makeZCFZygote = (
     getBrandForIssuer,
     getIssuerForBrand,
     getAssetKind: getAssetKindByBrand,
-    /**
-     * Provide a jig object for testing purposes only.
-     *
-     * The contract code provides a callback whose return result will
-     * be made available to the test that started this contract. The
-     * supplied callback will only be called in a testing context,
-     * never in production; i.e., it is only called if `testJigSetter`
-     * was supplied.
-     *
-     * If no, \testFn\ is supplied, then an empty jig will be used.
-     * An additional `zcf` property set to the current ContractFacet
-     * will be appended to the returned jig object (overriding any
-     * provided by the `testFn`).
-     *
-     * @type {SetTestJig}
-     */
+    /** @type {SetTestJig} */
     setTestJig: (testFn = () => ({})) => {
       if (testJigSetter) {
         console.warn('TEST ONLY: capturing test data', testFn);

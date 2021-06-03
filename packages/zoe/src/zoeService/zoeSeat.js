@@ -79,12 +79,11 @@ export const makeZoeSeatAdminKit = (
       updater.fail(reason);
       doExit(zoeSeatAdmin);
     },
-    getCurrentAllocation: () => currentAllocation,
   });
 
   /** @type {UserSeat} */
   const userSeat = Far('userSeat', {
-    getCurrentAllocation: async () => zoeSeatAdmin.getCurrentAllocation(),
+    getCurrentAllocation: async () => currentAllocation,
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword => {
