@@ -21,6 +21,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
+   *   options: { name?: string, description?: string },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('../vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -83,6 +84,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       manager,
       translators,
       enablePipelining,
+      options,
     };
     ephemeral.vats.set(vatID, result);
     return result;
@@ -225,6 +227,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       manager,
       translators,
       enablePipelining,
+      options: {},
     };
     ephemeral.vats.set(vatID, result);
   }
@@ -258,7 +261,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     deliverToVat,
 
     // mostly for testing?
-    activeVatIDs: () => [...ephemeral.vats.keys()],
+    activeVatsInfo: () =>
+      [...ephemeral.vats].map(([id, { options }]) => ({ id, options })),
 
     vatWasTerminated,
     shutdown,

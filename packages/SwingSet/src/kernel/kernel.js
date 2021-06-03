@@ -1016,6 +1016,13 @@ export default function buildKernel(
     getStats() {
       return kernelKeeper.getStats();
     },
+
+    getStatus() {
+      return harden({
+        activeVats: vatWarehouse.activeVatsInfo(),
+      });
+    },
+
     dump() {
       // note: dump().log is not deterministic, since log() does not go
       // through the syscall interface (and we replay transcripts one vat at
