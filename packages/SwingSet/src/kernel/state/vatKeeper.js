@@ -32,6 +32,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(
     `${vatID}.t.endPosition`,
     `${JSON.stringify(streamStore.STREAM_START)}`,
@@ -88,6 +89,12 @@ export function makeVatKeeper(
     const source = JSON.parse(kvStore.get(`${vatID}.source`));
     const options = JSON.parse(kvStore.get(`${vatID}.options`));
     return harden({ source, options });
+  }
+
+  function nextDeliveryNum() {
+    const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
+    kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
+    return num;
   }
 
   function getReachableFlag(kernelSlot) {
@@ -391,6 +398,7 @@ export function makeVatKeeper(
   return harden({
     setSourceAndOptions,
     getSourceAndOptions,
+    nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,

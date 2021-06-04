@@ -372,12 +372,15 @@ export default function buildKernel(
   async function deliverAndLogToVat(vatID, kernelDelivery, vatDelivery) {
     const vat = ephemeral.vats.get(vatID);
     assert(vat);
+    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     const crankNum = kernelKeeper.getCrankNumber();
+    const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
     /** @typedef { any } FinishFunction TODO: static types for slog? */
     /** @type { FinishFunction } */
     const finish = kernelSlog.delivery(
       vatID,
       crankNum,
+      deliveryNum,
       kernelDelivery,
       vatDelivery,
     );

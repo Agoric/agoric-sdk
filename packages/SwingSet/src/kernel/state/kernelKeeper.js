@@ -47,6 +47,7 @@ const enableKernelPromiseGC = true;
 //   $R is 'R' when reachable, '_' when merely recognizable
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
+// v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 

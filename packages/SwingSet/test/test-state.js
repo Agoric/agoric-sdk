@@ -616,11 +616,15 @@ test('vatKeeper', async t => {
   t.is(kernelExport1, 'ko20');
   t.is(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk.nextDeliveryNum(), 0n);
+  t.is(vk.nextDeliveryNum(), 1n);
 
   commitCrank();
   let vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk2.nextDeliveryNum(), 2n);
+  t.is(vk2.nextDeliveryNum(), 3n);
 
   const kernelImport2 = k.addKernelObject('v1', 25);
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);
