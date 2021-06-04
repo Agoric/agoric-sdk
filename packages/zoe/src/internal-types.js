@@ -262,7 +262,7 @@
  * The SeatManager holds the active zcfSeats and seatStagings and can
  * reallocate and make new zcfSeats.
  *
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
