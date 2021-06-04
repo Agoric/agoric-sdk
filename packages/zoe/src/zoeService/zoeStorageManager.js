@@ -31,7 +31,7 @@ import { makeInstallationStorage } from './installationStorage';
 export const makeZoeStorageManager = createZCFVat => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
-  // mathKind, and displayInfo
+  // assetKind, and displayInfo
   const issuerStorage = makeIssuerStorage();
   issuerStorage.instantiate();
 
