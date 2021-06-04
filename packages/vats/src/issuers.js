@@ -172,6 +172,22 @@ const fromPegasusIssuerEntries = [
       tradesGivenCentral: [[scaleCentral(1), scaleEth(1)]],
     },
   ],
+ [
+    'CLOUTC',
+    {
+      issuerArgs: [undefined, { decimalPlaces: 18 }],
+      defaultPurses: [['CLOUTVAL', scaleEth(1_323n)]],
+      collateralConfig: {
+        keyword: 'ClOUTC',
+        collateralValue: scaleEth(10_000_000n),
+        initialMarginPercent: 150n,
+        liquidationMarginPercent: 125n,
+        interestRateBasis: 250n,
+        loanFeeBasis: 1n,
+      },
+      tradesGivenCentral: [[scaleCentral(1), scaleEth(1)]],
+    },
+  ],
 ];
 
 harden(fromPegasusIssuerEntries);
