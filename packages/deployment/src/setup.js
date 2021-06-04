@@ -8,7 +8,8 @@ export const SSH_TYPE = 'ecdsa';
 
 export const setup = ({ resolve, env, setInterval }) => {
   const it = harden({
-    SETUP_DIR: __dirname,
+    AGORIC_SDK: resolve(__dirname, '../../..'),
+    SETUP_DIR: resolve(__dirname, '..'),
     SETUP_HOME: env.AG_SETUP_COSMOS_HOME
       ? resolve(env.AG_SETUP_COSMOS_HOME)
       : resolve('.'),

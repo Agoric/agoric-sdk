@@ -25,14 +25,16 @@ const nodeCount = (count, force) => {
 const tfStringify = obj => {
   let ret = '';
   if (Array.isArray(obj)) {
-    let sep = '[';
+    ret += '[';
+    let sep = '';
     for (const el of obj) {
       ret += sep + tfStringify(el);
       sep = ',';
     }
     ret += ']';
   } else if (Object(obj) === obj) {
-    let sep = '{';
+    ret += '{';
+    let sep = '';
     for (const key of Object.keys(obj).sort()) {
       ret += `${sep}${JSON.stringify(key)}=${tfStringify(obj[key])}`;
       sep = ',';
@@ -149,7 +151,7 @@ module "${PLACEMENT}" {
     source           = "${setup.SETUP_DIR}/terraform/${provider.value}"
     CLUSTER_NAME     = "${PREFIX}\${var.NETWORK_NAME}-${PLACEMENT}"
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
-    SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
+    SSH_KEY_FILE     = "${PLACEMENT}-\${var.SSH_KEY_FILE}"
     ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
     SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
     VOLUMES          = "\${var.VOLUMES["${PLACEMENT}"]}"
@@ -187,7 +189,8 @@ module "${PLACEMENT}" {
     OFFSET           = "\${var.OFFSETS["${PLACEMENT}"]}"
     REGIONS          = "\${var.DATACENTERS["${PLACEMENT}"]}"
     ROLE             = "\${var.ROLES["${PLACEMENT}"]}"
-    SSH_KEY_FILE     = "\${var.SSH_KEY_FILE}"
+    # TODO: DigitalOcean provider module doesn't allow reuse of SSH public keys.
+    SSH_KEY_FILE     = "${PLACEMENT}-\${var.SSH_KEY_FILE}"
     DO_API_TOKEN     = "\${var.API_KEYS["${PLACEMENT}"]}"
     SERVERS          = "\${length(var.DATACENTERS["${PLACEMENT}"])}"
 }
@@ -262,13 +265,21 @@ const askProvider = ({ inquirer }) => PROVIDERS => {
   return inquirer.prompt(questions);
 };
 
-const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
-  progname,
-  args,
-) => {
+const doInit = ({
+  env,
+  rd,
+  wr,
+  running,
+  setup,
+  inquirer,
+  fetch,
+  parseArgs,
+}) => async (progname, args) => {
   const { needDoRun, cwd, chdir } = running;
   const PROVIDERS = makeProviders({ env, inquirer, wr, setup, fetch });
-  let [dir, overrideNetworkName] = args.slice(1);
+  let {
+    _: [dir, overrideNetworkName],
+  } = parseArgs(args.slice(1));
   if (!dir) {
     dir = setup.SETUP_HOME;
   }
@@ -292,16 +303,23 @@ const doInit = ({ env, rd, wr, running, setup, inquirer, fetch }) => async (
   const deploymentJson = `deployment.json`;
   const config = (await rd.exists(deploymentJson))
     ? JSON.parse(await rd.readFile(deploymentJson, 'utf-8'))
-    : {
-        PLACEMENTS: [],
-        PLACEMENT_PROVIDER: {},
-        SSH_PRIVATE_KEY_FILE: `id_${SSH_TYPE}`,
-        DETAILS: {},
-        OFFSETS: {},
-        ROLES: {},
-        DATACENTERS: {},
-        PROVIDER_NEXT_INDEX: {},
-      };
+    : {};
+
+  const defaultConfigs = {
+    PLACEMENTS: [],
+    PLACEMENT_PROVIDER: {},
+    SSH_PRIVATE_KEY_FILE: `id_${SSH_TYPE}`,
+    DETAILS: {},
+    OFFSETS: {},
+    ROLES: {},
+    DATACENTERS: {},
+    PROVIDER_NEXT_INDEX: {},
+  };
+  Object.entries(defaultConfigs).forEach(([key, dflt]) => {
+    if (!(key in config)) {
+      config[key] = dflt;
+    }
+  });
   config.NETWORK_NAME = overrideNetworkName;
 
   // eslint-disable-next-line no-constant-condition
@@ -514,6 +532,16 @@ variable ${JSON.stringify(vname)} {
   for (const PLACEMENT of Object.keys(config.PLACEMENT_PROVIDER).sort()) {
     const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
     const provider = PROVIDERS[PROVIDER];
+
+    // Create a placement-specific key file.
+    const keyFile = `${PLACEMENT}-${config.SSH_PRIVATE_KEY_FILE}`;
+    // eslint-disable-next-line no-await-in-loop
+    if (!(await rd.exists(keyFile))) {
+      // Set empty password.
+      // eslint-disable-next-line no-await-in-loop
+      await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', keyFile]);
+    }
+
     // eslint-disable-next-line no-await-in-loop
     await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
   }
@@ -552,6 +580,7 @@ output "offsets" {
 #! /bin/sh
 exec ansible-playbook -f10 \\
   -eSETUP_HOME=${shellEscape(cwd())} \\
+  -eAGORIC_SDK=${shellEscape(setup.AGORIC_SDK)} \\
   -eNETWORK_NAME=\`cat ${shellEscape(rd.resolve('network.txt'))}\` \\
   \${1+"$@"}
 `,
