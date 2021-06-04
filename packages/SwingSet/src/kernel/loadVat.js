@@ -85,6 +85,7 @@ export function makeVatLoader(stuff) {
     'enableSetup',
     'enablePipelining',
     'virtualObjectCacheSize',
+    'useTranscript',
   ];
 
   const allowedStaticOptions = [
@@ -96,6 +97,7 @@ export function makeVatLoader(stuff) {
     'enableSetup',
     'enablePipelining',
     'virtualObjectCacheSize',
+    'useTranscript',
   ];
 
   /**
@@ -139,6 +141,11 @@ export function makeVatLoader(stuff) {
    *        without waiting for the promises to be resolved.  If false, such
    *        messages will be queued inside the kernel.  Defaults to false.
    *
+   *    'useTranscript' If true, saves a transcript of a vat's inbound
+   *        deliveries and outbound syscalls so that the vat's internal state
+   *        can be reconstructed via replay.  If false, no such record is kept.
+   *        Defaults to true.
+   *
    * @param {boolean} isDynamic  If true, the vat being created is a dynamic vat;
    *    if false, it's a static vat (these have differences in their allowed
    *    options and some of their option defaults).
@@ -169,6 +176,7 @@ export function makeVatLoader(stuff) {
       enableDisavow = false,
       enablePipelining = false,
       virtualObjectCacheSize,
+      useTranscript = true,
       name,
     } = options;
 
@@ -199,6 +207,7 @@ export function makeVatLoader(stuff) {
       liveSlotsConsole: makeVatConsole('ls', vatID),
       vatParameters,
       virtualObjectCacheSize,
+      useTranscript,
       name,
     };
 
@@ -220,6 +229,7 @@ export function makeVatLoader(stuff) {
       setup,
       enableSetup: true,
       managerType: 'local',
+      useTranscript: true,
     };
     const translators = makeVatTranslators(vatID, kernelKeeper);
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);

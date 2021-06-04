@@ -25,6 +25,8 @@
  *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
+ *   useTranscript?: boolean,
+ *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   vatParameters: Record<string, unknown>,
  *   name: string,

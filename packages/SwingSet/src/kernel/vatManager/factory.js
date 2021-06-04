@@ -61,6 +61,7 @@ export function makeVatManagerFactory({
       'enableSetup',
       'liveSlotsConsole',
       'virtualObjectCacheSize',
+      'useTranscript',
       'vatParameters',
       'vatConsole',
       'name',

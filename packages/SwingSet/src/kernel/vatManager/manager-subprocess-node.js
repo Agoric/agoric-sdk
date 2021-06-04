@@ -21,6 +21,7 @@ export function makeNodeSubprocessFactory(tools) {
       virtualObjectCacheSize,
       enableDisavow,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
@@ -32,6 +33,7 @@ export function makeNodeSubprocessFactory(tools) {
       vatSyscallHandler,
       false,
       compareSyscalls,
+      useTranscript,
     );
 
     // start the worker and establish a connection

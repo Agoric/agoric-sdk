@@ -66,6 +66,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'enableDisavow',
         'enableSetup',
         'virtualObjectCacheSize',
+        'useTranscript',
       ]);
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
