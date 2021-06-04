@@ -77,7 +77,7 @@
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
-    "test": "ava",
+    "test": "yarn workspaces run test",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build",
@@ -88,9 +88,6 @@
   "ava": {
     "files": [
       "packages/*/test/**/test-*.js"
-    ],
-    "nodeArguments": [
-      "--expose-gc"
     ],
     "require": [
       "esm"
