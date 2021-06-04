@@ -54,7 +54,6 @@
  * @property {ZoeSeatAdminExit} exit
  * @property {(reason: TerminationReason) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
- * @property {() => Allocation} getCurrentAllocation
  */
 
 /**
@@ -102,9 +101,9 @@
 
 /**
  * @callback ZoeInstanceAdminMakeInvitation
- * @param invitationHandle: InvitationHandle,
- * @param description: string,
- * @param customProperties: Record<string, any>=,
+ * @param {InvitationHandle} invitationHandle
+ * @param {string} description
+ * @param {Record<string, any>=} customProperties
  * @returns {Payment}
  */
 

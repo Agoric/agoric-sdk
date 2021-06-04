@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { amountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
 import { createInvitationKit } from '../../../src/zoeService/makeInvitation';
@@ -34,7 +34,7 @@ test('createInvitationKit', async t => {
 
   t.deepEqual(
     amount,
-    amountMath.make(invitationBrand, [
+    AmountMath.make(invitationBrand, [
       {
         description: 'myInvitation',
         fruit: 'apple',
@@ -96,7 +96,7 @@ test('customProperties ok to omit', async t => {
 
   t.deepEqual(
     amount,
-    amountMath.make(invitationBrand, [
+    AmountMath.make(invitationBrand, [
       {
         description: 'myInvitation',
         handle: mockInvitationHandle,
