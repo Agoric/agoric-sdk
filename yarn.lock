@@ -5730,10 +5730,9 @@ eslint@^7.23.0:
     text-table "^0.2.0"
     v8-compile-cache "^2.0.3"
 
-esm@^3.2.25, esm@^3.2.5, esm@^3.2.7:
+esm@agoric-labs/esm#Agoric-built:
   version "3.2.25"
-  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
-  integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
+  resolved "https://codeload.github.com/agoric-labs/esm/tar.gz/3603726ad4636b2f865f463188fcaade6375638e"
 
 espree@^7.3.0, espree@^7.3.1:
   version "7.3.1"
