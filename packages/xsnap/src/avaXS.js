@@ -33,7 +33,7 @@ const asset = (ref, readFile) =>
 const externals = [
   'ava',
   'ses',
-  '@agoric/ses-ava',
+  '@endo/ses-ava',
   '@agoric/bundle-source',
   '@agoric/install-ses',
   '@agoric/install-metering-and-ses',

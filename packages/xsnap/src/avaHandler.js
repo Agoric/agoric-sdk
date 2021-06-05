@@ -46,7 +46,7 @@ const testRequire = function require(specifier) {
       return test;
     case 'ses':
       return undefined;
-    case '@agoric/ses-ava':
+    case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@agoric/install-ses':
       return undefined;

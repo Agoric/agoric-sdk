@@ -10,7 +10,7 @@
 // that, or should we just move tools/* into test/ ?
 //
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { wrapTest } from '@agoric/ses-ava';
+import { wrapTest } from '@endo/ses-ava';
 import './prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
