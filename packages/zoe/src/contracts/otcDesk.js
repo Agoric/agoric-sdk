@@ -4,7 +4,6 @@ import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import {
-  trade,
   offerTo,
   saveAllIssuers,
   assertProposalShape,
@@ -100,11 +99,8 @@ const start = zcf => {
   const addInventory = seat => {
     assertProposalShape(seat, { want: {} });
     // Take everything in this seat and add it to the marketMakerSeat
-    trade(
-      zcf,
-      { seat: marketMakerSeat, gains: seat.getCurrentAllocation() },
-      { seat, gains: {} },
-    );
+    marketMakerSeat.incrementBy(seat.decrementBy(seat.getCurrentAllocation()));
+    zcf.reallocate(marketMakerSeat, seat);
     seat.exit();
     return 'Inventory added';
   };
@@ -112,7 +108,8 @@ const start = zcf => {
   const removeInventory = seat => {
     assertProposalShape(seat, { give: {} });
     const { want } = seat.getProposal();
-    trade(zcf, { seat: marketMakerSeat, gains: {} }, { seat, gains: want });
+    seat.incrementBy(marketMakerSeat.decrementBy(want));
+    zcf.reallocate(marketMakerSeat, seat);
     seat.exit();
     return 'Inventory removed';
   };

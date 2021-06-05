@@ -4,7 +4,6 @@ import '@agoric/zoe/exported';
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import {
-  trade,
   assertProposalShape,
   divideBy,
   multiplyBy,
@@ -165,17 +164,13 @@ export function makeVaultKit(
     // take more than you owe
     assert(AmountMath.isGTE(runReturned, runDebt));
 
-    trade(
-      zcf,
-      {
-        seat: vaultSeat,
-        gains: { RUN: runDebt }, // return any overpayment
-      },
-      {
-        seat,
-        gains: { Collateral: getCollateralAllocated(vaultSeat) },
-      },
+    // Return any overpayment
+    vaultSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
+    seat.incrementBy(
+      vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
     );
+    zcf.reallocate(seat, vaultSeat);
+
     seat.exit();
     runDebt = AmountMath.makeEmpty(runBrand);
     active = false;
@@ -238,6 +233,19 @@ export function makeVaultKit(
     }
   }
 
+  function stageCollateral(seat) {
+    const proposal = seat.getProposal();
+    if (proposal.want.Collateral) {
+      seat.incrementBy(
+        vaultSeat.decrementBy({ Collateral: proposal.want.Collateral }),
+      );
+    } else if (proposal.give.Collateral) {
+      vaultSeat.incrementBy(
+        seat.decrementBy({ Collateral: proposal.give.Collateral }),
+      );
+    }
+  }
+
   // Calculate the target RUN level for the vaultSeat and clientSeat implied
   // by the proposal. If the proposal wants collateral, transfer that amount
   // from vault to client. If the proposal gives collateral, transfer the
@@ -268,6 +276,20 @@ export function makeVaultKit(
         vault: AmountMath.makeEmpty(runBrand),
         client: clientAllocation,
       };
+    }
+  }
+
+  function stageRun(seat) {
+    const proposal = seat.getProposal();
+    if (proposal.want.RUN) {
+      seat.incrementBy(vaultSeat.decrementBy({ RUN: proposal.want.RUN }));
+    } else if (proposal.give.RUN) {
+      // We don't allow runDebt to be negative, so we'll refund overpayments
+      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
+        ? runDebt
+        : proposal.give.RUN;
+
+      vaultSeat.incrementBy(seat.decrementBy({ RUN: acceptedRun }));
     }
   }
 
@@ -342,17 +364,10 @@ export function makeVaultKit(
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
     runMint.mintGains({ RUN: toMint }, vaultSeat);
-    zcf.reallocate(
-      vaultSeat.stage({
-        Collateral: collateralAfter.vault,
-        RUN: runAfter.vault,
-      }),
-      clientSeat.stage({
-        Collateral: collateralAfter.client,
-        RUN: runAfter.client,
-      }),
-      manager.stageReward(fee),
-    );
+    stageCollateral(clientSeat);
+    stageRun(clientSeat);
+    zcf.reallocate(vaultSeat, clientSeat);
+    manager.transferReward(fee, vaultSeat);
 
     runDebt = newDebt;
     runMint.burnLosses({ RUN: runAfter.vault }, vaultSeat);
@@ -395,18 +410,11 @@ export function makeVaultKit(
     await assertSufficientCollateral(collateralAmount, runDebt);
 
     runMint.mintGains({ RUN: runDebt }, vaultSeat);
-    const priorCollateral = getCollateralAllocated(vaultSeat);
 
-    const collateralSeatStaging = vaultSeat.stage({
-      Collateral: AmountMath.add(priorCollateral, collateralAmount),
-      RUN: AmountMath.makeEmpty(runBrand),
-    });
-    const loanSeatStaging = seat.stage({
-      RUN: wantedRun,
-      Collateral: AmountMath.makeEmpty(collateralBrand),
-    });
-    const stageReward = manager.stageReward(fee);
-    zcf.reallocate(collateralSeatStaging, loanSeatStaging, stageReward);
+    seat.incrementBy(vaultSeat.decrementBy({ RUN: wantedRun }));
+    vaultSeat.incrementBy(seat.decrementBy({ Collateral: collateralAmount }));
+    zcf.reallocate(vaultSeat, seat);
+    manager.transferReward(fee, vaultSeat);
 
     updateUiState();
 

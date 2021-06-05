@@ -7,7 +7,6 @@ import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
-import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/notifier/exported';
 import '@agoric/vats/exported';
@@ -498,16 +497,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
         winner,
       ) => {
         // Transfer the amount to our backing seat.
-        const currentLoser = loser.getAmountAllocated(loserKeyword, localBrand);
-        const currentWinner = winner.getAmountAllocated(
-          winnerKeyword,
-          localBrand,
-        );
-        const newLoser = AmountMath.subtract(currentLoser, amount);
-        const newWinner = AmountMath.add(currentWinner, amount);
-        const loserStage = loser.stage({ [loserKeyword]: newLoser });
-        const winnerStage = winner.stage({ [winnerKeyword]: newWinner });
-        zcf.reallocate(loserStage, winnerStage);
+        loser.decrementBy({ [loserKeyword]: amount });
+        winner.incrementBy({ [winnerKeyword]: amount });
+        zcf.reallocate(loser, winner);
       };
 
       // Describe how to retain/redeem real local erights.

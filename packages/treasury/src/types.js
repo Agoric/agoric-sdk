@@ -45,10 +45,11 @@
  */
 
 /**
- * @callback StageReward return a seat staging (for use in reallocate)
- * that will add the indicated amount to the stablecoin machine's reward pool.
+ * @callback TransferReward transfer the indicated amount to the
+ * stablecoin machine's reward pool, taken from the `fromSeat`.
  * @param {Amount} amount
- * @returns SeatStaging
+ * @param {ZCFSeat} fromSeat
+ * @returns {void}
  */
 
 /**
@@ -59,7 +60,7 @@
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
- * @property {StageReward} stageReward
+ * @property {TransferReward} transferReward
  */
 
 /**

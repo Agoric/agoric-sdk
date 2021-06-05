@@ -10,7 +10,6 @@ import {
   getOutputPrice,
   calcLiqValueToMint,
   calcValueToRemove,
-  trade,
   calcSecondaryRequired,
 } from '../../contractSupport';
 
@@ -63,20 +62,17 @@ export const makeAddPool = (
       liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
       liqTokenSupply += liquidityValueOut;
 
-      trade(
-        zcf,
-        {
-          seat: poolSeat,
-          gains: {
-            Central: zcfSeat.getCurrentAllocation().Central,
-            Secondary: secondaryAmount,
-          },
-        },
-        {
-          seat: zcfSeat,
-          gains: { Liquidity: liquidityAmountOut },
-        },
+      poolSeat.incrementBy(
+        zcfSeat.decrementBy({
+          Central: zcfSeat.getCurrentAllocation().Central,
+          Secondary: secondaryAmount,
+        }),
       );
+
+      zcfSeat.incrementBy(
+        poolSeat.decrementBy({ Liquidity: liquidityAmountOut }),
+      );
+      zcf.reallocate(poolSeat, zcfSeat);
       zcfSeat.exit();
       updateState(pool);
       return 'Added liquidity.';
@@ -108,7 +104,6 @@ export const makeAddPool = (
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
-      stageSeat: poolSeat.stage,
       getCentralAmount: () =>
         poolSeat.getAmountAllocated('Central', centralBrand),
       getSecondaryAmount: () =>
@@ -253,20 +248,14 @@ export const makeAddPool = (
 
         liqTokenSupply -= liquidityValueIn;
 
-        trade(
-          zcf,
-          {
-            seat: poolSeat,
-            gains: { Liquidity: liquidityIn },
-          },
-          {
-            seat: userSeat,
-            gains: {
-              Central: centralTokenAmountOut,
-              Secondary: tokenKeywordAmountOut,
-            },
-          },
+        poolSeat.incrementBy(userSeat.decrementBy({ Liquidity: liquidityIn }));
+        userSeat.incrementBy(
+          poolSeat.decrementBy({
+            Central: centralTokenAmountOut,
+            Secondary: tokenKeywordAmountOut,
+          }),
         );
+        zcf.reallocate(userSeat, poolSeat);
 
         userSeat.exit();
         updateState(pool);

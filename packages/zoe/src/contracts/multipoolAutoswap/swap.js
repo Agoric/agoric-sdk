@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape, trade } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport';
 
 import '../../../exported';
 
@@ -54,19 +54,16 @@ export const makeMakeSwapInvitation = (
         amountOut,
         amountIn: reducedAmountIn,
       } = pool.getPriceGivenAvailableInput(amountIn, brandOut);
-      trade(
-        zcf,
-        {
-          seat: pool.getPoolSeat(),
-          gains: { Central: reducedAmountIn },
-          losses: { Secondary: amountOut },
-        },
-        {
-          seat,
-          gains: { Out: amountOut },
-          losses: { In: reducedAmountIn },
-        },
-      );
+
+      const poolSeat = pool.getPoolSeat();
+
+      seat.decrementBy({ In: reducedAmountIn });
+      poolSeat.incrementBy({ Central: reducedAmountIn });
+
+      poolSeat.decrementBy({ Secondary: amountOut });
+      seat.incrementBy({ Out: amountOut });
+
+      zcf.reallocate(poolSeat, seat);
       seat.exit();
       getPool(brandOut).updateState();
       return `Swap successfully completed.`;
@@ -78,19 +75,16 @@ export const makeMakeSwapInvitation = (
         amountOut,
         amountIn: reducedAmountIn,
       } = pool.getPriceGivenAvailableInput(amountIn, brandOut);
-      trade(
-        zcf,
-        {
-          seat: pool.getPoolSeat(),
-          gains: { Secondary: reducedAmountIn },
-          losses: { Central: amountOut },
-        },
-        {
-          seat,
-          gains: { Out: amountOut },
-          losses: { In: reducedAmountIn },
-        },
-      );
+      const poolSeat = pool.getPoolSeat();
+
+      seat.decrementBy({ In: reducedAmountIn });
+      poolSeat.incrementBy({ Secondary: reducedAmountIn });
+
+      poolSeat.decrementBy({ Central: amountOut });
+      seat.incrementBy({ Out: amountOut });
+
+      zcf.reallocate(seat, poolSeat);
+
       seat.exit();
       getPool(brandIn).updateState();
       return `Swap successfully completed.`;
@@ -103,39 +97,19 @@ export const makeMakeSwapInvitation = (
         centralAmount: reducedCentralAmount,
       } = getPriceGivenAvailableInput(amountIn, brandOut);
 
-      const brandInPool = getPool(brandIn);
-      const brandOutPool = getPool(brandOut);
+      const brandInPoolSeat = getPool(brandIn).getPoolSeat();
+      const brandOutPoolSeat = getPool(brandOut).getPoolSeat();
 
-      const seatStaging = seat.stage(
-        harden({
-          In: AmountMath.subtract(amountIn, reducedAmountIn),
-          Out: amountOut,
-        }),
-      );
+      brandOutPoolSeat.decrementBy({ Secondary: amountOut });
+      seat.incrementBy({ Out: amountOut });
 
-      const poolBrandInStaging = brandInPool.stageSeat({
-        Secondary: AmountMath.add(
-          brandInPool.getSecondaryAmount(),
-          reducedAmountIn,
-        ),
-        Central: AmountMath.subtract(
-          brandInPool.getCentralAmount(),
-          reducedCentralAmount,
-        ),
-      });
+      brandInPoolSeat.decrementBy({ Central: reducedCentralAmount });
+      brandOutPoolSeat.incrementBy({ Central: reducedCentralAmount });
 
-      const poolBrandOutStaging = brandOutPool.stageSeat({
-        Central: AmountMath.add(
-          brandOutPool.getCentralAmount(),
-          reducedCentralAmount,
-        ),
-        Secondary: AmountMath.subtract(
-          brandOutPool.getSecondaryAmount(),
-          amountOut,
-        ),
-      });
+      seat.decrementBy({ In: reducedAmountIn });
+      brandInPoolSeat.incrementBy({ Secondary: reducedAmountIn });
 
-      zcf.reallocate(poolBrandInStaging, poolBrandOutStaging, seatStaging);
+      zcf.reallocate(brandOutPoolSeat, brandInPoolSeat, seat);
       seat.exit();
       getPool(brandIn).updateState();
       getPool(brandOut).updateState();
@@ -173,20 +147,15 @@ export const makeMakeSwapInvitation = (
         const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
         throw seat.fail(Error(reason));
       }
+      const poolSeat = pool.getPoolSeat();
+      seat.decrementBy({ In: amountIn });
+      poolSeat.incrementBy({ Secondary: amountIn });
 
-      trade(
-        zcf,
-        {
-          seat: pool.getPoolSeat(),
-          gains: { Secondary: amountIn },
-          losses: { Central: improvedAmountOut },
-        },
-        {
-          seat,
-          gains: { Out: improvedAmountOut },
-          losses: { In: amountIn },
-        },
-      );
+      poolSeat.decrementBy({ Central: improvedAmountOut });
+      seat.incrementBy({ Out: improvedAmountOut });
+
+      zcf.reallocate(seat, poolSeat);
+
       seat.exit();
       getPool(brandIn).updateState();
       return `Swap successfully completed.`;
@@ -197,19 +166,16 @@ export const makeMakeSwapInvitation = (
         amountOut: improvedAmountOut,
       } = pool.getPriceGivenRequiredOutput(brandIn, amountOut);
 
-      trade(
-        zcf,
-        {
-          seat: pool.getPoolSeat(),
-          gains: { Central: amountIn },
-          losses: { Secondary: improvedAmountOut },
-        },
-        {
-          seat,
-          gains: { Out: improvedAmountOut },
-          losses: { In: amountIn },
-        },
-      );
+      const poolSeat = pool.getPoolSeat();
+
+      seat.decrementBy({ In: amountIn });
+      poolSeat.incrementBy({ Central: amountIn });
+
+      poolSeat.decrementBy({ Secondary: improvedAmountOut });
+      seat.incrementBy({ Out: improvedAmountOut });
+
+      zcf.reallocate(poolSeat, seat);
+
       seat.exit();
       getPool(brandOut).updateState();
       return `Swap successfully completed.`;
@@ -221,36 +187,19 @@ export const makeMakeSwapInvitation = (
         // @ts-ignore If has Central, should not be typed as PriceAmountPair
         centralAmount: improvedCentralAmount,
       } = getPriceGivenRequiredOutput(brandIn, amountOut);
-      const brandInPool = getPool(brandIn);
-      const brandOutPool = getPool(brandOut);
+      const brandInPoolSeat = getPool(brandIn).getPoolSeat();
+      const brandOutPoolSeat = getPool(brandOut).getPoolSeat();
 
-      const seatStaging = seat.stage(
-        harden({
-          In: AmountMath.subtract(offeredAmountIn, amountIn),
-          Out: improvedAmountOut,
-        }),
-      );
+      brandOutPoolSeat.decrementBy({ Secondary: improvedAmountOut });
+      seat.incrementBy({ Out: improvedAmountOut });
 
-      const poolBrandInStaging = brandInPool.stageSeat({
-        Secondary: AmountMath.add(brandInPool.getSecondaryAmount(), amountIn),
-        Central: AmountMath.subtract(
-          brandInPool.getCentralAmount(),
-          improvedCentralAmount,
-        ),
-      });
+      brandInPoolSeat.decrementBy({ Central: improvedCentralAmount });
+      brandOutPoolSeat.incrementBy({ Central: improvedCentralAmount });
 
-      const poolBrandOutStaging = brandOutPool.stageSeat({
-        Central: AmountMath.add(
-          brandOutPool.getCentralAmount(),
-          improvedCentralAmount,
-        ),
-        Secondary: AmountMath.subtract(
-          brandOutPool.getSecondaryAmount(),
-          improvedAmountOut,
-        ),
-      });
+      seat.decrementBy({ In: amountIn });
+      brandInPoolSeat.incrementBy({ Secondary: amountIn });
 
-      zcf.reallocate(poolBrandInStaging, poolBrandOutStaging, seatStaging);
+      zcf.reallocate(brandInPoolSeat, brandOutPoolSeat, seat);
       seat.exit();
       getPool(brandIn).updateState();
       getPool(brandOut).updateState();

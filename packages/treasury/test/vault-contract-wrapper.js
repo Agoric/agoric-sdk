@@ -39,11 +39,13 @@ export async function start(zcf) {
     },
   };
 
-  function stageReward(amount, _fromSeat) {
-    const priorReward = stableCoinSeat.getAmountAllocated('RUN', runBrand);
-    return stableCoinSeat.stage({
-      RUN: AmountMath.add(priorReward, amount),
-    });
+  function transferReward(amount, fromSeat) {
+    stableCoinSeat.incrementBy(
+      fromSeat.decrementBy({
+        RUN: amount,
+      }),
+    );
+    zcf.reallocate(stableCoinSeat, fromSeat);
   }
 
   /** @type {InnerVaultManager} */
@@ -61,7 +63,7 @@ export async function start(zcf) {
       return makeRatio(5n, runBrand);
     },
     collateralBrand,
-    stageReward,
+    transferReward,
   };
 
   const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;

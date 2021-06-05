@@ -1,9 +1,11 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
 import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { assertProposalShape, swapExact } from '../contractSupport';
+import { isAfterDeadlineExitRule } from '../typeGuards';
 
 /**
  * A call option is the right (but not the obligation) to buy digital
@@ -66,12 +68,19 @@ import { assertProposalShape, swapExact } from '../contractSupport';
 const start = zcf => {
   const sellSeatExpiredMsg = `The covered call option is expired.`;
 
+  /** @type {OfferHandler} */
   const makeOption = sellSeat => {
     assertProposalShape(sellSeat, { exit: { afterDeadline: null } });
+    const sellSeatExitRule = sellSeat.getProposal().exit;
+    assert(
+      isAfterDeadlineExitRule(sellSeatExitRule),
+      `the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
+    );
 
     const exerciseOption = buySeat => {
+      assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
       try {
-        swapExact(zcf, sellSeat, buySeat, sellSeatExpiredMsg);
+        swapExact(zcf, sellSeat, buySeat);
       } catch (err) {
         console.log(
           'Swap failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.',
@@ -83,8 +92,8 @@ const start = zcf => {
     };
 
     const customProps = harden({
-      expirationDate: sellSeat.getProposal().exit.afterDeadline.deadline,
-      timeAuthority: sellSeat.getProposal().exit.afterDeadline.timer,
+      expirationDate: sellSeatExitRule.afterDeadline.deadline,
+      timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });
