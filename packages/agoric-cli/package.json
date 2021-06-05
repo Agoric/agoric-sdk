@@ -37,7 +37,7 @@
     "chalk": "^2.4.2",
     "commander": "^5.0.0",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.25",
+    "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^6.3.1",
     "opener": "^1.5.2",
     "ws": "^7.2.0"
@@ -59,8 +59,12 @@
     ]
   },
   "ava": {
-    "files": ["test/**/test-*.js"],
-    "require": ["esm"],
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
     "timeout": "2m"
   },
   "prettier": {

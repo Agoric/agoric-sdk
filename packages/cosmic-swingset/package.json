@@ -41,7 +41,7 @@
     "agoric": "^0.13.2",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "devDependencies": {
     "ava": "^3.12.1"

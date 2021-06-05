@@ -14,7 +14,7 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "devDependencies": {
     "ava": "^3.12.1"
