@@ -1,5 +1,6 @@
 {
   "bootstrap": "bootstrap",
+  "loopboxSenders": ["user", "bot"],
   "bundles": {
     "commsvat": {
       "sourceSpec": "vat-comms.js"

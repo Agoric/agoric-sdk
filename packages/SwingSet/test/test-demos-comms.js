@@ -24,6 +24,9 @@ async function main(basedir, argv) {
   config.devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: ['user', 'bot'],
+      },
     },
   };
   const deviceEndowments = {

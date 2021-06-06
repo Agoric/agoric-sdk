@@ -15,17 +15,17 @@ export function buildRootObject(vatPowers, vatParameters) {
       // machine A can send and receive through the loopbox
       const { vattpA, commsA } = vats;
       D(loopbox).registerInboundHandler(A, vattpA);
-      await E(vattpA).registerMailboxDevice(D(loopbox).makeSender(A));
+      await E(vattpA).registerMailboxDevice(D(loopbox).getSender(A));
 
       // machine B can send and receive through the loopbox
       const { vattpB, commsB } = vats;
       D(loopbox).registerInboundHandler(B, vattpB);
-      await E(vattpB).registerMailboxDevice(D(loopbox).makeSender(B));
+      await E(vattpB).registerMailboxDevice(D(loopbox).getSender(B));
 
       // machine C can send and receive through the loopbox
       const { vattpC, commsC } = vats;
       D(loopbox).registerInboundHandler(C, vattpC);
-      await E(vattpC).registerMailboxDevice(D(loopbox).makeSender(C));
+      await E(vattpC).registerMailboxDevice(D(loopbox).getSender(C));
 
       // A knows about B
       const AtoB = await E(vattpA).addRemote(B);
