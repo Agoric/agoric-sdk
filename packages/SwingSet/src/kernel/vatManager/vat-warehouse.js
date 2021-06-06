@@ -7,7 +7,6 @@ import { makeVatTranslators } from '../vatTranslator';
  * @param { ReturnType<typeof import('../loadVat').makeVatLoader> } vatLoader
  * @param {{ maxVatsOnline?: number }=} policyOptions
  *
- * @typedef { ReturnType<typeof import('@agoric/swing-store-simple').initSwingStore> } SwingStore
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
