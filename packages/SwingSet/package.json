@@ -52,7 +52,7 @@
     "@endo/base64": "^0.1.0",
     "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
-    "esm": "^3.2.5",
+    "esm": "agoric-labs/esm#Agoric-built",
     "node-lmdb": "^0.9.4",
     "re2": "^1.10.5",
     "semver": "^6.3.0",

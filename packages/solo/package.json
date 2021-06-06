@@ -44,7 +44,7 @@
     "@agoric/vats": "^0.2.2",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.25",
+    "esm": "agoric-labs/esm#Agoric-built",
     "express": "^4.17.1",
     "minimist": "^1.2.0",
     "morgan": "^1.9.1",
