@@ -394,6 +394,8 @@ export default function buildKernel(
       kernelDelivery,
       vatDelivery,
     );
+    // Ensure that the vatSlogger is available before clist translation.
+    kernelSlog.provideVatSlogger(vatID);
     try {
       // eslint-disable-next-line no-use-before-define
       const deliveryResult = await vatWarehouse.deliverToVat(

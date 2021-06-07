@@ -82,7 +82,7 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
     slogCallbacks,
   );
   const dummySlogger = harden({
-    addVat: reg('addVat', () => 0),
+    provideVatSlogger: reg('provideVatSlogger', () => 0),
     vatConsole: reg('vatConsole', () => makeConsole('disabled slogger')),
     startup: reg('startup', () => () => 0), // returns nop finish() function
     replayVatTranscript: reg('replayVatTranscript', () => () => 0),
@@ -189,7 +189,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     });
   }
 
-  function addVat(
+  function provideVatSlogger(
     vatID,
     dynamic,
     description,
@@ -198,7 +198,10 @@ export function makeSlogger(slogCallbacks, writeObj) {
     managerType,
     vatParameters,
   ) {
-    assert(!vatSlogs.has(vatID), X`already have slog for ${vatID}`);
+    const found = vatSlogs.get(vatID);
+    if (found) {
+      return { vatSlog: found, starting: false };
+    }
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
     write({
@@ -211,7 +214,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
       vatParameters,
       vatSourceBundle,
     });
-    return vatSlog;
+    return { vatSlog, starting: true };
   }
 
   function replayVatTranscript(vatID) {
@@ -230,7 +233,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     slogCallbacks,
   );
   const slogger = harden({
-    addVat: reg('addVat', addVat),
+    provideVatSlogger: reg('provideVatSlogger', provideVatSlogger),
     vatConsole: reg('vatConsole', (vatID, ...args) =>
       vatSlogs.get(vatID).vatConsole(...args),
     ),
