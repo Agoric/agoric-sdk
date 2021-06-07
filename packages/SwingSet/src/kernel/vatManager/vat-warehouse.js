@@ -32,7 +32,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type {Map<string, VatTranslators> } */
   const xlate = new Map();
   /** @param { string } vatID */
-  function findOrCreateTranslators(vatID) {
+  function provideTranslators(vatID) {
     let translators = xlate.get(vatID);
     if (!translators) {
       // NOTE: makeVatTranslators assumes
@@ -56,7 +56,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       kernelKeeper.getVatKeeper(vatID) || kernelKeeper.allocateVatKeeper(vatID);
     const { source, options } = vatKeeper.getSourceAndOptions();
 
-    const translators = findOrCreateTranslators(vatID);
+    const translators = provideTranslators(vatID);
 
     const chooseLoader = () => {
       if (recreate) {
@@ -206,7 +206,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @returns { VatDeliveryObject }
    */
   function kernelDeliveryToVatDelivery(vatID, kd) {
-    const translators = findOrCreateTranslators(vatID);
+    const translators = provideTranslators(vatID);
 
     // @ts-ignore TODO: types for kernelDeliveryToVatDelivery
     return translators.kernelDeliveryToVatDelivery(kd);
@@ -220,7 +220,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function loadTestVat(vatID, setup, creationOptions) {
     const manager = await vatLoader.loadTestVat(vatID, setup, creationOptions);
 
-    const translators = findOrCreateTranslators(vatID);
+    const translators = provideTranslators(vatID);
 
     const { enablePipelining = false } = creationOptions;
 
