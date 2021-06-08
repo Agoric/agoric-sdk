@@ -17,15 +17,40 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
+// Normalized balance updates for order-insensitive comparisons.
+// Address -> Denomination -> Amount
+type normalBalanceUpdate map[string]map[string]string
+
+// normalizeBalanceUpdate validates vpurseBalanceUpdate message and returns normalized version.
+func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) normalBalanceUpdate {
+	t.Helper()
+	if msg == nil {
+		return nil
+	}
+	if msg.Type != "VPURSE_BALANCE_UPDATE" {
+		t.Errorf("bad balance update type: %s", msg.Type)
+	}
+	accounts := make(map[string]map[string]string)
+	for _, update := range msg.Updated {
+		account := accounts[update.Address]
+		if account == nil {
+			account = make(map[string]string)
+			accounts[update.Address] = account
+		}
+		account[update.Denom] = update.Amount
+	}
+	return accounts
+}
+
 func Test_marshalBalanceUpdate(t *testing.T) {
 	tests := []struct {
 		name             string
 		addressToBalance map[string]sdk.Coins
-		want             []byte
+		want             normalBalanceUpdate
 		wantErr          bool
 	}{
 		{
-			name:             "nil",
+			name:             "empty",
 			addressToBalance: map[string]sdk.Coins{},
 			want:             nil,
 		},
@@ -34,11 +59,11 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 			addressToBalance: map[string]sdk.Coins{
 				"acct1": sdk.Coins{sdk.NewInt64Coin("foocoin", 123)},
 			},
-			want: []byte(
-				`{"nonce":1,"type":"VPURSE_BALANCE_UPDATE","updated":[` +
-					`{"address":"acct1","denom":"foocoin","amount":"123"}` +
-					`]}`,
-			),
+			want: map[string]map[string]string{
+				"acct1": map[string]string{
+					"foocoin": "123",
+				},
+			},
 		},
 		{
 			name: "multi-denom",
@@ -48,12 +73,12 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 					sdk.NewInt64Coin("barcoin", 456),
 				},
 			},
-			want: []byte(
-				`{"nonce":2,"type":"VPURSE_BALANCE_UPDATE","updated":[` +
-					`{"address":"acct1","denom":"foocoin","amount":"123"},` +
-					`{"address":"acct1","denom":"barcoin","amount":"456"}` +
-					`]}`,
-			),
+			want: map[string]map[string]string{
+				"acct1": map[string]string{
+					"foocoin": "123",
+					"barcoin": "456",
+				},
+			},
 		},
 		{
 			name: "multi-acct",
@@ -61,24 +86,36 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 				"acct1": sdk.Coins{sdk.NewInt64Coin("foocoin", 123)},
 				"acct2": sdk.Coins{sdk.NewInt64Coin("barcoin", 456)},
 			},
-			want: []byte(
-				`{"nonce":3,"type":"VPURSE_BALANCE_UPDATE","updated":[` +
-					`{"address":"acct1","denom":"foocoin","amount":"123"},` +
-					`{"address":"acct2","denom":"barcoin","amount":"456"}` +
-					`]}`,
-			),
+			want: map[string]map[string]string{
+				"acct1": map[string]string{
+					"foocoin": "123",
+				},
+				"acct2": map[string]string{
+					"barcoin": "456",
+				},
+			},
 		},
 	}
 	resetForTests()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := marshalBalanceUpdate(tt.addressToBalance)
+			encoded, err := marshalBalanceUpdate(tt.addressToBalance)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("marshalBalanceUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			msg := &vpurseBalanceUpdate{}
+			if encoded == nil {
+				msg = nil
+			} else {
+				err = json.Unmarshal(encoded, &msg)
+				if err != nil {
+					t.Fatalf("json.Unmarshal() error %v", err)
+				}
+			}
+			got := normalizeBalanceUpdate(msg, t)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("marshalBalanceUpdate() = %v, want %v", string(got), string(tt.want))
+				t.Errorf("marshalBalanceUpdate() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
@@ -160,14 +197,17 @@ func Test_Receive_GetBalance(t *testing.T) {
 		"denom": "quatloos"
 		}`)
 	if err != nil {
-		t.Errorf("VPURSE_GET_BALANCE error = %v", err)
+		t.Fatalf("got error = %v", err)
 	}
-	if ret != `"123"` {
-		t.Errorf("VPURSE_GET_BALANCE = %v, want \"0\"", ret)
+	want := `"123"`
+	if ret != want {
+		t.Errorf("got %v, want %s", ret, want)
 	}
-	wantCalls := []string{"GetBalance " + addr1.String() + " quatloos"}
+	wantCalls := []string{
+		"GetBalance " + addr1.String() + " quatloos",
+	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
-		t.Errorf("VPURSE_GET_BALANCE got calls %v, want {%s}", bank.calls, wantCalls)
+		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
 }
 
@@ -185,26 +225,22 @@ func Test_Receive_Give(t *testing.T) {
 		"denom": "urun"
 		}`)
 	if err != nil {
-		t.Errorf("VPURSE_GIVE error = %v", err)
+		t.Fatalf("got error = %v", err)
 	}
 	balanceUpdate := vpurseBalanceUpdate{}
 	err = json.Unmarshal([]byte(ret), &balanceUpdate)
 	if err != nil {
-		t.Errorf("VPURSE_GIVE unmarshal response error = %v", err)
+		t.Errorf("unmarshal response error = %v", err)
 	}
 	want := vpurseBalanceUpdate{
 		Type:  "VPURSE_BALANCE_UPDATE",
 		Nonce: balanceUpdate.Nonce,
 		Updated: []vpurseSingleBalanceUpdate{
-			vpurseSingleBalanceUpdate{
-				Address: addr1.String(),
-				Denom:   "urun",
-				Amount:  "1000",
-			},
+			{Address: addr1.String(), Denom: "urun", Amount: "1000"},
 		},
 	}
 	if !reflect.DeepEqual(balanceUpdate, want) {
-		t.Errorf("VPURSE_GIVE got %+v, want %+v", balanceUpdate, want)
+		t.Errorf("got %+v, want %+v", balanceUpdate, want)
 	}
 	wantCalls := []string{
 		"MintCoins vpurse 1000urun",
@@ -212,6 +248,47 @@ func Test_Receive_Give(t *testing.T) {
 		"GetBalance " + addr1.String() + " urun",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
-		t.Errorf("VPURSE_GIVE got calls %v, want {%s}", bank.calls, wantCalls)
+		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
+	}
+}
+
+func Test_Receive_Grab(t *testing.T) {
+	bank := &mockBank{balance: sdk.NewInt64Coin("ubld", 1000)}
+	keeper := makeTestKeeper(bank)
+	ch := NewPortHandler(AppModule{}, keeper)
+	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
+	ctx := &swingset.ControllerContext{Context: sdkCtx}
+
+	ret, err := ch.Receive(ctx, `{
+		"type": "VPURSE_GRAB",
+		"sender": "`+addr1.String()+`",
+		"amount": "500",
+		"denom": "ubld"
+		}`)
+	if err != nil {
+		t.Fatalf("got error = %v", err)
+	}
+	balanceUpdate := vpurseBalanceUpdate{}
+	err = json.Unmarshal([]byte(ret), &balanceUpdate)
+	if err != nil {
+		t.Errorf("unmarshal response error = %v", err)
+	}
+	want := vpurseBalanceUpdate{
+		Type:  "VPURSE_BALANCE_UPDATE",
+		Nonce: balanceUpdate.Nonce,
+		Updated: []vpurseSingleBalanceUpdate{
+			{Address: addr1.String(), Denom: "ubld", Amount: "1000"},
+		},
+	}
+	if !reflect.DeepEqual(balanceUpdate, want) {
+		t.Errorf("got %+v, want %+v", balanceUpdate, want)
+	}
+	wantCalls := []string{
+		"SendCoinsFromAccountToModule " + addr1.String() + " vpurse 500ubld",
+		"BurnCoins vpurse 500ubld",
+		"GetBalance " + addr1.String() + " ubld",
+	}
+	if !reflect.DeepEqual(bank.calls, wantCalls) {
+		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
 }
