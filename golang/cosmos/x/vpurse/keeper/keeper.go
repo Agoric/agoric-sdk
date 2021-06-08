@@ -4,8 +4,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
 )
 
@@ -16,7 +14,7 @@ type Keeper struct {
 	storeKey sdk.StoreKey
 	cdc      codec.Codec
 
-	bankKeeper       bankkeeper.Keeper
+	bankKeeper       types.BankKeeper
 	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
@@ -26,7 +24,7 @@ type Keeper struct {
 // NewKeeper creates a new vpurse Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey,
-	bankKeeper bankkeeper.Keeper,
+	bankKeeper types.BankKeeper,
 	feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
