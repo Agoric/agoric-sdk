@@ -25,7 +25,7 @@ test('communication', async t => {
       t.is(dstID, 'bank');
       let ret;
       switch (obj.type) {
-        case 'VPURSE_GET_BALANCE': {
+        case 'VBANK_GET_BALANCE': {
           const { address, denom, type: _type, ...rest } = obj;
           t.is(address, 'agoricfoo');
           t.deepEqual(rest, {});
@@ -39,7 +39,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VPURSE_GIVE': {
+        case 'VBANK_GIVE': {
           const { amount, denom, recipient, type: _type, ...rest } = obj;
           t.is(recipient, 'agoricfoo');
           t.is(denom, 'ubld');
@@ -49,7 +49,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VPURSE_GRAB': {
+        case 'VBANK_GRAB': {
           const { amount, denom, sender, type: _type, ...rest } = obj;
           t.is(sender, 'agoricfoo');
           t.deepEqual(rest, {});
@@ -69,7 +69,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VPURSE_GIVE_TO_FEE_COLLECTOR': {
+        case 'VBANK_GIVE_TO_FEE_COLLECTOR': {
           const { amount, denom, type: _type, ...rest } = obj;
           t.is(denom, 'ufee');
           t.is(amount, '12');
@@ -142,7 +142,7 @@ test('communication', async t => {
   const notifier = E(vpurse).getCurrentAmountNotifier();
   const updateRecord = await E(notifier).getUpdateSince();
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
-  const obj = { type: 'VPURSE_BALANCE_UPDATE', updated: [balance] };
+  const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
   t.assert(bankHandler);
   await (bankHandler && E(bankHandler).fromBridge('bank', obj));
 

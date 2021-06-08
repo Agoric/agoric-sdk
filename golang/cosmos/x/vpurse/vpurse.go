@@ -14,7 +14,7 @@ type portHandler struct {
 }
 
 type portMessage struct { // comes from swingset's vat-bank
-	Type      string `json:"type"` // VPURSE_*
+	Type      string `json:"type"` // VBANK_*
 	Address   string `json:"address"`
 	Recipient string `json:"recipient"`
 	Sender    string `json:"sender"`
@@ -51,7 +51,7 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 
 	nonce += 1
 	event := vpurseBalanceUpdate{
-		Type:    "VPURSE_BALANCE_UPDATE",
+		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
 		Updated: make([]vpurseSingleBalanceUpdate, 0, nentries),
 	}
@@ -80,7 +80,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	}
 
 	switch msg.Type {
-	case "VPURSE_GET_BALANCE":
+	case "VBANK_GET_BALANCE":
 		addr, err := sdk.AccAddressFromBech32(msg.Address)
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
@@ -94,7 +94,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			}
 		}
 
-	case "VPURSE_GRAB":
+	case "VBANK_GRAB":
 		addr, err := sdk.AccAddressFromBech32(msg.Sender)
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Sender, err)
@@ -119,7 +119,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			ret = string(bz)
 		}
 
-	case "VPURSE_GIVE":
+	case "VBANK_GIVE":
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Recipient, err)
@@ -144,7 +144,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			ret = string(bz)
 		}
 
-	case "VPURSE_GIVE_TO_FEE_COLLECTOR":
+	case "VBANK_GIVE_TO_FEE_COLLECTOR":
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
