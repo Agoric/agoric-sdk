@@ -19,10 +19,41 @@ import (
 
 // Normalized balance updates for order-insensitive comparisons.
 // Address -> Denomination -> Amount
-type normalBalanceUpdate map[string]map[string]string
+type accountBalances map[string]map[string]string
+
+type accountOption func(map[string]string)
+
+func coin(denom, amount string) accountOption {
+	return func(acct map[string]string) {
+		acct[denom] = amount
+	}
+}
+
+type balancesOption func(map[string]map[string]string)
+
+func account(addr string, opts ...accountOption) balancesOption {
+	return func(bal map[string]map[string]string) {
+		acct := bal[addr]
+		if acct == nil {
+			acct = make(map[string]string)
+			bal[addr] = acct
+		}
+		for _, opt := range opts {
+			opt(acct)
+		}
+	}
+}
+
+func newBalances(opts ...balancesOption) accountBalances {
+	bal := make(map[string]map[string]string)
+	for _, opt := range opts {
+		opt(bal)
+	}
+	return bal
+}
 
 // normalizeBalanceUpdate validates vpurseBalanceUpdate message and returns normalized version.
-func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) normalBalanceUpdate {
+func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) accountBalances {
 	t.Helper()
 	if msg == nil {
 		return nil
@@ -46,7 +77,7 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 	tests := []struct {
 		name             string
 		addressToBalance map[string]sdk.Coins
-		want             normalBalanceUpdate
+		want             accountBalances
 		wantErr          bool
 	}{
 		{
@@ -57,43 +88,30 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 		{
 			name: "simple",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": sdk.Coins{sdk.NewInt64Coin("foocoin", 123)},
+				"acct1": {sdk.NewInt64Coin("foocoin", 123)},
 			},
-			want: map[string]map[string]string{
-				"acct1": map[string]string{
-					"foocoin": "123",
-				},
-			},
+			want: newBalances(account("acct1", coin("foocoin", "123"))),
 		},
 		{
 			name: "multi-denom",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": sdk.Coins{
+				"acct1": {
 					sdk.NewInt64Coin("foocoin", 123),
 					sdk.NewInt64Coin("barcoin", 456),
 				},
 			},
-			want: map[string]map[string]string{
-				"acct1": map[string]string{
-					"foocoin": "123",
-					"barcoin": "456",
-				},
-			},
+			want: newBalances(account("acct1", coin("foocoin", "123"), coin("barcoin", "456"))),
 		},
 		{
 			name: "multi-acct",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": sdk.Coins{sdk.NewInt64Coin("foocoin", 123)},
-				"acct2": sdk.Coins{sdk.NewInt64Coin("barcoin", 456)},
+				"acct1": {sdk.NewInt64Coin("foocoin", 123)},
+				"acct2": {sdk.NewInt64Coin("barcoin", 456)},
 			},
-			want: map[string]map[string]string{
-				"acct1": map[string]string{
-					"foocoin": "123",
-				},
-				"acct2": map[string]string{
-					"barcoin": "456",
-				},
-			},
+			want: newBalances(
+				account("acct1", coin("foocoin", "123")),
+				account("acct2", coin("barcoin", "456")),
+			),
 		},
 	}
 	resetForTests()
@@ -232,15 +250,10 @@ func Test_Receive_Give(t *testing.T) {
 	if err != nil {
 		t.Errorf("unmarshal response error = %v", err)
 	}
-	want := vpurseBalanceUpdate{
-		Type:  "VPURSE_BALANCE_UPDATE",
-		Nonce: balanceUpdate.Nonce,
-		Updated: []vpurseSingleBalanceUpdate{
-			{Address: addr1.String(), Denom: "urun", Amount: "1000"},
-		},
-	}
-	if !reflect.DeepEqual(balanceUpdate, want) {
-		t.Errorf("got %+v, want %+v", balanceUpdate, want)
+	got := normalizeBalanceUpdate(&balanceUpdate, t)
+	want := newBalances(account(addr1.String(), coin("urun", "1000")))
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
 		"MintCoins vpurse 1000urun",
@@ -273,15 +286,10 @@ func Test_Receive_Grab(t *testing.T) {
 	if err != nil {
 		t.Errorf("unmarshal response error = %v", err)
 	}
-	want := vpurseBalanceUpdate{
-		Type:  "VPURSE_BALANCE_UPDATE",
-		Nonce: balanceUpdate.Nonce,
-		Updated: []vpurseSingleBalanceUpdate{
-			{Address: addr1.String(), Denom: "ubld", Amount: "1000"},
-		},
-	}
-	if !reflect.DeepEqual(balanceUpdate, want) {
-		t.Errorf("got %+v, want %+v", balanceUpdate, want)
+	got := normalizeBalanceUpdate(&balanceUpdate, t)
+	want := newBalances(account(addr1.String(), coin("ubld", "1000")))
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
 		"SendCoinsFromAccountToModule " + addr1.String() + " vpurse 500ubld",
