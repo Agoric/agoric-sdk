@@ -8,6 +8,10 @@ import { parseKernelSlot } from '../parseKernelSlots';
 import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
 import { insistVatID } from '../id';
 import { kdebug } from '../kdebug';
+import {
+  parseReachableAndVatSlot,
+  buildReachableAndVatSlot,
+} from './reachable';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
@@ -28,6 +32,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(
     `${vatID}.t.endPosition`,
     `${JSON.stringify(streamStore.STREAM_START)}`,
@@ -47,6 +52,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * kernel's mapping tables.
  * @param {*} incrementRefCount
  * @param {*} decrementRefCount
+ * @param {(vatID: string, kernelSlot: string) => {reachable: boolean, vatSlot: string}} getReachableAndVatSlot
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
@@ -61,6 +67,7 @@ export function makeVatKeeper(
   addKernelPromiseForVat,
   incrementRefCount,
   decrementRefCount,
+  getReachableAndVatSlot,
   incStat,
   decStat,
   getCrankNumber,
@@ -84,41 +91,51 @@ export function makeVatKeeper(
     return harden({ source, options });
   }
 
-  function parseReachableAndVatSlot(value) {
-    assert.typeof(value, 'string', X`non-string value: ${value}`);
-    const flag = value.slice(0, 1);
-    assert.equal(value.slice(1, 2), ' ');
-    const vatSlot = value.slice(2);
-    let reachable;
-    if (flag === 'R') {
-      reachable = true;
-    } else if (flag === '_') {
-      reachable = false;
-    } else {
-      assert(`flag (${flag}) must be 'R' or '_'`);
-    }
-    return { reachable, vatSlot };
+  function nextDeliveryNum() {
+    const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
+    kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
+    return num;
   }
 
-  function buildReachableAndVatSlot(reachable, vatSlot) {
-    return `${reachable ? 'R' : '_'} ${vatSlot}`;
-  }
-
-  function getReachableAndVatSlot(kernelSlot) {
+  function getReachableFlag(kernelSlot) {
     const kernelKey = `${vatID}.c.${kernelSlot}`;
-    return parseReachableAndVatSlot(kvStore.get(kernelKey));
+    const data = kvStore.get(kernelKey);
+    const { isReachable } = parseReachableAndVatSlot(data);
+    return isReachable;
+  }
+
+  function insistNotReachable(kernelSlot) {
+    const isReachable = getReachableFlag(kernelSlot);
+    assert.equal(isReachable, false, X`${kernelSlot} was reachable, oops`);
   }
 
   function setReachableFlag(kernelSlot) {
+    // const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    // const { allocatedByVat } = parseVatSlot(vatSlot);
     kvStore.set(kernelKey, buildReachableAndVatSlot(true, vatSlot));
   }
 
   function clearReachableFlag(kernelSlot) {
+    // const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { vatSlot } = parseReachableAndVatSlot(kvStore.get(kernelKey));
+    // const { allocatedByVat } = parseVatSlot(vatSlot);
     kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+  }
+
+  function importsKernelSlot(kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    const data = kvStore.get(kernelKey);
+    if (data) {
+      const { vatSlot } = parseReachableAndVatSlot(data);
+      const { allocatedByVat } = parseVatSlot(vatSlot);
+      if (!allocatedByVat) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -181,8 +198,8 @@ export function makeVatKeeper(
         setReachableFlag(kernelSlot);
       } else {
         // imports must be reachable
-        const { reachable } = getReachableAndVatSlot(kernelSlot);
-        assert(reachable, X`vat tried to access unreachable import`);
+        const { isReachable } = getReachableAndVatSlot(vatID, kernelSlot);
+        assert(isReachable, X`vat tried to access unreachable import`);
       }
     }
     return kernelSlot;
@@ -235,7 +252,7 @@ export function makeVatKeeper(
       kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
-    const { reachable, vatSlot } = getReachableAndVatSlot(kernelSlot);
+    const { isReachable, vatSlot } = getReachableAndVatSlot(vatID, kernelSlot);
     const { allocatedByVat } = parseVatSlot(vatSlot);
     if (setReachable) {
       if (!allocatedByVat) {
@@ -244,7 +261,7 @@ export function makeVatKeeper(
       } else {
         // if the kernel is sending non-reachable exports back into
         // exporting vat, that's a kernel bug
-        assert(reachable, X`kernel sent unreachable export`);
+        assert(isReachable, X`kernel sent unreachable export ${kernelSlot}`);
       }
     }
     return vatSlot;
@@ -381,8 +398,12 @@ export function makeVatKeeper(
   return harden({
     setSourceAndOptions,
     getSourceAndOptions,
+    nextDeliveryNum,
+    importsKernelSlot,
     mapVatSlotToKernelSlot,
     mapKernelSlotToVatSlot,
+    getReachableFlag,
+    insistNotReachable,
     setReachableFlag,
     clearReachableFlag,
     hasCListEntry,

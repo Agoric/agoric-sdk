@@ -54,7 +54,6 @@
  * @property {ZoeSeatAdminExit} exit
  * @property {(reason: TerminationReason) => void} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
- * @property {() => Allocation} getCurrentAllocation
  */
 
 /**
@@ -102,9 +101,9 @@
 
 /**
  * @callback ZoeInstanceAdminMakeInvitation
- * @param invitationHandle: InvitationHandle,
- * @param description: string,
- * @param customProperties: Record<string, any>=,
+ * @param {InvitationHandle} invitationHandle
+ * @param {string} description
+ * @param {Record<string, any>=} customProperties
  * @returns {Payment}
  */
 
@@ -174,7 +173,7 @@
  *
  * @callback ExecuteContract
  * @param {SourceBundle} bundle
- * @param {ZoeService} zoeService
+ * @param {Promise<ZoeService>} zoeServicePromise
  * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
@@ -262,7 +261,7 @@
  * The SeatManager holds the active zcfSeats and seatStagings and can
  * reallocate and make new zcfSeats.
  *
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,

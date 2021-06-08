@@ -10,15 +10,15 @@ export function makeVatRootObjectSlot() {
 
 export function makeVatLoader(stuff) {
   const {
-    vatNameToID,
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
     addVatManager,
-    queueToExport,
+    queueToKref,
     kernelKeeper,
     panic,
     buildVatSyscallHandler,
+    vatAdminRootKref,
   } = stuff;
 
   /**
@@ -32,6 +32,7 @@ export function makeVatLoader(stuff) {
    * @returns {Promise<void>}  The vatID of the newly created vat
    */
   function createVatDynamically(vatID, source, dynamicOptions = {}) {
+    assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     // eslint-disable-next-line no-use-before-define
     return create(vatID, source, dynamicOptions, true);
   }
@@ -175,8 +176,6 @@ export function makeVatLoader(stuff) {
         return;
       }
       terminated = true;
-      const vatAdminVatId = vatNameToID('vatAdmin');
-      const vatAdminRootObjectSlot = makeVatRootObjectSlot();
 
       // Embedding the info capdata into the arguments list, taking advantage of
       // the fact that neither vatID (which is a string) nor shouldReject (which
@@ -186,13 +185,7 @@ export function makeVatLoader(stuff) {
         slots: info.slots,
       };
 
-      queueToExport(
-        vatAdminVatId,
-        vatAdminRootObjectSlot,
-        'vatTerminated',
-        args,
-        'logFailure',
-      );
+      queueToKref(vatAdminRootKref, 'vatTerminated', args, 'logFailure');
     }
 
     kernelSlog.addVat(

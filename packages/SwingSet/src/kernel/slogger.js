@@ -104,7 +104,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
   function makeVatSlog(vatID) {
     let state = IDLE; // or STARTUP or DELIVERY
     let crankNum;
-    let deliveryNum = 0;
+    let deliveryNum;
     let syscallNum;
 
     function assertOldState(exp, msg) {
@@ -137,10 +137,11 @@ export function makeSlogger(slogCallbacks, writeObj) {
     }
 
     // kd: kernelDelivery, vd: vatDelivery
-    function delivery(newCrankNum, kd, vd) {
+    function delivery(newCrankNum, newDeliveryNum, kd, vd) {
       assertOldState(IDLE, 'reentrant delivery?');
       state = DELIVERY;
       crankNum = newCrankNum;
+      deliveryNum = newDeliveryNum;
       const when = { crankNum, vatID, deliveryNum };
       write({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
@@ -149,7 +150,6 @@ export function makeSlogger(slogCallbacks, writeObj) {
       function finish(dr) {
         assertOldState(DELIVERY, 'delivery-finish called twice?');
         write({ type: 'deliver-result', ...when, dr });
-        deliveryNum += 1;
         state = IDLE;
       }
       return harden(finish);

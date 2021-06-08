@@ -2,7 +2,7 @@ import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
 import {
-  initSwingStore,
+  initSimpleSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -68,12 +68,12 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
 function buildHostDBAndGetState() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const hostDB = buildHostDBInMemory(store.kvStore);
   return { hostDB, getState: () => getAllState(store).kvStuff };
 }
@@ -119,13 +119,13 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const guardedHostStorage = guardStorage(store.kvStore);
   testStorage(t, guardedHostStorage, () => getAllState(store).kvStuff, null);
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(store.kvStore);
   testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
 });
@@ -186,7 +186,7 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const s = addHelpers(store.kvStore);
 
   s.set('foo.0', 'f0');
@@ -236,7 +236,7 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
   return {
@@ -248,7 +248,7 @@ function buildKeeperStorageInMemory() {
 }
 
 function duplicateKeeper(getState) {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   const { enhancedCrankBuffer } = wrapStorage(kvStore);
@@ -283,6 +283,7 @@ test('kernel state', async t => {
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -314,6 +315,7 @@ test('kernelKeeper vat names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
@@ -361,6 +363,7 @@ test('kernelKeeper device names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -539,6 +542,7 @@ test('kernelKeeper promises', async t => {
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '20'],
@@ -612,13 +616,17 @@ test('vatKeeper', async t => {
   t.is(kernelExport1, 'ko20');
   t.is(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk.nextDeliveryNum(), 0n);
+  t.is(vk.nextDeliveryNum(), 1n);
 
   commitCrank();
   let vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk2.nextDeliveryNum(), 2n);
+  t.is(vk2.nextDeliveryNum(), 3n);
 
-  const kernelImport2 = 'ko25';
+  const kernelImport2 = k.addKernelObject('v1', 25);
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);
   t.is(vatImport2, 'o-50');
   t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);

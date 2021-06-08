@@ -31,7 +31,7 @@
     "@agoric/bundle-source": "^1.3.7",
     "@agoric/eventual-send": "^0.13.14",
     "@agoric/install-ses": "^0.5.13",
-    "esm": "^3.2.5",
+    "esm": "agoric-labs/esm#Agoric-built",
     "glob": "^7.1.6",
     "ses": "^0.12.7"
   },

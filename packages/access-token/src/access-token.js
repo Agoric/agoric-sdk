@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import os from 'os';
 import path from 'path';
 
-import { openSwingStore } from '@agoric/swing-store-simple';
+import { openJSONStore } from './json-store.js';
 
 // Adapted from https://stackoverflow.com/a/43866992/14073862
 export function generateAccessToken({
@@ -27,18 +27,25 @@ export function generateAccessToken({
 }
 
 export async function getAccessToken(port) {
+  if (typeof port === 'string') {
+    const match = port.match(/^(.*:)?(\d+)$/);
+    if (match) {
+      port = match[2];
+    }
+  }
+
   // Ensure we're protected with a unique accessToken for this basedir.
   const sharedStateDir = path.join(os.homedir(), '.agoric');
   await fs.promises.mkdir(sharedStateDir, { mode: 0o700, recursive: true });
 
   // Ensure an access token exists.
-  const { kvStore, commit, close } = openSwingStore(sharedStateDir, 'state');
+  const { storage, commit, close } = openJSONStore(sharedStateDir);
   const accessTokenKey = `accessToken/${port}`;
-  if (!kvStore.has(accessTokenKey)) {
-    kvStore.set(accessTokenKey, await generateAccessToken());
+  if (!storage.has(accessTokenKey)) {
+    storage.set(accessTokenKey, await generateAccessToken());
     commit();
   }
-  const accessToken = kvStore.get(accessTokenKey);
+  const accessToken = storage.get(accessTokenKey);
   close();
   return accessToken;
 }

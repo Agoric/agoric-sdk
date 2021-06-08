@@ -137,6 +137,9 @@ export async function runVatsInComms(t, name) {
   const devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: ['A', 'B', 'C'],
+      },
     },
   };
   const config = { ...commsConfig, devices };

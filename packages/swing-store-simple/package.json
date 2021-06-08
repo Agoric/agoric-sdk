@@ -26,7 +26,7 @@
   "devDependencies": {
     "@agoric/install-ses": "^0.5.13",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "publishConfig": {
     "access": "public"

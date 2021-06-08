@@ -1,6 +1,8 @@
+import engineGC from '../src/engine-gc';
+
 import { WeakRef, FinalizationRegistry } from '../src/weakref';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { gcAndFinalize } from '../src/gc-and-finalize';
+import { makeGcAndFinalize } from '../src/gc-and-finalize';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 
 export function buildSyscall() {
@@ -43,7 +45,7 @@ export function makeDispatch(
     WeakRef,
     FinalizationRegistry,
     waitUntilQuiescent,
-    gcAndFinalize,
+    gcAndFinalize: makeGcAndFinalize(engineGC),
   });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,

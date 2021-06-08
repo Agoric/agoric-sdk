@@ -34,12 +34,13 @@
     "@agoric/swingset-vat": "^0.17.2",
     "@agoric/tame-metering": "^1.3.9",
     "@agoric/zoe": "^0.15.7",
+    "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "eslintConfig": {
     "extends": [

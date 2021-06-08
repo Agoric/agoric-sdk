@@ -1,1 +1,1 @@
-export * from './src/contractFacet/contractFacet';
+export * from './src/contractFacet/vatRoot';

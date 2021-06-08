@@ -65,7 +65,7 @@
     "eslint-plugin-flowtype": "^5.2.0",
     "eslint-plugin-react": "^7.22.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "esm": "^3.2.25",
+    "esm": "agoric-labs/esm#Agoric-built",
     "prettier": "^1.19.0",
     "react": "^16.14.0",
     "react-dom": "^16.8.0",

@@ -6,7 +6,7 @@ import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 import inquirer from 'inquirer';
 
-import { getAccessToken } from './open';
+import { getAccessToken } from '@agoric/access-token';
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling

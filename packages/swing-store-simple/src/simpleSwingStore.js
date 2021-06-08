@@ -1,8 +1,4 @@
 // @ts-check
-import fs from 'fs';
-import path from 'path';
-import Readlines from 'n-readlines';
-
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -35,29 +31,14 @@ import { assert, details as X, q } from '@agoric/assert';
  * }} SwingStore
  */
 
-function safeUnlink(filePath) {
-  try {
-    fs.unlinkSync(filePath);
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
-  }
-}
+const streamPeek = new WeakMap(); // for tests to get raw access to the streams
 
 /**
- * Create a new instance of a RAM-based implementation of the Storage API.
+ * Create a swingset store that based on an in-memory map.
  *
- * The "Storage API" is a set of functions { has, getKeys, get, set, delete }
- * that work on string keys and accept string values.  A lot of kernel-side
- * code expects to get an object that implements the Storage API.
- *
- * @returns {{
- *   kvStore: KVStore,  // the storage API object itself
- *   state: any,     // the underlying map that holds the state in memory
- * }}
+ * @returns {SwingStore}
  */
-function makeStorageInMemory() {
+export function initSimpleSwingStore() {
   const state = new Map();
 
   /**
@@ -152,78 +133,6 @@ function makeStorageInMemory() {
     set,
     delete: del,
   };
-
-  return harden({ kvStore, state });
-}
-
-const streamPeek = new WeakMap(); // for tests to get raw access to the streams
-
-/**
- * Do the work of `initSwingStore` and `openSwingStore`.
- *
- * @param {string} [dirPath]  Path to a directory in which database files may be kept, or
- *   null.
- * @param {boolean} [forceReset]  If true, initialize the database to an empty state
- *
- * @returns {SwingStore}
- */
-function makeSwingStore(dirPath, forceReset = false) {
-  const { kvStore, state } = makeStorageInMemory();
-
-  let storeFile;
-  if (dirPath) {
-    fs.mkdirSync(dirPath, { recursive: true });
-    storeFile = path.resolve(dirPath, 'swingset-kernel-state.jsonlines');
-    if (forceReset) {
-      safeUnlink(storeFile);
-    } else {
-      let lines;
-      try {
-        lines = new Readlines(storeFile);
-      } catch (e) {
-        // storeFile will be missing the first time we try to use it.  That's OK;
-        // commit will create it.
-        if (e.code !== 'ENOENT') {
-          throw e;
-        }
-      }
-      if (lines) {
-        let line = lines.next();
-        while (line) {
-          // @ts-ignore JSON.parse can take a Buffer
-          const [key, value] = JSON.parse(line);
-          kvStore.set(key, value);
-          line = lines.next();
-        }
-      }
-    }
-  }
-
-  /**
-   * Commit unsaved changes.
-   */
-  function commit() {
-    if (dirPath) {
-      const tempFile = `${storeFile}.tmp`;
-      const fd = fs.openSync(tempFile, 'w');
-
-      for (const [key, value] of state.entries()) {
-        const line = JSON.stringify([key, value]);
-        fs.writeSync(fd, line);
-        fs.writeSync(fd, '\n');
-      }
-      fs.closeSync(fd);
-      fs.renameSync(tempFile, storeFile);
-    }
-  }
-
-  /**
-   * Close the "database", abandoning any changes made since the last commit
-   * (if you want to save them, call commit() first).
-   */
-  function close() {
-    // Nothing to do here.
-  }
 
   /** @type {Map<string, Array<string>>} */
   const streams = new Map();
@@ -336,53 +245,31 @@ function makeSwingStore(dirPath, forceReset = false) {
     return harden({ itemCount: position.itemCount + 1 });
   }
 
-  const streamStore = harden({
+  const streamStore = {
     readStream,
     writeStreamItem,
     closeStream,
     STREAM_START,
-  });
+  };
+
+  /**
+   * Commit unsaved changes.
+   */
+  function commit() {
+    // Nothing to do here.
+  }
+
+  /**
+   * Close the "database", abandoning any changes made since the last commit
+   * (if you want to save them, call commit() first).
+   */
+  function close() {
+    // Nothing to do here.
+  }
 
   streamPeek.set(streamStore, streams);
 
   return harden({ kvStore, streamStore, commit, close });
-}
-
-/**
- * Create a swingset store that is an in-memory map, normally backed by JSON
- * serialized to a text file.  If there is an existing store at the given
- * `dirPath`, it will be reinitialized to an empty state.
- *
- * @param {string=} dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
- *   created) but it is reserved (by the caller) for the exclusive use of this
- *   swing store instance.  If this is nullish, the swing store created will
- *   have no backing store and thus be non-persistent.
- *
- * @returns {SwingStore}
- */
-export function initSwingStore(dirPath) {
-  if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
-    throw new Error('dirPath must be a string or nullish');
-  }
-  return makeSwingStore(dirPath, true);
-}
-
-/**
- * Open a swingset store that is an in-memory map, backed by JSON serialized to
- * a text file.  If there is no existing store at the given `dirPath`, a new,
- * empty store will be created.
- *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
- *   created) but it is reserved (by the caller) for the exclusive use of this
- *   swing store instance.
- *
- * @returns {SwingStore}
- */
-export function openSwingStore(dirPath) {
-  assert.typeof(dirPath, 'string');
-  return makeSwingStore(dirPath, false);
 }
 
 /**
@@ -444,26 +331,4 @@ export function setAllState(swingStore, stuff) {
     }
     streamStore.closeStream(streamName);
   }
-}
-
-/**
- * Is this directory a compatible swing store?
- *
- * @param {string} dirPath  Path to a directory in which database files might be present.
- *   This directory need not actually exist
- *
- * @returns {boolean}
- *   If the directory is present and contains the files created by initSwingStore
- *   or openSwingStore, returns true. Else returns false.
- *
- */
-export function isSwingStore(dirPath) {
-  assert.typeof(dirPath, 'string');
-  if (fs.existsSync(dirPath)) {
-    const storeFile = path.resolve(dirPath, 'swingset-kernel-state.jsonlines');
-    if (fs.existsSync(storeFile)) {
-      return true;
-    }
-  }
-  return false;
 }

@@ -162,7 +162,7 @@ async function test2(t, mode) {
       'method4',
       'ret method4 done',
     ]);
-    await c.step();
+    await c.run();
     t.deepEqual(c.dump().log, [
       'calling d2.method4',
       'method4',

@@ -1,9 +1,10 @@
-/* global __dirname globalThis */
+/* global __dirname */
 import { test } from '../../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
 import path from 'path';
 
+import engineGC from '../../src/engine-gc';
 import { provideHostStorage } from '../../src/hostStorage';
 import { initializeSwingset, makeSwingsetController } from '../../src/index';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
@@ -17,17 +18,7 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-let gc;
-function insistGC(t) {
-  if (globalThis.gc) {
-    gc = globalThis.gc;
-  } else {
-    t.fail(`GC needs to be enabled for this test to work`);
-  }
-}
-
 test('weakMap in vat', async t => {
-  insistGC(t);
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'local',
@@ -70,7 +61,7 @@ test('weakMap in vat', async t => {
     'probe of [object Promise] returns fep',
   ]);
   await doSimple('betweenProbes');
-  gc();
+  engineGC();
   const postGCResult = await doSimple('runProbes');
   t.deepEqual(postGCResult, capargs('probes done'));
   t.deepEqual(nextLog(), [
@@ -86,7 +77,6 @@ test('weakMap in vat', async t => {
 });
 
 test('weakMap vref handling', async t => {
-  insistGC(t);
   const log = [];
   const {
     VirtualObjectAwareWeakMap,

@@ -29,3 +29,9 @@
         state: present
         line: "{{ item }}"
       with_items: "{{ ssh_keys.splitlines() }}"
+
+    - name: Set master authorized SSH key
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', SETUP_HOME + '/id_ecdsa.pub') }}"

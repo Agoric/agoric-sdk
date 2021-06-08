@@ -2,6 +2,7 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
+import { parseReachableAndVatSlot } from './reachable';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
 import {
   insistKernelType,
@@ -46,6 +47,7 @@ const enableKernelPromiseGC = true;
 //   $R is 'R' when reachable, '_' when merely recognizable
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
+// v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 
@@ -57,6 +59,7 @@ const enableKernelPromiseGC = true;
 // d$NN.options = JSON
 
 // runQueue = JSON(runQueue) // usually empty on disk
+// gcActions = JSON(gcActions) // usually empty on disk
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
@@ -203,6 +206,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
     kvStore.set('kd.nextID', `${FIRST_DEVNODE_ID}`);
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
+    kvStore.set('gcActions', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
@@ -220,11 +224,45 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return harden(JSON.parse(kvStore.get(`bundle.${name}`)));
   }
 
-  function addKernelObject(ownerID) {
+  function getGCActions() {
+    return new Set(JSON.parse(kvStore.get(`gcActions`)));
+  }
+
+  function setGCActions(actions) {
+    const a = Array.from(actions);
+    a.sort();
+    kvStore.set('gcActions', JSON.stringify(a));
+  }
+
+  function addGCActions(newActions) {
+    const actions = getGCActions();
+    for (const action of newActions) {
+      assert.typeof(action, 'string', 'addGCActions given bad action');
+      const [vatID, type, koid] = action.split(' ');
+      insistVatID(vatID);
+      assert(
+        ['dropExport', 'retireExport', 'retireImport'].includes(type),
+        `bad GCAction ${action} (type='${type}')`,
+      );
+      insistKernelType('object', koid);
+      actions.add(action);
+    }
+    setGCActions(actions);
+  }
+
+  function getReachableAndVatSlot(vatID, kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    return parseReachableAndVatSlot(kvStore.get(kernelKey));
+  }
+
+  function addKernelObject(ownerID, id = undefined) {
+    // providing id= is only for unit tests
     insistVatID(ownerID);
-    const id = Nat(BigInt(getRequired('ko.nextID')));
+    if (id === undefined) {
+      id = Nat(BigInt(getRequired('ko.nextID')));
+      kvStore.set('ko.nextID', `${id + 1n}`);
+    }
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
-    kvStore.set('ko.nextID', `${id + 1n}`);
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
     incStat('kernelObjects');
@@ -238,6 +276,12 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       insistVatID(owner);
     }
     return owner;
+  }
+
+  function deleteKernelObject(koid) {
+    kvStore.delete(`${koid}.owner`);
+    kvStore.delete(`${koid}.refCount`);
+    // TODO: decref auxdata slots and delete auxdata, when #2069 is added
   }
 
   function addKernelDeviceNode(deviceID) {
@@ -679,6 +723,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       addKernelPromiseForVat,
       incrementRefCount,
       decrementRefCount,
+      getReachableAndVatSlot,
       incStat,
       decStat,
       getCrankNumber,
@@ -742,6 +787,22 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       }
     }
     return harden(deviceIDs);
+  }
+
+  function getImporters(koid) {
+    // TODO maintain an index instead of scanning every single vat
+    const importers = [];
+    function doesImport(vatID) {
+      return getVatKeeper(vatID).importsKernelSlot(koid);
+    }
+    importers.push(...getDynamicVats().filter(doesImport));
+    importers.push(
+      ...getStaticVats()
+        .map(nameAndVatID => nameAndVatID[1])
+        .filter(doesImport),
+    );
+    importers.sort();
+    return importers;
   }
 
   // used for debugging, and tests. This returns a JSON-serializable object.
@@ -808,12 +869,16 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
+    const gcActions = Array.from(getGCActions());
+    gcActions.sort();
+
     const runQueue = JSON.parse(getRequired('runQueue'));
 
     return harden({
       vatTables,
       kernelTable,
       promises,
+      gcActions,
       runQueue,
     });
   }
@@ -836,8 +901,15 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     loadStats,
     getStats,
 
+    getGCActions,
+    setGCActions,
+    addGCActions,
+
+    addKernelObject,
     ownerOfKernelObject,
     ownerOfKernelDevice,
+    getImporters,
+    deleteKernelObject,
 
     addKernelPromise,
     addKernelPromiseForVat,

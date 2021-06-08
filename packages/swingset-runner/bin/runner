@@ -1,6 +1,6 @@
-#!/usr/bin/env -S node --expose-gc -r esm
+#!/usr/bin/env -S node -r esm
 
-// #!/usr/bin/env -S node --inspect-brk --expose-gc -r esm
+// #!/usr/bin/env -S node --inspect-brk -r esm
 
 /**
  * Simple boilerplate program providing linkage to launch an application written using modules within the

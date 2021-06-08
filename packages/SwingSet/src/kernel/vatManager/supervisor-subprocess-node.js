@@ -7,8 +7,9 @@ import fs from 'fs';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
+import engineGC from '../../engine-gc';
 import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { gcAndFinalize } from '../../gc-and-finalize';
+import { makeGcAndFinalize } from '../../gc-and-finalize';
 import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
 import {
   netstringEncoderStream,
@@ -92,7 +93,7 @@ fromParent.on('data', ([type, ...margs]) => {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      gcAndFinalize,
+      gcAndFinalize: makeGcAndFinalize(engineGC),
     });
     const ls = makeLiveSlots(
       syscall,
