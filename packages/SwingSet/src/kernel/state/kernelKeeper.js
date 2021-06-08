@@ -420,6 +420,30 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   function resolveKernelPromise(kernelSlot, rejected, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
+
+    let idx = 0;
+    for (const dataSlot of capdata.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
+
+    // Re-queue all messages, so they can be delivered to the resolution.
+    // This is a lateral move, so we retain their original refcounts. TODO:
+    // this is slightly lazy, sending the message back to the same promise
+    // that just got resolved. When this message makes it to the front of the
+    // run-queue, we'll look up the resolution. Instead, we could maybe look
+    // up the resolution *now* and set the correct target early. Doing that
+    // might make it easier to remove the Promise Table entry earlier.
+    const p = getKernelPromise(kernelSlot);
+    const runQueue = JSON.parse(getRequired('runQueue'));
+    for (const msg of p.queue) {
+      const entry = harden({ type: 'send', target: kernelSlot, msg });
+      runQueue.push(entry);
+    }
+    kvStore.set('runQueue', JSON.stringify(runQueue));
+    incStat('runQueueLength', p.queue.length);
+
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
 
@@ -512,6 +536,27 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   function addMessageToPromiseQueue(kernelSlot, msg) {
     insistKernelType('promise', kernelSlot);
     insistMessage(msg);
+
+    // Each message on a promise's queue maintains a refcount to the promise
+    // itself. This isn't strictly necessary (the promise will be kept alive
+    // by the deciding vat's clist, or the queued message that holds this
+    // promise as its result), but it matches our policy with run-queue
+    // messages (each holds a refcount on its target), and makes it easier to
+    // transfer these messages back to the run-queue in
+    // resolveKernelPromise() (which doesn't touch any of the refcounts).
+
+    // eslint-disable-next-line no-use-before-define
+    incrementRefCount(kernelSlot, `pq|${kernelSlot}|t`);
+    if (msg.result) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(msg.result, `pq|${kernelSlot}|r`);
+    }
+    let idx = 0;
+    for (const kref of msg.args.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(kref, `pq|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
 
     const p = getKernelPromise(kernelSlot);
     assert(

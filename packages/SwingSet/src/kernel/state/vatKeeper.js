@@ -234,7 +234,7 @@ export function makeVatKeeper(
       } else {
         assert.fail(X`unknown type ${type}`);
       }
-      incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
+      incrementRefCount(kernelSlot, `${vatID}|kv|clist`);
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;

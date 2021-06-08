@@ -282,26 +282,6 @@ export default function buildKernel(
     kernelKeeper.addToRunQueue(m);
   }
 
-  function notifySubscribersAndQueue(kpid, resolvingVatID, subscribers, queue) {
-    insistKernelType('promise', kpid);
-    for (const vatID of subscribers) {
-      if (vatID !== resolvingVatID) {
-        notify(vatID, kpid);
-      }
-    }
-    // re-deliver msg to the now-settled promise, which will forward or
-    // reject depending on the new state of the promise
-    for (const msg of queue) {
-      // todo: this is slightly lazy, sending the message back to the same
-      // promise that just got resolved. When this message makes it to the
-      // front of the run-queue, we'll look up the resolution. Instead, we
-      // could maybe look up the resolution *now* and set the correct target
-      // early. Doing that might make it easier to remove the Promise Table
-      // entry earlier.
-      kernelSyscallHandler.send(kpid, msg);
-    }
-  }
-
   function doResolve(vatID, resolutions) {
     if (vatID) {
       insistVatID(vatID);
@@ -311,14 +291,13 @@ export default function buildKernel(
       insistKernelType('promise', kpid);
       insistCapData(data);
       const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-      const { subscribers, queue } = p;
-      let idx = 0;
-      for (const dataSlot of data.slots) {
-        kernelKeeper.incrementRefCount(dataSlot, `resolve|s${idx}`);
-        idx += 1;
+      const { subscribers } = p;
+      for (const subscriber of subscribers) {
+        if (subscriber !== vatID) {
+          notify(subscriber, kpid);
+        }
       }
       kernelKeeper.resolveKernelPromise(kpid, rejected, data);
-      notifySubscribersAndQueue(kpid, vatID, subscribers, queue);
       const tag = rejected ? 'rejected' : 'fulfilled';
       if (p.policy === 'logAlways' || (rejected && p.policy === 'logFailure')) {
         console.log(
@@ -614,6 +593,10 @@ export default function buildKernel(
     try {
       processQueueRunning = Error('here');
       terminationTrigger = null;
+      // Decref everything in the message, under the assumption that most of
+      // the time we're delivering to a vat or answering the result promise
+      // with an error. If we wind up queueing it on a promise, we'll
+      // re-increment everything there.
       if (message.type === 'send') {
         kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
         if (message.msg.result) {
