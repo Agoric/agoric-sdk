@@ -18,8 +18,9 @@ import (
 )
 
 // Normalized balance updates for order-insensitive comparisons.
-// Address -> Denomination -> Amount
-type accountBalances map[string]map[string]string
+// Balance updates are represented as a map-of-maps (all strings):
+// Address -> Denomination -> Amount.
+type balances map[string]map[string]string
 
 type accountOption func(map[string]string)
 
@@ -44,7 +45,7 @@ func account(addr string, opts ...accountOption) balancesOption {
 	}
 }
 
-func newBalances(opts ...balancesOption) accountBalances {
+func newBalances(opts ...balancesOption) balances {
 	bal := make(map[string]map[string]string)
 	for _, opt := range opts {
 		opt(bal)
@@ -53,7 +54,8 @@ func newBalances(opts ...balancesOption) accountBalances {
 }
 
 // normalizeBalanceUpdate validates vpurseBalanceUpdate message and returns normalized version.
-func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) accountBalances {
+// A nil message becomes a nil balances.
+func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) balances {
 	t.Helper()
 	if msg == nil {
 		return nil
@@ -61,23 +63,18 @@ func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) accountBalan
 	if msg.Type != "VPURSE_BALANCE_UPDATE" {
 		t.Errorf("bad balance update type: %s", msg.Type)
 	}
-	accounts := make(map[string]map[string]string)
-	for _, update := range msg.Updated {
-		account := accounts[update.Address]
-		if account == nil {
-			account = make(map[string]string)
-			accounts[update.Address] = account
-		}
-		account[update.Denom] = update.Amount
+	bal := newBalances()
+	for _, u := range msg.Updated {
+		account(u.Address, coin(u.Denom, u.Amount))(bal)
 	}
-	return accounts
+	return bal
 }
 
 func Test_marshalBalanceUpdate(t *testing.T) {
 	tests := []struct {
 		name             string
 		addressToBalance map[string]sdk.Coins
-		want             accountBalances
+		want             balances
 		wantErr          bool
 	}{
 		{
@@ -100,7 +97,10 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 					sdk.NewInt64Coin("barcoin", 456),
 				},
 			},
-			want: newBalances(account("acct1", coin("foocoin", "123"), coin("barcoin", "456"))),
+			want: newBalances(
+				account("acct1",
+					coin("foocoin", "123"),
+					coin("barcoin", "456"))),
 		},
 		{
 			name: "multi-acct",
@@ -114,7 +114,6 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 			),
 		},
 	}
-	resetForTests()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			encoded, err := marshalBalanceUpdate(tt.addressToBalance)
@@ -140,9 +139,12 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 }
 
 type mockBank struct {
-	calls       []string
+	// Record of all calls to the bank.
+	calls []string
+	// Value to return from GetAllBalances().
 	allBalances sdk.Coins
-	balance     sdk.Coin
+	// Value to return from GetBalance().
+	balance sdk.Coin
 }
 
 var _ types.BankKeeper = (*mockBank)(nil)
@@ -186,6 +188,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 	return nil
 }
 
+// makeTestKeeper creates a minimal Keeper for use in testing.
 func makeTestKeeper(bank types.BankKeeper) keeper.Keeper {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
@@ -300,3 +303,5 @@ func Test_Receive_Grab(t *testing.T) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
 }
+
+// TODO(JimLarson): create tests for event handling.

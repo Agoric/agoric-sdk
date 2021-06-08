@@ -43,10 +43,6 @@ type vpurseBalanceUpdate struct {
 
 var nonce uint64
 
-func resetForTests() {
-	nonce = 0
-}
-
 func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error) {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
