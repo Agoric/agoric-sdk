@@ -39,3 +39,17 @@ test(`zcf.reallocate introducing new empty amount`, async t => {
     RUN: empty,
   });
 });
+
+test(`zcf.reallocate undefined`, async t => {
+  const { zcf } = await setupZCFTest();
+  const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
+  const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
+
+  // @ts-ignore Deliberate wrong type for testing
+  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, undefined), {
+    message:
+      // TODO: Improve error message if something other than a seat is
+      // passed.
+      'seat has been exited',
+  });
+});

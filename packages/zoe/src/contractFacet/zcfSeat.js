@@ -57,7 +57,8 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
    * @returns {void}
    */
   const commitStagedAllocation = zcfSeat => {
-    assertActive(zcfSeat);
+    // By this point, we have checked that the zcfSeat is a key in
+    // activeZCFSeats and in zcfSeatToStagedAllocations.
     activeZCFSeats.set(zcfSeat, zcfSeat.getStagedAllocation());
     zcfSeatToStagedAllocations.delete(zcfSeat);
   };
@@ -114,6 +115,13 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
    * @type {ReallocateInternal}
    */
   const reallocateInternal = seats => {
+    // This check was already done in `reallocate`, but
+    // zcfMint.mintGains and zcfMint.burnLosses call
+    // `reallocateInternal` directly without calling `reallocate`, so
+    // we must check here as well.
+    seats.forEach(assertActive);
+    seats.forEach(assertStagedAllocation);
+
     // Keep track of seats used so far in this call, to prevent aliasing.
     const zcfSeatsSoFar = new WeakSet();
 
@@ -169,6 +177,7 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
       X`reallocating must be done over two or more seats`,
     );
 
+    seats.forEach(assertActive);
     seats.forEach(assertStagedAllocation);
 
     // Ensure that rights are conserved overall.
