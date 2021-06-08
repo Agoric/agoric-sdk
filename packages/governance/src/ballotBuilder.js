@@ -2,28 +2,41 @@
 
 import { assert, details as X } from '@agoric/assert';
 
-// CHOOSE_ONE: voter indicates only their favorite. ORDER: voter lists their
-// choices from most to least favorite. RANK: voter lists their choices, each
-// with a numerical ranking. Low numbers are most preferred.
+// CHOOSE_N: voter indicates up to N they find acceptable (N might be 1).
+// ORDER: voter lists their choices from most to least favorite.
+// WEIGHT: voter lists their choices, each with a numerical weight. High
+//   numbers are most preferred.
+
 const ChoiceMethod = {
-  CHOOSE_ONE: 'choose_one',
+  CHOOSE_N: 'choose_n',
   ORDER: 'order',
-  RANK: 'rank',
+  WEIGHT: 'weight',
 };
 
-function buildBallot(method, question, positions) {
-  function choose(position) {
-    assert(positions.includes(position), X`Not a valid position: ${position}`);
-    return { question, chosen: [position] };
-  }
+const buildBallot = (method, question, positions, maxChoices = 1) => {
+  const choose = (...chosenPositions) => {
+    assert(
+      chosenPositions.length <= maxChoices,
+      X`only ${maxChoices} position(s) allowed`,
+    );
+
+    for (const position of chosenPositions) {
+      assert(
+        positions.includes(position),
+        X`Not a valid position: ${position}`,
+      );
+    }
+    return { question, chosen: chosenPositions };
+  };
 
   return {
     getMethod: () => method,
     getQuestion: () => question,
     getPositions: () => positions,
+    getMaxChoices: () => maxChoices,
     choose,
   };
-}
+};
 
 harden(buildBallot);
 
