@@ -2,18 +2,6 @@
 /// <reference types="ses"/>
 
 /**
- * @callback Trade
- * Trade between left and right so that left and right end up with
- * the declared gains and losses.
- * @param {ContractFacet} zcf
- * @param {SeatGainsLossesRecord} left
- * @param {SeatGainsLossesRecord} right
- * @param {string} [leftHasExitedMsg] A custom error message if
- * the left seat has been exited already
- * @param {string} [rightHasExitedMsg] A custom error message if the
- * right seat has been exited already
- * @returns {void}
- *
  * @typedef {Object} SeatGainsLossesRecord
  * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
@@ -34,10 +22,24 @@
  * gives 5 moola and seat B only wants 3 moola, seat A retains 2
  * moola.
  *
- * If leftSeat has exited already, both seats will fail
- * with an error message (provided by 'leftHasExitedMsg'). Similarly,
- * if rightSeat has exited already, both seats fail
- * with an error message (provided by 'rightHasExitedMsg').
+ * If the swap fails, no assets are transferred, both seats will fail,
+ * and the function throws.
+ *
+ * The keywords for both seats must match.
+ *
+ * @param {ContractFacet} zcf
+ * @param {ZCFSeat} leftSeat
+ * @param {ZCFSeat} rightSeat
+ * @returns {string}
+ */
+
+/**
+ * @callback SwapExact
+ *
+ * Swap such that both seats gain what they want and lose everything
+ * that they gave. Only good for exact and entire swaps where each
+ * seat wants everything that the other seat has. The benefit of using
+ * this method is that the keywords of each seat do not matter.
  *
  * If the swap fails, no assets are transferred, both seats will fail,
  * and the function throws.
@@ -45,8 +47,6 @@
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} leftSeat
  * @param {ZCFSeat} rightSeat
- * @param {string} [leftHasExitedMsg]
- * @param {string} [rightHasExitedMsg]
  * @returns {string}
  */
 

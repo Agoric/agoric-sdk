@@ -251,15 +251,16 @@
 
 /**
  * @callback ReallocateInternal
- * @param {SeatStaging[]} seatStagings
+ * @param {ZCFSeat[]} seats
  * @returns {void}
  */
 
 /**
  *
- * @callback CreateSeatManager
- * The SeatManager holds the active zcfSeats and seatStagings and can
- * reallocate and make new zcfSeats.
+ * @callback CreateSeatManager 
+ *
+ * The SeatManager holds the active zcfSeats and can reallocate and
+ * make new zcfSeats.
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand

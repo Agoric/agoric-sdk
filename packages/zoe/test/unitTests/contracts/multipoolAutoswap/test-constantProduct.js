@@ -45,17 +45,14 @@ test('constantProduct invariant', async t => {
   // Let's give the swap user all the tokens and take
   // nothing, a clear violation of the constant product
   t.throws(
-    () =>
-      checkedZCF.reallocate(
-        poolSeat.stage({
-          Central: AmountMath.make(centralBrand, 0n),
-          Secondary: AmountMath.make(secondaryBrand, 0n),
-        }),
-        swapSeat.stage({
-          In: poolSeatAllocation.Central,
-          Out: poolSeatAllocation.Secondary,
-        }),
-      ),
+    () => {
+      poolSeat.decrementBy(poolSeatAllocation);
+      swapSeat.incrementBy({
+        In: poolSeatAllocation.Central,
+        Out: poolSeatAllocation.Secondary,
+      });
+      checkedZCF.reallocate(poolSeat, swapSeat);
+    },
     {
       message:
         'the product of the pool tokens must not decrease as the result of a trade. "[1000000000000n]" decreased to "[0n]"',

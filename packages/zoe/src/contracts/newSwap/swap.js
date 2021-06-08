@@ -27,199 +27,159 @@ export const makeMakeSwapInvitation = (
   getPriceGivenRequiredOutput,
   protocolSeat,
 ) => {
-  function stageProtocolSeatFee(protocolFee) {
-    const protocolStage = protocolSeat.stage({
-      RUN: AmountMath.add(
-        protocolSeat.getAmountAllocated('RUN', protocolFee.brand),
-        protocolFee,
-      ),
-    });
-    return protocolStage;
-  }
-
-  function poolStagingFromCentral(amountIn, amountOut, protocolFee) {
+  const reallocateCentralToSecondary = (
+    seat,
+    protocolFee,
+    amountIn,
+    amountOut,
+  ) => {
     const pool = getPool(amountOut.brand);
-    // gains (amountIn - protocolFee), loses amountOut
-    return pool.stageSeat({
-      Central: AmountMath.add(
-        pool.getCentralAmount(),
-        AmountMath.subtract(amountIn, protocolFee),
-      ),
-      Secondary: AmountMath.subtract(pool.getSecondaryAmount(), amountOut),
-    });
-  }
+    const poolSeat = pool.getPoolSeat();
 
-  function poolStagingToCentral(amountIn, amountOut, protocolFee) {
+    // Transfer amountIn from the user
+    seat.decrementBy({ In: amountIn });
+    poolSeat.incrementBy({ Central: amountIn });
+
+    // Transfer protocolFee
+
+    // TODO: this should be transferred directly from the user such
+    // that there's no way to accidentally take more than expected
+    // from the pool.
+    poolSeat.decrementBy({ Central: protocolFee });
+    protocolSeat.incrementBy({ RUN: protocolFee });
+
+    // Transfer amountOut from the pool
+    poolSeat.decrementBy({ Secondary: amountOut });
+    seat.incrementBy({ Out: amountOut });
+
+    zcf.reallocate(poolSeat, seat, protocolSeat);
+    seat.exit();
+    pool.updateState();
+  };
+
+  const reallocateSecondaryToCentral = (
+    seat,
+    protocolFee,
+    amountIn,
+    amountOut,
+  ) => {
     const pool = getPool(amountIn.brand);
-    // gains reducedAmountIn, loses (amountOut + protocolFee)
-    return pool.stageSeat({
-      Central: AmountMath.subtract(
-        pool.getCentralAmount(),
-        AmountMath.add(amountOut, protocolFee),
-      ),
-      Secondary: AmountMath.add(pool.getSecondaryAmount(), amountIn),
-    });
-  }
+    const poolSeat = pool.getPoolSeat();
 
-  function secondaryPoolStagings(
+    // Transfer amountIn from the user
+    seat.decrementBy({ In: amountIn });
+    poolSeat.incrementBy({ Secondary: amountIn });
+
+    // Transfer amountOut from the pool
+    poolSeat.decrementBy({ Central: amountOut });
+    seat.incrementBy({ Out: amountOut });
+
+    // Transfer protocolFee
+    poolSeat.decrementBy({ Central: protocolFee });
+    protocolSeat.incrementBy({ RUN: protocolFee });
+
+    zcf.reallocate(poolSeat, seat, protocolSeat);
+    seat.exit();
+    pool.updateState();
+  };
+
+  const reallocateSecondaryToSecondary = (
+    seat,
+    protocolFee,
     amountIn,
     amountOut,
     centralAmount,
-    protocolFee,
-  ) {
+  ) => {
     const brandInPool = getPool(amountIn.brand);
-    // gains reducedAmountIn, loses (centralAmount + protocolFee)
-    const brandInStaging = brandInPool.stageSeat({
-      Secondary: AmountMath.add(brandInPool.getSecondaryAmount(), amountIn),
-      Central: AmountMath.subtract(
-        brandInPool.getCentralAmount(),
-        AmountMath.add(centralAmount, protocolFee),
-      ),
-    });
+    const brandInPoolSeat = brandInPool.getPoolSeat();
 
     const brandOutPool = getPool(amountOut.brand);
-    // gains centralAmount, loses amountOut
-    const brandOutStaging = brandOutPool.stageSeat({
-      Central: AmountMath.add(brandOutPool.getCentralAmount(), centralAmount),
-      Secondary: AmountMath.subtract(
-        brandOutPool.getSecondaryAmount(),
-        amountOut,
-      ),
-    });
-    return [brandInStaging, brandOutStaging];
-  }
+    const brandOutPoolSeat = brandOutPool.getPoolSeat();
 
-  // trade with a stated amountIn.
-  const swapIn = seat => {
+    // Transfer amountIn from the user
+    seat.decrementBy({ In: amountIn });
+    brandInPoolSeat.incrementBy({ Secondary: amountIn });
+
+    // Transfer protocolFee from the brandInPool
+
+    // Note: the protocolFee is effectively shared between the
+    // brandInPool and the brandOutPool. We subtract the protocolFee
+    // from brandInPool directly, and we subtract more value from
+    // brandOutPool than we otherwise would, thus taking part of the
+    // fee from brandOutPool too.
+    brandInPoolSeat.decrementBy({ Central: protocolFee });
+    protocolSeat.incrementBy({ RUN: protocolFee });
+
+    // Transfer Central between pools
+    brandInPoolSeat.decrementBy({ Central: centralAmount });
+    brandOutPoolSeat.incrementBy({ Central: centralAmount });
+
+    // Transfer amountOut from the pool
+    brandOutPoolSeat.decrementBy({ Secondary: amountOut });
+    seat.incrementBy({ Out: amountOut });
+
+    zcf.reallocate(brandInPoolSeat, brandOutPoolSeat, seat, protocolSeat);
+    seat.exit();
+    brandInPool.updateState();
+    brandOutPool.updateState();
+  };
+
+  const reallocate = (
+    seat,
+    { protocolFee, amountIn, amountOut, centralAmount },
+  ) => {
+    // central to secondary, secondary to central, or secondary to secondary
+    if (isCentral(amountIn.brand) && isSecondary(amountOut.brand)) {
+      reallocateCentralToSecondary(seat, protocolFee, amountIn, amountOut);
+    } else if (isSecondary(amountIn.brand) && isCentral(amountOut.brand)) {
+      reallocateSecondaryToCentral(seat, protocolFee, amountIn, amountOut);
+    } else if (isSecondary(amountIn.brand) && isSecondary(amountOut.brand)) {
+      reallocateSecondaryToSecondary(
+        seat,
+        protocolFee,
+        amountIn,
+        amountOut,
+        centralAmount,
+      );
+    } else {
+      assert.fail(X`brands were not recognized`);
+    }
+  };
+
+  const doSwap = (seat, getPriceFn) => {
     assertProposalShape(seat, {
       give: { In: null },
       want: { Out: null },
     });
     const {
       give: { In: amountIn },
-      want: {
-        Out: { brand: brandOut },
-      },
+      want: { Out: amountOut },
     } = seat.getProposal();
-    const { brand: brandIn } = amountIn;
 
-    const {
-      amountIn: reducedAmountIn,
-      amountOut,
-      protocolFee,
-      // @ts-ignore two pool version of getPrice returns central
-      centralAmount,
-    } = getPriceGivenAvailableInput(amountIn, brandOut);
+    const prices = getPriceFn(amountIn, amountOut);
 
-    const stagings = [];
-    stagings.push(stageProtocolSeatFee(protocolFee));
-    stagings.push(
-      seat.stage(
-        harden({
-          In: AmountMath.subtract(amountIn, reducedAmountIn),
-          Out: amountOut,
-        }),
-      ),
-    );
+    const amountInCoversCosts = AmountMath.isGTE(amountIn, prices.amountIn);
 
-    // central to secondary, secondary to central, or secondary to secondary
-    const pools = [];
-    if (isCentral(brandIn) && isSecondary(brandOut)) {
-      stagings.push(
-        poolStagingFromCentral(reducedAmountIn, amountOut, protocolFee),
-      );
-      pools.push(getPool(brandOut));
-    } else if (isSecondary(brandIn) && isCentral(brandOut)) {
-      stagings.push(
-        poolStagingToCentral(reducedAmountIn, amountOut, protocolFee),
-      );
-      pools.push(getPool(brandIn));
-    } else if (isSecondary(brandIn) && isSecondary(brandOut)) {
-      const secondaryStagings = secondaryPoolStagings(
-        reducedAmountIn,
-        amountOut,
-        centralAmount,
-        protocolFee,
-      );
-      stagings.push(...secondaryStagings);
-      pools.push(getPool(brandIn), getPool(brandOut));
-    } else {
-      assert.fail(X`brands were not recognized`);
+    if (!amountInCoversCosts) {
+      const reason = `offeredAmountIn ${amountIn} is insufficient to buy amountOut ${amountOut}. ${prices.amountIn} is required.`;
+      throw seat.fail(Error(reason));
     }
-
-    // @ts-ignore typescript can't tell that we started by adding two stagings
-    zcf.reallocate(...stagings);
-    seat.exit();
-    pools.forEach(p => p.updateState());
+    reallocate(seat, prices);
     return SUCCESS_STRING;
   };
 
-  // trade with a stated amount out.
+  const swapIn = seat => {
+    const getPriceFn = (amountIn, amountOut) => {
+      return getPriceGivenAvailableInput(amountIn, amountOut.brand);
+    };
+    return doSwap(seat, getPriceFn);
+  };
+
   const swapOut = seat => {
-    assertProposalShape(seat, {
-      give: { In: null },
-      want: { Out: null },
-    });
-    // The offer's amountOut is a minimum; the offeredAmountIn is a max.
-    const {
-      give: { In: offeredAmountIn },
-      want: { Out: amountOut },
-    } = seat.getProposal();
-    const { brand: brandOut } = amountOut;
-    const brandIn = offeredAmountIn.brand;
-
-    const {
-      amountIn,
-      amountOut: improvedAmountOut,
-      protocolFee,
-      // @ts-ignore two pool version of getPrice returns central
-      centralAmount,
-    } = getPriceGivenRequiredOutput(brandIn, amountOut);
-
-    if (!AmountMath.isGTE(offeredAmountIn, amountIn)) {
-      const reason = `offeredAmountIn ${offeredAmountIn} is insufficient to buy amountOut ${amountOut}`;
-      throw seat.fail(Error(reason));
-    }
-
-    const stagings = [];
-    stagings.push(stageProtocolSeatFee(protocolFee));
-    stagings.push(
-      seat.stage({
-        In: AmountMath.subtract(offeredAmountIn, amountIn),
-        Out: improvedAmountOut,
-      }),
-    );
-
-    // central to secondary, secondary to central, or secondary to secondary
-    const pools = [];
-    if (isCentral(brandOut) && isSecondary(brandIn)) {
-      stagings.push(
-        poolStagingToCentral(amountIn, improvedAmountOut, protocolFee),
-      );
-      pools.push(getPool(brandIn));
-    } else if (isSecondary(brandOut) && isCentral(brandIn)) {
-      stagings.push(
-        poolStagingFromCentral(amountIn, improvedAmountOut, protocolFee),
-      );
-      pools.push(getPool(brandOut));
-    } else if (isSecondary(brandOut) && isSecondary(brandIn)) {
-      const secondaryStagings = secondaryPoolStagings(
-        amountIn,
-        improvedAmountOut,
-        centralAmount,
-        protocolFee,
-      );
-      stagings.push(...secondaryStagings);
-      pools.push(getPool(brandIn), getPool(brandOut));
-    } else {
-      assert.fail(X`brands were not recognized`);
-    }
-
-    // @ts-ignore typescript can't tell that we started by adding two stagings
-    zcf.reallocate(...stagings);
-    seat.exit();
-    pools.forEach(p => p.updateState());
-    return SUCCESS_STRING;
+    const getPriceFn = (amountIn, amountOut) => {
+      return getPriceGivenRequiredOutput(amountIn.brand, amountOut);
+    };
+    return doSwap(seat, getPriceFn);
   };
 
   const makeSwapInInvitation = () =>
