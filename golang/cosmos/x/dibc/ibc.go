@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -14,8 +15,6 @@ import (
 	"github.com/cosmos/ibc-go/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
 )
 
 type portHandler struct {
@@ -69,7 +68,7 @@ func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
 	}
 }
 
-func (ch portHandler) Receive(ctx *chain.ControllerContext, str string) (ret string, err error) {
+func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
 	keeper := ch.keeper
 
@@ -204,7 +203,7 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -268,7 +267,7 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -325,7 +324,7 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -371,7 +370,7 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -412,7 +411,7 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -452,7 +451,7 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -490,7 +489,7 @@ func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) exported.Acknowledgement {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -542,7 +541,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {
@@ -586,7 +585,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
-	if chain.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {

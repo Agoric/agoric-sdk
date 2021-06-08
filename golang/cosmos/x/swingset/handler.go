@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +17,7 @@ func NewHandler(k Keeper) sdk.Handler {
 	msgServer := keeper.NewMsgServerImpl(k)
 
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-		if chain.IsSimulation(ctx) {
+		if vm.IsSimulation(ctx) {
 			// We don't support simulation.
 			return &sdk.Result{}, nil
 		} else {

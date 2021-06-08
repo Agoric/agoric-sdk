@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -69,7 +69,7 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 	return json.Marshal(&event)
 }
 
-func (ch portHandler) Receive(ctx *chain.ControllerContext, str string) (ret string, err error) {
+func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	fmt.Println("vpurse.go downcall", str)
 	keeper := ch.keeper
 

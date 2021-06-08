@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -23,7 +23,7 @@ func NewStorageHandler(keeper Keeper) storageHandler {
 	return storageHandler{keeper: keeper}
 }
 
-func (sh storageHandler) Receive(ctx *chain.ControllerContext, str string) (ret string, err error) {
+func (sh storageHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	keeper := sh.keeper
 	msg := new(storageMessage)
 	err = json.Unmarshal([]byte(str), &msg)

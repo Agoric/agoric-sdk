@@ -96,7 +96,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/modules/core/keeper"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse"
@@ -357,7 +357,7 @@ func NewAgoricApp(
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		app.MustInitController(ctx)
-		defer chain.SetControllerContext(ctx)()
+		defer vm.SetControllerContext(ctx)()
 		return sendToController(true, str)
 	}
 
@@ -367,7 +367,7 @@ func NewAgoricApp(
 		app.AccountKeeper, app.BankKeeper,
 		callToController,
 	)
-	chain.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
+	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
 
 	app.DibcKeeper = dibc.NewKeeper(
 		appCodec, keys[dibc.StoreKey],
@@ -378,7 +378,7 @@ func NewAgoricApp(
 	)
 
 	dibcModule := dibc.NewAppModule(app.DibcKeeper)
-	app.ibcPort = chain.RegisterPortHandler("dibc", dibc.NewPortHandler(dibcModule, app.DibcKeeper))
+	app.ibcPort = vm.RegisterPortHandler("dibc", dibc.NewPortHandler(dibcModule, app.DibcKeeper))
 
 	// Create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
@@ -393,7 +393,7 @@ func NewAgoricApp(
 		callToController,
 	)
 	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)
-	app.vpursePort = chain.RegisterPortHandler("bank", vpurse.NewPortHandler(vpurseModule, app.VpurseKeeper))
+	app.vpursePort = vm.RegisterPortHandler("bank", vpurse.NewPortHandler(vpurseModule, app.VpurseKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -566,7 +566,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
 		IBCPort:     app.ibcPort,
-		StoragePort: chain.GetPort("storage"),
+		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VPursePort:  app.vpursePort,
 	}
