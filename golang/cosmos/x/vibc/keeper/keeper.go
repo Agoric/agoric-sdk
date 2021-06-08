@@ -14,7 +14,7 @@ import (
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
@@ -56,19 +56,19 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 }
 
 // GetNextSequenceSend defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool) {
 	return k.channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
 }
 
 // GetChannel defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool) {
 	return k.channelKeeper.GetChannel(ctx, portID, channelID)
 }
 
 // ChanOpenInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
 	portID, rPortID, version string,
 ) error {
@@ -89,7 +89,7 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
@@ -102,7 +102,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
 }
 
 // WriteAcknowledgement defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
 	portID := packet.GetDestPort()
 	channelID := packet.GetDestChannel()
@@ -115,7 +115,7 @@ func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
@@ -126,14 +126,14 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 }
 
 // BindPort defines a wrapper function for the port Keeper's function in
-// order to expose it to the dibc IBC handler.
+// order to expose it to the vibc IBC handler.
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 	cap := k.portKeeper.BindPort(ctx, portID)
 	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
 }
 
 // TimeoutExecuted defines a wrapper function for the channel Keeper's function
-// in order to expose it to the dibc IBC handler.
+// in order to expose it to the vibc IBC handler.
 func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
@@ -145,7 +145,7 @@ func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) err
 	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
 }
 
-// ClaimCapability allows the dibc module to claim a capability that IBC module
+// ClaimCapability allows the vibc module to claim a capability that IBC module
 // passes to it
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)

@@ -1,8 +1,8 @@
-package dibc
+package vibc
 
 import (
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/keeper"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
 
 const (

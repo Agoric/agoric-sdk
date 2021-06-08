@@ -1,4 +1,4 @@
-package dibc
+package vibc
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"

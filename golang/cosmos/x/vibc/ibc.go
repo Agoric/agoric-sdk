@@ -1,4 +1,4 @@
-package dibc
+package vibc
 
 import (
 	"encoding/json"

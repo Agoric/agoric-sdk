@@ -1,10 +1,10 @@
 syntax = "proto3";
-package agoric.dibc;
+package agoric.vibc;
 
 import "gogoproto/gogo.proto";
 import "ibc/core/channel/v1/channel.proto";
 
-option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc/types";
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types";
 
 service Msg {
   rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);
