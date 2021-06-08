@@ -505,22 +505,19 @@ test('kernelKeeper promises', async t => {
   k.addSubscriberToPromise(p1, 'v3');
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
-  k.addMessageToPromiseQueue(p1, { type: 'send' });
-  k.addMessageToPromiseQueue(p1, { type: 'notify' });
-  k.addMessageToPromiseQueue(p1, { type: 'send', more: [2] });
-  t.deepEqual(k.getKernelPromise(p1).queue, [
-    { type: 'send' },
-    { type: 'notify' },
-    { type: 'send', more: [2] },
-  ]);
+  const expectedRunqueue = [];
+  const m1 = { method: 'm1', args: { body: '', slots: [] } };
+  k.addMessageToPromiseQueue(p1, m1);
+  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
+
+  const m2 = { method: 'm2', args: { body: '', slots: [] } };
+  k.addMessageToPromiseQueue(p1, m2);
+  t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
+  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   commitCrank();
   k2 = duplicateKeeper(getState);
-  t.deepEqual(k2.getKernelPromise(p1).queue, [
-    { type: 'send' },
-    { type: 'notify' },
-    { type: 'send', more: [2] },
-  ]);
+  t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
   const capdata = harden({
     body: '{"@qclass":"slot","index":0}',
@@ -535,6 +532,7 @@ test('kernelKeeper promises', async t => {
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
   commitCrank();
+
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['device.nextID', '7'],
@@ -561,9 +559,10 @@ test('kernelKeeper promise resolveToData', async t => {
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
+  const o1 = k.addKernelObject('v1');
   const capdata = harden({
     body: '"bodyjson"',
-    slots: ['ko22', 'kp24', 'kd25'],
+    slots: [o1],
   });
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -571,7 +570,7 @@ test('kernelKeeper promise resolveToData', async t => {
     refCount: 0,
     data: {
       body: '"bodyjson"',
-      slots: ['ko22', 'kp24', 'kd25'],
+      slots: [o1],
     },
   });
 });
@@ -582,9 +581,10 @@ test('kernelKeeper promise reject', async t => {
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
+  const o1 = k.addKernelObject('v1');
   const capdata = harden({
     body: '"bodyjson"',
-    slots: ['ko22', 'kp24', 'kd25'],
+    slots: [o1],
   });
   k.resolveKernelPromise(p1, true, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -592,7 +592,7 @@ test('kernelKeeper promise reject', async t => {
     refCount: 0,
     data: {
       body: '"bodyjson"',
-      slots: ['ko22', 'kp24', 'kd25'],
+      slots: [o1],
     },
   });
 });

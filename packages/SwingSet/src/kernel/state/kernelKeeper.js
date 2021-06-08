@@ -10,6 +10,7 @@ import {
   parseKernelSlot,
 } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
+import { insistMessage } from '../../message';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
 import {
@@ -510,6 +511,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
     insistKernelType('promise', kernelSlot);
+    insistMessage(msg);
 
     const p = getKernelPromise(kernelSlot);
     assert(
