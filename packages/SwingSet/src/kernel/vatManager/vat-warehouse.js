@@ -87,7 +87,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     };
     ephemeral.vats.set(vatID, result);
     // eslint-disable-next-line no-use-before-define
-    applyAvailabilityPolicy(vatID);
+    await applyAvailabilityPolicy(vatID);
     return result;
   }
 
