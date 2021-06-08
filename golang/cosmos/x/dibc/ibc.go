@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	channeltypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
-	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/modules/core/24-host"
+
+	"github.com/cosmos/ibc-go/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 )
 
 type portHandler struct {
@@ -67,7 +68,7 @@ func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
 	}
 }
 
-func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret string, err error) {
+func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
 	keeper := ch.keeper
 
@@ -202,7 +203,7 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -266,7 +267,7 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -323,7 +324,7 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -369,7 +370,7 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -410,7 +411,7 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -450,7 +451,7 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return nil
 	} else {
@@ -487,10 +488,10 @@ type receivePacketEvent struct {
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
-) (*sdk.Result, []byte, error) {
-	if swingset.IsSimulation(ctx) {
+) exported.Acknowledgement {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
-		return &sdk.Result{}, nil, nil
+		return nil
 	} else {
 		// The simulation was done, so now allow infinite gas.
 		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
@@ -514,18 +515,16 @@ func (am AppModule) OnRecvPacket(
 
 	bytes, err := json.Marshal(&event)
 	if err != nil {
-		return nil, nil, err
+		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
 	// FIXME: Get acknowledgement data from this call.
 	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
-		return nil, nil, err
+		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
-	return &sdk.Result{
-		Events: ctx.EventManager().Events().ToABCIEvents(),
-	}, nil, nil
+	return nil
 }
 
 type acknowledgementPacketEvent struct {
@@ -542,7 +541,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {
@@ -586,7 +585,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
-	if swingset.IsSimulation(ctx) {
+	if vm.IsSimulation(ctx) {
 		// We don't support simulation.
 		return &sdk.Result{}, nil
 	} else {

@@ -20,7 +20,7 @@ import (
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey sdk.StoreKey
-	cdc      codec.Marshaler
+	cdc      codec.Codec
 
 	accountKeeper authkeeper.AccountKeeper
 	bankKeeper    bankkeeper.Keeper
@@ -31,7 +31,7 @@ type Keeper struct {
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Marshaler, key sdk.StoreKey,
+	cdc codec.Codec, key sdk.StoreKey,
 	accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
@@ -105,7 +105,7 @@ func (k Keeper) ExportStorage(ctx sdk.Context) map[string]string {
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var storage types.Storage
-		k.cdc.MustUnmarshalBinaryLengthPrefixed(iterator.Value(), &storage)
+		k.cdc.MustUnmarshalLengthPrefixed(iterator.Value(), &storage)
 		exported[string(iterator.Key())] = storage.Value
 	}
 	return exported
@@ -121,7 +121,7 @@ func (k Keeper) GetStorage(ctx sdk.Context, path string) *types.Storage {
 	}
 	bz := dataStore.Get([]byte(path))
 	var storage types.Storage
-	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &storage)
+	k.cdc.MustUnmarshalLengthPrefixed(bz, &storage)
 	return &storage
 }
 
@@ -134,7 +134,7 @@ func (k Keeper) GetKeys(ctx sdk.Context, path string) *types.Keys {
 	}
 	bz := keysStore.Get([]byte(path))
 	var keys types.Keys
-	k.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &keys)
+	k.cdc.MustUnmarshalLengthPrefixed(bz, &keys)
 	return &keys
 }
 
@@ -172,7 +172,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 	if storage.Value == "" {
 		dataStore.Delete([]byte(path))
 	} else {
-		dataStore.Set([]byte(path), k.cdc.MustMarshalBinaryLengthPrefixed(storage))
+		dataStore.Set([]byte(path), k.cdc.MustMarshalLengthPrefixed(storage))
 	}
 
 	// Update the keys.
@@ -182,7 +182,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 		// Update the key node.
 		sort.Strings(keyList)
 		keyNode.Keys = keyList
-		keysStore.Set([]byte(oneUp), k.cdc.MustMarshalBinaryLengthPrefixed(keyNode))
+		keysStore.Set([]byte(oneUp), k.cdc.MustMarshalLengthPrefixed(keyNode))
 	}
 }
 

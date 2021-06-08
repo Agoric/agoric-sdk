@@ -9,6 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
@@ -38,7 +39,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: GetPort("storage"),
+		StoragePort: vm.GetPort("storage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),
@@ -63,7 +64,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: GetPort("storage"),
+		StoragePort: vm.GetPort("storage"),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
@@ -94,7 +95,7 @@ func CommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
-	committedHeight = endBlockHeight
+	vm.SetCommittedHeight(endBlockHeight)
 
 	b, err := json.Marshal(action)
 	if err != nil {

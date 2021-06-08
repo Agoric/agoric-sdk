@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 )
 
 type portHandler struct {
@@ -70,7 +69,7 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 	return json.Marshal(&event)
 }
 
-func (ch portHandler) Receive(ctx *swingset.ControllerContext, str string) (ret string, err error) {
+func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	fmt.Println("vpurse.go downcall", str)
 	keeper := ch.keeper
 
