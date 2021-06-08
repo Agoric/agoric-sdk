@@ -1,4 +1,4 @@
-package vpurse
+package vbank
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -148,7 +148,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 				case "recipient", "sender":
 					address := string(attr.GetValue())
 					if err := ensureBalanceIsPresent(address); err != nil {
-						stdlog.Println("Cannot ensure vpurse balance for", address, err)
+						stdlog.Println("Cannot ensure vbank balance for", address, err)
 					}
 				}
 			}

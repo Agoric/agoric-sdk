@@ -1,4 +1,4 @@
-package vpurse
+package vbank
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -64,18 +64,18 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
-// decodeBalances unmarshals a JSON-encoded vpurseBalanceUpdate into normalized balances.
+// decodeBalances unmarshals a JSON-encoded vbankBalanceUpdate into normalized balances.
 // A nil input returns a nil balances.
 func decodeBalances(encoded []byte) (balances, error) {
 	if encoded == nil {
 		return nil, nil
 	}
-	balanceUpdate := vpurseBalanceUpdate{}
+	balanceUpdate := vbankBalanceUpdate{}
 	err := json.Unmarshal(encoded, &balanceUpdate)
 	if err != nil {
 		return nil, err
 	}
-	if balanceUpdate.Type != "VPURSE_BALANCE_UPDATE" {
+	if balanceUpdate.Type != "VBANK_BALANCE_UPDATE" {
 		return nil, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
 	}
 	b := newBalances()
@@ -201,11 +201,11 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKeeper(bank types.BankKeeper) Keeper {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaller
-	vpurseStoreKey := storetypes.NewKVStoreKey(StoreKey)
+	vbankStoreKey := storetypes.NewKVStoreKey(StoreKey)
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		return "", nil
 	}
-	return NewKeeper(cdc, vpurseStoreKey, bank, "feeCollectorName", callToController)
+	return NewKeeper(cdc, vbankStoreKey, bank, "feeCollectorName", callToController)
 }
 
 func Test_Receive_GetBalance(t *testing.T) {
@@ -218,7 +218,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
-		"type": "VPURSE_GET_BALANCE",
+		"type": "VBANK_GET_BALANCE",
 		"address": "`+addr1+`",
 		"denom": "quatloos"
 		}`)
@@ -247,7 +247,7 @@ func Test_Receive_Give(t *testing.T) {
 	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
-		"type": "VPURSE_GIVE",
+		"type": "VBANK_GIVE",
 		"recipient": "`+addr1+`",
 		"amount": "1000",
 		"denom": "urun"
@@ -263,8 +263,8 @@ func Test_Receive_Give(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
-		"MintCoins vpurse 1000urun",
-		"SendCoinsFromModuleToAccount vpurse " + addr1 + " 1000urun",
+		"MintCoins vbank 1000urun",
+		"SendCoinsFromModuleToAccount vbank " + addr1 + " 1000urun",
 		"GetBalance " + addr1 + " urun",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
@@ -282,7 +282,7 @@ func Test_Receive_Grab(t *testing.T) {
 	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
-		"type": "VPURSE_GRAB",
+		"type": "VBANK_GRAB",
 		"sender": "`+addr1+`",
 		"amount": "500",
 		"denom": "ubld"
@@ -298,8 +298,8 @@ func Test_Receive_Grab(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
-		"SendCoinsFromAccountToModule " + addr1 + " vpurse 500ubld",
-		"BurnCoins vpurse 500ubld",
+		"SendCoinsFromAccountToModule " + addr1 + " vbank 500ubld",
+		"BurnCoins vbank 500ubld",
 		"GetBalance " + addr1 + " ubld",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {

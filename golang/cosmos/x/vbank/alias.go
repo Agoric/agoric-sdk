@@ -1,8 +1,8 @@
-package vpurse
+package vbank
 
 import (
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/keeper"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/keeper"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 )
 
 const (

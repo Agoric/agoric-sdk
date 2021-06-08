@@ -4,7 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 )
 
 const genesis string = "genesis"
@@ -21,7 +21,7 @@ type Keeper struct {
 	CallToController func(ctx sdk.Context, str string) (string, error)
 }
 
-// NewKeeper creates a new vpurse Keeper instance
+// NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey,
 	bankKeeper types.BankKeeper,

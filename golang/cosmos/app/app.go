@@ -98,8 +98,8 @@ import (
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -131,7 +131,7 @@ var (
 		ibc.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		vibc.AppModuleBasic{},
-		vpurse.AppModuleBasic{},
+		vbank.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -149,7 +149,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		vpurse.ModuleName:              {authtypes.Minter, authtypes.Burner},
+		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -167,8 +167,8 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
 
-	ibcPort    int
-	vpursePort int
+	ibcPort   int
+	vbankPort int
 
 	invCheckPeriod uint
 
@@ -198,7 +198,7 @@ type GaiaApp struct { // nolint: golint
 
 	SwingSetKeeper swingset.Keeper
 	VibcKeeper     vibc.Keeper
-	VbankKeeper    vpurse.Keeper
+	VbankKeeper    vbank.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -260,7 +260,7 @@ func NewAgoricApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, feegrant.StoreKey, ibctransfertypes.StoreKey,
-		swingset.StoreKey, vibc.StoreKey, vpurse.StoreKey,
+		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey,
 		capabilitytypes.StoreKey,
 		authzkeeper.StoreKey,
 	)
@@ -387,13 +387,13 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(vibc.ModuleName, vibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	app.VbankKeeper = vpurse.NewKeeper(
-		appCodec, keys[vpurse.StoreKey],
+	app.VbankKeeper = vbank.NewKeeper(
+		appCodec, keys[vbank.StoreKey],
 		app.BankKeeper, authtypes.FeeCollectorName,
 		callToController,
 	)
-	vbankModule := vpurse.NewAppModule(app.VbankKeeper)
-	app.vpursePort = vm.RegisterPortHandler("bank", vpurse.NewPortHandler(vbankModule, app.VbankKeeper))
+	vbankModule := vbank.NewAppModule(app.VbankKeeper)
+	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -450,7 +450,7 @@ func NewAgoricApp(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, swingset.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(vpurse.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(vbank.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -462,7 +462,7 @@ func NewAgoricApp(
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		vpurse.ModuleName, swingset.ModuleName,
+		vbank.ModuleName, swingset.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 	)
@@ -549,7 +549,7 @@ type cosmosInitAction struct {
 	IBCPort     int       `json:"ibcPort"`
 	StoragePort int       `json:"storagePort"`
 	SupplyCoins sdk.Coins `json:"supplyCoins"`
-	VPursePort  int       `json:"vpursePort"`
+	VBankPort   int       `json:"vbankPort"`
 }
 
 // Name returns the name of the App
@@ -568,7 +568,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		IBCPort:     app.ibcPort,
 		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
-		VPursePort:  app.vpursePort,
+		VBankPort:   app.vbankPort,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {

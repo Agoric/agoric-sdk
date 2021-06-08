@@ -1,7 +1,0 @@
-syntax = "proto3";
-package agoric.vpurse;
-
-option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types";
-
-service Msg {
-}

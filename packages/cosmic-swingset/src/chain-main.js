@@ -254,8 +254,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.storage = action.storagePort;
     }
 
-    if (action.vpursePort) {
-      portNums.bank = action.vpursePort;
+    if (action.vbankPort) {
+      portNums.bank = action.vbankPort;
     }
 
     if (!blockManager) {

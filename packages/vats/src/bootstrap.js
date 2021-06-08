@@ -146,7 +146,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     //   type: 'AG_COSMOS_INIT',
     //   ibcPort: 2,
     //   storagePort: 1,
-    //   vpursePort: 3,
+    //   vbankPort: 3,
     //   chainID: 'agoric',
     //   supplyCoins: [
     //     { denom: 'provisionpass', amount: '100' },

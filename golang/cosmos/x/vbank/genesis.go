@@ -1,11 +1,11 @@
-package vpurse
+package vbank
 
 import (
 	// "fmt"
 
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -16,7 +16,7 @@ func NewGenesisState() *types.GenesisState {
 
 func ValidateGenesis(data *types.GenesisState) error {
 	if data == nil {
-		return fmt.Errorf("vpurse genesis data cannot be nil")
+		return fmt.Errorf("vbank genesis data cannot be nil")
 	}
 	return nil
 }

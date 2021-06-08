@@ -1,4 +1,4 @@
-package vpurse
+package vbank
 
 import (
 	"encoding/json"
@@ -29,16 +29,16 @@ func NewPortHandler(am AppModule, keeper Keeper) portHandler {
 	}
 }
 
-type vpurseSingleBalanceUpdate struct {
+type vbankSingleBalanceUpdate struct {
 	Address string `json:"address"`
 	Denom   string `json:"denom"`
 	Amount  string `json:"amount"`
 }
 
-type vpurseBalanceUpdate struct {
-	Nonce   uint64                      `json:"nonce"`
-	Type    string                      `json:"type"`
-	Updated []vpurseSingleBalanceUpdate `json:"updated"`
+type vbankBalanceUpdate struct {
+	Nonce   uint64                     `json:"nonce"`
+	Type    string                     `json:"type"`
+	Updated []vbankSingleBalanceUpdate `json:"updated"`
 }
 
 var nonce uint64
@@ -50,14 +50,14 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 	}
 
 	nonce += 1
-	event := vpurseBalanceUpdate{
+	event := vbankBalanceUpdate{
 		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
-		Updated: make([]vpurseSingleBalanceUpdate, 0, nentries),
+		Updated: make([]vbankSingleBalanceUpdate, 0, nentries),
 	}
 	for address, coins := range addressToBalance {
 		for _, coin := range coins {
-			update := vpurseSingleBalanceUpdate{
+			update := vbankSingleBalanceUpdate{
 				Address: address,
 				Denom:   coin.Denom,
 				Amount:  coin.Amount.String(),
@@ -70,7 +70,7 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 }
 
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
-	fmt.Println("vpurse.go downcall", str)
+	fmt.Println("vbank.go downcall", str)
 	keeper := ch.keeper
 
 	var msg portMessage
@@ -163,7 +163,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
 	}
 
-	fmt.Println("vpurse.go downcall reply", ret, err)
+	fmt.Println("vbank.go downcall reply", ret, err)
 	return
 }
 
