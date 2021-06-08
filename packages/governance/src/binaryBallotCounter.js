@@ -7,25 +7,23 @@ import { Far } from '@agoric/marshal';
 
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 
-function makeWeightedBallot(ballot, weight) {
-  return { ballot, weight };
-}
+const makeWeightedBallot = (ballot, weight) => ({ ballot, weight });
 
-function makeBinaryBallot(question, positionAName, positionBName) {
+const makeBinaryBallot = (question, positionAName, positionBName) => {
   const positions = [];
   assert.typeof(positionAName, 'string');
   assert.typeof(positionBName, 'string');
   positions.push(positionAName, positionBName);
 
-  return buildBallot(ChoiceMethod.CHOOSE_ONE, question, positions);
-}
+  return buildBallot(ChoiceMethod.CHOOSE_N, question, positions);
+};
 
-function makeBinaryBallotCounter(question, aName, bName) {
+const makeBinaryBallotCounter = (question, aName, bName) => {
   const template = makeBinaryBallot(question, aName, bName);
 
   assert(
-    template.getMethod() === ChoiceMethod.CHOOSE_ONE,
-    X`Binary ballot counter only works with CHOOSE_ONE`,
+    template.getMethod() === ChoiceMethod.CHOOSE_N,
+    X`Binary ballot counter only works with CHOOSE_N`,
   );
   let isOpen = true;
   const outcomePromise = makePromiseKit();
@@ -35,13 +33,13 @@ function makeBinaryBallotCounter(question, aName, bName) {
   // TODO: quorum: by weight, by proportion
   const quorum = true;
 
-  function recordBallot(seat, filledBallot, weight = 1n) {
+  const recordBallot = (seat, filledBallot, weight = 1n) => {
     allBallots.has(seat)
       ? allBallots.set(seat, makeWeightedBallot(filledBallot, weight))
       : allBallots.init(seat, makeWeightedBallot(filledBallot, weight));
-  }
+  };
 
-  function countVotes() {
+  const countVotes = () => {
     assert(!isOpen, X`can't count votes while the election is open`);
 
     // ballot template has position choices; Each ballot in allBallots should
@@ -82,7 +80,7 @@ function makeBinaryBallotCounter(question, aName, bName) {
       ],
     };
     tallyPromise.resolve(stats);
-  }
+  };
 
   const adminFacet = Far('adminFacet', {
     closeVoting: () => (isOpen = false),
@@ -97,7 +95,7 @@ function makeBinaryBallotCounter(question, aName, bName) {
     getStats: () => tallyPromise.promise,
   });
   return { publicFacet, adminFacet };
-}
+};
 harden(makeBinaryBallotCounter);
 
 export { makeBinaryBallotCounter };
