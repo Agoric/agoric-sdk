@@ -1,4 +1,4 @@
-package swingset
+package chain
 
 import (
 	"errors"

@@ -14,8 +14,8 @@ import (
 	"errors"
 	"os"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/chain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
-	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 )
 
 type goReturn = struct {
@@ -102,7 +102,7 @@ type errorWrapper struct {
 func SendToGo(port C.int, str C.Body) C.Body {
 	goStr := C.GoString(str)
 	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	outstr, err := swingset.ReceiveFromController(int(port), goStr)
+	outstr, err := chain.ReceiveFromController(int(port), goStr)
 	if err != nil {
 		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
 		ret := errorWrapper{
