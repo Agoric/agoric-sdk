@@ -16,7 +16,7 @@ const ParamType = {
 };
 harden(ParamType);
 
-function assertType(type, value, name) {
+const assertType = (type, value, name) => {
   if (!type) {
     // undefined type means don't verify. Did we omit an interesting type?
     return;
@@ -53,9 +53,9 @@ function assertType(type, value, name) {
     default:
       assert.fail(X`unknown type guard ${type}`);
   }
-}
+};
 
-function parse(paramDesc) {
+const parse = paramDesc => {
   const bindings = makeStore('name');
   const types = makeStore('name');
 
@@ -67,10 +67,10 @@ function parse(paramDesc) {
   });
 
   return { bindings, types };
-}
+};
 
 /** @type {BuildParamManager} */
-function buildParamManager(paramDesc) {
+const buildParamManager = paramDesc => {
   const { bindings, types } = parse(paramDesc);
 
   const publicFacet = {
@@ -87,7 +87,7 @@ function buildParamManager(paramDesc) {
   };
 
   return { publicFacet, manager };
-}
+};
 harden(buildParamManager);
 
 export { ParamType, buildParamManager };
