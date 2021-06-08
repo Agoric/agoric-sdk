@@ -57,9 +57,10 @@ func Run() {
 
 // RunWithController starts the app with a custom upcall handler.
 func RunWithController(sendToController cmd.Sender) {
-	// Exit on several different signals.
+	// Exit on Control-C and kill.
+	// Without this explicitly, ag-chain-cosmos ignores them.
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
 		os.Exit(98)
