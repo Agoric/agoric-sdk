@@ -340,8 +340,12 @@ export async function main() {
     config.devices = {
       loopbox: {
         sourceSpec: loopboxSrcPath,
+        parameters: {
+          senders: config.loopboxSenders,
+        },
       },
     };
+    delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (launchIndirectly) {
