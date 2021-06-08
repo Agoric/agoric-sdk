@@ -136,9 +136,9 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kernelStats[`${key}Max`] = 0;
   });
 
-  function incStat(stat) {
+  function incStat(stat, delta = 1) {
     assert.typeof(kernelStats[stat], 'number');
-    kernelStats[stat] += 1;
+    kernelStats[stat] += delta;
     const maxStat = `${stat}Max`;
     if (
       kernelStats[maxStat] !== undefined &&
@@ -148,7 +148,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     const upStat = `${stat}Up`;
     if (kernelStats[upStat] !== undefined) {
-      kernelStats[upStat] += 1;
+      kernelStats[upStat] += delta;
     }
   }
 
