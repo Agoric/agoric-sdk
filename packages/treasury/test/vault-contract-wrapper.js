@@ -39,13 +39,17 @@ export async function start(zcf) {
     },
   };
 
-  function transferReward(amount, fromSeat) {
+  function reallocateReward(amount, fromSeat, otherSeat) {
     stableCoinSeat.incrementBy(
       fromSeat.decrementBy({
         RUN: amount,
       }),
     );
-    zcf.reallocate(stableCoinSeat, fromSeat);
+    if (otherSeat !== undefined) {
+      zcf.reallocate(stableCoinSeat, fromSeat, otherSeat);
+    } else {
+      zcf.reallocate(stableCoinSeat, fromSeat);
+    }
   }
 
   /** @type {InnerVaultManager} */
@@ -63,7 +67,7 @@ export async function start(zcf) {
       return makeRatio(5n, runBrand);
     },
     collateralBrand,
-    transferReward,
+    reallocateReward,
   };
 
   const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;

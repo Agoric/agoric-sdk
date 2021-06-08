@@ -80,15 +80,19 @@ export async function start(zcf) {
    * We provide an easy way for the vaultManager and vaults to add rewards to
    * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
    *
-   * @type {TransferReward}
+   * @type {ReallocateReward}
    */
-  function transferReward(amount, fromSeat) {
+  function reallocateReward(amount, fromSeat, otherSeat = undefined) {
     rewardPoolSeat.incrementBy(
       fromSeat.decrementBy({
         RUN: amount,
       }),
     );
-    zcf.reallocate(rewardPoolSeat, fromSeat);
+    if (otherSeat !== undefined) {
+      zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
+    } else {
+      zcf.reallocate(rewardPoolSeat, fromSeat);
+    }
   }
 
   /** @type {Store<Brand,VaultManager>} */
@@ -220,7 +224,7 @@ export async function start(zcf) {
         collateralBrand,
         priceAuthority,
         rates,
-        transferReward,
+        reallocateReward,
         timerService,
         loanParams,
         liquidationStrategy,

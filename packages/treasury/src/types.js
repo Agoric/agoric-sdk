@@ -45,10 +45,15 @@
  */
 
 /**
- * @callback TransferReward transfer the indicated amount to the
- * stablecoin machine's reward pool, taken from the `fromSeat`.
+ * @callback ReallocateReward
+ *
+ * Transfer the indicated amount to the stablecoin machine's reward
+ * pool, taken from the `fromSeat`. Then reallocate over all the seat
+ * arguments and the rewardPoolSeat.
+ *
  * @param {Amount} amount
  * @param {ZCFSeat} fromSeat
+ * @param {ZCFSeat=} otherSeat
  * @returns {void}
  */
 
@@ -60,7 +65,7 @@
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
- * @property {TransferReward} transferReward
+ * @property {ReallocateReward} reallocateReward
  */
 
 /**

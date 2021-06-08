@@ -75,9 +75,6 @@ export const makeMakeSwapInvitation = (
     seat.incrementBy({ Out: amountOut });
 
     // Transfer protocolFee
-    // TODO: this should be transferred directly from the user such
-    // that there's no way to accidentally take more than expected
-    // from the pool.
     poolSeat.decrementBy({ Central: protocolFee });
     protocolSeat.incrementBy({ RUN: protocolFee });
 
@@ -104,7 +101,12 @@ export const makeMakeSwapInvitation = (
     brandInPoolSeat.incrementBy({ Secondary: amountIn });
 
     // Transfer protocolFee from the brandInPool
-    // TODO: Why the brandInPool? Should this be split over both?
+
+    // Note: the protocolFee is effectively shared between the
+    // brandInPool and the brandOutPool. We subtract the protocolFee
+    // from brandInPool directly, and we subtract more value from
+    // brandOutPool than we otherwise would, thus taking part of the
+    // fee from brandOutPool too.
     brandInPoolSeat.decrementBy({ Central: protocolFee });
     protocolSeat.incrementBy({ RUN: protocolFee });
 

@@ -233,7 +233,7 @@ export function makeVaultKit(
     }
   }
 
-  function stageCollateral(seat) {
+  function transferCollateral(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.Collateral) {
       seat.incrementBy(
@@ -279,7 +279,7 @@ export function makeVaultKit(
     }
   }
 
-  function stageRun(seat) {
+  function transferRun(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
       seat.incrementBy(vaultSeat.decrementBy({ RUN: proposal.want.RUN }));
@@ -364,10 +364,9 @@ export function makeVaultKit(
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
     runMint.mintGains({ RUN: toMint }, vaultSeat);
-    stageCollateral(clientSeat);
-    stageRun(clientSeat);
-    zcf.reallocate(vaultSeat, clientSeat);
-    manager.transferReward(fee, vaultSeat);
+    transferCollateral(clientSeat);
+    transferRun(clientSeat);
+    manager.reallocateReward(fee, vaultSeat, clientSeat);
 
     runDebt = newDebt;
     runMint.burnLosses({ RUN: runAfter.vault }, vaultSeat);
@@ -413,8 +412,7 @@ export function makeVaultKit(
 
     seat.incrementBy(vaultSeat.decrementBy({ RUN: wantedRun }));
     vaultSeat.incrementBy(seat.decrementBy({ Collateral: collateralAmount }));
-    zcf.reallocate(vaultSeat, seat);
-    manager.transferReward(fee, vaultSeat);
+    manager.reallocateReward(fee, vaultSeat, seat);
 
     updateUiState();
 
