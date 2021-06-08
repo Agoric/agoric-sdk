@@ -52,6 +52,7 @@ FLAGS may be:
   --lmdb           - runs using LMDB as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
+  --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -182,6 +183,7 @@ export async function main() {
   let configPath = null;
   let statsFile = null;
   let dbDir = null;
+  let dbSize = 0;
   let initOnly = false;
   let loopbox = false;
 
@@ -253,6 +255,9 @@ export async function main() {
         break;
       case '--dbdir':
         dbDir = argv.shift();
+        break;
+      case '--dbsize':
+        dbSize = Number(argv.shift());
         break;
       case '--raw':
         rawMode = true;
@@ -351,23 +356,34 @@ export async function main() {
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
   }
-  if (!dbDir) {
-    dbDir = basedir;
-  }
 
   let swingStore;
-  const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
   switch (dbMode) {
     case '--memdb':
+      if (dbDir) {
+        fail('--dbdir only valid with --lmdb');
+      }
+      if (dbSize) {
+        fail('--dbsize only valid with --lmdb');
+      }
       swingStore = initSimpleSwingStore();
       break;
-    case '--lmdb':
+    case '--lmdb': {
+      if (!dbDir) {
+        dbDir = basedir;
+      }
+      const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
+      const dbOptions = {};
+      if (dbSize) {
+        dbOptions.mapSize = dbSize * 1024 * 1024;
+      }
       if (forceReset) {
-        swingStore = initLMDBSwingStore(kernelStateDBDir);
+        swingStore = initLMDBSwingStore(kernelStateDBDir, dbOptions);
       } else {
-        swingStore = openLMDBSwingStore(kernelStateDBDir);
+        swingStore = openLMDBSwingStore(kernelStateDBDir, dbOptions);
       }
       break;
+    }
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
