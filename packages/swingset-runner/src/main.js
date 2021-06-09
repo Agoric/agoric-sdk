@@ -413,8 +413,8 @@ export async function main() {
       hostStorage,
       runtimeOptions,
     );
+    swingStore.commit();
     if (initOnly) {
-      swingStore.commit();
       swingStore.close();
       return;
     }
