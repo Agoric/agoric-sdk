@@ -144,16 +144,16 @@ export function buildRootObject(vatPowers, vatParameters) {
     // We'll usually have something like:
     // {
     //   type: 'AG_COSMOS_INIT',
-    //   ibcPort: 2,
-    //   storagePort: 1,
-    //   vbankPort: 3,
     //   chainID: 'agoric',
+    //   storagePort: 1,
     //   supplyCoins: [
     //     { denom: 'provisionpass', amount: '100' },
     //     { denom: 'sendpacketpass', amount: '100' },
     //     { denom: 'ubld', amount: '1000000000000000' },
     //     { denom: 'urun', amount: '50000000000' }
     //   ]
+    //   vbankPort: 3,
+    //   vibcPort: 2
     // }
     const { supplyCoins = [] } =
       (vatParameters && vatParameters.argv && vatParameters.argv.bootMsg) || {};

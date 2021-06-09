@@ -167,8 +167,8 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
 
-	ibcPort   int
 	vbankPort int
+	vibcPort  int
 
 	invCheckPeriod uint
 
@@ -378,7 +378,7 @@ func NewAgoricApp(
 	)
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper)
-	app.ibcPort = vm.RegisterPortHandler("vibc", vibc.NewPortHandler(vibcModule, app.VibcKeeper))
+	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewPortHandler(vibcModule, app.VibcKeeper))
 
 	// Create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
@@ -546,10 +546,10 @@ func NewAgoricApp(
 type cosmosInitAction struct {
 	Type        string    `json:"type"`
 	ChainID     string    `json:"chainID"`
-	IBCPort     int       `json:"ibcPort"`
 	StoragePort int       `json:"storagePort"`
 	SupplyCoins sdk.Coins `json:"supplyCoins"`
-	VBankPort   int       `json:"vbankPort"`
+	VibcPort    int       `json:"vibcPort"`
+	VbankPort   int       `json:"vbankPort"`
 }
 
 // Name returns the name of the App
@@ -565,10 +565,10 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
-		IBCPort:     app.ibcPort,
 		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
-		VBankPort:   app.vbankPort,
+		VibcPort:    app.vibcPort,
+		VbankPort:   app.vbankPort,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {
