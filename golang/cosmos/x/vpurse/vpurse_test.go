@@ -11,9 +11,21 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+)
+
+var (
+	priv1 = secp256k1.GenPrivKey()
+	priv2 = secp256k1.GenPrivKey()
+	priv3 = secp256k1.GenPrivKey()
+	priv4 = secp256k1.GenPrivKey()
+	addr1 = sdk.AccAddress(priv1.PubKey().Address()).String()
+	addr2 = sdk.AccAddress(priv2.PubKey().Address()).String()
+	addr3 = sdk.AccAddress(priv3.PubKey().Address()).String()
+	addr4 = sdk.AccAddress(priv4.PubKey().Address()).String()
 )
 
 // Normalized balance updates for order-insensitive comparisons.
@@ -52,21 +64,25 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
-// normalizeBalanceUpdate validates vpurseBalanceUpdate message and returns normalized version.
-// A nil message becomes a nil balances.
-func normalizeBalanceUpdate(msg *vpurseBalanceUpdate, t *testing.T) balances {
-	t.Helper()
-	if msg == nil {
-		return nil
+// decodeBalances unmarshals a JSON-encoded vpurseBalanceUpdate into normalized balances.
+// A nil input returns a nil balances.
+func decodeBalances(encoded []byte) (balances, error) {
+	if encoded == nil {
+		return nil, nil
 	}
-	if msg.Type != "VPURSE_BALANCE_UPDATE" {
-		t.Errorf("bad balance update type: %s", msg.Type)
+	balanceUpdate := vpurseBalanceUpdate{}
+	err := json.Unmarshal(encoded, &balanceUpdate)
+	if err != nil {
+		return nil, err
 	}
-	bal := newBalances()
-	for _, u := range msg.Updated {
-		account(u.Address, coin(u.Denom, u.Amount))(bal)
+	if balanceUpdate.Type != "VPURSE_BALANCE_UPDATE" {
+		return nil, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
 	}
-	return bal
+	b := newBalances()
+	for _, u := range balanceUpdate.Updated {
+		account(u.Address, coin(u.Denom, u.Amount))(b)
+	}
+	return b, nil
 }
 
 func Test_marshalBalanceUpdate(t *testing.T) {
@@ -84,32 +100,32 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 		{
 			name: "simple",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": {sdk.NewInt64Coin("foocoin", 123)},
+				addr1: {sdk.NewInt64Coin("foocoin", 123)},
 			},
-			want: newBalances(account("acct1", coin("foocoin", "123"))),
+			want: newBalances(account(addr1, coin("foocoin", "123"))),
 		},
 		{
 			name: "multi-denom",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": {
+				addr1: {
 					sdk.NewInt64Coin("foocoin", 123),
 					sdk.NewInt64Coin("barcoin", 456),
 				},
 			},
 			want: newBalances(
-				account("acct1",
+				account(addr1,
 					coin("foocoin", "123"),
 					coin("barcoin", "456"))),
 		},
 		{
 			name: "multi-acct",
 			addressToBalance: map[string]sdk.Coins{
-				"acct1": {sdk.NewInt64Coin("foocoin", 123)},
-				"acct2": {sdk.NewInt64Coin("barcoin", 456)},
+				addr1: {sdk.NewInt64Coin("foocoin", 123)},
+				addr2: {sdk.NewInt64Coin("barcoin", 456)},
 			},
 			want: newBalances(
-				account("acct1", coin("foocoin", "123")),
-				account("acct2", coin("barcoin", "456")),
+				account(addr1, coin("foocoin", "123")),
+				account(addr2, coin("barcoin", "456")),
 			),
 		},
 	}
@@ -120,16 +136,10 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 				t.Errorf("marshalBalanceUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			msg := &vpurseBalanceUpdate{}
-			if encoded == nil {
-				msg = nil
-			} else {
-				err = json.Unmarshal(encoded, &msg)
-				if err != nil {
-					t.Fatalf("json.Unmarshal() error %v", err)
-				}
+			got, err := decodeBalances(encoded)
+			if err != nil {
+				t.Fatalf("decode balance error = %v", err)
 			}
-			got := normalizeBalanceUpdate(msg, t)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("marshalBalanceUpdate() = %+v, want %+v", got, tt.want)
 			}
@@ -141,9 +151,9 @@ type mockBank struct {
 	// Record of all calls to the bank.
 	calls []string
 	// Value to return from GetAllBalances().
-	allBalances sdk.Coins
+	allBalances map[string]sdk.Coins
 	// Value to return from GetBalance().
-	balance sdk.Coin
+	balance map[string]sdk.Coin
 }
 
 var _ types.BankKeeper = (*mockBank)(nil)
@@ -159,12 +169,12 @@ func (b *mockBank) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) 
 
 func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	b.record(fmt.Sprintf("GetAllBalances %s", addr))
-	return b.allBalances
+	return b.allBalances[addr.String()]
 }
 
 func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	b.record(fmt.Sprintf("GetBalance %s %s", addr, denom))
-	return b.balance
+	return b.balance[addr.String()]
 }
 
 func (b *mockBank) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
@@ -198,13 +208,10 @@ func makeTestKeeper(bank types.BankKeeper) Keeper {
 	return NewKeeper(cdc, vpurseStoreKey, bank, "feeCollectorName", callToController)
 }
 
-var (
-	priv1 = secp256k1.GenPrivKey()
-	addr1 = sdk.AccAddress(priv1.PubKey().Address())
-)
-
 func Test_Receive_GetBalance(t *testing.T) {
-	bank := &mockBank{balance: sdk.NewInt64Coin("quatloos", 123)}
+	bank := &mockBank{balance: map[string]sdk.Coin{
+		addr1: sdk.NewInt64Coin("quatloos", 123),
+	}}
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
@@ -212,7 +219,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GET_BALANCE",
-		"address": "`+addr1.String()+`",
+		"address": "`+addr1+`",
 		"denom": "quatloos"
 		}`)
 	if err != nil {
@@ -223,7 +230,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 		t.Errorf("got %v, want %s", ret, want)
 	}
 	wantCalls := []string{
-		"GetBalance " + addr1.String() + " quatloos",
+		"GetBalance " + addr1 + " quatloos",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
@@ -231,7 +238,9 @@ func Test_Receive_GetBalance(t *testing.T) {
 }
 
 func Test_Receive_Give(t *testing.T) {
-	bank := &mockBank{balance: sdk.NewInt64Coin("urun", 1000)}
+	bank := &mockBank{balance: map[string]sdk.Coin{
+		addr1: sdk.NewInt64Coin("urun", 1000),
+	}}
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
@@ -239,27 +248,24 @@ func Test_Receive_Give(t *testing.T) {
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GIVE",
-		"recipient": "`+addr1.String()+`",
+		"recipient": "`+addr1+`",
 		"amount": "1000",
 		"denom": "urun"
 		}`)
 	if err != nil {
 		t.Fatalf("got error = %v", err)
 	}
-	balanceUpdate := vpurseBalanceUpdate{}
-	err = json.Unmarshal([]byte(ret), &balanceUpdate)
+	want := newBalances(account(addr1, coin("urun", "1000")))
+	got, err := decodeBalances([]byte(ret))
 	if err != nil {
-		t.Errorf("unmarshal response error = %v", err)
-	}
-	got := normalizeBalanceUpdate(&balanceUpdate, t)
-	want := newBalances(account(addr1.String(), coin("urun", "1000")))
-	if !reflect.DeepEqual(got, want) {
+		t.Errorf("decode balances error = %v", err)
+	} else if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
 		"MintCoins vpurse 1000urun",
-		"SendCoinsFromModuleToAccount vpurse " + addr1.String() + " 1000urun",
-		"GetBalance " + addr1.String() + " urun",
+		"SendCoinsFromModuleToAccount vpurse " + addr1 + " 1000urun",
+		"GetBalance " + addr1 + " urun",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
@@ -267,7 +273,9 @@ func Test_Receive_Give(t *testing.T) {
 }
 
 func Test_Receive_Grab(t *testing.T) {
-	bank := &mockBank{balance: sdk.NewInt64Coin("ubld", 1000)}
+	bank := &mockBank{balance: map[string]sdk.Coin{
+		addr1: sdk.NewInt64Coin("ubld", 1000),
+	}}
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
@@ -275,31 +283,91 @@ func Test_Receive_Grab(t *testing.T) {
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GRAB",
-		"sender": "`+addr1.String()+`",
+		"sender": "`+addr1+`",
 		"amount": "500",
 		"denom": "ubld"
 		}`)
 	if err != nil {
 		t.Fatalf("got error = %v", err)
 	}
-	balanceUpdate := vpurseBalanceUpdate{}
-	err = json.Unmarshal([]byte(ret), &balanceUpdate)
+	want := newBalances(account(addr1, coin("ubld", "1000")))
+	got, err := decodeBalances([]byte(ret))
 	if err != nil {
-		t.Errorf("unmarshal response error = %v", err)
-	}
-	got := normalizeBalanceUpdate(&balanceUpdate, t)
-	want := newBalances(account(addr1.String(), coin("ubld", "1000")))
-	if !reflect.DeepEqual(got, want) {
+		t.Errorf("decode balances error = %v", err)
+	} else if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	wantCalls := []string{
-		"SendCoinsFromAccountToModule " + addr1.String() + " vpurse 500ubld",
+		"SendCoinsFromAccountToModule " + addr1 + " vpurse 500ubld",
 		"BurnCoins vpurse 500ubld",
-		"GetBalance " + addr1.String() + " ubld",
+		"GetBalance " + addr1 + " ubld",
 	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
 }
 
-// TODO(JimLarson): create tests for event handling.
+func Test_EndBlock(t *testing.T) {
+	bank := &mockBank{allBalances: map[string]sdk.Coins{
+		addr1: {sdk.NewInt64Coin("ubld", 1000)},
+		addr2: {
+			sdk.NewInt64Coin("urun", 4000),
+			sdk.NewInt64Coin("arcadeTokens", 7),
+		},
+	}}
+	keeper := makeTestKeeper(bank)
+	msgsSent := []string{}
+	keeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
+		msgsSent = append(msgsSent, str)
+		return "", nil
+	}
+	am := NewAppModule(keeper)
+
+	events := []abci.Event{
+		{
+			Type: "transfer",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("recipient"), Value: []byte(addr1)},
+				{Key: []byte("sender"), Value: []byte(addr2)},
+				{Key: []byte("amount"), Value: []byte("quite a lot")},
+				{Key: []byte("other"), Value: []byte(addr3)},
+			},
+		},
+		{
+			Type: "not a transfer",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("sender"), Value: []byte(addr4)},
+			},
+		},
+	}
+	em := sdk.NewEventManagerWithHistory(events)
+	ctx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger()).WithEventManager(em)
+
+	updates := am.EndBlock(ctx, abci.RequestEndBlock{})
+	if len(updates) != 0 {
+		t.Errorf("EndBlock() got %+v, want empty", updates)
+	}
+
+	wantCalls := []string{
+		"GetAllBalances " + addr1,
+		"GetAllBalances " + addr2,
+	}
+	// TODO: make comparison order-insensitive
+	if !reflect.DeepEqual(bank.calls, wantCalls) {
+		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
+	}
+
+	wantMsg := newBalances(
+		account(addr1, coin("ubld", "1000")),
+		account(addr2, coin("urun", "4000"), coin("arcadeTokens", "7")),
+	)
+	if len(msgsSent) != 1 {
+		t.Errorf("got msgs = %v, want one message", msgsSent)
+	}
+	gotMsg, err := decodeBalances([]byte(msgsSent[0]))
+	if err != nil {
+		t.Errorf("decode balances error = %v", err)
+	} else if !reflect.DeepEqual(gotMsg, wantMsg) {
+		t.Errorf("got sent message %v, want %v", gotMsg, wantMsg)
+	}
+}
