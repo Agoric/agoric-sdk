@@ -77,7 +77,6 @@ FLAGS may be:
   --globalmetering - install metering on global objects
   --meter          - run metered vats (implies --globalmetering and --indirect)
   --config FILE    - read swingset config from FILE instead of inferring it
-  --loopbox        - make the loopbox device available to the bootstrap vat
 
 CMD is one of:
   help   - print this helpful usage information
@@ -185,7 +184,6 @@ export async function main() {
   let dbDir = null;
   let dbSize = 0;
   let initOnly = false;
-  let loopbox = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -287,9 +285,6 @@ export async function main() {
       case '--lmdb':
         dbMode = flag;
         break;
-      case '--loopbox':
-        loopbox = true;
-        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -340,7 +335,7 @@ export async function main() {
     config = loadBasedir(basedir);
   }
   const deviceEndowments = {};
-  if (loopbox) {
+  if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
     config.devices = {
       loopbox: {
