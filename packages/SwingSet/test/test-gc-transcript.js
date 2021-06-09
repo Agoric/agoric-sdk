@@ -23,7 +23,7 @@ function setup(storedTranscript = []) {
     closeTranscript() {},
   };
   const kernelKeeper = {
-    getVatKeeper() {
+    provideVatKeeper() {
       return vatKeeper;
     },
   };

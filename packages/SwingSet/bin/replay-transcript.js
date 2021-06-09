@@ -44,7 +44,7 @@ async function replay(transcriptFile, worker = 'xs-worker') {
   let factory;
 
   const fakeKernelKeeper = {
-    getVatKeeper: _vatID => ({
+    provideVatKeeper: _vatID => ({
       addToTranscript: () => undefined,
     }),
   };
