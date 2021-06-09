@@ -28,7 +28,6 @@
  *   useTranscript?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
- *   vatParameters: Record<string, unknown>,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  * } & (HasBundle | HasSetup)} ManagerOptions
