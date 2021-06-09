@@ -135,9 +135,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     }
     const vatKeeper = kernelKeeper.getVatKeeper(vatID);
     if (vatKeeper) {
-      const {
-        options: { enablePipelining },
-      } = vatKeeper.getSourceAndOptions();
+      const { enablePipelining } = vatKeeper.getOptions();
       return { enablePipelining };
     }
     return undefined;
