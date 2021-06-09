@@ -1,5 +1,5 @@
 // @ts-nocheck
-import 'ses/lockdown';
+import 'ses';
 
 // see install-ses-debug.js
 const debugOptions = {

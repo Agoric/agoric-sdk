@@ -1,4 +1,4 @@
 // @ts-nocheck
-import 'ses/lockdown';
+import 'ses';
 
 lockdown();

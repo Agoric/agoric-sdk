@@ -55,11 +55,12 @@
     "@agoric/transform-metering": "^1.4.12"
   },
   "devDependencies": {
+    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/install-metering-and-ses": "^0.2.13",
     "@agoric/install-ses": "^0.5.13",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
-    "ses": "^0.12.7"
+    "ses": "^0.13.1"
   },
   "files": [
     "bundles/",

@@ -1,6 +1,9 @@
 /* global globalThis */
-import test from 'ava';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
+import test from 'ava';
 import fs from 'fs';
 import anylogger from 'anylogger';
 
