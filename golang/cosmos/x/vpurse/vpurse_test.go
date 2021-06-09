@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/keeper"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -189,15 +188,14 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 }
 
 // makeTestKeeper creates a minimal Keeper for use in testing.
-func makeTestKeeper(bank types.BankKeeper) keeper.Keeper {
+func makeTestKeeper(bank types.BankKeeper) Keeper {
 	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaler
-	vpurseStoreKey := storetypes.NewKVStoreKey(types.StoreKey)
+	cdc := encodingConfig.Marshaller
+	vpurseStoreKey := storetypes.NewKVStoreKey(StoreKey)
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		return "", nil
 	}
-	vk := keeper.NewKeeper(cdc, vpurseStoreKey, bank, "feeCollectorName", callToController)
-	return vk
+	return NewKeeper(cdc, vpurseStoreKey, bank, "feeCollectorName", callToController)
 }
 
 var (
@@ -210,7 +208,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
-	ctx := &swingset.ControllerContext{Context: sdkCtx}
+	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GET_BALANCE",
@@ -237,7 +235,7 @@ func Test_Receive_Give(t *testing.T) {
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
-	ctx := &swingset.ControllerContext{Context: sdkCtx}
+	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GIVE",
@@ -273,7 +271,7 @@ func Test_Receive_Grab(t *testing.T) {
 	keeper := makeTestKeeper(bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
-	ctx := &swingset.ControllerContext{Context: sdkCtx}
+	ctx := &vm.ControllerContext{Context: sdkCtx}
 
 	ret, err := ch.Receive(ctx, `{
 		"type": "VPURSE_GRAB",
