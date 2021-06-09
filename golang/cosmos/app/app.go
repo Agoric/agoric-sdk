@@ -97,9 +97,9 @@ import (
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/dibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -130,8 +130,8 @@ var (
 		slashing.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		swingset.AppModuleBasic{},
-		dibc.AppModuleBasic{},
-		vpurse.AppModuleBasic{},
+		vibc.AppModuleBasic{},
+		vbank.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -149,7 +149,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		vpurse.ModuleName:              {authtypes.Minter, authtypes.Burner},
+		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -167,8 +167,8 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
 
-	ibcPort    int
-	vpursePort int
+	vbankPort int
+	vibcPort  int
 
 	invCheckPeriod uint
 
@@ -197,13 +197,13 @@ type GaiaApp struct { // nolint: golint
 	TransferKeeper   ibctransferkeeper.Keeper
 
 	SwingSetKeeper swingset.Keeper
-	DibcKeeper     dibc.Keeper
-	VpurseKeeper   vpurse.Keeper
+	VibcKeeper     vibc.Keeper
+	VbankKeeper    vbank.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-	ScopedDibcKeeper     capabilitykeeper.ScopedKeeper
+	ScopedVibcKeeper     capabilitykeeper.ScopedKeeper
 
 	FeeGrantKeeper feegrantkeeper.Keeper
 	// the module manager
@@ -260,7 +260,7 @@ func NewAgoricApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, feegrant.StoreKey, ibctransfertypes.StoreKey,
-		swingset.StoreKey, dibc.StoreKey, vpurse.StoreKey,
+		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey,
 		capabilitytypes.StoreKey,
 		authzkeeper.StoreKey,
 	)
@@ -286,7 +286,7 @@ func NewAgoricApp(
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedDibcKeeper := app.CapabilityKeeper.ScopeToModule(dibc.ModuleName)
+	scopedVibcKeeper := app.CapabilityKeeper.ScopeToModule(vibc.ModuleName)
 
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
@@ -369,31 +369,31 @@ func NewAgoricApp(
 	)
 	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
 
-	app.DibcKeeper = dibc.NewKeeper(
-		appCodec, keys[dibc.StoreKey],
+	app.VibcKeeper = vibc.NewKeeper(
+		appCodec, keys[vibc.StoreKey],
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.BankKeeper,
-		scopedDibcKeeper,
+		scopedVibcKeeper,
 		callToController,
 	)
 
-	dibcModule := dibc.NewAppModule(app.DibcKeeper)
-	app.ibcPort = vm.RegisterPortHandler("dibc", dibc.NewPortHandler(dibcModule, app.DibcKeeper))
+	vibcModule := vibc.NewAppModule(app.VibcKeeper)
+	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewPortHandler(vibcModule, app.VibcKeeper))
 
 	// Create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
-	ibcRouter.AddRoute(dibc.ModuleName, dibcModule)
+	ibcRouter.AddRoute(vibc.ModuleName, vibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	app.VpurseKeeper = vpurse.NewKeeper(
-		appCodec, keys[vpurse.StoreKey],
+	app.VbankKeeper = vbank.NewKeeper(
+		appCodec, keys[vbank.StoreKey],
 		app.BankKeeper, authtypes.FeeCollectorName,
 		callToController,
 	)
-	vpurseModule := vpurse.NewAppModule(app.VpurseKeeper)
-	app.vpursePort = vm.RegisterPortHandler("bank", vpurse.NewPortHandler(vpurseModule, app.VpurseKeeper))
+	vbankModule := vbank.NewAppModule(app.VbankKeeper)
+	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -436,8 +436,8 @@ func NewAgoricApp(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		swingset.NewAppModule(app.SwingSetKeeper),
-		dibcModule,
-		vpurseModule,
+		vibcModule,
+		vbankModule,
 		transferModule,
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 	)
@@ -450,7 +450,7 @@ func NewAgoricApp(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, swingset.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(vpurse.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(vbank.ModuleName, swingset.ModuleName, crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -462,7 +462,7 @@ func NewAgoricApp(
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		vpurse.ModuleName, swingset.ModuleName,
+		vbank.ModuleName, swingset.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 	)
@@ -537,7 +537,7 @@ func NewAgoricApp(
 		app.CapabilityKeeper.InitializeAndSeal(ctx)
 	}
 	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedDibcKeeper = scopedDibcKeeper
+	app.ScopedVibcKeeper = scopedVibcKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	return app
@@ -546,10 +546,10 @@ func NewAgoricApp(
 type cosmosInitAction struct {
 	Type        string    `json:"type"`
 	ChainID     string    `json:"chainID"`
-	IBCPort     int       `json:"ibcPort"`
 	StoragePort int       `json:"storagePort"`
 	SupplyCoins sdk.Coins `json:"supplyCoins"`
-	VPursePort  int       `json:"vpursePort"`
+	VibcPort    int       `json:"vibcPort"`
+	VbankPort   int       `json:"vbankPort"`
 }
 
 // Name returns the name of the App
@@ -565,10 +565,10 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
-		IBCPort:     app.ibcPort,
 		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
-		VPursePort:  app.vpursePort,
+		VibcPort:    app.vibcPort,
+		VbankPort:   app.vbankPort,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {

@@ -54,7 +54,7 @@ const makePurseController = (
     async pushAmount(amt) {
       const value = AmountMath.getValue(brand, amt);
       const update = await bankCall({
-        type: 'VPURSE_GIVE',
+        type: 'VBANK_GIVE',
         recipient: address,
         denom,
         amount: `${value}`,
@@ -64,7 +64,7 @@ const makePurseController = (
     async pullAmount(amt) {
       const value = AmountMath.getValue(brand, amt);
       const update = await bankCall({
-        type: 'VPURSE_GRAB',
+        type: 'VBANK_GRAB',
         sender: address,
         denom,
         amount: `${value}`,
@@ -109,7 +109,7 @@ export function buildRootObject(_vatPowers) {
 
       const updateBalances = obj => {
         switch (obj && obj.type) {
-          case 'VPURSE_BALANCE_UPDATE': {
+          case 'VBANK_BALANCE_UPDATE': {
             for (const update of obj.updated) {
               try {
                 const { address, denom, amount: value } = update;
@@ -230,7 +230,7 @@ export function buildRootObject(_vatPowers) {
             // Get the initial balance.
             addressToUpdater.init(address, balanceUpdater);
             const balanceString = await bankCall({
-              type: 'VPURSE_GET_BALANCE',
+              type: 'VBANK_GET_BALANCE',
               address,
               denom: assetRecord.denom,
             });
@@ -285,7 +285,7 @@ export function buildRootObject(_vatPowers) {
             async pushAmount(amount) {
               const value = AmountMath.getValue(feeKit.brand, amount);
               await bankCall({
-                type: 'VPURSE_GIVE_TO_FEE_COLLECTOR',
+                type: 'VBANK_GIVE_TO_FEE_COLLECTOR',
                 denom,
                 amount: `${value}`,
               });

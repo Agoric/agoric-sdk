@@ -1,4 +1,4 @@
-package dibc
+package vibc
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// NewHandler returns a handler for "dibc" type messages.
+// NewHandler returns a handler for "vibc" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		if vm.IsSimulation(ctx) {
@@ -25,7 +25,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 			return handleMsgSendPacket(ctx, keeper, msg)
 
 		default:
-			errMsg := fmt.Sprintf("Unrecognized dibc Msg type: %T", msg)
+			errMsg := fmt.Sprintf("Unrecognized vibc Msg type: %T", msg)
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}

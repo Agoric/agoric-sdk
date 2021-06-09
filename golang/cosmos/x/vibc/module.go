@@ -1,14 +1,13 @@
-package vpurse
+package vibc
 
 import (
 	"encoding/json"
-	stdlog "log"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vpurse/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,11 +16,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
 )
 
 // type check to ensure the interface is properly implemented
 var (
 	_ module.AppModule      = AppModule{}
+	_ porttypes.IBCModule   = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
@@ -45,16 +47,12 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 
 // DefaultGenesis returns default genesis state as raw bytes for the deployment
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(DefaultGenesisState())
+	return nil
 }
 
 // Validation check of the Genesis
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return err
-	}
-	return ValidateGenesis(&data)
+	return nil
 }
 
 // Register rest routes
@@ -100,73 +98,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	events := ctx.EventManager().GetABCIEventHistory()
-	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
-
-	ensureBalanceIsPresent := func(address string) error {
-		if _, ok := addressToBalance[address]; ok {
-			return nil
-		}
-		account, err := sdk.AccAddressFromBech32(address)
-		if err != nil {
-			return err
-		}
-		coins := am.keeper.GetAllBalances(ctx, account)
-		addressToBalance[address] = coins
-		return nil
-	}
-
-	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
-
-	### MsgSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | send               |
-	| message  | sender        | {senderAddress}    |
-
-	### MsgMultiSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | multisend          |
-	| message  | sender        | {senderAddress}    |
-	*/
-	for _, event := range events {
-		switch event.Type {
-		case "transfer":
-			for _, attr := range event.GetAttributes() {
-				switch string(attr.GetKey()) {
-				case "recipient", "sender":
-					address := string(attr.GetValue())
-					if err := ensureBalanceIsPresent(address); err != nil {
-						stdlog.Println("Cannot ensure vpurse balance for", address, err)
-					}
-				}
-			}
-		}
-	}
-
-	// Dump all the addressToBalances entries to SwingSet.
-	bz, err := marshalBalanceUpdate(addressToBalance)
-	if err != nil {
-		panic(err)
-	}
-	if bz != nil {
-		_, err := am.CallToController(ctx, string(bz))
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	return []abci.ValidatorUpdate{}
 }
 
@@ -199,14 +130,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	return InitGenesis(ctx, am.keeper, &genesisState)
+	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the ibc-transfer
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(gs)
+	return nil
 }

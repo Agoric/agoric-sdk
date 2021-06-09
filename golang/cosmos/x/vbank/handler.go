@@ -1,4 +1,4 @@
-package vpurse
+package vbank
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// NewHandler returns a handler for "vpurse" type messages.
+// NewHandler returns a handler for "vbank" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		if vm.IsSimulation(ctx) {
@@ -21,7 +21,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 
 		switch msg := msg.(type) {
 		default:
-			errMsg := fmt.Sprintf("Unrecognized vpurse Msg type: %T", msg)
+			errMsg := fmt.Sprintf("Unrecognized vbank Msg type: %T", msg)
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
