@@ -91,6 +91,11 @@ export function makeVatKeeper(
     return harden({ source, options });
   }
 
+  function getOptions() {
+    const options = JSON.parse(kvStore.get(`${vatID}.options`));
+    return harden(options);
+  }
+
   function nextDeliveryNum() {
     const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
@@ -398,6 +403,7 @@ export function makeVatKeeper(
   return harden({
     setSourceAndOptions,
     getSourceAndOptions,
+    getOptions,
     nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,

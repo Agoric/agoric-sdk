@@ -642,6 +642,24 @@ test('vatKeeper', async t => {
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 });
 
+test('vatKeeper.getOptions', async t => {
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
+  k.createStartingKernelState('local');
+
+  const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const vk = k.allocateVatKeeper(v1);
+  vk.setSourceAndOptions(
+    { bundleName: 'vattp' },
+    {
+      managerType: 'local',
+      name: 'fred',
+    },
+  );
+  const { name } = vk.getOptions();
+  t.is(name, 'fred');
+});
+
 test('XS vatKeeper defaultManagerType', async t => {
   const { kvStore, streamStore } = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(kvStore, streamStore);
