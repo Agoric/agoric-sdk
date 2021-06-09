@@ -508,17 +508,21 @@ test('kernelKeeper promises', async t => {
   const expectedRunqueue = [];
   const m1 = { method: 'm1', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
+  t.deepEqual(k.getKernelPromise(p1).refCount, 1);
   expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
   const m2 = { method: 'm2', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
+  t.deepEqual(k.getKernelPromise(p1).refCount, 2);
   expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   commitCrank();
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
+  // when we resolve the promise, all its queued messages are moved to the
+  // run-queue, and its refcount remains the same
   const capdata = harden({
     body: '{"@qclass":"slot","index":0}',
     slots: ['ko44'],
@@ -526,7 +530,7 @@ test('kernelKeeper promises', async t => {
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilled',
-    refCount: 0,
+    refCount: 2,
     data: capdata,
   });
   t.truthy(k.hasKernelPromise(p1));
@@ -541,14 +545,14 @@ test('kernelKeeper promises', async t => {
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
     ['gcActions', '[]'],
-    ['runQueue', '[]'],
+    ['runQueue', JSON.stringify(expectedRunqueue)],
     ['kd.nextID', '30'],
     ['ko.nextID', '20'],
     ['kp.nextID', '41'],
     ['kp40.data.body', '{"@qclass":"slot","index":0}'],
     ['kp40.data.slots', 'ko44'],
     ['kp40.state', 'fulfilled'],
-    ['kp40.refCount', '0'],
+    ['kp40.refCount', '2'],
     ['kernel.defaultManagerType', 'local'],
   ]);
 });
