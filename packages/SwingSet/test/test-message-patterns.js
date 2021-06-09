@@ -81,6 +81,7 @@ test.before(async t => {
       enablePipelining: true,
       enableSetup: true,
       managerType: 'local',
+      useTranscript: false,
     },
   };
   const moreVatTP = { bundle: kernelBundles.vattp };

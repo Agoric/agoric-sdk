@@ -290,6 +290,7 @@ export async function initializeSwingset(
       // non-local workers any time soon.
       enableSetup: true,
       managerType: 'local',
+      useTranscript: false,
     },
   };
 

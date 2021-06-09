@@ -19,7 +19,8 @@
     "botcomms": {
       "bundleName": "commsvat",
       "creationOptions": {
-        "enableSetup": true
+        "enableSetup": true,
+        "useTranscript": false
       }
     },
     "botvattp": {
@@ -31,7 +32,8 @@
     "usercomms": {
       "bundleName": "commsvat",
       "creationOptions": {
-        "enableSetup": true
+        "enableSetup": true,
+        "useTranscript": false
       }
     },
     "uservattp": {

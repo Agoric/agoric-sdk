@@ -37,6 +37,8 @@ function setup(storedTranscript = []) {
     kernelKeeper,
     vatSyscallHandler,
     workerCanBlock,
+    undefined,
+    true,
   );
   const { syscallFromWorker } = mk;
   function deliver(_delivery) {

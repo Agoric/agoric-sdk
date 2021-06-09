@@ -25,8 +25,9 @@
  *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
- *   virtualObjectCacheSize: number,
+ *   useTranscript?: boolean,
  *   vatParameters: Record<string, unknown>,
+ *   virtualObjectCacheSize: number,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  * } & (HasBundle | HasSetup)} ManagerOptions

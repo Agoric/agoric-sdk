@@ -55,6 +55,7 @@ export function makeXsSubprocessFactory({
       name,
       metered,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
@@ -67,6 +68,7 @@ export function makeXsSubprocessFactory({
       vatSyscallHandler,
       true,
       compareSyscalls,
+      useTranscript,
     );
 
     /** @type { (item: Tagged) => unknown } */
