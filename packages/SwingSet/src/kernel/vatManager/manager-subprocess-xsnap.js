@@ -20,13 +20,13 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: SyncHandler, metered?: boolean) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns { VatManagerFactory }
  *
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
- * @typedef { (msg: Uint8Array) => Uint8Array } SyncHandler
+ * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
  * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
  */
 export function makeXsSubprocessFactory({
@@ -96,8 +96,8 @@ export function makeXsSubprocessFactory({
       }
     }
 
-    /** @type { (msg: Uint8Array) => Uint8Array } */
-    function handleCommand(msg) {
+    /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
+    async function handleCommand(msg) {
       // parentLog('handleCommand', { length: msg.byteLength });
       const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
       return encoder.encode(JSON.stringify(tagged));

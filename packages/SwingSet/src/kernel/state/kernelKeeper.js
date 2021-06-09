@@ -646,7 +646,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
    * Note that currently we are only reference counting promises, but ultimately
    * we intend to keep track of all objects with kernel slots.
    *
-   * @param {string} kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
    * @param {string} _tag
    */
   function incrementRefCount(kernelSlot, _tag) {
