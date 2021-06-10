@@ -8732,6 +8732,10 @@ napi-thread-safe-callback@0.0.6:
   resolved "https://registry.yarnpkg.com/napi-thread-safe-callback/-/napi-thread-safe-callback-0.0.6.tgz#ef86a149b5312e480f74e89a614e6d9e3b17b456"
   integrity sha512-X7uHCOCdY4u0yamDxDrv3jF2NtYc8A1nvPzBQgvpoSX+WB3jAe2cVNsY448V1ucq7Whf9Wdy02HEUoLW5rJKWg==
 
+nat@agoric/nat#kris-endo:
+  version "4.0.0"
+  resolved "https://codeload.github.com/agoric/nat/tar.gz/4ed28287ec333dc0cd65d6dbb1f20efc2fde7825"
+
 natural-compare@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"

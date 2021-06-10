@@ -64,6 +64,9 @@
     "prettier": "^1.18.2",
     "typescript": "^4.2.3"
   },
+  "resolutions": {
+    "**/nat": "agoric/nat#kris-endo"
+  },
   "engines": {
     "node": ">=14.15.0"
   },
