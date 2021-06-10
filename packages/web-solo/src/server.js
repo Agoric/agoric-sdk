@@ -1,6 +1,8 @@
 /* global __dirname require setTimeout clearTimeout process */
 // Start a network service
 import http from 'http';
+import https from 'https';
+import fs from 'fs';
 import { createConnection } from 'net';
 import express from 'express';
 import anylogger from 'anylogger';
@@ -24,7 +26,19 @@ app.use(
   }),
 );
 app.use(express.json()); // parse application/json
-const server = http.createServer(app);
+
+let server;
+
+const lh = `${process.env.HOME}/Library/Application Support/https-localhost/localhost`;
+let IS_HTTPS = false;
+if (0 && fs.existsSync(`${lh}.key`) && fs.existsSync(`${lh}.crt`)) {
+  IS_HTTPS = true;
+  const cert = fs.readFileSync(`${lh}.crt`).toString('utf-8');
+  const key = fs.readFileSync(`${lh}.key`).toString('utf-8');
+  server = https.createServer({ cert, key }, app);
+} else {
+  server = http.createServer(app);
+}
 
 // serve the static HTML
 app.use(express.static(`${__dirname}/../public`));
@@ -54,7 +68,12 @@ const doListen = async (host, port) => {
     });
   });
 
-  server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
+  server.listen(port, host, () =>
+    log.info(
+      'Listening on',
+      `${IS_HTTPS ? 'https' : 'http'}://${host}:${port}`,
+    ),
+  );
 };
 
 doListen('localhost', process.env.PORT || '3000');

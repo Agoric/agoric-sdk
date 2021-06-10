@@ -34,6 +34,7 @@ self.addEventListener('connect', bootEv => {
 
     switch (ev.data[0]) {
       case 'initStore': {
+        parentPort.postMessage(['count', count]);
         if (storePort) {
           return;
         }
