@@ -6,7 +6,6 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { bar } from '@agoric/bundle-source/demo/circular/b';
 import { buildParamManager, ParamType } from '../src/param-manager';
 
 const BASIS_POINTS = 10_000;
