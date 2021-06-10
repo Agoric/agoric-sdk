@@ -31,7 +31,7 @@
     "@agoric/bundle-source": "^1.3.7",
     "@agoric/captp": "^1.7.13",
     "@agoric/install-ses": "^0.5.13",
-    "@agoric/nat": "^4.0.0",
+    "@agoric/nat": "^4.1.0",
     "@agoric/promise-kit": "^0.2.13",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",

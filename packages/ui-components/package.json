@@ -8,7 +8,7 @@
     "@agoric/ertp": "^0.11.2",
     "@agoric/eventual-send": "^0.13.14",
     "@agoric/install-ses": "^0.5.13",
-    "@agoric/nat": "^4.0.0",
+    "@agoric/nat": "^4.1.0",
     "@agoric/zoe": "^0.15.7",
     "clsx": "^1.1.1"
   },
