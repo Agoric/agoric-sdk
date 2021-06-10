@@ -14,7 +14,11 @@ import { assertRightsConserved } from './rightsConservation';
 import { addToAllocation, subtractFromAllocation } from './allocationMath';
 
 /** @type {CreateSeatManager} */
-export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
+export const createSeatManager = (
+  zoeInstanceAdmin,
+  getAssetKindByBrand,
+  zcfAssert,
+) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
   /** @type {Store<ZCFSeat, Allocation>} */
@@ -146,27 +150,29 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
       X`At least one seat has a staged allocation but was not included in the call to reallocate`,
     );
 
-    // No side effects above. All conditions checked which could have
-    // caused us to reject this reallocation.
-    // COMMIT POINT
-    // All the effects below must succeed "atomically". Scare quotes because
-    // the eventual send at the bottom is part of this "atomicity" even
-    // though its effects happen later. The send occurs in the order of
-    // updates from zcf to zoe, its effects must occur immediately in zoe
-    // on reception, and must not fail.
-    //
-    // Commit the staged allocations (currentAllocation is replaced
-    // for each of the seats) and inform Zoe of the
-    // newAllocation.
+    zcfAssert.notThrows(() => {
+      // No side effects above. All conditions checked which could have
+      // caused us to reject this reallocation.
+      // COMMIT POINT
+      // All the effects below must succeed "atomically". Scare quotes because
+      // the eventual send at the bottom is part of this "atomicity" even
+      // though its effects happen later. The send occurs in the order of
+      // updates from zcf to zoe, its effects must occur immediately in zoe
+      // on reception, and must not fail.
+      //
+      // Commit the staged allocations (currentAllocation is replaced
+      // for each of the seats) and inform Zoe of the
+      // newAllocation.
 
-    seats.forEach(commitStagedAllocation);
+      seats.forEach(commitStagedAllocation);
 
-    const seatHandleAllocations = seats.map(seat => {
-      const seatHandle = zcfSeatToSeatHandle.get(seat);
-      return { seatHandle, allocation: seat.getCurrentAllocation() };
+      const seatHandleAllocations = seats.map(seat => {
+        const seatHandle = zcfSeatToSeatHandle.get(seat);
+        return { seatHandle, allocation: seat.getCurrentAllocation() };
+      });
+
+      E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     });
-
-    E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
   };
 
   const reallocate = (/** @type {ZCFSeat[]} */ ...seats) => {
@@ -200,6 +206,7 @@ export const createSeatManager = (zoeInstanceAdmin, getAssetKindByBrand) => {
       );
     });
 
+    // Note COMMIT POINT within reallocateInternal
     reallocateInternal(seats);
   };
 

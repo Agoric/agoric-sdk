@@ -20,6 +20,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
+ * @param {Assert} fatalAssert
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -27,6 +28,7 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
+  fatalAssert,
 ) => {
   /** @type {WeakStore<Payment, Amount>} */
   const paymentLedger = makeWeakStore('payment');
@@ -111,16 +113,15 @@ export const makePaymentLedger = (
       X`rights were not conserved: ${total} vs ${newTotal}`,
     );
 
-    // commit point
-    payments.forEach(payment => paymentLedger.delete(payment));
+    return fatalAssert.notThrows(() => {
+      // COMMIT POINT
+      payments.forEach(payment => paymentLedger.delete(payment));
 
     const newPayments = newPaymentBalances.map(balance => {
       const newPayment = makePayment(allegedName, brand);
       paymentLedger.init(newPayment, balance);
       return newPayment;
     });
-
-    return harden(newPayments);
   };
 
   /** @type {IssuerIsLive} */
@@ -144,8 +145,10 @@ export const makePaymentLedger = (
       assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
       assertAmountConsistent(paymentBalance, optAmount);
-      // Commit point.
-      paymentLedger.delete(payment);
+      fatalAssert.notThrows(() => {
+        // COMMIT POINT.
+        paymentLedger.delete(payment);
+      });
       return paymentBalance;
     });
   };
@@ -156,7 +159,7 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountConsistent(srcPaymentBalance, optAmount);
-      // Commit point.
+      // Note COMMIT POINT within reallocate.
       const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
       return payment;
     });
@@ -172,7 +175,7 @@ export const makePaymentLedger = (
         .map(paymentLedger.get)
         .reduce(add, emptyAmount);
       assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Commit point.
+      // Note COMMIT POINT within reallocate.
       const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
       return payment;
     });
@@ -186,7 +189,7 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Commit point
+      // Note COMMIT POINT within reallocate.
       const newPayments = reallocate(
         [srcPayment],
         [paymentAmountA, paymentAmountB],
@@ -200,7 +203,7 @@ export const makePaymentLedger = (
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       amounts = amounts.map(coerce);
-      // Commit point
+      // Note COMMIT POINT within reallocate.
       const newPayments = reallocate([srcPayment], amounts);
       return newPayments;
     });
@@ -241,11 +244,13 @@ export const makePaymentLedger = (
     // Note: this does not guarantee that optAmount itself is a valid stable amount
     assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
-    // Commit point
-    // Move the assets in `srcPayment` into this purse, using up the
-    // source payment, such that total assets are conserved.
-    paymentLedger.delete(srcPayment);
-    updatePurseBalance(newPurseBalance);
+    fatalAssert.notThrows(() => {
+      // COMMIT POINT
+      // Move the assets in `srcPayment` into this purse, using up the
+      // source payment, such that total assets are conserved.
+      paymentLedger.delete(srcPayment);
+      updatePurseBalance(newPurseBalance);
+    });
     return srcPaymentBalance;
   };
 
@@ -263,7 +268,7 @@ export const makePaymentLedger = (
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
     const payment = makePayment(allegedName, brand);
-    // Commit point
+    // COMMIT POINT
     // Move the withdrawn assets from this purse into a new payment
     // which is returned. Total assets must remain conserved.
     updatePurseBalance(newPurseBalance);

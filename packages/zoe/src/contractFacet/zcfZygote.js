@@ -42,12 +42,23 @@ export const makeZCFZygote = (
     instantiate: instantiateIssuerStorage,
   } = makeIssuerStorage();
 
+  const shutdownWithFailure = reason => {
+    E(zoeInstanceAdmin).failAllSeats(reason);
+    // eslint-disable-next-line no-use-before-define
+    dropAllReferences();
+    // @ts-ignore powers is not typed correctly:
+    // https://github.com/Agoric/agoric-sdk/issues/3239
+    powers.exitVatWithFailure(reason);
+  };
+
+  const zcfAssert = makeAssert(shutdownWithFailure);
+
   const {
     makeZCFSeat,
     reallocate,
     reallocateInternal,
     dropAllReferences,
-  } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand);
+  } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand, zcfAssert);
 
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
 
@@ -151,11 +162,12 @@ export const makeZCFZygote = (
         zcfSeat.incrementBy(gains);
         // verifies offer safety
         assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
-        // No effects above. COMMIT POINT. The following two steps
+        // No effects above. The following two steps
         // *should* be committed atomically, but it is not a
         // disaster if they are not. If we minted only, no one would
         // ever get those invisibly-minted assets.
         E(zoeMintP).mintAndEscrow(totalToMint);
+        // Note COMMIT POINT within reallocateInternal.
         reallocateInternal([zcfSeat]);
         return zcfSeat;
       },
@@ -165,7 +177,9 @@ export const makeZCFZygote = (
         zcfSeat.decrementBy(losses);
         // verifies offer safety
         assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
-        // No effects above. Commit point. The following two steps
+        // No effects above.
+        // Note COMMIT POINT within reallocateInternal.
+        // The following two steps
         // *should* be committed atomically, but it is not a disaster
         // if they are not. If we only commit the stagedAllocation no
         // one would ever get the unburned assets.
@@ -174,13 +188,6 @@ export const makeZCFZygote = (
       },
     });
     return zcfMint;
-  };
-
-  const shutdownWithFailure = reason => {
-    E(zoeInstanceAdmin).failAllSeats(reason);
-    dropAllReferences();
-    // @ts-ignore powers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239
-    powers.exitVatWithFailure(reason);
   };
 
   /** @type {ContractFacet} */
@@ -225,7 +232,7 @@ export const makeZCFZygote = (
       powers.exitVat(completion);
     },
     shutdownWithFailure,
-    assert: makeAssert(shutdownWithFailure),
+    assert: zcfAssert,
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
     makeEmptySeatKit,

@@ -255,13 +255,14 @@
 
 /**
  *
- * @callback CreateSeatManager 
+ * @callback CreateSeatManager
  *
  * The SeatManager holds the active zcfSeats and can reallocate and
  * make new zcfSeats.
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {Assert} zcfAssert
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,

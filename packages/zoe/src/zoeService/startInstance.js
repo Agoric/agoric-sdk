@@ -43,7 +43,7 @@ export const makeStartInstance = (
     );
     // AWAIT ///
 
-    const { adminNode, root } = await zoeInstanceStorageManager.createZCFVat();
+    const { adminNode, root } = await zoeInstanceStorageManager;
     /** @type {ZCFRoot} */
     const zcfRoot = root;
 
