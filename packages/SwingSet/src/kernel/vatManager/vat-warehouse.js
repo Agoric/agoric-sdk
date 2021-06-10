@@ -52,8 +52,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
-    const vatKeeper =
-      kernelKeeper.getVatKeeper(vatID) || kernelKeeper.allocateVatKeeper(vatID);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { source, options } = vatKeeper.getSourceAndOptions();
 
     const translators = provideTranslators(vatID);
@@ -108,14 +107,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     // instantiate all static vats
     for (const [name, vatID] of kernelKeeper.getStaticVats()) {
-      logStartup(`allocateVatKeeper for vat ${name} as vat ${vatID}`);
+      logStartup(`provideVatKeeper for vat ${name} as vat ${vatID}`);
       // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
     }
 
     // instantiate all dynamic vats
     for (const vatID of kernelKeeper.getDynamicVats()) {
-      logStartup(`allocateVatKeeper for dynamic vat ${vatID}`);
+      logStartup(`provideVatKeeper for dynamic vat ${vatID}`);
       // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
     }
@@ -124,7 +123,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /**
    * @param { string } vatID
    * @returns {{ enablePipelining?: boolean }
-   *  | void // undefined if the vat is dead or never initialized
+   *  | undefined // if the vat is dead or never initialized
    * }
    */
   function lookup(vatID) {
@@ -133,14 +132,12 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       const { enablePipelining } = liveInfo;
       return { enablePipelining };
     }
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    if (vatKeeper) {
-      const {
-        options: { enablePipelining },
-      } = vatKeeper.getSourceAndOptions();
-      return { enablePipelining };
+    if (!kernelKeeper.vatIsAlive(vatID)) {
+      return undefined;
     }
-    return undefined;
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const { enablePipelining } = vatKeeper.getOptions();
+    return { enablePipelining };
   }
 
   /**
@@ -156,11 +153,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     if (!info) return undefined;
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
-    const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-    if (vatKeeper) {
-      // not terminated
-      vatKeeper.closeTranscript();
-    }
+    kernelKeeper.closeVatTranscript(vatID);
+    kernelKeeper.evictVatKeeper(vatID);
 
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();

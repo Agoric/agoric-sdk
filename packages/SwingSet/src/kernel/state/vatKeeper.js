@@ -91,6 +91,11 @@ export function makeVatKeeper(
     return harden({ source, options });
   }
 
+  function getOptions() {
+    const options = JSON.parse(kvStore.get(`${vatID}.options`));
+    return harden(options);
+  }
+
   function nextDeliveryNum() {
     const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
@@ -234,7 +239,7 @@ export function makeVatKeeper(
       } else {
         assert.fail(X`unknown type ${type}`);
       }
-      incrementRefCount(kernelSlot, `${vatID}[kv|clist`);
+      incrementRefCount(kernelSlot, `${vatID}|kv|clist`);
       const vatSlot = makeVatSlot(type, false, id);
 
       const vatKey = `${vatID}.c.${vatSlot}`;
@@ -346,13 +351,6 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
   }
 
-  /**
-   * Cease writing to the vat's transcript.
-   */
-  function closeTranscript() {
-    streamStore.closeStream(transcriptStream);
-  }
-
   function vatStats() {
     function getCount(key, first) {
       const id = Nat(BigInt(kvStore.get(key)));
@@ -398,6 +396,7 @@ export function makeVatKeeper(
   return harden({
     setSourceAndOptions,
     getSourceAndOptions,
+    getOptions,
     nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,
@@ -411,7 +410,6 @@ export function makeVatKeeper(
     deleteCListEntriesForKernelSlots,
     getTranscript,
     addToTranscript,
-    closeTranscript,
     vatStats,
     dumpState,
   });

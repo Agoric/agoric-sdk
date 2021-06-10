@@ -10,7 +10,7 @@ import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
  * objects
  */
 function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
   // msg is { method, args, result }, all slots are kernel-centric
@@ -105,7 +105,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
  * objects
  */
 function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   const { mapVatSlotToKernelSlot } = vatKeeper;
 
   function translateSend(targetSlot, msg) {
@@ -319,7 +319,7 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
   vatID,
   kernelKeeper,
 ) {
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
 

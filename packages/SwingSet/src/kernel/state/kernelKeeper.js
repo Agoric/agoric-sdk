@@ -10,6 +10,7 @@ import {
   parseKernelSlot,
 } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
+import { insistMessage } from '../../message';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
 import {
@@ -135,9 +136,9 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kernelStats[`${key}Max`] = 0;
   });
 
-  function incStat(stat) {
+  function incStat(stat, delta = 1) {
     assert.typeof(kernelStats[stat], 'number');
-    kernelStats[stat] += 1;
+    kernelStats[stat] += delta;
     const maxStat = `${stat}Max`;
     if (
       kernelStats[maxStat] !== undefined &&
@@ -147,7 +148,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     const upStat = `${stat}Up`;
     if (kernelStats[upStat] !== undefined) {
-      kernelStats[upStat] += 1;
+      kernelStats[upStat] += delta;
     }
   }
 
@@ -419,6 +420,30 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   function resolveKernelPromise(kernelSlot, rejected, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
+
+    let idx = 0;
+    for (const dataSlot of capdata.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
+
+    // Re-queue all messages, so they can be delivered to the resolution.
+    // This is a lateral move, so we retain their original refcounts. TODO:
+    // this is slightly lazy, sending the message back to the same promise
+    // that just got resolved. When this message makes it to the front of the
+    // run-queue, we'll look up the resolution. Instead, we could maybe look
+    // up the resolution *now* and set the correct target early. Doing that
+    // might make it easier to remove the Promise Table entry earlier.
+    const p = getKernelPromise(kernelSlot);
+    const runQueue = JSON.parse(getRequired('runQueue'));
+    for (const msg of p.queue) {
+      const entry = harden({ type: 'send', target: kernelSlot, msg });
+      runQueue.push(entry);
+    }
+    kvStore.set('runQueue', JSON.stringify(runQueue));
+    incStat('runQueueLength', p.queue.length);
+
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
 
@@ -510,6 +535,28 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
     insistKernelType('promise', kernelSlot);
+    insistMessage(msg);
+
+    // Each message on a promise's queue maintains a refcount to the promise
+    // itself. This isn't strictly necessary (the promise will be kept alive
+    // by the deciding vat's clist, or the queued message that holds this
+    // promise as its result), but it matches our policy with run-queue
+    // messages (each holds a refcount on its target), and makes it easier to
+    // transfer these messages back to the run-queue in
+    // resolveKernelPromise() (which doesn't touch any of the refcounts).
+
+    // eslint-disable-next-line no-use-before-define
+    incrementRefCount(kernelSlot, `pq|${kernelSlot}|t`);
+    if (msg.result) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(msg.result, `pq|${kernelSlot}|r`);
+    }
+    let idx = 0;
+    for (const kref of msg.args.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(kref, `pq|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
 
     const p = getKernelPromise(kernelSlot);
     assert(
@@ -703,17 +750,15 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     deadKernelPromises.clear();
   }
 
-  function getVatKeeper(vatID) {
+  function provideVatKeeper(vatID) {
     insistVatID(vatID);
-    return ephemeral.vatKeepers.get(vatID);
-  }
-
-  function allocateVatKeeper(vatID) {
-    insistVatID(vatID);
+    const found = ephemeral.vatKeepers.get(vatID);
+    if (found !== undefined) {
+      return found;
+    }
     if (!kvStore.has(`${vatID}.o.nextID`)) {
       initializeVatState(kvStore, streamStore, vatID);
     }
-    assert(!ephemeral.vatKeepers.has(vatID), X`vatID ${vatID} already defined`);
     const vk = makeVatKeeper(
       kvStore,
       streamStore,
@@ -730,6 +775,33 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     );
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;
+  }
+
+  function vatIsAlive(vatID) {
+    insistVatID(vatID);
+    return kvStore.has(`${vatID}.o.nextID`);
+  }
+
+  /**
+   * Cease writing to the vat's transcript.
+   *
+   * @param { string } vatID
+   */
+  function closeVatTranscript(vatID) {
+    insistVatID(vatID);
+    const transcriptStream = `transcript-${vatID}`;
+    streamStore.closeStream(transcriptStream);
+  }
+
+  /**
+   * NOTE: caller is responsible to closeVatTranscript()
+   * before evicting a VatKeeper.
+   *
+   * @param {string} vatID
+   */
+  function evictVatKeeper(vatID) {
+    insistVatID(vatID);
+    ephemeral.vatKeepers.delete(vatID);
   }
 
   function getAllVatIDs() {
@@ -793,7 +865,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     // TODO maintain an index instead of scanning every single vat
     const importers = [];
     function doesImport(vatID) {
-      return getVatKeeper(vatID).importsKernelSlot(koid);
+      return provideVatKeeper(vatID).importsKernelSlot(koid);
     }
     importers.push(...getDynamicVats().filter(doesImport));
     importers.push(
@@ -814,11 +886,11 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     const kernelTable = [];
 
     for (const vatID of getAllVatIDs()) {
-      const vk = getVatKeeper(vatID);
+      const vk = provideVatKeeper(vatID);
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
-        vk.closeTranscript();
+        closeVatTranscript(vatID);
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },
@@ -933,8 +1005,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
-    allocateVatKeeper,
-    getVatKeeper,
+    provideVatKeeper,
+    vatIsAlive,
+    evictVatKeeper,
+    closeVatTranscript,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,

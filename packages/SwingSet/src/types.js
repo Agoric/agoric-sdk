@@ -105,10 +105,8 @@
  *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { { getTranscript: (startPos?: Object) => TranscriptEntry[],
- *              vatStats: () => VatStats,
- *             } } VatKeeper
- * @typedef { { getVatKeeper: (vatID: string) => VatKeeper } } KernelKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
  * @typedef { { write: ({}) => void,
  *             } } KernelSlog
  *

@@ -1097,7 +1097,7 @@ test('non-pipelined promise queueing', async t => {
       id: p1ForKernel,
       state: 'unresolved',
       policy: 'ignore',
-      refCount: 2,
+      refCount: 3,
       decider: vatB,
       subscribers: [],
       queue: [
@@ -1112,7 +1112,7 @@ test('non-pipelined promise queueing', async t => {
       id: p2ForKernel,
       state: 'unresolved',
       policy: 'ignore',
-      refCount: 1,
+      refCount: 3,
       decider: undefined,
       subscribers: [],
       queue: [
@@ -1127,7 +1127,7 @@ test('non-pipelined promise queueing', async t => {
       id: p3ForKernel,
       state: 'unresolved',
       policy: 'ignore',
-      refCount: 1,
+      refCount: 2,
       decider: undefined,
       subscribers: [],
       queue: [],

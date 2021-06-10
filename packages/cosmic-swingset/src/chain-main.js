@@ -244,8 +244,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   let blockManager;
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
-    if (action.ibcPort) {
-      portNums.dibc = action.ibcPort;
+    if (action.vibcPort) {
+      portNums.dibc = action.vibcPort;
     }
 
     if (action.storagePort) {
@@ -254,8 +254,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.storage = action.storagePort;
     }
 
-    if (action.vpursePort) {
-      portNums.bank = action.vpursePort;
+    if (action.vbankPort) {
+      portNums.bank = action.vbankPort;
     }
 
     if (!blockManager) {
