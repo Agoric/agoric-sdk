@@ -5,6 +5,8 @@ import '@agoric/zoe/exported';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
+import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { bar } from '@agoric/bundle-source/demo/circular/b';
 import { buildParamManager, ParamType } from '../src/param-manager';
 
 const BASIS_POINTS = 10_000;
@@ -160,4 +162,41 @@ test('params one brand', async t => {
     },
     'value should be a brand',
   );
+});
+
+test('params one handle', async t => {
+  const fooHandle = makeHandle('foo');
+  const barHandle = makeHandle('bar');
+  const { publicFacet, manager } = buildParamManager([
+    {
+      name: 'handle',
+      value: fooHandle,
+      type: ParamType.HANDLE,
+    },
+  ]);
+  t.deepEqual(publicFacet.lookup('handle'), fooHandle);
+  manager.update('handle', barHandle);
+  t.deepEqual(publicFacet.lookup('handle'), barHandle);
+
+  t.throws(
+    () => manager.update('handle', 18.1),
+    {
+      message: 'value for "handle" must be an empty object, was 18.1',
+    },
+    'value for "handle" must be an empty object, was 18.1',
+  );
+});
+
+test('params one any', async t => {
+  const fooHandle = makeHandle('foo');
+  const { publicFacet, manager } = buildParamManager([
+    {
+      name: 'stuff',
+      value: fooHandle,
+      type: ParamType.ANY,
+    },
+  ]);
+  t.deepEqual(publicFacet.lookup('stuff'), fooHandle);
+  manager.update('stuff', 18.1);
+  t.deepEqual(publicFacet.lookup('stuff'), 18.1);
 });
