@@ -17,10 +17,11 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
+import engineGC from './engine-gc';
 import { WeakRef, FinalizationRegistry } from './weakref';
 import { startSubprocessWorker } from './spawnSubprocessWorker';
 import { waitUntilQuiescent } from './waitUntilQuiescent';
-import { gcAndFinalize } from './gc-and-finalize';
+import { makeGcAndFinalize } from './gc-and-finalize';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
 import { parseVatSlot } from './parseVatSlots';
@@ -123,6 +124,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
  *   testTrackDecref?: unknown,
+ *   warehousePolicy?: { maxVatsOnline?: number },
  *   snapstorePath?: string,
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
@@ -147,6 +149,7 @@ export async function makeSwingsetController(
     slogFile,
     snapstorePath,
     spawn = ambientSpawn,
+    warehousePolicy = {},
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -272,7 +275,7 @@ export async function makeSwingsetController(
     const supercode = require.resolve(
       './kernel/vatManager/supervisor-subprocess-node.js',
     );
-    const args = ['--expose-gc', '-r', 'esm', supercode];
+    const args = ['-r', 'esm', supercode];
     return startSubprocessWorker(process.execPath, args);
   }
 
@@ -299,10 +302,11 @@ export async function makeSwingsetController(
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
-    gcAndFinalize,
+    gcAndFinalize: makeGcAndFinalize(engineGC),
   };
 
-  const kernelOptions = { verbose };
+  const kernelOptions = { verbose, warehousePolicy };
+  /** @type { ReturnType<typeof import('./kernel').default> } */
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -310,6 +314,13 @@ export async function makeSwingsetController(
   }
 
   await kernel.start();
+
+  /**
+   * @param {T} x
+   * @returns {T}
+   * @template T
+   */
+  const defensiveCopy = x => JSON.parse(JSON.stringify(x));
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
@@ -321,7 +332,7 @@ export async function makeSwingsetController(
     writeSlogObject,
 
     dump() {
-      return JSON.parse(JSON.stringify(kernel.dump()));
+      return defensiveCopy(kernel.dump());
     },
 
     verboseDebugMode(flag) {
@@ -341,7 +352,11 @@ export async function makeSwingsetController(
     },
 
     getStats() {
-      return JSON.parse(JSON.stringify(kernel.getStats()));
+      return defensiveCopy(kernel.getStats());
+    },
+
+    getStatus() {
+      return defensiveCopy(kernel.getStatus());
     },
 
     // these are for tests
@@ -392,6 +407,7 @@ export async function makeSwingsetController(
  *   slogCallbacks?: unknown,
  *   testTrackDecref?: unknown,
  *   snapstorePath?: string,
+ *   warehousePolicy?: { maxVatsOnline?: number },
  * }} runtimeOptions
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  */
@@ -407,12 +423,14 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     snapstorePath,
+    warehousePolicy,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
     slogCallbacks,
     snapstorePath,
+    warehousePolicy,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;

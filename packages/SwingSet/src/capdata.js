@@ -9,7 +9,7 @@ import { assert, details as X } from '@agoric/assert';
  * @param {any} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {asserts capdata is CapData}
+ * @returns {asserts capdata is CapData<unknown>}
  */
 export function insistCapData(capdata) {
   assert.typeof(

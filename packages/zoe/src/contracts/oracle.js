@@ -7,7 +7,6 @@ import { AmountMath } from '@agoric/ertp';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { trade } from '../contractSupport';
 
 /**
  * This contract provides oracle queries for a fee or for free.
@@ -34,7 +33,9 @@ const start = async zcf => {
         const gains = total
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
-        trade(zcf, { seat: feeSeat, gains: {} }, { seat, gains });
+
+        seat.incrementBy(feeSeat.decrementBy(gains));
+        zcf.reallocate(seat, feeSeat);
         seat.exit();
         return 'Successfully withdrawn';
       }, 'withdraw');
@@ -45,11 +46,8 @@ const start = async zcf => {
     makeShutdownInvitation: () => {
       const shutdown = seat => {
         revoked = true;
-        trade(
-          zcf,
-          { seat: feeSeat, gains: {} },
-          { seat, gains: feeSeat.getCurrentAllocation() },
-        );
+        seat.incrementBy(feeSeat.decrementBy(feeSeat.getCurrentAllocation()));
+        zcf.reallocate(seat, feeSeat);
         zcf.shutdown(revokedMsg);
       };
       return zcf.makeInvitation(shutdown, 'shutdown');
@@ -86,11 +84,8 @@ const start = async zcf => {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
-            trade(
-              zcf,
-              { seat: querySeat, gains: {} },
-              { seat: feeSeat, gains: { Fee: requiredFee } },
-            );
+            feeSeat.incrementBy(querySeat.decrementBy({ Fee: requiredFee }));
+            zcf.reallocate(feeSeat, querySeat);
           }
           querySeat.exit();
           E(handler).onReply(query, reply, requiredFee);

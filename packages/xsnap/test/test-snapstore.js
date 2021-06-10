@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -68,9 +69,10 @@ test('build temp file; compress to cache file', async t => {
     'temp file should have been deleted after withTempName',
   );
   const dest = path.resolve(pool.name, `${hash}.gz`);
-  t.truthy(fs.existsSync(dest));
+  t.truthy(fs.existsSync(dest), 'save() produces file named after hash');
   const gz = fs.readFileSync(dest);
-  t.is(gz.toString('hex'), '1f8b08000000000000034b4c4a0600c241243503000000');
+  const contents = zlib.gunzipSync(gz);
+  t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
 });
 
 test('bootstrap, save, compress', async t => {

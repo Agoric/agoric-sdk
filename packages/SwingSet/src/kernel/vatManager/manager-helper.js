@@ -112,14 +112,18 @@ function makeManagerKit(
   vatSyscallHandler,
   workerCanBlock,
   compareSyscalls,
+  useTranscript,
 ) {
   assert(kernelSlog);
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-  const transcriptManager = makeTranscriptManager(
-    vatKeeper,
-    vatID,
-    compareSyscalls,
-  );
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+  let transcriptManager;
+  if (useTranscript) {
+    transcriptManager = makeTranscriptManager(
+      vatKeeper,
+      vatID,
+      compareSyscalls,
+    );
+  }
 
   /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
   let deliverToWorker;
@@ -138,7 +142,9 @@ function makeManagerKit(
    * @returns { Promise<VatDeliveryResult> }
    */
   async function deliver(delivery) {
-    transcriptManager.startDispatch(delivery);
+    if (transcriptManager) {
+      transcriptManager.startDispatch(delivery);
+    }
     /** @type { VatDeliveryResult } */
     const status = await deliverToWorker(delivery).catch(err =>
       harden(['error', err.message, null]),
@@ -146,11 +152,14 @@ function makeManagerKit(
     insistVatDeliveryResult(status);
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
-    transcriptManager.finishDispatch();
+    if (transcriptManager) {
+      transcriptManager.finishDispatch();
+    }
     return status;
   }
 
   async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
+    assert(transcriptManager, `delivery replay with no transcript`);
     transcriptManager.startReplay();
     transcriptManager.startReplayDelivery(expectedSyscalls);
     kernelSlog.write({
@@ -167,20 +176,22 @@ function makeManagerKit(
   }
 
   async function replayTranscript() {
-    const total = vatKeeper.vatStats().transcriptCount;
-    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-    let deliveryNum = 0;
-    for (const t of vatKeeper.getTranscript()) {
-      // if (deliveryNum % 100 === 0) {
-      //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
-      // }
-      //
-      // eslint-disable-next-line no-await-in-loop
-      await replayOneDelivery(t.d, t.syscalls, deliveryNum);
-      deliveryNum += 1;
+    if (transcriptManager) {
+      const total = vatKeeper.vatStats().transcriptCount;
+      kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
+      let deliveryNum = 0;
+      for (const t of vatKeeper.getTranscript()) {
+        // if (deliveryNum % 100 === 0) {
+        //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
+        // }
+        //
+        // eslint-disable-next-line no-await-in-loop
+        await replayOneDelivery(t.d, t.syscalls, deliveryNum);
+        deliveryNum += 1;
+      }
+      transcriptManager.checkReplayError();
+      kernelSlog.write({ type: 'finish-replay', vatID });
     }
-    transcriptManager.checkReplayError();
-    kernelSlog.write({ type: 'finish-replay', vatID });
   }
 
   /**
@@ -194,7 +205,7 @@ function makeManagerKit(
    * @returns { VatSyscallResult }
    */
   function syscallFromWorker(vso) {
-    if (transcriptManager.inReplay()) {
+    if (transcriptManager && transcriptManager.inReplay()) {
       // We're replaying old messages to bring the vat's internal state
       // up-to-date. It will make syscalls like a puppy chasing rabbits in
       // its sleep. Gently prevent their twitching paws from doing anything.
@@ -211,7 +222,9 @@ function makeManagerKit(
       if (data && !workerCanBlock) {
         console.log(`warning: syscall returns data, but worker cannot get it`);
       }
-      transcriptManager.addSyscall(vso, data);
+      if (transcriptManager) {
+        transcriptManager.addSyscall(vso, data);
+      }
     }
     return vres;
   }

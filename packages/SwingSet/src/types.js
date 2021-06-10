@@ -16,14 +16,16 @@
  *   enableSetup: true,
  * }} HasSetup
  *
- * TODO: metered...
- *
+ * TODO: liveSlotsConsole...
  * See validateManagerOptions() in factory.js
+ *
  * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
  * @typedef {{
+ *   enablePipelining?: boolean,
  *   managerType: ManagerType,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
+ *   useTranscript?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
@@ -103,10 +105,8 @@
  *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { { getTranscript: (startPos?: Object) => TranscriptEntry[],
- *              vatStats: () => VatStats,
- *             } } VatKeeper
- * @typedef { { getVatKeeper: (vatID: string) => VatKeeper } } KernelKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
  * @typedef { { write: ({}) => void,
  *             } } KernelSlog
  *
@@ -116,7 +116,7 @@
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: () => void,
+ *              replayTranscript: () => Promise<void>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { () => Promise<void> } WaitUntilQuiescent

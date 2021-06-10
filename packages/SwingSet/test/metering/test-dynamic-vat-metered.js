@@ -1,4 +1,7 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';
@@ -80,7 +83,7 @@ async function runOneTest(t, explosion, managerType) {
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
   t.is(kvStore.get(`${root}.owner`), vatID);
-  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 10);
+  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 11);
   // neverKPID should still be unresolved
   t.is(kvStore.get(`${neverKPID}.state`), 'unresolved');
 

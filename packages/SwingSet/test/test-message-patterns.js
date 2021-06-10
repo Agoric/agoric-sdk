@@ -81,6 +81,7 @@ test.before(async t => {
       enablePipelining: true,
       enableSetup: true,
       managerType: 'local',
+      useTranscript: false,
     },
   };
   const moreVatTP = { bundle: kernelBundles.vattp };
@@ -137,6 +138,9 @@ export async function runVatsInComms(t, name) {
   const devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: ['A', 'B', 'C'],
+      },
     },
   };
   const config = { ...commsConfig, devices };

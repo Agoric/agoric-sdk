@@ -1,0 +1,11 @@
+syntax = "proto3";
+package agoric.vbank;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
+
+message GenesisState {
+    option (gogoproto.equal) = false;
+
+}

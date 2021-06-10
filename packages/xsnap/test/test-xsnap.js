@@ -160,6 +160,19 @@ test('bigint map key', async t => {
   t.deepEqual(opts.messages, ['"abc"']);
 });
 
+test('bigint toString', async t => {
+  const opts = options();
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    const txt = \`number: 1 2 3 bigint: \${0n} \${1n} \${BigInt(2)} \${BigInt(3)} .\`;
+    send(txt)
+  `);
+  t.deepEqual(opts.messages, ['"number: 1 2 3 bigint: 0 1 2 3 ."']);
+});
+
+
 test('keyword in destructuring', async t => {
   const opts = options();
   const vat = xsnap(opts);

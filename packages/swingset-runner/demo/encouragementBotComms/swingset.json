@@ -1,5 +1,6 @@
 {
   "bootstrap": "bootstrap",
+  "loopboxSenders": ["user", "bot"],
   "bundles": {
     "commsvat": {
       "sourceSpec": "vat-comms.js"
@@ -18,7 +19,8 @@
     "botcomms": {
       "bundleName": "commsvat",
       "creationOptions": {
-        "enableSetup": true
+        "enableSetup": true,
+        "useTranscript": false
       }
     },
     "botvattp": {
@@ -30,7 +32,8 @@
     "usercomms": {
       "bundleName": "commsvat",
       "creationOptions": {
-        "enableSetup": true
+        "enableSetup": true,
+        "useTranscript": false
       }
     },
     "uservattp": {

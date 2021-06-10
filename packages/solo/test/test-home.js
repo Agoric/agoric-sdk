@@ -4,6 +4,9 @@
 // See https://github.com/endojs/endo/issues/647
 // TODO restore
 // import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/swingset-vat/tools/prepare-test-env';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -156,7 +159,7 @@ test.serial('home.localTimerService createRepeater', async t => {
   const notifier = E(localTimerService).makeNotifier(1n, 1n);
   await E(notifier).getUpdateSince();
 
-  t.is(1, handler.getCalls());
+  t.truthy(handler.getCalls() >= 1);
   t.truthy(handler.getArgs()[0] > timestamp);
 });
 
@@ -169,7 +172,7 @@ test.serial('home.localTimerService makeRepeater', async t => {
   const notifier = E(localTimerService).makeNotifier(1, 1);
   await E(notifier).getUpdateSince();
 
-  t.is(1, handler.getCalls());
+  t.truthy(handler.getCalls() >= 1);
   t.truthy(handler.getArgs()[0] > timestamp);
 });
 

@@ -1,4 +1,4 @@
-/* global globalThis __dirname */
+/* global __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';
@@ -13,11 +13,12 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
+import engineGC from '@agoric/swingset-vat/src/engine-gc';
 
-import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
+import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
-  initSwingStore as initLMDBSwingStore,
-  openSwingStore as openLMDBSwingStore,
+  initLMDBSwingStore,
+  openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
@@ -51,6 +52,7 @@ FLAGS may be:
   --lmdb           - runs using LMDB as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
+  --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -181,6 +183,7 @@ export async function main() {
   let configPath = null;
   let statsFile = null;
   let dbDir = null;
+  let dbSize = 0;
   let initOnly = false;
   let loopbox = false;
 
@@ -253,6 +256,9 @@ export async function main() {
       case '--dbdir':
         dbDir = argv.shift();
         break;
+      case '--dbsize':
+        dbSize = Number(argv.shift());
+        break;
       case '--raw':
         rawMode = true;
         doDumps = true;
@@ -313,11 +319,6 @@ export async function main() {
   }
 
   if (forceGC) {
-    if (!globalThis.gc) {
-      fail(
-        'To use --forcegc you must start node with the --expose-gc command line option',
-      );
-    }
     if (!logMem) {
       log('Warning: --forcegc without --logmem may be a mistake');
     }
@@ -344,30 +345,45 @@ export async function main() {
     config.devices = {
       loopbox: {
         sourceSpec: loopboxSrcPath,
+        parameters: {
+          senders: config.loopboxSenders,
+        },
       },
     };
+    delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
   }
-  if (!dbDir) {
-    dbDir = basedir;
-  }
 
   let swingStore;
-  const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
   switch (dbMode) {
     case '--memdb':
+      if (dbDir) {
+        fail('--dbdir only valid with --lmdb');
+      }
+      if (dbSize) {
+        fail('--dbsize only valid with --lmdb');
+      }
       swingStore = initSimpleSwingStore();
       break;
-    case '--lmdb':
+    case '--lmdb': {
+      if (!dbDir) {
+        dbDir = basedir;
+      }
+      const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
+      const dbOptions = {};
+      if (dbSize) {
+        dbOptions.mapSize = dbSize * 1024 * 1024;
+      }
       if (forceReset) {
-        swingStore = initLMDBSwingStore(kernelStateDBDir);
+        swingStore = initLMDBSwingStore(kernelStateDBDir, dbOptions);
       } else {
-        swingStore = openLMDBSwingStore(kernelStateDBDir);
+        swingStore = openLMDBSwingStore(kernelStateDBDir, dbOptions);
       }
       break;
+    }
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
@@ -603,7 +619,7 @@ export async function main() {
     }
     const blockEndTime = readClock();
     if (forceGC) {
-      globalThis.gc();
+      engineGC();
     }
     if (statLogger) {
       blockNumber += 1;

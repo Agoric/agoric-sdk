@@ -5,7 +5,7 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape, trade } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport';
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid
@@ -38,40 +38,21 @@ export const makeCloseLoanInvitation = (zcf, config) => {
       X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
     );
 
-    // We cannot use `swap` or `swapExact` helper because the collateralSeat
-    // doesn't have a `want`.
-
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
-    trade(
-      zcf,
-      {
-        seat: repaySeat,
-        gains: {
-          Collateral: collateralSeat.getAmountAllocated(
-            'Collateral',
-            collateralBrand,
-          ),
-        },
-      },
-      {
-        seat: collateralSeat,
-        gains: { Loan: debt },
-      },
-    );
-
     // Transfer the repaid loan amount to the lender
-    trade(
-      zcf,
-      {
-        seat: lenderSeat,
-        gains: { Loan: debt },
-      },
-      {
-        seat: collateralSeat,
-        gains: {},
-      },
+
+    repaySeat.incrementBy(
+      collateralSeat.decrementBy({
+        Collateral: collateralSeat.getAmountAllocated(
+          'Collateral',
+          collateralBrand,
+        ),
+      }),
     );
+    lenderSeat.incrementBy(repaySeat.decrementBy({ Loan: debt }));
+
+    zcf.reallocate(repaySeat, collateralSeat, lenderSeat);
 
     repaySeat.exit();
     lenderSeat.exit();

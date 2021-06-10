@@ -28,12 +28,13 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.2.12",
+    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/bundle-source": "^1.3.7",
     "@agoric/eventual-send": "^0.13.14",
     "@agoric/install-ses": "^0.5.13",
-    "esm": "^3.2.5",
+    "esm": "agoric-labs/esm#Agoric-built",
     "glob": "^7.1.6",
-    "ses": "^0.12.7"
+    "ses": "^0.13.1"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.1.0",

@@ -538,7 +538,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (zoe)
-      timeout-minutes: 20
+      timeout-minutes: 30
       run: cd packages/zoe && yarn test
       env:
         ESM_DISABLE_CACHE: true

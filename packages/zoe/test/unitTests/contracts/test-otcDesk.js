@@ -264,7 +264,8 @@ const makeBob = (
       const seat = await zoe.offer(invitation, proposal, payments);
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
-        message: 'The reallocation failed to conserve rights.',
+        message:
+          'rights were not conserved for brand "[Alleged: simoleans brand]"',
       });
 
       await assertPayoutAmount(

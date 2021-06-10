@@ -1,0 +1,50 @@
+/* global require */
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava';
+
+import { provideHostStorage } from '../src/hostStorage';
+import { buildVatController } from '../src/index';
+import { capargs } from './util.js';
+
+async function testTranscriptlessness(t, useTranscript) {
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourceSpec: require.resolve('./vat-transcript-maybe.js'),
+        creationOptions: {
+          enableSetup: true,
+          useTranscript,
+        },
+      },
+    },
+  };
+  const hostStorage = provideHostStorage();
+  const c1 = await buildVatController(config, [], {
+    hostStorage,
+  });
+  await c1.run();
+  t.deepEqual(c1.dump().log, ['ephemeralCounter=1 sturdyCounter=1']);
+
+  const c2 = await buildVatController(config, [], {
+    hostStorage,
+  });
+  c2.queueToVatExport('bootstrap', 'o+0', 'go', capargs([]), 'panic');
+  await c2.run();
+  if (useTranscript) {
+    t.deepEqual(c2.dump().log, [
+      'ephemeralCounter=1 sturdyCounter=1',
+      'ephemeralCounter=2 sturdyCounter=2',
+    ]);
+  } else {
+    t.deepEqual(c2.dump().log, ['ephemeralCounter=1 sturdyCounter=2']);
+  }
+}
+
+test('transcript on', async t => {
+  await testTranscriptlessness(t, true);
+});
+
+test('transcript off', async t => {
+  await testTranscriptlessness(t, false);
+});

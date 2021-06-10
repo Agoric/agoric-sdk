@@ -1,4 +1,4 @@
-import 'ses/lockdown';
+import 'ses';
 import '@agoric/eventual-send/shim';
 
 lockdown();

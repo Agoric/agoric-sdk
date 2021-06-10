@@ -269,7 +269,6 @@ export function buildRootObject(_vatPowers) {
   harden(preapprovedBridge);
 
   async function getWallet(bank) {
-    console.error('/// importing bank assets', bank);
     if (bank) {
       walletRoot.importBankAssets(bank);
     }

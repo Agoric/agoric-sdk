@@ -4,14 +4,15 @@ import { AmountMath } from '@agoric/ertp';
 
 export const makeMakeCollectFeesInvitation = (zcf, feeSeat, centralBrand) => {
   const collectFees = seat => {
-    const allocation = feeSeat.getAmountAllocated('RUN', centralBrand);
+    // Ensure that the feeSeat has a stagedAllocation with a RUN keyword
+    feeSeat.incrementBy({ RUN: AmountMath.makeEmpty(centralBrand) });
+    const amount = feeSeat.getAmountAllocated('RUN', centralBrand);
 
-    zcf.reallocate(
-      seat.stage({ RUN: allocation }),
-      feeSeat.stage({ RUN: AmountMath.makeEmpty(centralBrand) }),
-    );
+    seat.incrementBy(feeSeat.decrementBy({ RUN: amount }));
+    zcf.reallocate(seat, feeSeat);
+
     seat.exit();
-    return `paid out ${allocation.value}`;
+    return `paid out ${amount.value}`;
   };
 
   const makeCollectFeesInvitation = () =>

@@ -7,7 +7,6 @@ import { AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import {
   assertIssuerKeywords,
-  trade,
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
@@ -108,15 +107,10 @@ const start = zcf => {
       X`More money (${totalCost}) is required to buy these items`,
     );
 
-    // Reallocate. We are able to trade by only defining the gains
-    // (omitting the losses) because the keywords for both offers are
-    // the same, so the gains for one offer are the losses for the
-    // other.
-    trade(
-      zcf,
-      { seat: sellerSeat, gains: { Money: providedMoney } },
-      { seat: buyerSeat, gains: { Items: wantedItems } },
-    );
+    // Reallocate.
+    sellerSeat.incrementBy(buyerSeat.decrementBy({ Money: providedMoney }));
+    buyerSeat.incrementBy(sellerSeat.decrementBy({ Items: wantedItems }));
+    zcf.reallocate(buyerSeat, sellerSeat);
 
     // The buyer's offer has been processed.
     buyerSeat.exit();

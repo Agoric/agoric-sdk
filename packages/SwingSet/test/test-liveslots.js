@@ -6,8 +6,9 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
+import engineGC from '../src/engine-gc';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { gcAndFinalize } from '../src/gc-and-finalize';
+import { makeGcAndFinalize } from '../src/gc-and-finalize';
 import { makeLiveSlots } from '../src/kernel/liveSlots';
 import { buildSyscall, makeDispatch } from './liveslots-helpers';
 import {
@@ -323,6 +324,7 @@ test('liveslots retires outbound promise IDs after reject', async t => {
 });
 
 test('liveslots retains pending exported promise', async t => {
+  const gcAndFinalize = makeGcAndFinalize(engineGC);
   const { log, syscall } = buildSyscall();
   let watch;
   const success = [];
@@ -661,6 +663,7 @@ test('disavow', async t => {
 });
 
 test('liveslots retains device nodes', async t => {
+  const gcAndFinalize = makeGcAndFinalize(engineGC);
   const { syscall } = buildSyscall();
   let watch;
   const recognize = new WeakSet(); // real WeakSet

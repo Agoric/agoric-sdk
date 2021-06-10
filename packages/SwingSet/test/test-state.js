@@ -2,7 +2,7 @@ import { test } from '../tools/prepare-test-env-ava';
 
 // eslint-disable-next-line import/order
 import {
-  initSwingStore,
+  initSimpleSwingStore,
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
@@ -68,12 +68,12 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
 function buildHostDBAndGetState() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const hostDB = buildHostDBInMemory(store.kvStore);
   return { hostDB, getState: () => getAllState(store).kvStuff };
 }
@@ -119,13 +119,13 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('guardStorage fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const guardedHostStorage = guardStorage(store.kvStore);
   testStorage(t, guardedHostStorage, () => getAllState(store).kvStuff, null);
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { crankBuffer, commitCrank } = buildCrankBuffer(store.kvStore);
   testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
 });
@@ -186,7 +186,7 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const s = addHelpers(store.kvStore);
 
   s.set('foo.0', 'f0');
@@ -236,7 +236,7 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
   return {
@@ -248,7 +248,7 @@ function buildKeeperStorageInMemory() {
 }
 
 function duplicateKeeper(getState) {
-  const store = initSwingStore();
+  const store = initSimpleSwingStore();
   const { kvStore, streamStore } = store;
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   const { enhancedCrankBuffer } = wrapStorage(kvStore);
@@ -283,6 +283,7 @@ test('kernel state', async t => {
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -314,6 +315,7 @@ test('kernelKeeper vat names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
@@ -361,6 +363,7 @@ test('kernelKeeper device names', async t => {
   commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
+    ['gcActions', '[]'],
     ['runQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -502,23 +505,24 @@ test('kernelKeeper promises', async t => {
   k.addSubscriberToPromise(p1, 'v3');
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
-  k.addMessageToPromiseQueue(p1, { type: 'send' });
-  k.addMessageToPromiseQueue(p1, { type: 'notify' });
-  k.addMessageToPromiseQueue(p1, { type: 'send', more: [2] });
-  t.deepEqual(k.getKernelPromise(p1).queue, [
-    { type: 'send' },
-    { type: 'notify' },
-    { type: 'send', more: [2] },
-  ]);
+  const expectedRunqueue = [];
+  const m1 = { method: 'm1', args: { body: '', slots: [] } };
+  k.addMessageToPromiseQueue(p1, m1);
+  t.deepEqual(k.getKernelPromise(p1).refCount, 1);
+  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
+
+  const m2 = { method: 'm2', args: { body: '', slots: [] } };
+  k.addMessageToPromiseQueue(p1, m2);
+  t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
+  t.deepEqual(k.getKernelPromise(p1).refCount, 2);
+  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   commitCrank();
   k2 = duplicateKeeper(getState);
-  t.deepEqual(k2.getKernelPromise(p1).queue, [
-    { type: 'send' },
-    { type: 'notify' },
-    { type: 'send', more: [2] },
-  ]);
+  t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
+  // when we resolve the promise, all its queued messages are moved to the
+  // run-queue, and its refcount remains the same
   const capdata = harden({
     body: '{"@qclass":"slot","index":0}',
     slots: ['ko44'],
@@ -526,12 +530,13 @@ test('kernelKeeper promises', async t => {
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilled',
-    refCount: 0,
+    refCount: 2,
     data: capdata,
   });
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
   commitCrank();
+
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['device.nextID', '7'],
@@ -539,14 +544,15 @@ test('kernelKeeper promises', async t => {
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
-    ['runQueue', '[]'],
+    ['gcActions', '[]'],
+    ['runQueue', JSON.stringify(expectedRunqueue)],
     ['kd.nextID', '30'],
     ['ko.nextID', '20'],
     ['kp.nextID', '41'],
     ['kp40.data.body', '{"@qclass":"slot","index":0}'],
     ['kp40.data.slots', 'ko44'],
     ['kp40.state', 'fulfilled'],
-    ['kp40.refCount', '0'],
+    ['kp40.refCount', '2'],
     ['kernel.defaultManagerType', 'local'],
   ]);
 });
@@ -557,9 +563,10 @@ test('kernelKeeper promise resolveToData', async t => {
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
+  const o1 = k.addKernelObject('v1');
   const capdata = harden({
     body: '"bodyjson"',
-    slots: ['ko22', 'kp24', 'kd25'],
+    slots: [o1],
   });
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -567,7 +574,7 @@ test('kernelKeeper promise resolveToData', async t => {
     refCount: 0,
     data: {
       body: '"bodyjson"',
-      slots: ['ko22', 'kp24', 'kd25'],
+      slots: [o1],
     },
   });
 });
@@ -578,9 +585,10 @@ test('kernelKeeper promise reject', async t => {
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
+  const o1 = k.addKernelObject('v1');
   const capdata = harden({
     body: '"bodyjson"',
-    slots: ['ko22', 'kp24', 'kd25'],
+    slots: [o1],
   });
   k.resolveKernelPromise(p1, true, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -588,7 +596,7 @@ test('kernelKeeper promise reject', async t => {
     refCount: 0,
     data: {
       body: '"bodyjson"',
-      slots: ['ko22', 'kp24', 'kd25'],
+      slots: [o1],
     },
   });
 });
@@ -604,30 +612,53 @@ test('vatKeeper', async t => {
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
-  const vk = k.allocateVatKeeper(v1);
-  t.is(vk, k.getVatKeeper(v1));
+  const vk = k.provideVatKeeper(v1);
+  // TODO: confirm that this level of caching is part of the API
+  t.is(vk, k.provideVatKeeper(v1));
 
   const vatExport1 = 'o+4';
   const kernelExport1 = vk.mapVatSlotToKernelSlot(vatExport1);
   t.is(kernelExport1, 'ko20');
   t.is(vk.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk.nextDeliveryNum(), 0n);
+  t.is(vk.nextDeliveryNum(), 1n);
 
   commitCrank();
-  let vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
+  let vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
+  t.is(vk2.nextDeliveryNum(), 2n);
+  t.is(vk2.nextDeliveryNum(), 3n);
 
-  const kernelImport2 = 'ko25';
+  const kernelImport2 = k.addKernelObject('v1', 25);
   const vatImport2 = vk.mapKernelSlotToVatSlot(kernelImport2);
   t.is(vatImport2, 'o-50');
   t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
   commitCrank();
-  vk2 = duplicateKeeper(getState).allocateVatKeeper(v1);
+  vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
+});
+
+test('vatKeeper.getOptions', async t => {
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
+  k.createStartingKernelState('local');
+
+  const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const vk = k.provideVatKeeper(v1);
+  vk.setSourceAndOptions(
+    { bundleName: 'vattp' },
+    {
+      managerType: 'local',
+      name: 'fred',
+    },
+  );
+  const { name } = vk.getOptions();
+  t.is(name, 'fred');
 });
 
 test('XS vatKeeper defaultManagerType', async t => {

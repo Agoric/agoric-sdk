@@ -39,11 +39,17 @@ export async function start(zcf) {
     },
   };
 
-  function stageReward(amount, _fromSeat) {
-    const priorReward = stableCoinSeat.getAmountAllocated('RUN', runBrand);
-    return stableCoinSeat.stage({
-      RUN: AmountMath.add(priorReward, amount),
-    });
+  function reallocateReward(amount, fromSeat, otherSeat) {
+    stableCoinSeat.incrementBy(
+      fromSeat.decrementBy({
+        RUN: amount,
+      }),
+    );
+    if (otherSeat !== undefined) {
+      zcf.reallocate(stableCoinSeat, fromSeat, otherSeat);
+    } else {
+      zcf.reallocate(stableCoinSeat, fromSeat);
+    }
   }
 
   /** @type {InnerVaultManager} */
@@ -61,7 +67,7 @@ export async function start(zcf) {
       return makeRatio(5n, runBrand);
     },
     collateralBrand,
-    stageReward,
+    reallocateReward,
   };
 
   const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;

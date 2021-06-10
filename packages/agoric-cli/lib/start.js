@@ -41,12 +41,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const SDK_IMAGE = `agoric/agoric-sdk:${opts.dockerTag}`;
   const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
-  const pspawnEnv = {
-    ...process.env,
-    // TODO: We'd love to --expose-gc in this environment variable,
-    // but Node.js rejects it.
-    // NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --expose-gc`,
-  };
+  const pspawnEnv = { ...process.env };
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
 
   let keysSpawn;

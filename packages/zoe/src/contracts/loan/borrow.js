@@ -10,7 +10,6 @@ import { AmountMath } from '@agoric/ertp';
 
 import {
   assertProposalShape,
-  trade,
   getAmountOut,
   multiplyBy,
   getTimestamp,
@@ -80,26 +79,14 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-    // Transfer the wanted Loan amount to the collateralSeat
-    trade(
-      zcf,
-      {
-        seat: lenderSeat,
-        gains: {},
-      },
-      { seat: collateralSeat, gains: { Loan: loanWanted } },
-    );
+    // Transfer the wanted Loan amount to the borrower
+    borrowerSeat.incrementBy(lenderSeat.decrementBy({ Loan: loanWanted }));
 
-    // Transfer *all* collateral to the collateral seat. Transfer the
-    // wanted Loan amount to the borrower.
-    trade(
-      zcf,
-      {
-        seat: collateralSeat,
-        gains: { Collateral: collateralGiven },
-      },
-      { seat: borrowerSeat, gains: { Loan: loanWanted } },
+    // Transfer *all* collateral to the collateral seat.
+    collateralSeat.incrementBy(
+      borrowerSeat.decrementBy({ Collateral: collateralGiven }),
     );
+    zcf.reallocate(lenderSeat, borrowerSeat, collateralSeat);
 
     // We now exit the borrower seat so that the borrower gets their
     // loan. However, the borrower gets an object as their offerResult

@@ -314,7 +314,10 @@ test('bootstrap export', async t => {
     'right.obj0.bar 2 true',
   ]);
 
+  // that pushes several higher-priority GC dropExports onto the queue as
+  // everything gets dropped
+  await c.run();
+
   removeTriple(kt, barP, leftVatID, 'p+5'); // pruned promise
   checkKT(t, c, kt);
-  t.deepEqual(c.dump().runQueue, []);
 });

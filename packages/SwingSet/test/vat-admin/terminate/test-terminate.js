@@ -1,4 +1,7 @@
 /* global __dirname */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';
@@ -208,7 +211,7 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 8);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 9);
 
   controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
   await controller.run();

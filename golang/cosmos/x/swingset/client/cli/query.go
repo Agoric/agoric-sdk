@@ -45,7 +45,7 @@ func GetCmdGetEgress(queryRoute string) *cobra.Command {
 			}
 
 			var out types.Egress
-			cctx.JSONMarshaler.MustUnmarshalJSON(res, &out)
+			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
 			return cctx.PrintObjectLegacy(&out)
 		},
 	}
@@ -71,7 +71,7 @@ func GetCmdGetStorage(queryRoute string) *cobra.Command {
 			}
 
 			var out types.Storage
-			cctx.JSONMarshaler.MustUnmarshalJSON(res, &out)
+			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
 			return cctx.PrintObjectLegacy(&out)
 		},
 	}
@@ -100,7 +100,7 @@ func GetCmdGetKeys(queryRoute string) *cobra.Command {
 			}
 
 			var out types.Keys
-			cctx.JSONMarshaler.MustUnmarshalJSON(res, &out)
+			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
 			return cctx.PrintObjectLegacy(&out)
 		},
 	}
@@ -126,7 +126,7 @@ func GetCmdMailbox(queryRoute string) *cobra.Command {
 			}
 
 			var out types.Storage
-			cctx.JSONMarshaler.MustUnmarshalJSON(res, &out)
+			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
 			return cctx.PrintObjectLegacy(&out)
 		},
 	}

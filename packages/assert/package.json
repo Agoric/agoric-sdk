@@ -37,7 +37,7 @@
   "devDependencies": {
     "@agoric/install-ses": "^0.5.13",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src/",
@@ -68,6 +68,6 @@
     "access": "public"
   },
   "dependencies": {
-    "ses": "^0.12.7"
+    "ses": "^0.13.1"
   }
 }

@@ -1,8 +1,11 @@
 /* global __dirname */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import test from 'ava';
 import { decodeBase64 } from '@endo/base64';
-import { parseArchive } from '@agoric/compartment-mapper';
+import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 import bundleSource from '..';
 
 function evaluate(src, endowments) {

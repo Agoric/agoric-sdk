@@ -12,11 +12,11 @@ import (
 func MakeEncodingConfig() EncodingConfig {
 	cdc := codec.New()
 	interfaceRegistry := types.NewInterfaceRegistry()
-	marshaler := codec.NewAminoCodec(cdc)
+	codec := codec.NewAminoCodec(cdc)
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Marshaler:         marshaler,
+		Marshaller:        codec,
 		TxConfig:          authtypes.StdTxConfig{Cdc: cdc},
 		Amino:             cdc,
 	}

@@ -26,7 +26,13 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, vatSyscallHandler, meterRecord, compareSyscalls) {
+  function prepare(
+    vatID,
+    vatSyscallHandler,
+    meterRecord,
+    compareSyscalls,
+    useTranscript,
+  ) {
     const mtools = harden({ stopGlobalMeter, meterRecord, refillAllMeters });
     const mk = makeManagerKit(
       vatID,
@@ -35,6 +41,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatSyscallHandler,
       true,
       compareSyscalls,
+      useTranscript,
     );
 
     function finish(dispatch) {
@@ -60,12 +67,13 @@ export function makeLocalVatManagerFactory(tools) {
     assert(!managerOptions.metered, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
 
-    const { vatParameters, compareSyscalls } = managerOptions;
+    const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
     const { syscall, finish } = prepare(
       vatID,
       vatSyscallHandler,
       null,
       compareSyscalls,
+      useTranscript,
     );
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
@@ -91,6 +99,7 @@ export function makeLocalVatManagerFactory(tools) {
       liveSlotsConsole,
       virtualObjectCacheSize,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
@@ -112,6 +121,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatSyscallHandler,
       meterRecord,
       compareSyscalls,
+      useTranscript,
     );
 
     const vatPowers = harden({

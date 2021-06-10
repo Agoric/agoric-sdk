@@ -23,7 +23,7 @@ import {
   buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 
@@ -134,7 +134,7 @@ async function buildSwingset(
     plugin: { ...plugin.endowments },
   };
 
-  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
   const hostStorage = {
     kvStore,
     streamStore,

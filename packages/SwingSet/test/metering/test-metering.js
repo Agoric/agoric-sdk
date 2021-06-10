@@ -1,6 +1,9 @@
 /* global require */
 // eslint-disable-next-line import/order
 import { replaceGlobalMeter } from './install-global-metering';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';

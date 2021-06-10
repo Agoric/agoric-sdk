@@ -1650,8 +1650,7 @@ test('multipoolAutoSwap jig - removeLiquidity ask for too much', async t => {
     payment,
   );
   await t.throwsAsync(() => seat.getOfferResult(), {
-    message:
-      'The trade between left [object Object] and right [object Object] failed offer safety. Please check the log for more information',
+    message: /Offer safety was violated by the proposed allocation/,
   });
 });
 

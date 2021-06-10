@@ -14,7 +14,7 @@ export function buildRootObject(vatPowers) {
       const BOT_CLIST_INDEX = 0;
 
       D(devices.loopbox).registerInboundHandler(USER, vats.uservattp);
-      const usersender = D(devices.loopbox).makeSender(USER);
+      const usersender = D(devices.loopbox).getSender(USER);
       await E(vats.uservattp).registerMailboxDevice(usersender);
       const {
         transmitter: txToBotForUser,
@@ -27,7 +27,7 @@ export function buildRootObject(vatPowers) {
       );
 
       D(devices.loopbox).registerInboundHandler(BOT, vats.botvattp);
-      const botsender = D(devices.loopbox).makeSender(BOT);
+      const botsender = D(devices.loopbox).getSender(BOT);
       await E(vats.botvattp).registerMailboxDevice(botsender);
       const {
         transmitter: txToUserForBot,

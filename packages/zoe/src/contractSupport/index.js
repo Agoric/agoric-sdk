@@ -25,7 +25,6 @@ export * from './statistics';
 
 export {
   defaultAcceptanceMsg,
-  trade,
   swap,
   assertProposalShape,
   assertIssuerKeywords,
