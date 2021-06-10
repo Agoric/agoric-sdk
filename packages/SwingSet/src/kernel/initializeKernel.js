@@ -77,7 +77,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
-      const vatKeeper = kernelKeeper.allocateVatKeeper(vatID);
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
@@ -155,7 +155,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       // bootstrap object to call itself, though.
       const vref = Far('vref', {});
       vatObj0s[name] = vref;
-      const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
       vrefs.set(vref, kernelSlot);
       logStartup(`adding vref ${name} [${vatID}]`);

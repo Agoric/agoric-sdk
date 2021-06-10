@@ -14,7 +14,7 @@ test(`clist reachability`, async t => {
   const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
   kk.createStartingKernelState('local');
   const vatID = kk.allocateUnusedVatID();
-  const vk = kk.allocateVatKeeper(vatID);
+  const vk = kk.provideVatKeeper(vatID);
 
   const ko1 = kk.addKernelObject('v1', 1);
   t.is(vk.mapKernelSlotToVatSlot(ko1), 'o-50');
@@ -101,13 +101,13 @@ test('getImporters', async t => {
   kk.createStartingKernelState('local');
   const vatID1 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID1);
-  const vk1 = kk.allocateVatKeeper(vatID1);
+  const vk1 = kk.provideVatKeeper(vatID1);
   const vatID2 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID2);
-  const vk2 = kk.allocateVatKeeper(vatID2);
+  const vk2 = kk.provideVatKeeper(vatID2);
   const vatID3 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID3);
-  const vk3 = kk.allocateVatKeeper(vatID3);
+  const vk3 = kk.provideVatKeeper(vatID3);
 
   const kref = kk.addKernelObject('v1', 1);
   t.deepEqual(kk.getImporters(kref), []);

@@ -750,17 +750,15 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     deadKernelPromises.clear();
   }
 
-  function getVatKeeper(vatID) {
+  function provideVatKeeper(vatID) {
     insistVatID(vatID);
-    return ephemeral.vatKeepers.get(vatID);
-  }
-
-  function allocateVatKeeper(vatID) {
-    insistVatID(vatID);
+    const found = ephemeral.vatKeepers.get(vatID);
+    if (found !== undefined) {
+      return found;
+    }
     if (!kvStore.has(`${vatID}.o.nextID`)) {
       initializeVatState(kvStore, streamStore, vatID);
     }
-    assert(!ephemeral.vatKeepers.has(vatID), X`vatID ${vatID} already defined`);
     const vk = makeVatKeeper(
       kvStore,
       streamStore,
@@ -777,6 +775,33 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     );
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;
+  }
+
+  function vatIsAlive(vatID) {
+    insistVatID(vatID);
+    return kvStore.has(`${vatID}.o.nextID`);
+  }
+
+  /**
+   * Cease writing to the vat's transcript.
+   *
+   * @param { string } vatID
+   */
+  function closeVatTranscript(vatID) {
+    insistVatID(vatID);
+    const transcriptStream = `transcript-${vatID}`;
+    streamStore.closeStream(transcriptStream);
+  }
+
+  /**
+   * NOTE: caller is responsible to closeVatTranscript()
+   * before evicting a VatKeeper.
+   *
+   * @param {string} vatID
+   */
+  function evictVatKeeper(vatID) {
+    insistVatID(vatID);
+    ephemeral.vatKeepers.delete(vatID);
   }
 
   function getAllVatIDs() {
@@ -840,7 +865,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     // TODO maintain an index instead of scanning every single vat
     const importers = [];
     function doesImport(vatID) {
-      return getVatKeeper(vatID).importsKernelSlot(koid);
+      return provideVatKeeper(vatID).importsKernelSlot(koid);
     }
     importers.push(...getDynamicVats().filter(doesImport));
     importers.push(
@@ -861,11 +886,11 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     const kernelTable = [];
 
     for (const vatID of getAllVatIDs()) {
-      const vk = getVatKeeper(vatID);
+      const vk = provideVatKeeper(vatID);
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
-        vk.closeTranscript();
+        closeVatTranscript(vatID);
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },
@@ -980,8 +1005,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
-    allocateVatKeeper,
-    getVatKeeper,
+    provideVatKeeper,
+    vatIsAlive,
+    evictVatKeeper,
+    closeVatTranscript,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,

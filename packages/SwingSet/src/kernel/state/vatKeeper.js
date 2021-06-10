@@ -351,13 +351,6 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
   }
 
-  /**
-   * Cease writing to the vat's transcript.
-   */
-  function closeTranscript() {
-    streamStore.closeStream(transcriptStream);
-  }
-
   function vatStats() {
     function getCount(key, first) {
       const id = Nat(BigInt(kvStore.get(key)));
@@ -417,7 +410,6 @@ export function makeVatKeeper(
     deleteCListEntriesForKernelSlots,
     getTranscript,
     addToTranscript,
-    closeTranscript,
     vatStats,
     dumpState,
   });

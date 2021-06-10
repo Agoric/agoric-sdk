@@ -115,7 +115,7 @@ function makeManagerKit(
   useTranscript,
 ) {
   assert(kernelSlog);
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   let transcriptManager;
   if (useTranscript) {
     transcriptManager = makeTranscriptManager(
