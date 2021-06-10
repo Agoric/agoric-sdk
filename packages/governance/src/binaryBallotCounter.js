@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
+import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 
 const makeWeightedBallot = (ballot, weight) => ({ ballot, weight });
@@ -15,9 +16,10 @@ const makeBinaryBallot = (question, positionAName, positionBName) => {
   assert.typeof(positionBName, 'string');
   positions.push(positionAName, positionBName);
 
-  return buildBallot(ChoiceMethod.CHOOSE_N, question, positions);
+  return buildBallot(ChoiceMethod.CHOOSE_N, question, positions, 1);
 };
 
+// Exported for testing purposes
 const makeBinaryBallotCounter = (question, aName, bName) => {
   const template = makeBinaryBallot(question, aName, bName);
 
@@ -30,8 +32,11 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
   const tallyPromise = makePromiseKit();
   const allBallots = makeStore('seat');
 
-  // TODO: quorum: by weight, by proportion
-  const quorum = true;
+  const getQuestionPositions = () => ({
+    question,
+    positionA: aName,
+    positionB: bName,
+  });
 
   const recordBallot = (seat, filledBallot, weight = 1n) => {
     allBallots.has(seat)
@@ -39,7 +44,7 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
       : allBallots.init(seat, makeWeightedBallot(filledBallot, weight));
   };
 
-  const countVotes = () => {
+  const countVotes = async quorumChecker => {
     assert(!isOpen, X`can't count votes while the election is open`);
 
     // ballot template has position choices; Each ballot in allBallots should
@@ -59,7 +64,17 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
         tally[choice] += weight;
       }
     });
-    if (!quorum) {
+
+    const stats = {
+      spoiled,
+      votes: allBallots.entries().length,
+      results: [
+        { position: positionA, total: tally[positionA] },
+        { position: positionB, total: tally[positionB] },
+      ],
+    };
+
+    if (!(await E(quorumChecker).check(stats))) {
       outcomePromise.reject('No quorum');
     }
 
@@ -71,31 +86,36 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
       outcomePromise.resolve("It's a tie!");
     }
 
-    const stats = {
-      spoiled,
-      votes: allBallots.entries().length,
-      results: [
-        { position: positionA, total: tally[positionA] },
-        { position: positionB, total: tally[positionB] },
-      ],
-    };
     tallyPromise.resolve(stats);
   };
 
-  const adminFacet = Far('adminFacet', {
+  const sharedFacet = {
+    getBallotTemplate: () => template,
+    isOpen: () => isOpen,
+    getQuestionPositions,
+  };
+
+  const creatorFacet = Far('adminFacet', {
     closeVoting: () => (isOpen = false),
     countVotes,
     submitVote: recordBallot,
+    ...sharedFacet,
   });
 
   const publicFacet = Far('publicFacet', {
-    getBallotTemplate: () => template,
-    isOpen: () => isOpen,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
+    ...sharedFacet,
   });
-  return { publicFacet, adminFacet };
+  return { publicFacet, creatorFacet };
 };
+
+const start = zcf => {
+  const { question, positions } = zcf.getTerms();
+  return makeBinaryBallotCounter(question, positions[0], positions[1]);
+};
+
+harden(start);
 harden(makeBinaryBallotCounter);
 
-export { makeBinaryBallotCounter };
+export { makeBinaryBallotCounter, start };
