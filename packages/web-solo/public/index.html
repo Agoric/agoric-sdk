@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sample Registration</title>
+  </head>
+  <body>
+    <h1>Wallet UI</h1>
+    <div id="spinner"></div>
+    <button id="getCount">Increment Count</button> <span id="currentCount"></span>
+    <script>
+      let spin = 0;
+      const spinText = ['/', '-', '\\', '|'];
+      setInterval(() => {
+        spinner.innerText = spinText[spin];
+        spin = (spin + 1) % spinText.length;
+      }, 1000 / spinText.length);
+
+      const ss = new SharedWorker('./swingset-worker.js');
+      const store = new SharedWorker('./store-worker.js');
+      ss.port.addEventListener('message', ev => {
+        console.log('received from swingset', ...ev.data);
+        switch (ev.data[0]) {
+          case 'count': {
+            currentCount.innerText = ev.data[1];
+            break;
+          }
+          case 'toDapp': {
+            window.parent.postMessage(ev.data, '*');
+            break;
+          }
+        }
+      });
+      ss.port.start();
+      store.port.start();
+      const channel = new MessageChannel();
+      // We transfer the store directly to the swingset.
+      ss.port.postMessage(['initStore', store.port], [store.port]);
+      getCount.addEventListener('click', ev => {
+        ss.port.postMessage(['getCount']);
+      });
+
+      window.addEventListener('message', ev => {
+        switch (ev.data[0]) {
+          case 'fromDapp': {
+            ss.port.postMessage(ev.data);
+            break;
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
