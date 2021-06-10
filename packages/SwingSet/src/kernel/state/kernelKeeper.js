@@ -793,9 +793,14 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     streamStore.closeStream(transcriptStream);
   }
 
+  /**
+   * NOTE: caller is responsible to closeVatTranscript()
+   * before evicting a VatKeeper.
+   *
+   * @param {string} vatID
+   */
   function evictVatKeeper(vatID) {
     insistVatID(vatID);
-    closeVatTranscript(vatID);
     ephemeral.vatKeepers.delete(vatID);
   }
 
