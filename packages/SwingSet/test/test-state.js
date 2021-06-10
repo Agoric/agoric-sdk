@@ -649,7 +649,7 @@ test('vatKeeper.getOptions', async t => {
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
-  const vk = k.allocateVatKeeper(v1);
+  const vk = k.provideVatKeeper(v1);
   vk.setSourceAndOptions(
     { bundleName: 'vattp' },
     {
