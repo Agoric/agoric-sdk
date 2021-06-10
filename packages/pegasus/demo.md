@@ -4,13 +4,122 @@ In agoric-sdk, start the chain:
 yarn build
 cd packages/cosmic-swingset
 make scenario2-setup-nobuild scenario2-run-chain
-```
-
-After producing blocks:
-
-```
-ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test tx bank send $(ag-cosmos-helper --home=t1/bootstrap --keyring-backend=test keys show -a bootstrap) agoric189hehmq5mz5zp7mel9u8ellc37pvvr9veyje7a 1000000ubld --from=bootstrap --chain-id=agoric --yes
+# In another terminal:
 make scenario2-run-client
+```
+
+Hermes config looks like:
+
+```toml
+[global]
+strategy = 'all'
+filter = false
+log_level = 'trace'
+clear_packets_interval = 100
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]                                                               
+id = 'agoric'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://127.0.0.1:26657/websocket'
+rpc_timeout = '10s'
+account_prefix = 'agoric'
+key_name = 'stagekey'
+store_prefix = 'ibc'
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'urun' }
+gas_adjustment = 0.1
+clock_drift = '5s'
+trusting_period = '14days'                                               
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[chains]]                                                               
+id = 'cosmoshub-testnet'
+rpc_addr = 'https://rpc.testnet.cosmos.network:443'
+grpc_addr = 'https://grpc.testnet.cosmos.network:443'
+websocket_addr = 'wss://rpc.testnet.cosmos.network:443/websocket'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'stagekey'
+store_prefix = 'ibc'
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'uphoton' }
+gas_adjustment = 0.1
+clock_drift = '5s'
+trusting_period = '14days'                                               
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+```
+
+Running the relayer is:
+
+```
+hermes create channel cosmoshub-testnet agoric --port-a transfer --port-b transfer -o unordered
+# [...many lines, then]
+# Success: Channel {
+#    ordering: Unordered,
+#    a_side: ChannelSide {
+#        chain: ProdChainHandle {
+#            chain_id: ChainId {
+#                id: "cosmoshub-testnet",
+#                version: 0,
+#            },
+#            runtime_sender: Sender { .. },
+#        },
+#        client_id: ClientId(
+#            "07-tendermint-75",
+#        ),
+#        connection_id: ConnectionId(
+#            "connection-74",
+#        ),
+#        port_id: PortId(
+#            "transfer",
+#        ),
+#        channel_id: Some(
+#            ChannelId(
+#                "channel-69",
+#            ),
+#        ),
+#    },
+#    b_side: ChannelSide {
+#        chain: ProdChainHandle {
+#            chain_id: ChainId {
+#                id: "agoric",
+#                version: 0,
+#            },
+#            runtime_sender: Sender { .. },
+#        },
+#        client_id: ClientId(
+#            "07-tendermint-0",
+#        ),
+#        connection_id: ConnectionId(
+#           "connection-0",
+#        ),
+#        port_id: PortId(
+#            "transfer",
+#        ),
+#        channel_id: Some(
+#            ChannelId(
+#                "channel-2",
+#            ),
+#        ),
+#    },
+#    connection_delay: 0ns,
+#    version: Some(
+#        "ics20-1",
+#    ),
+# }
+hermes start
 ```
 
 Using golang relayer:
@@ -19,7 +128,7 @@ Using golang relayer:
 i=7; rly light init -f agoric && rly light init -f stargate-final && rly paths generate stargate-final agoric transfer$i --port=transfer && rly tx link transfer$i -d -o 3s && rly start transfer$i -d --time-threshold=5m
 ```
 
-When it says "no packets to relay", go to Agoric REPL:
+When Golang relayer says "no packets to relay", or when Hermes started, go to Agoric REPL:
 
 ```
 command[0]

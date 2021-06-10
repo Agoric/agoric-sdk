@@ -1,0 +1,5 @@
+/web-solo/*
+  # Enable performance.now() and true SharedArrayBuffers.
+  # https://web.dev/why-coop-coep/
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin

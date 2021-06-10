@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Agoric || Welcome aboard!</title>
+    <link rel="icon" type="image/png" href="web-solo/images/touch/homescreen144.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css?family=Inter:600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">
+  </head>
+
+  <body>
+    <style>
+      :root {
+        --mdc-theme-primary: #BB2D40;
+        --mdc-theme-on-primary: white;
+      }
+
+      html, body {
+        margin: 0;
+      }
+
+      body {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
+      }
+
+      h1 {
+        font-weight: 600;
+      }
+
+      .upcase {
+        text-transform: uppercase;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr auto 0.3fr 0.3fr 1fr 0.3fr 1fr;
+        grid-template-rows: 0.5fr 0.4fr 0.3fr 0.2fr 60px;
+        grid-template-areas:
+          "intro intro intro intro intro intro intro"
+          "dapp-clients dapp-clients border-right . cosmos-clients cosmos-clients cosmos-clients"
+          "ag-solo web-solo border-right . keplr . ag-cosmos-helper"
+          "ag-solo-install web-solo-install border-right . keplr-install . ag-cosmos-helper-install"
+          ". . . . . . .";
+        padding-left: 80px;
+        padding-right: 80px;
+
+        height: 100vh;
+      }
+      #intro {
+        grid-area: intro;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+      }
+      #intro > * {
+        margin-right: auto;
+        margin-left: auto;
+      }
+      #dapp-clients {
+        grid-area: dapp-clients;
+      }
+      #cosmos-clients {
+        grid-area: cosmos-clients;
+      }
+      #ag-solo {
+        grid-area: ag-solo;
+      }
+      #keplr {
+        grid-area: keplr;
+      }
+      #keplr-install {
+        grid-area: keplr-install;
+      }
+      #ag-solo-install {
+        grid-area: ag-solo-install;
+      }
+      #ag-cosmos-helper-install {
+        grid-area: ag-cosmos-helper-install;
+      }
+      #ag-cosmos-helper {
+        grid-area: ag-cosmos-helper;
+      }
+      #web-solo {
+        grid-area: web-solo;
+      }
+      #web-solo-install {
+        grid-area: web-solo-install;
+      }
+
+      .nodisplay {
+        display: none;
+      }
+
+      .border-right {
+        grid-area: border-right;
+        margin-left: auto;
+        border-right: solid 3px var(--mdc-theme-primary);
+        height: 100%;
+      }
+
+      button {
+        border: 0;
+        border-radius: 0px;
+        font-size: inherit;
+      }
+
+      a.button, button {
+        display: inline-block;
+        margin-right: auto;
+        margin-bottom: auto;
+        font-family: 'Inter', sans-serif;
+        
+        text-decoration: none;
+        padding: 15px 20px;
+        background-color: var(--mdc-theme-primary);
+        color: var(--mdc-theme-on-primary);
+      }
+
+      a.button.nodisplay {
+        display: none;
+      }
+
+      .little-logo {
+        display: none;
+      }
+
+      @media only screen and (max-width:650px) {
+        .container {
+          grid-template-columns: 1fr;
+          grid-template-rows: none;
+          grid-template-areas:
+            "intro"
+            "dapp-clients"
+            "ag-solo"
+            "ag-solo-install"
+            "web-solo"
+            "web-solo-install"
+            "cosmos-clients"
+            "keplr"
+            "keplr-install"
+            "ag-cosmos-helper"
+            "ag-cosmos-helper-install"
+            "padding";
+          padding: 20px;
+        }
+
+        .padding {
+          height: 40px;
+          grid-area: padding;
+        }
+
+        .big-logo {
+          display: none;
+        }
+        .little-logo {
+          display: block;
+        }
+      }
+
+      .float-logo {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+      }
+    </style>
+
+  <div class="float-logo"><a href="https://agoric.com"><img class="big-logo"
+    src="web-solo/images/touch/homescreen144.png" height="144" width="144"></a></div>
+
+  <div class="float-logo little-logo"><a href="https://agoric.com"><img class="little-logo"
+    src="web-solo/images/touch/homescreen72.png" height="72" width="72"></a></div>
+
+  <main class="container">
+    
+    <div id="intro">
+    <h1>Agoric Wallets</h1>
+
+    <p>Choose the wallet that best suits your needs.</p>
+    </div>
+
+    <div id="dapp-clients">
+    <h4 class="upcase">Dapp Client Wallets</h4>
+
+    <p>These wallets support offer-safe interaction with Agoric dapps.</p>
+    </div>
+
+    <div id="ag-solo">
+      <h2>Ag-Solo</h2>
+
+      <p>Docker-based</p>
+    </div>
+
+    <a class="button" id="ag-solo-install"
+      href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">Learn&nbsp;How</a>
+
+    <div id="web-solo" class="experimental nodisplay">
+      <h2>Web-Solo</h2>
+
+      <p>Web Page</p>
+    </div>
+
+    <a class="nodisplay button experimental" id="web-solo-install" href="web-solo/current/">Try&nbsp;It</a>
+
+    <div class="border-right"></div>
+    
+    <div id="cosmos-clients">
+      <h4 class="upcase">Cosmos-Layer Wallets</h4>
+
+      <p>These wallets enable staking and trading chain tokens including RUN and BLD.</p>
+      
+      <p>Unfortunately, you can't use them to interact with Agoric dapps; for that you must use a Dapp Client wallet.</p>
+    </div>
+
+    <div id="keplr">
+      <h2>Keplr</h2>
+      <p>Chrome Extension</p>
+    </div>
+
+    <button id="keplr-install">Install&nbsp;Wallet</button>
+
+    <div id="ag-cosmos-helper">
+      <h2>Ag-Cosmos-Helper</h2>
+      <p>Command-line</p>
+    </div>
+    <a id="ag-cosmos-helper-install" class="button"
+      href="https://github.com/Agoric/agoric-sdk/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn&nbsp;How</a>
+
+    <div class="padding"></div>
+  </main>
+
+  <mwc-dialog heading="Install Keplr" id="keplr-modal">
+    <div class="instructions nodisplay">You must first <a target="_blank"
+    href="https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap">install
+    the Chrome extension</a> then come back to this page.
+
+    If it is already installed, please enable it and reload this page.
+    </div>
+    
+    <div class="network-config nodisplay">
+      Choose the network to connect:
+      <p>
+      <mwc-select id="networks" fixedMenuPosition label="Network">
+        <mwc-list-item selected value="https://testnet.agoric.net/network-config">Agoric Testnet</mwc-list-item>
+        <mwc-list-item value="https://devnet.agoric.net/network-config">Agoric Devnet</mwc-list-item>
+        <mwc-list-item value="https://stage.agoric.net/network-config">Agoric
+        Stage</mwc-list-item>
+        <mwc-list-item value="cosmos-hub-testnet">Cosmos Hub Testnet</mwc-list-item>
+      </mwc-select>
+      <button id="chooseNetworkConfig">Configure</button>
+      </p>
+      <div id="keplr-status"></div>
+    </div>
+  </mwc-dialog>
+
+    <script type="module">
+      import '@agoric/wallet/components/install-ses-lockdown.js';
+      import '@material/mwc-dialog';
+      import '@material/mwc-select';
+      import '@material/mwc-list/mwc-list-item';
+      import { suggestChain } from '@agoric/wallet/components/use-keplr.js';
+
+      const suggestCosmosHub = async (chainId, rpc, api) => {
+                    const stakeCurrency = {
+    coinDenom: 'ATOM',
+    coinMinimalDenom: 'uphoton',
+    coinDecimals: 6,
+    coinGeckoId: '$ATOM',
+  };
+            const chainInfo = {
+    rpc,
+    rest: api,
+    chainId,
+    chainName: chainId,
+    stakeCurrency,
+    walletUrlForStaking: `http://localhost`,
+    bip44: {
+      coinType: 118,
+    },
+    bech32Config: {
+      bech32PrefixAccAddr: 'cosmos',
+      bech32PrefixAccPub: 'cosmospub',
+      bech32PrefixValAddr: 'cosmosvaloper',
+      bech32PrefixValPub: 'cosmosvaloperpub',
+      bech32PrefixConsAddr: 'cosmosvalcons',
+      bech32PrefixConsPub: 'cosmosvalconspub',
+    },
+    currencies: [stakeCurrency],
+    feeCurrencies: [stakeCurrency],
+    features: ['stargate', 'ibc-transfer'],
+  };
+            await window.keplr.experimentalSuggestChain(chainInfo);
+            await window.keplr.enable(chainId);
+      }
+
+      const checkHash = () => {
+        console.log('trying', window.location.hash);
+        if (window.location.hash.startsWith('#x')) {
+          // Don't hide the experimental wallets.
+          document.querySelectorAll('.experimental').forEach(el => el.classList.remove('nodisplay'));
+        }
+      };
+      window.addEventListener('hashchange', ev => checkHash());
+      checkHash();
+      
+      window.addEventListener('load', async _ => {
+        if (window.keplr && window.keplr.enable) {
+          document.querySelector('#keplr-status').innerText = 'Keplr Detected';
+          window.keplr.enable('agoric').finally(_ => {
+            document.querySelectorAll('#keplr-modal .network-config').forEach(el => el.classList.remove('nodisplay'));
+            document.querySelector('#keplr-status').innerText = 'Keplr Enabled';
+          });
+          return;
+        }
+        document.querySelectorAll('#keplr-modal .instructions').forEach(el => el.classList.remove('nodisplay'));
+      });
+
+      chooseNetworkConfig.addEventListener('click', async ev => {
+        const nc = networks.value;
+        const st = document.querySelector('#keplr-status');
+        st.innerText = 'Configuring Keplr...';
+        try {
+          if (nc === 'cosmos-hub-testnet') {
+            await suggestCosmosHub('cosmos-hub-testnet', 'https://rpc.testnet.cosmos.network:443', 'https://api.testnet.cosmos.network:443');
+          } else {
+            await suggestChain(nc);
+          }
+          st.innerText = `${networks.selected.text} configured`;
+        } catch (e) {
+          console.log(e);
+          st.innerText = `${e}`;
+        }
+      });
+
+      document.querySelector('#keplr-install').addEventListener('click', ev => {
+        ev.preventDefault();
+        document.querySelector('#keplr-modal').show();
+      });
+    </script>
+  </body>
+</html>

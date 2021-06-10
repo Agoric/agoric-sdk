@@ -1,0 +1,104 @@
+{
+  "name": "@agoric/wallet",
+  "version": "0.1.0",
+  "description": "The wallet.agoric.app web site",
+  "parsers": {
+    "js": "mjs"
+  },
+  "type": "module",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "scripts": {
+    "build": "rm -rf build && rollup -c",
+    "start": "web-dev-server --port=3000 packages/wallet/public/",
+    "start:prod": "node src/server.js build/",
+    "test": "exit 0",
+    "test:xs": "exit 0",
+    "pretty-fix": "prettier --write '**/*.js'",
+    "pretty-check": "prettier --check '**/*.js'",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint '**/*.js'"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./components/*": "./components/*"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/access-token": "^0.4.0",
+    "@agoric/assert": "^0.3.1",
+    "@agoric/captp": "^1.7.13",
+    "@agoric/cosmic-swingset": "^0.31.0",
+    "@agoric/dapp-svelte-wallet": "^0.10.2",
+    "@agoric/eventual-send": "^0.13.14",
+    "@agoric/import-bundle": "^0.2.14",
+    "@agoric/install-ses": "^0.5.15",
+    "@agoric/marshal": "^0.4.11",
+    "@agoric/notifier": "^0.3.14",
+    "@agoric/promise-kit": "^0.2.13",
+    "@agoric/spawner": "^0.4.14",
+    "@agoric/store": "^0.4.14",
+    "@agoric/swing-store-lmdb": "^0.5.1",
+    "@agoric/swingset-vat": "^0.18.0",
+    "@agoric/vats": "^0.2.2",
+    "@material/mwc-dialog": "^0.21.0",
+    "@material/mwc-list": "^0.21.0",
+    "@material/mwc-select": "^0.21.0",
+    "anylogger": "^0.21.0",
+    "deterministic-json": "^1.0.5",
+    "esm": "agoric-labs/esm#Agoric-built",
+    "express": "^4.17.1",
+    "minimist": "^1.2.0",
+    "morgan": "^1.9.1",
+    "node-fetch": "^2.6.0",
+    "node-lmdb": "^0.9.4",
+    "temp": "^0.9.1",
+    "ws": "^7.2.0"
+  },
+  "devDependencies": {
+    "@agoric/babel-standalone": "^7.14.3",
+    "@agoric/bundle-source": "^1.3.7",
+    "@rollup/plugin-node-resolve": "13.0.0",
+    "@web/dev-server": "^0.1.17",
+    "@web/rollup-plugin-copy": "^0.3.0",
+    "@web/rollup-plugin-html": "^1.8.0",
+    "ava": "^3.12.1",
+    "lit": "^2.0.0-rc.2",
+    "rollup-plugin-minify-html-literals": "^1.2.6",
+    "rollup-plugin-multi-input": "^1.3.1",
+    "rollup-plugin-summary": "^1.3.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "ses": "^0.14.2"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ],
+    "ignorePatterns": [
+      "build/**"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=11.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "require": [
+      "esm"
+    ],
+    "timeout": "20m"
+  }
+}
