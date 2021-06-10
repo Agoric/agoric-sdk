@@ -459,10 +459,14 @@ export async function main() {
       break;
     }
     case 'step': {
-      const steps = await controller.step();
-      swingStore.commit();
-      swingStore.close();
-      log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      try {
+        const steps = await controller.step();
+        swingStore.commit();
+        swingStore.close();
+        log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      } catch (err) {
+        kernelFailure(err);
+      }
       break;
     }
     case 'shell': {
@@ -522,9 +526,13 @@ export async function main() {
       cli.defineCommand('step', {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
-          const steps = await controller.step();
-          log(steps ? 'stepped one crank' : "didn't step, queue is empty");
-          cli.displayPrompt();
+          try {
+            const steps = await controller.step();
+            log(steps ? 'stepped one crank' : "didn't step, queue is empty");
+            cli.displayPrompt();
+          } catch (err) {
+            kernelFailure(err);
+          }
         },
       });
       break;
@@ -591,13 +599,17 @@ export async function main() {
     }
     while (requestedSteps > 0) {
       requestedSteps -= 1;
-      // eslint-disable-next-line no-await-in-loop
-      const stepped = await controller.step();
-      if (stepped < 1) {
-        break;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const stepped = await controller.step();
+        if (stepped < 1) {
+          break;
+        }
+        crankNumber += stepped;
+        actualSteps += stepped;
+      } catch (err) {
+        kernelFailure(err);
       }
-      crankNumber += stepped;
-      actualSteps += stepped;
       if (doDumps) {
         kernelStateDump();
       }
@@ -656,6 +668,11 @@ export async function main() {
       stepLimit -= steps;
     } while ((runAll || stepLimit > 0) && steps >= blockSize);
     return [totalSteps, readClock() - startTime];
+  }
+
+  function kernelFailure(err) {
+    log(`kernel failure in crank ${crankNumber}: ${err}`, err);
+    process.exit(1);
   }
 
   async function commandRun(stepLimit, runInBlockMode) {
