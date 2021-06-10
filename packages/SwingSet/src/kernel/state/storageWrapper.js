@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../storageAPI';
 
 // We manage a host-realm Storage object with a has/getKeys/get/set/del API.
@@ -12,83 +12,6 @@ import { insistStorageAPI } from '../../storageAPI';
 // nature of that parameter, perhaps we should establish some naming convention
 // that signals that the object could be foreign and thus deserving of
 // xenophobia.
-
-/**
- * Wrap some paranoia around an alleged host storage object.  Checks that the
- * given host storage object at least appears to implement the host storage
- * API, and wrap each of the methods in a protective wrapper that logs any
- * thrown errors and ensures that any return values that are supposed to be
- * strings actually are.
- *
- * @param {*} kvStore  Alleged host storage object to be wrapped this way.
- *
- * @returns {*} a hardened version of kvStore wrapped as described.
- */
-export function guardStorage(kvStore) {
-  insistStorageAPI(kvStore);
-
-  function callAndWrapError(method, ...args) {
-    // This is based on the one in SES, but kvStore is not supposed to
-    // throw any exceptions, so we don't need to retain error types or stack
-    // traces: just log the full exception, and return a stripped down
-    // kernel-realm Error to the caller.
-
-    // This does not modify the arguments in any way, it only protects against
-    // exposing host-realm Error objects to kernel realm callers.
-
-    try {
-      return kvStore[method](...args);
-    } catch (err) {
-      console.error(`error invoking kvStore.${method}(${args})`, err);
-      assert.fail(X`error invoking kvStore.${method}(${args}): ${err}`);
-    }
-  }
-
-  function has(key) {
-    assert.typeof(key, 'string');
-    return !!callAndWrapError('has', key);
-  }
-
-  // kvStore.getKeys returns a host-realm Generator, so we return a
-  // kernel-realm wrapper generator that returns the same contents, and guard
-  // against the host-realm Generator throwing any new errors as it runs
-  function* getKeys(start, end) {
-    assert.typeof(start, 'string');
-    assert.typeof(end, 'string');
-    try {
-      for (const key of kvStore.getKeys(start, end)) {
-        yield key;
-      }
-    } catch (err) {
-      console.error(`error invoking kvStore.getKeys(${start}, ${end})`, err);
-      throw new Error(
-        `error invoking kvStore.getKeys(${start}, ${end}): ${err}`,
-      );
-    }
-  }
-
-  function get(key) {
-    assert.typeof(key, 'string');
-    const value = callAndWrapError('get', key);
-    if (value === undefined) {
-      return undefined;
-    }
-    return value;
-  }
-
-  function set(key, value) {
-    assert.typeof(key, 'string');
-    assert.typeof(value, 'string');
-    callAndWrapError('set', key, value);
-  }
-
-  function del(key) {
-    assert.typeof(key, 'string');
-    callAndWrapError('delete', key);
-  }
-
-  return harden({ has, getKeys, get, set, delete: del });
-}
 
 /**
  * Create and return a crank buffer, which wraps a storage object with logic
@@ -241,10 +164,8 @@ export function addHelpers(kvStore) {
 // that.
 
 export function wrapStorage(kvStore) {
-  const guardedKVStore = guardStorage(kvStore);
-  const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
-    guardedKVStore,
-  );
+  insistStorageAPI(kvStore);
+  const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(kvStore);
   const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };
 }
