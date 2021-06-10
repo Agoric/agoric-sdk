@@ -45,6 +45,8 @@ export function dumpStore(swingStore, outfile, rawMode) {
 
   popt('crankNumber');
   popt('kernel.defaultManagerType');
+  popt('vatAdminRootKref');
+  popt('gcActions');
   popt('kernelStats');
   gap();
 
@@ -132,6 +134,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
     popt(`${v}.d.nextID`);
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
+    popt(`${v}.nextDeliveryNum`);
     const endPos = JSON.parse(popt(`${v}.t.endPosition`));
     vatInfo.push([v, vn, endPos]);
     for (const key of groupKeys(`${v}.c.kd`)) {
