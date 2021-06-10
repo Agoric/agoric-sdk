@@ -272,6 +272,32 @@ func Test_Receive_Give(t *testing.T) {
 	}
 }
 
+func Test_Receive_GiveToFeeCollector(t *testing.T) {
+	bank := &mockBank{}
+	keeper := makeTestKeeper(bank)
+	ch := NewPortHandler(AppModule{}, keeper)
+	sdkCtx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger())
+	ctx := &vm.ControllerContext{Context: sdkCtx}
+
+	ret, err := ch.Receive(ctx, `{
+		"type": "VBANK_GIVE_TO_FEE_COLLECTOR",
+		"amount": "1000",
+		"denom": "urun"
+		}`)
+	if err != nil {
+		t.Fatalf("got error = %v", err)
+	}
+	if ret != `true` {
+		t.Errorf("got %v, want \"true\"", ret)
+	}
+	wantCalls := []string{
+		"MintCoins vbank 1000urun",
+	}
+	if !reflect.DeepEqual(bank.calls, wantCalls) {
+		t.Errorf("got calls %v, want %v", bank.calls, wantCalls)
+	}
+}
+
 func Test_Receive_Grab(t *testing.T) {
 	bank := &mockBank{balance: map[string]sdk.Coin{
 		addr1: sdk.NewInt64Coin("ubld", 1000),

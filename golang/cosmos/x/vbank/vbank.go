@@ -150,8 +150,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
-		if err := keeper.SendCoinsToFeeCollector(ctx.Context, coins); err != nil {
-			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
+		if err := keeper.StoreFeeCoins(ctx.Context, coins); err != nil {
+			return "", fmt.Errorf("cannot store fee %s coins: %w", coins.Sort().String(), err)
 		}
 		if err != nil {
 			return "", err

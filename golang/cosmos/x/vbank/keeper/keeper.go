@@ -59,6 +59,10 @@ func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.bankKeeper.GetAllBalances(ctx, addr)
 }
 
+func (k Keeper) StoreFeeCoins(ctx sdk.Context, amt sdk.Coins) error {
+	return k.bankKeeper.MintCoins(ctx, types.ModuleName, amt)
+}
+
 func (k Keeper) SendCoinsToFeeCollector(ctx sdk.Context, amt sdk.Coins) error {
 	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
 		return err
