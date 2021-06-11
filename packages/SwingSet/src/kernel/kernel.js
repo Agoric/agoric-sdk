@@ -633,7 +633,7 @@ export default function buildKernel(
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
       if (!didAbort) {
-        kernelKeeper.purgeDeadKernelPromises();
+        kernelKeeper.processRefcounts();
         kernelKeeper.saveStats();
       }
       commitCrank();

@@ -514,11 +514,12 @@ test('kernelKeeper promises', async t => {
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
+  const ko = k.addKernelObject('v1');
   // when we resolve the promise, all its queued messages are moved to the
   // run-queue, and its refcount remains the same
   const capdata = harden({
     body: '{"@qclass":"slot","index":0}',
-    slots: ['ko44'],
+    slots: [ko],
   });
   k.resolveKernelPromise(p1, false, capdata);
   t.deepEqual(k.getKernelPromise(p1), {
@@ -540,12 +541,14 @@ test('kernelKeeper promises', async t => {
     ['gcActions', '[]'],
     ['runQueue', JSON.stringify(expectedRunqueue)],
     ['kd.nextID', '30'],
-    ['ko.nextID', '20'],
+    ['ko.nextID', '21'],
     ['kp.nextID', '41'],
     ['kp40.data.body', '{"@qclass":"slot","index":0}'],
-    ['kp40.data.slots', 'ko44'],
+    ['kp40.data.slots', ko],
     ['kp40.state', 'fulfilled'],
     ['kp40.refCount', '2'],
+    [`${ko}.owner`, 'v1'],
+    [`${ko}.refCount`, '1,1'],
     ['kernel.defaultManagerType', 'local'],
   ]);
 });
