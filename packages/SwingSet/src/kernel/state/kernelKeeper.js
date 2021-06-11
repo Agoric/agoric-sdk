@@ -491,50 +491,78 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function cleanupAfterTerminatedVat(vatID) {
     insistVatID(vatID);
-    ephemeral.vatKeepers.delete(vatID);
-    const koPrefix = `${vatID}.c.o+`;
-    const kpPrefix = `${vatID}.c.p`;
+    // eslint-disable-next-line no-use-before-define
+    const vatKeeper = provideVatKeeper(vatID);
+    const exportPrefix = `${vatID}.c.o+`;
+    const importPrefix = `${vatID}.c.o-`;
+    const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
-    for (const k of kvStore.getKeys(`${vatID}.`, `${vatID}/`)) {
-      // The current store semantics ensure this iteration is lexicographic.
-      // Any changes to the creation of the list of promises to be rejected (and
-      // thus to the order in which they *get* rejected) need to preserve this
-      // ordering in order to preserve determinism.  TODO: we would like to
-      // shift to a different deterministic ordering scheme that is less fragile
-      // in the face of potential changes in the nature of the database being
-      // used.
-      if (k.startsWith(koPrefix)) {
-        // The void for an object exported by a vat will always be of the form
-        // `o+NN`.  The '+' means that the vat exported the object (rather than
-        // importing it) and therefor the object is owned by (i.e., within) the
-        // vat.  The corresponding void->koid c-list entry will thus always
-        // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
-        // must also delete the corresponding kernel owner entry for the object,
-        // since the object will no longer be accessible.
-        const koid = kvStore.get(k);
-        const ownerKey = `${koid}.owner`;
-        const ownerVat = kvStore.get(ownerKey);
-        if (ownerVat === vatID) {
-          kvStore.delete(ownerKey);
-        }
-      } else if (k.startsWith(kpPrefix)) {
-        // The vpid for a promise imported or exported by a vat (and thus
-        // potentially a promise for which the vat *might* be the decider) will
-        // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
-        // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
-        // independent of whether the promise was imported or exported, so we
-        // have to look up the corresponding kernel promise table entry to see
-        // whether the vat is the decider or not.  If it is, we add the promise
-        // to the list of promises that must be rejected because the dead vat
-        // will never be able to act upon them.
-        const kpid = kvStore.get(k);
-        const p = getKernelPromise(kpid);
-        if (p.state === 'unresolved' && p.decider === vatID) {
-          kernelPromisesToReject.push(kpid);
-        }
+
+    // Note: ASCII order is "+,-./", and we rely upon this to split the
+    // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
+    // more sophisticated database, we'd keep each section in a separate
+    // table.
+
+    // The current store semantics ensure this iteration is lexicographic.
+    // Any changes to the creation of the list of promises to be rejected (and
+    // thus to the order in which they *get* rejected) need to preserve this
+    // ordering in order to preserve determinism.  TODO: we would like to
+    // shift to a different deterministic ordering scheme that is less fragile
+    // in the face of potential changes in the nature of the database being
+    // used.
+
+    // first, scan for exported objects, which must be orphaned
+    for (const k of kvStore.getKeys(`${vatID}.c.o+`, `${vatID}.c.o,`)) {
+      assert(k.startsWith(exportPrefix), k);
+      // The void for an object exported by a vat will always be of the form
+      // `o+NN`.  The '+' means that the vat exported the object (rather than
+      // importing it) and therefor the object is owned by (i.e., within) the
+      // vat.  The corresponding void->koid c-list entry will thus always
+      // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
+      // must also delete the corresponding kernel owner entry for the object,
+      // since the object will no longer be accessible.
+      const kref = kvStore.get(k);
+      const ownerKey = `${kref}.owner`;
+      const ownerVat = kvStore.get(ownerKey);
+      assert.equal(ownerVat, vatID, `export ${kref} not owned by late vat`);
+      kvStore.delete(ownerKey);
+    }
+
+    // then scan for imported objects, which must be decrefed
+    for (const k of kvStore.getKeys(`${vatID}.c.o-`, `${vatID}.c.o.`)) {
+      assert(k.startsWith(importPrefix), k);
+      // abandoned imports: delete the clist entry as if the vat did a
+      // drop+retire
+      const kref = kvStore.get(k);
+      const vref = k.slice(`${vatID}.c.`.length);
+      vatKeeper.deleteCListEntry(kref, vref, true);
+      // that will also delete both db keys
+    }
+
+    // now find all orphaned promises, which must be rejected
+    for (const k of kvStore.getKeys(`${vatID}.c.p`, `${vatID}.c.p.`)) {
+      assert(k.startsWith(promisePrefix), k);
+      // The vpid for a promise imported or exported by a vat (and thus
+      // potentially a promise for which the vat *might* be the decider) will
+      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
+      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
+      // independent of whether the promise was imported or exported, so we
+      // have to look up the corresponding kernel promise table entry to see
+      // whether the vat is the decider or not.  If it is, we add the promise
+      // to the list of promises that must be rejected because the dead vat
+      // will never be able to act upon them.
+      const kpid = kvStore.get(k);
+      const p = getKernelPromise(kpid);
+      if (p.state === 'unresolved' && p.decider === vatID) {
+        kernelPromisesToReject.push(kpid);
       }
+    }
+
+    // now loop back through everything and delete it all
+    for (const k of kvStore.getKeys(`${vatID}.`, `${vatID}/`)) {
       kvStore.delete(k);
     }
+
     // TODO: deleting entries from the dynamic vat IDs list requires a linear
     // scan of the list; arguably this collection ought to be represented in a
     // different way that makes it efficient to remove an entry from it, though
