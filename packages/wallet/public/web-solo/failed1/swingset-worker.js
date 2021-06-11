@@ -29,14 +29,6 @@ const trapToStore = obj => {
 self.addEventListener('connect', bootEv => {
   const parentPort = bootEv.ports[0];
 
-  // eslint-disable-next-line no-restricted-globals
-  if (self.crossOriginIsolated === false) {
-    const msg = `The SwingSet SharedWorker requires self.crossOriginIsolated !== false`;
-    // alert(msg);
-    parentPort.postMessage(['count', msg]);
-    throw Error(msg);
-  }
-
   clients.push(parentPort);
   parentPort.start();
   parentPort.addEventListener('message', ev => {
