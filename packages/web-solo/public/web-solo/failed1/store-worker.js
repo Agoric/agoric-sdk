@@ -1,6 +1,8 @@
 /* global self */
+
 let ssPort;
 
+// eslint-disable-next-line no-restricted-globals
 console.log('have', self.indexedDB, self.WebSocket);
 
 // eslint-disable-next-line no-restricted-globals
@@ -10,6 +12,11 @@ self.addEventListener('connect', connectEv => {
   parentPort.addEventListener('message', ev => {
     console.log('store got', ...ev.data);
     switch (ev.data[0]) {
+      case 'sendSharedArrayBuffer': {
+        console.log('sab = ', ev.data[1]);
+        break;
+      }
+
       case 'initSS': {
         if (ssPort) {
           return;

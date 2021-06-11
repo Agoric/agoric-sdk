@@ -25,6 +25,17 @@ app.use(
     },
   }),
 );
+// Enable performance.now() and true SharedArrayBuffers.
+const enableCrossOriginIsolated = prefix => (req, res, next) => {
+  if (req.path.startsWith(prefix)) {
+    res.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.set('Cross-Origin-Opener-Policy', 'same-origin');
+    res.set('Cross-Origin-Resource-Policy', 'same-origin');
+  }
+  next();
+};
+
+app.use(enableCrossOriginIsolated('/web-solo/'));
 app.use(express.json()); // parse application/json
 
 let server;

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="manifest" href="../manifest.json" />
+    <link rel="icon" type="image/png" href="../images/touch/homescreen144.png" />
+    <title>Agoric Wallet App</title>
+  </head>
+  <body>
+    <h1><a href="." target="_top">Wallet UI</a></h1>
+    <div id="spinner"></div>
+    <button id="getCount">Increment Count</button> <span id="currentCount"></span>
+    <script type="module">
+      if (!self.crossOriginIsolated) {
+        const msg = `web-solo requires self.crossOriginIsolated`;
+        alert(msg);
+        throw Error(msg);
+      }
+      let spin = 0;
+      const spinText = ['/', '-', '\\', '|'];
+      setInterval(() => {
+        spinner.innerText = spinText[spin];
+        spin = (spin + 1) % spinText.length;
+      }, 1000 / spinText.length);
+
+      const workers = new Map();
+      const sched = new SharedWorker('./scheduler.js');
+      sched.port.addEventListener('message', ev => {
+        const obj = ev.data;
+        console.log('received from scheduler', obj);
+        switch (obj && obj.type) {
+          case 'SCHED_DELIVER': {
+            const { script, id, msg, timeout } = obj;
+            let wrk;
+            if (workers.has(id)) {
+              wrk = workers.get(id);
+              wrk.worker.postMessage({ type: 'WORKER_DELIVER', msg });
+            } else {
+              const worker = new Worker(script);
+              let resolveReadyP;
+              const readyP = new Promise(resolve => resolveReadyP = resolve);
+              wrk = { tbuf: new Int32Array(new SharedArrayBuffer(8192)), worker, readyP };
+              worker.addEventListener('message', ev => {
+                console.log('worker', id, ev.data);
+                const obj = ev.data;
+                switch (obj && obj.type) {
+                  case 'WORKER_READY': {
+                    resolveReadyP();
+                    wrk.readyP = new Promise(resolve => resolveReadyP = resolve);
+                    break;
+                  }
+                  case 'TRAP': {
+                    const { timeout } = obj;
+                    setTimeout(() => { wrk.tbuf[0] = 1; Atomics.notify(wrk.tbuf, 0); }, timeout);
+                  }
+                }
+              });
+              worker.postMessage({ type: 'WORKER_INIT', msg, transferBuffer: wrk.tbuf.buffer });
+              workers.set(id, wrk);
+            }
+            const ps = [wrk.readyP];
+            if (timeout) {
+              const to = new Promise((resolve, reject) => setTimeout(() => reject('timeout'), timeout));
+              ps.push(to);
+            }
+            Promise.race(ps).then(
+              () => sched.port.postMessage({ type: 'SCHED_CRANK_DONE', id, isReject: false, value: null }),
+              reason => sched.port.postMessage({ type: 'SCHED_CRANK_DONE', id, isReject: true, value: `${reason}` })
+            );
+            break;
+          }
+          case 'SCHED_KILL': {
+            const { id } = obj;
+            const wrk = workers.get(id);
+            workers.delete(id);
+            wrk && wrk.worker.terminate();
+            break;
+          }
+          case 'SCHED_OUTBOUND': {
+            const { id, msg } = obj;
+            currentCount.innerText = msg;
+            break;
+          }
+        }
+      });
+      sched.port.start();
+
+      getCount.addEventListener('click', () => sched.port.postMessage({ type: 'SCHED_INBOUND', id: 'testnet', msg: 1 }));
+
+      // We ask to deliver a message.
+      sched.port.postMessage({ type: 'SCHED_REGISTER', id: 'testnet', script: './guest-worker.js' });
+      sched.port.postMessage({ type: 'SCHED_INBOUND', id: 'testnet', msg: 2000 });
+    </script>
+  </body>
+</html>

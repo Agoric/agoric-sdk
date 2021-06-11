@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="manifest" href="manifest.json" />
+    <link rel="manifest" href="../manifest.json" />
+    <link rel="icon" type="image/png" href="../images/touch/homescreen144.png" />
     <title>Agoric Wallet App</title>
   </head>
   <body>
     <h1><a href="." target="_top">Wallet UI</a></h1>
+    <p>Verdict: FAILED! Table at the end of <a
+    href="https://html.spec.whatwg.org/#integration-with-the-javascript-agent-cluster-formalism">HTML
+    spec</a> says that SharedWorkers are not in the same agent cluster as the
+    window, so can't communicate via SharedArrayBuffer.</p>
     <div id="spinner"></div>
     <button id="getCount">Increment Count</button> <span id="currentCount"></span>
     <script>
+      if (!self.crossOriginIsolated) {
+        const msg = `web-solo requires self.crossOriginIsolated`;
+        alert(msg);
+        throw Error(msg);
+      }
       let spin = 0;
       const spinText = ['/', '-', '\\', '|'];
       setInterval(() => {
@@ -34,6 +44,7 @@
       ss.port.start();
       store.port.start();
       const channel = new MessageChannel();
+
       // We transfer the store directly to the swingset.
       ss.port.postMessage(['initStore', store.port], [store.port]);
       getCount.addEventListener('click', ev => {

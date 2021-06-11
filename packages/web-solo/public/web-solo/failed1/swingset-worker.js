@@ -1,4 +1,5 @@
 /* global self MessageChannel */
+
 let count = 0;
 let storePort;
 const channel = new MessageChannel();
@@ -27,12 +28,25 @@ const trapToStore = obj => {
 // eslint-disable-next-line no-restricted-globals
 self.addEventListener('connect', bootEv => {
   const parentPort = bootEv.ports[0];
+
+  // eslint-disable-next-line no-restricted-globals
+  if (self.crossOriginIsolated === false) {
+    const msg = `The SwingSet SharedWorker requires self.crossOriginIsolated !== false`;
+    // alert(msg);
+    parentPort.postMessage(['count', msg]);
+    throw Error(msg);
+  }
+
   clients.push(parentPort);
   parentPort.start();
   parentPort.addEventListener('message', ev => {
     console.log('swingset got', ...ev.data);
 
     switch (ev.data[0]) {
+      case 'sendSharedArrayBuffer': {
+        console.log('sab = ', ev.data[1]);
+        break;
+      }
       case 'initStore': {
         parentPort.postMessage(['count', count]);
         if (storePort) {
