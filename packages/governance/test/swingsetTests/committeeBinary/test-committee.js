@@ -2,8 +2,15 @@
 
 // @ts-check
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import '@agoric/babel-standalone';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/install-ses';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import test from 'ava';
+
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 
@@ -53,6 +60,7 @@ test.before(async t => {
   const ttime = `${(step4 - start) / 1000}s total`;
   console.log(`bundling: ${ktime}, ${ctime}, ${vtime}, ${ttime}`);
 
+  // @ts-ignore
   t.context.data = { kernelBundles, config };
 });
 

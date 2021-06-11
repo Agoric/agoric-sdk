@@ -7,7 +7,7 @@
   },
   "main": "src/missing.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
@@ -46,9 +46,10 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.13",
+    "@agoric/babel-standalone": "^7.14.3",
     "ava": "^3.12.1",
-    "esm": "^3.2.25",
-    "ses": "^0.12.7"
+    "esm": "agoric-labs/esm#Agoric-built",
+    "ses": "^0.13.1"
   },
   "files": [
     "bundles/",
