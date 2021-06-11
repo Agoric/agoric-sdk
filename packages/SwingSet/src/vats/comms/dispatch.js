@@ -152,21 +152,21 @@ export function buildCommsDispatch(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring dropExports`);
+    // console.log(`-- comms ignoring dropExports`);
   }
 
   function retireExports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring retireExports`);
+    // console.log(`-- comms ignoring retireExports`);
   }
 
   function retireImports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring retireImports`);
+    // console.log(`-- comms ignoring retireImports`);
   }
 
   function dispatch(vatDeliveryObject) {
