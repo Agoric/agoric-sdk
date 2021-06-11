@@ -18,6 +18,7 @@ import { makeMeterManager } from './metering';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall';
 import { makeSlogger, makeDummySlogger } from './slogger';
 import { getKpidsToRetire } from './cleanup';
+import { processNextGCAction } from './gc-actions';
 
 import { makeVatRootObjectSlot, makeVatLoader } from './loadVat';
 import { makeDeviceTranslators } from './deviceTranslator';
@@ -524,6 +525,29 @@ export default function buildKernel(
     }
   }
 
+  async function processGCMessage(message) {
+    // used for dropExports, retireExports, and retireImports
+    const { type, vatID, krefs } = message;
+    // console.log(`-- processGCMessage(${vatID} ${type} ${krefs.join(',')})`);
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    if (!vatWarehouse.lookup(vatID)) {
+      return; // can't collect from the dead
+    }
+    const kd = harden([type, krefs]);
+    if (type === 'retireExports') {
+      for (const kref of krefs) {
+        // const rc = kernelKeeper.getObjectRefCount(kref);
+        // console.log(`   ${kref}: ${rc.reachable},${rc.recognizable}`);
+        kernelKeeper.deleteKernelObject(kref);
+        // console.log(`   deleted ${kref}`);
+      }
+    }
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    await deliverAndLogToVat(vatID, kd, vd);
+  }
+
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
@@ -582,6 +606,8 @@ export default function buildKernel(
     }
   }
 
+  const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
+
   let processQueueRunning;
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -613,6 +639,8 @@ export default function buildKernel(
         await processNotify(message);
       } else if (message.type === 'create-vat') {
         await processCreateVat(message);
+      } else if (gcMessages.includes(message.type)) {
+        await processGCMessage(message);
       } else {
         assert.fail(X`unable to process message.type ${message.type}`);
       }
@@ -897,6 +925,10 @@ export default function buildKernel(
   }
 
   function getNextMessage() {
+    const gcMessage = processNextGCAction(kernelKeeper);
+    if (gcMessage) {
+      return gcMessage;
+    }
     if (!kernelKeeper.isRunQueueEmpty()) {
       return kernelKeeper.getNextMsg();
     }
