@@ -10,7 +10,6 @@ import { buildHostDBInMemory } from '../src/hostStorage';
 import { buildBlockBuffer } from '../src/blockBuffer';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
 import {
-  guardStorage,
   buildCrankBuffer,
   addHelpers,
   wrapStorage,
@@ -116,12 +115,6 @@ test('blockBuffer fulfills storage API', t => {
   const { hostDB, getState } = buildHostDBAndGetState();
   const { blockBuffer, commitBlock } = buildBlockBuffer(hostDB);
   testStorage(t, blockBuffer, getState, commitBlock);
-});
-
-test('guardStorage fulfills storage API', t => {
-  const store = initSimpleSwingStore();
-  const guardedHostStorage = guardStorage(store.kvStore);
-  testStorage(t, guardedHostStorage, () => getAllState(store).kvStuff, null);
 });
 
 test('crankBuffer fulfills storage API', t => {

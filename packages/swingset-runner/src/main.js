@@ -77,7 +77,6 @@ FLAGS may be:
   --globalmetering - install metering on global objects
   --meter          - run metered vats (implies --globalmetering and --indirect)
   --config FILE    - read swingset config from FILE instead of inferring it
-  --loopbox        - make the loopbox device available to the bootstrap vat
 
 CMD is one of:
   help   - print this helpful usage information
@@ -185,7 +184,6 @@ export async function main() {
   let dbDir = null;
   let dbSize = 0;
   let initOnly = false;
-  let loopbox = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -287,9 +285,6 @@ export async function main() {
       case '--lmdb':
         dbMode = flag;
         break;
-      case '--loopbox':
-        loopbox = true;
-        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -340,7 +335,7 @@ export async function main() {
     config = loadBasedir(basedir);
   }
   const deviceEndowments = {};
-  if (loopbox) {
+  if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
     config.devices = {
       loopbox: {
@@ -418,8 +413,8 @@ export async function main() {
       hostStorage,
       runtimeOptions,
     );
+    swingStore.commit();
     if (initOnly) {
-      swingStore.commit();
       swingStore.close();
       return;
     }
@@ -464,10 +459,14 @@ export async function main() {
       break;
     }
     case 'step': {
-      const steps = await controller.step();
-      swingStore.commit();
-      swingStore.close();
-      log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      try {
+        const steps = await controller.step();
+        swingStore.commit();
+        swingStore.close();
+        log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      } catch (err) {
+        kernelFailure(err);
+      }
       break;
     }
     case 'shell': {
@@ -527,9 +526,13 @@ export async function main() {
       cli.defineCommand('step', {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
-          const steps = await controller.step();
-          log(steps ? 'stepped one crank' : "didn't step, queue is empty");
-          cli.displayPrompt();
+          try {
+            const steps = await controller.step();
+            log(steps ? 'stepped one crank' : "didn't step, queue is empty");
+            cli.displayPrompt();
+          } catch (err) {
+            kernelFailure(err);
+          }
         },
       });
       break;
@@ -596,13 +599,17 @@ export async function main() {
     }
     while (requestedSteps > 0) {
       requestedSteps -= 1;
-      // eslint-disable-next-line no-await-in-loop
-      const stepped = await controller.step();
-      if (stepped < 1) {
-        break;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const stepped = await controller.step();
+        if (stepped < 1) {
+          break;
+        }
+        crankNumber += stepped;
+        actualSteps += stepped;
+      } catch (err) {
+        kernelFailure(err);
       }
-      crankNumber += stepped;
-      actualSteps += stepped;
       if (doDumps) {
         kernelStateDump();
       }
@@ -661,6 +668,11 @@ export async function main() {
       stepLimit -= steps;
     } while ((runAll || stepLimit > 0) && steps >= blockSize);
     return [totalSteps, readClock() - startTime];
+  }
+
+  function kernelFailure(err) {
+    log(`kernel failure in crank ${crankNumber}: ${err}`, err);
+    process.exit(1);
   }
 
   async function commandRun(stepLimit, runInBlockMode) {
