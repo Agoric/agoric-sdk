@@ -44,13 +44,17 @@ function makeError(message, name = 'Error') {
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
 /*
- * Pretend that a vat just exported an object
+ * Pretend that a vat just exported an object, and increment the refcount on
+ * the resulting kref so nothing tries to delete it for being unreferenced.
  */
 export function doAddExport(kernelKeeper, fromVatID, vref) {
   insistVatID(fromVatID);
   assert(parseVatSlot(vref).allocatedByVat);
   const vatKeeper = kernelKeeper.provideVatKeeper(fromVatID);
   const kref = vatKeeper.mapVatSlotToKernelSlot(vref);
+  // we lie to incrementRefCount (this is really an export, but we pretend
+  // it's an import) so it will actually increment the count
+  kernelKeeper.incrementRefCount(kref, 'doAddExport', { isExport: false });
   return kref;
 }
 
@@ -1008,6 +1012,9 @@ export default function buildKernel(
       case 'fulfilled':
       case 'rejected':
         kernelKeeper.decrementRefCount(kpid, 'external');
+        for (const kref of p.data.slots) {
+          kernelKeeper.incrementRefCount(kref, 'external');
+        }
         return p.data;
       default:
         assert.fail(X`invalid state for ${kpid}: ${p.state}`);
