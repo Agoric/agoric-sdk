@@ -382,7 +382,9 @@ export async function makeSwingsetController(
       insistCapData(args);
       const kref = kernel.addExport(vatID, exportID);
       const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
-      kernel.kpRegisterInterest(kpid);
+      if (kpid) {
+        kernel.kpRegisterInterest(kpid);
+      }
       return kpid;
     },
   });
