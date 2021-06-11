@@ -118,7 +118,9 @@ When the kernel translates the vat's `syscall.dropImport`, it goes through the c
 
 Importing vats perform `syscall.retireImport` when they can neither reach nor recognize an import. If the Presence was never used in virtualized data or as a weak key, this will happen at the end of the crank in which the Presence is collected. Otherwise, the vat may do `syscall.dropImport` now, and `syscall.retireImport` much later.
 
-The kernel translates `syscall.retireImport` into kernelspace (krefs), deletes the importing vat's clist entry, and decrements the kernel object's "recognizable" refcount. If this results in zero, the kref is pushed onto the `maybeFreeKrefs` list for post-delivery processing as described below. No other work is necessary.
+The kernel translates `syscall.retireImport` into kernelspace (krefs), deletes the importing vat's clist entry, and decrements the kernel object's "recognizable" refcount (if the object still exists). If this results in zero, the kref is pushed onto the `maybeFreeKrefs` list for post-delivery processing as described below. No other work is necessary.
+
+When `syscall.retireImport` goes to decref "recognizable", the reason the object might not still exist is that the exporter might have already done `syscall.retireExport`, which deletes the kernel object table entry (along with the refcounts). This will queue a `dispatch.retireImport` to all importers, but this importing vat may not have seen it yet. So `syscall.retireImport` must be tolerant of the object being missing. In this case, it merely has to delete the clist entry.
 
 ## syscall.retireExport Processing
 
@@ -129,6 +131,8 @@ At this point, the exporting vat performs `syscall.retireExport` to inform the k
 The kernel translates the `syscall.retireExport` into kernelspace (krefs), and deletes the importing vat's clist entry. Then it consults the kernel object table to get a list of subscribers (vats which have the kref in their own clists). For each subscribing vat, the kernel adds a `retireImport ${vatID} ${kref}` item to the GC action set (described below). Then the kernel decrefs any auxilliary data the kernel object might have had (which may push krefs onto `makybeFreeKrefs`). Finally the kernel deletes the kernel object table entry, and returns control to the exporting vat.
 
 At this point, the kref is only referenced in the queued `retireImport` action and the importing vats' clists. We know these vats cannot export the kref (their "reachable" flag is clear, otherwise the exporting vat couldn't have retired it). So nothing can save the kref. Eventually the `retireImport` actions will be processed, as described below. The kernel will translate the kref through the subscribing vat's clist, delete the clist entry, then deliver the message. The vat reacts to `dispatch.retireImport` by notifying any weak collections about the vref, which can delete the virtual entry indexed by it. This may provoke more drops or retirements.
+
+If the last importing vat had previously called `syscall.retireImport`, there will be no subscribers, but the kernel object data will still be present (a general invariant is that the exporting clist entry and the kernel object table entry are either both present or both missing). A `dispatch.retireExport` will be on the queue for the exporting vat, but it has not yet arrived (otherwise it would be illegal for the exporting vat to call `syscall.retireExport`). That `dispatch.retireExport` GC action will be nullified during `processOneGCAction` because its work was already performed by the exporter's `syscall.retireExport`.
 
 ## Post-Decref Processing
 
@@ -187,12 +191,25 @@ The algorithm for a single `processOneGCAction` step is:
 * loop through all vatIDs in sorted order
   * loop through types in priority order: `dropExports` first, then `retireExports`, then `retireImports`
     * loop through all krefs in that list
-      * check the reachable count: if non-zero, delete it from the ephemeral Set, skip
-        * (that means it is "re-reachable": it was re-exported between `processRefcounts` and `processOneGCAction`, and is no longer eligible for action)
-        * this could happen if the block ends before finishing all GC actions, and a timer wakeup message is queued by the timer device between blocks, and that message references some export which was just about to be `dropExport`ed
-      * for `retireExports`, check the recognizable count: if non-zero, delete from set and skip
-        * this could happen if 1: object is released entirely, 2: `processOneGCAction` delivers the `dropExports`, 3: vat re-exports the reference, 4: importing vats drop, but do not retire, the object, 5: `processOneGCAction` delivers the new `dropExports`, 6: `processOneGCAction` finally gets down to the pending `retireExports`
-    * if any krefs survived the reachablility check, exit the loops with `vatID, type, krefs` tuple
+      * test each kref in various ways
+        * "ALREADY" means delete the action from the ephemeral Set, and skip (it should not be done)
+        * "NEGATE" means delete the action from the ephemeral Set and skip (it was done already)
+      * for `dropExports`:
+        * if the kernel object is missing: ALREADY (although this shouldn't happen)
+        * if the reachable count is non-zero: NEGATE (the object was re-exported between `processRefcounts` and `processOneGCAction`, and is no longer eligible for drop)
+          * this could happen if the block ends before finishing all GC actions, and a timer wakeup message is queued by the timer device between blocks, and that message references some export which was just about to be `dropExport`ed
+        * if the clist is missing: ALREADY (although this shouldn't happen)
+        * if the isReachable flag is clear: ALREADY
+      * for `retireExports`:
+        * if the kernel object is missing: ALREADY
+          * this could happen if the exporting vat did `syscall.retireExports` before receiving the `dispatch.retireExports`
+        * if the reachable or recognizable counts are non-zero: NEGATE
+          * "reachable" could be nonzero if the object was re-exported before the `retireExports` was delivered
+          * even if "reachable" is zero, "recognizable" could be nonzero, if 1: object is released entirely, 2: `processOneGCAction` delivers the `dropExports`, 3: vat re-exports the reference, 4: importing vats drop, but do not retire, the object, 5: `processOneGCAction` delivers the new `dropExports`, 6: `processOneGCAction` finally gets down to the pending `retireExports`
+        * if the clist is missing: ALREADY
+      * for `retireImports`:
+        * if the clist is missing: ALREADY
+    * if any krefs survived these checks, exit the loops with `vatID, type, krefs` tuple
 * we now either have a `vatID, type, krefs` set of actions to take, or we know there are no actions to take
 * remove the selected actions (if any) from the ephemeral set, leaving the rest for a future call to `processOneGCAction`
 * write the ephemeral set back to durable storage
