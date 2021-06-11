@@ -961,7 +961,8 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       initializeDeviceState(kvStore, deviceID);
     }
     if (!ephemeral.deviceKeepers.has(deviceID)) {
-      const dk = makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode);
+      const tools = { addKernelDeviceNode, incrementRefCount };
+      const dk = makeDeviceKeeper(kvStore, deviceID, tools);
       ephemeral.deviceKeepers.set(deviceID, dk);
     }
     return ephemeral.deviceKeepers.get(deviceID);

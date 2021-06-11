@@ -27,13 +27,20 @@ export function initializeDeviceState(kvStore, deviceID) {
  *
  * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} deviceID  The device ID string of the device in question
- * @param {*} addKernelDeviceNode  Kernel function to add a new device node to the
- *    kernel's mapping tables.
- *
+ * @param { addKernelDeviceNode: (deviceID: string) => string,
+ *          incrementRefCount: (kernelSlot: string,
+ *                              tag: string?,
+ *                              options: {
+ *                                isExport: boolean?,
+ *                                onlyRecognizable: boolean?,
+ *                              },
+ *                             ) => undefined),
+ *         } tools
  * @returns {*} an object to hold and access the kernel's state for the given device
  */
-export function makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode) {
+export function makeDeviceKeeper(kvStore, deviceID, tools) {
   insistDeviceID(deviceID);
+  const { addKernelDeviceNode, incrementRefCount } = tools;
 
   function setSourceAndOptions(source, options) {
     assert.typeof(source, 'object');
@@ -78,6 +85,7 @@ export function makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode) {
         } else {
           assert.fail(X`unknown type ${type}`);
         }
+        // device nodes don't have refcounts: they're immortal
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
         kvStore.set(kernelKey, devSlot);
         kvStore.set(devKey, kernelSlot);
@@ -119,6 +127,15 @@ export function makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode) {
       } else {
         assert.fail(X`unknown type ${type}`);
       }
+      // Use isExport=false, since this is an import. Unlike
+      // mapKernelSlotToVatSlot, we use onlyRecognizable=false, to increment
+      // both reachable and recognizable, because we aren't tracking object
+      // reachability on the device clist (deviceSlots doesn't use WeakRefs
+      // and won't emit dropImports), so we need the clist to hold a ref to
+      // the imported object forever.
+      const opts = { isExport: false, onlyRecognizable: false };
+      incrementRefCount(kernelSlot, `${deviceID}|dk|clist`, opts);
+
       const devSlot = makeVatSlot(type, false, id);
 
       const devKey = `${deviceID}.c.${devSlot}`;
