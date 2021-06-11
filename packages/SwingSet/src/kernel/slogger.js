@@ -235,23 +235,23 @@ export function makeSlogger(slogCallbacks, writeObj) {
   const slogger = harden({
     provideVatSlogger: reg('provideVatSlogger', provideVatSlogger),
     vatConsole: reg('vatConsole', (vatID, ...args) =>
-      vatSlogs.get(vatID).vatConsole(...args),
+      provideVatSlogger(vatID).vatSlog.vatConsole(...args),
     ),
     startup: reg('startup', (vatID, ...args) =>
-      vatSlogs.get(vatID).startup(...args),
+      provideVatSlogger(vatID).vatSlog.startup(...args),
     ),
     replayVatTranscript,
     delivery: reg('delivery', (vatID, ...args) =>
-      vatSlogs.get(vatID).delivery(...args),
+      provideVatSlogger(vatID).vatSlog.delivery(...args),
     ),
     syscall: reg('syscall', (vatID, ...args) =>
-      vatSlogs.get(vatID).syscall(...args),
+      provideVatSlogger(vatID).vatSlog.syscall(...args),
     ),
     changeCList: reg('changeCList', (vatID, ...args) =>
-      vatSlogs.get(vatID).changeCList(...args),
+      provideVatSlogger(vatID).vatSlog.changeCList(...args),
     ),
     terminateVat: reg('terminateVat', (vatID, ...args) =>
-      vatSlogs.get(vatID).terminateVat(...args),
+      provideVatSlogger(vatID).vatSlog.terminateVat(...args),
     ),
     write,
   });

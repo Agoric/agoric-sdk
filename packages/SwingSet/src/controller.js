@@ -382,7 +382,9 @@ export async function makeSwingsetController(
       insistCapData(args);
       const kref = kernel.addExport(vatID, exportID);
       const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
-      kernel.kpRegisterInterest(kpid);
+      if (kpid) {
+        kernel.kpRegisterInterest(kpid);
+      }
       return kpid;
     },
   });
@@ -408,6 +410,7 @@ export async function makeSwingsetController(
  *   testTrackDecref?: unknown,
  *   snapstorePath?: string,
  *   warehousePolicy?: { maxVatsOnline?: number },
+ *   slogFile?: string,
  * }} runtimeOptions
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  */
@@ -424,6 +427,7 @@ export async function buildVatController(
     slogCallbacks,
     snapstorePath,
     warehousePolicy,
+    slogFile,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
@@ -431,6 +435,7 @@ export async function buildVatController(
     slogCallbacks,
     snapstorePath,
     warehousePolicy,
+    slogFile,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;

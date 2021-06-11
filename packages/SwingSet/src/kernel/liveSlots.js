@@ -463,7 +463,7 @@ function build(
       slotToVal.set(slot, new WeakRef(val));
       if (type === 'object') {
         deadSet.delete(slot);
-        droppedRegistry.register(val, slot);
+        droppedRegistry.register(val, slot, val);
       }
     }
     return valToSlot.get(val);
@@ -486,7 +486,7 @@ function build(
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
       deadSet.delete(slot); // might have been FINALIZED before, no longer
-      droppedRegistry.register(val, slot);
+      droppedRegistry.register(val, slot, val);
     }
   }
 
