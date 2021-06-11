@@ -46,7 +46,8 @@
     "packages/notifier",
     "packages/xsnap",
     "packages/deploy-script-support",
-    "packages/ui-components"
+    "packages/ui-components",
+    "packgaes/wallet"
   ],
   "devDependencies": {
     "@typescript-eslint/parser": "^4.18.0",

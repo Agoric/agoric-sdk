@@ -120,6 +120,60 @@ jobs:
         name: benchmarkstats.json
         path: packages/swingset-runner/benchstats*.json
 
+    - uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: coverage
+    - name: Find Netlify site ID
+      run: |
+        echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
+
+  netlify-wallet:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note: only use one node-version
+        node-version: ['14.x']
+    # FIGME: if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: Find Netlify site ID
+      run: |
+        echo "NETLIFY_SITE_ID=$(cat packages/wallet/NETLIFY_SITE_ID)" >> $GITHUB_ENV
+
+    - uses: nwtgck/actions-netlify@v1.1
+      with:
+        # Production deployment if a commit to master.
+        # FIGME: production-deploy: ${{ github.ref == 'refs/heads/master' }}
+        production-deploy: true
+        publish-dir: packages/wallet/public
+        # SECURITY: we don't want to hand out the Github token to this action.
+        # github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
   coverage:
     needs: build
     runs-on: ubuntu-latest
