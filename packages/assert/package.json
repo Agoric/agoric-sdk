@@ -2,9 +2,7 @@
   "name": "@agoric/assert",
   "version": "0.2.12",
   "description": "Assert expression support that protects sensitive data",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/assert.js",
   "engines": {
     "node": ">=11.0"
@@ -36,8 +34,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
     "@agoric/install-ses": "^0.5.13",
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "files": [
     "src/",
@@ -47,9 +44,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ]
   },
   "eslintConfig": {
