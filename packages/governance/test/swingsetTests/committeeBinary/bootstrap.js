@@ -104,15 +104,14 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   const installations = { committeeRegistrar, binaryBallotCounter };
 
-  const [testName, startingValues] = argv;
   const { voterCreator, creatorFacet, registrarInstance } = await makeVats(
     log,
     vats,
     zoe,
     installations,
-    startingValues,
   );
 
+  const [testName] = argv;
   switch (testName) {
     case 'committeeBinaryStart':
       committeeBinaryStart(
