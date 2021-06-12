@@ -12,6 +12,8 @@ test('gc actions', t => {
     actions = a;
     newActions = Array.from(a);
   }
+  const clistState = { v1: { ko1: {}, ko2: {} }, v2: { ko2: {} } };
+
   const kernelKeeper = {
     getGCActions() {
       return new Set(actions);
@@ -20,12 +22,22 @@ test('gc actions', t => {
       newActions = Array.from(a);
       newActions.sort();
     },
-    ownerOfKernelObject(kref) {
-      return rc[kref] ? 'vatX' : undefined;
+    kernelObjectExists(kref) {
+      return !!rc[kref];
     },
     getObjectRefCount(kref) {
       const [reachable, recognizable] = rc[kref];
       return { reachable, recognizable };
+    },
+    provideVatKeeper(vatID) {
+      return {
+        hasCListEntry(kref) {
+          return !!clistState[vatID][kref].exists;
+        },
+        getReachableFlag(kref) {
+          return !!clistState[vatID][kref].isReachable;
+        },
+      };
     },
   };
   function process() {
@@ -46,8 +58,10 @@ test('gc actions', t => {
   // fully dropped. the dropExport takes priority
   setActions(['v1 dropExport ko1', 'v1 retireExport ko1']);
   rc = { ko1: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
+  clistState.v1.ko1 = { exists: true, isReachable: false };
   t.deepEqual(newActions, ['v1 retireExport ko1']);
   // then the retireExport
   setActions(['v1 retireExport ko1']);
@@ -59,6 +73,7 @@ test('gc actions', t => {
   // fully dropped, then fully re-reachable before dropExports: both negated
   setActions(['v1 dropExport ko1', 'v1 retireExport ko1']);
   rc = { ko1: [1, 1] }; // re-exported, still reachable+recognizable
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, undefined);
   t.deepEqual(newActions, []);
@@ -66,11 +81,13 @@ test('gc actions', t => {
   // fully dropped, dropExport happens, then fully re-reachable: retire negated
   setActions(['v1 dropExport ko1', 'v1 retireExport ko1']);
   rc = { ko1: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v1 retireExport ko1']);
   setActions(['v1 retireExport ko1']);
   rc = { ko1: [1, 1] };
+  clistState.v1.ko1 = { exists: true, isReachable: false };
   msg = process();
   t.deepEqual(msg, undefined);
   t.deepEqual(newActions, []);
@@ -79,9 +96,11 @@ test('gc actions', t => {
   rc = { ko1: [0, 0] };
   setActions(['v1 dropExport ko1', 'v1 retireExport ko1']);
   rc = { ko1: [1, 1] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   rc = { ko1: [0, 1] };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
+  clistState.v1.ko1 = { exists: true, isReachable: false };
   t.deepEqual(newActions, ['v1 retireExport ko1']);
   // the retire is left pending because we ignore lower-prority types
   setActions(['v1 retireExport ko1']);
@@ -93,11 +112,13 @@ test('gc actions', t => {
   // fully dropped, dropExports happens, re-reachable, partial drop: retire
   // negated
   setActions(['v1 dropExport ko1', 'v1 retireExport ko1']);
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   rc = { ko1: [0, 0] };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v1 retireExport ko1']);
   setActions(['v1 retireExport ko1']);
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   rc = { ko1: [0, 1] };
   msg = process();
   t.deepEqual(msg, undefined);
@@ -106,6 +127,7 @@ test('gc actions', t => {
   // partially dropped: recognizable but not reachable
   setActions(['v1 dropExport ko1']);
   rc = { ko1: [0, 1] }; // recognizable, not reachable
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
   t.deepEqual(newActions, []);
@@ -113,6 +135,7 @@ test('gc actions', t => {
   // partially dropped, re-reachable: negate dropExports
   setActions(['v1 dropExport ko1']);
   rc = { ko1: [1, 1] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, undefined);
   t.deepEqual(newActions, []);
@@ -120,25 +143,40 @@ test('gc actions', t => {
   // priority order: retireImports is last
   setActions(['v1 dropExport ko1', 'v1 retireImport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
+  clistState.v1.ko2 = { exists: true, isReachable: false };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v1 retireImport ko2']);
 
   setActions(['v1 retireExport ko1', 'v1 retireImport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
+  clistState.v1.ko2 = { exists: true, isReachable: false };
   msg = process();
   t.deepEqual(msg, make('retireExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v1 retireImport ko2']);
 
   setActions(['v1 retireImport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko2 = { exists: true, isReachable: false };
   msg = process();
   t.deepEqual(msg, make('retireImports', 'v1', 'ko2'));
+  t.deepEqual(newActions, []);
+
+  // retireImport but was already done
+  setActions(['v1 retireImport ko2']);
+  rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko2 = { exists: false, isReachable: false };
+  msg = process();
+  t.deepEqual(msg, undefined);
   t.deepEqual(newActions, []);
 
   // multiple vats: process in sorted order
   setActions(['v1 dropExport ko1', 'v2 dropExport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: true };
+  clistState.v2.ko2 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, make('dropExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v2 dropExport ko2']);
@@ -146,6 +184,8 @@ test('gc actions', t => {
   // multiple vats: vatID is major sort order, type is minor
   setActions(['v1 retireExport ko1', 'v2 dropExport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };
+  clistState.v1.ko1 = { exists: true, isReachable: false };
+  clistState.v2.ko2 = { exists: true, isReachable: true };
   msg = process();
   t.deepEqual(msg, make('retireExports', 'v1', 'ko1'));
   t.deepEqual(newActions, ['v2 dropExport ko2']);
