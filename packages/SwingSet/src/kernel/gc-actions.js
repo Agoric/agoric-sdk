@@ -15,6 +15,31 @@ function parseAction(s) {
 export function processNextGCAction(kernelKeeper) {
   const allActionsSet = kernelKeeper.getGCActions();
 
+  // GC actions are each one of 'dropExport', 'retireExport', or
+  // 'retireImport', aimed at a specific vat and affecting a specific kref.
+  // They are added to the durable "GC Actions" set (stored in kernelDB) when
+  // `processRefcounts` notices a refcount sitting at zero, which means some
+  // vat needs to be told that an object can be freed. Before each crank, the
+  // kernel calls processNextGCAction to see if there are any GC actions that
+  // should be taken. All such GC actions are executed before any regular vat
+  // delivery gets to run.
+
+  // However, things might have changed between the time the action was
+  // pushed into the durable set and the time the kernel is ready to execute
+  // it. For example, the kref might have been re-exported: we were all set
+  // to tell the exporting vat that their object isn't recognizable any more
+  // (with a `dispatch.retireExport`), but then they sent a brand new copy to
+  // some importer. We must negate the `retireExport` action, because it's no
+  // longer the right thing to do. Alternatively, the exporting vat might
+  // have deleted the object itself (`syscall.retireExport`) before the
+  // kernel got a chance to deliver the `dispatch.retireExport`, which means
+  // we must bypass the action as redundant (since it's an error to delete
+  // the same c-list entry twice).
+
+  // This `filterAction` function looks at each queued GC Action and decides
+  // whether the current state of the c-lsits and reference counts warrants
+  // permits the action to run, or if it should be negated/bypassed.
+
   function filterAction(vatKeeper, action, type, kref) {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
@@ -39,6 +64,21 @@ export function processNextGCAction(kernelKeeper) {
     }
     return true;
   }
+
+  // We process actions in groups (sorted first by vat, then by type), to
+  // make it deterministic, and to ensure that `dropExport` happens before
+  // `retireExport`. This examines one group at a time, filtering everything
+  // in that group, and returning the survivors of the first group that
+  // wasn't filtered out entirely. Our available dispatch functions take
+  // multiple krefs (`dispatch.dropExports`, rather than
+  // `dispatch.dropExport`), so the set of surviving krefs can all be
+  // delivered to a vat in a single crank.
+
+  // Some day we may consolidate the three GC delivery methods into a single
+  // one, in which case we'll batch together an entire vat's worth of
+  // actions, instead of the narrower (vat+type) group. The filtering rules
+  // may need to change to support that, to ensure that `dropExport` and
+  // `retireExport` can both be delivered.
 
   function filterActions(vatID, groupedActions) {
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
