@@ -12,7 +12,7 @@ entirely at the ERTP level.
 ## Parameters
 
 - `feeCollectorName`: the module which handles fee distribution to stakers.
-- `feeEpochDuration`: the duration (in seconds) over which fees should be given to the fee collector.
+- `feeEpochDurationBlocks`: the duration (in blocks) over which fees should be given to the fee collector.
 
 ## State
 

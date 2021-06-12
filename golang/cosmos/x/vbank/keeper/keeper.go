@@ -7,7 +7,9 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 )
 
-const genesis string = "genesis"
+const genesisKey string = "genesis"
+const paramsKey string = "params"
+const stateKey string = "state"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
@@ -16,7 +18,6 @@ type Keeper struct {
 
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
-
 	// CallToController dispatches a message to the controlling process
 	CallToController func(ctx sdk.Context, str string) (string, error)
 }
@@ -40,7 +41,7 @@ func NewKeeper(
 
 func (k Keeper) GetGenesis(ctx sdk.Context) types.GenesisState {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(genesis))
+	bz := store.Get([]byte(genesisKey))
 	var gs types.GenesisState
 	k.cdc.MustUnmarshalLengthPrefixed(bz, &gs)
 	return gs
@@ -48,7 +49,11 @@ func (k Keeper) GetGenesis(ctx sdk.Context) types.GenesisState {
 
 func (k Keeper) SetGenesis(ctx sdk.Context, data types.GenesisState) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set([]byte(genesis), k.cdc.MustMarshalLengthPrefixed(&data))
+	store.Set([]byte(genesisKey), k.cdc.MustMarshalLengthPrefixed(&data))
+	params := types.Params{
+		FeeEpochDurationBlocks: data.GetParams().FeeEpochDurationBlocks,
+	}
+	k.SetParams(ctx, params)
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
@@ -64,9 +69,6 @@ func (k Keeper) StoreFeeCoins(ctx sdk.Context, amt sdk.Coins) error {
 }
 
 func (k Keeper) SendCoinsToFeeCollector(ctx sdk.Context, amt sdk.Coins) error {
-	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
-		return err
-	}
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.feeCollectorName, amt)
 }
 
@@ -82,4 +84,32 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 		return err
 	}
 	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, amt)
+}
+
+func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(paramsKey))
+	params := types.Params{}
+	k.cdc.MustUnmarshal(bz, &params)
+	return params
+}
+
+func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&params)
+	store.Set([]byte(paramsKey), bz)
+}
+
+func (k Keeper) GetState(ctx sdk.Context) types.State {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(stateKey))
+	state := types.State{}
+	k.cdc.MustUnmarshal(bz, &state)
+	return state
+}
+
+func (k Keeper) SetState(ctx sdk.Context, state types.State) {
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&state)
+	store.Set([]byte(stateKey), bz)
 }
