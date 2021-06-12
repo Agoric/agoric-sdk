@@ -72,6 +72,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
     ] = margs;
 
     function testLog(...args) {
@@ -102,6 +103,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
     );
 

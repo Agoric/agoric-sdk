@@ -97,6 +97,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters = {},
       vatConsole,
       liveSlotsConsole,
+      enableVatstore = false,
       virtualObjectCacheSize,
       compareSyscalls,
       useTranscript,
@@ -139,6 +140,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
       liveSlotsConsole,
     );

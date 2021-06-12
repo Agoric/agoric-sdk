@@ -174,7 +174,7 @@ export function makeVirtualObjectManager(
    * @returns {*} an object representing the object's stored state.
    */
   function fetch(vobjID) {
-    return JSON.parse(syscall.vatstoreGet(vobjID));
+    return JSON.parse(syscall.vatstoreGet(`vom.${vobjID}`));
   }
 
   /**
@@ -185,7 +185,7 @@ export function makeVirtualObjectManager(
    * @param {*} rawData  A data object representing the state to be written.
    */
   function store(vobjID, rawData) {
-    syscall.vatstoreSet(vobjID, JSON.stringify(rawData));
+    syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
   }
 
   const cache = makeCache(cacheSize, fetch, store);
@@ -308,7 +308,7 @@ export function makeVirtualObjectManager(
       if (vobjID) {
         const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
         if (type === 'object' && (virtual || !allocatedByVat)) {
-          return `ws${storeID}.${vobjID}`;
+          return `vom.ws${storeID}.${vobjID}`;
         }
       }
       return undefined;

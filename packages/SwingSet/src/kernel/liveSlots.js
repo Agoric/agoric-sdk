@@ -23,6 +23,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {boolean} enableDisavow
+ * @param {boolean} enableVatstore
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
@@ -40,6 +41,7 @@ function build(
   forVatID,
   cacheSize,
   enableDisavow,
+  enableVatstore,
   vatPowers,
   vatParameters,
   gcTools,
@@ -916,6 +918,23 @@ function build(
     if (enableDisavow) {
       vpow.disavow = disavow;
     }
+    if (enableVatstore) {
+      vpow.vatstore = harden({
+        get: key => {
+          assert.typeof(key, 'string');
+          return syscall.vatstoreGet(`vvs.${key}`);
+        },
+        set: (key, value) => {
+          assert.typeof(key, 'string');
+          assert.typeof(value, 'string');
+          syscall.vatstoreSet(`vvs.${key}`, value);
+        },
+        delete: key => {
+          assert.typeof(key, 'string');
+          syscall.vatstoreDelete(`vvs.${key}`);
+        },
+      });
+    }
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
@@ -1029,6 +1048,7 @@ function build(
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
+ * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
@@ -1062,6 +1082,7 @@ export function makeLiveSlots(
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
+  enableVatstore = false,
   gcTools,
   liveSlotsConsole = console,
 ) {
@@ -1074,6 +1095,7 @@ export function makeLiveSlots(
     forVatID,
     cacheSize,
     enableDisavow,
+    enableVatstore,
     allVatPowers,
     vatParameters,
     gcTools,
@@ -1101,6 +1123,7 @@ export function makeMarshaller(syscall, gcTools) {
     syscall,
     'forVatID',
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+    false,
     false,
     {},
     {},

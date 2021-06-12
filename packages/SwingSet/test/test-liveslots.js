@@ -932,7 +932,16 @@ test('dropImports', async t => {
     return root;
   }
 
-  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, undefined, false, gcTools);
+  const ls = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    undefined,
+    false,
+    false,
+    gcTools,
+  );
   const { setBuildRootObject, dispatch, deadSet } = ls;
   setBuildRootObject(build);
   const allFRs = gcTools.getAllFRs();

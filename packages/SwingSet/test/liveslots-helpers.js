@@ -54,6 +54,7 @@ export function makeDispatch(
     {},
     undefined,
     enableDisavow,
+    false,
     gcTools,
   );
   setBuildRootObject(build);

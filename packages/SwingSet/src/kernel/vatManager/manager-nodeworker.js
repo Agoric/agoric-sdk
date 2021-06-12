@@ -40,6 +40,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -114,6 +115,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
     ]);
 
     function deliverToWorker(delivery) {

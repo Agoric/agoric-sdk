@@ -52,6 +52,7 @@ export function makeXsSubprocessFactory({
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       name,
       metered,
       compareSyscalls,
@@ -126,6 +127,7 @@ export function makeXsSubprocessFactory({
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
     ]);
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);

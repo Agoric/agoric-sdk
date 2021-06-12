@@ -65,6 +65,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'managerType',
         'enableDisavow',
         'enableSetup',
+        'enableVatstore',
         'virtualObjectCacheSize',
         'useTranscript',
       ]);
