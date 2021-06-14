@@ -35,6 +35,8 @@ test('bootstrap payment', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   // This test value is not a statement about the actual value to
@@ -81,6 +83,8 @@ test('bootstrap payment - only minted once', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   // This test value is not a statement about the actual value to
@@ -136,6 +140,8 @@ test('bootstrap payment - default value is 0n', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, instance } = await E(

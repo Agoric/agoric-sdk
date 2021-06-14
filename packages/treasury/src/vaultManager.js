@@ -17,6 +17,14 @@ import { makeVaultKit } from './vault';
 import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
 import { makeTracer } from './makeTracer';
+import {
+  RECORDING_PERIOD_KEY,
+  LIQUIDATION_MARGIN_KEY,
+  INITIAL_MARGIN_KEY,
+  LOAN_FEE_KEY,
+  INTEREST_RATE_KEY,
+  CHARGING_PERIOD_KEY,
+} from './paramKeys';
 
 const { details: X } = assert;
 
@@ -34,10 +42,10 @@ export function makeVaultManager(
   runMint,
   collateralBrand,
   priceAuthority,
-  rates,
+  rateManager,
   reallocateReward,
   timerService,
-  loanParams,
+  loanParamManager,
   liquidationStrategy,
 ) {
   const { brand: runBrand } = runMint.getIssuerRecord();
@@ -45,17 +53,23 @@ export function makeVaultManager(
   const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
-      return rates.liquidationMargin;
+      return rateManager.lookup(LIQUIDATION_MARGIN_KEY);
     },
     // loans must initially have at least 1.2x collateralization
     getInitialMargin() {
-      return rates.initialMargin;
+      return rateManager.lookup(INITIAL_MARGIN_KEY);
     },
     getLoanFee() {
-      return rates.loanFee;
+      return rateManager.lookup(LOAN_FEE_KEY);
     },
     getInterestRate() {
-      return rates.interestRate;
+      return rateManager.lookup(INTEREST_RATE_KEY);
+    },
+    getChargingPeriod() {
+      return rateManager.lookup(CHARGING_PERIOD_KEY);
+    },
+    getRecordingPeriod() {
+      return rateManager.lookup(RECORDING_PERIOD_KEY);
     },
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
@@ -176,7 +190,7 @@ export function makeVaultManager(
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    loanParams.recordingPeriod,
+    rateManager.lookup(RECORDING_PERIOD_KEY),
   );
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
@@ -217,7 +231,7 @@ export function makeVaultManager(
       runMint,
       autoswap,
       priceAuthority,
-      loanParams,
+      loanParamManager,
       startTimeStamp,
     );
 

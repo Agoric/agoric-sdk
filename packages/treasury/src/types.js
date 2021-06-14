@@ -32,6 +32,9 @@
  * @property {(collateralIssuer: Issuer, collateralKeyword: Keyword, rates: Rates) => Promise<Invitation>} makeAddTypeInvitation
  * @property {() => Instance} getAMM
  * @property {() => Promise<Array<Collateral>>} getCollaterals
+ * @property {() => Payment} getBootstrapPayment
+ * @property {() => ParamManager} paramManager
+ * @property {() => ParamManager} getRateManager
  */
 
 /**
@@ -65,6 +68,10 @@
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
+ * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
+ *   which interest is charged to the loan.
+ * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
+ *   at which interest is recorded to the loan.
  * @property {ReallocateReward} reallocateReward
  */
 
@@ -114,6 +121,12 @@
  */
 
 /**
+ * @typedef {Object} AMMFees
+ * @property {bigint} poolFee
+ * @property {bigint} protocolFee
+ */
+
+/**
  * @typedef {Object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
  * @property {(collateral: Amount, RUN: Amount) => Proposal} makeProposal
@@ -127,10 +140,10 @@
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Rates} rates
- * @param {StageReward} rewardPoolStaging
+ * @param {ParamManagerPublic} rateManager
+ * @param {ReallocateReward} reallocateReward
  * @param {TimerService} timerService
- * @param {LoanParams} loanParams
+ * @param {ParamManagerPublic} paramManager
  * @param {LiquidationStrategy} liquidationStrategy
  * @returns {VaultManager}
  */
@@ -142,7 +155,7 @@
  * @param {ZCFMint} runMint
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanParams} loanParams
+ * @param {ParamManagerPublic} paramManager
  * @param {Timestamp} startTimeStamp
  * @returns {VaultKit}
  */

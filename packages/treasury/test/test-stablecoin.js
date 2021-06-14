@@ -311,8 +311,8 @@ test('price drop', async t => {
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
-    poolFee: 24,
-    protocolFee: 6,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
   const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(

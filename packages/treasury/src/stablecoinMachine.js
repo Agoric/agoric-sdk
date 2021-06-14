@@ -2,6 +2,7 @@
 
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
+import '@agoric/governance/src/exported';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
 // "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
@@ -32,10 +33,26 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
+import {
+  buildParamManager,
+  ParamType,
+} from '@agoric/governance/src/param-manager';
+
 import { makeTracer } from './makeTracer';
 import { makeVaultManager } from './vaultManager';
 import { makeLiquidationStrategy } from './liquidateMinimum';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees';
+import {
+  PROTOCOL_FEE_KEY,
+  POOL_FEE_KEY,
+  RECORDING_PERIOD_KEY,
+  CHARGING_PERIOD_KEY,
+  INITIAL_MARGIN_KEY,
+  LIQUIDATION_MARGIN_KEY,
+  INITIAL_PRICE_KEY,
+  INTEREST_RATE_KEY,
+  LOAN_FEE_KEY,
+} from './paramKeys';
 
 const trace = makeTracer('ST');
 
@@ -63,6 +80,22 @@ export async function start(zcf) {
       loanParams.recordingPeriod,
     )}) must be a BigInt`,
   );
+
+  const {
+    publicFacet: paramManagerPublic,
+    manager: paramManager,
+  } = buildParamManager([
+    {
+      name: POOL_FEE_KEY,
+      value: loanParams.poolFee,
+      type: ParamType.BIGINT,
+    },
+    {
+      name: PROTOCOL_FEE_KEY,
+      value: loanParams.protocolFee,
+      type: ParamType.BIGINT,
+    },
+  ]);
 
   const [runMint, govMint] = await Promise.all([
     zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
@@ -114,10 +147,14 @@ export async function start(zcf) {
     { Central: runIssuer },
     {
       timer: timerService,
-      poolFee: loanParams.poolFee,
-      protocolFee: loanParams.protocolFee,
+      // TODO(hibbert): make the AMM use a paramManager. For now, the values
+      //  are fixed after creation of an autoswap instance.
+      poolFee: paramManagerPublic.lookup(POOL_FEE_KEY),
+      protocolFee: paramManagerPublic.lookup(PROTOCOL_FEE_KEY),
     },
   );
+
+  const rateManagers = makeStore('brand'); // Brand -> rateManager
 
   // We process only one offer per collateralType. They must tell us the
   // dollar value of their collateral, and we create that many RUN.
@@ -130,6 +167,49 @@ export async function start(zcf) {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     assert(!collateralTypes.has(collateralBrand));
+
+    const {
+      publicFacet: rateManagerPublic,
+      manager: rateManager,
+    } = buildParamManager([
+      {
+        name: CHARGING_PERIOD_KEY,
+        value: loanParams.chargingPeriod,
+        type: ParamType.BIGINT,
+      },
+      {
+        name: RECORDING_PERIOD_KEY,
+        value: loanParams.recordingPeriod,
+        type: ParamType.BIGINT,
+      },
+      {
+        name: INITIAL_MARGIN_KEY,
+        value: rates.initialMargin,
+        type: ParamType.RATIO,
+      },
+      {
+        name: LIQUIDATION_MARGIN_KEY,
+        value: rates.liquidationMargin,
+        type: ParamType.RATIO,
+      },
+      {
+        name: INITIAL_PRICE_KEY,
+        value: rates.initialPrice,
+        type: ParamType.RATIO,
+      },
+      {
+        name: INTEREST_RATE_KEY,
+        value: rates.interestRate,
+        type: ParamType.RATIO,
+      },
+      {
+        name: LOAN_FEE_KEY,
+        value: rates.loanFee,
+        type: ParamType.RATIO,
+      },
+    ]);
+    assert(!rateManagers.has(collateralBrand));
+    rateManagers.init(collateralBrand, rateManager);
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
@@ -147,7 +227,8 @@ export async function start(zcf) {
         want: { Governance: _govOut }, // ownership of the whole stablecoin machine
       } = seat.getProposal();
       assert(!collateralTypes.has(collateralBrand));
-      const runAmount = multiplyBy(collateralIn, rates.initialPrice);
+      const initialPrice = rateManagerPublic.lookup(INITIAL_PRICE_KEY);
+      const runAmount = multiplyBy(collateralIn, initialPrice);
       // arbitrarily, give governance tokens equal to RUN tokens
       const govAmount = AmountMath.make(runAmount.value, govBrand);
 
@@ -223,10 +304,10 @@ export async function start(zcf) {
         runMint,
         collateralBrand,
         priceAuthority,
-        rates,
+        rateManagerPublic,
         reallocateReward,
         timerService,
-        loanParams,
+        paramManagerPublic,
         liquidationStrategy,
       );
       collateralTypes.init(collateralBrand, vm);
@@ -318,8 +399,6 @@ export async function start(zcf) {
     return getBootstrapPayment;
   }
 
-  const getBootstrapPayment = mintBootstrapPayment();
-
   const publicFacet = harden({
     getAMM() {
       return autoswapInstance;
@@ -331,6 +410,7 @@ export async function start(zcf) {
     getRunIssuer() {
       return runIssuer;
     },
+    getParamManager: () => paramManagerPublic,
   });
 
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
@@ -348,8 +428,10 @@ export async function start(zcf) {
     },
     getCollaterals,
     getRewardAllocation,
-    getBootstrapPayment,
+    getBootstrapPayment: mintBootstrapPayment(),
     makeCollectFeesInvitation,
+    getParamManager: () => paramManager,
+    getRateManager: rateManagers.get,
   });
 
   return harden({ creatorFacet: stablecoinMachine, publicFacet });
