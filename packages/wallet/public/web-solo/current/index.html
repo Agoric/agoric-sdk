@@ -4,6 +4,7 @@
     <link rel="manifest" href="../manifest.json" />
     <link rel="icon" type="image/png" href="../images/touch/homescreen144.png" />
     <title>Agoric Wallet App</title>
+    <script type="module" src="../../install-ses-lockdown.js"></script>
   </head>
   <body>
     <h1>TrapCaps 2</h1>
@@ -27,10 +28,10 @@
       }, 1000 / spinText.length);
 
       const workers = new Map();
-      const sched = new SharedWorker('./scheduler.js');
+      const sched = new SharedWorker('./sched-worker.js');
       sched.port.addEventListener('message', ev => {
         const obj = ev.data;
-        console.log('received from scheduler', obj);
+        console.log('received from sched-worker', obj);
         switch (obj && obj.type) {
           case 'SCHED_DELIVER': {
             const { script, id, msg, timeout } = obj;

@@ -168,7 +168,7 @@ jobs:
         # Production deployment if a commit to master.
         # FIGME: production-deploy: ${{ github.ref == 'refs/heads/master' }}
         production-deploy: true
-        publish-dir: packages/wallet/public
+        publish-dir: packages/wallet/build
         # SECURITY: we don't want to hand out the Github token to this action.
         # github-token: ${{ secrets.GITHUB_TOKEN }}
       env:
