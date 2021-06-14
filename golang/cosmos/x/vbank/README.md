@@ -9,6 +9,11 @@ the bridge to act upon the bank account. Updates to the bank account balance are
 sent over the bridge to update the bank purse, whose balance can be queried
 entirely at the ERTP level.
 
+## Parameters
+
+- `feeCollectorName`: the module which handles fee distribution to stakers.
+- `feeEpochDurationBlocks`: the duration (in blocks) over which fees should be given to the fee collector.
+
 ## State
 
 The Vbank module maintains no significant state, but will access stored state through the bank module.
@@ -29,8 +34,9 @@ The following fields are common to the Vbank messages:
 
 Downcalls from JS to Cosmos (by `type`):
 - `VBANK_GET_BALANCE (type, address, denom)`: gets the account balance in the given denomination from the bank. Returns the amount as a string.
-- `VBANK_GRAB (type, sender, denom, amount)`: burns amount of denomination from account balance to reflect withdrawal from virtual purse. Returns a `VBANK_BALANCE_UPDATE` message restricted to the sender account and denomination.
 - `VBANK_GIVE (type, recipeient, denom, amount)`: adds amount of denomination to account balance to reflect a deposit to the virtual purse. Returns a `VBANK_BALANCE_UPDATE` message restricted to the recipient account and denomination.
+- `VBANK_GIVE_TO_FEE_COLLECTOR (type, denom, amount)`: stores rewards which will be gradually sent to the fee collector
+- `VBANK_GRAB (type, sender, denom, amount)`: burns amount of denomination from account balance to reflect withdrawal from virtual purse. Returns a `VBANK_BALANCE_UPDATE` message restricted to the sender account and denomination.
 
 Upcalls from Cosmos to JS: (by `type`)
 - `VBANK_BALANCE_UPDATE (type, nonce, updated)`: inform virtual purse of change to the account balance (including a change initiated by VBANK_GRAB or VBANK_GIVE).

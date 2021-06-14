@@ -3,6 +3,7 @@ package vbank
 import (
 	"encoding/json"
 	stdlog "log"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -24,6 +25,32 @@ var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
+
+// minCoins returns the minimum of each denomination.
+// The input coins should be sorted.
+func minCoins(a, b sdk.Coins) sdk.Coins {
+	min := make([]sdk.Coin, 0)
+	for indexA, indexB := 0, 0; indexA < len(a) && indexB < len(b); {
+		coinA, coinB := a[indexA], b[indexB]
+		switch strings.Compare(coinA.Denom, coinB.Denom) {
+		case -1: // A < B
+			indexA++
+		case 0: // A == B
+			minCoin := coinA
+			if coinB.IsLT(minCoin) {
+				minCoin = coinB
+			}
+			if !minCoin.IsZero() {
+				min = append(min, minCoin)
+			}
+			indexA++
+			indexB++
+		case 1: // A > B
+			indexB++
+		}
+	}
+	return sdk.NewCoins(min...)
+}
 
 // app module Basics object
 type AppModuleBasic struct {
@@ -165,6 +192,15 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	// Distribute rewards.
+	state := am.keeper.GetState(ctx)
+	xfer := minCoins(state.RewardRate, state.RewardPool)
+	if !xfer.IsZero() {
+		am.keeper.SendCoinsToFeeCollector(ctx, xfer)
+		state.RewardPool = state.RewardPool.Sub(xfer)
+		am.keeper.SetState(ctx, state)
 	}
 
 	return []abci.ValidatorUpdate{}
