@@ -839,7 +839,7 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots acting upon dropExports`);
+    // console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
     for (const vref of vrefs) {
       const wr = slotToVal.get(vref);
       const o = wr && wr.deref();
@@ -849,18 +849,57 @@ function build(
     }
   }
 
+  function retireOneExport(vref) {
+    insistVatType('object', vref);
+    const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+    assert(allocatedByVat);
+    assert.equal(type, 'object');
+    if (virtual) {
+      // virtual object: ignore for now, but TODO we must still not make
+      // syscall.retireExport for vrefs that were already retired by the
+      // kernel
+      // console.log(`-- liveslots ignoring retireExports ${vref}`);
+    } else {
+      // Remotable
+      // console.log(`-- liveslots acting on retireExports ${vref}`);
+      const wr = slotToVal.get(vref);
+      if (wr) {
+        const val = wr.deref();
+        if (val) {
+          // it's fine to still have a value, that just means the kernel
+          // (and other vats) have completely forgotten about this, but we
+          // still know about it
+
+          if (exportedRemotables.has(val)) {
+            // however this is weird: we still think the Remotable is
+            // reachable, otherwise we would have removed it from
+            // exportedRemotables. The kernel was supposed to send
+            // dispatch.dropExports first.
+            console.log(`err: kernel retired undropped ${vref}`);
+            // TODO: find a way to make this more severe, it's cause for
+            // panicing the kernel, except that vats don't have that
+            // authority. It's *not* cause for terminating the vat, since
+            // it wasn't necessarily our fault.
+            return;
+          }
+          valToSlot.delete(val);
+          droppedRegistry.unregister(val);
+        }
+        slotToVal.delete(vref);
+      }
+    }
+  }
+
   function retireExports(vrefs) {
     assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireExports`);
+    vrefs.forEach(retireOneExport);
   }
 
   function retireImports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireImports`);
+    // console.log(`-- liveslots ignoring retireImports ${vrefs.join(',')}`);
   }
 
   // TODO: when we add notifyForward, guard against cycles

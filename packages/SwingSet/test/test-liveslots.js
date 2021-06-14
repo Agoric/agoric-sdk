@@ -1112,3 +1112,70 @@ test('GC dispatch.dropExports', async t => {
   });
   t.deepEqual(log, []);
 });
+
+test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
+  const { log, syscall } = buildSyscall();
+  let wr;
+  function build(_vatPowers) {
+    let ex1;
+    const root = Far('root', {
+      hold() {
+        ex1 = Far('export', {});
+        wr = new WeakRef(ex1);
+        return ex1;
+      },
+      two() {},
+      drop() {
+        // eslint-disable-next-line no-unused-vars
+        ex1 = undefined; // drop the last userspace strongref
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // rp1 = root~.hold()
+  // ex1 = await rp1
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'hold', capargs([]), rp1));
+  const l1 = log.shift();
+  const ex1 = l1.resolutions[0][2].slots[0];
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+  });
+  t.deepEqual(log, []);
+
+  // the exported Remotable should be held in place by exportedRemotables
+  // until we tell the vat we don't need it any more
+  t.truthy(wr.deref());
+
+  // an intermediate message will trigger GC, but the presence is still held
+  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  t.truthy(wr.deref());
+
+  // now tell the vat we don't need a strong reference to that export.
+  await dispatch(makeDropExports(ex1));
+
+  // that removes the liveslots strongref, but the vat's remains in place
+  t.truthy(wr.deref());
+
+  // now the kernel tells the vat we can't even recognize the export
+  await dispatch(makeRetireExports(ex1));
+
+  // that ought to delete the table entry, but doesn't affect the vat
+  // strongref
+  t.truthy(wr.deref());
+
+  // now tell the vat to drop its strongref
+  await dispatch(makeMessage(rootA, 'drop', capargs([])));
+
+  // which should let the export be collected
+  t.falsy(wr.deref());
+
+  // the vat should *not* emit `syscall.retireExport`, because it already
+  // received a dispatch.retireExport
+  t.deepEqual(log, []);
+});
