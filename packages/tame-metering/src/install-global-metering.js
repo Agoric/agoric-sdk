@@ -1,3 +1,3 @@
-import { tameMetering } from './tame';
+import { tameMetering } from './tame.js';
 
 export default tameMetering();
