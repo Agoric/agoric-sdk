@@ -13,9 +13,12 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import liquidateBundle from '../../bundles/bundle-liquidateMinimum';
-import autoswapBundle from '../../bundles/bundle-multipoolAutoswap';
-import stablecoinBundle from '../../bundles/bundle-stablecoinMachine';
+import liquidateBundle from '../../../bundles/bundle-liquidateMinimum';
+import autoswapBundle from '../../../bundles/bundle-multipoolAutoswap';
+import stablecoinBundle from '../../../bundles/bundle-stablecoinMachine';
+import committeeRegistrarBundle from '../../../bundles/bundle-committeeRegistrar';
+import contractGovernorBundle from '../../../bundles/bundle-contractGovernor';
+import binaryBallotCounterBundle from '../../../bundles/bundle-binaryBallotCounter';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;
@@ -27,6 +30,9 @@ test.before(async t => {
     ['liquidateMinimum', liquidateBundle],
     ['autoswap', autoswapBundle],
     ['treasury', stablecoinBundle],
+    ['committeeRegistrar', committeeRegistrarBundle],
+    ['contractGovernor', contractGovernorBundle],
+    ['binaryBallotCounter', binaryBallotCounterBundle],
   ];
   const contractBundles = {};
   nameToBundle.forEach(([name, bundle]) => {

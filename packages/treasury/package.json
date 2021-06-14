@@ -37,10 +37,12 @@
     "@agoric/deploy-script-support": "^0.2.19",
     "@agoric/ertp": "^0.11.11",
     "@agoric/eventual-send": "^0.13.23",
+    "@agoric/governance": "^0.1.0",
     "@agoric/marshal": "^0.4.20",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.23",
     "@agoric/promise-kit": "^0.2.21",
+    "@agoric/same-structure": "^0.1.20",
     "@agoric/store": "^0.4.23",
     "@agoric/swingset-vat": "^0.19.0",
     "@agoric/zoe": "^0.17.6"
@@ -69,7 +71,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "eslintIgnore": [

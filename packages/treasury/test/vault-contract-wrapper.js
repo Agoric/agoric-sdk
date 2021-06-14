@@ -11,11 +11,12 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { Far } from '@agoric/marshal';
 
+import { buildParamManager } from '@agoric/governance/src/paramManager';
 import { makeVaultKit } from '../src/vault';
 import { paymentFromZCFMint } from '../src/burn';
-import { SECONDS_PER_YEAR } from '../src/interest';
 
 const BASIS_POINTS = 10000n;
+const SECONDS_PER_HOUR = 60n * 60n;
 
 /** @param {ContractFacet} zcf */
 export async function start(zcf) {
@@ -66,11 +67,18 @@ export async function start(zcf) {
     getInterestRate() {
       return makeRatio(5n, runBrand);
     },
-    // collateralBrand, // TODO not a method. How did this ever work?
+    getChargingPeriod() {
+      return SECONDS_PER_HOUR * 24n;
+    },
+    getRecordingPeriod() {
+      return SECONDS_PER_HOUR * 24n * 7n;
+    },
+    // getCollateralBrand() {
+    //   return collateralBrand;
+    // },
     reallocateReward,
   });
 
-  const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;
   const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
   const options = {
     actualBrandIn: collateralBrand,
@@ -82,16 +90,15 @@ export async function start(zcf) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
+  const { publicFacet } = buildParamManager([]);
+
   const { vault, openLoan, accrueInterestAndAddToPool } = await makeVaultKit(
     zcf,
     managerMock,
     runMint,
     autoswapMock,
     priceAuthority,
-    {
-      chargingPeriod: SECONDS_PER_HOUR * 24n,
-      recordingPeriod: SECONDS_PER_HOUR * 24n * 7n,
-    },
+    publicFacet,
     timer.getCurrentTimestamp(),
   );
 

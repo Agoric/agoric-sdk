@@ -20,7 +20,16 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (log, vats, zoe, installations, startingValues) => {
+const startRegistrar = async (zoe, installations) => {
+  const registrarTerms = { committeeName: 'TwentyCommittee', committeeSize: 5 };
+  const {
+    creatorFacet: committeeCreator,
+    instance: registrarInstance,
+  } = await E(zoe).startInstance(installations.registrar, {}, registrarTerms);
+  return { committeeCreator, registrarInstance };
+};
+
+const makeVats = async (log, vats, zoe, installations, startingValues) => {
   const timer = buildManualTimer(console.log, 0n, ONE_DAY);
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
@@ -37,6 +46,8 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
     timer,
   );
 
+  const { committeeCreator } = await startRegistrar(zoe, installations);
+
   // Setup Owner
   const treasuryPublicFacet = E(vats.owner).build(
     zoe,
@@ -46,6 +57,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
     installations,
     timer,
     vats.priceAuthority,
+    committeeCreator,
   );
 
   const result = { aliceP, treasuryPublicFacet };
@@ -60,16 +72,33 @@ function makeBootstrap(argv, cb, vatPowers) {
       devices.vatAdmin,
     );
     const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
-    const [liquidateMinimum, autoswap, treasury] = await Promise.all([
+    const [
+      liquidateMinimum,
+      autoswap,
+      treasury,
+      registrar,
+      counter,
+      governor,
+    ] = await Promise.all([
       E(zoe).install(cb.liquidateMinimum),
       E(zoe).install(cb.autoswap),
       E(zoe).install(cb.treasury),
+      E(zoe).install(cb.committeeRegistrar),
+      E(zoe).install(cb.binaryBallotCounter),
+      E(zoe).install(cb.contractGovernor),
     ]);
 
-    const installations = { liquidateMinimum, autoswap, treasury };
+    const installations = {
+      liquidateMinimum,
+      autoswap,
+      treasury,
+      registrar,
+      counter,
+      governor,
+    };
 
     const [testName, startingValues] = argv;
-    const { aliceP, treasuryPublicFacet } = makeVats(
+    const { aliceP, treasuryPublicFacet } = await makeVats(
       vatPowers.testLog,
       vats,
       zoe,

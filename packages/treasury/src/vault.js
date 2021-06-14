@@ -28,7 +28,7 @@ export function makeVaultKit(
   runMint,
   autoswap,
   priceAuthority,
-  loanParams,
+  loanParamManager,
   startTimeStamp,
 ) {
   const trace = makeTracer('VV');
@@ -58,8 +58,8 @@ export function makeVaultKit(
   const interestCalculator = makeInterestCalculator(
     runBrand,
     manager.getInterestRate(),
-    loanParams.chargingPeriod,
-    loanParams.recordingPeriod,
+    manager.getChargingPeriod(),
+    manager.getRecordingPeriod(),
   );
 
   function getCollateralAllocated(seat) {

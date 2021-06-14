@@ -19,6 +19,14 @@ import { makeVaultKit } from './vault';
 import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
 import { makeTracer } from './makeTracer';
+import {
+  RECORDING_PERIOD_KEY,
+  LIQUIDATION_MARGIN_KEY,
+  INITIAL_MARGIN_KEY,
+  LOAN_FEE_KEY,
+  INTEREST_RATE_KEY,
+  CHARGING_PERIOD_KEY,
+} from './params';
 
 const { details: X } = assert;
 
@@ -36,28 +44,35 @@ export function makeVaultManager(
   runMint,
   collateralBrand,
   priceAuthority,
-  rates,
+  getLoanParams,
   reallocateReward,
   timerService,
-  loanParams,
   liquidationStrategy,
 ) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
+  const getLoanParamValue = key => getLoanParams()[key].value;
+
   const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
-      return rates.liquidationMargin;
+      return getLoanParamValue(LIQUIDATION_MARGIN_KEY);
     },
     // loans must initially have at least 1.2x collateralization
     getInitialMargin() {
-      return rates.initialMargin;
+      return getLoanParamValue(INITIAL_MARGIN_KEY);
     },
     getLoanFee() {
-      return rates.loanFee;
+      return getLoanParamValue(LOAN_FEE_KEY);
     },
     getInterestRate() {
-      return rates.interestRate;
+      return getLoanParamValue(INTEREST_RATE_KEY);
+    },
+    getChargingPeriod() {
+      return getLoanParamValue(CHARGING_PERIOD_KEY);
+    },
+    getRecordingPeriod() {
+      return getLoanParamValue(RECORDING_PERIOD_KEY);
     },
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
@@ -178,7 +193,7 @@ export function makeVaultManager(
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    loanParams.recordingPeriod,
+    /** @type {bigint} */ (getLoanParamValue(RECORDING_PERIOD_KEY)),
   );
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
@@ -219,7 +234,7 @@ export function makeVaultManager(
       runMint,
       autoswap,
       priceAuthority,
-      loanParams,
+      getLoanParams,
       startTimeStamp,
     );
 

@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath } from '@agoric/ertp';
+import { governedParameterTerms } from '../../../src/params';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -20,6 +21,7 @@ const build = async (
   installations,
   timer,
   priceAuthorityVat,
+  committeeCreator,
 ) => {
   const [moolaBrand] = brands;
   const [moolaPayment] = payments;
@@ -39,18 +41,32 @@ const build = async (
     loanParams,
     liquidationInstall: installations.liquidateMinimum,
     timerService: timer,
+    governedParams: governedParameterTerms,
   });
 
-  const { publicFacet, creatorFacet, instance } = await E(zoe).startInstance(
+  const governor = await E(zoe).startInstance(installations.governor);
+
+  const governedContract = await E(governor.creatorFacet).startGovernedInstance(
+    committeeCreator,
     installations.treasury,
-    undefined,
+    {},
     terms,
   );
+  const governedFacets = await Promise.all([
+    E(governedContract).getInstance(),
+    E(governedContract).getCreatorFacet(),
+    E(governedContract).getPublicFacet(),
+  ]);
+  const governed = {
+    instance: governedFacets[0],
+    creatorFacet: governedFacets[1],
+    publicFacet: governedFacets[2],
+  };
 
   const {
     issuers: { RUN: runIssuer },
     brands: { Governance: govBrand, RUN: runBrand },
-  } = await E(zoe).getTerms(instance);
+  } = await E(zoe).getTerms(governed.instance);
 
   const rates = {
     initialPrice: makeRatio(10000, runBrand, 5, moolaBrand),
@@ -60,11 +76,9 @@ const build = async (
     loanFee: makeRatio(200, runBrand, BASIS_POINTS),
   };
 
-  const addTypeInvitation = await E(creatorFacet).makeAddTypeInvitation(
-    moolaIssuer,
-    'Moola',
-    rates,
-  );
+  const addTypeInvitation = await E(
+    governed.creatorFacet,
+  ).makeAddTypeInvitation(moolaIssuer, 'Moola', rates);
   const proposal = harden({
     give: {
       Collateral: AmountMath.make(moolaBrand, 1000n),
@@ -98,7 +112,7 @@ const build = async (
     runBrand,
   );
 
-  return publicFacet;
+  return governed.publicFacet;
 };
 
 export function buildRootObject(vatPowers) {

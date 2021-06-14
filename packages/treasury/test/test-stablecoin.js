@@ -6,25 +6,27 @@ import '../src/types';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
-
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeLoopback } from '@agoric/captp';
-
 import { makeZoe } from '@agoric/zoe';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
 import { makePromiseKit } from '@agoric/promise-kit';
-
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers';
+
+import { governedParameterTerms } from '../src/params';
 import { makeTracer } from '../src/makeTracer';
 import { SECONDS_PER_YEAR } from '../src/interest';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';
 const autoswapRoot = '@agoric/zoe/src/contracts/newSwap/multipoolAutoswap';
+const contractGovernorRoot = '@agoric/governance/src/contractGovernor';
+const committeeRegistrarRoot = '@agoric/governance/src/committeeRegistrar';
+const ballotCounterRoot = '@agoric/governance/src/binaryBallotCounter';
+
 const trace = makeTracer('TestST');
 
 const BASIS_POINTS = 10000n;
@@ -41,7 +43,7 @@ function setUpZoeForTest(setJig) {
   }
 
   /**
-   * These properties will be asssigned by `setJig` in the contract.
+   * These properties will be assigned by `setJig` in the contract.
    *
    * @typedef {Object} TestContext
    * @property {ContractFacet} zcf
@@ -87,7 +89,6 @@ const makePriceAuthority = (
   brandIn,
   brandOut,
   priceList,
-  tradeList,
   timer,
   quoteMint,
   unitAmountIn,
@@ -97,7 +98,6 @@ const makePriceAuthority = (
     actualBrandIn: brandIn,
     actualBrandOut: brandOut,
     priceList,
-    tradeList,
     timer,
     quoteMint,
     unitAmountIn,
@@ -121,50 +121,86 @@ function makeRates(runBrand, aethBrand) {
   });
 }
 
-test('first', async t => {
-  /* @type {TestContext} */
+async function setupServices(
+  loanParams,
+  priceList,
+  unitAmountIn,
+  aethBrand,
+  registrarTerms,
+  timer = buildManualTimer(console.log),
+  quoteInterval,
+) {
   let testJig;
   const setJig = jig => {
     testJig = jig;
   };
   const zoe = setUpZoeForTest(setJig);
 
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
+  const [
+    autoswap,
+    stablecoin,
+    liquidation,
+    governor,
+    registrar,
+    counter,
+  ] = await Promise.all([
+    makeInstall(autoswapRoot, zoe),
+    makeInstall(stablecoinRoot, zoe),
+    makeInstall(liquidationRoot, zoe),
+    makeInstall(contractGovernorRoot, zoe),
+    makeInstall(committeeRegistrarRoot, zoe),
+    makeInstall(ballotCounterRoot, zoe),
+  ]);
+  const installs = {
+    autoswap,
+    stablecoin,
+    liquidation,
+    governor,
+    registrar,
+    counter,
+  };
+
+  const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
+    installs.registrar,
+    {},
+    registrarTerms,
+  );
 
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
+    instance: governorInstance,
+    publicFacet: governorPublicFacet,
+    creatorFacet: governorCreatorFacet,
+  } = await E(zoe).startInstance(installs.governor);
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
-  const loanParams = {
-    chargingPeriod: 2n,
-    recordingPeriod: 10n,
-    poolFee: 24n,
-    protocolFee: 6n,
-  };
-  const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
+  const governedContract = await E(governorCreatorFacet).startGovernedInstance(
+    committeeCreator,
+    installs.stablecoin,
     {},
     {
-      autoswapInstall,
+      autoswapInstall: installs.autoswap,
       priceAuthority: priceAuthorityPromise,
       loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
+      timerService: timer,
+      liquidationInstall: installs.liquidation,
+      electionManager: governorInstance,
+      governedParams: governedParameterTerms,
     },
   );
 
-  const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
+  const stablecoinMachineP = E(governedContract).getCreatorFacet();
+  const lenderP = E(governedContract).getPublicFacet();
 
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
+  const [stablecoinMachine, lender] = await Promise.all([
+    stablecoinMachineP,
+    lenderP,
+  ]);
 
-  const { brand: govBrand } = govIssuerRecord;
+  const g = { governorInstance, governorPublicFacet, governorCreatorFacet };
+
+  const s = { stablecoinMachine, lender };
+  const { runIssuerRecord, govIssuerRecord, autoswap: autoswapAPI } = testJig;
+  const issuers = { run: runIssuerRecord, gov: govIssuerRecord };
 
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
@@ -172,14 +208,48 @@ test('first', async t => {
   // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
   const priceAuthority = makePriceAuthority(
     aethBrand,
-    runBrand,
-    [500n, 15n],
-    null,
-    manualTimer,
+    runIssuerRecord.brand,
+    priceList,
+    timer,
     quoteMint,
-    AmountMath.make(900n, aethBrand),
+    unitAmountIn,
+    quoteInterval,
   );
   priceAuthorityPromiseKit.resolve(priceAuthority);
+
+  return {
+    zoe,
+    installs,
+    registrar,
+    governor: g,
+    stablecoin: s,
+    issuers,
+    priceAuthority,
+    autoswapAPI,
+  };
+}
+
+test('first', async t => {
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const loanParams = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+    poolFee: 24n,
+    protocolFee: 6n,
+  };
+  const services = await setupServices(
+    loanParams,
+    [500n, 15n],
+    AmountMath.make(900n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+  );
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -273,12 +343,8 @@ test('first', async t => {
     'withdrew 100 collateral',
   );
 
-  console.log('preDEBT ', vault.getDebtAmount());
-
   await E(aethVaultManager).liquidateAll();
-  console.log('DEBT ', vault.getDebtAmount());
   t.truthy(AmountMath.isEmpty(vault.getDebtAmount()), 'debt is paid off');
-  console.log('COLLATERAL ', vault.getCollateralAmount());
   t.truthy(AmountMath.isEmpty(vault.getCollateralAmount()), 'vault is cleared');
 
   t.deepEqual(stablecoinMachine.getRewardAllocation(), {
@@ -287,66 +353,33 @@ test('first', async t => {
 });
 
 test('price drop', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
 
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   // When the price falls to 636, the loan will get liquidated. 636 for 900
   // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
-
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
-    poolFee: 24,
-    protocolFee: 6,
+    poolFee: 24n,
+    protocolFee: 6n,
   };
   const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
 
-  const { runIssuerRecord, govIssuerRecord } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const services = await setupServices(
+    loanParams,
     [1000n, 677n, 636n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(900n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    manualTimer,
   );
-  // priceAuthority needs runDebt, which isn't available till the
-  // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a pool with 900 aeth at a 201 RUN/aeth rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -440,29 +473,15 @@ test('price drop', async t => {
 });
 
 test('price falls precipitously', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
     poolFee: 24n,
     protocolFee: 6n,
   };
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
 
   // The borrower will deposit 4 Aeth, and ask to borrow 470 RUN. The
   // PriceAuthority's initial quote is 180. The max loan on 4 Aeth would be 600
@@ -473,42 +492,18 @@ test('price falls precipitously', async t => {
   // gets 41 back
 
   const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
-
-  const { runIssuerRecord, govIssuerRecord, autoswap: autoswapAPI } = testJig;
-
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  // Our wrapper gives us a Vault which holds 5 Collateral, has lent out 10
-  // RUN, which uses an autoswap that presents a fixed price of 4 RUN
-  // per Collateral.
-
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  // priceAuthority needs the RUN brand, which isn't available till the
-  // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const services = await setupServices(
+    loanParams,
     [2200n, 19180n, 1650n, 150n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(900n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    manualTimer,
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a pool with 900 aeth at a 201 RUN/aeth rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -560,7 +555,7 @@ test('price falls precipitously', async t => {
   );
 
   // Sell some Eth to drive the value down
-  const swapInvitation = E(autoswapAPI).makeSwapInvitation();
+  const swapInvitation = E(services.autoswapAPI).makeSwapInvitation();
   const proposal = {
     give: { In: AmountMath.make(200n, aethBrand) },
     want: { Out: AmountMath.makeEmpty(runBrand) },
@@ -596,57 +591,27 @@ test('price falls precipitously', async t => {
 });
 
 test('stablecoin display collateral', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
     poolFee: 24n,
     protocolFee: 6n,
   };
-  const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine } = await E(zoe).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
 
-  const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
-  const { brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const services = await setupServices(
+    loanParams,
     [500n, 1500n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(90n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine } = services.stablecoin;
 
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -684,23 +649,6 @@ test('stablecoin display collateral', async t => {
 
 // charging period is 1 week. Clock ticks by days
 test('interest on multiple vaults', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const secondsPerDay = SECONDS_PER_YEAR / 365n;
   const loanParams = {
     chargingPeriod: secondsPerDay * 7n,
@@ -710,36 +658,23 @@ test('interest on multiple vaults', async t => {
   };
   // Clock ticks by days
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
 
-  const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const services = await setupServices(
+    loanParams,
     [500n, 1500n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(90n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    manualTimer,
     secondsPerDay,
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -891,59 +826,27 @@ test('interest on multiple vaults', async t => {
 });
 
 test('adjust balances', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
     poolFee: 24n,
     protocolFee: 6n,
   };
-  const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
 
-  const { runIssuerRecord, govIssuerRecord } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const services = await setupServices(
+    loanParams,
     [15n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(1n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   const priceConversion = makeRatio(15n, runBrand, 1n, aethBrand);
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
@@ -1193,59 +1096,27 @@ test('adjust balances', async t => {
 // Alice will over repay her borrowed RUN. In order to make that possible,
 // Bob will also take out a loan and will give her the proceeds.
 test('overdeposit', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
     poolFee: 24n,
     protocolFee: 6n,
   };
-  const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
 
-  const { runIssuerRecord, govIssuerRecord } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const services = await setupServices(
+    loanParams,
     [15n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(1n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = AmountMath.make(900n, aethBrand);
@@ -1386,63 +1257,32 @@ test('overdeposit', async t => {
 // enough of the overage that she'll get caught when prices drop. Bob will be
 // charged interest (twice), which will trigger liquidation.
 test('mutable liquidity triggers and interest', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
 
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
-
   const secondsPerDay = SECONDS_PER_YEAR / 365n;
-  // charge interest on every tick
   const loanParams = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
     poolFee: 24n,
     protocolFee: 6n,
   };
+  // charge interest on every tick
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
-
-  const { runIssuerRecord, govIssuerRecord } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const services = await setupServices(
+    loanParams,
     [10n, 7n],
-    null,
-    manualTimer,
-    quoteMint,
     AmountMath.make(1n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    manualTimer,
     secondsPerDay * 7n,
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const capitalAmount = AmountMath.make(10000n, aethBrand);
@@ -1616,9 +1456,7 @@ test('mutable liquidity triggers and interest', async t => {
 });
 
 test('bad chargingPeriod', async t => {
-  /* @type {TestContext} */
   const setJig = () => {};
-  /* @type {TestContext} */
   const zoe = setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
@@ -1646,6 +1484,7 @@ test('bad chargingPeriod', async t => {
           loanParams,
           timerService: manualTimer,
           liquidationInstall,
+          governedParams: governedParameterTerms,
         },
       ),
     { message: 'chargingPeriod (2) must be a BigInt' },
@@ -1653,61 +1492,33 @@ test('bad chargingPeriod', async t => {
 });
 
 test('coll fees from loan and AMM', async t => {
-  /* @type {TestContext} */
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const zoe = setUpZoeForTest(setJig);
-
-  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
-  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
-  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
-
-  const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-  } = setupAssets();
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
     poolFee: 24n,
     protocolFee: 6n,
   };
+
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const priceList = [500n, 15n];
+  const unitAmountIn = AmountMath.make(900n, aethBrand);
+  const registrarTerms = { committeeName: 'TheCabal', committeeSize: 5 };
   const manualTimer = buildManualTimer(console.log);
-  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
-    zoe,
-  ).startInstance(
-    stablecoinInstall,
-    {},
-    {
-      autoswapInstall,
-      priceAuthority: priceAuthorityPromise,
-      loanParams,
-      timerService: manualTimer,
-      liquidationInstall,
-    },
-  );
 
-  const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
-  const { brand: runBrand } = runIssuerRecord;
-  const { brand: govBrand } = govIssuerRecord;
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  // priceAuthority needs the RUN brand, which isn't available until the
-  // stablecoinMachine has been built, so resolve priceAuthorityPromiseKit here
-  const priceAuthority = makePriceAuthority(
+  const services = await setupServices(
+    loanParams,
+    priceList,
+    unitAmountIn,
     aethBrand,
-    runBrand,
-    [500n, 15n],
-    null,
+    registrarTerms,
     manualTimer,
-    quoteMint,
-    AmountMath.make(900n, aethBrand),
   );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  const { brand: runBrand } = services.issuers.run;
+  const { brand: govBrand } = services.issuers.gov;
+  const zoe = services.zoe;
+  const { stablecoinMachine, lender } = services.stablecoin;
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
   const capitalAmount = AmountMath.make(900n, aethBrand);

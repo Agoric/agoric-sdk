@@ -29,6 +29,13 @@
  */
 
 /**
+ * @typedef {Object} QuestionTermsShort - ballot details for the Registrar
+ * @property {BallotSpec} ballotSpec
+ * @property {ClosingRule} closingRule
+ * @property {QuorumRule} quorumRule
+ */
+
+/**
  * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' | 'unknown' } ParamType
  */
 
