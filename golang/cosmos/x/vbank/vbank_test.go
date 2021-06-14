@@ -345,6 +345,17 @@ func Test_Receive_GiveToFeeCollector(t *testing.T) {
 				sdk.NewInt64Coin("stickers", 1),
 			),
 		},
+		{
+			name:          "big",
+			duration:      1000 * 1000,
+			rewardPool:    sdk.NewCoins(),
+			feeAmount:     "123456789123456789123456789",
+			feeDenom:      "yoctoquatloos",
+			wantMintCoins: "123456789123456789123456789yoctoquatloos",
+			wantRate: sdk.NewCoins(
+				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+			),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

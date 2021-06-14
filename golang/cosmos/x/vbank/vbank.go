@@ -77,13 +77,13 @@ func rewardRate(pool sdk.Coins, blocks int64) sdk.Coins {
 	coins := make([]sdk.Coin, 0)
 	if blocks > 0 {
 		for _, coin := range pool {
-			amt := coin.Amount.Int64()
-			if amt == 0 {
+			if coin.IsZero() {
 				continue
 			}
 			// divide by blocks, rounding fractions up
-			rate := (amt-1)/blocks + 1
-			coins = append(coins, sdk.NewInt64Coin(coin.GetDenom(), rate))
+			// (coin.Amount - 1)/blocks + 1
+			rate := coin.Amount.SubRaw(1).QuoRaw(blocks).AddRaw(1)
+			coins = append(coins, sdk.NewCoin(coin.GetDenom(), rate))
 		}
 	}
 	return sdk.NewCoins(coins...)
