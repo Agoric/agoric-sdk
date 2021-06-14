@@ -4,7 +4,6 @@
     <link rel="manifest" href="../manifest.json" />
     <link rel="icon" type="image/png" href="../images/touch/homescreen144.png" />
     <title>Agoric Wallet App</title>
-    <script type="module" src="../../install-ses-lockdown.js"></script>
   </head>
   <body>
     <h1>Failed 1</h1>
@@ -16,6 +15,7 @@
     <div id="spinner"></div>
     <button id="getCount">Increment Count</button> <span id="currentCount"></span>
     <script type="module">
+      import '@agoric/wallet/src/install-ses-lockdown.js';
       if (!self.crossOriginIsolated) {
         const msg = `web-solo requires self.crossOriginIsolated`;
         alert(msg);

@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-globals */
+/* global self */
 const portsToTasks = new Map();
 const tasks = new Map();
 
@@ -25,7 +27,6 @@ const broadcast = obj => {
 
 let count = 0;
 
-// eslint-disable-next-line no-restricted-globals
 self.addEventListener('connect', connectEv => {
   const clientPort = connectEv.ports[0];
   const myTasks = new Set();
@@ -52,12 +53,12 @@ self.addEventListener('connect', connectEv => {
         let port = task.port;
         const deliver = { type: 'SCHED_DELIVER', id, script: task.script, msg };
         // unicast(port, deliver);
-        if (1 || task.port === null) {
+        if (task.port === null) {
           console.log('first choice for delivery failed');
-          port = clientPort;
-          myTasks.add(task);
-          port.postMessage(deliver);
         }
+        port = clientPort;
+        myTasks.add(task);
+        port.postMessage(deliver);
         task.port = port;
         break;
       }

@@ -2,7 +2,6 @@
 <html>
   <head>
     <title>Agoric || Welcome aboard!</title>
-    <script type="module" src="install-ses-lockdown.js"></script>
   </head>
 
   <body>
@@ -26,7 +25,7 @@
       href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">ag-solo</a></td>
       <td>Docker</td> <td>Beta</td></tr>
       <tr class="stability-experimental nodisplay"><td><a href="web-solo/current/">web-solo</a></td>
-      <td>Static Web Page</td> <td>Experimental</td></tr>
+      <td>Web Page</td> <td>Experimental</td></tr>
     </table>
     
     <h2>Cosmos Layer</h2>
@@ -45,6 +44,7 @@
     </table>
 
     <script type="module">
+      import '@agoric/wallet/src/install-ses-lockdown.js';
       if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
         // Don't hide the experimental wallets.
         document.querySelectorAll('.stability-experimental').forEach(el => el.classList.remove('nodisplay'));

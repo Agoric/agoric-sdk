@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-globals */
+/* global self */
+
 console.log('guest-worker isolated:', self.isCrossOriginIsolated, self);
 
 let tbuf;

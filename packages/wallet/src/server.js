@@ -1,8 +1,6 @@
 /* global __dirname setTimeout clearTimeout process */
 // Start a network service
 import http from 'http';
-import https from 'https';
-import fs from 'fs';
 import { createConnection } from 'net';
 import express from 'express';
 import anylogger from 'anylogger';
@@ -41,18 +39,7 @@ const enableCrossOriginIsolated = prefix => (req, res, next) => {
 app.use(enableCrossOriginIsolated('/web-solo/'));
 app.use(express.json()); // parse application/json
 
-let server;
-
-const lh = `${process.env.HOME}/Library/Application Support/https-localhost/localhost`;
-let IS_HTTPS = false;
-if (0 && fs.existsSync(`${lh}.key`) && fs.existsSync(`${lh}.crt`)) {
-  IS_HTTPS = true;
-  const cert = fs.readFileSync(`${lh}.crt`).toString('utf-8');
-  const key = fs.readFileSync(`${lh}.key`).toString('utf-8');
-  server = https.createServer({ cert, key }, app);
-} else {
-  server = http.createServer(app);
-}
+const server = http.createServer(app);
 
 // serve the static HTML
 app.use(express.static(STATIC_DIR));
@@ -83,10 +70,7 @@ const doListen = async (host, port) => {
   });
 
   server.listen(port, host, () =>
-    log.info(
-      'Listening on',
-      `${IS_HTTPS ? 'https' : 'http'}://${host}:${port}`,
-    ),
+    log.info('Listening on', `http://${host}:${port}`),
   );
 };
 
