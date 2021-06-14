@@ -1,0 +1,46 @@
+@startuml contract governance
+
+Object ParamManager {
+    paramDesc[] { name, type, value }
+    --
+    +getParams()
+    +getParam()
+    -updateFoo()
+}
+
+class GovernedContract {
+    <i>verifiable</i>: Governor, params
+    --
+    +terms: { electionManager, governedParams }
+    +getState()
+    +getContractGovernor()
+    -getContractGovernor
+    -getParamManagerAccessor
+}
+note  left : calls buildParamManager(paramDesc);\nmakes paramMgr state public\nreturns paramMgr in creatorFacet
+
+class ContractGovernor {
+    <i>verifiable</i>: governedInstance, registrarInstance
+    --
+    +getRegistrar()
+    +getGovernedContract()
+    -startGovernedInstance(registrar, governed, ...)
+    validateBallotCounter()
+    validateBallotRegistrar()
+    validateBallotTimer()
+}
+note left : ContractGovernor starts GovernedContract\nholds paramManager tightly for issue creation
+
+class Registrar {
+    Questions
+    ===
+    -addQuestion()
+}
+
+GovernedContract ..> ParamManager : creates >
+GovernedContract --> ParamManager : access\nto params
+ContractGovernor ..> GovernedContract : creates >
+ContractGovernor --> Registrar
+ContractGovernor ==> ParamManager : manages\nparams
+
+@enduml
