@@ -1,4 +1,4 @@
-import '../src/install-global-metering';
+import '../src/install-global-metering.js';
 import test from 'ava';
 
 test('symbol properties', t => {

@@ -1,1 +1,1 @@
-export { tameMetering, isTamed } from './tame';
+export { tameMetering, isTamed } from './tame.js';

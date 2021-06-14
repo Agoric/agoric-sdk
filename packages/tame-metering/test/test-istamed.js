@@ -1,5 +1,5 @@
 import test from 'ava';
-import { isTamed, tameMetering } from '../src/index';
+import { isTamed, tameMetering } from '../src/index.js';
 
 test('isTamed', t => {
   t.is(isTamed(), false, 'isTamed() is false in a new untamed realm');

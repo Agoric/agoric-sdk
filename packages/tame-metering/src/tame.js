@@ -1,5 +1,5 @@
 /* global globalThis */
-import * as c from './constants';
+import * as c from './constants.js';
 
 let replaceGlobalMeter;
 
