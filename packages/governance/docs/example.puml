@@ -1,0 +1,45 @@
+@startuml governance example
+
+package "Example Invitations" <<rectangle>> {
+  object CommitteeElectionManager {
+      has a committee that wlll vote on questions.
+      can create binary (and other) questions.
+  }
+
+  object BinaryBallotCounter {
+      quorumPercent
+      majorityRequired
+      --
+      doesn't know who's voting.
+      knows how to create and count binary questions.
+  }
+
+  map FeesTo2Percent {
+      Question => set fees at 2%?
+      positionA => Yes
+      positionB => No
+  }
+
+  object TreasuryGovernanceRegistrar1 {
+      Questions: FeesTo2Percent, ...
+      --
+      distributed voterInvitations to creator.
+      doesn't know how questions are created.
+  }
+
+  object memberAVoterInvitation {
+    TreasuryGovernanceRegistrar1
+  }
+
+  object memberAVoterFacet {
+    TreasuryGovernanceRegistrar1
+    --
+    castBallot(template)
+  }
+}
+
+CommitteeElectionManager --> BinaryBallotCounter
+CommitteeElectionManager --> TreasuryGovernanceRegistrar1
+memberAVoterInvitation --> memberAVoterFacet
+
+@enduml

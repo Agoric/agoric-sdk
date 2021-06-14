@@ -1,0 +1,67 @@
+@startuml governance invitation linkages
+
+class "Registrar\n(In a Vat)" as Registrar {
+    Question...
+    addQuestion(ballotCounterInstall, question, deadline)
+    questionNotifier()
+    #getVoterInvitation()
+}
+
+note "produces VoterInvitations.\nunaware of BallotCounters." as N1
+Registrar .. N1
+
+class "BallotCounter\n(In a Vat)" as BallotCounter {
+    Question
+    quorumRule
+    --
+    makeBallot()
+    countVotes()
+    submitVote()
+    getDeadline()
+    +getBallotTemplate()
+    +getOutcome()
+}
+
+note "unaware of voter registration." as N2
+BallotCounter .. N2
+
+class BallotTemplate {
+    question
+    positions
+    choose(position...)
+}
+
+object Question {
+    name
+    positionA
+    positionB
+    ...
+}
+
+class "ElectionManager\n(in a Vat)" as ElectionManager {
+    Registrar
+    addQuestion()
+}
+
+class VoterFacet {
+    castBallot(template)
+}
+
+object VoterInvitation {
+    Registrar
+    --
+    getVoterFacet()
+}
+
+ElectionManager --|> Registrar
+
+Registrar --> VoterInvitation
+Registrar --|> BallotCounter
+Registrar --|> VoterFacet
+VoterInvitation -> VoterFacet
+VoterFacet -> BallotTemplate
+BallotCounter --|> BallotTemplate
+
+BallotTemplate ..> Question
+
+@enduml
