@@ -20,6 +20,7 @@ export function makeNodeSubprocessFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -109,6 +110,7 @@ export function makeNodeSubprocessFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
     ]);
 
     function shutdown() {

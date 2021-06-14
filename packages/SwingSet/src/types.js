@@ -26,6 +26,7 @@
  *   metered?: boolean,
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
+ *   enableVatstore?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,

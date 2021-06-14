@@ -57,6 +57,7 @@ parentPort.on('message', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
     ] = margs;
 
     function testLog(...args) {
@@ -89,6 +90,7 @@ parentPort.on('message', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
     );
 

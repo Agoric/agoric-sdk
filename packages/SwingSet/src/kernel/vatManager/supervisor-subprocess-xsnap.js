@@ -143,6 +143,7 @@ function makeWorker(port) {
    * @param {unknown} vatParameters
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
+   * @param {boolean} enableVatstore
    * @returns { Promise<Tagged> }
    */
   async function setBundle(
@@ -151,6 +152,7 @@ function makeWorker(port) {
     vatParameters,
     virtualObjectCacheSize,
     enableDisavow,
+    enableVatstore,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
@@ -195,6 +197,7 @@ function makeWorker(port) {
       vatParameters,
       cacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
     );
 
@@ -227,7 +230,15 @@ function makeWorker(port) {
       case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[4];
-        return setBundle(args[0], args[1], args[2], args[3], enableDisavow);
+        const enableVatstore = !!args[5];
+        return setBundle(
+          args[0],
+          args[1],
+          args[2],
+          args[3],
+          enableDisavow,
+          enableVatstore,
+        );
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');

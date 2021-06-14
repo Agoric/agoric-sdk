@@ -84,6 +84,7 @@ export function makeVatLoader(stuff) {
     'vatParameters',
     'enableSetup',
     'enablePipelining',
+    'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
   ];
@@ -96,6 +97,7 @@ export function makeVatLoader(stuff) {
     'enableDisavow',
     'enableSetup',
     'enablePipelining',
+    'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
   ];
@@ -141,6 +143,10 @@ export function makeVatLoader(stuff) {
    *        without waiting for the promises to be resolved.  If false, such
    *        messages will be queued inside the kernel.  Defaults to false.
    *
+   *    'enableVatstore' If true, the vat is provided with an object that allows
+   *        individual keyed access (in an insolated subset of the key space) to
+   *        the vatstore.  Defaults to false.
+   *
    *    'useTranscript' If true, saves a transcript of a vat's inbound
    *        deliveries and outbound syscalls so that the vat's internal state
    *        can be reconstructed via replay.  If false, no such record is kept.
@@ -175,6 +181,7 @@ export function makeVatLoader(stuff) {
       enableSetup = false,
       enableDisavow = false,
       enablePipelining = false,
+      enableVatstore = false,
       virtualObjectCacheSize,
       useTranscript = true,
       name,
@@ -206,6 +213,7 @@ export function makeVatLoader(stuff) {
       vatConsole: makeVatConsole('vat', vatID),
       liveSlotsConsole: makeVatConsole('ls', vatID),
       vatParameters,
+      enableVatstore,
       virtualObjectCacheSize,
       useTranscript,
       name,

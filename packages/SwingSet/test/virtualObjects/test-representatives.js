@@ -264,7 +264,7 @@ test('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function thingID(num) {
-    return `v1.vs.o+1/${num}`;
+    return `v1.vs.vom.o+1/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
