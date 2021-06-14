@@ -1,0 +1,80 @@
+@startuml governance invitation linkages
+
+note "Contracts have a 'C' marker.\nInvitations have an 'I'." as NC
+
+class Registrar {
+    terms: committeeSize, committeeName
+    --
+    Questions[]
+    +questionNotifier()
+    +getOpenQuestions()
+    +getBallot(handle)
+    #getVoterInvitation()
+    -getQuestionPoserInvitation
+    -addQuestion(ballotCounterInstall, question, details)
+}
+
+note "produces VoterInvitations.\nPolymorphic over BallotCounters.\nquestions are enumerable." as N1
+Registrar .. N1
+
+class BallotCounter {
+    terms\n   {ballotSpec, quorum, closingRule, tieOutcome}
+    --
+    +getDetails()
+    +getOutcome()
+    +getStats()
+    +getBallotTemplate()
+    #countVotes()
+    -submitVote()
+    -getVoterFacet()
+}
+
+note "unaware of voter registration.\n Only Registrar hands out voterFacets" as N2
+BallotCounter .. N2
+
+object BallotDetails {
+    Method { CHOOSE_N | ORDER | WEIGHT }
+    Type { ParamChange | Election | Survey }
+    --
+    question, positions, tieOutcome, maxChoices
+    quorumRule
+    closingRule: { timer, deadline }
+    ballotHandle
+    counterInstance
+}
+
+class ElectionManager {
+    Registrar
+    addQuestion()
+}
+
+object VoterFacet {
+    ---
+    submitVote(...positions)
+}
+
+interface VoterInvitation {
+    Registrar
+    --
+    getVoterFacet()
+}
+
+interface QuestionPoserInvitation {
+    Registrar
+    --
+    getVoterFacet()
+}
+
+
+ElectionManager -.[#blue]-|> Registrar : verifiable
+
+Registrar *. VoterInvitation
+Registrar *. QuestionPoserInvitation
+Registrar --> BallotCounter : creates >
+Registrar --> VoterFacet : creates >
+VoterInvitation -> VoterFacet
+Registrar -> BallotDetails : creates >
+BallotCounter <|-.[#blue]-|> BallotDetails : verifiable
+
+
+@enduml
