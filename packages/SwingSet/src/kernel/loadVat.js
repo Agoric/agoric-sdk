@@ -52,8 +52,11 @@ export function makeVatLoader(stuff) {
    */
   function recreateDynamicVat(vatID, source, translators, dynamicOptions) {
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, translators, dynamicOptions, true).catch(err =>
-      panic(`unable to re-create vat ${vatID}`, err),
+    return create(vatID, source, translators, dynamicOptions, true).catch(
+      err => {
+        panic(`unable to re-create vat ${vatID}`, err);
+        throw err;
+      },
     );
     // if we fail to recreate the vat during replay, crash the kernel,
     // because we no longer have any way to inform the original caller
@@ -72,8 +75,11 @@ export function makeVatLoader(stuff) {
    */
   function recreateStaticVat(vatID, source, translators, staticOptions) {
     // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, translators, staticOptions, false).catch(err =>
-      panic(`unable to re-create vat ${vatID}`, err),
+    return create(vatID, source, translators, staticOptions, false).catch(
+      err => {
+        panic(`unable to re-create vat ${vatID}`, err);
+        throw err;
+      },
     );
   }
 

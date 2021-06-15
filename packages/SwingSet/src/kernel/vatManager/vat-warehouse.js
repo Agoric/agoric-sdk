@@ -71,13 +71,12 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     };
     // console.log('provide: creating from bundle', vatID);
     const manager = await chooseLoader()(vatID, source, translators, options);
-    assert(manager, `no vat manager; kernel panic?`);
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    // TODO: load from snapshot
     await manager.replayTranscript();
+
     const result = {
       manager,
       translators,
