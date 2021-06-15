@@ -52,7 +52,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ],
     "ignorePatterns": [
       "examples/**/*.js"

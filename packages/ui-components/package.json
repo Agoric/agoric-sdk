@@ -32,7 +32,7 @@
   "eslintConfig": {
     "extends": [
       "react-app",
-      "@agoric"
+      "@endo"
     ],
     "rules": {
       "no-use-before-define": "off",
