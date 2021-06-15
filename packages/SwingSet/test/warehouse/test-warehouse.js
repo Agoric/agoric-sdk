@@ -1,18 +1,22 @@
 /* global __dirname */
 // @ts-check
 
-import { test } from '../../tools/prepare-test-env-ava.js';
-
+// eslint-disable-next-line import/order
+import { test } from '../../tools/prepare-test-env-ava';
+import path from 'path';
+import fs from 'fs';
+import { tmpName } from 'tmp';
+import { makeSnapstore } from '@agoric/xsnap';
 import { loadBasedir, buildVatController } from '../../src/index.js';
+import { provideHostStorage } from '../../src/hostStorage.js';
 
-async function makeController(managerType, maxVatsOnline) {
+async function makeController(managerType, runtimeOptions) {
   const config = await loadBasedir(__dirname);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
   config.vats.target3 = config.vats.target;
   config.vats.target4 = config.vats.target;
-  const warehousePolicy = { maxVatsOnline };
-  const c = await buildVatController(config, [], { warehousePolicy });
+  const c = await buildVatController(config, [], runtimeOptions);
   return c;
 }
 
@@ -60,8 +64,7 @@ const steps = [
   },
 ];
 
-test('4 vats in warehouse with 2 online', async t => {
-  const c = await makeController('xs-worker', maxVatsOnline);
+async function runSteps(c, t) {
   t.teardown(c.shutdown);
 
   await c.run();
@@ -83,4 +86,32 @@ test('4 vats in warehouse with 2 online', async t => {
       online,
     );
   }
+}
+
+test('4 vats in warehouse with 2 online', async t => {
+  const c = await makeController('xs-worker', {
+    warehousePolicy: { maxVatsOnline },
+  });
+  await runSteps(c, t);
+});
+
+test('snapshot after deliveries', async t => {
+  const snapstorePath = path.resolve(__dirname, './fixture-xs-snapshots/');
+  fs.mkdirSync(snapstorePath, { recursive: true });
+
+  const snapstore = makeSnapstore(snapstorePath, {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  });
+  const hostStorage = { snapstore, ...provideHostStorage() };
+  const c = await makeController('xs-worker', {
+    hostStorage,
+    warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
+  });
+  await runSteps(c, t);
 });

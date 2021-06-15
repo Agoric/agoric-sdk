@@ -185,8 +185,11 @@ function makeManagerKit(
   async function replayTranscript(startPos = undefined) {
     if (transcriptManager) {
       const total = vatKeeper.vatStats().transcriptCount;
-      if (startPos === undefined) {
-        startPos = vatKeeper.getLastSnapshot();
+      if (!startPos) {
+        const ls = vatKeeper.getLastSnapshot();
+        if (ls) {
+          startPos = ls.startPos;
+        }
       }
       kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
       let deliveryNum = 0;

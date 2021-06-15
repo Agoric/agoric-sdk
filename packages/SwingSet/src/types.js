@@ -126,7 +126,7 @@
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos?: unknown) => Promise<void>,
- *              makeSnapshot: (ss: SnapStore) => Promise<string>,
+ *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapstore> } SnapStore

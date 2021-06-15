@@ -42,7 +42,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
 /**
  * Produce a vat keeper for a vat.
  *
- * @param {*} kvStore  The keyValue store in which the persistent state will be kept
+ * @param {KVStorePlus} kvStore  The keyValue store in which the persistent state will be kept
  * @param {StreamStore} streamStore  Accompanying stream store, for the transcripts
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
@@ -60,6 +60,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
+ * @param { SnapStore= } snapStore
  * returns an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
@@ -418,23 +419,11 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
   }
 
-  /**
-   * Take a snapshot of an XSnap worker and return its hash.
-   *
-   * @param { VatManager } manager
-   * @returns { Promise<void> }
-   */
-  async function saveSnapshot(manager) {
-    console.log('@@@saveSnapshot', { snapStore });
-    assert(snapStore, 'cannot saveSnapshot: no snapStore provided');
-    const snapshotID = await manager.makeSnapshot(snapStore);
-    // @@skip crank buffering?
-    kvStore.set(
-      `${vatID}.lastSnapshot`,
-      JSON.stringify({
-        snapshotID,
-        startPos: kvStore.get(`${vatID}.t.nextID`),
-      }),
+  /** @returns { StreamPosition } */
+  function getTranscriptEnd() {
+    return JSON.parse(
+      kvStore.get(`${vatID}.t.endPosition`) ||
+        assert.fail('missing endPosition'),
     );
   }
 
@@ -450,6 +439,50 @@ export function makeVatKeeper(
     assert.typeof(snapshotID, 'string');
     assert(startPos);
     return { snapshotID, startPos };
+  }
+
+  /**
+   * Store a snapshot priodically, if given power to make a snapStore.
+   *
+   * @param { VatManager } manager
+   * @param { number= } snapshotInterval
+   * @returns { Promise<void> }
+   */
+  async function saveSnapshot(manager, snapshotInterval = undefined) {
+    if (!snapStore || !manager.makeSnapshot) {
+      return;
+    }
+    const endPosition = getTranscriptEnd();
+    const newCount = endPosition.itemCount;
+    if (newCount === undefined) {
+      console.log('@@DEBUG: no itemCount', { endPosition });
+      return;
+    }
+    const lastSnapshot = getLastSnapshot();
+    const savedCount = lastSnapshot ? lastSnapshot.startPos.itemCount || 0 : 0;
+    if (
+      snapshotInterval !== undefined &&
+      snapshotInterval > newCount - savedCount
+    ) {
+      console.debug('interval not reached:', {
+        snapshotInterval,
+        newCount,
+        savedCount,
+        delta: newCount - savedCount,
+      });
+      return;
+    }
+    const snapshotID = await manager.makeSnapshot(snapStore);
+    // @@skip crank buffering?
+    kvStore.set(
+      `${vatID}.lastSnapshot`,
+      JSON.stringify({ snapshotID, startPos: endPosition }),
+    );
+    console.log('@@@saveSnapshot', {
+      vatID,
+      snapshotID,
+      startPos: endPosition,
+    });
   }
 
   function vatStats() {

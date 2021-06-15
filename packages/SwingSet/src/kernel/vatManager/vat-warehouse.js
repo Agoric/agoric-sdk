@@ -1,11 +1,11 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
 
 /**
  * @param { KernelKeeper } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
- * @param {{ maxVatsOnline?: number }=} policyOptions
+ * @param {{ maxVatsOnline?: number, snapshotInterval?: number }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
@@ -13,7 +13,7 @@ import { makeVatTranslators } from '../vatTranslator.js';
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { maxVatsOnline = 50 } = policyOptions || {};
+  const { maxVatsOnline = 50, snapshotInterval = 20 } = policyOptions || {};
   // console.debug('makeVatWarehouse', { policyOptions });
 
   /**
@@ -52,6 +52,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
+    assert(kernelKeeper.vatIsAlive(vatID), X`${q(vatID)}: not alive`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { source, options } = vatKeeper.getSourceAndOptions();
 
@@ -187,17 +188,32 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     await evict(lru);
   }
 
+  /** @type { string | undefined } */
+  let lastVatID;
+
   /** @type {(vatID: string, d: VatDeliveryObject) => Promise<Tagged> } */
   async function deliverToVat(vatID, delivery) {
     await applyAvailabilityPolicy(vatID);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const recreate = true; // PANIC in the failure case
+    lastVatID = vatID;
 
+    const recreate = true; // PANIC in the failure case
     const { manager } = await ensureVatOnline(vatID, recreate);
-    const result = manager.deliver(delivery);
-    const todo = '@@@only snapshot occasionally; move to evict?';
-    vatKeeper.saveSnapshot(manager);
-    return result;
+    return manager.deliver(delivery);
+  }
+
+  /**
+   * Save a snapshot of most recently used vat,
+   * depending on snapshotInterval.
+   */
+  async function maybeSaveSnapshot() {
+    if (!lastVatID || !lookup(lastVatID)) {
+      return;
+    }
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(lastVatID, recreate);
+    const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
+    await vatKeeper.saveSnapshot(manager, snapshotInterval);
+    lastVatID = undefined;
   }
 
   /**
@@ -260,6 +276,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     lookup,
     kernelDeliveryToVatDelivery,
     deliverToVat,
+    maybeSaveSnapshot,
 
     // mostly for testing?
     activeVatsInfo: () =>

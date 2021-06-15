@@ -109,8 +109,14 @@ const FIRST_CRANK_NUMBER = 0n;
  * @param {KVStorePlus} kvStore
  * @param {StreamStore} streamStore
  * @param {KernelSlog} kernelSlog
+ * @param {SnapStore=} snapStore
  */
-export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
+export default function makeKernelKeeper(
+  kvStore,
+  streamStore,
+  kernelSlog,
+  snapStore = undefined,
+) {
   insistEnhancedStorageAPI(kvStore);
 
   /**
@@ -939,6 +945,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       incStat,
       decStat,
       getCrankNumber,
+      snapStore,
     );
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;

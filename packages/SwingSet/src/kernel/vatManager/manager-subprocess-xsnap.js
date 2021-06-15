@@ -110,14 +110,14 @@ export function makeXsSubprocessFactory({
     }
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const snapshotDetail = vatKeeper.getLastSnapshot();
+    const lastSnapshot = vatKeeper.getLastSnapshot();
 
     // start the worker and establish a connection
     const worker = await startXSnap(
       `${vatID}:${name}`,
       handleCommand,
       metered,
-      snapshotDetail ? snapshotDetail.snapshotID : undefined,
+      lastSnapshot ? lastSnapshot.snapshotID : undefined,
     );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
