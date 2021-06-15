@@ -2,7 +2,7 @@ import { assert } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
-import { meterMe } from './metered-code';
+import { meterMe } from './metered-code.js';
 
 export function buildRootObject(_dynamicVatPowers) {
   let grandchildNS;

@@ -1,9 +1,9 @@
 /* global WeakRef */
 import { makeMarshal } from '@agoric/marshal';
 import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../src/parseVatSlots';
+import { parseVatSlot } from '../src/parseVatSlots.js';
 
-import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager';
+import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager.js';
 
 export function makeFakeVirtualObjectManager(options = {}) {
   const { cacheSize = 100, log, weak = false } = options;

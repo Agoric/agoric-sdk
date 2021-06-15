@@ -15,7 +15,7 @@ import '@agoric/babel-standalone';
 /* eslint-disable no-await-in-loop */
 import '@agoric/install-ses';
 import { assert, details as X, q } from '@agoric/assert';
-import { xsnap } from './xsnap';
+import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
 const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;

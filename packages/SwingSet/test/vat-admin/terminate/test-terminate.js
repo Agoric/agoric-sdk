@@ -6,7 +6,7 @@ import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../../../src/hostStorage';
+import { provideHostStorage } from '../../../src/hostStorage.js';
 
 import {
   buildVatController,

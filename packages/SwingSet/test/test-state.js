@@ -1,4 +1,4 @@
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import {
@@ -6,14 +6,14 @@ import {
   getAllState,
   setAllState,
 } from '@agoric/swing-store-simple';
-import { buildHostDBInMemory } from '../src/hostStorage';
-import { buildBlockBuffer } from '../src/blockBuffer';
-import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
+import { buildHostDBInMemory } from '../src/hostStorage.js';
+import { buildBlockBuffer } from '../src/blockBuffer.js';
+import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import {
   buildCrankBuffer,
   addHelpers,
   wrapStorage,
-} from '../src/kernel/state/storageWrapper';
+} from '../src/kernel/state/storageWrapper.js';
 
 function checkState(t, getState, expected) {
   const state = getState();

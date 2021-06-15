@@ -1,8 +1,8 @@
 // Copyright (C) 2019-20 Agoric, under Apache license 2.0
 
 // @ts-check
-import { makeWeakStore } from '../weak-store';
-import '../types';
+import { makeWeakStore } from '../weak-store.js';
+import '../types.js';
 
 /**
  * Create a completely in-memory "external" store.  This store will be

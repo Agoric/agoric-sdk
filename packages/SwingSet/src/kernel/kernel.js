@@ -1,27 +1,27 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { assertKnownOptions } from '../assertOptions';
-import { makeVatManagerFactory } from './vatManager/factory';
-import { makeVatWarehouse } from './vatManager/vat-warehouse';
-import makeDeviceManager from './deviceManager';
-import { wrapStorage } from './state/storageWrapper';
-import makeKernelKeeper from './state/kernelKeeper';
-import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { parseVatSlot } from '../parseVatSlots';
-import { insistStorageAPI } from '../storageAPI';
-import { insistCapData } from '../capdata';
-import { insistMessage, insistVatDeliveryResult } from '../message';
-import { insistDeviceID, insistVatID } from './id';
-import { makeMeterManager } from './metering';
-import { makeKernelSyscallHandler, doSend } from './kernelSyscall';
-import { makeSlogger, makeDummySlogger } from './slogger';
-import { getKpidsToRetire } from './cleanup';
+import { assertKnownOptions } from '../assertOptions.js';
+import { makeVatManagerFactory } from './vatManager/factory.js';
+import { makeVatWarehouse } from './vatManager/vat-warehouse.js';
+import makeDeviceManager from './deviceManager.js';
+import { wrapStorage } from './state/storageWrapper.js';
+import makeKernelKeeper from './state/kernelKeeper.js';
+import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug.js';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
+import { parseVatSlot } from '../parseVatSlots.js';
+import { insistStorageAPI } from '../storageAPI.js';
+import { insistCapData } from '../capdata.js';
+import { insistMessage, insistVatDeliveryResult } from '../message.js';
+import { insistDeviceID, insistVatID } from './id.js';
+import { makeMeterManager } from './metering.js';
+import { makeKernelSyscallHandler, doSend } from './kernelSyscall.js';
+import { makeSlogger, makeDummySlogger } from './slogger.js';
+import { getKpidsToRetire } from './cleanup.js';
 
-import { makeVatRootObjectSlot, makeVatLoader } from './loadVat';
-import { makeDeviceTranslators } from './deviceTranslator';
-import { notifyTermination } from './notifyTermination';
+import { makeVatRootObjectSlot, makeVatLoader } from './loadVat.js';
+import { makeDeviceTranslators } from './deviceTranslator.js';
+import { notifyTermination } from './notifyTermination.js';
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {

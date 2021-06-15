@@ -1,6 +1,6 @@
-import './console-shim';
-import './text-shim';
-import '@agoric/eventual-send/shim';
-import './lockdown-shim-debug';
+import './console-shim.js';
+import './text-shim.js';
+import '@agoric/eventual-send/shim.js';
+import './lockdown-shim-debug.js';
 
 harden(console);

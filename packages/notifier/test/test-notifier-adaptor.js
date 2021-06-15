@@ -1,13 +1,13 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierFromAsyncIterable,
   observeIteration,
   observeNotifier,
-} from '../src/index';
+} from '../src/index.js';
 import {
   finiteStream,
   explodingStream,
@@ -15,7 +15,7 @@ import {
   testManualConsumer,
   testAutoConsumer,
   makeTestIterationObserver,
-} from './iterable-testing-tools';
+} from './iterable-testing-tools.js';
 
 // /////////////// Self test the testing tools for consistency /////////////////
 

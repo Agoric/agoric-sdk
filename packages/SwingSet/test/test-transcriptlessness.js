@@ -1,9 +1,9 @@
 /* global require */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { provideHostStorage } from '../src/hostStorage';
-import { buildVatController } from '../src/index';
+import { provideHostStorage } from '../src/hostStorage.js';
+import { buildVatController } from '../src/index.js';
 import { capargs } from './util.js';
 
 async function testTranscriptlessness(t, useTranscript) {

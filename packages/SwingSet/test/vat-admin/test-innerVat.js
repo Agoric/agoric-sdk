@@ -6,7 +6,11 @@ import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
-import { buildKernelBundles, buildVatController, loadBasedir } from '../../src';
+import {
+  buildKernelBundles,
+  buildVatController,
+  loadBasedir,
+} from '../../src/index.js';
 
 function nonBundleFunction(_E) {
   return {};

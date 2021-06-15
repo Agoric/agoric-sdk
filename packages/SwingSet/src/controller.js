@@ -17,19 +17,19 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { xsnap, makeSnapstore } from '@agoric/xsnap';
 
-import engineGC from './engine-gc';
-import { WeakRef, FinalizationRegistry } from './weakref';
-import { startSubprocessWorker } from './spawnSubprocessWorker';
-import { waitUntilQuiescent } from './waitUntilQuiescent';
-import { makeGcAndFinalize } from './gc-and-finalize';
-import { insistStorageAPI } from './storageAPI';
-import { insistCapData } from './capdata';
-import { parseVatSlot } from './parseVatSlots';
-import { provideHostStorage } from './hostStorage';
+import engineGC from './engine-gc.js';
+import { WeakRef, FinalizationRegistry } from './weakref.js';
+import { startSubprocessWorker } from './spawnSubprocessWorker.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { insistStorageAPI } from './storageAPI.js';
+import { insistCapData } from './capdata.js';
+import { parseVatSlot } from './parseVatSlots.js';
+import { provideHostStorage } from './hostStorage.js';
 import {
   swingsetIsInitialized,
   initializeSwingset,
-} from './initializeSwingset';
+} from './initializeSwingset.js';
 
 /** @param {string} tag */
 function makeConsole(tag) {

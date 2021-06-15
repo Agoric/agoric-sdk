@@ -1,10 +1,10 @@
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { initSimpleSwingStore } from '@agoric/swing-store-simple';
-import { makeDummySlogger } from '../src/kernel/slogger';
-import makeKernelKeeper from '../src/kernel/state/kernelKeeper';
-import { wrapStorage } from '../src/kernel/state/storageWrapper';
+import { makeDummySlogger } from '../src/kernel/slogger.js';
+import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
+import { wrapStorage } from '../src/kernel/state/storageWrapper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});

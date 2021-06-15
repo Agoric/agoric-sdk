@@ -12,7 +12,7 @@ import {
   initLMDBSwingStore,
   openLMDBSwingStore,
   isSwingStore,
-} from '../src/lmdbSwingStore';
+} from '../src/lmdbSwingStore.js';
 
 function testKVStore(t, store) {
   const kvStore = store.kvStore;

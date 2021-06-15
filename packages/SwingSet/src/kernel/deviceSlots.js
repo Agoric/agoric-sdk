@@ -1,7 +1,7 @@
 import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
-import { insistCapData } from '../capdata';
+import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
+import { insistCapData } from '../capdata.js';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 

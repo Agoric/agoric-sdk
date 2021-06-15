@@ -1,7 +1,10 @@
 // @ts-check
 import { assert } from '@agoric/assert';
-import { insistVatSyscallObject, insistVatSyscallResult } from '../../message';
-import '../../types';
+import {
+  insistVatSyscallObject,
+  insistVatSyscallResult,
+} from '../../message.js';
+import '../../types.js';
 
 /**
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync

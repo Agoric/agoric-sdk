@@ -1,7 +1,7 @@
 /* global require __dirname */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { loadBasedir, buildVatController } from '../../src/index';
+import { loadBasedir, buildVatController } from '../../src/index.js';
 
 const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
 

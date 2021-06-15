@@ -6,11 +6,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
-import engineGC from '../src/engine-gc';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { makeGcAndFinalize } from '../src/gc-and-finalize';
-import { makeLiveSlots } from '../src/kernel/liveSlots';
-import { buildSyscall, makeDispatch } from './liveslots-helpers';
+import engineGC from '../src/engine-gc.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { makeLiveSlots } from '../src/kernel/liveSlots.js';
+import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   capargs,
   capargsOneSlot,

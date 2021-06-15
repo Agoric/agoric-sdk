@@ -20,7 +20,7 @@ const path = require('path');
 const glob = require('glob');
 const bundleSource = require('@agoric/bundle-source').default;
 
-const { main, makeBundleResolve } = require('./avaXS');
+const { main, makeBundleResolve } = require('./avaXS.js');
 
 Promise.resolve()
   .then(_ =>

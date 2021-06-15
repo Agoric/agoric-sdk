@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from '@agoric/assert';
-import { makeVatTranslators } from '../vatTranslator';
+import { makeVatTranslators } from '../vatTranslator.js';
 
 /**
  * @param { ReturnType<typeof import('../state/kernelKeeper').default> } kernelKeeper

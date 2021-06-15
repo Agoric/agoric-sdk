@@ -8,9 +8,9 @@ import { Far } from '@agoric/marshal';
 import {
   makeAsyncIterableFromNotifier,
   observeIteration,
-} from './asyncIterableAdaptor';
+} from './asyncIterableAdaptor.js';
 
-import './types';
+import './types.js';
 
 /**
  * @template T

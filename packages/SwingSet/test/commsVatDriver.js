@@ -1,8 +1,8 @@
 import { assert, details as X } from '@agoric/assert';
-import buildCommsDispatch from '../src/vats/comms';
-import { debugState } from '../src/vats/comms/dispatch';
-import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot';
-import { makeMessage, makeResolutions } from './util';
+import buildCommsDispatch from '../src/vats/comms/index.js';
+import { debugState } from '../src/vats/comms/dispatch.js';
+import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
+import { makeMessage, makeResolutions } from './util.js';
 
 // This module provides a power tool for testing the comms vat implementation.
 // It provides support for injecting events into the comms vat and observing

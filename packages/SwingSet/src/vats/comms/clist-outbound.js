@@ -1,7 +1,7 @@
 import { assert, details as X } from '@agoric/assert';
-import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
-import { flipRemoteSlot, insistRemoteType } from './parseRemoteSlot';
-import { cdebug } from './cdebug';
+import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
+import { flipRemoteSlot, insistRemoteType } from './parseRemoteSlot.js';
+import { cdebug } from './cdebug.js';
 
 function rname(remote) {
   return `${remote.remoteID()} (${remote.name()})`;

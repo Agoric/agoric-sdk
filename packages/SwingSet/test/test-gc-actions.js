@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { processNextGCAction } from '../src/kernel/gc-actions';
+import { processNextGCAction } from '../src/kernel/gc-actions.js';
 
 test('gc actions', t => {
   let rc = {};

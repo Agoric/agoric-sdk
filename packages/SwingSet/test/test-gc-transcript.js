@@ -1,8 +1,8 @@
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { makeDummySlogger } from '../src/kernel/slogger';
-import { makeManagerKit } from '../src/kernel/vatManager/manager-helper';
+import { makeDummySlogger } from '../src/kernel/slogger.js';
+import { makeManagerKit } from '../src/kernel/vatManager/manager-helper.js';
 
 const m1 = ['message', { method: 'foo', args: { body: '', slots: [] } }];
 

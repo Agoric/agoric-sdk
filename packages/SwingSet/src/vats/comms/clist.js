@@ -1,7 +1,7 @@
-import { makeInbound } from './clist-inbound';
-import { makeOutbound } from './clist-outbound';
-import { makeKernel } from './clist-kernel';
-import { makeIngressEgress } from './clist-xgress';
+import { makeInbound } from './clist-inbound.js';
+import { makeOutbound } from './clist-outbound.js';
+import { makeKernel } from './clist-kernel.js';
+import { makeIngressEgress } from './clist-xgress.js';
 
 // get-*: the entry must be present
 // add-*: the entry must not be present. add one.

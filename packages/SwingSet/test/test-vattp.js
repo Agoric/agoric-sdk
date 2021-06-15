@@ -1,10 +1,10 @@
 /* global require */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/hostStorage';
-import { initializeSwingset, makeSwingsetController } from '../src/index';
-import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
+import { provideHostStorage } from '../src/hostStorage.js';
+import { initializeSwingset, makeSwingsetController } from '../src/index.js';
+import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox.js';
 
 test('vattp', async t => {
   const s = buildMailboxStateMap();

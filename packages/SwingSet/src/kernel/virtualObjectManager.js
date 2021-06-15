@@ -1,6 +1,6 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
-import { parseVatSlot } from '../parseVatSlots';
-// import { kdebug } from './kdebug';
+import { parseVatSlot } from '../parseVatSlots.js';
+// import { kdebug } from './kdebug.js';
 
 const initializationsInProgress = new WeakSet();
 

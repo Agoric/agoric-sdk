@@ -1,6 +1,6 @@
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { makeTimerMap, curryPollFn } from '../src/devices/timer-src';
+import { makeTimerMap, curryPollFn } from '../src/devices/timer-src.js';
 
 test('multiMap multi store', t => {
   const mm = makeTimerMap();

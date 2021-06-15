@@ -4,7 +4,7 @@
 
 import { E } from '@agoric/eventual-send';
 
-import './types';
+import './types.js';
 
 /**
  * Adaptor from a notifierP to an async iterable.

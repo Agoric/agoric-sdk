@@ -1,4 +1,4 @@
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -10,7 +10,7 @@ import {
   makeLoopbackProtocolHandler,
   makeNetworkProtocol,
   makeRouter,
-} from '../src/vats/network';
+} from '../src/vats/network/index.js';
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};

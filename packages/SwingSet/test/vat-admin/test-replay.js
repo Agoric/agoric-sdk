@@ -7,8 +7,8 @@ import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../../src/hostStorage';
-import { buildKernelBundles, buildVatController } from '../../src';
+import { provideHostStorage } from '../../src/hostStorage.js';
+import { buildKernelBundles, buildVatController } from '../../src/index.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

@@ -1,8 +1,8 @@
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
 
-import { makeMeter } from '../src/index';
-import * as c from '../src/constants';
+import { makeMeter } from '../src/index.js';
+import * as c from '../src/constants.js';
 
 const testAllExhausted = (t, meter, desc) => {
   t.throws(

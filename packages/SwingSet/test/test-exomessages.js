@@ -1,7 +1,7 @@
 /* global require */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { buildVatController } from '../src/index';
+import { buildVatController } from '../src/index.js';
 
 async function beginning(t, mode) {
   const config = {

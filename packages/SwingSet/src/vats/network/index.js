@@ -1,4 +1,4 @@
-export * from './network';
-export { default as makeRouter } from './router';
-export * from './multiaddr';
-export * from './bytes';
+export * from './network.js';
+export { default as makeRouter } from './router.js';
+export * from './multiaddr.js';
+export * from './bytes.js';

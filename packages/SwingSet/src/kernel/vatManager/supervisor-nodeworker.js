@@ -5,19 +5,19 @@ import '@agoric/install-ses';
 import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
-import '../../types';
+import '../../types.js';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
-import engineGC from '../../engine-gc';
-import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { makeGcAndFinalize } from '../../gc-and-finalize';
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-import { makeLiveSlots } from '../liveSlots';
+import engineGC from '../../engine-gc.js';
+import { WeakRef, FinalizationRegistry } from '../../weakref.js';
+import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
+import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+} from './supervisor-helper.js';
 
 assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
 
