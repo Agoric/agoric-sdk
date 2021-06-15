@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.31.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.0...@agoric/cosmic-swingset@0.31.1) (2021-06-15)
+
+
+### Features
+
+* modify all SwingStore uses to reflect constructor renaming ([9cda6a4](https://github.com/Agoric/agoric-sdk/commit/9cda6a4542bb64d72ddd42d08e2056f5323b18a9))
+* remove no-LMDB fallback from cosmic-swingset ([11dba7a](https://github.com/Agoric/agoric-sdk/commit/11dba7a145711097966ed41b9d36dd2ffdad2846))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove genesis bootstrap config; use just add-genesis-account ([fdc1255](https://github.com/Agoric/agoric-sdk/commit/fdc1255d66c702e8970ecf795be191dcf2291c39))
+* **cosmic-swingset:** slog begin/end-block and input events ([cc77234](https://github.com/Agoric/agoric-sdk/commit/cc77234b3d56b629ef4183990db798e78545526c))
+* update cosmic swingset build instructions ([29fdec4](https://github.com/Agoric/agoric-sdk/commit/29fdec40d6db374385e0a40d2e635a27d1828adb))
+
+
+
 # [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.30.1...@agoric/cosmic-swingset@0.31.0) (2021-05-10)
 
 

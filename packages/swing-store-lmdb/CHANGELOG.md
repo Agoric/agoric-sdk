@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.12...@agoric/swing-store-lmdb@0.5.0) (2021-06-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swing-store-lmdb:** This includes a renaming of the constructors to acknowledge
+that the different SwingStore constructors are not polymorphic.
+
+### Features
+
+* **swing-store-lmdb:** enable configuration of LMDB database size limit ([6f7cefa](https://github.com/Agoric/agoric-sdk/commit/6f7cefa6eae92ff00594a576a7ccad4c5c5c2bcc))
+* greater paranoia about concurrent access ([e67c4ef](https://github.com/Agoric/agoric-sdk/commit/e67c4ef37d2a0d9361612401b43c2b81a4ebc66d))
+* move transcripts out of key-value store and into stream stores ([a128e93](https://github.com/Agoric/agoric-sdk/commit/a128e93803344d8a36140d53d3e7711bec5c2511))
+* overhaul stream store API to better fit actual use in kernel ([c5cc00a](https://github.com/Agoric/agoric-sdk/commit/c5cc00a9e0f1c90ee2cb57fe6c3767a285f4d8e3))
+* provide streamStore implementations ([e094914](https://github.com/Agoric/agoric-sdk/commit/e094914ad5ceec3d1131270e5943c6f0df267cac))
+* remove .jsonlines hack from simple swing store ([ef87997](https://github.com/Agoric/agoric-sdk/commit/ef87997a1519b18f23656b57bf38055fea203f9a))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* tweaks and cleanup based on review feedback ([ba95e34](https://github.com/Agoric/agoric-sdk/commit/ba95e34622063eaae47335a0260a004a3a159807))
+
+
+
 ## [0.4.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.11...@agoric/swing-store-lmdb@0.4.12) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb

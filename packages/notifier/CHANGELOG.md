@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.14...@agoric/notifier@0.3.15) (2021-06-15)
+
+
+### Bug Fixes
+
+* **notifier:** Stronger assertion to work around harden type weakness ([2b3fe0e](https://github.com/Agoric/agoric-sdk/commit/2b3fe0efa002dc6535723d16f81129f843c0f515))
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.3.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.13...@agoric/notifier@0.3.14) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/notifier

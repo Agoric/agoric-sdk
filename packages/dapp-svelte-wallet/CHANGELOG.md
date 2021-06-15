@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.10.2...@agoric/dapp-svelte-wallet@0.10.3) (2021-06-15)
+
+
+### Features
+
+* use 'engine-gc.js' to get the Node.js garbage collector ([0153529](https://github.com/Agoric/agoric-sdk/commit/0153529cbfc0b7da2d1ec434b32b2171bc246f93))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove references to @agoric/babel-parser ([e4b1e2b](https://github.com/Agoric/agoric-sdk/commit/e4b1e2b4bb13436ef53f055136a4a1d5d933d99e))
+* remove references to @agoric/registrar ([ec6cc6d](https://github.com/Agoric/agoric-sdk/commit/ec6cc6d8f1da9ec5a38420b501562eaebfbdc76c))
+
+
+
 ## [0.10.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.10.1...@agoric/dapp-svelte-wallet@0.10.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

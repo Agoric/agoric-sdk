@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.3.9...@agoric/tame-metering@2.0.0) (2021-06-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **tame-metering:** Converts `@agoric/tame-metering` from emulated ESM with `node -r esm` to Node.js ESM proper.
+
+### Features
+
+* **tame-metering:** RESM to NESM ([705f930](https://github.com/Agoric/agoric-sdk/commit/705f9303f6a616f021baadb32acab6e4660c77fc)), closes [#527](https://github.com/Agoric/agoric-sdk/issues/527)
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [1.3.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@1.3.8...@agoric/tame-metering@1.3.9) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/tame-metering

@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### 0.4.1 (2021-06-15)
+
+
+### Features
+
+* new access-token package for encapsulation from swing-store ([aa52d2e](https://github.com/Agoric/agoric-sdk/commit/aa52d2ea54ec679889db9abdb8cdd6639824f50e))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.3.5...@agoric/swing-store-simple@0.3.6) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/swing-store-simple
