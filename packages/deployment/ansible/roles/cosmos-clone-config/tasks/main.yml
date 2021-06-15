@@ -19,5 +19,5 @@
 - name: "Copy to data/*.dst/genesis.json"
   delegate_to: localhost
   copy:
-    src: "{{ data | default(service + '/data') }}/genesis.json"
+    src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}/genesis.json"
     dest: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/genesis.json"

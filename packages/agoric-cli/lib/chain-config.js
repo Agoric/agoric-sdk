@@ -14,6 +14,9 @@ export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 // 5 seconds is about as fast as we can go without penalising validators.
 export const BLOCK_CADENCE_S = 5;
 
+export const EPOCH_DURATION_S = 60 * 60; // 1 hour
+export const BLOCKS_PER_EPOCH = Math.floor(EPOCH_DURATION_S / BLOCK_CADENCE_S);
+
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
@@ -146,6 +149,14 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+
+  // Until we have epoched distribution, we manually set the fee disbursement.
+  if (
+    genesis.app_state.vbank.params &&
+    genesis.app_state.vbank.params.feeEpochDurationBlocks
+  ) {
+    genesis.app_state.vbank.params.feeEpochDurationBlocks = BLOCKS_PER_EPOCH;
+  }
 
   // Use the same consensus_params.
   if ('consensus_params' in exported) {

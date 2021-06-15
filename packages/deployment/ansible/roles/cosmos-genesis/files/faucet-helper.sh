@@ -5,7 +5,7 @@ thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
-DELEGATE_COINS=62000000ubld,93000000urun
+DELEGATE_COINS=62000000ubld,9300000urun
 SOLO_COINS=5000000urun
 
 OP=$1
