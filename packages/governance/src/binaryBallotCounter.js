@@ -105,6 +105,7 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
     closeVoting: () => (isOpen = false),
     countVotes,
     ...sharedFacet,
+    getVoterFacet: () => voterFacet,
   });
 
   const publicFacet = Far('publicFacet', {
@@ -112,7 +113,7 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
     getStats: () => tallyPromise.promise,
     ...sharedFacet,
   });
-  return { publicFacet, creatorFacet, voterFacet };
+  return { publicFacet, creatorFacet };
 };
 
 const start = zcf => {
