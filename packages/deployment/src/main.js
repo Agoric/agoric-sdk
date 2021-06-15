@@ -409,18 +409,24 @@ show-config      display the client connection parameters
         const allIds = await needBacktick(
           `${shellEscape(progname)} show-all-ids`,
         );
-        const faucetAddress = await needBacktick(
-          `${shellEscape(progname)} show-faucet-address`,
-        );
+        const hasPeers = dsts.find(dst => dst.startsWith('peer'));
         await Promise.all(
           dsts.map(async (dst, i) => {
             // Update the config.toml and genesis.json.
+            const corsFlags = [];
+            if (hasPeers && dst.startsWith('peer')) {
+              // Some "peers", and this is one of them.
+              corsFlags.push('--enable-cors');
+            } else if (!hasPeers && dst.startsWith('validator')) {
+              // No "peers", and this is a validator.
+              corsFlags.push('--enable-cors');
+            }
             await needDoRun([
               agoricCli,
               `set-defaults`,
               `ag-chain-cosmos`,
-              `--bootstrap-address=${faucetAddress.trimRight()}`,
               `--persistent-peers=${peers}`,
+              ...corsFlags,
               `--seeds=${seeds}`,
               `--unconditional-peer-ids=${allIds}`,
               ...importFlags,
