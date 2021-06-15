@@ -17,7 +17,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
     X`<prog> must currently be 'ag-chain-cosmos'`,
   );
 
-  const { exportMetrics } = opts;
+  const { exportMetrics, enableCors } = opts;
 
   let appFile;
   let configFile;
@@ -51,6 +51,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
     const newAppToml = finishCosmosApp({
       appToml,
+      enableCors,
       exportMetrics,
     });
     await create(appFile, newAppToml);
@@ -63,6 +64,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
     const newConfigToml = finishTendermintConfig({
       configToml,
+      enableCors,
       persistentPeers,
       seeds,
       unconditionalPeerIds,

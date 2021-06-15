@@ -112,6 +112,11 @@ const main = async (progname, rawArgs, powers) => {
     .command('set-defaults <program> <config-dir>')
     .description('update the configuration files for <program> in <config-dir>')
     .option(
+      '--enable-cors',
+      'open RPC and API endpoints to all cross-origin requests',
+      false,
+    )
+    .option(
       '--export-metrics',
       'open ports to export Prometheus metrics',
       false,
