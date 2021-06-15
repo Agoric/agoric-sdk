@@ -98,8 +98,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const vrefs = [];
     for (const kref of krefs) {
       const vref = mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts);
-      // 'false' means skip the decref, the object is already deleted
-      vatKeeper.deleteCListEntry(kref, vref, false);
+      vatKeeper.deleteCListEntry(kref, vref);
       vrefs.push(vref);
     }
     const vatDelivery = harden(['retireExports', vrefs]);
@@ -110,7 +109,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const vrefs = [];
     for (const kref of krefs) {
       const vref = mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts);
-      vatKeeper.deleteCListEntry(kref, vref, false);
+      vatKeeper.deleteCListEntry(kref, vref);
       vrefs.push(vref);
     }
     const vatDelivery = harden(['retireImports', vrefs]);
@@ -257,10 +256,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       if (vatKeeper.getReachableFlag(kref)) {
         throw Error(`syscall.retireImports but ${vref} is still reachable`);
       }
-      // 'true' means decref the object, which won't reduce the reachable
-      // count (because it was unreachable, as we asserted), but it *will*
-      // reduce the recognizable count
-      vatKeeper.deleteCListEntry(kref, vref, true);
+      // deleting the clist entry will decrement the recognizable count, but
+      // not the reachable count (because it was unreachable, as we asserted)
+      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
     // we've done all the work here, during translation
@@ -276,7 +274,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // kref must already be in the clist
       const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
       vatKeeper.insistNotReachable(kref);
-      vatKeeper.deleteCListEntry(kref, vref, true);
+      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
     // retireExports still has work to do

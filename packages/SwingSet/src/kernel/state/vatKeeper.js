@@ -337,9 +337,8 @@ export function makeVatKeeper(
    *
    * @param {string} kernelSlot  The kernel slot being removed
    * @param {string} vatSlot  The vat slot being removed
-   * @param {boolean} decref Decrement the related refcounts. Use 'false' when the object is already deleted.
    */
-  function deleteCListEntry(kernelSlot, vatSlot, decref) {
+  function deleteCListEntry(kernelSlot, vatSlot) {
     parseKernelSlot(kernelSlot); // used for its assert()
     const { allocatedByVat } = parseVatSlot(vatSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -355,19 +354,24 @@ export function makeVatKeeper(
         vatSlot,
       );
     }
-    // tolerate the object kref not being present in the kernel object table,
-    // because the exporter's syscall.retireExport raced ahead of the
-    // importer's syscall.retireImports (retireImports calls deleteCListEntry).
-    if (decref) {
-      const isExport = allocatedByVat;
-      // First, make sure the reachable flag is clear, which might reduce the
-      // reachable refcount. Note that we need the clist entry to find this,
-      // so decref before delete.
-      clearReachableFlag(kernelSlot);
-      // then decrementRefCount only the recognizable portion of the refcount
-      const decopts = { isExport, onlyRecognizable: true };
-      decrementRefCount(kernelSlot, `${vatID}|del|clist`, decopts);
-    }
+    const isExport = allocatedByVat;
+    // We tolerate the object kref not being present in the kernel object
+    // table, either because we're being called during the translation of
+    // dispatch.retireExports/retireImports (so the kernel object has already
+    // been deleted), or because the exporter's syscall.retireExport raced
+    // ahead of the importer's syscall.retireImports (retireImports calls
+    // deleteCListEntry).
+
+    // First, make sure the reachable flag is clear, which might reduce the
+    // reachable refcount. Note that we need the clist entry to find this, so
+    // decref before delete.
+    clearReachableFlag(kernelSlot);
+
+    // Then decrementRefCount only the recognizable portion of the refcount.
+    // `decrementRefCount` is a nop if the object is already gone.
+    const decopts = { isExport, onlyRecognizable: true };
+    decrementRefCount(kernelSlot, `${vatID}|del|clist`, decopts);
+
     decStat('clistEntries');
     kvStore.delete(kernelKey);
     kvStore.delete(vatKey);
