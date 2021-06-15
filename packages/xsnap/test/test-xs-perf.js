@@ -2,7 +2,7 @@
 import test from 'ava';
 import * as childProcess from 'child_process';
 import * as os from 'os';
-import { xsnap } from '../src/xsnap';
+import { xsnap } from '../src/xsnap.js';
 
 const decoder = new TextDecoder();
 

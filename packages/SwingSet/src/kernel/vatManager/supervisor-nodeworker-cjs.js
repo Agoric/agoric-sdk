@@ -10,4 +10,4 @@
 
 // eslint-disable-next-line no-global-assign
 require = require('esm')(module);
-module.exports = require('./supervisor-nodeworker');
+module.exports = require('./supervisor-nodeworker.js');

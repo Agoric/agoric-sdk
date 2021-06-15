@@ -1,6 +1,6 @@
 // @ts-check
 
-import { insistCapData } from '../capdata';
+import { insistCapData } from '../capdata.js';
 
 /**
  * @param {string} vatID

@@ -1,10 +1,10 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { insistCapData } from '../../capdata';
-import { makeVatSlot, insistVatType } from '../../parseVatSlots';
-import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots';
-import { initializeRemoteState, makeRemote, insistRemoteID } from './remote';
-import { cdebug } from './cdebug';
+import { insistCapData } from '../../capdata.js';
+import { makeVatSlot, insistVatType } from '../../parseVatSlots.js';
+import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
+import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
+import { cdebug } from './cdebug.js';
 
 const COMMS = 'comms';
 const KERNEL = 'kernel';

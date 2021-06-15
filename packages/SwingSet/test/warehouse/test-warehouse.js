@@ -1,9 +1,9 @@
 /* global __dirname */
 // @ts-check
 
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { loadBasedir, buildVatController } from '../../src/index';
+import { loadBasedir, buildVatController } from '../../src/index.js';
 
 async function makeController(managerType, maxVatsOnline) {
   const config = await loadBasedir(__dirname);

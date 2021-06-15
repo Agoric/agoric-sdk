@@ -1,17 +1,17 @@
 /* global require __dirname */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import { spawn } from 'child_process';
-import { provideHostStorage } from '../src/hostStorage';
+import { provideHostStorage } from '../src/hostStorage.js';
 import {
   buildVatController,
   loadBasedir,
   initializeSwingset,
   makeSwingsetController,
-} from '../src/index';
-import { checkKT } from './util';
+} from '../src/index.js';
+import { checkKT } from './util.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { buildPatterns } from '../message-patterns';
+import { buildPatterns } from '../message-patterns.js';
 
 export function buildRootObject(vatPowers) {
   const root = Far('root', {

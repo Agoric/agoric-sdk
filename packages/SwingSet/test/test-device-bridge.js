@@ -1,14 +1,14 @@
 /* global require */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/hostStorage';
+import { provideHostStorage } from '../src/hostStorage.js';
 
 import {
   initializeSwingset,
   makeSwingsetController,
   buildBridge,
-} from '../src/index';
+} from '../src/index.js';
 
 test('bridge device', async t => {
   const outboundLog = [];

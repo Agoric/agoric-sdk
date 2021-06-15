@@ -2,7 +2,7 @@
 
 // @ts-check
 
-import '../types';
-import { makeMemoryExternalStore } from './memory';
+import '../types.js';
+import { makeMemoryExternalStore } from './memory.js';
 
 export const makeExternalStore = makeMemoryExternalStore;

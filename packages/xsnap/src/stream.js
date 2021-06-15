@@ -1,6 +1,6 @@
 // @ts-check
 
-import { defer } from './defer';
+import { defer } from './defer.js';
 
 /**
  * @template T

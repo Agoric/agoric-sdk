@@ -2,9 +2,9 @@
 import '@agoric/install-ses';
 
 import test from 'ava';
-import { makeNotifierKit } from '../src/index';
+import { makeNotifierKit } from '../src/index.js';
 
-import '../src/types';
+import '../src/types.js';
 
 test('notifier - initial state', async t => {
   /** @type {NotifierRecord<1>} */

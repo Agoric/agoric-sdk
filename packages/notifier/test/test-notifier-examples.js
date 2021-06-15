@@ -2,10 +2,14 @@
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
 import test from 'ava';
-import { observeIteration, makeNotifierKit, makeNotifier } from '../src/index';
-import { paula, alice, bob } from './iterable-testing-tools';
+import {
+  observeIteration,
+  makeNotifierKit,
+  makeNotifier,
+} from '../src/index.js';
+import { paula, alice, bob } from './iterable-testing-tools.js';
 
-import '../src/types';
+import '../src/types.js';
 
 const last = array => array[array.length - 1];
 

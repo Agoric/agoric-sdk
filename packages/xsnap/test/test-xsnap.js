@@ -5,8 +5,8 @@ import * as childProcess from 'child_process';
 import * as os from 'os';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { xsnap } from '../src/xsnap';
-import { ExitCode, ErrorCode } from '../api';
+import { xsnap } from '../src/xsnap.js';
+import { ExitCode, ErrorCode } from '../api.js';
 
 const importMetaUrl = `file://${__filename}`;
 

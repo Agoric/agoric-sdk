@@ -3,10 +3,10 @@
 import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
-import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
-import { insistCapData } from '../capdata';
-import { insistMessage } from '../message';
-import { makeVirtualObjectManager } from './virtualObjectManager';
+import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
+import { insistCapData } from '../capdata.js';
+import { insistMessage } from '../message.js';
+import { makeVirtualObjectManager } from './virtualObjectManager.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 

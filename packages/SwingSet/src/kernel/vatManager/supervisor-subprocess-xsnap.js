@@ -3,17 +3,20 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
-import '../../types';
+import '../../types.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-import { makeGcAndFinalize } from '../../gc-and-finalize';
-import { insistVatDeliveryObject, insistVatSyscallResult } from '../../message';
+import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import {
+  insistVatDeliveryObject,
+  insistVatSyscallResult,
+} from '../../message.js';
 
-import { makeLiveSlots } from '../liveSlots';
+import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+} from './supervisor-helper.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

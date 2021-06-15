@@ -1,4 +1,4 @@
-import * as c from './constants';
+import * as c from './constants.js';
 
 const { isArray } = Array;
 const { getOwnPropertyDescriptors } = Object;

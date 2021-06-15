@@ -1,5 +1,5 @@
 /* global __dirname */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
@@ -7,8 +7,8 @@ import {
   buildVatController,
   loadBasedir,
   buildKernelBundles,
-} from '../src/index';
-import { capargs } from './util';
+} from '../src/index.js';
+import { capargs } from './util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

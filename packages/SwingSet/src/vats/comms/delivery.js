@@ -2,11 +2,11 @@
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X } from '@agoric/assert';
-import { parseLocalSlot, insistLocalType } from './parseLocalSlots';
-import { makeUndeliverableError } from '../../makeUndeliverableError';
-import { insistCapData } from '../../capdata';
-import { insistRemoteType } from './parseRemoteSlot';
-import { insistRemoteID } from './remote';
+import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
+import { makeUndeliverableError } from '../../makeUndeliverableError.js';
+import { insistCapData } from '../../capdata.js';
+import { insistRemoteType } from './parseRemoteSlot.js';
+import { insistRemoteID } from './remote.js';
 
 const UNDEFINED = harden({
   body: JSON.stringify({ '@qclass': 'undefined' }),

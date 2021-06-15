@@ -1,4 +1,4 @@
-export { makeMeteredEvaluator } from './evaluator';
-export { makeMeter } from './meter';
-export { makeMeteringTransformer } from './transform';
-export { makeWithMeter } from './with';
+export { makeMeteredEvaluator } from './evaluator.js';
+export { makeMeter } from './meter.js';
+export { makeMeteringTransformer } from './transform.js';
+export { makeWithMeter } from './with.js';

@@ -11,10 +11,10 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api';
-import { defer } from './defer';
-import * as netstring from './netstring';
-import * as node from './node-stream';
+import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
+import { defer } from './defer.js';
+import * as netstring from './netstring.js';
+import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
 const DEFAULT_CRANK_METERING_LIMIT = 1e7;

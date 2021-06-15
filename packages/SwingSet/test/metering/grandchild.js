@@ -1,4 +1,4 @@
-import { meterMe } from './metered-code';
+import { meterMe } from './metered-code.js';
 
 export function meterThem(explode) {
   const log2 = [];

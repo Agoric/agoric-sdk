@@ -11,7 +11,7 @@
  * @template T
  * @typedef {import('./defer.js').Deferred<T>} Deferred
  */
-import { defer } from './defer';
+import { defer } from './defer.js';
 
 const continues = { value: undefined };
 

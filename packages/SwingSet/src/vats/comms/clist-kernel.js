@@ -1,7 +1,7 @@
 import { assert, details as X } from '@agoric/assert';
-import { parseVatSlot, insistVatType } from '../../parseVatSlots';
-import { parseLocalSlot } from './parseLocalSlots';
-import { cdebug } from './cdebug';
+import { parseVatSlot, insistVatType } from '../../parseVatSlots.js';
+import { parseLocalSlot } from './parseLocalSlots.js';
+import { cdebug } from './cdebug.js';
 
 export function makeKernel(state, syscall) {
   // *-KernelForLocal: comms vat sending out to kernel

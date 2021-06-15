@@ -1,6 +1,6 @@
 import test from 'ava';
-import * as netstring from '../src/netstring';
-import { pipe } from '../src/stream';
+import * as netstring from '../src/netstring.js';
+import { pipe } from '../src/stream.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

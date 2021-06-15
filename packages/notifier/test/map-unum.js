@@ -13,7 +13,7 @@ import {
   makeNotifierKit,
   makeSubscriptionKit,
   observeIteration,
-} from '../src/index';
+} from '../src/index.js';
 
 export const makeMapLeader = initialEntries => {
   let m = new Map(initialEntries);

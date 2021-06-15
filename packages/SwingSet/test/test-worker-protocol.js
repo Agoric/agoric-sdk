@@ -1,12 +1,15 @@
 /* global Buffer */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { arrayEncoderStream, arrayDecoderStream } from '../src/worker-protocol';
+import {
+  arrayEncoderStream,
+  arrayDecoderStream,
+} from '../src/worker-protocol.js';
 import {
   encode,
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../src/netstring';
+} from '../src/netstring.js';
 
 test('arrayEncoderStream', async t => {
   const e = arrayEncoderStream();

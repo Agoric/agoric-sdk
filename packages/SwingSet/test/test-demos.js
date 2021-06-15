@@ -1,15 +1,15 @@
 /* global __dirname */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
-import { provideHostStorage } from '../src/hostStorage';
-import { buildLoopbox } from '../src/devices/loopbox';
+import { provideHostStorage } from '../src/hostStorage.js';
+import { buildLoopbox } from '../src/devices/loopbox.js';
 import {
   loadBasedir,
   initializeSwingset,
   makeSwingsetController,
-} from '../src/index';
+} from '../src/index.js';
 
 async function main(basedir, argv) {
   const config = await loadBasedir(basedir);

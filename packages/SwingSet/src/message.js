@@ -1,5 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
-import { insistCapData } from './capdata';
+import { insistCapData } from './capdata.js';
 
 /**
  * Assert function to ensure that something expected to be a message object

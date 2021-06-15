@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { makeRemoteSlot, flipRemoteSlot } from './parseRemoteSlot';
+import { makeRemoteSlot, flipRemoteSlot } from './parseRemoteSlot.js';
 
 export function insistRemoteID(remoteID) {
   assert(/^r\d+$/.test(remoteID), X`not a remoteID: ${remoteID}`);
