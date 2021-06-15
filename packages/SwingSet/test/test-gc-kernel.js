@@ -49,13 +49,17 @@ function bigintReplacer(_, arg) {
   return arg;
 }
 
+function writeSlogObject(o) {
+  0 && console.log(JSON.stringify(o, bigintReplacer));
+}
+
 function makeEndowments() {
   return {
     waitUntilQuiescent,
     hostStorage: provideHostStorage(),
     runEndOfCrank: () => {},
     makeConsole,
-    writeSlogObject: o => console.log(JSON.stringify(o, bigintReplacer)),
+    writeSlogObject,
     WeakRef,
     FinalizationRegistry,
   };
@@ -582,6 +586,7 @@ test('retire before drop is error', async t => {
         // dropImports
         try {
           // console.log(`+-- doing s.retireImports`, amyForBob);
+          // this will emit an error to the console
           syscall.retireImports([amyForBob]);
         } catch (e) {
           syscallError = e;

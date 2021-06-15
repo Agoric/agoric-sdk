@@ -13,7 +13,7 @@ export function buildRootObject() {
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      vat = await E(vatMaker).createVatByName('doomed');
+      vat = await E(vatMaker).createVatByName('doomed', { metered: false });
       const fromDoomed = await sendExport(vat.root);
       pin.push(fromDoomed);
     },
