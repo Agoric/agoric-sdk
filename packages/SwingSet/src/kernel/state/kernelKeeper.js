@@ -53,6 +53,7 @@ const enableKernelGC = true;
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 // v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+// v$NN.stats = JSON(vatStats)
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -316,7 +317,7 @@ export default function makeKernelKeeper(
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
     setObjectRefCount(s, { reachable: 0, recognizable: 0 });
-    incStat('kernelObjects');
+    incStat('kernelObjectsRecognizable');
     return s;
   }
 
@@ -336,6 +337,7 @@ export default function makeKernelKeeper(
   function deleteKernelObject(koid) {
     kvStore.delete(`${koid}.owner`);
     kvStore.delete(`${koid}.refCount`);
+    decStat('kernelObjectsRecognizable');
     // TODO: decref auxdata slots and delete auxdata, when #2069 is added
   }
 

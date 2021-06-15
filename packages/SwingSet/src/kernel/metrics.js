@@ -69,9 +69,14 @@ export const KERNEL_STATS_SUM_METRICS = [
 
 export const KERNEL_STATS_UPDOWN_METRICS = [
   {
-    key: 'kernelObjects',
-    name: 'swingset_kernel_objects',
-    description: 'Active kernel objects',
+    key: 'kernelObjectsRecognizable',
+    name: 'swingset_kernel_objects_recognizable',
+    description: 'Recognizable kernel objects',
+  },
+  {
+    key: 'kernelObjectsReachable',
+    name: 'swingset_kernel_objects_reachable',
+    description: 'Reachable kernel objects',
   },
   {
     key: 'kernelDevices',

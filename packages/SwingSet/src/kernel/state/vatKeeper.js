@@ -20,6 +20,9 @@ const FIRST_OBJECT_ID = 50n;
 const FIRST_PROMISE_ID = 60n;
 const FIRST_DEVICE_ID = 70n;
 
+const STAT_NAMES = harden(['reachable', 'recognizable']);
+const STAT_DIRECTIONS = harden(['import', 'export']);
+
 /**
  * Establish a vat's state.
  *
@@ -32,6 +35,17 @@ export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  const stats = { objects: {} };
+  for (const direction of STAT_DIRECTIONS) {
+    stats.objects[direction] = {};
+    for (const stat of STAT_NAMES) {
+      stats.objects[direction][stat] = {};
+      for (const name of ['value', 'max', 'up', 'down']) {
+        stats.objects[direction][stat][name] = 0;
+      }
+    }
+  }
+  kvStore.set(`${vatID}.stats`, JSON.stringify(stats));
   kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(
     `${vatID}.t.endPosition`,
@@ -106,6 +120,32 @@ export function makeVatKeeper(
     return harden(options);
   }
 
+  function incVatStat(stat, direction, delta = 1) {
+    assert(STAT_NAMES.includes(stat), stat);
+    assert(STAT_DIRECTIONS.includes(direction), direction);
+    const key = `${vatID}.stats`;
+    const stats = JSON.parse(kvStore.get(key));
+    const o = stats.objects[direction];
+    o[stat].up += delta;
+    const value = o[stat].value + delta;
+    if (o[stat].max < value) {
+      o[stat].max = value;
+    }
+    o[stat].value = value;
+    kvStore.set(key, JSON.stringify(stats));
+  }
+
+  function decVatStat(stat, direction, delta = 1) {
+    assert(STAT_NAMES.includes(stat), stat);
+    assert(STAT_DIRECTIONS.includes(direction), direction);
+    const key = `${vatID}.stats`;
+    const stats = JSON.parse(kvStore.get(key));
+    const o = stats.objects[direction];
+    o[stat].down += delta;
+    o[stat].value -= delta;
+    kvStore.set(key, JSON.stringify(stats));
+  }
+
   function nextDeliveryNum() {
     const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
@@ -138,6 +178,13 @@ export function makeVatKeeper(
       let { reachable, recognizable } = getObjectRefCount(kernelSlot);
       reachable += 1;
       setObjectRefCount(kernelSlot, { reachable, recognizable });
+      incStat('kernelObjectsReachable');
+      incVatStat('reachable', 'import');
+    }
+    // count a newly-reachable (or re-reachable) object export
+    if (!isReachable && type === 'object' && allocatedByVat) {
+      incStat('kernelObjectsReachable');
+      incVatStat('reachable', 'export');
     }
   }
 
@@ -163,6 +210,12 @@ export function makeVatKeeper(
       if (reachable === 0) {
         addMaybeFreeKref(kernelSlot);
       }
+      decVatStat('reachable', 'import');
+    }
+    // count cleared reachability of object exports
+    if (isReachable && type === 'object' && allocatedByVat) {
+      decStat('kernelObjectsReachable');
+      decVatStat('reachable', 'export');
     }
   }
 
@@ -204,6 +257,8 @@ export function makeVatKeeper(
         if (type === 'object') {
           // this sets the initial refcount to reachable:0 recognizable:0
           kernelSlot = addKernelObject(vatID);
+          incStat('kernelObjectsRecognizable');
+          incVatStat('recognizable', 'export');
         } else if (type === 'device') {
           assert.fail(X`normal vats aren't allowed to export device nodes`);
         } else if (type === 'promise') {
@@ -276,6 +331,7 @@ export function makeVatKeeper(
       if (type === 'object') {
         id = Nat(BigInt(kvStore.get(`${vatID}.o.nextID`)));
         kvStore.set(`${vatID}.o.nextID`, `${id + 1n}`);
+        incVatStat('recognizable', 'import');
       } else if (type === 'device') {
         id = Nat(BigInt(kvStore.get(`${vatID}.d.nextID`)));
         kvStore.set(`${vatID}.d.nextID`, `${id + 1n}`);
@@ -357,6 +413,11 @@ export function makeVatKeeper(
       );
     }
     const isExport = allocatedByVat;
+    if (isExport) {
+      decVatStat('recognizable', 'export');
+    } else {
+      decVatStat('recognizable', 'import');
+    }
     // We tolerate the object kref not being present in the kernel object
     // table, either because we're being called during the translation of
     // dispatch.retireExports/retireImports (so the kernel object has already
@@ -488,6 +549,7 @@ export function makeVatKeeper(
       promiseCount: Number(promiseCount),
       deviceCount: Number(deviceCount),
       transcriptCount: Number(transcriptCount),
+      vatStats: JSON.parse(kvStore.get(`${vatID}.stats`)),
     });
   }
 
