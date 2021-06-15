@@ -91,7 +91,7 @@ When the last strong reference to a target object is removed, we define the obje
 
 `WeakRef` provides the ability to "poll" whether a given object has been garbage-collected or not, but it does not provide any sort of notification when collection happens. To enable more proactive reactions to object collection, JavaScript provides the `FinalizationRegistry`, which will run a callback some time after a given object is collected. This callback will always happen on its own turn (just like Promise `.then` callbacks), however no guarantees are made as to exactly when it is run.
 
-Swingset makes use of a `FinalizationRegistry` to implement its garbage collection code, however it is denied to vats for the same reason that `WeakRef` is withheld.
+Swingset makes use of a `FinalizationRegistry` to implement its garbage collection code. However, it is denied to vats for the same reason that `WeakRef` is withheld.
 
 ## Recognizability
 
@@ -123,7 +123,7 @@ We use a visual notation in which (strong) reachability is marked with a double 
 
 SwingSet allows vats to use `WeakMap` and `WeakSet` as usual, however the semantics they provide are defined in terms of "swingset objects" instead of strictly using JavaScript `Object` objects.
 
-## JS Engine States: REACHABLE / UNREACHABLE / COLLECTED / FINALIZED / UNKNOWN
+## JS Object States: REACHABLE / UNREACHABLE / COLLECTED / FINALIZED / UNKNOWN
 
 We'll set aside the notion of "recognizability" for a moment, and focus strictly on reachability.
 
@@ -137,9 +137,12 @@ When tracking the reachability state of a JavaScript `Object`, we define five st
 
 If you had a `WeakRef` for the object, it would be "alive" (i.e. `.deref()` returns a value) in the REACHABLE and UNREACHABLE states, and "dead" (`wr.deref() === undefined`) in COLLECTED and FINALIZED.
 
+![JS Object States diagram](./images/gc/js-object-states.png "JS Object States")
+
 Note that there's no actual state machine with those values, and we can't observe all of the transitions from JavaScript. But we *can* describe what operations could cause a transition, and what our observations allow us to deduce about the state:
 
 * UKNOWN moves to REACHABLE when a delivery introduces a new import
+  * or the vat exports/stores a newly created object
   * userspace holds a reference only in REACHABLE
 * REACHABLE moves to UNREACHABLE only during a userspace crank
 * UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer callback
