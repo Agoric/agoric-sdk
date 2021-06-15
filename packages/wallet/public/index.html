@@ -13,7 +13,7 @@
 
     <h1>Agoric Wallets</h1>
 
-    <p>You need to manage your assets and crypto keys by using a wallet.</p>
+    <p>You need to manage your Agoric assets and crypto keys by using a wallet.</p>
 
     <h2>Dapp Clients</h2>
 
@@ -31,7 +31,7 @@
     <h2>Cosmos Layer</h2>
 
     <p>These wallets can only be used to manipulate low-level chain tokens, such
-    as the RUN and BLD corresponding to your "bank purses" in the above
+    as the RUN and BLD corresponding to your "bank purses" in the above dapp client
     wallets:</p>
       
     <table>
@@ -44,7 +44,7 @@
     </table>
 
     <script type="module">
-      import '@agoric/wallet/src/install-ses-lockdown.js';
+      import '@agoric/wallet/components/install-ses-lockdown.js';
       if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
         // Don't hide the experimental wallets.
         document.querySelectorAll('.stability-experimental').forEach(el => el.classList.remove('nodisplay'));

@@ -14,7 +14,7 @@
     <div id="spinner"></div>
     <button id="getCount">Increment Count</button> <span id="currentCount"></span>
     <script type="module">
-      import '@agoric/wallet/src/install-ses-lockdown.js';
+      import '@agoric/wallet/components/install-ses-lockdown.js';
       if (!self.crossOriginIsolated) {
         const msg = `web-solo requires self.crossOriginIsolated`;
         alert(msg);
