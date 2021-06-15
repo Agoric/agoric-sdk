@@ -33,9 +33,8 @@
     "@agoric/assert": "^0.3.0",
     "@agoric/ertp": "^0.11.2",
     "@agoric/marshal": "^0.4.13",
-    "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.14",
     "@agoric/store": "^0.4.15",
+    "@agoric/promise-kit": "^0.2.13",
     "@agoric/zoe": "^0.16.0"
   },
   "devDependencies": {
