@@ -8,6 +8,8 @@ import { Far } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 
+const TIE_VOTE = "It's a tie!";
+
 const makeWeightedBallot = (ballot, weight) => ({ ballot, weight });
 
 const makeBinaryBallot = (question, positionAName, positionBName) => {
@@ -83,7 +85,7 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
     } else if (tally[positionB] > tally[positionA]) {
       outcomePromise.resolve(positionB);
     } else {
-      outcomePromise.resolve("It's a tie!");
+      outcomePromise.resolve(TIE_VOTE);
     }
 
     tallyPromise.resolve(stats);
@@ -95,10 +97,13 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
     getQuestionPositions,
   };
 
+  const voterFacet = Far('voterFacet', {
+    submitVote: recordBallot,
+  });
+
   const creatorFacet = Far('adminFacet', {
     closeVoting: () => (isOpen = false),
     countVotes,
-    submitVote: recordBallot,
     ...sharedFacet,
   });
 
@@ -107,7 +112,7 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
     getStats: () => tallyPromise.promise,
     ...sharedFacet,
   });
-  return { publicFacet, creatorFacet };
+  return { publicFacet, creatorFacet, voterFacet };
 };
 
 const start = zcf => {
@@ -118,4 +123,4 @@ const start = zcf => {
 harden(start);
 harden(makeBinaryBallotCounter);
 
-export { makeBinaryBallotCounter, start };
+export { makeBinaryBallotCounter, start, TIE_VOTE };
