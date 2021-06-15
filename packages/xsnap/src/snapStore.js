@@ -104,6 +104,7 @@ export function makeSnapstore(
     return withTempName(async snapFile => {
       await saveRaw(snapFile);
       const h = await fileHash(snapFile);
+      // console.log('save', { snapFile, h });
       if (existsSync(`${h}.gz`)) return h;
       await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
@@ -123,6 +124,7 @@ export function makeSnapstore(
     return withTempName(async raw => {
       await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
       const actual = await fileHash(raw);
+      // console.log('load', { raw, hash });
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
       // be sure to await loadRaw before exiting withTempName
       const result = await loadRaw(raw);

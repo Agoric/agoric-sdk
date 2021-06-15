@@ -1,7 +1,6 @@
 /* global require */
 // @ts-check
 import fs from 'fs';
-import path from 'path';
 import process from 'process';
 import re2 from 're2';
 import { performance } from 'perf_hooks';
@@ -9,13 +8,12 @@ import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
-import { tmpName } from 'tmp';
 
 import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import { xsnap, makeSnapstore, recordXSnap } from '@agoric/xsnap';
+import { xsnap, recordXSnap } from '@agoric/xsnap';
 
 import engineGC from './engine-gc.js';
 import { WeakRef, FinalizationRegistry } from './weakref.js';
@@ -49,12 +47,12 @@ function unhandledRejectionHandler(e) {
 /**
  * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
- *   snapstorePath?: string,
+ *   snapStore?: ReturnType<typeof import('@agoric/xsnap').makeSnapstore>,
  *   spawn: typeof import('child_process').spawn
  *   env: Record<string, string | undefined>,
  * }} opts
  */
-export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
+export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
@@ -79,37 +77,28 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
     };
   }
 
-  /** @type { ReturnType<typeof makeSnapstore> } */
-  let snapStore;
-
-  if (snapstorePath) {
-    fs.mkdirSync(snapstorePath, { recursive: true });
-
-    snapStore = makeSnapstore(snapstorePath, {
-      tmpName,
-      existsSync: fs.existsSync,
-      createReadStream: fs.createReadStream,
-      createWriteStream: fs.createWriteStream,
-      rename: fs.promises.rename,
-      unlink: fs.promises.unlink,
-      resolve: path.resolve,
-    });
-  }
-
   let supervisorHash = '';
   /**
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
    * @param { boolean } [metered]
+   * @param { string } [snapshotHash]
    */
-  async function startXSnap(name, handleCommand, metered) {
-    if (supervisorHash) {
-      return snapStore.load(supervisorHash, async snapshot => {
+  async function startXSnap(
+    name,
+    handleCommand,
+    metered,
+    snapshotHash = undefined,
+  ) {
+    if (snapStore && (snapshotHash || supervisorHash)) {
+      // console.log('startXSnap from', { supervisorHash, snapshotHash });
+      return snapStore.load(snapshotHash || supervisorHash, async snapshot => {
         const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
         await xs.evaluate('null'); // ensure that spawn is done
         return xs;
       });
     }
+    // console.log('fresh xsnap', { snapstore: snapStore });
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
@@ -123,6 +112,7 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
     }
     if (snapStore) {
       supervisorHash = await snapStore.save(async fn => worker.snapshot(fn));
+      // console.log('startXSnap saved supervisor to', { supervisorHash });
     }
     return worker;
   }
@@ -162,7 +152,6 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
-    snapstorePath,
     spawn = ambientSpawn,
     warehousePolicy = {},
   } = runtimeOptions;
@@ -300,7 +289,11 @@ export async function makeSwingsetController(
     // @ts-ignore assume supervisorBundle is set
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
-  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+  const startXSnap = makeStartXSnap(bundles, {
+    snapStore: hostStorage.snapstore,
+    env,
+    spawn,
+  });
 
   const kernelEndowments = {
     waitUntilQuiescent,
@@ -430,7 +423,6 @@ export async function makeSwingsetController(
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   testTrackDecref?: unknown,
- *   snapstorePath?: string,
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   slogFile?: string,
  * }} runtimeOptions
@@ -447,7 +439,6 @@ export async function buildVatController(
     kernelBundles,
     debugPrefix,
     slogCallbacks,
-    snapstorePath,
     warehousePolicy,
     slogFile,
   } = runtimeOptions;
@@ -455,7 +446,6 @@ export async function buildVatController(
     verbose,
     debugPrefix,
     slogCallbacks,
-    snapstorePath,
     warehousePolicy,
     slogFile,
   };

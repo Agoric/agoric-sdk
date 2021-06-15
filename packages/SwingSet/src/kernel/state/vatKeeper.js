@@ -79,6 +79,7 @@ export function makeVatKeeper(
   incStat,
   decStat,
   getCrankNumber,
+  snapStore = undefined,
 ) {
   insistVatID(vatID);
   const transcriptStream = `transcript-${vatID}`;
@@ -417,6 +418,40 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
   }
 
+  /**
+   * Take a snapshot of an XSnap worker and return its hash.
+   *
+   * @param { VatManager } manager
+   * @returns { Promise<void> }
+   */
+  async function saveSnapshot(manager) {
+    console.log('@@@saveSnapshot', { snapStore });
+    assert(snapStore, 'cannot saveSnapshot: no snapStore provided');
+    const snapshotID = await manager.makeSnapshot(snapStore);
+    // @@skip crank buffering?
+    kvStore.set(
+      `${vatID}.lastSnapshot`,
+      JSON.stringify({
+        snapshotID,
+        startPos: kvStore.get(`${vatID}.t.nextID`),
+      }),
+    );
+  }
+
+  /**
+   * @returns {{ snapshotID: string, startPos: StreamPosition } | undefined}
+   */
+  function getLastSnapshot() {
+    const notation = kvStore.get(`${vatID}.lastSnapshot`);
+    if (!notation) {
+      return undefined;
+    }
+    const { snapshotID, startPos } = JSON.parse(notation);
+    assert.typeof(snapshotID, 'string');
+    assert(startPos);
+    return { snapshotID, startPos };
+  }
+
   function vatStats() {
     function getCount(key, first) {
       const id = Nat(BigInt(kvStore.get(key)));
@@ -480,5 +515,7 @@ export function makeVatKeeper(
     addToTranscript,
     vatStats,
     dumpState,
+    saveSnapshot,
+    getLastSnapshot,
   });
 }

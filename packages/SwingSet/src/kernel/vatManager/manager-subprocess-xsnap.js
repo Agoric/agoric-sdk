@@ -23,7 +23,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns { VatManagerFactory }
@@ -109,8 +109,16 @@ export function makeXsSubprocessFactory({
       return encoder.encode(JSON.stringify(tagged));
     }
 
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const snapshotDetail = vatKeeper.getLastSnapshot();
+
     // start the worker and establish a connection
-    const worker = await startXSnap(`${vatID}:${name}`, handleCommand, metered);
+    const worker = await startXSnap(
+      `${vatID}:${name}`,
+      handleCommand,
+      metered,
+      snapshotDetail ? snapshotDetail.snapshotID : undefined,
+    );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
@@ -184,7 +192,15 @@ export function makeXsSubprocessFactory({
     function shutdown() {
       return worker.close().then(_ => undefined);
     }
-    return mk.getManager(shutdown);
+    /**
+     * @param {SnapStore} snapStore
+     * @returns {Promise<string>}
+     */
+    function makeSnapshot(snapStore) {
+      return snapStore.save(fn => worker.snapshot(fn));
+    }
+
+    return mk.getManager(shutdown, makeSnapshot);
   }
 
   return harden({ createFromBundle });

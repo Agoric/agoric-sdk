@@ -125,7 +125,8 @@
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: () => Promise<void>,
+ *              replayTranscript: (startPos?: unknown) => Promise<void>,
+ *              makeSnapshot: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapstore> } SnapStore
@@ -179,6 +180,7 @@
  * @typedef {{
  *   kvStore: KVStore,
  *   streamStore: StreamStore,
+ *   snapstore?: ReturnType<typeof import('@agoric/xsnap').makeSnapstore>
  * }} HostStore
  *
  * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus

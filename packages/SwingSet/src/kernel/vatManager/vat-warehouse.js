@@ -146,7 +146,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @returns { Promise<unknown> }
    */
   async function evict(vatID, makeSnapshot = false) {
-    assert(!makeSnapshot, 'not implemented');
+    assert(!makeSnapshot, 'not implemented@@@');
     assert(lookup(vatID));
     const info = ephemeral.vats.get(vatID);
     if (!info) return undefined;
@@ -190,10 +190,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type {(vatID: string, d: VatDeliveryObject) => Promise<Tagged> } */
   async function deliverToVat(vatID, delivery) {
     await applyAvailabilityPolicy(vatID);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const recreate = true; // PANIC in the failure case
 
     const { manager } = await ensureVatOnline(vatID, recreate);
-    return manager.deliver(delivery);
+    const result = manager.deliver(delivery);
+    const todo = '@@@only snapshot occasionally; move to evict?';
+    vatKeeper.saveSnapshot(manager);
+    return result;
   }
 
   /**

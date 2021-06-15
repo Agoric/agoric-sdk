@@ -1,4 +1,7 @@
+import fs from 'fs';
+import path from 'path';
 import anylogger from 'anylogger';
+import { tmpName } from 'tmp'; // TODO: reconcile tmp vs. temp
 
 import {
   buildMailbox,
@@ -13,6 +16,7 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { makeSnapstore } from '@agoric/xsnap';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -98,9 +102,21 @@ export async function launch(
   console.info('Launching SwingSet kernel');
 
   const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
+  const snapshotDir = path.resolve(kernelStateDBDir, 'xs-snapshots');
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  const snapstore = makeSnapstore(snapshotDir, {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  });
   const hostStorage = {
     kvStore,
     streamStore,
+    snapstore,
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.

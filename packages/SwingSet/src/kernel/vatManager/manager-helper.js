@@ -47,7 +47,8 @@ import { makeTranscriptManager } from './transcript.js';
 
 /**
  *
- * @typedef { { getManager: (shutdown: () => Promise<void>) => VatManager,
+ * @typedef { { getManager: (shutdown: () => Promise<void>,
+ *                           makeSnapshot?: (ss: SnapStore) => Promise<string>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -178,12 +179,18 @@ function makeManagerKit(
     kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
   }
 
-  async function replayTranscript() {
+  /**
+   * @param {StreamPosition | undefined} startPos
+   */
+  async function replayTranscript(startPos = undefined) {
     if (transcriptManager) {
       const total = vatKeeper.vatStats().transcriptCount;
+      if (startPos === undefined) {
+        startPos = vatKeeper.getLastSnapshot();
+      }
       kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
       let deliveryNum = 0;
-      for (const t of vatKeeper.getTranscript()) {
+      for (const t of vatKeeper.getTranscript(startPos)) {
         // if (deliveryNum % 100 === 0) {
         //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
         // }
@@ -235,10 +242,17 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
+   * @param { (ss: SnapStore) => Promise<string> } makeSnapshot
    * @returns { VatManager }
    */
-  function getManager(shutdown) {
-    return harden({ replayTranscript, replayOneDelivery, deliver, shutdown });
+  function getManager(shutdown, makeSnapshot) {
+    return harden({
+      replayTranscript,
+      replayOneDelivery,
+      deliver,
+      shutdown,
+      makeSnapshot,
+    });
   }
 
   return harden({ getManager, syscallFromWorker, setDeliverToWorker });
