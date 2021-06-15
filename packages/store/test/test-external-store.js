@@ -1,16 +1,16 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import {
   makeStore,
   makeExternalStore,
   makeHydrateExternalStoreMaker,
   makeWeakStore,
-} from '../src/index';
+} from '../src/index.js';
 
-import '../src/types';
+import '../src/types.js';
 
 const moduleLevel = 'module-level';
 

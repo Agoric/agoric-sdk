@@ -2,10 +2,10 @@
 import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { observeIteration, observeIterator } from '../src/index';
+import { observeIteration, observeIterator } from '../src/index.js';
 
-import '@agoric/marshal/exported';
-import '../src/types';
+import '@agoric/marshal/exported.js';
+import '../src/types.js';
 
 const obj = harden({});
 const unresP = new Promise(_ => {});

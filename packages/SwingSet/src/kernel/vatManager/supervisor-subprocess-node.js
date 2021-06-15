@@ -7,20 +7,23 @@ import fs from 'fs';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
-import engineGC from '../../engine-gc';
-import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { makeGcAndFinalize } from '../../gc-and-finalize';
-import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
+import engineGC from '../../engine-gc.js';
+import { WeakRef, FinalizationRegistry } from '../../weakref.js';
+import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import {
+  arrayEncoderStream,
+  arrayDecoderStream,
+} from '../../worker-protocol.js';
 import {
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../../netstring';
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-import { makeLiveSlots } from '../liveSlots';
+} from '../../netstring.js';
+import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
+import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+} from './supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {

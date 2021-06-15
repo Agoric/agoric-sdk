@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 
 import test from 'ava';
-import { initSimpleSwingStore, getAllState } from '../src/simpleSwingStore';
+import { initSimpleSwingStore, getAllState } from '../src/simpleSwingStore.js';
 
 test('kvStore read/write', t => {
   const store = initSimpleSwingStore();

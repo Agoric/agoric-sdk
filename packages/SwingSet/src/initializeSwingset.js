@@ -6,9 +6,9 @@ import path from 'path';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 
-import './types';
-import { insistStorageAPI } from './storageAPI';
-import { initializeKernel } from './kernel/initializeKernel';
+import './types.js';
+import { insistStorageAPI } from './storageAPI.js';
+import { initializeKernel } from './kernel/initializeKernel.js';
 
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const { keys, values, fromEntries } = Object;

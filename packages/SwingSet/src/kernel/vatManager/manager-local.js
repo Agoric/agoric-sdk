@@ -1,13 +1,13 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { makeLiveSlots } from '../liveSlots';
-import { makeManagerKit } from './manager-helper';
+import { makeLiveSlots } from '../liveSlots.js';
+import { makeManagerKit } from './manager-helper.js';
 import {
   makeSupervisorDispatch,
   makeMeteredDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+} from './supervisor-helper.js';
 
 export function makeLocalVatManagerFactory(tools) {
   const {

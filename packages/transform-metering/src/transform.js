@@ -1,6 +1,6 @@
 /* global require */
-import * as c from './constants';
-import { makePureBabelCore } from './pure-babel-core';
+import * as c from './constants.js';
+import { makePureBabelCore } from './pure-babel-core.js';
 
 // We'd like to import this, but RE2 is cjs
 const RE2 = require('re2');

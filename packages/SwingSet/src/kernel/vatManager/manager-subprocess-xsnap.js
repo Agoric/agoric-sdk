@@ -1,11 +1,14 @@
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
-import { ExitCode } from '@agoric/xsnap/api';
-import { makeManagerKit } from './manager-helper';
+import { ExitCode } from '@agoric/xsnap/api.js';
+import { makeManagerKit } from './manager-helper.js';
 
-import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
-import '../../types';
-import './types';
+import {
+  insistVatSyscallObject,
+  insistVatDeliveryResult,
+} from '../../message.js';
+import '../../types.js';
+import './types.js';
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {

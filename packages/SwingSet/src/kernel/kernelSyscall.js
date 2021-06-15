@@ -1,8 +1,8 @@
 import { assert, details as X } from '@agoric/assert';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { insistMessage } from '../message';
-import { insistCapData } from '../capdata';
-import { insistDeviceID, insistVatID } from './id';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
+import { insistMessage } from '../message.js';
+import { insistCapData } from '../capdata.js';
+import { insistDeviceID, insistVatID } from './id.js';
 
 const OKNULL = harden(['ok', null]);
 

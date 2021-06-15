@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
-import { insistKernelType } from './parseKernelSlots';
-import { insistVatID } from './id';
+import { insistKernelType } from './parseKernelSlots.js';
+import { insistVatID } from './id.js';
 
 const typePriority = ['dropExport', 'retireExport', 'retireImport'];
 

@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
-import { assertKnownOptions } from '../../assertOptions';
-import { makeLocalVatManagerFactory } from './manager-local';
-import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker';
-import { makeNodeSubprocessFactory } from './manager-subprocess-node';
-import { makeXsSubprocessFactory } from './manager-subprocess-xsnap';
+import { assertKnownOptions } from '../../assertOptions.js';
+import { makeLocalVatManagerFactory } from './manager-local.js';
+import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';
+import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
+import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
 export function makeVatManagerFactory({
   allVatPowers,

@@ -5,11 +5,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
-import { toBytes } from './bytes';
+import { toBytes } from './bytes.js';
 
-import '@agoric/store/exported';
-import './types';
-import './internal-types';
+import '@agoric/store/exported.js';
+import './types.js';
+import './internal-types.js';
 
 /**
  * Compatibility note: this must match what our peers use,

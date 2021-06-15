@@ -1,6 +1,6 @@
 // @ts-check
 
-// import '@agoric/marshal/src/types';
+// import '@agoric/marshal/src/types.js';
 
 /**
  * @typedef {CapData<string>} SwingSetCapData

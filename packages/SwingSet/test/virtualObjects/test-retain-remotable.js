@@ -1,12 +1,12 @@
 /* global WeakRef */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { Far } from '@agoric/marshal';
 
-import engineGC from '../../src/engine-gc';
-import { makeGcAndFinalize } from '../../src/gc-and-finalize';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
+import engineGC from '../../src/engine-gc.js';
+import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
 
 // empty object, used as makeWeakStore() key
 function makeKeyInstance(_state) {

@@ -10,7 +10,7 @@
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 
-import './install-ses-debug';
+import './install-ses-debug.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager';
 
 const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager({

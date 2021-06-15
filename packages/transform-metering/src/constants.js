@@ -1,5 +1,5 @@
 // These are the meter members of the meterId.
-export * from '@agoric/tame-metering/src/constants';
+export * from '@agoric/tame-metering/src/constants.js';
 export const METER_COMBINED = '*';
 
 export const DEFAULT_METER_ID = '$h\u200d_meter';

@@ -1,18 +1,18 @@
 /* global require */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@agoric/bundle-source';
 import { getAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../src/hostStorage';
+import { provideHostStorage } from '../src/hostStorage.js';
 
 import {
   initializeSwingset,
   makeSwingsetController,
   buildKernelBundles,
-} from '../src/index';
-import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox';
-import buildCommand from '../src/devices/command';
+} from '../src/index.js';
+import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox.js';
+import buildCommand from '../src/devices/command.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

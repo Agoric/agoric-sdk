@@ -1,13 +1,13 @@
 /* global require */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage';
+import { provideHostStorage } from '../../src/hostStorage.js';
 
-import { initializeSwingset, makeSwingsetController } from '../../src/index';
-import { buildTimer } from '../../src/devices/timer';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { buildTimer } from '../../src/devices/timer.js';
 
-const TimerSrc = require.resolve('../../src/devices/timer-src');
+const TimerSrc = require.resolve('../../src/devices/timer-src.js');
 
 const timerConfig = {
   bootstrap: 'bootstrap',

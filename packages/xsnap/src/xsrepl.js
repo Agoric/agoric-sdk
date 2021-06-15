@@ -9,8 +9,8 @@
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import * as readline from 'readline';
-import { xsnap } from './xsnap';
-import { defer } from './defer';
+import { xsnap } from './xsnap.js';
+import { defer } from './defer.js';
 
 const decoder = new TextDecoder();
 

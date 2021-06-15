@@ -1,14 +1,14 @@
 /* global setImmediate */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { makeMarshaller } from '../src/kernel/liveSlots';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { makeMarshaller } from '../src/kernel/liveSlots.js';
 
-import { buildVatController } from '../src/index';
+import { buildVatController } from '../src/index.js';
 
 const gcTools = harden({ WeakRef, FinalizationRegistry });
 

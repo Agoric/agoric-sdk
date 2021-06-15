@@ -1,13 +1,17 @@
 import { assert, details as X } from '@agoric/assert';
-import { makeVatSlot, insistVatType, parseVatSlot } from '../../parseVatSlots';
-import { insistMessage } from '../../message';
-import { makeState } from './state';
-import { deliverToController } from './controller';
-import { insistCapData } from '../../capdata';
+import {
+  makeVatSlot,
+  insistVatType,
+  parseVatSlot,
+} from '../../parseVatSlots.js';
+import { insistMessage } from '../../message.js';
+import { makeState } from './state.js';
+import { deliverToController } from './controller.js';
+import { insistCapData } from '../../capdata.js';
 
-import { makeCListKit } from './clist';
-import { makeDeliveryKit } from './delivery';
-import { cdebug } from './cdebug';
+import { makeCListKit } from './clist.js';
+import { makeDeliveryKit } from './delivery.js';
+import { cdebug } from './cdebug.js';
 
 export const debugState = new WeakMap();
 

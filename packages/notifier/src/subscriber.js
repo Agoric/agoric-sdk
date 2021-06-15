@@ -6,7 +6,7 @@ import { HandledPromise, E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import './types';
+import './types.js';
 
 /**
  * @template T

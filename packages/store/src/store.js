@@ -3,7 +3,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { isEmptyNonRemotableObject } from './helpers';
+import { isEmptyNonRemotableObject } from './helpers.js';
 
 /**
  * Distinguishes between adding a new key (init) and updating or

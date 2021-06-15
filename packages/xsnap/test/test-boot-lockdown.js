@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-import { xsnap } from '../src/xsnap';
+import { xsnap } from '../src/xsnap.js';
 
 const importModuleUrl = `file://${__filename}`;
 

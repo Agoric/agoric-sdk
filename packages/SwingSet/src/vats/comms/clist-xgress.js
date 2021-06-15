@@ -1,7 +1,7 @@
 import { Nat } from '@agoric/nat';
-import { insistLocalType } from './parseLocalSlots';
-import { makeRemoteSlot } from './parseRemoteSlot';
-import { cdebug } from './cdebug';
+import { insistLocalType } from './parseLocalSlots.js';
+import { makeRemoteSlot } from './parseRemoteSlot.js';
+import { cdebug } from './cdebug.js';
 
 export function makeIngressEgress(state, provideLocalForRemote) {
   function addEgress(remoteID, remoteRefID, loid) {

@@ -15,7 +15,7 @@ import '@agoric/babel-standalone';
 //
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { wrapTest } from '@endo/ses-ava';
-import './prepare-test-env';
+import './prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
 

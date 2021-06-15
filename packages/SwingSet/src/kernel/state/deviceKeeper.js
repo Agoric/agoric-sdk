@@ -4,9 +4,9 @@
 
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { parseKernelSlot } from '../parseKernelSlots';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
-import { insistDeviceID } from '../id';
+import { parseKernelSlot } from '../parseKernelSlots.js';
+import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
+import { insistDeviceID } from '../id.js';
 
 const FIRST_DEVICE_STATE_ID = 10n;
 

@@ -1,8 +1,8 @@
 // @ts-check
 import { assert } from '@agoric/assert';
-import '../../types';
-import { insistVatDeliveryResult } from '../../message';
-import { makeTranscriptManager } from './transcript';
+import '../../types.js';
+import { insistVatDeliveryResult } from '../../message.js';
+import { makeTranscriptManager } from './transcript.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into

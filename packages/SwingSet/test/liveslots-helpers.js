@@ -1,9 +1,9 @@
-import engineGC from '../src/engine-gc';
+import engineGC from '../src/engine-gc.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { makeGcAndFinalize } from '../src/gc-and-finalize';
-import { makeLiveSlots } from '../src/kernel/liveSlots';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { makeLiveSlots } from '../src/kernel/liveSlots.js';
 
 export function buildSyscall() {
   const log = [];

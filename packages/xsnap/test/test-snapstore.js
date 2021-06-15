@@ -12,8 +12,8 @@ import zlib from 'zlib';
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { xsnap } from '../src/xsnap';
-import { makeSnapstore } from '../src/snapStore';
+import { xsnap } from '../src/xsnap.js';
+import { makeSnapstore } from '../src/snapStore.js';
 
 const importMetaUrl = new URL(`file://${__filename}`);
 

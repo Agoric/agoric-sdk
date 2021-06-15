@@ -1,11 +1,11 @@
 /* global process setTimeout */
-import { replaceGlobalMeter } from './install-metering';
+import { replaceGlobalMeter } from './install-metering.js';
 import '@agoric/install-ses'; // calls lockdown()
 
 // eslint-disable-next-line import/order
 import test from 'ava';
 
-import { makeMeter, makeMeteredEvaluator } from '../src/index';
+import { makeMeter, makeMeteredEvaluator } from '../src/index.js';
 
 // 'May be blocked by https://github.com/Agoric/SES-beta/issues/8',
 

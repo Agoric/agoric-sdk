@@ -1,4 +1,4 @@
-import { makeMeteringTransformer } from './transform';
+import { makeMeteringTransformer } from './transform.js';
 
 export function makeMeteredEvaluator({
   replaceGlobalMeter,

@@ -5,8 +5,8 @@ import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';
-import { buildVatController } from '../../src/index';
-import makeNextLog from '../make-nextlog';
+import { buildVatController } from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

@@ -3,8 +3,8 @@ import {
   flipRemoteSlot,
   insistRemoteType,
   parseRemoteSlot,
-} from './parseRemoteSlot';
-import { cdebug } from './cdebug';
+} from './parseRemoteSlot.js';
+import { cdebug } from './cdebug.js';
 
 function rname(remote) {
   return `${remote.remoteID()} (${remote.name()})`;

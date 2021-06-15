@@ -3,8 +3,8 @@ import test from 'ava';
 
 import * as childProcess from 'child_process';
 import * as os from 'os';
-import { xsnap } from '../src/xsnap';
-import { makeGcAndFinalize } from './gc';
+import { xsnap } from '../src/xsnap.js';
+import { makeGcAndFinalize } from './gc.js';
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };

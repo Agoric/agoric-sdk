@@ -1,16 +1,16 @@
 /* global __dirname */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
 
-import { provideHostStorage } from '../../src/hostStorage';
+import { provideHostStorage } from '../../src/hostStorage.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
-} from '../../src/index';
-import makeNextLog from '../make-nextlog';
+} from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

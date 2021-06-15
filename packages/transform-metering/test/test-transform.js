@@ -3,8 +3,8 @@
 import test from 'ava';
 import fs from 'fs';
 
-import { makeMeteringTransformer } from '../src/index';
-import * as c from '../src/constants';
+import { makeMeteringTransformer } from '../src/index.js';
+import * as c from '../src/constants.js';
 
 test('meter transform', async t => {
   let getMeter;
