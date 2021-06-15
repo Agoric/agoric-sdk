@@ -254,7 +254,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       assert.equal(type, 'object');
       assert.equal(allocatedByVat, false); // retire *imports*, not exports
       const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
-      vatKeeper.insistNotReachable(kref);
+      if (vatKeeper.getReachableFlag(kref)) {
+        throw Error(`syscall.retireImports but ${vref} is still reachable`);
+      }
       // 'true' means decref the object, which won't reduce the reachable
       // count (because it was unreachable, as we asserted), but it *will*
       // reduce the recognizable count
