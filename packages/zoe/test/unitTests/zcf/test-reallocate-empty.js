@@ -19,11 +19,9 @@ test(`zcf.reallocate introducing new empty amount`, async t => {
 
   const empty = AmountMath.makeEmpty(brand, AssetKind.NAT);
 
-  // decrementBy empty
-  t.throws(() => zcfSeat1.decrementBy({ RUN: empty }), {
-    message:
-      'The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword "RUN".',
-  });
+  // decrementBy empty does not throw, and does not add a keyword
+  zcfSeat1.decrementBy({ RUN: empty });
+  t.deepEqual(zcfSeat1.getStagedAllocation(), {});
 
   // Try to incrementBy empty. This succeeds, and the keyword is added
   // with an empty amount.
