@@ -1,37 +1,24 @@
+// @ts-check
+/* global __filename */
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import * as childProcess from 'child_process';
+
+import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
-import * as path from 'path';
+
 import { xsnap } from '../src/xsnap.js';
 
-const importModuleUrl = `file://${__filename}`;
+import { options, loader } from './message-tools.js';
 
-const asset = async (...segments) =>
-  fs.promises.readFile(
-    path.join(importModuleUrl.replace('file:/', ''), '..', ...segments),
-    'utf-8',
-  );
+const importMeta = { url: `file://${__filename}` };
 
-const decoder = new TextDecoder();
-
-const xsnapOptions = {
-  spawn: childProcess.spawn,
-  os: os.type(),
-};
-
-function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const ld = loader(importMeta.url, fs.promises.readFile);
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const name = 'SES lockdown worker';
   const vat = xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
@@ -49,12 +36,12 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(bootScript);
 
-  const script = await asset('escapeCompartment.js');
+  const script = await ld.asset('escapeCompartment.js');
   await vat.evaluate(script);
   await vat.close();
 
@@ -62,8 +49,8 @@ test('child compartment cannot access start powers', async t => {
 });
 
 test('SES deep stacks work on xsnap', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(bootScript);
   await vat.evaluate(`
@@ -75,7 +62,7 @@ test('SES deep stacks work on xsnap', async t => {
     const msg = getStackString(err);
     send(msg);
   `);
-  const [stackInErr, msg] = opts.messages.map(JSON.parse);
+  const [stackInErr, msg] = opts.messages.map(s => JSON.parse(s));
   t.assert(!stackInErr);
   t.is(typeof msg, 'string');
   t.assert(msg.length >= 1);

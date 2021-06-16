@@ -14,14 +14,10 @@ import test from 'ava';
 import tmp from 'tmp';
 import { xsnap } from '../src/xsnap.js';
 import { makeSnapstore } from '../src/snapStore.js';
+import { loader } from './message-tools.js';
 
-const importMetaUrl = new URL(`file://${__filename}`);
-
-const asset = async (...segments) =>
-  fs.promises.readFile(
-    path.join(importMetaUrl.pathname, '..', ...segments),
-    'utf-8',
-  );
+const importMeta = { url: `file://${__filename}` };
+const ld = loader(importMeta.url, fs.promises.readFile); // WARNING: ambient
 
 /**
  * @param {string} name
@@ -38,7 +34,7 @@ async function bootWorker(name, handleCommand) {
     // debug: !!env.XSNAP_DEBUG,
   });
 
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
   await worker.evaluate(bootScript);
   return worker;
 }
