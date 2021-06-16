@@ -30,9 +30,6 @@ export function buildRootObject(vatPowers) {
       terminateWithFailure(reason) {
         D(vatAdminNode).terminateWithFailure(vatID, reason);
       },
-      adminData() {
-        return D(vatAdminNode).adminStats(vatID);
-      },
       done() {
         return doneP;
       },

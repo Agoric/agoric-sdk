@@ -70,15 +70,3 @@ test('error creating vat from non-bundle', async t => {
   ]);
   await c.run();
 });
-
-test('VatAdmin get vat stats', async t => {
-  const c = await doTestSetup(t, 'vatStats');
-  await c.run();
-  t.deepEqual(c.dump().log, [
-    'starting stats test',
-    '{"deviceCount":0,"objectCount":0,"promiseCount":0,"transcriptCount":0}',
-    '4',
-    '{"deviceCount":0,"objectCount":0,"promiseCount":2,"transcriptCount":2}',
-  ]);
-  await c.run();
-});

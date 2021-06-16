@@ -866,12 +866,6 @@ export default function buildKernel(
     });
   }
 
-  function collectVatStats(vatID) {
-    insistVatID(vatID);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    return vatKeeper.vatStats();
-  }
-
   async function start() {
     if (started) {
       throw Error('kernel.start already called');
@@ -891,7 +885,6 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      stats: collectVatStats,
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
     };
 
