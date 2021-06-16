@@ -1279,6 +1279,20 @@
     "@endo/zip" "^0.2.2"
     ses "^0.13.2"
 
+"@endo/eslint-config@^0.3.9":
+  version "0.3.9"
+  resolved "https://registry.yarnpkg.com/@endo/eslint-config/-/eslint-config-0.3.9.tgz#157ab2e64ddca73c65c7cf0762cfb04c573c3722"
+  integrity sha512-nL3y1ncAC52PGLaZDr2u+/r5jjiLZ295wWGNpa+g0yOhzOuAaZ6PvEs8r7qIXJ7YrzdzRKJcEdC+RBjRLRo8Tg==
+  dependencies:
+    "@endo/eslint-plugin" "^0.3.5"
+
+"@endo/eslint-plugin@^0.3.5":
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.3.5.tgz#13c9c5e3f11ee147698af4f81b0cf03cea155bb1"
+  integrity sha512-qmkCgasPlzQhY/1gstz67RnakLmjc/MRSyNFzmvCmLw9NOCP4DEtsq9O6Af4wimfeqGwYOBvGOGT/FzfydQvlA==
+  dependencies:
+    requireindex "~1.1.0"
+
 "@endo/ses-ava@^0.2.2":
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.2.tgz#44fc4f1c25575346f43b03d4e944931e53d81f3d"

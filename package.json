@@ -95,6 +95,7 @@
     "timeout": "30m"
   },
   "dependencies": {
+    "@endo/eslint-config": "^0.3.9",
     "patch-package": "^6.2.2"
   }
 }
