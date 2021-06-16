@@ -332,7 +332,7 @@ show-config      display the client connection parameters
         importFlags.push(`--import-from=${absImportFrom}`);
       }
 
-      if (subOpts.bump) {
+      if (subOpts.bump !== undefined) {
         const bumpOpts = subOpts.bump ? [subOpts.bump] : [];
         await needReMain(['bump-chain-version', ...bumpOpts]);
       }
@@ -350,7 +350,12 @@ show-config      display the client connection parameters
           genJSON = await trimReadFile(loc.pathname);
         } else {
           const res = await fetch(subOpts.genesis);
-          genJSON = await res.text();
+          const js = await res.json();
+          if (js && js.jsonrpc) {
+            genJSON = JSON.stringify(js.result.genesis);
+          } else {
+            genJSON = JSON.stringify(js);
+          }
         }
 
         const genesis = JSON.parse(genJSON);
@@ -364,7 +369,7 @@ show-config      display the client connection parameters
         `${COSMOS_DIR}/chain-name.txt`,
       ).catch(_ => undefined);
 
-      if (subOpts.bump || currentChainName !== chainName) {
+      if (subOpts.bump !== undefined || currentChainName !== chainName) {
         // We don't have matching parameters, so restart the chain.
         // Stop the chain services.
         await reMain(['play', 'stop', '-eservice=ag-chain-cosmos']);
@@ -385,15 +390,13 @@ show-config      display the client connection parameters
       // If the canonical genesis exists, use it.
       await guardFile(`${COSMOS_DIR}/genesis.stamp`, async () => {
         await wr.mkdir(`${COSMOS_DIR}/data`, { recursive: true });
+        let pr;
         if (genJSON) {
-          await wr.createFile(`${COSMOS_DIR}/data/genesis.json`, genJSON);
+          pr = wr.createFile(`${COSMOS_DIR}/data/genesis.json`, genJSON);
         } else {
-          await guardFile(`${COSMOS_DIR}/data/genesis.json`, async () => {
-            await needReMain(['play', 'cosmos-genesis']);
-            // Don't overwrite the data/genesis.json.
-            return true;
-          });
+          pr = needReMain(['play', 'cosmos-genesis']);
         }
+        await pr;
       });
 
       await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
@@ -411,7 +414,7 @@ show-config      display the client connection parameters
         );
         const hasPeers = dsts.find(dst => dst.startsWith('peer'));
         await Promise.all(
-          dsts.map(async (dst, i) => {
+          dsts.map(async dst => {
             // Update the config.toml and genesis.json.
             const corsFlags = [];
             if (hasPeers && dst.startsWith('peer')) {
@@ -432,7 +435,7 @@ show-config      display the client connection parameters
               ...importFlags,
               `${COSMOS_DIR}/data/${dst}`,
             ]);
-            if (i !== 0) {
+            if (dst !== 'validator0.dst') {
               return;
             }
             await guardFile(

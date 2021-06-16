@@ -6,7 +6,7 @@
     "js": "mjs"
   },
   "bin": {
-    "ag-chain-cosmos": "./src/chain-entrypoint.cjs"
+    "ag-chain-cosmos": "./src/entrypoint.cjs"
   },
   "main": "src/chain-main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -27,6 +27,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.3.0",
+    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/cosmos": "^0.26.3",
     "@agoric/dapp-svelte-wallet": "^0.10.3",
     "@agoric/import-bundle": "^0.2.15",
@@ -41,7 +42,8 @@
     "agoric": "^0.13.3",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "esm": "agoric-labs/esm#Agoric-built",
+    "node-lmdb": "^0.9.4"
   },
   "devDependencies": {
     "ava": "^3.12.1"

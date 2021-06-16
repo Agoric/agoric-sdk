@@ -20,7 +20,7 @@ ARG MODDABLE_URL
 WORKDIR /usr/src/agoric-sdk
 COPY . .
 
-RUN yarn install --frozen-lockfile --ignore-scripts
+RUN yarn install --frozen-lockfile --ignore-scripts --network-timeout 100000
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
@@ -35,7 +35,7 @@ RUN MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" MODDABLE_URL="$MODDABLE_URL" ya
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable
 RUN find . -name node_modules -prune -print0 | xargs -0 rm -rf
-RUN yarn install --frozen-lockfile --production
+RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
 ###############################
 # The install container.
