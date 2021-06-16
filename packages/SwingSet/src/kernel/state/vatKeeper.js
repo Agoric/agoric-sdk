@@ -120,6 +120,7 @@ export function makeVatKeeper(
     return harden(options);
   }
 
+  // TODO: accumulate deltas in RAM, apply in a single saveVatStats() call at end of the delivery
   function incVatStat(stat, direction, delta = 1) {
     assert(STAT_NAMES.includes(stat), stat);
     assert(STAT_DIRECTIONS.includes(direction), direction);

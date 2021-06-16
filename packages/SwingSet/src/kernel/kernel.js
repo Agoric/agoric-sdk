@@ -677,7 +677,8 @@ export default function buildKernel(
       }
       if (!didAbort) {
         kernelKeeper.processRefcounts();
-        kernelKeeper.saveStats();
+        kernelKeeper.saveStats(); // TODO: maybe loadStats() at start of crank to keep in sync
+        // maybe: if (didAbort) kk.loadStats() else kk.saveStats()
         // eslint-disable-next-line no-use-before-define
         await vatWarehouse.maybeSaveSnapshot();
       }
