@@ -13,7 +13,7 @@ const ChoiceMethod = {
   WEIGHT: 'weight',
 };
 
-const buildBallot = (method, question, positions, maxChoices = 1) => {
+const buildBallot = (method, question, positions, maxChoices = 0) => {
   const choose = (...chosenPositions) => {
     assert(
       chosenPositions.length <= maxChoices,

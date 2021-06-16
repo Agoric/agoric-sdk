@@ -76,7 +76,8 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
       ],
     };
 
-    if (!(await E(quorumChecker).check(stats))) {
+    const quorumCheck = await E(quorumChecker).check(stats);
+    if (!quorumCheck) {
       outcomePromise.reject('No quorum');
     }
 
@@ -102,16 +103,18 @@ const makeBinaryBallotCounter = (question, aName, bName) => {
   });
 
   const creatorFacet = Far('adminFacet', {
-    closeVoting: () => (isOpen = false),
-    countVotes,
     ...sharedFacet,
+    closeVoting: () => {
+      isOpen = false;
+    },
+    countVotes,
     getVoterFacet: () => voterFacet,
   });
 
   const publicFacet = Far('publicFacet', {
+    ...sharedFacet,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
-    ...sharedFacet,
   });
   return { publicFacet, creatorFacet };
 };
