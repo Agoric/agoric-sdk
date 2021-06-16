@@ -1,7 +1,5 @@
 // @ts-check
 
-import { AmountMath } from '@agoric/ertp';
-
 export const makeMakeCollectFeesInvitation = (zcf, feeSeat, centralBrand) => {
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated('RUN', centralBrand);

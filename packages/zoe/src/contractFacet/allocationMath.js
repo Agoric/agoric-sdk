@@ -25,11 +25,17 @@ import { AmountMath } from '@agoric/ertp';
  */
 const doOperation = (allocation, amountKeywordRecord, operationFn) => {
   const allKeywords = Object.keys({ ...allocation, ...amountKeywordRecord });
-  
-  const entries = allKeywords.map(keyword => {
-      const result = operationFn(allocation[keyword], amountKeywordRecord[keyword], keyword);
-      return [ keyword, result];
-    }).filter(([_keyword, result]) => result !== undefined);
+
+  const entries = allKeywords
+    .map(keyword => {
+      const result = operationFn(
+        allocation[keyword],
+        amountKeywordRecord[keyword],
+        keyword,
+      );
+      return [keyword, result];
+    })
+    .filter(([_keyword, result]) => result !== undefined);
 
   return Object.fromEntries(entries);
 };
@@ -48,7 +54,10 @@ const add = (amount, amountToAdd, _keyword) => {
 /** @type {Operation} */
 const subtract = (amount, amountToSubtract, keyword) => {
   // if amountToSubtract is undefined OR is defined, but empty
-  if (amountToSubtract === undefined || (amountToSubtract !== undefined && AmountMath.isEmpty(amountToSubtract))) {
+  if (
+    amountToSubtract === undefined ||
+    (amountToSubtract !== undefined && AmountMath.isEmpty(amountToSubtract))
+  ) {
     // Subtracting undefined is equivalent to subtracting empty, so in
     // both cases we can return the original amount. If the original
     // amount is undefined, it is filtered out in doOperation.
