@@ -62,6 +62,13 @@ const steps = [
       { id: 'v5', name: 'target4' },
     ],
   },
+  {
+    vat: 'target2',
+    online: [
+      { id: 'v5', name: 'target4' },
+      { id: 'v3', name: 'target2' },
+    ],
+  },
 ];
 
 async function runSteps(c, t) {

@@ -130,22 +130,26 @@ export function makeXsSubprocessFactory({
       return { ...result, reply: [tag, ...rest] };
     }
 
-    parentLog(vatID, `instructing worker to load bundle..`);
-    const { reply: bundleReply } = await issueTagged([
-      'setBundle',
-      vatID,
-      bundle,
-      vatParameters,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-      gcEveryCrank,
-    ]);
-    if (bundleReply[0] === 'dispatchReady') {
-      parentLog(vatID, `bundle loaded. dispatch ready.`);
+    if (lastSnapshot) {
+      parentLog(vatID, `snapshot loaded. dispatch ready.`);
     } else {
-      const [_tag, errName, message] = bundleReply;
-      assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      parentLog(vatID, `instructing worker to load bundle..`);
+      const { reply: bundleReply } = await issueTagged([
+        'setBundle',
+        vatID,
+        bundle,
+        vatParameters,
+        virtualObjectCacheSize,
+        enableDisavow,
+        enableVatstore,
+        gcEveryCrank,
+      ]);
+      if (bundleReply[0] === 'dispatchReady') {
+        parentLog(vatID, `bundle loaded. dispatch ready.`);
+      } else {
+        const [_tag, errName, message] = bundleReply;
+        assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      }
     }
 
     /**

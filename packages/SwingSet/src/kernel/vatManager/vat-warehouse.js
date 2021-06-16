@@ -20,7 +20,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
-   *   options: { name?: string, description?: string },
+   *   options: { name?: string, description?: string, managerType?: ManagerType },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('../vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -70,13 +70,15 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
         return vatLoader.createVatDynamically;
       }
     };
-    // console.log('provide: creating from bundle', vatID);
     const manager = await chooseLoader()(vatID, source, translators, options);
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    await manager.replayTranscript();
+    const lastSnapshot = vatKeeper.getLastSnapshot();
+    await manager.replayTranscript(
+      lastSnapshot ? lastSnapshot.startPos : undefined,
+    );
 
     const result = {
       manager,
@@ -84,6 +86,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       enablePipelining,
       options,
     };
+    // console.log('ensure -> online:', vatID, options);
     ephemeral.vats.set(vatID, result);
     // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
@@ -150,7 +153,10 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     assert(!makeSnapshot, 'not implemented@@@');
     assert(lookup(vatID));
     const info = ephemeral.vats.get(vatID);
-    if (!info) return undefined;
+    if (!info) {
+      // console.debug('evict: not online:', vatID);
+      return undefined;
+    }
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
     kernelKeeper.closeVatTranscript(vatID);
@@ -174,17 +180,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @param {string} currentVatID
    */
   async function applyAvailabilityPolicy(currentVatID) {
-    // console.log('applyAvailabilityPolicy', currentVatID, recent);
-    const pos = recent.indexOf(currentVatID);
-    // console.debug('applyAvailabilityPolicy', { currentVatID, recent, pos });
-    // already most recently used
-    if (pos + 1 === maxVatsOnline) return;
-    if (pos >= 0) recent.splice(pos, 1);
-    recent.push(currentVatID);
-    // not yet full
-    if (recent.length <= maxVatsOnline) return;
-    const [lru] = recent.splice(0, 1);
-    // console.debug('evicting', { lru });
+    const lru = recent.add(currentVatID);
+    if (!lru) {
+      return;
+    }
+    // const {
+    //   options: { description, managerType },
+    // } = ephemeral.vats.get(lru) || assert.fail();
+    // console.info('evict', lru, description, managerType, 'for', currentVatID);
     await evict(lru);
   }
 

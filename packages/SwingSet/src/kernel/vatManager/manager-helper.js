@@ -183,6 +183,8 @@ function makeManagerKit(
    * @param {StreamPosition | undefined} startPos
    */
   async function replayTranscript(startPos = undefined) {
+    // console.log('replay from', { vatID, startPos });
+
     if (transcriptManager) {
       const total = vatKeeper.vatStats().transcriptCount;
       if (!startPos) {
