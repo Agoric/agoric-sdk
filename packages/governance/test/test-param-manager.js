@@ -199,3 +199,34 @@ test('params one any', async t => {
   manager.update('stuff', 18.1);
   t.deepEqual(publicFacet.lookup('stuff'), 18.1);
 });
+
+test('params keys', async t => {
+  const fooHandle = makeHandle('foo');
+  const { publicFacet, manager } = buildParamManager([
+    {
+      name: 'stuff',
+      value: fooHandle,
+      type: ParamType.ANY,
+    },
+    {
+      name: 'bigint',
+      value: 314159n,
+      type: ParamType.BIGINT,
+    },
+  ]);
+  t.deepEqual(publicFacet.lookup('stuff'), fooHandle);
+  manager.update('stuff', 18.1);
+  t.deepEqual(publicFacet.lookup('stuff'), 18.1);
+
+  t.deepEqual(publicFacet.getDetails('stuff'), {
+    name: 'stuff',
+    value: 18.1,
+    type: ParamType.ANY,
+  });
+  t.deepEqual(publicFacet.getDetails('bigint'), {
+    name: 'bigint',
+    value: 314159n,
+    type: ParamType.BIGINT,
+  });
+  t.deepEqual(publicFacet.definedNames(), ['stuff', 'bigint']);
+});

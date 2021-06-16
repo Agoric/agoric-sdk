@@ -83,9 +83,13 @@ const buildParamManager = paramDesc => {
   const { bindings, types } = parse(paramDesc);
 
   const publicFacet = {
-    lookup(name) {
-      return bindings.get(name);
-    },
+    lookup: name => bindings.get(name),
+    getDetails: name => ({
+      name,
+      value: bindings.get(name),
+      type: types.get(name),
+    }),
+    definedNames: () => bindings.keys(),
   };
 
   const manager = {
