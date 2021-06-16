@@ -12,7 +12,5 @@ test('resolvePathForPackagedContract', async t => {
 
   const result = resolvePathForPackagedContract(path);
 
-  t.truthy(
-    result.includes('agoric-sdk/packages/zoe/src/contracts/automaticRefund.js'),
-  );
+  t.truthy(result.includes('packages/zoe/src/contracts/automaticRefund.js'));
 });
