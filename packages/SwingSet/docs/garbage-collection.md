@@ -12,11 +12,9 @@ This document describes the details of SwingSet's implementation, starting with 
 
 # Preliminaries
 
-## REACHABLE vs RECOGNIZABLE
+## Reachability
 
-To make WeakMaps and WeakSets work correctly across vats, we define two basic kinds of reachability: REACHABLE and RECOGNIZABLE. To demonstrate, the following examples build a "stash" with some methods, and then give a target "thing" object to the stash.
-
-"Reachable" means a given piece of code has some way to produce the target object. when a caller invokes `store(thing)`, the stash can now "reach" `thing` in the closed-over `stash` variable, and `retrieve()` can be called to exercise this ability:
+"Reachable" means a given piece of code has some way to produce the target object. In the following example, when a caller invokes `store(thing)`, the stash can now "reach" `thing` in the closed-over `stash` variable, and `retrieve()` can be called to exercise this ability:
 
 ```js
 function makeStash() {
@@ -32,7 +30,76 @@ function makeStash() {
 }
 ```
 
-"Recognizable" means the code can recognize a target object, even if it cannot necessarily produce it. In this example, a `WeakSet` is used as a recognizer. Once the target has been submitted to `remember()`, the stash cannot produce the target object (it has no strong reference). However it can still tell if `ask()` is called with the same `thing` as before, or some unrelated object.
+"Reachable" doesn't necessarily mean the target object can be accessed from the outside: closely-held references are still "reachable" by the holder. In this example `counter` is reachable by the incrementer, but is not revealed in its entirety to callers:
+
+```js
+function makeIncrementer() {
+  const counter = { count: 0, reads: 0 };
+  return harden({
+    increment() {
+      counter.count += 1;
+    },
+    read() {
+      counter.reads += 1;
+      return counter.count;
+    }
+  });
+}
+```
+
+For garbage-collection purposes, the incrementer can reach the counter. The platform must keep `counter` alive for at least as long as `incrementer` remain alive.
+
+## References
+
+Objects reference other objects in several ways:
+
+* Object properties
+* the Object's `.__prototype__`, which is effectively another property for GC purposes
+* code (including methods: object properties which are functions) which closes over variable bindings from an enclosing scope
+
+And of course most data structures (Arrays, Maps) hold strong references to their members.
+
+## Vat Roots
+
+Each vat has a set of "root references": these keep all other objects alive. These are the only starting points: if there is no pathway from a root reference to a target object, the target object is unreachable and will eventually be deleted.
+
+Vats have two kinds of root references. "Vat Globals" are top-level declarations (`const` and `let` declarations that appear in the highest scope of any module, outside any function definition). Top-level `const` declarations are eternal, while `let` declarations are mutable and could be added or removed later as the value is modified. These references are controlled entirely by the code that makes up a vat.
+
+"Vat Exports" are the subset of objects that have been used exported through the kernel to other vats. Such objects are added to the export table when they are used as an argument in an outbound message, or in the resolution of a Promise that some other vat is following. Each exported object is allocated a new integer and assigned a "vref" (vat-reference ID), in the form `o+NN`. A special initial "root object" is defined when the vat is first constructed (the return object of `buildRootObject()`) and assigned vref `o+0`.
+
+Objects are removed from the export table when no other vat retains a reference. If an object is not exported, and not a global, and not transitively reachable by any object in either of those two categories, then the object is unreachable and will be deleted.
+
+![Vat Roots diagram](./images/gc/vat-roots.png "Vat Roots")
+
+In this example, A is the "root object", A and B are vat exports, and C is a Vat Global. D is kept alive by virtue of the reference from C. If C were modified and dropped its reference to D, D would be deleted.
+
+## Weak References
+
+JavaScript, like many languages, offers the notion of a "Weak Reference". In JS, this is exposed in the `WeakRef` object. A weak reference can be used to reach the target *if* it is still around, but does not keep its target alive on its own.
+
+![WeakRef diagram](./images/gc/weakref.png "WeakRef")
+
+JavaScript `WeakRef` objects have a `.deref()` method: this will either return the target of the weak reference, or return `undefined` if the target was deleted. We describe the WeakRef as either being "alive" or "dead" depending upon the availability of its target.
+
+When the last strong reference to a target object is removed, we define the object to be "unreachable", however the JS engine does not necessarily delete it right away. As a result, there is a time window (after reference deletion, before a garbage collection sweep) during which a WeakRef might be able to resurrect the unreachable object. In the following diagram, the left-hand case is where the target is strongly reachable, the right-hand case is where the object was fully deleted, and the middle case is where the object was unreachable but not collected (and `deref` creates and returns the only strong reference to the target).
+
+![WeakRef States](./images/gc/weakref-states.png "WeakRef States")
+
+`WeakRef`'s ability to resurrect an otherwise unreachable object depends upon the internal activity of the JS engine's garbage collector. This activity is not a part of the JS specification, and will vary depending upon memory pressure and other details that vat behavior should not be sensitive to. Therefore, to maintain deterministic execution, vats are not allowed to access `WeakRef` (it is removed from global scope, and cannot be implemented from scratch). We describe it here because the "liveslots" code which helps to implement the vat platform depends heavily upon `WeakRef`.
+
+## Finalization Registry
+
+`WeakRef` provides the ability to "poll" whether a given object has been garbage-collected or not, but it does not provide any sort of notification when collection happens. To enable more proactive reactions to object collection, JavaScript provides the `FinalizationRegistry`, which will run a callback some time after a given object is collected. This callback will always happen on its own turn (just like Promise `.then` callbacks), however no guarantees are made as to exactly when it is run.
+
+Swingset makes use of a `FinalizationRegistry` to implement its garbage collection code. However, it is denied to vats for the same reason that `WeakRef` is withheld.
+
+## Recognizability
+
+JavaScript offers `WeakMap` and `WeakSet` collections, which behave much like the regular `Map` and `Set`, but do not hold strong references to the objects used as keys. In addition, they are not enumerable, meaning there is no way to use them to retrieve a key object, even if that object is still alive (held by a strong reference elsewhere).
+
+This makes them a form of "recognizer": despite not being usable to *reach* a given object, they can still be used to *recognize* that object. `weakmap.has(target)`, `weakmap.get(target)`, and `weakset.has(target)` are all effectively predicates that ask the question "is this a `target` that I've seen before?".
+
+In this example, a `WeakSet` is used as a recognizer. Once the target has been submitted to `remember()`, the stash cannot produce the target object (it has no strong reference). However it can still tell if `ask()` is called with the same `thing` as before, or some unrelated object.
 
 ```js
 function makeStash() {
@@ -48,13 +115,17 @@ function makeStash() {
 }
 ```
 
-We use "RECOGNIZABLE" to mean "recognizable but not reachable", and "REACHABLE" to mean "both recognizable and reachable".
+These predicates must be invoked with a strong reference to an object, so the target must be strongly reachable for the question to even be asked. However, we'll soon introduce the notion of abstract "swingset objects" (as opposed to the normal JavaScript `Object` type), and we want the predicate to answer a question about the abstract identity, even though the question is being asked with the concrete `Object` type. Hence, we must establish the difference between A being able to "reach" B, and A merely being able to "recognize" B.
 
-RECOGNIZABLE happens when the object is used as a key in a `WeakMap` or `WeakSet` entry, but not stored elsewhere. If the vat held a copy of the object to compare against (e.g. with `===`), the object would also be reachable, and we'd be in the REACHABLE state, not RECOGNIZABLE. We do not give userspace code access to the JavaScript `WeakRef` or `FinalizationRegistry` objects, so `WeakMap` and `WeakSet` are the only tools they can use to achieve recognizability without also reachability.
+We use a visual notation in which (strong) reachability is marked with a double line, weak references use a single line, and recognizability is marked with a dotted line:
 
-RECOGNIZABLE is significant because we want a WeakMap in one vat to accept keys which are Presences associated with an exported Remotable from some other vat, and we want to clean up the entries when they go away. We cannot rely upon the JavaScript engine's GC code to perform this cross-vat collection, because the inter-vat links are just data (vrefs and krefs), which are opaque to the JS engine.
+![Reachable vs Recognizable](./images/gc/reachable-vs-recognizable.png "Reachable vs Recognizable")
 
-## REACHABLE / UNREACHABLE / COLLECTED / FINALIZED
+SwingSet allows vats to use `WeakMap` and `WeakSet` as usual, however the semantics they provide are defined in terms of "swingset objects" instead of strictly using JavaScript `Object` objects.
+
+## JS Object States: REACHABLE / UNREACHABLE / COLLECTED / FINALIZED / UNKNOWN
+
+We'll set aside the notion of "recognizability" for a moment, and focus strictly on reachability.
 
 When tracking the reachability state of a JavaScript `Object`, we define five states:
 
@@ -64,45 +135,243 @@ When tracking the reachability state of a JavaScript `Object`, we define five st
 * COLLECTED: the JS engine has realized the object is gone
 * FINALIZED: a `FinalizationRegistry` callback is being run
 
-If you had a `WeakRef` for the object, it would be "full" (i.e. `.deref()` returns a value) in the REACHABLE and UNREACHABLE states, and "empty" (`wr.deref() === undefined`) in COLLECTED and FINALIZED.
+If you had a `WeakRef` for the object, it would be "alive" (i.e. `.deref()` returns a value) in the REACHABLE and UNREACHABLE states, and "dead" (`wr.deref() === undefined`) in COLLECTED and FINALIZED.
 
-Note that there's no actual state machine with those values, and we can't observe all of the transitions from JavaScript, but we can describe what operations could cause a transition, and what our observations allow us to deduce about the state:
+![JS Object States diagram](./images/gc/js-object-states.png "JS Object States")
+
+Note that there's no actual state machine with those values, and we can't observe all of the transitions from JavaScript. But we *can* describe what operations could cause a transition, and what our observations allow us to deduce about the state:
 
 * UKNOWN moves to REACHABLE when a delivery introduces a new import
+  * or the vat exports/stores a newly created object
   * userspace holds a reference only in REACHABLE
 * REACHABLE moves to UNREACHABLE only during a userspace crank
-* UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer
+* UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer callback
 * COLLECTED moves to FINALIZED when a new turn runs the finalizer
-* liveslots moves from FINALIZED to UNKNOWN by syscalling dropImports
+* liveslots moves from FINALIZED to UNKNOWN by doing `syscall.dropImports`
 
 We have several subtle challenges to keep in mind:
 
 * we cannot sense the difference between REACHABLE and UNREACHABLE, although we know it can only happen as userspace runs
-* the transition from UNREACHABLE to COLLECTED can happen spontaneously, at any moment, whenever the engine experience memory pressure and decide to run GC
+* the transition from UNREACHABLE to COLLECTED can happen spontaneously, at any moment, whenever the engine experiences memory pressure and decides to run GC
 * a new delivery might re-import an object that was already on its way out
   * the liveslots `slotToVal` WeakRef will re-use the old Presence if present (REACHABLE or UNREACHABLE)
   * if we're in COLLECTED, then a finalizer callback is already queued, and will run sooner or later, so the callback must not clobber a re-import
 
-## within-vat vs between-vat
+## Within-Vat vs Between-Vat
 
-The SwingSet kernel manages a set of abstract entities known as "SwingSet objects" and "SwingSet Promises". Within a vat, the "liveslots" layer uses concrete JavaScript `Object`s (Presences, Remotables, and Representatives) and the JavaScript `Promise` to give vat code the means to manipulate the kernel-managed objects. Vats create a Remotable, or obtain a Representative, when they want to "export" an object into the kernel (and on to some other vat). Vats receive a Presence when they "import" an object from the kernel (which was first exported by some other vat). Vats can both export a Promise and receive an imported Promise.
+The SwingSet kernel manages a set of abstract entities known as "SwingSet objects" and "SwingSet promises". Within a vat, the "liveslots" layer uses concrete JavaScript `Object`s (Presences, Remotables, and Representatives) and the JavaScript `Promise` to give vat code the means to manipulate the kernel-managed objects. Vats create a Remotable, or obtain a Representative, when they want to "export" an object into the kernel (and on to some other vat). Vats receive a Presence when they "import" an object from the kernel (which was first exported by some other vat). Vats can both export a Promise and receive an imported Promise.
 
-Within a single vat, the "liveslots" layer uses WeakRefs and a FinalizationRegistry to track when Presence, Remotable, and Representative JS `Object`s transition between the five different states listed above. Armed with this information, liveslots can update its notion of whether the abstract SwingSet entity is REACHABLE, RECOGNIZABLE, or neither by the vat as a whole. Liveslots then issues syscalls to notify the kernel of the transition. If/when this results in an object becoming unreachable and/or unrecognizable by all vats, the kernel will notify the exporting vat with a delivery like `dispatch.dropExports` or `dispatch.retireExports`.
+Within a single vat, the "liveslots" layer uses WeakRefs and a FinalizationRegistry to track when Presence, Remotable, and Representative JS `Object`s transition between the different states listed above. Armed with this information, liveslots can update its notion of whether the abstract SwingSet entity is REACHABLE, RECOGNIZABLE, or neither by the vat as a whole. Liveslots then issues syscalls to notify the kernel of the transition. If/when this results in an object becoming unreachable and/or unrecognizable by all vats, the kernel will notify the exporting vat with a delivery like `dispatch.dropExports` or `dispatch.retireExports`.
+
+## Vat States: REACHABLE vs RECOGNIZABLE
+
+To help explain the swingset garbage-collection algorithm, we define an importing vat's relationship to a given swingset object in one of three states:
+
+* REACHABLE means the vat can both reach and recognize the object
+* RECOGNIZABLE means the vat can recognize the object, but cannot reach it
+* UNKNOWN means the vat does not know anything about the object
+
+REACHABLE happens if the object is held anywhere in the vat, in a form that is reachable from one of the roots (an export or a global). This is the most common state.
+
+RECOGNIZABLE happens when the object is used as a key in a `WeakMap` or `WeakSet` entry, but not stored elsewhere. If the vat held a copy of the object to compare against (e.g. with `===`), the object would also be reachable, and we'd be in the REACHABLE state, not RECOGNIZABLE. We do not give userspace code access to the JavaScript `WeakRef` or `FinalizationRegistry` objects, so `WeakMap` and `WeakSet` are the only tools they can use to achieve recognizability without also reachability.
+
+RECOGNIZABLE is significant because we want a WeakMap in one vat to accept keys which are Presences associated with an exported Remotable from some other vat, and we want to clean up the entries when they go away. We cannot rely upon the JavaScript engine's GC code to perform this cross-vat collection, because the inter-vat links are just data (vrefs and krefs), which are opaque to the JS engine.
+
+The previous distinctions are only for the zero or more vats which *import* a SwingSet object. Every SwingSet object is exported by exactly one vat. This exporting vat might know that the kernel can still reach the object, or it might know the importing vats can merely recognize the object. As a result, from the kernel's point of view, a given vat's relationship to a "SwingSet object" is in one of five states:
+
+* exported (REACHABLE)
+* exported (RECOGNIZABLE)
+* imported (REACHABLE)
+* exported (RECOGNIZABLE)
+* unknown
+
+The kernel is responsible for managing these per-vat states, and reacting to syscalls that the vat emits to change their state (which may result in deliveries to other vats, to inform them to update their own states). Vats, through `liveSlots.js`, are responsible for managing their internal JS `Object` states, and emitting syscalls to notify the kernel about changes.
+
+## Virtualized Data
+
+To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use. The second is a "virtual collection" (e.g. what `makeWeakStore()` returns), which is like a WeakMap except that any values keyed by a virtual object are also stored as serialized data on disk.
+
+Instead of Remotables, virtual objects use "Representatives" as the handle with which the object is sent, received, and manipulated. The Representative is a JS `Object`, however it goes away when userspace drops the last strong reference. But a new one might be created the next time the object is received (or retrieved from offline data), As a result, a virtual object might be defined and populated, and even reachable/recognizable by other vats (or serialized local data), even though there is no local Representative object at that moment.
+
+Liveslots and the virtual object manager cooperate to ensure these abstract objects (and their state) are retained even if the concrete JS `Object` Representative is not.
+
 
 # Within-Vat Tracking
 
 (TODO): describe `slotToVal` (WeakRefs), `valToSlot`, `exportedRemotables`, `pendingPromises`, `importedDevices`, the `deadSet`, the `droppedRegistry` and its finalizer callbacks, the implementation of of `processDeadSet`, and the implementation of `dispatch.dropExports`, `retireExports`, and `retireImports`.
 
+Within a Vat, and for the purpose of SwingSet objects, liveslots and the virtual object manager interact with three kinds of JS `Objects` for use by vat code:
+
+* `Remotable`: vat code creates this with `Far(interfacename, methods)` to expose identity and behavior to external callers. Remotables are held in RAM for their entire lifetime, and exist only within the exporting vat. The `Remotable` object is "precious": the lifetime of the  "SwingSet object" is the same as the `Remotable`, and liveslots is responsible for keeping the Remotable alive until all other vats have lost reachability to it. At any given moment, there is exactly one Remotable for each (non-virtual) SwingSet object exported by a given vat.
+* `Representative`: vat code defines a "Kind" by calling `makeKind()` to define how new instances of the Kind should be created, and how they behave. `makeKind()` returns a "kind constructor", which vat code then uses to make new instances. These instances are represented by a single `Representative` object, however this object is *not* precious: the `Representative` can be dropped without deleting the abstract SwingSet object (or its state). At any given moment, there is either zero or one Representatives for each (virtual) SwingSet object exported by a given vat.
+* `Presence`: vats which import a SwingSet object are given a `Presence` to serve as a proxy for the remote object. This Presence can be used as the target of an `E(presence).method(args)` call, or it can be passed around in method arguments, or within the resolution of a promise. At any given moment, there is either zero or one Presences for each SwingSet object imported by a given vat.
+  * this Presence might be used as a key of a WeakMap or WeakSet, and the Presence might be dropped within the importing vat and then re-introduced by some other vat
+  * hence the vat might retain recognizability of the SwingSet object even if it drops the Presence (and perhaps also loses reachability of the object)
+  * therefore we modify the WeakMap/WeakSet made available to userspace code to act upon the SwingSet object identity of the Presence, rather than the JS `Object` identity, and to remember the recognizability status independently of the reachability status
+
+Within a Vat, liveslots uses four data structures to keep track of JS `Objects` and their relationship to the kernel:
+
+* `slotToVal`: this is a `Map` whose keys are vrefs and values are `WeakRef` objects which point (while alive) at a Remotable, Representative, or Presence
+* `valToslot`: a `WeakMap` whose keys are a Remotable/Representative/Presence and values are a vref
+* `exportedRemotables`: a `Set` whose members are `Remotables`
+* `droppedRegistry`: a `FinalizationRegistry` whose subjects are a Remotable/Representative/Presence
+
+## Exported Remotables
+
+When a Remotable is first exported, the tables look like this:
+
+![Exported Remotable](./images/gc/exported-remotable.png "Exported Remotable")
+
+Liveslots holds a strong reference in `exportedRemotables` while the object might be reachable by the kernel (meaning it is reachable by some importing vat, or from a kernel data structure like the run-queue or a resolved promise). This reference is held until the kernel uses `dispatch.dropExports` to release it. The Remotable might also be held by a vat global, or something reachable from there.
+
+Even after the kernel drops the Remotable, some downstream vat might still be able to recognize the object (if a local reference kept it alive, and it were ever re-exported). Hence `dispatch.dropExports` does not delete the `valToSlot` or `slotToVal` entries. If the Remotable survives and is re-exported, it will get the same vref as before (via `valToSlot`), retaining its identity.
+
+![Recognizable Remotable](./images/gc/recognizable-remotable.png "Recognizable Remotable")
+
+Later, if/when the Remotable is released by any remaining local references, and after the next GC sweep occurs, the WeakRef will die (along with the `valToSlot` entry, since it's a WeakMap), and eventually the finalizer callback will be run. Liveslots reacts to this by sending a `syscall.retireExport` and deleting the lame-duck `slotToVal` entry. This informs the kernel that the SwingSet object identity is gone, so any remaining downstream vats can give up their ability to recognize the object (and delete their WeakMap values, if any).
+
+The virtual object manager must keep track of Remotables that are used in virtualized data, and hold onto an additional strong reference for as long as the
+
+## Imported Presences
+
+When the kernel makes a delivery into the vat which introduces a vref for the first time, liveslots creates a Presence for it, and populates `slotToVal`, `valToSlot`, and the `droppedRegistry`. It does *not* put the Presence in `exportedRemotables`, because it should not retain a strong reference to the Presence (only userspace should do that, so we can sense when that reference is released).
+
+![Imported Presence](./images/gc/imported-presence.png "Imported Presence")
+
+The SwingSet object is kept "reachable" by two sources: a live Presence, and the vref being reachable from any of the vat's virtualized data (i.e. in a property of a virtual object, or as the value of a `makeWeakStore` instance). Liveslots uses the `droppedRegistry` to keep track of the former, and the virtual object manager can be queried about the state of the latter. When both sources have gone away, liveslots uses `syscall.dropImports` to inform the kernel that this vat can no longer reach the vref. If the vref is not also recognizable at that time (i.e. it is not in used as a *key* of a `WeakMap`, `WeakStore` or a `makeWeakStore` instance), liveslots also calls `syscall.retireImports` to inform the kernel that the vat can't recognize the vref either.
+
+## Virtual Objects, Virtualized Data
+
+When a virtual object is created for the first time, a vref is allocated just like for an exported Remotable, and the "initial representative" is created to give back to the caller. The slotToVal/valToSlot tables track the Representative `Object`. The Representative is *not* added to `exportedRemotables` (because we *want* it to be dropped once userspace is not actively using it), but we still use `droppedRegistry` to remain aware of the Representative's presence in (or absence from) memory.
+
+Later, if the vat receives a message from the kernel that references the virtual object's vref, or if it appears in virtualized data being unserialized, the virtual object manager will first use slotToVal to see if there is an existing Representative to use. This maintains the "at most one Representative at a time" invariant. If not, a new Representative is created, and slotToVal/valToSlot are populated.
+
+If/when this Representative `Object` is no longer referenced by userspace and becomes collected, the `droppedRegistry` finalizer will run, and liveslots will learn of its disappearance. At that point, liveslots checks with the VOM to see if the vref is truly unreachable, and perhaps call `syscall.dropExports`. If the vref is also unrecognizable, it will also call `syscall.retireExports`.
+
+The full flowchart for tracking the reachable/recognizable state of virtual objects is complex, and not yet fully implemented. See ticket [#2724](https://github.com/Agoric/agoric-sdk/issues/2724) for details.
+
+## deadSet, processDeadSet
+
+There is a temporal gap between the moment a JS `Object` becomes UNREACHABLE, and the point at which the engine finally notices (moving it to COLLECTED, so a WeakRef could be polled). There is a further delay before a finalizer callback is run (moving it to FINALIZED), and liveslots is notified about the change in status. During this gap, a replacement object might be created, negating whatever reaction should have taken place.
+
+To deal with this correctly, the finalizer callback merely adds the dead object's vref in the `deadSet`. Once all userspace activity has finished, liveslots calls `processDeadSet()` to examine this set and see what work (if any) needs to be done. If an object is re-introduced during the crank, `processDeadSet()` will see a new+live WeakRef in `slotToVal`, and the vref is ignored. But otherwise, `processDeadSet()` treats the vref as recently dropped, and figures out what must be done.
+
+When the vref identified a Presence, we now know that there is no Presence supporting the vat's reachability of the imported vref. If the VOM also disavows reachability (tracked in `reachableVrefs`), liveslots adds the vref to a list for `syscall.dropImports`. If the VOM then disavows recognizability as well, the vref is also scheduled for `syscall.retireImports`.
+
+When the vref identified a Remotable, liveslots schedules the vref for `dropExports`, which signals the kernel that the object's identity has been destroyed, and any downstream recognizers should give up. Remotables are precious, and once they're gone, the SwingSet object they represent is also gone. If the VOM needed the Remotable as the value of virtualized data, it should have kept a strong reference (this is managed in the `reachableRemotables` `Set`).
+
+If the vref identified a virtual object (i.e. the late `Object` was a Representative), `processDeadSet()` consults with the VOM to figure out the new state. The loss of the Representative is one of three pins that support reachability: the presence of a kernel reference is the second, and a virtualized-data value holding the vref is the third. The latter two are kept on disk, rather than in RAM. When all three are gone, the vat can signal `syscall.retireExports` just like it would if a Remotable were collected.
+
+## Other Object Types
+
+Vats can import three kinds of things: objects, promises, and device nodes. Most GC is about objects.
+
+Objects have a strict and immutable notion of "importer" vs "exporter". Each object is exported by exactly one vat, and imported by zero or more vats (and/or referenced by kernel tables, independently of any vat).
+
+In contrast, Promises have a single "decider", which is either the one vat which currently holds decision-making authority, or the kernel itself (in the case of result promises for queued messages). The decider can move around over time, as the promise is used in the result of messages passed from one vat to another.
+
+In addition, the GC behavior of JS `Promise` objects is non-trivial. For unresolved Promises, vats need to remain prepared to handle a resolution as long as any `.then` callback is scheduled, but we have no way to sense whether `.then` has been called or not. Our general approach is to remove promise identifiers from each vat's c-list once they've been resolved, but keep a copy of the resolution data in the kernel until the promise ID has been fully retired.
+
+As a result, we track `Promise` objects in the liveslots `slotToVal` and `valToSlot` tables for the sake of serialization, but not in `exportedRemotables` or the `droppedRegistry`. We use a separate table named `pendingPromises` to keep the `Promise` objects alive until they are resolved.
+
+Vats can also import device nodes, however there are very few of them in the system (only a handful per device). Like Promises, we use `slotToVal` and `valToSlot`, and a special `importedDevices` table, but not the others. Devices nodes are immortal: vats never announce their drop or retirement.
+
+The `dropImports`, `retireImports`, and `retireExports` syscalls/deliveries only mention object references, never promises or device nodes.
+
+## Vat GC Cycle
+
+Within a vat, liveslots runs each delivery in two phases. The first phase is for userspace: a message or promise resolution is delivered, which causes arbitrary userspace code to run. Eventually that userspace code comes to a halt: userspace can use Promises to span multiple turns, but it does not get `setImmediate` or any other form of IO, so eventually control will return to liveslots, and userspace has no way to regain agency until liveslots makes another delivery.
+
+The second phase then begins with a call to the platform's `gc()` primitive, and enough delay to allow any activated finalizer callbacks to run. The necessary calls were determined experimentally for each JS engine we use: the winning combination for both Node.js and XS appears to be two `setImmediate` calls, followed by `gc()`, followed by a third `setImmediate`.
+
+Liveslots then uses `processDeadSet()` to examine everything turned up by the finalizer callbacks during the delivery, and emits some number of `syscall.dropImports`, `syscall.retireImports` and `syscall.retireExports` calls.
+
+When the vat delivery is a GC action (`dispatch.dropExports`, `dispatch.retireExports`, or `dispatch.retireImports`), liveslots gets control immediately, and never calls into userspace. Since userspace does not have access to `FinalizationRegistry`, it cannot sense objects going away, userspace never gets control during these deliveries (and because userspace does not get `WeakRef` either, it cannot even poll to see whether an object has been collected or not).
 
 # Comms Tracking
 
 (TODO): describe the code which tracks REACHABLE/RECOGNIZABLE for all objects the the comms object table, the "reachable" flag in each c-list entry, the code that computes the overall reachability state, and the creation and processing of remote-side `dropImports`/etc messages.
 
-Note that the comms tracking code is not yet implemented. Until then, the comms vat will retain a strong reference to all passing objects forever.
+Note that the comms tracking code is not yet implemented. Until then, the comms vat will retain a strong reference to all passing objects forever. See [#3306](https://github.com/Agoric/agoric-sdk/issues/3306) for current progress.
+
+The following are some quick protocol notes.
+
+
+* incoming drop/retire messages are either "informed" if the sender was fully aware of any cross-on-the-wire re-introductions, or "ignorant" if not
+  * comms-kernel messages are always informed
+  * comms-comms messages are informed if the inbound message's acknum is equal or greater than the outbound clist record of the last reintroduction, else they are ignorant
+* comms will add an `isReachable` flag to all clist entries
+  * on import entries, this describes the state of the importer
+  * on export entries, it merely records whether we've sent a drop or not, and might not actually be necessary
+* comms will add a (reachable, recognizable) refcount tuple to all comms object table entries
+  * just like the kernel does:
+    * `reachable` is the sum of the `isReachable` flags from all importers, plus one for each resolved promise or auxdata that references the object
+    * `recognizable` is the count of all importing clist entries, plus resolved promises and auxdata
+* when comms receives an informed `dropExport`, it clears the `isReachable` flag for that importer's clist, which decrements the `reachable` refcount
+  * if `reachable` hits zero, comms sends a `dropExport` to the exporter and clears the `isReachable` flag on the exporter's clist entry (again, maybe not really necessary)
+* when comms receives an informed `retireExport`, it deletes the importer's clist entry, which decrements the `recognizable` refcount
+  * if `recognizable` hits zero, comms sends a `retireExport` to the exporter and deletes the clist entry
+* when comms receives an informed(??) `dropImport` (which will always be from an exporter):
+  * comms translates the `dropImport` from sender-space to local (comms) space, then deletes the exporting c-list entry
+  *  the `reachable` count must already be zero, else the sender of `dropImport` did something wrong
+  * comms locates all importers, then deletes the object table entry
+  * comms translates a `dropImport` to each importer, then deletes their clist entry
+  * comms sends the translated `dropImport` to the importer
+
+If comms receives a `retireExport` or `retireImport` for a ref that is not in the c-list, it should just ignore it. There are two reasons/phases where this might happen. The "normal" one is during a race between the importer sending `retireExport` and the exporter sending `retireImport`. We could choose to track this race in the same way we handle the retirement of promises:
+* importer sends `retireExport`, and tracks the (sent seqnum, rref) pair in an ordered list
+  * if a message arrives that effectively acks that seqnum, delete the pair: the window for a race has closed
+  * if a re-introduction arrives before that point, delete the pair: the race has been superceded by a replacement object
+  * if a `retireImport` arrives before that point, ignore it: there was a race, no big deal
+  * if a `retireImport` arrives after that point (i.e. neither the clist nor the ordered `retireExport`-sent list knows the rref): this is the weird case, we might decide to kill the connection, or log-but-ignore, or just ignore
+ * follow the same pattern when the exporter sends `retireImport`
+
+The algorithm for comms is mostly simpler than the kernel because:
+* there are no queued messages: no run-queue, and no per-promise message queues (because everything is immediately pipelined)
+* we aren't trying to spread GC actions out among multiple cranks, so we don't need to record the upcoming work in a durable fashion: the equivalents of `maybeFreeKrefs` and the durable `gcActions` set can both be ephemeral
+* drops and retires appear in separate messages, so we don't need the `processNextGCAction` code that prioritizes one over the other, and actions won't be negated by an earlier re-introduction
+
+However it's slightly more complex because of the need to distinguish between informed and ignorant inbound messages, and the possibility that we choose to log or kill-connection when a `retireImport`/`retireExport` arrives after we know the race window has closed.
+
 
 # Cross-Vat (kernel) Tracking
 
 (TODO): describe the c-list entry "reachable" flag, the "reachable" and "recognizable" refcounts on all kernel objects, how these are updated by clist manipulation like `mapKernelSlotToVatSlot` and `mapVatSlotToKernelSlot`. Describe how syscalls are translated from vat space to kernel space, then processed by `kernelSyscall.js` in their kernel-space form. Describe the kernelKeeper `maybeFreeKrefs` ephemeral set, `processRefcounts()`, the durable "GC actions" set, `processOneGCAction()` and how it fits into the run-queue, and how the resulting deliveries like `dispatch.dropExports` are processed by translating from kernel space into vat space (and the refcount/reachable manipulation that occurs during translation). Describe vat-to-device invocations and how their clist entries are used on both sides of the control transfer.
+
+Because of the work done by liveslots and the comms vat, described above, the kernel can treat each vat as a monolithic importer or exporter of vrefs, and does not need to know anything about the vat's internal state. For each vref, a vat is either the single exporter, one of the (possibly multiple) importers, or neither. The kernel itself may be able to reach the vref (via queued messages, promise resolution data, or auxilliary data), or not.
+
+This section describes how the kernel keeps track of the SwingSet object's state, and the transitions that might occur.
+
+## Vat Reachability
+
+For each vat, the kernel maintains a c-list, which maps vrefs (vat-side reference identifiers, like `o+0` and `o-4`) to and from krefs (kernel-side identifiers, like `ko5` and `ko12`). These c-list entries maintain a stable identity for each SwingSet object, from initial export to final retirement.
+
+Each c-list entry also has a `isReachable` flag. For importing vats, this indicates that the vat can reach the kref. If `isReachable === false`, something inside the vat could recognize a the SwingSet object, but nothing holds a strong reference, so the vat could never include the kref in an outbound message or promise resolution. For exporting vats, the kref is obviously always reachable, so `isReachable` is instead used to remember whether we've sent a `dispatch.dropExport` into the vat or not.
+
+## Kernel Reachability
+
+Beyond vats, SwingSet objects can also be reached by certain kernel-side data structures.
+
+The first is the primary run-queue (or the escalator structure that will eventually replace it). Messages which are waiting their turn for execution can have arguments, and these arguments can reference SwingSet objects. These objects must be retained even though no vats are currently importing them. When the message reaches the front of the queue and is delivered to some vat, the object will be imported by that vat (at least until the delivery is finished, possibly longer). The run-queue's reference will go away, and the vat's c-list entry will replace it. Until that point, each run-queue entry that references a kref will maintain a single "reachable" reference.
+
+The second is the queue of messages for each unresolved promise. When the decider of the promise cannot accept pipelined messages (i.e. everything but the comms vat), those messages are held in the kernel's promise table. When those messages have arguments that include a SwingSet object, the queued message maintains a single "reachable" reference on the kref.
+
+The third is the table of resolved promises. Ideally these promises are quickly retired (since all vats retire their c-list entry once the promise is resolved), but cycles or other kernel-side references might keep them around for a while, and promise resolution data can contain SwingSet objects. Each resolved promise that references a kref will maintain a "reachable" reference.
+
+The fourth and final source of kernel-side references is the upcoming [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) "auxilliary data". This is an immutable capdata structure attached to each SwingSet object. Any other SwingSet objects included in the auxdata must be kept alive until the enclosing object is released. This does enable cycles in the dependency graph, so when we implement this, we must either implement a full mark-and-sweep GC system, find a cheaper hack ([#2870](https://github.com/Agoric/agoric-sdk/issues/2870)), or simply tolerate the indefinite retention of anything involved in a cycle.
+
+## Reference Counters
+
+The kernel maintains a pair of reference counters for each SwingSet object (in addition to the `owner` pointer that indicates which vat should get messages sent to the object).
+
+* `referenceable`: this counts how many importing vats have the kref in their c-list, with the `isReachable` flag set, as well as every kernel-side reference to the kref
+* `recognizable`: this counts every importing vats with the kref in their c-list, even the ones with `isReachable === false`, plus all the kernel-side references. The `recognizable` count will always be equal or greater than the `referenceable` count.
+
+The counters are kept in the kernelDB, under keys named `ko${NN}.refCount`, with a value like `${reachable},${recognizable}`.
+
+These counters are incremented and decremented as the kernel moves messages from one queue to another, delivers messages to vats, and accepts syscalls from vats. The kernel refrains from acting upon refcount changes until the delivery is complete, since the state might change as later syscalls are made. In particular, removing a message from the run-queue and delivering it to a vat causes a "break-before-make" transition of the argument krefs, dropping their refcount briefly to zero but then immediately incrementing them back up to one. If we acted too soon, we would drop objects that are still in use.
+
+Each time a refcount drops to zero, the kernel adds the kref to an ephemeral set named `maybeFreeKrefs`. After the delivery is complete, a function named `processRefcounts()` examines this set to see which krefs are truly unreachable/unrecognizable, and takes action. This deferred action mirrors the way liveslots calls `processDeadSet()` at end-of-crank, for similar reasons.
 
 ## syscall.dropImport Processing
 
@@ -234,7 +503,7 @@ The delivery of each GC action is processed as follows:
   * so the vat's notion of dropped-or-not always matches its clist's reachability flag
   * note that we do not delete the `ko$NN` kernelDB data at this point, because:
     * the object retains its identity until retired (which cannot happen until it is fully unrecognizable)
-    * any #2069 auxilliary data is part of the object's identity, and must be retained until the object is retired
+    * any [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) auxilliary data is part of the object's identity, and must be retained until the object is retired
 * the `retireExport ${vatID} ${kref}` action will:
   * decref any auxdata slots
   * delete the kernel object table entry and auxdata

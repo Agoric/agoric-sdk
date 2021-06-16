@@ -40,7 +40,9 @@ async function vatSyscallFailure(t, beDynamic) {
       '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
     );
     t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
-    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 9);
+    t.true(
+      Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length > 0,
+    );
     t.is(kvStore.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();

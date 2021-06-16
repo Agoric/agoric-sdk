@@ -18,6 +18,7 @@ import { makeMeterManager } from './metering.js';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { getKpidsToRetire } from './cleanup.js';
+import { processNextGCAction } from './gc-actions.js';
 
 import { makeVatRootObjectSlot, makeVatLoader } from './loadVat.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
@@ -43,13 +44,17 @@ function makeError(message, name = 'Error') {
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
 /*
- * Pretend that a vat just exported an object
+ * Pretend that a vat just exported an object, and increment the refcount on
+ * the resulting kref so nothing tries to delete it for being unreferenced.
  */
 export function doAddExport(kernelKeeper, fromVatID, vref) {
   insistVatID(fromVatID);
   assert(parseVatSlot(vref).allocatedByVat);
   const vatKeeper = kernelKeeper.provideVatKeeper(fromVatID);
   const kref = vatKeeper.mapVatSlotToKernelSlot(vref);
+  // we lie to incrementRefCount (this is really an export, but we pretend
+  // it's an import) so it will actually increment the count
+  kernelKeeper.incrementRefCount(kref, 'doAddExport', { isExport: false });
   return kref;
 }
 
@@ -524,6 +529,29 @@ export default function buildKernel(
     }
   }
 
+  async function processGCMessage(message) {
+    // used for dropExports, retireExports, and retireImports
+    const { type, vatID, krefs } = message;
+    // console.log(`-- processGCMessage(${vatID} ${type} ${krefs.join(',')})`);
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    if (!vatWarehouse.lookup(vatID)) {
+      return; // can't collect from the dead
+    }
+    const kd = harden([type, krefs]);
+    if (type === 'retireExports') {
+      for (const kref of krefs) {
+        // const rc = kernelKeeper.getObjectRefCount(kref);
+        // console.log(`   ${kref}: ${rc.reachable},${rc.recognizable}`);
+        kernelKeeper.deleteKernelObject(kref);
+        // console.log(`   deleted ${kref}`);
+      }
+    }
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    await deliverAndLogToVat(vatID, kd, vd);
+  }
+
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
@@ -582,6 +610,8 @@ export default function buildKernel(
     }
   }
 
+  const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
+
   let processQueueRunning;
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -613,6 +643,8 @@ export default function buildKernel(
         await processNotify(message);
       } else if (message.type === 'create-vat') {
         await processCreateVat(message);
+      } else if (gcMessages.includes(message.type)) {
+        await processGCMessage(message);
       } else {
         assert.fail(X`unable to process message.type ${message.type}`);
       }
@@ -633,7 +665,7 @@ export default function buildKernel(
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
       if (!didAbort) {
-        kernelKeeper.purgeDeadKernelPromises();
+        kernelKeeper.processRefcounts();
         kernelKeeper.saveStats();
       }
       commitCrank();
@@ -897,6 +929,10 @@ export default function buildKernel(
   }
 
   function getNextMessage() {
+    const gcMessage = processNextGCAction(kernelKeeper);
+    if (gcMessage) {
+      return gcMessage;
+    }
     if (!kernelKeeper.isRunQueueEmpty()) {
       return kernelKeeper.getNextMsg();
     }
@@ -976,6 +1012,9 @@ export default function buildKernel(
       case 'fulfilled':
       case 'rejected':
         kernelKeeper.decrementRefCount(kpid, 'external');
+        for (const kref of p.data.slots) {
+          kernelKeeper.incrementRefCount(kref, 'external');
+        }
         return p.data;
       default:
         assert.fail(X`invalid state for ${kpid}: ${p.state}`);

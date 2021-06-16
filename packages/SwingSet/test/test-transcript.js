@@ -10,12 +10,13 @@ import { buildVatController, loadBasedir } from '../src/index.js';
 
 async function buildTrace(c, storage) {
   const states = [];
-  while (c.dump().runQueue.length) {
+  while (c.dump().runQueue.length && c.dump().gcActions.length) {
     states.push(getAllState(storage));
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
   states.push(getAllState(storage));
+  await c.shutdown();
   return states;
 }
 

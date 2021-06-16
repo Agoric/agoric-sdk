@@ -77,8 +77,8 @@ test(`clist reachability`, async t => {
   t.throws(() => vk.mapVatSlotToKernelSlot('o-52'), {
     message: /vat tried to access unreachable import/,
   });
-  t.is(vk.mapVatSlotToKernelSlot('o-52', false), ko3);
-  t.is(vk.mapKernelSlotToVatSlot(ko3, false), 'o-52');
+  t.is(vk.mapVatSlotToKernelSlot('o-52', { setReachable: false }), ko3);
+  t.is(vk.mapKernelSlotToVatSlot(ko3, { setReachable: false }), 'o-52');
   t.is(s.get(`${vatID}.c.ko3`), '_ o-52');
 
   t.is(vk.mapVatSlotToKernelSlot('o+3'), 'ko22');
@@ -87,8 +87,8 @@ test(`clist reachability`, async t => {
   t.throws(() => vk.mapKernelSlotToVatSlot('ko22'), {
     message: /kernel sent unreachable export/,
   });
-  t.is(vk.mapKernelSlotToVatSlot('ko22', false), 'o+3');
-  t.is(vk.mapVatSlotToKernelSlot('o+3', false), 'ko22');
+  t.is(vk.mapKernelSlotToVatSlot('ko22', { setReachable: false }), 'o+3');
+  t.is(vk.mapVatSlotToKernelSlot('o+3', { setReachable: false }), 'ko22');
   t.is(s.get(`${vatID}.c.ko22`), '_ o+3');
 });
 

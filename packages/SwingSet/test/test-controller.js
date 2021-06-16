@@ -223,9 +223,20 @@ test('bootstrap export', async t => {
     },
   ]);
 
+  // this test was designed before GC, and wants to single-step the kernel,
+  // but doesn't care about the GC action steps, so we use this helper
+  // function
+  async function stepGC() {
+    while (c.dump().gcActions.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
+    await c.step(); // the non- GC action
+  }
+
   t.deepEqual(c.dump().log, []);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
-  await c.step();
+  await stepGC();
   // kernel promise for result of the foo() that bootstrap sends to vat-left
   const fooP = 'kp41';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()']);
@@ -254,7 +265,7 @@ test('bootstrap export', async t => {
     },
   ]);
 
-  await c.step();
+  await stepGC();
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
   kt.push([right0, leftVatID, 'o-50']);
@@ -277,7 +288,7 @@ test('bootstrap export', async t => {
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
   ]);
 
-  await c.step();
+  await stepGC();
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',
@@ -292,7 +303,7 @@ test('bootstrap export', async t => {
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
-  await c.step();
+  await stepGC();
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',
@@ -306,7 +317,7 @@ test('bootstrap export', async t => {
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
-  await c.step();
+  await stepGC();
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',

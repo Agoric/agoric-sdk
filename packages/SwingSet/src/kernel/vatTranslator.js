@@ -84,6 +84,38 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
+  const gcDeliveryMapOpts = { setReachable: false, required: true };
+  function translateDropExports(krefs) {
+    const vrefs = krefs.map(kref =>
+      mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts),
+    );
+    krefs.map(vatKeeper.clearReachableFlag);
+    const vatDelivery = harden(['dropExports', vrefs]);
+    return vatDelivery;
+  }
+
+  function translateRetireExports(krefs) {
+    const vrefs = [];
+    for (const kref of krefs) {
+      const vref = mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts);
+      vatKeeper.deleteCListEntry(kref, vref);
+      vrefs.push(vref);
+    }
+    const vatDelivery = harden(['retireExports', vrefs]);
+    return vatDelivery;
+  }
+
+  function translateRetireImports(krefs) {
+    const vrefs = [];
+    for (const kref of krefs) {
+      const vref = mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts);
+      vatKeeper.deleteCListEntry(kref, vref);
+      vrefs.push(vref);
+    }
+    const vatDelivery = harden(['retireImports', vrefs]);
+    return vatDelivery;
+  }
+
   function kernelDeliveryToVatDelivery(kd) {
     const [type, ...args] = kd;
     switch (type) {
@@ -91,10 +123,21 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         return translateMessage(...args);
       case 'notify':
         return translateNotify(...args);
+      case 'dropExports':
+        return translateDropExports(...args);
+      case 'retireExports':
+        return translateRetireExports(...args);
+      case 'retireImports':
+        return translateRetireImports(...args);
       default:
         assert.fail(X`unknown kernelDelivery.type ${type}`);
     }
-    // returns ['message', target, msg] or ['notify', resolutions] or null
+    // returns one of:
+    //  ['message', target, msg]
+    //  ['notify', resolutions]
+    //  ['dropExports', vrefs]
+    //  ['retireExports', vrefs]
+    //  ['retireImports', vrefs]
   }
 
   return kernelDeliveryToVatDelivery;
@@ -106,7 +149,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
  */
 function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-  const { mapVatSlotToKernelSlot } = vatKeeper;
+  const { mapVatSlotToKernelSlot, clearReachableFlag } = vatKeeper;
 
   function translateSend(targetSlot, msg) {
     assert.typeof(targetSlot, 'string', 'non-string targetSlot');
@@ -184,41 +227,57 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['vatstoreDelete', vatID, key]);
   }
 
+  const gcSyscallMapOpts = { required: true, setReachable: false };
+
   function translateDropImports(vrefs) {
     assert(Array.isArray(vrefs), X`dropImports() given non-Array ${vrefs}`);
-    // TODO: dropImports does not affect the c-list, but makes the kernel
-    // calculate the refcount of a kref, possibly causing further action.
     const krefs = vrefs.map(vref => {
-      insistVatType('object', vref); // TODO: probably device nodes too
-      const kref = mapVatSlotToKernelSlot(vref);
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, false); // drop *imports*, not exports
+      // we translate into krefs, *not* setting the reachable flag
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      // and we clear the reachable flag, which might the decrement the
+      // reachable refcount, which might tag the kref for processing
+      clearReachableFlag(kref);
       return kref;
     });
+    // we've done all the work here, during translation
     return harden(['dropImports', krefs]);
   }
 
   function translateRetireImports(vrefs) {
     assert(Array.isArray(vrefs), X`retireImports() given non-Array ${vrefs}`);
-    // TODO: retireImports will delete clist entries as we translate, which
-    // will (TODO) decref the krefs. When we're done with that loop, we hand
-    // the set of krefs to kernelSyscall so it can (TODO) check
-    // newly-decremented refcounts against zero, and maybe delete even more.
     const krefs = vrefs.map(vref => {
-      insistVatType('object', vref); // TODO: probably device nodes too
-      const kref = mapVatSlotToKernelSlot(vref);
-      // vatKeeper.deleteCListEntry(kref, vref);
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, false); // retire *imports*, not exports
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      if (vatKeeper.getReachableFlag(kref)) {
+        throw Error(`syscall.retireImports but ${vref} is still reachable`);
+      }
+      // deleting the clist entry will decrement the recognizable count, but
+      // not the reachable count (because it was unreachable, as we asserted)
+      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
+    // we've done all the work here, during translation
     return harden(['retireImports', krefs]);
   }
 
   function translateRetireExports(vrefs) {
     assert(Array.isArray(vrefs), X`retireExports() given non-Array ${vrefs}`);
-    // TODO: not sure how the kernel should react to this yet
     const krefs = vrefs.map(vref => {
-      insistVatType('object', vref); // TODO: probably device nodes too
-      const kref = mapVatSlotToKernelSlot(vref);
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, true); // retire *exports*, not imports
+      // kref must already be in the clist
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      vatKeeper.insistNotReachable(kref);
+      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
+    // retireExports still has work to do
     return harden(['retireExports', krefs]);
   }
 

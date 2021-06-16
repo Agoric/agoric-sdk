@@ -83,7 +83,7 @@ async function runOneTest(t, explosion, managerType) {
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
   t.is(kvStore.get(`${root}.owner`), vatID);
-  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 11);
+  t.true(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length > 0);
   // neverKPID should still be unresolved
   t.is(kvStore.get(`${neverKPID}.state`), 'unresolved');
 

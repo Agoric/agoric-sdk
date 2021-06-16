@@ -78,7 +78,7 @@ export function ignore(p) {
 
 export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;
-  assert.equal(type, 'message');
+  assert.equal(type, 'message', `util.js .extractMessage`);
   const [facetID, msg] = vdoargs;
   const { method, args, result } = msg;
   return { facetID, method, args, result };
@@ -105,7 +105,7 @@ export function capargsOneSlot(slot) {
   );
 }
 
-export function makeMessage(target, method, args, result = undefined) {
+export function makeMessage(target, method, args, result = null) {
   const msg = { method, args, result };
   const vatDeliverObject = harden(['message', target, msg]);
   return vatDeliverObject;
