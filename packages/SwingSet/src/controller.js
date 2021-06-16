@@ -375,6 +375,13 @@ export async function makeSwingsetController(
       return kernel.deviceNameToID(deviceName);
     },
 
+    /**
+     * @param {string} vatName
+     * @param {string} exportID
+     * @param {string} method
+     * @param {CapData<unknown>} args
+     * @param {ResolutionPolicy} resultPolicy
+     */
     queueToVatExport(vatName, exportID, method, args, resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
       parseVatSlot(exportID);

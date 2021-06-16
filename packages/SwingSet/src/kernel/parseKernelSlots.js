@@ -47,7 +47,7 @@ export function parseKernelSlot(s) {
  * Generate a kernel slot reference string given a type and id.
  *
  * @param {'object' | 'device' | 'promise'} type  The type
- * @param {number} id    The id, a Nat.
+ * @param {bigint | number} id    The id, a Nat.
  *
  * @returns {string} the corresponding kernel slot reference string.
  *

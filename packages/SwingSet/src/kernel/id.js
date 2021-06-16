@@ -34,7 +34,7 @@ export function insistVatID(s) {
 /**
  * Generate a vat ID string given an index.
  *
- * @param {number} index  The index.
+ * @param {bigint | number} index  The index.
  *
  * @returns {string} a vat ID string of the form "vNN" where NN is the index.
  */
@@ -46,7 +46,7 @@ export function makeVatID(index) {
  * Assert function to ensure that something expected to be a device ID string
  * actually is one.
  *
- * @param {string} s  The (alleged) string to be tested.
+ * @param {unknown} s  The (alleged) string to be tested.
  *
  * @throws {Error} if, upon inspection, the parameter is not a string or is not a
  *    well-formed device ID as described above.
@@ -66,7 +66,7 @@ export function insistDeviceID(s) {
 /**
  * Generate a device ID string given an index.
  *
- * @param {number} index  The index.
+ * @param {bigint | number} index  The index.
  *
  * @returns {string} a device ID string of the form "dNN" where NN is the index.
  */

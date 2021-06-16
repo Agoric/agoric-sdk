@@ -1,7 +1,7 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-
+// @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots';
@@ -43,7 +43,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * Produce a vat keeper for a vat.
  *
  * @param {*} kvStore  The keyValue store in which the persistent state will be kept
- * @param {*} streamStore  Accompanying stream store, for the transcripts
+ * @param {StreamStore} streamStore  Accompanying stream store, for the transcripts
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
@@ -54,13 +54,13 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * @param {*} incrementRefCount
  * @param {*} decrementRefCount
  * @param {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
- * @param {(kernelSlot: string, { reachable: Number, recognizable: Number }) => undefined} setObjectRefCount
- * @param {(vatID: string, kernelSlot: string) => {reachable: boolean, vatSlot: string}} getReachableAndVatSlot
- * @param {(kernelSlot: string) => undefined} addMaybeFreeKref
+ * @param {(kernelSlot: string, o: { reachable: number, recognizable: number }) => void} setObjectRefCount
+ * @param {(vatID: string, kernelSlot: string) => {isReachable: boolean, vatSlot: string}} getReachableAndVatSlot
+ * @param {(kernelSlot: string) => void} addMaybeFreeKref
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
- * @returns {*} an object to hold and access the kernel's state for the given vat
+ * returns an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
   kvStore,
@@ -86,7 +86,7 @@ export function makeVatKeeper(
   function setSourceAndOptions(source, options) {
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
-    assert.typeof(source, 'object');
+    assert(source);
     assert(source.bundle || source.bundleName);
     assert.typeof(options, 'object');
     kvStore.set(`${vatID}.source`, JSON.stringify(source));
@@ -185,7 +185,7 @@ export function makeVatKeeper(
    * allocate, we insist that the reachable flag was already set.
    *
    * @param {string} vatSlot  The vat slot of interest
-   * @param { { setReachable: bool, required: bool } } options  'setReachable' will set the 'reachable' flag on vat exports, while 'required' means we refuse to allocate a missing entry
+   * @param {{ setReachable?: boolean, required?: boolean }} options  'setReachable' will set the 'reachable' flag on vat exports, while 'required' means we refuse to allocate a missing entry
    * @returns {string} the kernel slot that vatSlot maps to
    * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
    * or is otherwise invalid.
@@ -257,7 +257,7 @@ export function makeVatKeeper(
    * creating the vat slot if it doesn't already exist.
    *
    * @param {string} kernelSlot  The kernel slot of interest
-   * @param { { setReachable: bool, required: bool } } options  'setReachable' will set the 'reachable' flag on vat imports, while 'required' means we refuse to allocate a missing entry
+   * @param {{ setReachable?: boolean, required?: boolean }} options  'setReachable' will set the 'reachable' flag on vat imports, while 'required' means we refuse to allocate a missing entry
    * @returns {string} the vat slot kernelSlot maps to
    * @throws {Error} if kernelSlot is not a kind of thing that can be imported by vats
    * or is otherwise invalid.
@@ -380,16 +380,16 @@ export function makeVatKeeper(
   function deleteCListEntriesForKernelSlots(kernelSlots) {
     for (const kernelSlot of kernelSlots) {
       const vatSlot = mapKernelSlotToVatSlot(kernelSlot);
-      deleteCListEntry(kernelSlot, vatSlot, true);
+      deleteCListEntry(kernelSlot, vatSlot);
     }
   }
 
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    *
-   * @param {Object?} startPos  Optional position to begin reading from
+   * @param {StreamPosition=} startPos  Optional position to begin reading from
    *
-   * @yields {string} a stream of transcript entries
+   * @yields { TranscriptEntry } a stream of transcript entries
    */
   function* getTranscript(startPos = streamStore.STREAM_START) {
     const endPos = JSON.parse(kvStore.get(`${vatID}.t.endPosition`));
@@ -398,7 +398,7 @@ export function makeVatKeeper(
       startPos,
       endPos,
     )) {
-      yield JSON.parse(entry);
+      yield /** @type { TranscriptEntry } */ (JSON.parse(entry));
     }
   }
 
@@ -452,7 +452,9 @@ export function makeVatKeeper(
         if (!slot.startsWith('k')) {
           const vatSlot = slot;
           const kernelSlot = kvStore.get(k);
-          res.push([kernelSlot, vatID, vatSlot]);
+          /** @type { [string, string, string] } */
+          const item = [kernelSlot, vatID, vatSlot];
+          res.push(item);
         }
       }
     }

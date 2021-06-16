@@ -1,3 +1,4 @@
+// @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
@@ -104,11 +105,21 @@ const FIRST_DEVNODE_ID = 30n;
 const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
 
+/**
+ * @param {KVStorePlus} kvStore
+ * @param {StreamStore} streamStore
+ * @param {KernelSlog} kernelSlog
+ */
 export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   insistEnhancedStorageAPI(kvStore);
 
+  /**
+   * @param {string} key
+   * @returns {string}
+   */
   function getRequired(key) {
     assert(kvStore.has(key), X`storage lacks required key ${key}`);
+    // @ts-ignore already checked .has()
     return kvStore.get(key);
   }
 
@@ -175,7 +186,8 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   }
 
   const ephemeral = harden({
-    vatKeepers: new Map(), // vatID -> vatKeeper
+    /** @type { Map<string, VatKeeper> } */
+    vatKeepers: new Map(),
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
@@ -223,11 +235,11 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   }
 
   function getBundle(name) {
-    return harden(JSON.parse(kvStore.get(`bundle.${name}`)));
+    return harden(JSON.parse(getRequired(`bundle.${name}`)));
   }
 
   function getGCActions() {
-    return new Set(JSON.parse(kvStore.get(`gcActions`)));
+    return new Set(JSON.parse(getRequired(`gcActions`)));
   }
 
   function setGCActions(actions) {
@@ -252,6 +264,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     setGCActions(actions);
   }
 
+  /**
+   * @param { string } vatID
+   * @param { string } kernelSlot
+   */
   function getReachableAndVatSlot(vatID, kernelSlot) {
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     return parseReachableAndVatSlot(kvStore.get(kernelKey));
@@ -376,7 +392,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
         p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
         p.queue = Array.from(
           kvStore.getPrefixedValues(`${kernelSlot}.queue.`),
-        ).map(JSON.parse);
+        ).map(s => JSON.parse(s));
         break;
       case 'fulfilled':
       case 'rejected':
@@ -535,7 +551,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       // drop+retire
       const kref = kvStore.get(k);
       const vref = k.slice(`${vatID}.c.`.length);
-      vatKeeper.deleteCListEntry(kref, vref, true);
+      vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
     }
 
@@ -757,6 +773,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   // replay).
 
   const maybeFreeKrefs = new Set();
+  /** @param { string } kref */
   function addMaybeFreeKref(kref) {
     insistKernelType('object', kref);
     maybeFreeKrefs.add(kref);
@@ -771,7 +788,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
    *
    * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
    * @param {string?} tag  Debugging note with rough source of the reference.
-   * @param { { isExport: boolean?, onlyRecognizable: boolean? } } options
+   * @param { { isExport?: boolean, onlyRecognizable?: boolean } } options
    * 'isExport' means the reference comes from a clist export, which counts
    * for promises but not objects. 'onlyRecognizable' means the reference
    * provides only recognition, not reachability
@@ -805,7 +822,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
    *
    * @param {string} kernelSlot  The kernel slot whose refcount is to be decremented.
    * @param {string} tag
-   * @param { { isExport: boolean?, onlyRecognizable: boolean? } } options
+   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
    * 'isExport' means the reference comes from a clist export, which counts
    * for promises but not objects. 'onlyRecognizable' means the reference
    * deing deleted only provided recognition, not reachability

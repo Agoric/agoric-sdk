@@ -977,7 +977,11 @@ function build(
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
-    assert.equal(passStyleOf(rootObject), 'remotable');
+    assert.equal(
+      passStyleOf(rootObject),
+      'remotable',
+      `buildRootObject() (${buildRootObject}) returned ${rootObject}, which is not Far`,
+    );
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);

@@ -3,8 +3,8 @@ import { assert } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
 
 /**
- * @param { ReturnType<typeof import('../state/kernelKeeper').default> } kernelKeeper
- * @param { ReturnType<typeof import('../loadVat').makeVatLoader> } vatLoader
+ * @param { KernelKeeper } kernelKeeper
+ * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
  * @param {{ maxVatsOnline?: number }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
@@ -71,13 +71,12 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     };
     // console.log('provide: creating from bundle', vatID);
     const manager = await chooseLoader()(vatID, source, translators, options);
-    assert(manager, `no vat manager; kernel panic?`);
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    // TODO: load from snapshot
     await manager.replayTranscript();
+
     const result = {
       manager,
       translators,
