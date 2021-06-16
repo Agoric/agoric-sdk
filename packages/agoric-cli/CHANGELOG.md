@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.4](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.3...agoric@0.13.4) (2021-06-16)
+
+
+### Bug Fixes
+
+* **deployment:** many tweaks to make more robust ([16ce07d](https://github.com/Agoric/agoric-sdk/commit/16ce07d1269e66a016a0326ecc6ca4d42a76f75d))
+
+
+
 ### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.2...agoric@0.13.3) (2021-06-15)
 
 

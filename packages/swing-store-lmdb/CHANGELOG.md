@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.0...@agoric/swing-store-lmdb@0.5.1) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/swing-store-lmdb
+
+
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.12...@agoric/swing-store-lmdb@0.5.0) (2021-06-15)
 
 
