@@ -51,17 +51,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             );
           return;
         }
-        case 'vatStats': {
-          log(`starting stats test`);
-          const { root, adminNode } = await E(vatAdminSvc).createVat(
-            bundles.newVatBundle,
-          );
-          log(await E(adminNode).adminData());
-          const c = E(root).createRcvr(1);
-          log(await E(c).increment(3));
-          log(await E(adminNode).adminData());
-          return;
-        }
         default:
           assert.fail(X`unknown argv mode '${argv[0]}'`);
       }

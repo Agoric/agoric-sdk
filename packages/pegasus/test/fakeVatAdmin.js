@@ -12,7 +12,6 @@ export default harden({
           return makePromiseKit().promise;
         },
         terminate: () => {},
-        adminData: () => ({}),
       },
     });
   },

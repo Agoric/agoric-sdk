@@ -20,11 +20,7 @@
 import { Far } from '@agoric/marshal';
 
 export function buildRootDeviceNode({ endowments, serialize }) {
-  const {
-    pushCreateVatEvent,
-    stats: kernelVatStatsFn,
-    terminate: kernelTerminateVatFn,
-  } = endowments;
+  const { pushCreateVatEvent, terminate: kernelTerminateVatFn } = endowments;
 
   // The Root Device Node.
   return Far('root', {
@@ -41,11 +37,6 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     },
     terminateWithFailure(vatID, reason) {
       kernelTerminateVatFn(vatID, serialize(reason));
-    },
-    // Call the registered kernel function to request vat stats. Clean up the
-    // outgoing and incoming arguments.
-    adminStats(vatID) {
-      return kernelVatStatsFn(`${vatID}`);
     },
   });
 }
