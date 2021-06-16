@@ -216,8 +216,6 @@
  * promise will fulfill to the completion value.
  * @property {(reason: TerminationReason) => void} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure.
- * @property {() => Object} adminData
- * returns some statistics about the vat in which the contract is running.
  */
 
 /**

@@ -208,7 +208,6 @@ export const makeStartInstance = (
       }
       const adminFacet = Far('adminFacet', {
         getVatShutdownPromise: () => E(adminNode).done(),
-        getVatStats: () => E(adminNode).adminData(),
       });
 
       // Actually returned to the user.
