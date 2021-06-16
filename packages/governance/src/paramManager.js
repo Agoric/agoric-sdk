@@ -2,16 +2,26 @@
 
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
-
+/**
+ * @type {{
+ *  AMOUNT: 'amount',
+ *  ANY: 'any',
+ *  BRAND: 'brand',
+ *  INSTANCE: 'instance',
+ *  INSTALLATION: 'installation',
+ *  NAT: 'nat',
+ *  RATIO: 'ratio',
+ *  STRING: 'string',
+ * }}
+ */
 const ParamType = {
   AMOUNT: 'amount',
   ANY: 'any',
-  BIGINT: 'bigint',
   BRAND: 'brand',
-  HANDLE: 'handle',
+  INSTANCE: 'instance',
+  INSTALLATION: 'installation',
   NAT: 'nat',
   RATIO: 'ratio',
   STRING: 'string',
@@ -26,9 +36,7 @@ const assertType = (type, value, name) => {
 
   switch (type) {
     case ParamType.AMOUNT:
-      // TODO(hibbert): is there a clean way to assert something is an amount?
-      // An alternate approach would be to say the contract knows the brand and
-      // the managed parameter only needs to supply the value.
+      // It would be nice to have a clean way to assert something is an amount.
       assert(
         AmountMath.isEqual(value, value),
         X`value for ${name} must be an Amount, was ${value}`,
@@ -36,23 +44,28 @@ const assertType = (type, value, name) => {
       break;
     case ParamType.ANY:
       break;
-    case ParamType.BIGINT:
-      assert.typeof(value, 'bigint');
-      break;
     case ParamType.BRAND:
       assert(
         looksLikeBrand(value),
         X`value for ${name} must be a brand, was ${value}`,
       );
       break;
-    case ParamType.HANDLE:
+    case ParamType.INSTALLATION:
+      // TODO(3344): add a better assertion once Zoe validates installations
+      assert(
+        typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
+        X`value for ${name} must be an empty object, was ${value}`,
+      );
+      break;
+    case ParamType.INSTANCE:
+      // TODO(3344): add a better assertion once Zoe validates instances
       assert(
         typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
         X`value for ${name} must be an empty object, was ${value}`,
       );
       break;
     case ParamType.NAT:
-      Nat(value);
+      assert.typeof(value, 'bigint');
       break;
     case ParamType.RATIO:
       assertIsRatio(value);
@@ -82,7 +95,7 @@ const parse = paramDesc => {
 const buildParamManager = paramDesc => {
   const { bindings, types } = parse(paramDesc);
 
-  const publicFacet = {
+  const params = {
     lookup: name => bindings.get(name),
     getDetails: name => ({
       name,
@@ -99,7 +112,7 @@ const buildParamManager = paramDesc => {
     },
   };
 
-  return { publicFacet, manager };
+  return { params, manager };
 };
 harden(buildParamManager);
 

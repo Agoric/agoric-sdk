@@ -5,22 +5,21 @@ import '@agoric/zoe/exported';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { buildParamManager, ParamType } from '../src/param-manager';
+import { buildParamManager, ParamType } from '../src/paramManager';
 
 const BASIS_POINTS = 10_000;
 
 test('params one Nat', async t => {
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'number',
-      value: 13,
+      value: 13n,
       type: ParamType.NAT,
     },
   ]);
-  t.is(publicFacet.lookup('number'), 13);
-  manager.update('number', 42);
-  t.is(publicFacet.lookup('number'), 42);
+  t.is(params.lookup('number'), 13n);
+  manager.update('number', 42n);
+  t.is(params.lookup('number'), 42n);
 
   t.throws(
     () => manager.update('string', 'foo'),
@@ -32,23 +31,30 @@ test('params one Nat', async t => {
   t.throws(
     () => manager.update('number', 18.1),
     {
-      message: '18.1 not a safe integer',
+      message: '18.1 must be a bigint',
     },
     'value should be a nat',
+  );
+  t.throws(
+    () => manager.update('number', 13),
+    {
+      message: '13 must be a bigint',
+    },
+    'must be bigint',
   );
 });
 
 test('params one String', async t => {
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'string',
       value: 'foo',
       type: ParamType.STRING,
     },
   ]);
-  t.is(publicFacet.lookup('string'), 'foo');
+  t.is(params.lookup('string'), 'foo');
   manager.update('string', 'bar');
-  t.is(publicFacet.lookup('string'), 'bar');
+  t.is(params.lookup('string'), 'bar');
 
   t.throws(
     () => manager.update('number', 'foo'),
@@ -68,16 +74,16 @@ test('params one String', async t => {
 
 test('params one Amount', async t => {
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'amount',
       value: AmountMath.makeEmpty(brand),
       type: ParamType.AMOUNT,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('amount'), AmountMath.makeEmpty(brand));
+  t.deepEqual(params.lookup('amount'), AmountMath.makeEmpty(brand));
   manager.update('amount', AmountMath.make(brand, [13]));
-  t.deepEqual(publicFacet.lookup('amount'), AmountMath.make(brand, [13]));
+  t.deepEqual(params.lookup('amount'), AmountMath.make(brand, [13]));
 
   t.throws(
     () => manager.update('number', 13),
@@ -98,16 +104,16 @@ test('params one Amount', async t => {
 });
 
 test('params one BigInt', async t => {
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'bigint',
       value: 314159n,
-      type: ParamType.BIGINT,
+      type: ParamType.NAT,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('bigint'), 314159n);
+  t.deepEqual(params.lookup('bigint'), 314159n);
   manager.update('bigint', 271828182845904523536n);
-  t.deepEqual(publicFacet.lookup('bigint'), 271828182845904523536n);
+  t.deepEqual(params.lookup('bigint'), 271828182845904523536n);
 
   t.throws(
     () => manager.update('bigint', 18.1),
@@ -120,16 +126,16 @@ test('params one BigInt', async t => {
 
 test('params one ratio', async t => {
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'ratio',
       value: makeRatio(7, brand),
       type: ParamType.RATIO,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('ratio'), makeRatio(7, brand));
+  t.deepEqual(params.lookup('ratio'), makeRatio(7, brand));
   manager.update('ratio', makeRatio(701, brand, BASIS_POINTS));
-  t.deepEqual(publicFacet.lookup('ratio'), makeRatio(701, brand, BASIS_POINTS));
+  t.deepEqual(params.lookup('ratio'), makeRatio(701, brand, BASIS_POINTS));
 
   t.throws(
     () => manager.update('ratio', 18.1),
@@ -143,16 +149,16 @@ test('params one ratio', async t => {
 test('params one brand', async t => {
   const { brand: roseBrand } = makeIssuerKit('roses', AssetKind.SET);
   const { brand: thornBrand } = makeIssuerKit('thorns');
-  const { publicFacet, manager } = buildParamManager([
+  const { params, manager } = buildParamManager([
     {
       name: 'brand',
       value: roseBrand,
       type: ParamType.BRAND,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('brand'), roseBrand);
+  t.deepEqual(params.lookup('brand'), roseBrand);
   manager.update('brand', thornBrand);
-  t.deepEqual(publicFacet.lookup('brand'), thornBrand);
+  t.deepEqual(params.lookup('brand'), thornBrand);
 
   t.throws(
     () => manager.update('brand', 18.1),
@@ -163,70 +169,47 @@ test('params one brand', async t => {
   );
 });
 
-test('params one handle', async t => {
-  const fooHandle = makeHandle('foo');
-  const barHandle = makeHandle('bar');
-  const { publicFacet, manager } = buildParamManager([
-    {
-      name: 'handle',
-      value: fooHandle,
-      type: ParamType.HANDLE,
-    },
-  ]);
-  t.deepEqual(publicFacet.lookup('handle'), fooHandle);
-  manager.update('handle', barHandle);
-  t.deepEqual(publicFacet.lookup('handle'), barHandle);
-
-  t.throws(
-    () => manager.update('handle', 18.1),
-    {
-      message: 'value for "handle" must be an empty object, was 18.1',
-    },
-    'value for "handle" must be an empty object, was 18.1',
-  );
-});
-
 test('params one any', async t => {
-  const fooHandle = makeHandle('foo');
-  const { publicFacet, manager } = buildParamManager([
+  const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
+  const { params, manager } = buildParamManager([
     {
       name: 'stuff',
-      value: fooHandle,
+      value: stiltonBrand,
       type: ParamType.ANY,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('stuff'), fooHandle);
+  t.deepEqual(params.lookup('stuff'), stiltonBrand);
   manager.update('stuff', 18.1);
-  t.deepEqual(publicFacet.lookup('stuff'), 18.1);
+  t.deepEqual(params.lookup('stuff'), 18.1);
 });
 
 test('params keys', async t => {
-  const fooHandle = makeHandle('foo');
-  const { publicFacet, manager } = buildParamManager([
+  const { brand: parmesanBrand } = makeIssuerKit('parmesan', AssetKind.SET);
+  const { params, manager } = buildParamManager([
     {
       name: 'stuff',
-      value: fooHandle,
+      value: parmesanBrand,
       type: ParamType.ANY,
     },
     {
-      name: 'bigint',
+      name: 'nat',
       value: 314159n,
-      type: ParamType.BIGINT,
+      type: ParamType.NAT,
     },
   ]);
-  t.deepEqual(publicFacet.lookup('stuff'), fooHandle);
+  t.deepEqual(params.lookup('stuff'), parmesanBrand);
   manager.update('stuff', 18.1);
-  t.deepEqual(publicFacet.lookup('stuff'), 18.1);
+  t.deepEqual(params.lookup('stuff'), 18.1);
 
-  t.deepEqual(publicFacet.getDetails('stuff'), {
+  t.deepEqual(params.getDetails('stuff'), {
     name: 'stuff',
     value: 18.1,
     type: ParamType.ANY,
   });
-  t.deepEqual(publicFacet.getDetails('bigint'), {
-    name: 'bigint',
+  t.deepEqual(params.getDetails('nat'), {
+    name: 'nat',
     value: 314159n,
-    type: ParamType.BIGINT,
+    type: ParamType.NAT,
   });
-  t.deepEqual(publicFacet.definedNames(), ['stuff', 'bigint']);
+  t.deepEqual(params.definedNames(), ['stuff', 'nat']);
 });
