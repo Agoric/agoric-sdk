@@ -168,7 +168,8 @@ export function makeState(syscall, identifierBase = 0) {
    * @param {string} _tag  Descriptive label for use in diagnostics
    */
   function incrementRefCount(lref, _tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
       const refCount = Number(store.get(`${lref}.refCount`)) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
       if (refCount === 1 && deadLocalPromises.has(lref)) {
@@ -192,7 +193,8 @@ export function makeState(syscall, identifierBase = 0) {
    * @throws if this tries to decrement the reference count below zero.
    */
   function decrementRefCount(lref, tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
       let refCount = Number(store.get(`${lref}.refCount`));
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
