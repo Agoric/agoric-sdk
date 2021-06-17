@@ -24,8 +24,8 @@
     "build:src": "rm -rf dist && BABEL_ENV='test' ./node_modules/.bin/babel src --out-dir dist",
     "build": "yarn build:src && yarn build:tests",
     "lint-fix": "yarn lint --fix",
-    "lint": "yarn lint:types && yarn lint:eslint",
     "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json"
   },
