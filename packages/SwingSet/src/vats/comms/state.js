@@ -188,9 +188,7 @@ export function makeState(syscall, identifierBase = 0) {
    *
    * @param {string} lref  Ref of the local object whose refcount is to be decremented.
    * @param {string} tag  Descriptive label for use in diagnostics
-   * @returns {boolean} true if the reference count has been decremented to
-   *    zero, false if it is still non-zero
-   * @throws if this tries to decrement the reference count below zero.
+   * @throws if this tries to decrement a reference count below zero.
    */
   function decrementRefCount(lref, tag) {
     const { type } = parseLocalSlot(lref);
@@ -212,10 +210,8 @@ export function makeState(syscall, identifierBase = 0) {
         // dispatch is complete and any ancillary promises are safely referenced
         // by their subscribers clists.
         deadLocalPromises.add(lref);
-        return true;
       }
     }
-    return false;
   }
 
   /**
