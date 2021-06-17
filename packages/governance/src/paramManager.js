@@ -106,8 +106,8 @@ const parse = paramDesc => {
     describers.push(describer);
   });
 
-  /** @type {() => Record<Keyword,ParamDescription>} */
   const getParams = () => {
+    /** @type {Record<Keyword,ParamDescription>} */
     const descriptions = {};
     describers.forEach(d => {
       const description = d();

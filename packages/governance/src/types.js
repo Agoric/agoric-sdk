@@ -23,9 +23,11 @@
  */
 
 /**
- * @typedef  {Object} ParamManagerPublic
- * ParamManagerPublic also has updateFoo methods for each defined parameter.
+ * @typedef {Object} ParamManagerBase
  * @property {() => Record<Keyword,ParamDescription>} getParams
+ *
+ * @typedef {{ [updater: string]: (arg: any) => void }} ParamManagerUpdaters
+ * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerPublic
  */
 
 /**

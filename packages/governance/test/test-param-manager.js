@@ -189,9 +189,9 @@ test('params unknown type', async t => {
   const stuffDescription = {
     name: stuffKey,
     value: 'It was the best of times, it was the worst of times',
-    // @ts-ignore  illegal value for testing
     type: 'quote',
   };
+  // @ts-ignore  illegal value for testing
   t.throws(() => buildParamManager([stuffDescription]), {
     message: 'unknown type guard "quote"',
   });
