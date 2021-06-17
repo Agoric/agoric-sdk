@@ -7,8 +7,9 @@
   "scripts": {
     "test": "ava",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
   },
   "devDependencies": {

@@ -16,8 +16,9 @@
     "test": "ava",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
-    "lint-check": "eslint '**/*.{js,jsx}'",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'"
+    "lint-check": "yarn lint",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint": "eslint '**/*.{js,jsx}'"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.18.0",

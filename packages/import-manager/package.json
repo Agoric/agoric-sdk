@@ -14,7 +14,8 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint-check": "yarn lint",
+    "lint": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
