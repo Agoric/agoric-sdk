@@ -9,13 +9,13 @@ import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
 /**
  * @type {{
  *  AMOUNT: 'amount',
- *  UNKNOWN: 'unknown',
  *  BRAND: 'brand',
  *  INSTANCE: 'instance',
  *  INSTALLATION: 'installation',
  *  NAT: 'nat',
  *  RATIO: 'ratio',
  *  STRING: 'string',
+ *  UNKNOWN: 'unknown',
  * }}
  */
 const ParamType = {
@@ -34,10 +34,7 @@ const assertType = (type, value, name) => {
   switch (type) {
     case ParamType.AMOUNT:
       // It would be nice to have a clean way to assert something is an amount.
-      assert(
-        AmountMath.isEqual(value, value),
-        X`value for ${name} must be an Amount, was ${value}`,
-      );
+      AmountMath.coerce(value.brand, value);
       break;
     case ParamType.BRAND:
       assert(
@@ -49,14 +46,14 @@ const assertType = (type, value, name) => {
       // TODO(3344): add a better assertion once Zoe validates installations
       assert(
         typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
-        X`value for ${name} must be an empty object, was ${value}`,
+        X`value for ${name} must be an Installation, was ${value}`,
       );
       break;
     case ParamType.INSTANCE:
       // TODO(3344): add a better assertion once Zoe validates instances
       assert(
         typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
-        X`value for ${name} must be an empty object, was ${value}`,
+        X`value for ${name} must be an Instance, was ${value}`,
       );
       break;
     case ParamType.NAT:
@@ -68,52 +65,49 @@ const assertType = (type, value, name) => {
     case ParamType.STRING:
       assert.typeof(value, 'string');
       break;
+    // This is an escape hatch for types we haven't added yet. If you need to
+    // use it, please file an issue and ask us to support the new type.
     case ParamType.UNKNOWN:
       break;
     default:
-      assert.fail(X`unknown type guard ${type}`);
+      assert.fail(X`unrecognized type ${type}`);
   }
 };
 
 const parse = paramDesc => {
-  const values = {};
+  const typesAndValues = {};
   // manager has an updateFoo() for each Foo param. It will be returned.
   const manager = {};
-  // getParams() uses describers to generate descriptions of each param.
-  const describers = [];
 
   paramDesc.forEach(({ name, value, type }) => {
-    assert(
-      !values[name],
-      X`each parameter name must be unique: ${name} duplicated`,
-    );
-    assertType(type, value, name);
     // we want to create function names like updateFeeRatio(), so we insist that
     // the name has Keyword-nature.
     assertKeywordName(name);
 
-    values[name] = { type, value };
+    assert(
+      !typesAndValues[name],
+      X`each parameter name must be unique: ${name} duplicated`,
+    );
+    assertType(type, value, name);
+
+    typesAndValues[name] = { type, value };
     manager[`update${name}`] = newValue => {
       assertType(type, newValue, name);
-      values[name].value = newValue;
+      typesAndValues[name].value = newValue;
     };
-
-    const describer = () => ({
-      name,
-      type,
-      value: values[name].value,
-    });
-    describers.push(describer);
   });
 
   const getParams = () => {
     /** @type {Record<Keyword,ParamDescription>} */
     const descriptions = {};
-    describers.forEach(d => {
-      const description = d();
-      descriptions[description.name] = description;
+    Object.getOwnPropertyNames(typesAndValues).forEach(name => {
+      descriptions[name] = {
+        name,
+        type: typesAndValues[name].type,
+        value: typesAndValues[name].value,
+      };
     });
-    return descriptions;
+    return harden(descriptions);
   };
 
   return { getParams, manager };

@@ -5,6 +5,7 @@ import '@agoric/zoe/exported';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
+import { makeHandle } from '@agoric/zoe/src/makeHandle';
 import { buildParamManager, ParamType } from '../src/paramManager';
 
 const BASIS_POINTS = 10_000;
@@ -19,7 +20,7 @@ test('params one Nat', async t => {
   const { getParams, updateNumber } = buildParamManager([numberDescription]);
   t.deepEqual(getParams()[numberKey], numberDescription);
   updateNumber(42n);
-  t.is(getParams()[numberKey].value, 42n);
+  t.deepEqual(getParams()[numberKey].value, 42n);
 
   t.throws(
     () => updateNumber(18.1),
@@ -47,7 +48,7 @@ test('params one String', async t => {
   const { getParams, updateString } = buildParamManager([stringDescription]);
   t.deepEqual(getParams()[stringKey], stringDescription);
   updateString('bar');
-  t.is(getParams()[stringKey].value, 'bar');
+  t.deepEqual(getParams()[stringKey].value, 'bar');
 
   t.throws(
     () => updateString(18.1),
@@ -74,8 +75,7 @@ test('params one Amount', async t => {
   t.throws(
     () => updateAmount(18.1),
     {
-      message:
-        "The amount 18.1 doesn't look like an amount. Did you pass a value instead?",
+      message: 'The brand "[undefined]" doesn\'t look like a brand.',
     },
     'value should be a amount',
   );
@@ -161,6 +161,58 @@ test('params one unknown', async t => {
   t.deepEqual(getParams()[stuffKey].value, 18.1);
 });
 
+test('params one instance', async t => {
+  const instanceKey = 'Instance';
+  // this is sufficient for the current type check. When we add
+  // isInstance() (#3344), we'll need to make a mockZoe.
+  const instanceHandle = makeHandle('Instance');
+  const instanceDescription = {
+    name: instanceKey,
+    value: instanceHandle,
+    type: ParamType.INSTANCE,
+  };
+  const { getParams, updateInstance } = buildParamManager([
+    instanceDescription,
+  ]);
+  t.deepEqual(getParams()[instanceKey], instanceDescription);
+  t.throws(
+    () => updateInstance(18.1),
+    {
+      message: 'value for "Instance" must be an Instance, was 18.1',
+    },
+    'value should be an Instance',
+  );
+  const handle2 = makeHandle('another Instance');
+  updateInstance(handle2);
+  t.deepEqual(getParams()[instanceKey].value, handle2);
+});
+
+test('params one installation', async t => {
+  const installationKey = 'Installation';
+  // this is sufficient for the current type check. When we add
+  // isInstallation() (#3344), we'll need to make a mockZoe.
+  const installationHandle = makeHandle('installation');
+  const installationDescription = {
+    name: installationKey,
+    value: installationHandle,
+    type: ParamType.INSTALLATION,
+  };
+  const { getParams, updateInstallation } = buildParamManager([
+    installationDescription,
+  ]);
+  t.deepEqual(getParams()[installationKey], installationDescription);
+  t.throws(
+    () => updateInstallation(18.1),
+    {
+      message: 'value for "Installation" must be an Installation, was 18.1',
+    },
+    'value should be an installation',
+  );
+  const handle2 = makeHandle('another installation');
+  updateInstallation(handle2);
+  t.deepEqual(getParams()[installationKey].value, handle2);
+});
+
 test('params duplicate entry', async t => {
   const stuffKey = 'Stuff';
   const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
@@ -193,7 +245,7 @@ test('params unknown type', async t => {
   };
   // @ts-ignore  illegal value for testing
   t.throws(() => buildParamManager([stuffDescription]), {
-    message: 'unknown type guard "quote"',
+    message: 'unrecognized type "quote"',
   });
 });
 
@@ -206,14 +258,14 @@ test('params multiple values', t => {
     value: parmesanBrand,
     type: ParamType.UNKNOWN,
   };
-  const piDescription = {
+  const constantDescription = {
     name: natKey,
-    value: 314159n,
+    value: 602214076000000000000000n,
     type: ParamType.NAT,
   };
-  const { getParams, updateNat: _updateNat, updateStuff } = buildParamManager([
+  const { getParams, updateNat, updateStuff } = buildParamManager([
     cheeseDescription,
-    piDescription,
+    constantDescription,
   ]);
   t.deepEqual(getParams()[stuffKey], cheeseDescription);
   updateStuff(18.1);
@@ -223,6 +275,11 @@ test('params multiple values', t => {
     type: ParamType.UNKNOWN,
   };
   t.deepEqual(getParams()[stuffKey], floatDescription);
-  t.deepEqual(getParams()[natKey], piDescription);
-  t.deepEqual(getParams(), { Nat: piDescription, Stuff: floatDescription });
+  t.deepEqual(getParams()[natKey], constantDescription);
+  t.deepEqual(getParams(), {
+    Nat: constantDescription,
+    Stuff: floatDescription,
+  });
+  updateNat(299792458n);
+  t.deepEqual(getParams()[natKey].value, 299792458n);
 });

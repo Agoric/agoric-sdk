@@ -1,18 +1,11 @@
 // @ts-check
 
 /**
- * @typedef { 'amount' | 'unknown' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' } ParamType
+ * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' | 'unknown' } ParamType
  */
 
 /**
- * @typedef { Amount | Brand | Instance| Installation | bigint | Ratio | string | unknown } ParamValue
- */
-
-/**
- * @typedef  {Object} ParamDetails
- * @property {string} name
- * @property {ParamValue} value
- * @property {ParamType} type
+ * @typedef { Amount | Brand | Installation | Instance | bigint | Ratio | string | unknown } ParamValue
  */
 
 /**
@@ -26,8 +19,8 @@
  * @typedef {Object} ParamManagerBase
  * @property {() => Record<Keyword,ParamDescription>} getParams
  *
- * @typedef {{ [updater: string]: (arg: any) => void }} ParamManagerUpdaters
- * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerPublic
+ * @typedef {{ [updater: string]: (arg: ParamValue) => void }} ParamManagerUpdaters
+ * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
  */
 
 /**
@@ -37,5 +30,5 @@
 /**
  * @callback BuildParamManager
  * @param {ParamDescriptions} paramDesc
- * @returns {ParamManagerPublic}
+ * @returns {ParamManagerFull}
  */

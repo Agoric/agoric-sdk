@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"@agoric/assert@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@agoric/assert/-/assert-0.3.1.tgz#6173aa8d61cb9e928b86e2cd981be1c941375698"
-  integrity sha512-xpAxPLq3zXk7fnJEcGgjdZrioh1A72AnmMumm2wZLFfcz5UkQuVM8K3V6KOygLcQP8lZvuVX3H2ApywpskQy+g==
-  dependencies:
-    ses "^0.13.2"
-
 "@agoric/babel-parser@^7.6.4":
   version "7.6.4"
   resolved "https://registry.yarnpkg.com/@agoric/babel-parser/-/babel-parser-7.6.4.tgz#8dd5d36554cc758c29042713b5aa57dc58ee5273"
@@ -19,32 +12,10 @@
   resolved "https://registry.yarnpkg.com/@agoric/babel-standalone/-/babel-standalone-7.14.3.tgz#1bf201417481d37d2797dd3283590dcbef775b4d"
   integrity sha512-Rdlxts19kvxHsqTjTrhGJv0yKgCyjCSVgXoLBZf9dZ7lyo/j+6xFQBiWjP03bXve3X74wUvA1QU55wVey8DEiQ==
 
-"@agoric/eventual-send@^0.13.16":
-  version "0.13.16"
-  resolved "https://registry.yarnpkg.com/@agoric/eventual-send/-/eventual-send-0.13.16.tgz#be4204f19dc2c77d2f589fc29793d685e16a3971"
-  integrity sha512-lLjPFqezGnG3moX+Idf4moDFLcvubS4LWcANyBBnziMOXD6spLC9riRjxM/4JBBZH71FYKmM+TYZ15gpRDrvvQ==
-
-"@agoric/marshal@^0.4.13":
-  version "0.4.13"
-  resolved "https://registry.yarnpkg.com/@agoric/marshal/-/marshal-0.4.13.tgz#f8e7ccf0ed5c0ed64f6357468224a71f8ad8743a"
-  integrity sha512-SsaWAb69VasZWGlvi4N8ofT/8K70QzJVwozLIitzwA0DsyR7uU2kO8lAGgufll6DdgszORrRnMjycU6JJqSVyg==
-  dependencies:
-    "@agoric/assert" "^0.3.1"
-    "@agoric/eventual-send" "^0.13.16"
-    "@agoric/nat" "^4.1.0"
-    "@agoric/promise-kit" "^0.2.15"
-
-"@agoric/nat@^4.0.0", "@agoric/nat@^4.1.0":
+"@agoric/nat@^4.1.0":
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.1.0.tgz#102794e033ffc183a20b0f86031a2e76d204b9f6"
   integrity sha512-2oMoh3DMn0Fx8HChPPiH8irBNdT/33ttxAZJohhd3nU3gyBRQ1u+eEoOQWfSkrE6M02iMkQM7GE9MzGmjQ6bHg==
-
-"@agoric/promise-kit@^0.2.15":
-  version "0.2.15"
-  resolved "https://registry.yarnpkg.com/@agoric/promise-kit/-/promise-kit-0.2.15.tgz#eb877b37880aeb764a3456e28abaf10eb1b7a5fa"
-  integrity sha512-0MqVJresAD/j7Us8aODxf0xfNwzef3afLn4rMK8x81FDsFJZ/KT3vLULtVm88JsyKxugceCvYZKDu8flZ3j73Q==
-  dependencies:
-    "@agoric/eventual-send" "^0.13.16"
 
 "@babel/cli@^7.12.13":
   version "7.13.10"
