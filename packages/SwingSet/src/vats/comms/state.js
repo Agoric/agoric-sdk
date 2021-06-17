@@ -1,7 +1,11 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from '../../capdata.js';
-import { makeVatSlot, insistVatType } from '../../parseVatSlots.js';
+import {
+  makeVatSlot,
+  insistVatType,
+  parseVatSlot,
+} from '../../parseVatSlots.js';
 import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
 import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
 import { cdebug } from './cdebug.js';
@@ -83,6 +87,7 @@ export function makeState(syscall, identifierBase = 0) {
   // p.nextID = $NN  // kernel-facing promise identifier allocation counter (p+NN)
   // c.$kfref = $lref // inbound kernel-facing c-list (o+NN/o-NN/p+NN/p-NN -> loNN/lpNN)
   // c.$lref = $kfref // outbound kernel-facing c-list (loNN/lpNN -> o+NN/o-NN/p+NN/p-NN)
+  // cr.$lref = 1 | <missing> // isReachable flag
   // meta.$kfref = true // flag that $kfref (o+NN/o-NN) is a directly addressable control object
   //
   // lo.nextID = $NN // local object identifier allocation counter (loNN)
@@ -110,6 +115,7 @@ export function makeState(syscall, identifierBase = 0) {
   // r$NN.transmitterID = $kfref // transmitter object for sending to remote
   // r$NN.c.$rref = $lref // r$NN inbound c-list (ro+NN/ro-NN/rp+NN/rp-NN -> loNN/lpNN)
   // r$NN.c.$lref = $rref // r$NN outbound c-list (loNN/lpNN -> ro+NN/ro-NN/rp+NN/rp-NN)
+  // r$NN.cr.$lref = 1 | <missing> // isReachable flag
   // r$NN.sendSeq = $NN // counter for outbound message sequence numbers to r$NN
   // r$NN.recvSeq = $NN // counter for inbound message sequence numbers from r$NN
   // r$NN.o.nextID = $NN // r$NN object identifier allocation counter (ro-NN)
@@ -310,17 +316,60 @@ export function makeState(syscall, identifierBase = 0) {
     return store.get(`c.${lref}`);
   }
 
-  function addKernelMapping(kfref, lref) {
-    store.set(`c.${kfref}`, lref);
-    store.set(`c.${lref}`, kfref);
-    incrementRefCount(lref, `{kfref}|k|clist`);
+  // is/set/clear are used on both imports and exports, but set/clear needs
+  // to be told which one it is
+
+  function isReachableByKernel(lref) {
+    assert.equal(parseLocalSlot(lref).type, 'object');
+    return !!store.get(`cr.${lref}`);
+  }
+  function setReachableByKernel(lref, isImport) {
+    const wasReachable = isReachableByKernel(lref);
+    if (!wasReachable) {
+      store.set(`cr.${lref}`, `1`);
+      if (isImport) {
+        changeReachable(lref, 1n);
+      }
+    }
+  }
+  function clearReachableByKernel(lref, isImport) {
+    const wasReachable = isReachableByKernel(lref);
+    if (wasReachable) {
+      store.delete(`cr.${lref}`);
+      if (isImport) {
+        const reachable = changeReachable(lref, -1n);
+        if (!reachable) {
+          maybeFree.add(lref);
+        }
+      }
+    }
   }
 
+  // translators should addKernelMapping for new imports/exports, then
+  // setReachableByKernel
+  function addKernelMapping(kfref, lref) {
+    const { type, allocatedByVat } = parseVatSlot(kfref);
+    const isImport = allocatedByVat; // true = kernel is downstream importer
+    store.set(`c.${kfref}`, lref);
+    store.set(`c.${lref}`, kfref);
+    const mode = isImport ? 'clist-import' : 'clist-export';
+    incrementRefCount(lref, `{kfref}|k|clist`, mode);
+  }
+
+  // GC or delete-remote should just call deleteKernelMapping without any
+  // extra clearReachableByKernel
   function deleteKernelMapping(lref) {
     const kfref = store.get(`c.${lref}`);
+    let mode = 'data'; // close enough
+    const { type, allocatedByVat } = parseVatSlot(kfref);
+    const isImport = allocatedByVat;
+    if (type === 'object') {
+      clearReachableByKernel(lref, isImport);
+      mode = isImport ? 'clist-import' : 'clist-export';
+    }
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
-    decrementRefCount(lref, `{kfref}|k|clist`);
+    decrementRefCount(lref, `{kfref}|k|clist`, mode);
   }
 
   function hasMetaObject(kfref) {
@@ -552,6 +601,9 @@ export function makeState(syscall, identifierBase = 0) {
 
     mapFromKernel,
     mapToKernel,
+    isReachableByKernel,
+    setReachableByKernel,
+    clearReachableByKernel,
     addKernelMapping,
     deleteKernelMapping,
 

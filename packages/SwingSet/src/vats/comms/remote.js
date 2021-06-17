@@ -1,6 +1,11 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { makeRemoteSlot, flipRemoteSlot } from './parseRemoteSlot.js';
+import { parseLocalSlot } from './parseLocalSlots.js';
+import {
+  makeRemoteSlot,
+  flipRemoteSlot,
+  parseRemoteSlot,
+} from './parseRemoteSlot.js';
 
 export function insistRemoteID(remoteID) {
   assert(/^r\d+$/.test(remoteID), X`not a remoteID: ${remoteID}`);
@@ -51,22 +56,62 @@ export function makeRemote(state, store, remoteID) {
     return store.get(`${remoteID}.c.${lref}`);
   }
 
+  // is/set/clear are used on both imports and exports, but set/clear needs
+  // to be told which one it is
+
+  function isReachable(lref) {
+    assert.equal(parseLocalSlot(lref).type, 'object');
+    return !!store.get(`${remoteID}.cr.${lref}`);
+  }
+  function setReachable(lref, isImport) {
+    const wasReachable = isReachable(lref);
+    if (!wasReachable) {
+      store.set(`${remoteID}.cr.${lref}`, `1`);
+      if (isImport) {
+        state.changeReachable(lref, 1n);
+      }
+    }
+  }
+  function clearReachable(lref, isImport) {
+    const wasReachable = isReachable(lref);
+    if (wasReachable) {
+      store.delete(`${remoteID}.cr.${lref}`);
+      if (isImport) {
+        const reachable = state.changeReachable(lref, -1n);
+        if (!reachable) {
+          state.lrefMightBeFree(lref);
+        }
+      }
+    }
+  }
+
+  // rref is what we would get from them, so + means our export
   function addRemoteMapping(rref, lref) {
+    const { type, allocatedByRecipient } = parseRemoteSlot(rref);
+    const isImport = allocatedByRecipient;
     const fromKey = `${remoteID}.c.${rref}`;
     const toKey = `${remoteID}.c.${lref}`;
     assert(!store.get(fromKey), X`already have ${rref}`);
     assert(!store.get(toKey), X`already have ${lref}`);
     store.set(fromKey, lref);
     store.set(toKey, flipRemoteSlot(rref));
-    state.incrementRefCount(lref, `{rref}|${remoteID}|clist`);
+    const mode = isImport ? 'clist-import' : 'clist-export';
+    state.incrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
   }
 
   function deleteRemoteMapping(lref) {
     const rrefOutbound = store.get(`${remoteID}.c.${lref}`);
     const rrefInbound = flipRemoteSlot(rrefOutbound);
+    let mode = 'data'; // close enough
+    const { type, allocatedByRecipient } = parseRemoteSlot(rrefInbound);
+    const isImport = allocatedByRecipient;
+    if (type === 'object') {
+      clearReachable(lref, isImport);
+      mode = isImport ? 'clist-import' : 'clist-export';
+    }
     store.delete(`${remoteID}.c.${rrefInbound}`);
     store.delete(`${remoteID}.c.${lref}`);
-    state.decrementRefCount(lref, `{rref}|${remoteID}|clist`);
+    state.decrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
   }
 
   function nextSendSeqNum() {
@@ -144,10 +189,15 @@ export function makeRemote(state, store, remoteID) {
   return harden({
     remoteID: () => remoteID,
     name,
+
     mapFromRemote,
     mapToRemote,
+    isReachable,
+    setReachable,
+    clearReachable,
     addRemoteMapping,
     deleteRemoteMapping,
+
     allocateRemoteObject,
     skipRemoteObjectID,
     allocateRemotePromise,
