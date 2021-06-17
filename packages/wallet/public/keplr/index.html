@@ -41,6 +41,7 @@
         const res = await fetch(nc);
         const { chainName: chainId, rpcAddrs } = await res.json();
         const rpcAddr = rpcAddrs[Math.floor(Math.random() * rpcAddrs.length)];
+        const network = new URL(nc).hostname.split('.')[0];
         const stakeCurrency = {
           coinDenom: 'BLD',
           coinMinimalDenom: 'ubld',
@@ -57,9 +58,9 @@
           rpc: `http://${rpcAddr}`,
           rest: `http://${rpcAddr.replace(/:\d+$/, ':1317')}`,
           chainId,
-          chainName: `Agoric ${new URL(nc).hostname.split('.')[0]}`,
+          chainName: `Agoric ${network}`,
           stakeCurrency,
-          walletUrlForStaking: `http://staking.agoric.app/#/${chainId.replace(/-\d+$/, '')}/stake`,
+          walletUrlForStaking: `https://${network}.staking.agoric.app`,
           bip44: {
             coinType: 564,
           },
