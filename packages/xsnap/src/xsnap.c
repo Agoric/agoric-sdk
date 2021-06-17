@@ -14,16 +14,19 @@
 
 #if XSNAP_TEST_RECORD
 enum {
-	mxTestRecordJS = 0,
-	mxTestRecordJSON = 1,
-	mxTestRecordParam = 2,
-	mxTestRecordReply = 4,
+	mxTestRecordJS = 1,
+	mxTestRecordJSON = 2,
+	mxTestRecordParam = 4,
+	mxTestRecordReply = 8,
 };
 int gxTestRecordParamIndex = 0;
 int gxTestRecordReplyIndex = 0;
 static void fxTestRecordArgs(int argc, char* argv[]);
 static void fxTestRecord(int flags, void* buffer, size_t length);
 #endif
+
+static void xsPlayTest(xsMachine* the);
+static int gxPlayTest = 0;
 
 extern txScript* fxLoadScript(txMachine* the, txString path, txUnsigned flags);
 
@@ -309,6 +312,8 @@ ExitCode main(int argc, char* argv[])
 				return E_BAD_USAGE;
 			}
 		}
+		else if (!strcmp(argv[argi], "-t"))
+			gxPlayTest = 1;
 		else if (!strcmp(argv[argi], "-v")) {
 			printf("xsnap %s (XS %d.%d.%d)\n", XSNAP_VERSION, XS_MAJOR_VERSION, XS_MINOR_VERSION, XS_PATCH_VERSION);
 			return E_SUCCESS;
@@ -359,16 +364,19 @@ ExitCode main(int argc, char* argv[])
 		fxCheckAliases(machine);
 		machine = xsCloneMachine(creation, machine, "xsnap", NULL);
 	}
-	if (!(fromParent = fdopen(3, "rb"))) {
-		fprintf(stderr, "fdopen(3) from parent failed\n");
-		c_exit(E_IO_ERROR);
-	}
-	if (!(toParent = fdopen(4, "wb"))) {
-		fprintf(stderr, "fdopen(4) to parent failed\n");
-		c_exit(E_IO_ERROR);
-	}
 	xsBeginMetering(machine, fxMeteringCallback, interval);
-	{
+	if (gxPlayTest) {
+		xsPlayTest(machine);
+	}
+	else {
+		if (!(fromParent = fdopen(3, "rb"))) {
+			fprintf(stderr, "fdopen(3) from parent failed\n");
+			c_exit(E_IO_ERROR);
+		}
+		if (!(toParent = fdopen(4, "wb"))) {
+			fprintf(stderr, "fdopen(4) to parent failed\n");
+			c_exit(E_IO_ERROR);
+		}
 		char done = 0;
 		while (!done) {
 			// By default, use the infinite meter.
@@ -507,6 +515,9 @@ ExitCode main(int argc, char* argv[])
 				break;
 
 			case 'w':
+			#if XSNAP_TEST_RECORD
+				fxTestRecord(mxTestRecordParam, nsbuf + 1, nslen - 1);
+			#endif
 				path = nsbuf + 1;
 				snapshot.stream = fopen(path, "wb");
 				if (snapshot.stream) {
@@ -1472,6 +1483,26 @@ static char* fxWriteNetStringError(int code)
 
 static void fx_issueCommand(xsMachine *the)
 {
+	if (gxPlayTest) {
+		static int index = 0;
+		char path[PATH_MAX];
+		FILE* file;
+		size_t length;
+		sprintf(path, "reply-%d.json", index);
+		fprintf(stderr, "### %s\n", path);
+		file = fopen(path, "rb");
+		if (file) {
+			fseek(file, 0, SEEK_END);
+			length = ftell(file);
+			fseek(file, 0, SEEK_SET);
+			xsResult = xsArrayBuffer(NULL, length);
+			length = fread(xsToArrayBuffer(xsResult), 1, length, file);
+			fclose(file);
+		}
+		index++;
+		return;
+	}
+
 	int argc = xsToInteger(xsArgc);
 	if (argc < 1) {
 		mxTypeError("expected ArrayBuffer");
@@ -1547,10 +1578,12 @@ void fxTestRecord(int flags, void* buffer, size_t length)
 		sprintf(path, "%s/reply-%d", directory, gxTestRecordParamIndex);
 		gxTestRecordParamIndex++;
 	}
-	if (flags & mxTestRecordJSON)
+	if (flags & mxTestRecordJS)
+		strcat(path, ".js");
+	else if (flags & mxTestRecordJSON)
 		strcat(path, ".json");
 	else
-		strcat(path, ".js");
+		strcat(path, ".txt");
 	file = fopen(path, "wb");
 	if (file) {
 		fwrite(buffer, 1, length, file);
@@ -1559,6 +1592,80 @@ void fxTestRecord(int flags, void* buffer, size_t length)
 }
 
 #endif
+
+void xsPlayTest(xsMachine* machine)
+{
+	int index = 0;
+	char* extensions[3] = { ".js", ".json", ".txt" };
+	for (;;) {
+		int which;
+		for (which = 0; which < 3; which++) {
+			char path[PATH_MAX];
+			struct stat a_stat;
+			sprintf(path, "param-%d%s", index, extensions[which]);
+			if (stat(path, &a_stat) == 0) {
+				if (S_ISREG(a_stat.st_mode)) {
+					fprintf(stderr, "### %s\n", path);
+					FILE* file = fopen(path, "rb");
+					if (file) {
+						size_t length;
+						fseek(file, 0, SEEK_END);
+						length = ftell(file);
+						fseek(file, 0, SEEK_SET);
+						if (which == 0) {
+							xsBeginHost(machine);
+							xsStringValue string;
+							xsResult = xsStringBuffer(NULL, length);
+							string = xsToString(xsResult);
+							length = fread(string, 1, length, file);
+							string[length] = 0;
+							fclose(file);
+							xsCall1(xsGlobal, xsID("eval"), xsResult);
+							xsEndHost(machine);
+						}
+						else if (which == 1) {
+							xsBeginHost(machine);
+							xsResult = xsArrayBuffer(NULL, length);
+							length = fread(xsToArrayBuffer(xsResult), 1, length, file);
+							fclose(file);
+							xsCall1(xsGlobal, xsID("handleCommand"), xsResult);
+							xsEndHost(machine);
+						}
+						else {
+							txSnapshot snapshot = {
+								SNAPSHOT_SIGNATURE,
+								sizeof(SNAPSHOT_SIGNATURE) - 1,
+								gxSnapshotCallbacks,
+								mxSnapshotCallbackCount,
+								fxSnapshotRead,
+								fxSnapshotWrite,
+								NULL,
+								0,
+								NULL,
+								NULL,
+								NULL,
+							};
+							char path[PATH_MAX];
+							length = fread(path, 1, length, file);
+							fclose(file);
+                            path[length] = 0;
+							snapshot.stream = fopen(path, "wb");
+							if (snapshot.stream) {
+								fxWriteSnapshot(machine, &snapshot);
+								fclose(snapshot.stream);
+							}
+						}
+					}
+					index++;
+					break;
+				}
+			}
+		}
+		if (which == 3)
+			break;
+		fxRunLoop(machine);
+	}
+}
 
 
 void adjustSpaceMeter(txMachine* the, txSize theSize)
