@@ -20,8 +20,13 @@
  */
 
 /**
+ * @callback GetParams
+ * @returns {Record<Keyword,ParamDescription>}
+ */
+
+/**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword,ParamDescription>} getParams
+ * @property {GetParams} getParams
  *
  * @typedef {{ [updater: string]: (arg: ParamValue) => void }} ParamManagerUpdaters
  * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull

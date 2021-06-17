@@ -11,7 +11,7 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { Far } from '@agoric/marshal';
 
-import { buildParamManager } from '@agoric/governance/src/param-manager';
+import { buildParamManager } from '@agoric/governance/src/paramManager';
 import { makeVaultKit } from '../src/vault';
 import { paymentFromZCFMint } from '../src/burn';
 

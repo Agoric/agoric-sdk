@@ -33,8 +33,8 @@
  * @property {() => Instance} getAMM
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Payment} getBootstrapPayment
- * @property {() => ParamManager} paramManager
- * @property {() => ParamManager} getRateManager
+ * @property {() => ParamManagerFull} getFeeGovernor
+ * @property {() => ParamManagerFull} getPoolGovernor
  */
 
 /**
@@ -140,10 +140,9 @@
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {ParamManagerPublic} rateManager
+ * @param {GetParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
  * @param {TimerService} timerService
- * @param {ParamManagerPublic} paramManager
  * @param {LiquidationStrategy} liquidationStrategy
  * @returns {VaultManager}
  */
@@ -155,7 +154,7 @@
  * @param {ZCFMint} runMint
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {ParamManagerPublic} paramManager
+ * @param {GetParams} paramManager
  * @param {Timestamp} startTimeStamp
  * @returns {VaultKit}
  */
@@ -191,4 +190,23 @@
  * @param {RelativeTime} chargingPeriod
  * @param {RelativeTime} recordingPeriod
  * @returns {CalculatorKit}
+ */
+
+/**
+ * @typedef {Object} FeeGovernor
+ * @property {() => Record<Keyword,ParamDescription>} getParams
+ * @property {(bigint) => void} updateProtocolFee
+ * @property {(bigint) => void} updatePoolFee
+ */
+
+/**
+ * @typedef {Object} PoolGovernor
+ * @property {() => Record<Keyword,ParamDescription>} getParams
+ * @property {(bigint) => void} updateChargingPeriod
+ * @property {(bigint) => void} updateRecordingPeriod
+ * @property {(Ratio) => void} updateInitialMargin
+ * @property {(Ratio) => void} updateLiquidationMargin
+ * @property {(Ratio) => void} updateInitialPrice
+ * @property {(Ratio) => void} updateInterestRate
+ * @property {(Ratio) => void} updateLoanFee
  */

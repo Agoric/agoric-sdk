@@ -96,7 +96,8 @@
     "timeout": "30m"
   },
   "dependencies": {
-    "@endo/eslint-config": "^0.3.9",
+    "@endo/eslint-config": "^0.3.10",
+    "@endo/eslint-plugin": "^0.3.6",
     "patch-package": "^6.2.2"
   }
 }
