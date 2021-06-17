@@ -10,33 +10,26 @@ import { buildParamManager, ParamType } from '../src/paramManager';
 const BASIS_POINTS = 10_000;
 
 test('params one Nat', async t => {
-  const { params, manager } = buildParamManager([
-    {
-      name: 'number',
-      value: 13n,
-      type: ParamType.NAT,
-    },
-  ]);
-  t.is(params.lookup('number'), 13n);
-  manager.update('number', 42n);
-  t.is(params.lookup('number'), 42n);
+  const numberKey = 'Number';
+  const numberDescription = {
+    name: numberKey,
+    value: 13n,
+    type: ParamType.NAT,
+  };
+  const { getParams, updateNumber } = buildParamManager([numberDescription]);
+  t.deepEqual(getParams()[numberKey], numberDescription);
+  updateNumber(42n);
+  t.is(getParams()[numberKey].value, 42n);
 
   t.throws(
-    () => manager.update('string', 'foo'),
-    {
-      message: '"name" not found: "string"',
-    },
-    '"string" was not a registered name',
-  );
-  t.throws(
-    () => manager.update('number', 18.1),
+    () => updateNumber(18.1),
     {
       message: '18.1 must be a bigint',
     },
     'value should be a nat',
   );
   t.throws(
-    () => manager.update('number', 13),
+    () => updateNumber(13),
     {
       message: '13 must be a bigint',
     },
@@ -45,26 +38,19 @@ test('params one Nat', async t => {
 });
 
 test('params one String', async t => {
-  const { params, manager } = buildParamManager([
-    {
-      name: 'string',
-      value: 'foo',
-      type: ParamType.STRING,
-    },
-  ]);
-  t.is(params.lookup('string'), 'foo');
-  manager.update('string', 'bar');
-  t.is(params.lookup('string'), 'bar');
+  const stringKey = 'String';
+  const stringDescription = {
+    name: stringKey,
+    value: 'foo',
+    type: ParamType.STRING,
+  };
+  const { getParams, updateString } = buildParamManager([stringDescription]);
+  t.deepEqual(getParams()[stringKey], stringDescription);
+  updateString('bar');
+  t.is(getParams()[stringKey].value, 'bar');
 
   t.throws(
-    () => manager.update('number', 'foo'),
-    {
-      message: '"name" not found: "number"',
-    },
-    '"number" was not a registered name',
-  );
-  t.throws(
-    () => manager.update('string', 18.1),
+    () => updateString(18.1),
     {
       message: '18.1 must be a string',
     },
@@ -73,28 +59,20 @@ test('params one String', async t => {
 });
 
 test('params one Amount', async t => {
+  const amountKey = 'Amount';
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const { params, manager } = buildParamManager([
-    {
-      name: 'amount',
-      value: AmountMath.makeEmpty(brand),
-      type: ParamType.AMOUNT,
-    },
-  ]);
-  t.deepEqual(params.lookup('amount'), AmountMath.makeEmpty(brand));
-  manager.update('amount', AmountMath.make(brand, [13]));
-  t.deepEqual(params.lookup('amount'), AmountMath.make(brand, [13]));
+  const amountDescription = {
+    name: amountKey,
+    value: AmountMath.makeEmpty(brand),
+    type: ParamType.AMOUNT,
+  };
+  const { getParams, updateAmount } = buildParamManager([amountDescription]);
+  t.deepEqual(getParams()[amountKey], amountDescription);
+  updateAmount(AmountMath.make(brand, [13]));
+  t.deepEqual(getParams()[amountKey].value, AmountMath.make(brand, [13]));
 
   t.throws(
-    () => manager.update('number', 13),
-    {
-      message: '"name" not found: "number"',
-    },
-    '"number" was not a registered name',
-  );
-
-  t.throws(
-    () => manager.update('amount', 18.1),
+    () => updateAmount(18.1),
     {
       message:
         "The amount 18.1 doesn't look like an amount. Did you pass a value instead?",
@@ -104,19 +82,19 @@ test('params one Amount', async t => {
 });
 
 test('params one BigInt', async t => {
-  const { params, manager } = buildParamManager([
-    {
-      name: 'bigint',
-      value: 314159n,
-      type: ParamType.NAT,
-    },
-  ]);
-  t.deepEqual(params.lookup('bigint'), 314159n);
-  manager.update('bigint', 271828182845904523536n);
-  t.deepEqual(params.lookup('bigint'), 271828182845904523536n);
+  const bigintKey = 'Bigint';
+  const bigIntDescription = {
+    name: bigintKey,
+    value: 314159n,
+    type: ParamType.NAT,
+  };
+  const { getParams, updateBigint } = buildParamManager([bigIntDescription]);
+  t.deepEqual(getParams()[bigintKey], bigIntDescription);
+  updateBigint(271828182845904523536n);
+  t.deepEqual(getParams()[bigintKey].value, 271828182845904523536n);
 
   t.throws(
-    () => manager.update('bigint', 18.1),
+    () => updateBigint(18.1),
     {
       message: '18.1 must be a bigint',
     },
@@ -125,20 +103,20 @@ test('params one BigInt', async t => {
 });
 
 test('params one ratio', async t => {
+  const ratioKey = 'Ratio';
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const { params, manager } = buildParamManager([
-    {
-      name: 'ratio',
-      value: makeRatio(7, brand),
-      type: ParamType.RATIO,
-    },
-  ]);
-  t.deepEqual(params.lookup('ratio'), makeRatio(7, brand));
-  manager.update('ratio', makeRatio(701, brand, BASIS_POINTS));
-  t.deepEqual(params.lookup('ratio'), makeRatio(701, brand, BASIS_POINTS));
+  const ratioDescription = {
+    name: ratioKey,
+    value: makeRatio(7, brand),
+    type: ParamType.RATIO,
+  };
+  const { getParams, updateRatio } = buildParamManager([ratioDescription]);
+  t.deepEqual(getParams()[ratioKey], ratioDescription);
+  updateRatio(makeRatio(701, brand, BASIS_POINTS));
+  t.deepEqual(getParams()[ratioKey].value, makeRatio(701, brand, BASIS_POINTS));
 
   t.throws(
-    () => manager.update('ratio', 18.1),
+    () => updateRatio(18.1),
     {
       message: 'Ratio 18.1 must be a record with 2 fields.',
     },
@@ -147,69 +125,104 @@ test('params one ratio', async t => {
 });
 
 test('params one brand', async t => {
+  const brandKey = 'Brand';
   const { brand: roseBrand } = makeIssuerKit('roses', AssetKind.SET);
   const { brand: thornBrand } = makeIssuerKit('thorns');
-  const { params, manager } = buildParamManager([
-    {
-      name: 'brand',
-      value: roseBrand,
-      type: ParamType.BRAND,
-    },
-  ]);
-  t.deepEqual(params.lookup('brand'), roseBrand);
-  manager.update('brand', thornBrand);
-  t.deepEqual(params.lookup('brand'), thornBrand);
+  const brandDescription = {
+    name: brandKey,
+    value: roseBrand,
+    type: ParamType.BRAND,
+  };
+  const { getParams, updateBrand } = buildParamManager([brandDescription]);
+  t.deepEqual(getParams()[brandKey], brandDescription);
+  updateBrand(thornBrand);
+  t.deepEqual(getParams()[brandKey].value, thornBrand);
 
   t.throws(
-    () => manager.update('brand', 18.1),
+    () => updateBrand(18.1),
     {
-      message: 'value for "brand" must be a brand, was 18.1',
+      message: 'value for "Brand" must be a brand, was 18.1',
     },
     'value should be a brand',
   );
 });
 
-test('params one any', async t => {
+test('params one unknown', async t => {
+  const stuffKey = 'Stuff';
   const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
-  const { params, manager } = buildParamManager([
-    {
-      name: 'stuff',
-      value: stiltonBrand,
-      type: ParamType.ANY,
-    },
-  ]);
-  t.deepEqual(params.lookup('stuff'), stiltonBrand);
-  manager.update('stuff', 18.1);
-  t.deepEqual(params.lookup('stuff'), 18.1);
+  const stuffDescription = {
+    name: stuffKey,
+    value: stiltonBrand,
+    type: ParamType.UNKNOWN,
+  };
+  const { getParams, updateStuff } = buildParamManager([stuffDescription]);
+  t.deepEqual(getParams()[stuffKey], stuffDescription);
+  updateStuff(18.1);
+  t.deepEqual(getParams()[stuffKey].value, 18.1);
 });
 
-test('params keys', async t => {
-  const { brand: parmesanBrand } = makeIssuerKit('parmesan', AssetKind.SET);
-  const { params, manager } = buildParamManager([
+test('params duplicate entry', async t => {
+  const stuffKey = 'Stuff';
+  const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
+  t.throws(
+    () =>
+      buildParamManager([
+        {
+          name: stuffKey,
+          value: 37n,
+          type: ParamType.NAT,
+        },
+        {
+          name: stuffKey,
+          value: stiltonBrand,
+          type: ParamType.UNKNOWN,
+        },
+      ]),
     {
-      name: 'stuff',
-      value: parmesanBrand,
-      type: ParamType.ANY,
+      message: `each parameter name must be unique: "Stuff" duplicated`,
     },
-    {
-      name: 'nat',
-      value: 314159n,
-      type: ParamType.NAT,
-    },
-  ]);
-  t.deepEqual(params.lookup('stuff'), parmesanBrand);
-  manager.update('stuff', 18.1);
-  t.deepEqual(params.lookup('stuff'), 18.1);
+  );
+});
 
-  t.deepEqual(params.getDetails('stuff'), {
-    name: 'stuff',
-    value: 18.1,
-    type: ParamType.ANY,
+test('params unknown type', async t => {
+  const stuffKey = 'Stuff';
+  const stuffDescription = {
+    name: stuffKey,
+    value: 'It was the best of times, it was the worst of times',
+    // @ts-ignore  illegal value for testing
+    type: 'quote',
+  };
+  t.throws(() => buildParamManager([stuffDescription]), {
+    message: 'unknown type guard "quote"',
   });
-  t.deepEqual(params.getDetails('nat'), {
-    name: 'nat',
+});
+
+test('params multiple values', t => {
+  const stuffKey = 'Stuff';
+  const natKey = 'Nat';
+  const { brand: parmesanBrand } = makeIssuerKit('parmesan', AssetKind.SET);
+  const cheeseDescription = {
+    name: stuffKey,
+    value: parmesanBrand,
+    type: ParamType.UNKNOWN,
+  };
+  const piDescription = {
+    name: natKey,
     value: 314159n,
     type: ParamType.NAT,
-  });
-  t.deepEqual(params.definedNames(), ['stuff', 'nat']);
+  };
+  const { getParams, updateNat: _updateNat, updateStuff } = buildParamManager([
+    cheeseDescription,
+    piDescription,
+  ]);
+  t.deepEqual(getParams()[stuffKey], cheeseDescription);
+  updateStuff(18.1);
+  const floatDescription = {
+    name: stuffKey,
+    value: 18.1,
+    type: ParamType.UNKNOWN,
+  };
+  t.deepEqual(getParams()[stuffKey], floatDescription);
+  t.deepEqual(getParams()[natKey], piDescription);
+  t.deepEqual(getParams(), { Nat: piDescription, Stuff: floatDescription });
 });

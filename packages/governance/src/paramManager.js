@@ -1,13 +1,15 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
+
 /**
  * @type {{
  *  AMOUNT: 'amount',
- *  ANY: 'any',
+ *  UNKNOWN: 'unknown',
  *  BRAND: 'brand',
  *  INSTANCE: 'instance',
  *  INSTALLATION: 'installation',
@@ -18,22 +20,17 @@ import { AmountMath, looksLikeBrand } from '@agoric/ertp';
  */
 const ParamType = {
   AMOUNT: 'amount',
-  ANY: 'any',
   BRAND: 'brand',
   INSTANCE: 'instance',
   INSTALLATION: 'installation',
   NAT: 'nat',
   RATIO: 'ratio',
   STRING: 'string',
+  UNKNOWN: 'unknown',
 };
 harden(ParamType);
 
 const assertType = (type, value, name) => {
-  if (!type) {
-    // undefined type means don't verify. Did we omit an interesting type?
-    return;
-  }
-
   switch (type) {
     case ParamType.AMOUNT:
       // It would be nice to have a clean way to assert something is an amount.
@@ -41,8 +38,6 @@ const assertType = (type, value, name) => {
         AmountMath.isEqual(value, value),
         X`value for ${name} must be an Amount, was ${value}`,
       );
-      break;
-    case ParamType.ANY:
       break;
     case ParamType.BRAND:
       assert(
@@ -73,46 +68,65 @@ const assertType = (type, value, name) => {
     case ParamType.STRING:
       assert.typeof(value, 'string');
       break;
+    case ParamType.UNKNOWN:
+      break;
     default:
       assert.fail(X`unknown type guard ${type}`);
   }
 };
 
 const parse = paramDesc => {
-  const bindings = makeStore('name');
-  const types = makeStore('name');
+  const values = {};
+  // manager has an updateFoo() for each Foo param. It will be returned.
+  const manager = {};
+  // getParams() uses describers to generate descriptions of each param.
+  const describers = [];
 
   paramDesc.forEach(({ name, value, type }) => {
+    assert(
+      !values[name],
+      X`each parameter name must be unique: ${name} duplicated`,
+    );
     assertType(type, value, name);
-    bindings.init(name, value);
-    types.init(name, type);
+    // we want to create function names like updateFeeRatio(), so we insist that
+    // the name has Keyword-nature.
+    assertKeywordName(name);
+
+    values[name] = { type, value };
+    manager[`update${name}`] = newValue => {
+      assertType(type, newValue, name);
+      values[name].value = newValue;
+    };
+
+    const describer = () => ({
+      name,
+      type,
+      value: values[name].value,
+    });
+    describers.push(describer);
   });
 
-  return { bindings, types };
+  /** @type {() => Record<Keyword,ParamDescription>} */
+  const getParams = () => {
+    const descriptions = {};
+    describers.forEach(d => {
+      const description = d();
+      descriptions[description.name] = description;
+    });
+    return descriptions;
+  };
+
+  return { getParams, manager };
 };
 
 /** @type {BuildParamManager} */
 const buildParamManager = paramDesc => {
-  const { bindings, types } = parse(paramDesc);
+  const { getParams, manager } = parse(paramDesc);
 
-  const params = {
-    lookup: name => bindings.get(name),
-    getDetails: name => ({
-      name,
-      value: bindings.get(name),
-      type: types.get(name),
-    }),
-    definedNames: () => bindings.keys(),
-  };
-
-  const manager = {
-    update(name, value) {
-      assertType(types.get(name), value, name);
-      bindings.set(name, value);
-    },
-  };
-
-  return { params, manager };
+  return Far('param manager', {
+    getParams,
+    ...manager,
+  });
 };
 harden(buildParamManager);
 

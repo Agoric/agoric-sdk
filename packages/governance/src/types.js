@@ -1,16 +1,11 @@
 // @ts-check
 
 /**
- * @typedef { 'amount' | 'any' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' } ParamType
+ * @typedef { 'amount' | 'unknown' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' } ParamType
  */
 
 /**
- * @typedef { Amount | Brand | Instance| Installation | bigint | Ratio | string | any } ParamValue
- */
-
-/**
- * @typedef  {Object} ParamManager
- * @property {(name: string, value: ParamValue) => void} update
+ * @typedef { Amount | Brand | Instance| Installation | bigint | Ratio | string | unknown } ParamValue
  */
 
 /**
@@ -21,17 +16,16 @@
  */
 
 /**
- * @typedef  {Object} ParamManagerPublic
- * @property {(name: string) => ParamValue} lookup
- * @property {(name: string) => ParamDetails} getDetails
- * @property {() => string[]} definedNames
- */
-
-/**
  * @typedef {Object} ParamDescription
  * @property {string} name
  * @property {ParamValue} value
  * @property {ParamType} type
+ */
+
+/**
+ * @typedef  {Object} ParamManagerPublic
+ * ParamManagerPublic also has updateFoo methods for each defined parameter.
+ * @property {() => Record<Keyword,ParamDescription>} getParams
  */
 
 /**
@@ -41,5 +35,5 @@
 /**
  * @callback BuildParamManager
  * @param {ParamDescriptions} paramDesc
- * @returns {{params: ParamManagerPublic, manager: ParamManager }}
+ * @returns {ParamManagerPublic}
  */
