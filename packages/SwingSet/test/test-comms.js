@@ -20,12 +20,14 @@ test('provideRemoteForLocal', t => {
   const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal } = clistKit;
   const { remoteID } = s.addRemote('remote1', 'o-1');
+  const lo4 = s.allocateObject('remote0');
+  const lo5 = s.allocateObject('remote0');
 
   // n.b.: duplicated provideRemoteForLocal() call is not a cut-n-paste error
   // but a test that translation is stable
-  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'lo5'), 'ro-21');
+  t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, lo5), 'ro-21');
 });
 
 function mockSyscall() {

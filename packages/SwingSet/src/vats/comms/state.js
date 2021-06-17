@@ -87,6 +87,8 @@ export function makeState(syscall, identifierBase = 0) {
   //
   // lo.nextID = $NN // local object identifier allocation counter (loNN)
   // lo$NN.owner = r$NN | kernel // owners of local objects (loNN -> rNN)
+  // lo$NN.reachable = $NN // refcount
+  // lo$NN.recognizable = $NN // refcount
   //
   // lp.nextID = $NN // local promise identifier allocation counter (lpNN)
   // lp$NN.status = unresolved | fulfilled | rejected
@@ -156,6 +158,29 @@ export function makeState(syscall, identifierBase = 0) {
     deleteLocalPromiseState(lpid);
   }
 
+  /* A mode of 'clist-import' means we increment recognizable, but not
+   * reachable, because the translation function will call setReachable in a
+   * moment, and the count should only be changed if it wasn't already
+   * reachable. 'clist-export' means we don't touch the count at all. 'other'
+   * is used by resolved promise data and auxdata, and means we increment
+   * both.
+   */
+  const referenceModes = harden(['data', 'clist-export', 'clist-import']);
+
+  function changeRecognizable(lref, delta) {
+    const key = `${lref}.recognizable`;
+    const recognizable = Nat(BigInt(store.getRequired(key))) + delta;
+    store.set(key, `${recognizable}`);
+    return recognizable;
+  }
+
+  function changeReachable(lref, delta) {
+    const key = `${lref}.reachable`;
+    const reachable = Nat(BigInt(store.getRequired(key))) + delta;
+    store.set(key, `${reachable}`);
+    return reachable;
+  }
+
   const maybeFree = new Set(); // lrefs
 
   function lrefMightBeFree(lref) {
@@ -170,27 +195,36 @@ export function makeState(syscall, identifierBase = 0) {
    *
    * @param {string} lref  Ref of the local object whose refcount is to be incremented.
    * @param {string} _tag  Descriptive label for use in diagnostics
+   * @param {string} mode  Reference type
    */
-  function incrementRefCount(lref, _tag) {
+  function incrementRefCount(lref, _tag, mode = 'data') {
+    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
       store.set(`${lref}.refCount`, `${refCount}`);
     }
+    if (type === 'object') {
+      if (mode === 'clist-import' || mode === 'data') {
+        changeRecognizable(lref, 1n);
+      }
+      if (mode === 'data') {
+        changeReachable(lref, 1n);
+      }
+    }
   }
 
   /**
-   * Decrement the reference count associated with some local object.
-   *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all local objects.
+   * Decrement the reference counts associated with some local object/promise.
    *
    * @param {string} lref  Ref of the local object whose refcount is to be decremented.
    * @param {string} tag  Descriptive label for use in diagnostics
+   * @param {string} mode  Reference type
    * @throws if this tries to decrement a reference count below zero.
    */
-  function decrementRefCount(lref, tag) {
+  function decrementRefCount(lref, tag, mode = 'data') {
+    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       let refCount = parseInt(store.get(`${lref}.refCount`), 10);
@@ -210,6 +244,20 @@ export function makeState(syscall, identifierBase = 0) {
         // dispatch is complete and any ancillary promises are safely referenced
         // by their subscribers clists.
         maybeFree.add(lref);
+      }
+    }
+    if (type === 'object') {
+      if (mode === 'clist-import' || mode === 'data') {
+        const recognizable = changeRecognizable(lref, -1n);
+        if (!recognizable) {
+          // maybeFree.add(lref);
+        }
+      }
+      if (mode === 'data') {
+        const reachable = changeReachable(lref, -1n);
+        if (!reachable) {
+          // maybeFree.add(lref);
+        }
       }
     }
   }
@@ -304,6 +352,8 @@ export function makeState(syscall, identifierBase = 0) {
     store.set('lo.nextID', `${index + 1n}`);
     const loid = makeLocalSlot('object', index);
     store.set(`${loid}.owner`, owner);
+    store.set(`${loid}.reachable`, `0`);
+    store.set(`${loid}.recognizable`, `0`);
     return loid;
   }
 
@@ -518,6 +568,7 @@ export function makeState(syscall, identifierBase = 0) {
     getPromiseData,
     allocatePromise,
 
+    changeReachable,
     lrefMightBeFree,
     incrementRefCount,
     decrementRefCount,
