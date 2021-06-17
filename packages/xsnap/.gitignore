@@ -1,2 +1,4 @@
 build
 dist
+test/fixture-snap-pool/
+test/fixture-snap-shot.xss
