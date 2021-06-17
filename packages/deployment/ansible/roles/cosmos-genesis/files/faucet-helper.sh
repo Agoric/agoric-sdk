@@ -93,6 +93,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         echo "$ADDR:$DELEGATE_COINS:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0
       fi
+      exit $?
       ;;
     *)
       echo 1>&2 "Unknown operation $OP"
