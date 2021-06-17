@@ -35,14 +35,17 @@ export function makeSnapstore(
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
-  const tmpOpts = { tmpdir: root, template: 'tmp-XXXXXX.xss' };
   /**
    * @param { (name: string) => Promise<T> } thunk
+   * @param { string= } prefix
    * @returns { Promise<T> }
    * @template T
    */
-  async function withTempName(thunk) {
-    const name = await ptmpName(tmpOpts);
+  async function withTempName(thunk, prefix = 'tmp') {
+    const name = await ptmpName({
+      tmpdir: root,
+      template: `${prefix}-XXXXXX.xss`,
+    });
     let result;
     try {
       result = await thunk(name);
@@ -63,7 +66,7 @@ export function makeSnapstore(
    * @template T
    */
   async function atomicWrite(dest, thunk) {
-    const tmp = await ptmpName(tmpOpts);
+    const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
       result = await thunk(tmp);
@@ -105,8 +108,10 @@ export function makeSnapstore(
       await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
       );
+      const basename = snapFile.split('/').slice(-1)[0]; // @@WIP
+      await rename(snapFile, resolve(root, `${h}-${basename}`)); // @@WIP
       return h;
-    });
+    }, 'save-raw');
   }
 
   /**
@@ -122,7 +127,7 @@ export function makeSnapstore(
       // be sure to await loadRaw before exiting withTempName
       const result = await loadRaw(raw);
       return result;
-    });
+    }, `${hash}-load`);
   }
 
   return freeze({ load, save });
