@@ -56,6 +56,7 @@ export const makeZCFZygote = (
     addIssuerToInstanceRecord,
     getTerms,
     assertUniqueKeyword,
+    getInstanceRecord,
     instantiate: instantiateInstanceRecordStorage,
   } = makeInstanceRecordStorage();
 
@@ -243,6 +244,7 @@ export const makeZCFZygote = (
         testJigSetter({ ...testFn(), zcf });
       }
     },
+    getInstance: () => getInstanceRecord().instance,
   });
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
