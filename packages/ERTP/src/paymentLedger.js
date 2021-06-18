@@ -7,7 +7,7 @@ import { Far } from '@agoric/marshal';
 import { makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath';
-import { makePaymentMaker } from './payment';
+import { makePayment } from './payment';
 import { makePurse } from './purse';
 
 import '@agoric/store/exported';
@@ -42,8 +42,6 @@ export const makePaymentLedger = (
 
   /** @type {Amount} */
   const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
-
-  const makePayment = makePaymentMaker(allegedName, brand);
 
   /**
    * Methods like deposit() have an optional second parameter `amount`
@@ -117,7 +115,7 @@ export const makePaymentLedger = (
     payments.forEach(payment => paymentLedger.delete(payment));
 
     const newPayments = newPaymentBalances.map(balance => {
-      const newPayment = makePayment();
+      const newPayment = makePayment(allegedName, brand);
       paymentLedger.init(newPayment, balance);
       return newPayment;
     });
@@ -211,7 +209,7 @@ export const makePaymentLedger = (
   /** @type {MintPayment} */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
-    const payment = makePayment();
+    const payment = makePayment(allegedName, brand);
     paymentLedger.init(payment, newAmount);
     return payment;
   };
@@ -264,7 +262,7 @@ export const makePaymentLedger = (
   const withdraw = (currentBalance, updatePurseBalance, amount) => {
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
-    const payment = makePayment();
+    const payment = makePayment(allegedName, brand);
     // Commit point
     // Move the withdrawn assets from this purse into a new payment
     // which is returned. Total assets must remain conserved.
