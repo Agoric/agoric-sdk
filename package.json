@@ -15,6 +15,7 @@
     "packages/bundle-source",
     "packages/import-bundle",
     "packages/eventual-send",
+    "packages/governance",
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
