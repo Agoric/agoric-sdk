@@ -91,6 +91,7 @@ export const makeZoeStorageManager = createZCFVat => {
     // capabilities from the ZCF side.
     const instanceRecordManager = makeAndStoreInstanceRecord(
       installation,
+      instance,
       customTerms,
       issuers,
       brands,

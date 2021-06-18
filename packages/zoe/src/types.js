@@ -28,6 +28,7 @@
  *
  * @typedef {object} InstanceRecord
  * @property {Installation} installation
+ * @property {Instance} instance
  * @property {Terms} terms - contract parameters
  
  *

@@ -19,6 +19,12 @@ test(`zcf.getZoeService`, async t => {
   t.is(await zoeService, zoe);
 });
 
+test(`zcf.getInstance`, async t => {
+  const { zcf, instance } = await setupZCFTest();
+  const instanceFromZCF = zcf.getInstance();
+  t.is(instance, instanceFromZCF);
+});
+
 test(`zcf.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const zcfInvitationIssuer = zcf.getInvitationIssuer();
