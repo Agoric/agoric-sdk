@@ -9,6 +9,10 @@
  */
 
 /**
+ * @typedef { 'choose_n' | 'order' | 'weight' } ChoiceMethod
+ */
+
+/**
  * @typedef {Object} ParamDescription
  * @property {string} name
  * @property {ParamValue} value
@@ -31,4 +35,97 @@
  * @callback BuildParamManager
  * @param {ParamDescriptions} paramDesc
  * @returns {ParamManagerFull}
+ */
+
+/**
+ * @typedef {Object} BallotDetails
+ * @property {ChoiceMethod} method
+ * @property {string} question
+ * @property {string[]} positions
+ * @property {bigint} maxChoices
+ */
+
+/**
+ * @typedef {Object} Ballot
+ * @property {(positions: string[]) => CompletedBallot} choose
+ * @property {() => BallotDetails} getDetails
+ */
+
+/**
+ * @typedef {Object} PositionCount
+ * @property {string} position
+ * @property {number} tally
+ */
+
+/**
+ * @typedef {Object} VoteStatistics
+ * @property {number} spoiled
+ * @property {number} votes
+ * @property {PositionCount[]} results
+ */
+
+/**
+ * @typedef {Object} QurorumCounter
+ * @property {(VoteStatistics) => boolean} check
+ */
+
+/**
+ * @callback BuildBallot
+ * @param {ChoiceMethod} method
+ * @param {string} question
+ * @param {string[]} positions
+ * @param {bigint} maxChoices
+ * @returns {Ballot}
+ */
+
+/**
+ * @typedef {Object} BallotCounterCreatorFacet
+ * @property {() => boolean} isOpen
+ * @property {() => Ballot} getBallotTemplate
+ * @property {() => void} closeVoting
+ * @property {() => VoterFacet} getVoterFacet
+ */
+
+/**
+ * @typedef {Object} BallotCounterPublicFacet
+ * @property {() => boolean} isOpen
+ * @property {() => Ballot} getBallotTemplate
+ * @property {() => Promise<string>} getOutcome
+ * @property {() => Promise<VoteStatistics>} getStats
+ */
+
+/**
+ * @typedef {Object} CompleteEqualWeightBallot
+ * @property {string} question
+ * @property {string[]} chosen - a list of equal-weight preferred positions
+ */
+
+/**
+ * @typedef {Object} CompleteWeightedBallot
+ * @property {string} question
+ * @property {Record<string,bigint>[]} weighted - list of positions with weights.
+ *   BallotCounter may limit weights to a range or require uniqueness.
+ */
+
+/**
+ * @typedef {Object} CompleteOrderedBallot
+ * @property {string} question
+ * @property {string[]} ordered - ordered list of position from most prefered to
+ *   least prefered
+ */
+
+/**
+ * @typedef { CompleteEqualWeightBallot | CompleteOrderedBallot | CompleteWeightedBallot } CompletedBallot
+ */
+
+/**
+ * @callback SubmitVote
+ * @param {Handle<'Voter'>} seat
+ * @param {CompletedBallot} filledBallot
+ * @param {bigint=} weight
+ */
+
+/**
+ * @typedef {Object} VoterFacet
+ * @property {SubmitVote} submitVote
  */

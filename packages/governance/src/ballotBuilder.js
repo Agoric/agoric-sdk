@@ -7,14 +7,26 @@ import { assert, details as X } from '@agoric/assert';
 // WEIGHT: voter lists their choices, each with a numerical weight. High
 //   numbers are most preferred.
 
+/**
+ * @type {{
+ *   CHOOSE_N: 'choose_n',
+ *   ORDER: 'order',
+ *   WEIGHT: 'weight',
+ * }}
+ */
 const ChoiceMethod = {
   CHOOSE_N: 'choose_n',
   ORDER: 'order',
   WEIGHT: 'weight',
 };
 
-const buildBallot = (method, question, positions, maxChoices = 0) => {
-  const choose = (...chosenPositions) => {
+const buildEqualWeightBallot = (
+  method,
+  question,
+  positions,
+  maxChoices = 0n,
+) => {
+  const choose = chosenPositions => {
     assert(
       chosenPositions.length <= maxChoices,
       X`only ${maxChoices} position(s) allowed`,
@@ -26,16 +38,38 @@ const buildBallot = (method, question, positions, maxChoices = 0) => {
         X`Not a valid position: ${position}`,
       );
     }
+    /** @type {CompleteEqualWeightBallot} */
     return { question, chosen: chosenPositions };
   };
 
+  const getDetails = () =>
+    harden({
+      method,
+      question,
+      positions,
+      maxChoices,
+    });
+
   return {
-    getMethod: () => method,
-    getQuestion: () => question,
-    getPositions: () => positions,
-    getMaxChoices: () => maxChoices,
+    getDetails,
     choose,
   };
+};
+
+/** @type {BuildBallot} */
+const buildBallot = (method, question, positions, maxChoices = 0n) => {
+  assert.typeof(question, 'string');
+
+  switch (method) {
+    case ChoiceMethod.CHOOSE_N:
+      return buildEqualWeightBallot(method, question, positions, maxChoices);
+    case ChoiceMethod.ORDER:
+      throw Error(`choice method ${ChoiceMethod.ORDER} is unimplemented`);
+    case ChoiceMethod.WEIGHT:
+      throw Error(`choice method ${ChoiceMethod.WEIGHT} is unimplemented`);
+    default:
+      throw Error(`choice method unrecognized`);
+  }
 };
 
 harden(buildBallot);
