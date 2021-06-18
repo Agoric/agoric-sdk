@@ -54,10 +54,7 @@ const add = (amount, amountToAdd, _keyword) => {
 /** @type {Operation} */
 const subtract = (amount, amountToSubtract, keyword) => {
   // if amountToSubtract is undefined OR is defined, but empty
-  if (
-    amountToSubtract === undefined ||
-    (amountToSubtract !== undefined && AmountMath.isEmpty(amountToSubtract))
-  ) {
+  if (amountToSubtract === undefined || AmountMath.isEmpty(amountToSubtract)) {
     // Subtracting undefined is equivalent to subtracting empty, so in
     // both cases we can return the original amount. If the original
     // amount is undefined, it is filtered out in doOperation.
