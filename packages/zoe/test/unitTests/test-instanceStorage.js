@@ -129,7 +129,7 @@ test('makeInstanceRecordStorage', async t => {
   addIssuerToInstanceRecord(
     'Money',
     makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
-      assetKind: AssetKind.NAT, 
+      assetKind: AssetKind.NAT,
       decimalPlaces: 18,
     }),
   );
