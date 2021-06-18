@@ -39,7 +39,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "eslintIgnore": [

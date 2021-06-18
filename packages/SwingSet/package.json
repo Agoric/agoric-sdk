@@ -81,7 +81,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "ava": {
