@@ -40,8 +40,14 @@
         // alert('networkConfig ' + networkConfig.value);
         const res = await fetch(nc);
         const { chainName: chainId, rpcAddrs } = await res.json();
-        const rpcAddr = rpcAddrs[Math.floor(Math.random() * rpcAddrs.length)];
-        const network = new URL(nc).hostname.split('.')[0];
+        const hostname = new URL(nc).hostname;
+        const network = hostname.split('.')[0];
+        let rpcAddr;
+        if (network !== hostname) {
+          rpcAddr = `rpc.${network}.agoric.net:26657`;
+        } else {
+          rpcAddr = rpcAddrs[Math.floor(Math.random() * rpcAddrs.length)];
+        }
         const stakeCurrency = {
           coinDenom: 'BLD',
           coinMinimalDenom: 'ubld',
@@ -56,7 +62,7 @@
         };
         const chainInfo = {
           rpc: `http://${rpcAddr}`,
-          rest: `http://${rpcAddr.replace(/:\d+$/, ':1317')}`,
+          rest: `http://${rpcAddr.replace(/(:\d+)?$/, ':1317')}`,
           chainId,
           chainName: `Agoric ${network}`,
           stakeCurrency,
