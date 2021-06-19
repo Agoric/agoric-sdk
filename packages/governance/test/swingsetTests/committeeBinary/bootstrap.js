@@ -4,86 +4,62 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
-const makeVats = async (log, vats, zoe, installations) => {
-  // Setup Voters
+const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);
-
-  const { creatorFacet, instance: registrarInstance } = await E(
-    zoe,
-  ).startInstance(installations.committeeRegistrar);
-
-  const result = { voterCreator, creatorFacet, registrarInstance };
-
-  log(`=> voter and registrar vats are set up`);
-  return harden(result);
-};
-
-const getVoter = (zoe, voterCreator, invitation, name) => {
-  return E(zoe)
-    .offer(invitation)
-    .then(seat => {
-      const facet = E(seat).getOfferResult();
-      return E(voterCreator).createVoter(name, facet);
-    });
+  log(`=> voter vat is set up`);
+  return voterCreator;
 };
 
 async function committeeBinaryStart(
   zoe,
-  committeeCreatorFacet,
   voterCreator,
   timer,
   log,
   installations,
-  registrarInstance,
 ) {
-  const registrar = E(committeeCreatorFacet).createRegistrar('aCommittee', 5);
+  const registrarTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
+  const { creatorFacet: registrarFacet, instance: registrarInstance } = await E(
+    zoe,
+  ).startInstance(installations.committeeRegistrar, {}, registrarTerms);
 
-  const details = {
-    clock: timer,
-    deadline: 3n,
+  const ballotDetails = {
     question: 'Choose',
     positions: ['Eeny', 'Meeny'],
     quorumThreshold: 3n,
+    tieOutcome: undefined,
+    closureRule: {
+      timer,
+      deadline: 3n,
+    },
   };
-  const { instance } = await E(registrar).addQuestion(
+  const { instance: ballotInstance } = await E(registrarFacet).addQuestion(
     installations.binaryBallotCounter,
-    details,
+    ballotDetails,
   );
 
-  const invitations = await E(registrar).getVoterInvitations();
-
+  const invitations = await E(registrarFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);
 
   log(
-    `invitaiton details check: ${details2.instance === registrarInstance} ${
+    `invitation details check: ${details2.instance === registrarInstance} ${
       details2.description
-    }}`,
+    }`,
   );
 
-  const aliceP = getVoter(zoe, voterCreator, invitations[0], 'Alice');
-  const bobP = getVoter(zoe, voterCreator, invitations[1], 'Bob');
-  const carolP = getVoter(zoe, voterCreator, invitations[2], 'Carol');
-  const daveP = getVoter(zoe, voterCreator, invitations[3], 'Dave');
-  const emmaP = getVoter(zoe, voterCreator, invitations[4], 'Emma');
+  const aliceP = E(voterCreator).createVoter('Alice', invitations[0], 'Eeny');
+  E(voterCreator).createVoter('Bob', invitations[1], 'Meeny');
+  E(voterCreator).createVoter('Carol', invitations[2], 'Eeny');
+  E(voterCreator).createVoter('Dave', invitations[3], 'Eeny');
+  await E(voterCreator).createVoter('Emma', invitations[4], 'Meeny');
 
-  const publicFacet = E(zoe).getPublicFacet(instance);
-  const ballotTemplate = E(publicFacet).getBallotTemplate();
-  const [ballot0, ballot1] = await Promise.all([
-    E(ballotTemplate).choose([details.positions[0]]),
-    E(ballotTemplate).choose([details.positions[1]]),
-  ]);
-
-  E(aliceP).voteBallot('Choose', ballot0);
-  E(bobP).voteBallot('Choose', ballot1);
-  E(carolP).voteBallot('Choose', ballot0);
-  E(daveP).voteBallot('Choose', ballot0);
-  await E(emmaP).voteBallot('Choose', ballot1);
-  await E(aliceP).verifyBallot(instance);
+  // At least one voter should verify that everything is on the up-and-up
+  await E(aliceP).verifyBallot('Choose');
 
   E(timer).tick();
   E(timer).tick();
   await E(timer).tick();
 
+  const publicFacet = E(zoe).getPublicFacet(ballotInstance);
   await E(publicFacet)
     .getOutcome()
     .then(outcome => log(`vote outcome: ${outcome}`))
@@ -105,25 +81,12 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   const installations = { committeeRegistrar, binaryBallotCounter };
 
-  const { voterCreator, creatorFacet, registrarInstance } = await makeVats(
-    log,
-    vats,
-    zoe,
-    installations,
-  );
+  const voterCreator = await makeVoterVat(log, vats, zoe);
 
   const [testName] = argv;
   switch (testName) {
     case 'committeeBinaryStart':
-      committeeBinaryStart(
-        zoe,
-        creatorFacet,
-        voterCreator,
-        timer,
-        log,
-        installations,
-        registrarInstance,
-      );
+      committeeBinaryStart(zoe, voterCreator, timer, log, installations);
       break;
     default:
       log(`didn't find test: ${argv}`);
