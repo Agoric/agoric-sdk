@@ -143,13 +143,13 @@ export function buildCommsDispatch(
 
   function deliver(target, method, args, resultP) {
     const result = doDeliver(target, method, args, resultP);
-    state.purgeDeadLocalPromises();
+    state.processMaybeFree();
     return result;
   }
 
   function notify(resolutions) {
     resolveFromKernel(resolutions);
-    state.purgeDeadLocalPromises();
+    state.processMaybeFree();
   }
 
   function dropExports(vrefs) {
