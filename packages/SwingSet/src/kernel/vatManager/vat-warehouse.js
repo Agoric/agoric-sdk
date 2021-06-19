@@ -2,6 +2,48 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
 
+const { freeze } = Object;
+
+/** @param { number } max */
+export const makeLRU = max => {
+  /** @type { string[] } */
+  const items = [];
+
+  return freeze({
+    /** @param { string } item */
+    add: item => {
+      const pos = items.indexOf(item);
+      // already most recently used
+      if (pos + 1 === max) {
+        return null;
+      }
+      // remove from former position
+      if (pos >= 0) {
+        items.splice(pos, 1);
+      }
+      items.push(item);
+      // not yet full
+      if (items.length <= max) {
+        return null;
+      }
+      const [lru] = items.splice(0, 1);
+      return lru;
+    },
+
+    get size() {
+      return items.length;
+    },
+
+    /** @param { string } item */
+    remove: item => {
+      const pos = items.indexOf(item);
+      if (pos >= 0) {
+        items.splice(pos, 1);
+      }
+    },
+  });
+};
+
 /**
  * @param { KernelKeeper } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
@@ -143,6 +185,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     return { enablePipelining };
   }
 
+  const recent = makeLRU(maxVatsOnline);
+
   /**
    *
    * @param {string} vatID
@@ -165,9 +209,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();
   }
-
-  /** @type { string[] } */
-  const recent = [];
 
   /**
    * Simple fixed-size LRU cache policy

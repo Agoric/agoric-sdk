@@ -9,6 +9,7 @@ import { tmpName } from 'tmp';
 import { makeSnapstore } from '@agoric/xsnap';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { provideHostStorage } from '../../src/hostStorage.js';
+import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
   const config = await loadBasedir(__dirname);
@@ -121,4 +122,15 @@ test('snapshot after deliveries', async t => {
     warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
   });
   await runSteps(c, t);
+});
+
+test('LRU eviction', t => {
+  const recent = makeLRU(3);
+  const actual = [];
+  for (const current of ['v0', 'v1', 'v2', 'v3', 'v3', 'v2']) {
+    const evict = recent.add(current);
+    t.log({ size: recent.size, current, evict });
+    actual.push(evict);
+  }
+  t.deepEqual(actual, [null, null, null, 'v0', null, null]);
 });
