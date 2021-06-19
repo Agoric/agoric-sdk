@@ -38,11 +38,24 @@
  */
 
 /**
+ * @typedef {Object} BallotDetailsShort
+ *   BallotDetails as provided to the Registrar
+ * @property {ChoiceMethod} method
+ * @property {string} question
+ * @property {string[]} positions
+ * @property {bigint} maxChoices
+ * @property {ClosureRule} closureRule
+ */
+
+/**
  * @typedef {Object} BallotDetails
+ *   BallotDetails after the Registrar adds its Instance
  * @property {ChoiceMethod} method
  * @property {string} question
  * @property {string[]} positions
  * @property {number} maxChoices
+ * @property {ClosureRule} closureRule
+ * @property {Instance} registrar
  */
 
 /**
@@ -75,6 +88,7 @@
  * @param {string} question
  * @param {string[]} positions
  * @param {number} maxChoices
+ * @param {Instance} instance - ballotCounter instance
  * @returns {Ballot}
  */
 

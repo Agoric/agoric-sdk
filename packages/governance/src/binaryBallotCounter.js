@@ -29,6 +29,7 @@ const makeBinaryBallotCounter = (
   threshold,
   tieOutcome = undefined,
   closingRule,
+  instance,
 ) => {
   assert(
     positions.length === 2,
@@ -44,7 +45,13 @@ const makeBinaryBallotCounter = (
     );
   }
 
-  const template = buildBallot(ChoiceMethod.CHOOSE_N, question, positions, 1);
+  const template = buildBallot(
+    ChoiceMethod.CHOOSE_N,
+    question,
+    positions,
+    1,
+    instance,
+  );
   const ballotDetails = template.getDetails();
 
   assert(
@@ -144,8 +151,7 @@ const makeBinaryBallotCounter = (
     getVoterFacet: () => voterFacet,
   });
 
-  /** @type {BallotCounterPublicFacet} */
-  const publicFacet = Far('publicFacet', {
+  const publicFacet = Far('preliminaryPublicFacet', {
     ...sharedFacet,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
@@ -174,11 +180,17 @@ const start = zcf => {
     quorumThreshold,
     tieOutcome,
     closingRule,
+    zcf.getInstance(),
   );
 
   scheduleClose(closingRule, closeFacet.closeVoting);
 
-  return { publicFacet, creatorFacet };
+  /** @type {BallotCounterPublicFacet} */
+  const publicFacetWithGetInstance = Far('publicFacet', {
+    ...publicFacet,
+    getInstance: zcf.getInstance,
+  });
+  return { publicFacet: publicFacetWithGetInstance, creatorFacet };
 };
 
 harden(start);
