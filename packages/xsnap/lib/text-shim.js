@@ -7,8 +7,8 @@ const { fromString } = ArrayBuffer;
 const { fromArrayBuffer } = String;
 
 class TextEncoder {
-  encode(s) {
-    return new Uint8Array(fromString(s));
+  encode(text) {
+    return new Uint8Array(fromString(text));
   }
 }
 
