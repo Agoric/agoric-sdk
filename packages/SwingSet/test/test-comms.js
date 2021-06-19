@@ -5,12 +5,7 @@ import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
 import { makeState } from '../src/vats/comms/state.js';
 import { makeCListKit } from '../src/vats/comms/clist.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
-import {
-  makeMessage,
-  makeDropExports,
-  makeRetireExports,
-  makeRetireImports,
-} from './util.js';
+import { makeMessage, makeDropExports, makeRetireExports } from './util.js';
 import { commsVatDriver } from './commsVatDriver.js';
 
 test('provideRemoteForLocal', t => {
@@ -46,6 +41,7 @@ test('provideRemoteForLocal', t => {
 
 function mockSyscall() {
   const sends = [];
+  const gcs = [];
   const fakestore = new Map();
   const syscall = harden({
     send(targetSlot, method, args) {
@@ -62,8 +58,17 @@ function mockSyscall() {
     vatstoreDelete(key) {
       fakestore.delete(key);
     },
+    dropImports(vrefs) {
+      gcs.push(['dropImports', vrefs]);
+    },
+    retireImports(vrefs) {
+      gcs.push(['retireImports', vrefs]);
+    },
+    retireExports(vrefs) {
+      gcs.push(['retireExports', vrefs]);
+    },
   });
-  return { syscall, sends };
+  return { syscall, sends, gcs };
 }
 
 function capdata(body, slots = []) {
@@ -152,7 +157,7 @@ test('transmit', t => {
 test('receive', t => {
   // look at machine B, which is receiving remote messages aimed at a local
   // vat's object 'bob'
-  const { syscall, sends } = mockSyscall();
+  const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
   state.initialize();
@@ -252,18 +257,49 @@ test('receive', t => {
   //   { message: /unexpected recv seqNum .*/ },
   // );
 
-  // make sure comms can tolerate GC operations, even if they're a no-op
+  // bob!cat(alice, bob, agrippa)
+  const expectedAgrippaKernel = 'o+33';
+  dispatch(
+    makeMessage(
+      receiverID,
+      'receive',
+      encodeArgs(
+        `5:0:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-22;argsbytes`,
+      ),
+    ),
+  );
+  t.deepEqual(sends.shift(), [
+    bobKernel,
+    'cat',
+    capdata('argsbytes', [
+      expectedAliceKernel,
+      bobKernel,
+      expectedAgrippaKernel,
+    ]),
+  ]);
+
+  // upstream GC operations should work
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
+  const gc1 = `1:5:gc:dropExport:ro+20\ngc:dropExport:ro+21`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc1)]);
+
   dispatch(makeRetireExports(expectedAliceKernel, expectedAyanaKernel));
-  // Sending retireImport into a vat that hasn't yet emitted dropImport is
-  // rude, and would only happen if the exporter unilaterally revoked the
-  // object's identity. Normally the kernel would only send retireImport
-  // after receiving dropImport (and sending a dropExport into the exporter,
-  // and getting a retireExport from the exporter, gracefully terminating the
-  // object's identity). We do it the rude way because it's good enough to
-  // test the comms vat can tolerate it, but we may have to update this when
-  // we implement retireImport for real.
-  dispatch(makeRetireImports(bobKernel));
+  const gc2 = `2:5:gc:retireExport:ro+20\ngc:retireExport:ro+21`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc2)]);
+  t.deepEqual(sends, []);
+
+  // sending an upstream drop makes it legal to expect a downstream retire
+  dispatch(makeDropExports(expectedAgrippaKernel));
+  const gc3 = `3:5:gc:dropExport:ro+22`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc3)]);
+  t.deepEqual(sends, []);
+
+  dispatch(
+    makeMessage(receiverID, 'receive', encodeArgs(`6:3:gc:retireImport:ro-22`)),
+  );
+
+  t.deepEqual(gcs.shift(), ['retireExports', [expectedAgrippaKernel]]);
+  t.deepEqual(gcs, []);
 });
 
 // This tests the various pathways through the comms vat driver.  This has the
