@@ -28,6 +28,11 @@ test('provideRemoteForLocal', t => {
   t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, lo5), 'ro-21');
+
+  t.deepEqual(s.getImporters(lo4), [remoteID]);
+  const { remoteID: remoteID2 } = s.addRemote('remote2', 'o-2');
+  provideRemoteForLocal(remoteID2, lo4);
+  t.deepEqual(s.getImporters(lo4), [remoteID, remoteID2]);
 });
 
 function mockSyscall() {

@@ -97,6 +97,11 @@ export function makeRemote(state, store, remoteID) {
     store.set(toKey, flipRemoteSlot(rref));
     const mode = isImport ? 'clist-import' : 'clist-export';
     state.incrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        state.addImporter(lref, remoteID);
+      }
+    }
   }
 
   function deleteRemoteMapping(lref) {
@@ -112,6 +117,11 @@ export function makeRemote(state, store, remoteID) {
     store.delete(`${remoteID}.c.${rrefInbound}`);
     store.delete(`${remoteID}.c.${lref}`);
     state.decrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        state.removeImporter(lref, remoteID);
+      }
+    }
   }
 
   function nextSendSeqNum() {

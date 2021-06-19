@@ -88,6 +88,9 @@ export function makeState(syscall, identifierBase = 0) {
   // c.$kfref = $lref // inbound kernel-facing c-list (o+NN/o-NN/p+NN/p-NN -> loNN/lpNN)
   // c.$lref = $kfref // outbound kernel-facing c-list (loNN/lpNN -> o+NN/o-NN/p+NN/p-NN)
   // cr.$lref = 1 | <missing> // isReachable flag
+  // //imps.$lref.$remoteID = 1 // one key per importer of $lref (FUTURE)
+  // imps.$lref = JSON([remoteIDs]) // importers of $lref
+  // imps.$lref.$remoteID = 1 // one key per importer of $lref
   // meta.$kfref = true // flag that $kfref (o+NN/o-NN) is a directly addressable control object
   //
   // lo.nextID = $NN // local object identifier allocation counter (loNN)
@@ -162,6 +165,53 @@ export function makeState(syscall, identifierBase = 0) {
         assert.fail(X`unknown status for ${lpid}: ${status}`);
     }
     deleteLocalPromiseState(lpid);
+  }
+
+  /* we need syscall.vatstoreGetKeys to do it this way
+  function addImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}.${remoteID}`;
+    store.set(key, '1');
+  }
+  function removeImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}.${remoteID}`;
+    store.delete(key);
+  }
+  function getImporters(lref) {
+    const remoteIDs = [];
+    const prefix = `imps.${lref}`;
+    const startKey = `${prefix}.`;
+    const endKey = `${prefix}/`; // '.' and '/' are adjacent
+    for (const k of store.getKeys(startKey, endKey)) {
+      const remoteID = k.slice(0, prefix.length);
+      if (remoteID !== 'kernel') {
+        insistRemoteID(remoteID);
+      }
+      remoteIDs.push(remoteID);
+    }
+    return harden(remoteIDs);
+  }
+  */
+
+  function addImporter(lref, remoteID) {
+    const key = `imps.${lref}`;
+    const value = JSON.parse(store.get(key) || '[]');
+    value.push(remoteID);
+    value.sort();
+    store.set(key, JSON.stringify(value));
+  }
+  function removeImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}`;
+    let value = JSON.parse(store.get(key) || '[]');
+    value = value.filter(r => r !== remoteID);
+    store.set(key, JSON.stringify(value));
+  }
+  function getImporters(lref) {
+    const key = `imps.${lref}`;
+    const remoteIDs = JSON.parse(store.get(key) || '[]');
+    return harden(remoteIDs);
   }
 
   /* A mode of 'clist-import' means we increment recognizable, but not
@@ -354,6 +404,11 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`c.${lref}`, kfref);
     const mode = isImport ? 'clist-import' : 'clist-export';
     incrementRefCount(lref, `{kfref}|k|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        addImporter(lref, 'kernel');
+      }
+    }
   }
 
   // GC or delete-remote should just call deleteKernelMapping without any
@@ -370,6 +425,11 @@ export function makeState(syscall, identifierBase = 0) {
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
     decrementRefCount(lref, `{kfref}|k|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        removeImporter(lref, 'kernel');
+      }
+    }
   }
 
   function hasMetaObject(kfref) {
@@ -619,6 +679,10 @@ export function makeState(syscall, identifierBase = 0) {
     getPromiseStatus,
     getPromiseData,
     allocatePromise,
+
+    addImporter,
+    removeImporter,
+    getImporters,
 
     changeReachable,
     lrefMightBeFree,
