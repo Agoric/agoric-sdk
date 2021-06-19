@@ -307,25 +307,27 @@ export function makeState(syscall, identifierBase = 0) {
       if (mode === 'clist-import' || mode === 'data') {
         const recognizable = changeRecognizable(lref, -1n);
         if (!recognizable) {
-          // maybeFree.add(lref);
+          maybeFree.add(lref);
         }
       }
       if (mode === 'data') {
         const reachable = changeReachable(lref, -1n);
         if (!reachable) {
-          // maybeFree.add(lref);
+          maybeFree.add(lref);
         }
       }
     }
   }
 
   /**
-   * Delete any local promises that have zero references.
+   * Delete any local promises that have zero references. Return a list of
+   * work for unreachable/unrecognizable objects.
    *
    * Note that this should only be called *after* all work for a crank is done,
    * because transient zero refCounts are possible during the middle of a crank.
    */
   function processMaybeFree() {
+    const actions = new Set();
     // We make a copy of the set, iterate over that, then try again, until
     // the set is empty. TC39 went to a lot of trouble to make sure you can
     // add things to a Set while iterating over it, but I think our
@@ -353,8 +355,44 @@ export function makeState(syscall, identifierBase = 0) {
             }
           }
         }
+        if (type === 'object') {
+          // don't do anything if importers can still reach it
+          const reaKey = `${lref}.reachable`;
+          const reachable = Nat(BigInt(store.getRequired(reaKey)));
+          if (!reachable) {
+            // the object is unreachable
+
+            // eslint-disable-next-line no-use-before-define
+            const { owner, isReachable, isRecognizable } = getOwnerAndStatus(
+              lref,
+            );
+            if (isReachable) {
+              // but the exporter doesn't realize it yet, so schedule a
+              // dropExport to them, which will clear the isReachable flag at
+              // the end of the turn
+              actions.add(`${owner} dropExport ${lref}`);
+            }
+
+            const recKey = `${lref}.recognizable`;
+            const recognizable = Nat(BigInt(store.getRequired(recKey)));
+            if (!recognizable && isRecognizable) {
+              // all importers have given up, but the exporter is still
+              // exporting, so schedule a retireExport to them, which will
+              // delete the clist entry after it's translated.
+              actions.add(`${owner} retireExport ${lref}`);
+            }
+            if (!isRecognizable) {
+              // the exporter has given up, so tell all importers to give up
+              for (const importer of getImporters(lref)) {
+                actions.add(`${importer} retireImport ${lref}`);
+              }
+            }
+          }
+        }
       }
     }
+
+    return actions;
   }
 
   function mapFromKernel(kfref) {
@@ -480,6 +518,22 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${lpid}.subscribers`, '');
     store.set(`${lpid}.refCount`, '0');
     return lpid;
+  }
+
+  function getOwnerAndStatus(lref) {
+    const owner = getObject(lref);
+    let isReachable;
+    let isRecognizable;
+    if (owner === 'kernel') {
+      isReachable = isReachableByKernel(lref);
+      isRecognizable = !!mapToKernel(lref);
+    } else {
+      // eslint-disable-next-line no-use-before-define
+      const remote = getRemote(owner);
+      isReachable = remote.isReachable(lref);
+      isRecognizable = !!remote.mapToRemote(lref);
+    }
+    return { owner, isReachable, isRecognizable };
   }
 
   function deciderIsKernel(lpid) {
