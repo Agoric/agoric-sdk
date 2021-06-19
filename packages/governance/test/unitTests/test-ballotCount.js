@@ -236,7 +236,7 @@ test('binary ballot too many', async t => {
     () =>
       E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose(alicePositions)),
     {
-      message: 'only "[1n]" position(s) allowed',
+      message: 'only 1 position(s) allowed',
     },
   );
 });

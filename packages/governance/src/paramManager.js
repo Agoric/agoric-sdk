@@ -5,6 +5,7 @@ import { assertIsRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
+import { Nat } from '@agoric/nat';
 
 /**
  * @type {{
@@ -58,6 +59,7 @@ const assertType = (type, value, name) => {
       break;
     case ParamType.NAT:
       assert.typeof(value, 'bigint');
+      Nat(value);
       break;
     case ParamType.RATIO:
       assertIsRatio(value);

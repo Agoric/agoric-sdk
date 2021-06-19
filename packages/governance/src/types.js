@@ -65,7 +65,7 @@
  */
 
 /**
- * @typedef {Object} QurorumCounter
+ * @typedef {Object} QuorumCounter
  * @property {(VoteStatistics) => boolean} check
  */
 
@@ -74,7 +74,7 @@
  * @param {ChoiceMethod} method
  * @param {string} question
  * @param {string[]} positions
- * @param {bigint} maxChoices
+ * @param {number} maxChoices
  * @returns {Ballot}
  */
 
@@ -110,8 +110,8 @@
 /**
  * @typedef {Object} CompleteOrderedBallot
  * @property {string} question
- * @property {string[]} ordered - ordered list of position from most prefered to
- *   least prefered
+ * @property {string[]} ordered - ordered list of position from most preferred to
+ *   least preferred
  */
 
 /**

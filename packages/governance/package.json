@@ -35,6 +35,7 @@
     "@agoric/ertp": "^0.11.2",
     "@agoric/eventual-send": "^0.13.16",
     "@agoric/marshal": "^0.4.13",
+    "@agoric/nat": "^4.1.0",
     "@agoric/store": "^0.4.15",
     "@agoric/promise-kit": "^0.2.13",
     "@agoric/zoe": "^0.16.0"

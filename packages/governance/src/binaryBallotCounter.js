@@ -9,16 +9,6 @@ import { ChoiceMethod, buildBallot } from './ballotBuilder';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
 
-const makeBinaryBallot = (question, positionAName, positionBName) => {
-  const positions = [];
-  assert.typeof(question, 'string');
-  assert.typeof(positionAName, 'string');
-  assert.typeof(positionBName, 'string');
-  positions.push(positionAName, positionBName);
-
-  return buildBallot(ChoiceMethod.CHOOSE_N, question, positions, 1n);
-};
-
 const makeQuorumCounter = quorumThreshold => {
   const check = stats => {
     const votes = stats.results.reduce(
@@ -42,14 +32,17 @@ const makeBinaryBallotCounter = (
     positions.length === 2,
     X`Binary ballots must have exactly two positions. had ${positions.length}: ${positions}`,
   );
-  const [aName, bName] = positions;
+  assert.typeof(positions[0], 'string');
+  assert.typeof(positions[1], 'string');
+  assert.typeof(question, 'string');
   if (tieOutcome) {
     assert(
       positions.includes(tieOutcome),
       X`The default outcome on a tie must be one of the positions, not ${tieOutcome}`,
     );
   }
-  const template = makeBinaryBallot(question, aName, bName);
+
+  const template = buildBallot(ChoiceMethod.CHOOSE_N, question, positions, 1);
   const ballotDetails = template.getDetails();
 
   assert(
@@ -107,6 +100,7 @@ const makeBinaryBallotCounter = (
         { position: positions[1], total: tally[positions[1]] },
       ],
     };
+    tallyPromise.resolve(stats);
 
     if (!makeQuorumCounter(threshold).check(stats)) {
       outcomePromise.reject('No quorum');
@@ -120,8 +114,6 @@ const makeBinaryBallotCounter = (
     } else {
       outcomePromise.resolve(tieOutcome);
     }
-
-    tallyPromise.resolve(stats);
   };
 
   const sharedFacet = {

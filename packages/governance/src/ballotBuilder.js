@@ -24,7 +24,7 @@ const buildEqualWeightBallot = (
   method,
   question,
   positions,
-  maxChoices = 0n,
+  maxChoices = 0,
 ) => {
   const choose = chosenPositions => {
     assert(
@@ -57,7 +57,7 @@ const buildEqualWeightBallot = (
 };
 
 /** @type {BuildBallot} */
-const buildBallot = (method, question, positions, maxChoices = 0n) => {
+const buildBallot = (method, question, positions, maxChoices = 0) => {
   assert.typeof(question, 'string');
 
   switch (method) {
