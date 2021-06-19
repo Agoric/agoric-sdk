@@ -142,6 +142,10 @@ export function makeRemote(state, store, remoteID) {
       if (isImport) {
         state.removeImporter(lref, remoteID);
         deleteLastSent(lref);
+      } else {
+        // deleting the upstream/export-side mapping should trigger
+        // processMaybeFree
+        state.lrefMightBeFree(lref);
       }
     }
   }
