@@ -13,7 +13,13 @@ const UNDEFINED = harden({
   slots: [],
 });
 
-export function makeDeliveryKit(state, syscall, transmit, clistKit) {
+export function makeDeliveryKit(
+  state,
+  syscall,
+  transmit,
+  clistKit,
+  gcFromRemote,
+) {
   const {
     getRemoteForLocal,
     provideRemoteForLocal,
@@ -157,6 +163,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
     }
     if (command === 'resolve') {
       return resolveFromRemote(remoteID, msgBody);
+    }
+    if (command === 'gc') {
+      return gcFromRemote(remoteID, msgBody, ackSeqNum);
     }
     assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
   }

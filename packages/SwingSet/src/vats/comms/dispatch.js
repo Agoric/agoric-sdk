@@ -1,9 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
-import {
-  makeVatSlot,
-  insistVatType,
-  parseVatSlot,
-} from '../../parseVatSlots.js';
+import { makeVatSlot } from '../../parseVatSlots.js';
 import { insistMessage } from '../../message.js';
 import { makeState } from './state.js';
 import { deliverToController } from './controller.js';
@@ -11,6 +7,7 @@ import { insistCapData } from '../../capdata.js';
 
 import { makeCListKit } from './clist.js';
 import { makeDeliveryKit } from './delivery.js';
+import { makeGCKit } from './gc-comms.js';
 import { cdebug } from './cdebug.js';
 
 export const debugState = new WeakMap();
@@ -40,8 +37,16 @@ export function buildCommsDispatch(
     syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
   }
 
-  const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit);
+  const gcKit = makeGCKit(state, syscall, transmit);
+  const { gcFromRemote, gcFromKernel, processGC } = gcKit;
 
+  const deliveryKit = makeDeliveryKit(
+    state,
+    syscall,
+    transmit,
+    clistKit,
+    gcFromRemote,
+  );
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
 
   // our root object (o+0) is the Comms Controller
@@ -141,6 +146,20 @@ export function buildCommsDispatch(
     return sendFromKernel(target, method, args, result);
   }
 
+  function filterMetaObjects(vrefs) {
+    // Sometimes the bootstrap vat doesn't care very much about comms and
+    // allows the root object (the "controller") to be dropped, or one of the
+    // receiver objects we create during addRemote(). gc-comms.js doesn't
+    // know about these meta objects, so filter them out. Also, always filter
+    // out the controller (o+0) even if it isn't in the meta table, because
+    // some unit tests (test-demos-comms.js) create a comms vat but never
+    // talk to it, which means we never get a delivery, so initializeState()
+    // is never called, so o+0 is never added to the meta table.
+    return vrefs.filter(
+      vref => !(vref === controller || state.hasMetaObject(vref)),
+    );
+  }
+
   function doDispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
@@ -158,31 +177,25 @@ export function buildCommsDispatch(
       case 'dropExports': {
         const [vrefs] = args;
         assert(Array.isArray(vrefs));
-        vrefs.map(vref => insistVatType('object', vref));
-        vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-        // console.log(`-- comms ignoring dropExports`);
+        gcFromKernel({ dropExports: filterMetaObjects(vrefs) });
         break;
       }
       case 'retireExports': {
         const [vrefs] = args;
         assert(Array.isArray(vrefs));
-        vrefs.map(vref => insistVatType('object', vref));
-        vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-        // console.log(`-- comms ignoring retireExports`);
+        gcFromKernel({ retireExports: filterMetaObjects(vrefs) });
         break;
       }
       case 'retireImports': {
         const [vrefs] = args;
         assert(Array.isArray(vrefs));
-        vrefs.map(vref => insistVatType('object', vref));
-        vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-        // console.log(`-- comms ignoring retireImports`);
+        gcFromKernel({ retireImports: filterMetaObjects(vrefs) });
         break;
       }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
-    state.processMaybeFree();
+    processGC();
   }
 
   function dispatch(vatDeliveryObject) {
