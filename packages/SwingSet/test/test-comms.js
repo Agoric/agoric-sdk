@@ -29,6 +29,15 @@ test('provideRemoteForLocal', t => {
   t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
   t.is(provideRemoteForLocal(remoteID, lo5), 'ro-21');
 
+  const r = s.getRemote(remoteID);
+  const seq1 = r.nextSendSeqNum();
+  t.is(r.getLastSent(lo4), seq1);
+  r.advanceSendSeqNum();
+  const seq2 = r.nextSendSeqNum();
+  t.not(r.getLastSent(lo4), seq2);
+  provideRemoteForLocal(remoteID, lo4);
+  t.is(r.getLastSent(lo4), seq2);
+
   t.deepEqual(s.getImporters(lo4), [remoteID]);
   const { remoteID: remoteID2 } = s.addRemote('remote2', 'o-2');
   provideRemoteForLocal(remoteID2, lo4);

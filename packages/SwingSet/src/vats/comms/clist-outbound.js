@@ -73,7 +73,8 @@ export function makeOutbound(state) {
       rref = remote.mapToRemote(lref);
     }
 
-    // in either case, we need to mark exports or re-exports as reachable
+    // in either case, we need to mark exports or re-exports as reachable,
+    // and update the last-sent counter
     if (type === 'object') {
       const { allocatedByRecipient } = parseRemoteSlot(rref);
       // `rref` is what the remote wants to hear, so allocatedByRecipient
@@ -83,6 +84,17 @@ export function makeOutbound(state) {
         // the remote is always importing it
         const isImport = true;
         remote.setReachable(lref, isImport);
+        // This provideRemoteForLocal was called as part of translating a
+        // message to send (either a delivery, in `sendToRemote()`, or a
+        // resolution notification, in `resolveToRemote`). Both cases finish
+        // with a `transmit()`, which uses `remote.nextSendSeqNum()` to learn
+        // what sequence number to use. (nextSendSeqNum should always know
+        // the right number even if seqnums are elided). We snarf that seqnum
+        // here, to remember when we last told the remote about this object.
+        // We can safely ignore any drop or retire that doesn't demonstrate
+        // knowledge of this outbound message.
+        const seqNum = remote.nextSendSeqNum();
+        remote.setLastSent(lref, seqNum);
       }
       assert(remote.isReachable(lref), `sending unreachable rref ${lref}`);
     }

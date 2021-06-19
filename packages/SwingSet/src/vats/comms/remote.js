@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { parseLocalSlot } from './parseLocalSlots.js';
+import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import {
   makeRemoteSlot,
   flipRemoteSlot,
@@ -85,6 +85,26 @@ export function makeRemote(state, store, remoteID) {
     }
   }
 
+  function setLastSent(lref, seqNum) {
+    insistLocalType('object', lref);
+    const key = `${remoteID}.lastSent.${lref}`;
+    store.set(key, `${seqNum}`);
+  }
+
+  function getLastSent(lref) {
+    // for objects only, what was the outgoing seqnum on the most recent
+    // message that could have re-exported the object?
+    insistLocalType('object', lref);
+    const key = `${remoteID}.lastSent.${lref}`;
+    return Number(store.getRequired(key));
+  }
+
+  function deleteLastSent(lref) {
+    insistLocalType('object', lref);
+    const key = `${remoteID}.lastSent.${lref}`;
+    store.delete(key);
+  }
+
   // rref is what we would get from them, so + means our export
   function addRemoteMapping(rref, lref) {
     const { type, allocatedByRecipient } = parseRemoteSlot(rref);
@@ -100,6 +120,7 @@ export function makeRemote(state, store, remoteID) {
     if (type === 'object') {
       if (isImport) {
         state.addImporter(lref, remoteID);
+        setLastSent(lref, '1'); // should be updated momentarily
       }
     }
   }
@@ -120,6 +141,7 @@ export function makeRemote(state, store, remoteID) {
     if (type === 'object') {
       if (isImport) {
         state.removeImporter(lref, remoteID);
+        deleteLastSent(lref);
       }
     }
   }
@@ -207,6 +229,8 @@ export function makeRemote(state, store, remoteID) {
     clearReachable,
     addRemoteMapping,
     deleteRemoteMapping,
+    setLastSent,
+    getLastSent,
 
     allocateRemoteObject,
     skipRemoteObjectID,

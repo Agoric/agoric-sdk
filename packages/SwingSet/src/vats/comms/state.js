@@ -119,6 +119,7 @@ export function makeState(syscall, identifierBase = 0) {
   // r$NN.c.$rref = $lref // r$NN inbound c-list (ro+NN/ro-NN/rp+NN/rp-NN -> loNN/lpNN)
   // r$NN.c.$lref = $rref // r$NN outbound c-list (loNN/lpNN -> ro+NN/ro-NN/rp+NN/rp-NN)
   // r$NN.cr.$lref = 1 | <missing> // isReachable flag
+  // r$NN.lastSent.$lref = $NN // outbound seqnum of last object export
   // r$NN.sendSeq = $NN // counter for outbound message sequence numbers to r$NN
   // r$NN.recvSeq = $NN // counter for inbound message sequence numbers from r$NN
   // r$NN.o.nextID = $NN // r$NN object identifier allocation counter (ro-NN)
