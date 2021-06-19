@@ -7,3 +7,4 @@ export {
   METER_TYPE,
 } from '../api.js';
 export { makeSnapstore } from './snapStore.js';
+export { recordXSnap, replayXSnap } from './replay.js';

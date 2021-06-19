@@ -17,7 +17,7 @@ import * as netstring from './netstring.js';
 import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
-const DEFAULT_CRANK_METERING_LIMIT = 1e7;
+export const DEFAULT_CRANK_METERING_LIMIT = 1e7;
 
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);

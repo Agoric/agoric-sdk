@@ -1,34 +1,22 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import * as childProcess from 'child_process';
+
+import * as proc from 'child_process';
 import * as os from 'os';
+
 import { xsnap } from '../src/xsnap.js';
 
-const decoder = new TextDecoder();
+import { options } from './message-tools.js';
 
-const xsnapOptions = {
-  name: 'xsnap test worker',
-  spawn: childProcess.spawn,
-  os: os.type(),
-  stderr: 'inherit',
-  stdout: 'inherit',
-};
-
-export function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambien
 
 const { entries, fromEntries } = Object;
 
 const shape = obj => fromEntries(entries(obj).map(([p, v]) => [p, typeof v]));
 
 test('meter details', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
@@ -72,7 +60,7 @@ test('meter details', async t => {
 });
 
 test('meter details are still available with no limit', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap({ ...opts, meteringLimit: 0 });
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
@@ -88,7 +76,7 @@ test('meter details are still available with no limit', async t => {
 });
 
 test('high resolution timer', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
@@ -97,7 +85,7 @@ test('high resolution timer', async t => {
       const t = performance.now();
       send(t);
     `);
-  const [milliseconds] = opts.messages.map(JSON.parse);
+  const [milliseconds] = opts.messages.map(s => JSON.parse(s));
   t.log({ milliseconds, date: new Date(milliseconds) });
   t.is('number', typeof milliseconds);
 });

@@ -1,37 +1,25 @@
 /* global setTimeout, __filename */
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import * as childProcess from 'child_process';
+
+import * as proc from 'child_process';
 import * as os from 'os';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
+
 import { xsnap } from '../src/xsnap.js';
 import { ExitCode, ErrorCode } from '../api.js';
 
-const importMetaUrl = `file://${__filename}`;
+import { options, decode, encode, loader } from './message-tools.js';
 
-const decoder = new TextDecoder();
-const encoder = new TextEncoder();
+const importMeta = { url: `file://${__filename}` };
 
-const xsnapOptions = {
-  name: 'xsnap test worker',
-  spawn: childProcess.spawn,
-  os: os.type(),
-  stderr: 'inherit',
-  stdout: 'inherit',
-};
-
-export function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const ld = loader(importMeta.url);
 
 test('evaluate and issueCommand', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`issueCommand(ArrayBuffer.fromString("Hello, World!"));`);
   await vat.close();
@@ -39,7 +27,7 @@ test('evaluate and issueCommand', async t => {
 });
 
 test('evaluate until idle', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
     (async () => {
@@ -51,7 +39,7 @@ test('evaluate until idle', async t => {
 });
 
 test('evaluate infinite loop', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(vat.terminate);
   await t.throwsAsync(vat.evaluate(`for (;;) {}`), {
@@ -63,7 +51,7 @@ test('evaluate infinite loop', async t => {
 
 // TODO: Reenable when this doesn't take 3.6 seconds.
 test('evaluate promise loop', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(vat.terminate);
   await t.throwsAsync(
@@ -82,7 +70,7 @@ test('evaluate promise loop', async t => {
 });
 
 test('evaluate and report', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   const result = await vat.evaluate(`(() => {
     const report = {};
@@ -93,11 +81,11 @@ test('evaluate and report', async t => {
   })()`);
   await vat.close();
   const { reply } = result;
-  t.deepEqual('hi', decoder.decode(reply));
+  t.deepEqual('hi', decode(reply));
 });
 
 test('evaluate error', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat
     .evaluate(`***`)
@@ -111,7 +99,7 @@ test('evaluate error', async t => {
 });
 
 test('evaluate does not throw on unhandled rejections', async t => {
-  const opts = options();
+  const opts = options(io);
   // ISSUE: how to test that they are not entirely unobservable?
   // It's important that we can observe them using xsbug.
   // We can confirm this by running xsbug while running this test.
@@ -122,71 +110,8 @@ test('evaluate does not throw on unhandled rejections', async t => {
   }
 });
 
-test('reject odd regex range', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
-  await vat
-    .evaluate(
-      `const FILENAME_FILTER = /^((?:.*[( ])?)[:/\\w-_]*\\/(packages\\/.+)$/;`,
-    )
-    .then(_ => {
-      t.fail('should throw');
-    })
-    .catch(_ => {
-      t.pass();
-    });
-  await vat.terminate();
-});
-
-test('accept std regex range', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
-  await vat.evaluate(
-    `const FILENAME_FILTER = /^((?:.*[( ])?)[:/\\w_-]*\\/(packages\\/.+)$/;`,
-  );
-  t.pass();
-  await vat.terminate();
-});
-
-test('bigint map key', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
-  t.teardown(() => vat.terminate());
-  await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
-    const store = new Map([[1n, "abc"]]);
-    send(store.get(1n))
-  `);
-  t.deepEqual(opts.messages, ['"abc"']);
-});
-
-test('bigint toString', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
-  t.teardown(() => vat.terminate());
-  await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
-    const txt = \`number: 1 2 3 bigint: \${0n} \${1n} \${BigInt(2)} \${BigInt(3)} .\`;
-    send(txt)
-  `);
-  t.deepEqual(opts.messages, ['"number: 1 2 3 bigint: 0 1 2 3 ."']);
-});
-
-
-test('keyword in destructuring', async t => {
-  const opts = options();
-  const vat = xsnap(opts);
-  t.teardown(() => vat.terminate());
-  await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
-    const { default: d, in: i } = { default: 1, in: 2 };
-    send({ d, i })
-  `);
-  t.deepEqual(opts.messages, ['{"d":1,"i":2}']);
-});
-
 test('idle includes setImmediate too', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
     const send = it => issueCommand(ArrayBuffer.fromString(it));
@@ -199,11 +124,11 @@ test('idle includes setImmediate too', async t => {
 });
 
 test('print - start compartment only', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
     const send = it => issueCommand(ArrayBuffer.fromString(it));
-    print(123);
+    print('print:', 123);
     try {
       (new Compartment()).evalate('print("456")');
     } catch (_err) {
@@ -215,12 +140,12 @@ test('print - start compartment only', async t => {
 });
 
 test('gc - start compartment only', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
     gc();
     const send = it => issueCommand(ArrayBuffer.fromString(it));
-    print(123);
+    gc();
     try {
       (new Compartment()).evalate('gc()');
     } catch (_err) {
@@ -232,9 +157,9 @@ test('gc - start compartment only', async t => {
 });
 
 test('run script until idle', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
-  await vat.execute(new URL('fixture-xsnap-script.js', importMetaUrl).pathname);
+  await vat.execute(ld.resolve('fixture-xsnap-script.js'));
   await vat.close();
   t.deepEqual(['Hello, World!'], opts.messages);
 });
@@ -242,13 +167,13 @@ test('run script until idle', async t => {
 test('issueCommand is synchronous inside, async outside', async t => {
   const messages = [];
   async function handleCommand(request) {
-    const number = +decoder.decode(request);
+    const number = +decode(request);
     await Promise.resolve(null);
     messages.push(number);
     await Promise.resolve(null);
-    return encoder.encode(`${number + 1}`);
+    return encode(`${number + 1}`);
   }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     const response = issueCommand(ArrayBuffer.fromString('0'));
     const number = +String.fromArrayBuffer(response);
@@ -261,10 +186,10 @@ test('issueCommand is synchronous inside, async outside', async t => {
 test('deliver a message', async t => {
   const messages = [];
   async function handleCommand(message) {
-    messages.push(+decoder.decode(message));
+    messages.push(+decode(message));
     return new Uint8Array();
   }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
       const number = +String.fromArrayBuffer(message);
@@ -281,10 +206,10 @@ test('deliver a message', async t => {
 test('receive a response', async t => {
   const messages = [];
   async function handleCommand(message) {
-    messages.push(+decoder.decode(message));
+    messages.push(+decode(message));
     return new Uint8Array();
   }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
       const number = +String.fromArrayBuffer(message);
@@ -306,10 +231,10 @@ function* count(end, start = 0, stride = 1) {
 test('serialize concurrent messages', async t => {
   const messages = [];
   async function handleCommand(message) {
-    messages.push(+decoder.decode(message));
+    messages.push(+decode(message));
     return new Uint8Array();
   }
-  const vat = xsnap({ ...xsnapOptions, handleCommand });
+  const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     globalThis.handleCommand = message => {
       const number = +String.fromArrayBuffer(message);
@@ -327,21 +252,21 @@ test('write and read snapshot', async t => {
 
   const messages = [];
   async function handleCommand(message) {
-    messages.push(decoder.decode(message));
+    messages.push(decode(message));
     return new Uint8Array();
   }
 
   const snapshot = work.name;
   t.log({ snapshot });
 
-  const vat0 = xsnap({ ...xsnapOptions, handleCommand });
+  const vat0 = xsnap({ ...options(io), handleCommand });
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
   await vat0.snapshot(snapshot);
   await vat0.close();
 
-  const vat1 = xsnap({ ...xsnapOptions, handleCommand, snapshot });
+  const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
   await vat1.evaluate(`
     issueCommand(ArrayBuffer.fromString(hello));
   `);
@@ -355,7 +280,7 @@ function delay(ms) {
 }
 
 test('fail to send command to already-closed xsnap worker', async t => {
-  const vat = xsnap({ ...xsnapOptions });
+  const vat = xsnap({ ...options(io) });
   await vat.close();
   await vat.evaluate(``).catch(err => {
     t.is(err.message, 'xsnap test worker exited');
@@ -363,7 +288,7 @@ test('fail to send command to already-closed xsnap worker', async t => {
 });
 
 test('fail to send command to already-terminated xsnap worker', async t => {
-  const vat = xsnap({ ...xsnapOptions });
+  const vat = xsnap({ ...options(io) });
   await vat.terminate();
   await vat.evaluate(``).catch(err => {
     t.is(err.message, 'xsnap test worker exited due to signal SIGTERM');
@@ -371,7 +296,7 @@ test('fail to send command to already-terminated xsnap worker', async t => {
 });
 
 test('fail to send command to terminated xsnap worker', async t => {
-  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
+  const vat = xsnap({ ...options(io), meteringLimit: 0 });
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
     message: /^(Cannot write messages to xsnap test worker: write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
@@ -382,7 +307,7 @@ test('fail to send command to terminated xsnap worker', async t => {
 });
 
 test('abnormal termination', async t => {
-  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
+  const vat = xsnap({ ...options(io), meteringLimit: 0 });
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
     message: 'xsnap test worker exited due to signal SIGTERM',
@@ -395,7 +320,7 @@ test('abnormal termination', async t => {
 });
 
 test('normal close of pathological script', async t => {
-  const vat = xsnap({ ...xsnapOptions, meteringLimit: 0 });
+  const vat = xsnap({ ...options(io), meteringLimit: 0 });
   const hang = vat.evaluate(`for (;;) {}`).then(
     () => t.fail('command should not complete'),
     err => {
@@ -410,117 +335,3 @@ test('normal close of pathological script', async t => {
   await vat.terminate();
   await hang;
 });
-
-test('heap exhaustion: orderly fail-stop', async t => {
-  const grow = `
-  let stuff = '1234';
-  while (true) {
-    stuff = stuff + stuff;
-  }
-  `;
-  for (const debug of [false, true]) {
-    const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
-    t.teardown(() => vat.terminate());
-    // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow), {
-      code: ExitCode.E_NOT_ENOUGH_MEMORY,
-    });
-  }
-});
-
-test('property name space exhaustion: orderly fail-stop', async t => {
-  const grow = qty => `
-  const objmap = {};
-  try {
-    for (let ix = 0; ix < ${qty}; ix += 1) {
-      const key = \`k\${ix}\`;
-      objmap[key] = 1;
-      if (!(key in objmap)) {
-        throw Error(key);
-      }
-    }
-  } catch (err) {
-    // name space exhaustion should not be catchable!
-    // spin and fail with "too much computation"
-    for (;;) {}
-  }
-  `;
-  for (const debug of [false, true]) {
-    const vat = xsnap({ ...xsnapOptions, meteringLimit: 0, debug });
-    t.teardown(() => vat.terminate());
-    console.log({ debug, qty: 31000 });
-    // eslint-disable-next-line no-await-in-loop
-    await t.notThrowsAsync(vat.evaluate(grow(31000)));
-    console.log({ debug, qty: 4000000000 });
-    // eslint-disable-next-line no-await-in-loop
-    await t.throwsAsync(vat.evaluate(grow(4000000000)), {
-      code: ExitCode.E_NO_MORE_KEYS,
-    });
-  }
-});
-
-(() => {
-  const grow = qty => `
-  const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
-  let expr = \`"\${Array(${qty}).fill('abcd').join('')}"\`;
-  try {
-    eval(expr);
-    send(expr.length);
-  } catch (err) {
-    send(err.message);
-  }
-  `;
-  for (const debug of [false, true]) {
-    for (const [parserBufferSize, qty, failure] of [
-      [undefined, 100, null],
-      [undefined, (8192 * 1024) / 4 + 100, 'buffer overflow'],
-      [2, 10, null],
-      [2, 50000, 'buffer overflow'],
-    ]) {
-      test(`parser buffer size ${parserBufferSize ||
-        'default'}k; rep ${qty}; debug ${debug}`, async t => {
-        const opts = { ...options(), meteringLimit: 1e8, debug };
-        const vat = xsnap({ ...opts, parserBufferSize });
-        t.teardown(() => vat.terminate());
-        const expected = failure ? [failure] : [qty * 4 + 2];
-        // eslint-disable-next-line no-await-in-loop
-        await t.notThrowsAsync(vat.evaluate(grow(qty)));
-        t.deepEqual(
-          expected,
-          opts.messages.map(txt => JSON.parse(txt)),
-        );
-      });
-    }
-  }
-})();
-
-(() => {
-  const challenges = [
-    'new Uint8Array(2_130_706_417)',
-    'new Uint16Array(1_065_353_209)',
-    'new Uint32Array(532_676_605)',
-    'new BigUint64Array(266_338_303);',
-    'new Array(66_584_576).fill(0)',
-    '(new Array(66_584_575).fill(0))[66_584_575] = 0;',
-  ];
-
-  for (const statement of challenges) {
-    test(`large sizes - abort cluster: ${statement}`, async t => {
-      const vat = xsnap(xsnapOptions);
-      t.teardown(() => vat.terminate());
-      // eslint-disable-next-line no-await-in-loop
-      await t.throwsAsync(
-        vat.evaluate(`
-        (() => {
-          try {
-            // can't catch memory full
-            ${statement}\n
-          } catch (ignore) {
-            // ignore
-          }
-        })()`),
-        { code: ExitCode.E_NOT_ENOUGH_MEMORY },
-      );
-    });
-  }
-})();

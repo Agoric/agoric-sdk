@@ -1,10 +1,16 @@
 /* global FinalizationRegistry WeakRef */
+// @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import * as childProcess from 'child_process';
+import * as proc from 'child_process';
 import * as os from 'os';
 import { xsnap } from '../src/xsnap.js';
+
 import { makeGcAndFinalize } from './gc.js';
+import { options } from './message-tools.js';
+
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };
@@ -36,27 +42,8 @@ async function provokeGC(myGC) {
   return { wrState, finalizerState };
 }
 
-const xsnapOptions = {
-  name: 'xsnap test worker',
-  spawn: childProcess.spawn,
-  os: os.type(),
-  stderr: 'inherit',
-  stdout: 'inherit',
-};
-
-const decoder = new TextDecoder();
-
-function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
-
 test(`can provoke gc on xsnap`, async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   const code = `
 ${makeGcAndFinalize}
