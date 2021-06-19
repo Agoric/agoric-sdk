@@ -141,69 +141,58 @@ export function buildCommsDispatch(
     return sendFromKernel(target, method, args, result);
   }
 
-  function deliver(target, method, args, resultP) {
-    const result = doDeliver(target, method, args, resultP);
-    state.processMaybeFree();
-    return result;
-  }
-
-  function notify(resolutions) {
-    resolveFromKernel(resolutions);
-    state.processMaybeFree();
-  }
-
-  function dropExports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    // console.log(`-- comms ignoring dropExports`);
-  }
-
-  function retireExports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    // console.log(`-- comms ignoring retireExports`);
-  }
-
-  function retireImports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    // console.log(`-- comms ignoring retireImports`);
-  }
-
-  function dispatch(vatDeliveryObject) {
+  function doDispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'message': {
         const [targetSlot, msg] = args;
         insistMessage(msg);
-        deliver(targetSlot, msg.method, msg.args, msg.result);
-        return;
+        doDeliver(targetSlot, msg.method, msg.args, msg.result);
+        break;
       }
       case 'notify': {
         const [resolutions] = args;
-        notify(resolutions);
-        return;
+        resolveFromKernel(resolutions);
+        break;
       }
       case 'dropExports': {
         const [vrefs] = args;
-        dropExports(vrefs);
-        return;
+        assert(Array.isArray(vrefs));
+        vrefs.map(vref => insistVatType('object', vref));
+        vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+        // console.log(`-- comms ignoring dropExports`);
+        break;
       }
       case 'retireExports': {
         const [vrefs] = args;
-        retireExports(vrefs);
+        assert(Array.isArray(vrefs));
+        vrefs.map(vref => insistVatType('object', vref));
+        vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
+        // console.log(`-- comms ignoring retireExports`);
         break;
       }
       case 'retireImports': {
         const [vrefs] = args;
-        retireImports(vrefs);
+        assert(Array.isArray(vrefs));
+        vrefs.map(vref => insistVatType('object', vref));
+        vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
+        // console.log(`-- comms ignoring retireImports`);
         break;
       }
       default:
         assert.fail(X`unknown delivery type ${type}`);
+    }
+    state.processMaybeFree();
+  }
+
+  function dispatch(vatDeliveryObject) {
+    try {
+      doDispatch(vatDeliveryObject);
+    } catch (e) {
+      console.log(`error during comms.dispatch`);
+      console.log(vatDeliveryObject);
+      console.log(e);
+      throw e;
     }
   }
   harden(dispatch);
