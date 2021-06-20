@@ -156,7 +156,11 @@ export function makeState(syscall, identifierBase = 0) {
     deleteLocalPromiseState(lpid);
   }
 
-  const deadLocalPromises = new Set();
+  const maybeFree = new Set(); // lrefs
+
+  function lrefMightBeFree(lref) {
+    maybeFree.add(lref);
+  }
 
   /**
    * Increment the reference count associated with some local object.
@@ -168,13 +172,10 @@ export function makeState(syscall, identifierBase = 0) {
    * @param {string} _tag  Descriptive label for use in diagnostics
    */
   function incrementRefCount(lref, _tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
-      const refCount = Number(store.get(`${lref}.refCount`)) + 1;
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
+      const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
-      if (refCount === 1 && deadLocalPromises.has(lref)) {
-        // Oops, turns out the zero refCount was a transient
-        deadLocalPromises.delete(lref);
-      }
       store.set(`${lref}.refCount`, `${refCount}`);
     }
   }
@@ -187,13 +188,12 @@ export function makeState(syscall, identifierBase = 0) {
    *
    * @param {string} lref  Ref of the local object whose refcount is to be decremented.
    * @param {string} tag  Descriptive label for use in diagnostics
-   * @returns {boolean} true if the reference count has been decremented to
-   *    zero, false if it is still non-zero
-   * @throws if this tries to decrement the reference count below zero.
+   * @throws if this tries to decrement a reference count below zero.
    */
   function decrementRefCount(lref, tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
-      let refCount = Number(store.get(`${lref}.refCount`));
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
+      let refCount = parseInt(store.get(`${lref}.refCount`), 10);
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
@@ -209,11 +209,9 @@ export function makeState(syscall, identifierBase = 0) {
         // maybe-dead set, but we do not trigger GC until the entire comms
         // dispatch is complete and any ancillary promises are safely referenced
         // by their subscribers clists.
-        deadLocalPromises.add(lref);
-        return true;
+        maybeFree.add(lref);
       }
     }
-    return false;
   }
 
   /**
@@ -222,27 +220,36 @@ export function makeState(syscall, identifierBase = 0) {
    * Note that this should only be called *after* all work for a crank is done,
    * because transient zero refCounts are possible during the middle of a crank.
    */
-  function purgeDeadLocalPromises() {
-    if (enableLocalPromiseGC) {
-      for (const lpid of deadLocalPromises.values()) {
-        const refCount = Number(store.get(`${lpid}.refCount`));
-        assert(
-          refCount === 0,
-          X`promise ${lpid} in deadLocalPromises with non-zero refcount`,
-        );
-        let idx = 0;
-        const slots = commaSplit(store.get(`${lpid}.data.slots`));
-        for (const slot of slots) {
-          // Note: the following decrement can result in an addition to the
-          // deadLocalPromises set, which we are in the midst of iterating.
-          // TC39 went to a lot of trouble to ensure that this is kosher.
-          decrementRefCount(slot, `gc|${lpid}|s${idx}`);
-          idx += 1;
+  function processMaybeFree() {
+    // We make a copy of the set, iterate over that, then try again, until
+    // the set is empty. TC39 went to a lot of trouble to make sure you can
+    // add things to a Set while iterating over it, but I think our
+    // `!refCount` check could still be fooled, so it seems safer to use this
+    // approach.
+    while (maybeFree.size) {
+      const lrefs = Array.from(maybeFree.values());
+      lrefs.sort();
+      maybeFree.clear();
+      for (const lref of lrefs) {
+        const { type } = parseLocalSlot(lref);
+        if (type === 'promise' && enableLocalPromiseGC) {
+          const s = store.get(`${lref}.refCount`);
+          if (s) {
+            const refCount = parseInt(s, 10);
+            // refCount>0 means they were saved from near-certain death
+            if (!refCount) {
+              let idx = 0;
+              const slots = commaSplit(store.get(`${lref}.data.slots`));
+              for (const slot of slots) {
+                decrementRefCount(slot, `gc|${lref}|s${idx}`);
+                idx += 1;
+              }
+              deleteLocalPromise(lref);
+            }
+          }
         }
-        deleteLocalPromise(lpid);
       }
     }
-    deadLocalPromises.clear();
   }
 
   function mapFromKernel(kfref) {
@@ -261,7 +268,8 @@ export function makeState(syscall, identifierBase = 0) {
     incrementRefCount(lref, `{kfref}|k|clist`);
   }
 
-  function deleteKernelMapping(kfref, lref) {
+  function deleteKernelMapping(lref) {
+    const kfref = store.get(`c.${lref}`);
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
     decrementRefCount(lref, `{kfref}|k|clist`);
@@ -462,10 +470,10 @@ export function makeState(syscall, identifierBase = 0) {
     insistVatType('object', transmitterID);
     addMetaObject(transmitterID);
 
-    const index = Number(store.getRequired('r.nextID'));
+    const index = parseInt(store.getRequired('r.nextID'), 10);
     store.set('r.nextID', `${index + 1}`);
     const remoteID = `r${index}`;
-    const idBase = Number(store.get('identifierBase'));
+    const idBase = parseInt(store.get('identifierBase'), 10);
     store.set('identifierBase', `${idBase + 1000}`);
     initializeRemoteState(store, remoteID, idBase, name, transmitterID);
     store.set(nameKey, remoteID);
@@ -510,9 +518,10 @@ export function makeState(syscall, identifierBase = 0) {
     getPromiseData,
     allocatePromise,
 
+    lrefMightBeFree,
     incrementRefCount,
     decrementRefCount,
-    purgeDeadLocalPromises,
+    processMaybeFree,
 
     deciderIsKernel,
     deciderIsRemote,

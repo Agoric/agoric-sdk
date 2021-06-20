@@ -61,33 +61,31 @@ export function makeRemote(state, store, remoteID) {
     state.incrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
-  function deleteRemoteMapping(rref, lref) {
-    store.delete(`${remoteID}.c.${rref}`);
+  function deleteRemoteMapping(lref) {
+    const rrefOutbound = store.get(`${remoteID}.c.${lref}`);
+    const rrefInbound = flipRemoteSlot(rrefOutbound);
+    store.delete(`${remoteID}.c.${rrefInbound}`);
     store.delete(`${remoteID}.c.${lref}`);
     state.decrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
-  function deleteToRemoteMapping(lref) {
-    store.delete(`${remoteID}.c.${lref}`);
-  }
-
   function nextSendSeqNum() {
-    return Number(store.getRequired(`${remoteID}.sendSeq`));
+    return parseInt(store.getRequired(`${remoteID}.sendSeq`), 10);
   }
 
   function advanceSendSeqNum() {
     const key = `${remoteID}.sendSeq`;
-    const seqNum = Number(store.getRequired(key));
+    const seqNum = parseInt(store.getRequired(key), 10);
     store.set(key, `${seqNum + 1}`);
   }
 
   function lastReceivedSeqNum() {
-    return Number(store.getRequired(`${remoteID}.recvSeq`));
+    return parseInt(store.getRequired(`${remoteID}.recvSeq`), 10);
   }
 
   function advanceReceivedSeqNum() {
     const key = `${remoteID}.recvSeq`;
-    let seqNum = Number(store.getRequired(key));
+    let seqNum = parseInt(store.getRequired(key), 10);
     seqNum += 1;
     store.set(key, `${seqNum}`);
     return seqNum;
@@ -150,7 +148,6 @@ export function makeRemote(state, store, remoteID) {
     mapToRemote,
     addRemoteMapping,
     deleteRemoteMapping,
-    deleteToRemoteMapping,
     allocateRemoteObject,
     skipRemoteObjectID,
     allocateRemotePromise,

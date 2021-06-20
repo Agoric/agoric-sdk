@@ -27,7 +27,7 @@ export function makeInbound(state) {
       subscribers.indexOf(remoteID) === -1,
       X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
     );
-    remote.deleteRemoteMapping(rpid, lpid);
+    remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
   }
 
@@ -35,7 +35,6 @@ export function makeInbound(state) {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
-    remote.deleteToRemoteMapping(lpid);
     remote.enqueueRetirement(rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }
