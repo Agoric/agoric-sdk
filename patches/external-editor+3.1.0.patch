@@ -38,3 +38,51 @@ index 85a164e..217f192 100644
          d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
      };
  })();
+diff --git a/node_modules/external-editor/main/errors/ReadFileError.js b/node_modules/external-editor/main/errors/ReadFileError.js
+index 69e0513..e53e584 100644
+--- a/node_modules/external-editor/main/errors/ReadFileError.js
++++ b/node_modules/external-editor/main/errors/ReadFileError.js
+@@ -14,7 +14,18 @@ var __extends = (this && this.__extends) || (function () {
+     };
+     return function (d, b) {
+         extendStatics(d, b);
+-        function __() { this.constructor = d; }
++        function __() {
++          if (Object.defineProperty) {
++            Object.defineProperty(this, 'constructor', {
++              value: d,
++              writable: true,
++              configurable: true,
++              enumerable: true,
++            });
++          } else {
++            this.constructor = d;
++          }
++        }
+         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+     };
+ })();
+diff --git a/node_modules/external-editor/main/errors/RemoveFileError.js b/node_modules/external-editor/main/errors/RemoveFileError.js
+index 23d266f..86e228e 100644
+--- a/node_modules/external-editor/main/errors/RemoveFileError.js
++++ b/node_modules/external-editor/main/errors/RemoveFileError.js
+@@ -14,7 +14,18 @@ var __extends = (this && this.__extends) || (function () {
+     };
+     return function (d, b) {
+         extendStatics(d, b);
+-        function __() { this.constructor = d; }
++        function __() {
++          if (Object.defineProperty) {
++            Object.defineProperty(this, 'constructor', {
++              value: d,
++              writable: true,
++              configurable: true,
++              enumerable: true,
++            });
++          } else {
++            this.constructor = d;
++          }
++        }
+         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+     };
+ })();
