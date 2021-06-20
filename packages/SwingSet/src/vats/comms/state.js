@@ -174,7 +174,7 @@ export function makeState(syscall, identifierBase = 0) {
   function incrementRefCount(lref, _tag) {
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
-      const refCount = Number(store.get(`${lref}.refCount`)) + 1;
+      const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
       store.set(`${lref}.refCount`, `${refCount}`);
     }
@@ -193,7 +193,7 @@ export function makeState(syscall, identifierBase = 0) {
   function decrementRefCount(lref, tag) {
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
-      let refCount = Number(store.get(`${lref}.refCount`));
+      let refCount = parseInt(store.get(`${lref}.refCount`), 10);
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
@@ -235,7 +235,7 @@ export function makeState(syscall, identifierBase = 0) {
         if (type === 'promise' && enableLocalPromiseGC) {
           const s = store.get(`${lref}.refCount`);
           if (s) {
-            const refCount = Number(s);
+            const refCount = parseInt(s, 10);
             // refCount>0 means they were saved from near-certain death
             if (!refCount) {
               let idx = 0;
@@ -469,10 +469,10 @@ export function makeState(syscall, identifierBase = 0) {
     insistVatType('object', transmitterID);
     addMetaObject(transmitterID);
 
-    const index = Number(store.getRequired('r.nextID'));
+    const index = parseInt(store.getRequired('r.nextID'), 10);
     store.set('r.nextID', `${index + 1}`);
     const remoteID = `r${index}`;
-    const idBase = Number(store.get('identifierBase'));
+    const idBase = parseInt(store.get('identifierBase'), 10);
     store.set('identifierBase', `${idBase + 1000}`);
     initializeRemoteState(store, remoteID, idBase, name, transmitterID);
     store.set(nameKey, remoteID);
