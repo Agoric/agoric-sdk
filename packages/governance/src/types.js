@@ -82,7 +82,6 @@
  * @typedef {Object} BallotCounterCreatorFacet
  * @property {() => boolean} isOpen
  * @property {() => Ballot} getBallotTemplate
- * @property {() => void} closeVoting
  * @property {() => VoterFacet} getVoterFacet
  */
 
@@ -92,6 +91,12 @@
  * @property {() => Ballot} getBallotTemplate
  * @property {() => Promise<string>} getOutcome
  * @property {() => Promise<VoteStatistics>} getStats
+ */
+
+/**
+ * @typedef {Object} BallotCounterCloseFacet
+ *   TEST ONLY: Should not be allowed to escape from contracts
+ * @property {() => void} closeVoting
  */
 
 /**
@@ -128,4 +133,16 @@
 /**
  * @typedef {Object} VoterFacet
  * @property {SubmitVote} submitVote
+ */
+
+/**
+ * @typedef {Object} ClosureRule
+ * @property {Timer} timer
+ * @property {Timestamp} deadline
+ */
+
+/**
+ * @callback CloseVoting
+ * @param {ClosureRule} closureRule
+ * @param {() => void} closeVoting
  */

@@ -12,7 +12,7 @@ const FISH = 'Fish';
 const BAIT = 'Cut Bait';
 
 test('binary ballot', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     1n,
@@ -28,7 +28,7 @@ test('binary ballot', async t => {
     aliceSeat,
     aliceTemplate.choose([alicePositions[0]]),
   );
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, FISH);
 });
@@ -59,7 +59,7 @@ test('binary spoiled', async t => {
 });
 
 test('binary tied', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     2n,
@@ -72,13 +72,13 @@ test('binary tied', async t => {
   const positions = aliceTemplate.getDetails().positions;
   E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose([positions[0]]));
   await E(voterFacet).submitVote(bobSeat, aliceTemplate.choose([positions[1]]));
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, undefined);
 });
 
 test('binary tied w/fallback', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     2n,
@@ -92,7 +92,7 @@ test('binary tied w/fallback', async t => {
   const positions = aliceTemplate.getDetails().positions;
   E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose([positions[0]]));
   await E(voterFacet).submitVote(bobSeat, aliceTemplate.choose([positions[1]]));
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, BAIT);
 });
@@ -145,19 +145,19 @@ test('binary counter does not match ballot', async t => {
 });
 
 test('binary no votes', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     0n,
   );
 
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, undefined);
 });
 
 test('binary varying share weights', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     1n,
@@ -172,13 +172,13 @@ test('binary varying share weights', async t => {
   await E(voterFacet).submitVote(austinSeat, template.choose([BAIT]), 24n);
   await E(voterFacet).submitVote(saraSeat, template.choose([BAIT]), 11n);
 
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, 'Fish');
 });
 
 test('binary contested', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     3n,
@@ -193,14 +193,14 @@ test('binary contested', async t => {
 
   E(voterFacet).submitVote(aliceSeat, template.choose([positions[0]]), 23n);
   await E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 47n);
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
 
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, BAIT);
 });
 
 test('binary revote', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     5n,
@@ -216,7 +216,7 @@ test('binary revote', async t => {
   E(voterFacet).submitVote(aliceSeat, template.choose([positions[0]]), 23n);
   E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 47n);
   await E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 15n);
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
 
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, FISH);
@@ -243,7 +243,7 @@ test('binary ballot too many', async t => {
 });
 
 test('binary no quorum', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     QUESTION,
     [FISH, BAIT],
     2n,
@@ -257,7 +257,7 @@ test('binary no quorum', async t => {
     aliceSeat,
     aliceTemplate.choose([positions[0]]),
   );
-  creatorFacet.closeVoting();
+  closeFacet.closeVoting();
   await E(publicFacet)
     .getOutcome()
     .then(o => t.fail(`expected to reject, not ${o}`))
