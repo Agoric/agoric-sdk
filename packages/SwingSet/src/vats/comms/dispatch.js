@@ -132,7 +132,7 @@ export function buildCommsDispatch(
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    args.slots.map(s =>
+    args.slots.forEach(s =>
       assert(
         !state.hasMetaObject(s),
         X`comms meta-object ${s} not allowed in message args`,
