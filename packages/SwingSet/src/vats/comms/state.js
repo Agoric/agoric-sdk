@@ -429,6 +429,10 @@ export function makeState(syscall, identifierBase = 0) {
     if (type === 'object') {
       if (isImport) {
         removeImporter(lref, 'kernel');
+      } else {
+        // deleting the upstream/export-side mapping should trigger
+        // processMaybeFree
+        lrefMightBeFree(lref);
       }
     }
   }
