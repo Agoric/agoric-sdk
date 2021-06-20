@@ -268,7 +268,8 @@ export function makeState(syscall, identifierBase = 0) {
     incrementRefCount(lref, `{kfref}|k|clist`);
   }
 
-  function deleteKernelMapping(kfref, lref) {
+  function deleteKernelMapping(lref) {
+    const kfref = store.get(`c.${lref}`);
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
     decrementRefCount(lref, `{kfref}|k|clist`);

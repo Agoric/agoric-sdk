@@ -61,8 +61,10 @@ export function makeRemote(state, store, remoteID) {
     state.incrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
-  function deleteRemoteMapping(rref, lref) {
-    store.delete(`${remoteID}.c.${rref}`);
+  function deleteRemoteMapping(lref) {
+    const rrefOutbound = store.get(`${remoteID}.c.${lref}`);
+    const rrefInbound = flipRemoteSlot(rrefOutbound);
+    store.delete(`${remoteID}.c.${rrefInbound}`);
     store.delete(`${remoteID}.c.${lref}`);
     state.decrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }

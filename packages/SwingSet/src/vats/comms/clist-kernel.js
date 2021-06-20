@@ -72,7 +72,7 @@ export function makeKernel(state, syscall) {
       !kernelIsSubscribed,
       X`attempt to retire subscribed promise ${kfpid}`,
     );
-    state.deleteKernelMapping(kfpid, lpid);
+    state.deleteKernelMapping(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
   }
 

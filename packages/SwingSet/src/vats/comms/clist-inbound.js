@@ -27,7 +27,7 @@ export function makeInbound(state) {
       subscribers.indexOf(remoteID) === -1,
       X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
     );
-    remote.deleteRemoteMapping(rpid, lpid);
+    remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
   }
 
