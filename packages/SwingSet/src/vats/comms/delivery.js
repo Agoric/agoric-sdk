@@ -147,10 +147,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
       delim2 >= 0,
       X`received message ${message} lacks ackSeqNum delimiter`,
     );
-    const ackSeqNum = Number.parseInt(
-      message.substring(delim1 + 1, delim2),
-      10,
-    );
+    const ackSeqNum = parseInt(message.substring(delim1 + 1, delim2), 10);
     handleAckFromRemote(remoteID, ackSeqNum);
 
     const msgBody = message.substring(delim2 + 1);

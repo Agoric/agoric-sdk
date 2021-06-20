@@ -70,22 +70,22 @@ export function makeRemote(state, store, remoteID) {
   }
 
   function nextSendSeqNum() {
-    return Number(store.getRequired(`${remoteID}.sendSeq`));
+    return parseInt(store.getRequired(`${remoteID}.sendSeq`), 10);
   }
 
   function advanceSendSeqNum() {
     const key = `${remoteID}.sendSeq`;
-    const seqNum = Number(store.getRequired(key));
+    const seqNum = parseInt(store.getRequired(key), 10);
     store.set(key, `${seqNum + 1}`);
   }
 
   function lastReceivedSeqNum() {
-    return Number(store.getRequired(`${remoteID}.recvSeq`));
+    return parseInt(store.getRequired(`${remoteID}.recvSeq`), 10);
   }
 
   function advanceReceivedSeqNum() {
     const key = `${remoteID}.recvSeq`;
-    let seqNum = Number(store.getRequired(key));
+    let seqNum = parseInt(store.getRequired(key), 10);
     seqNum += 1;
     store.set(key, `${seqNum}`);
     return seqNum;
