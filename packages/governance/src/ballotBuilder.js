@@ -31,13 +31,11 @@ const buildEqualWeightBallot = (
       chosenPositions.length <= maxChoices,
       X`only ${maxChoices} position(s) allowed`,
     );
+    assert(
+      chosenPositions.every(p => positions.includes(p)),
+      X`Some positions in ${chosenPositions} are not valid in ${positions}`,
+    );
 
-    for (const position of chosenPositions) {
-      assert(
-        positions.includes(position),
-        X`Not a valid position: ${position}`,
-      );
-    }
     /** @type {CompleteEqualWeightBallot} */
     return { question, chosen: chosenPositions };
   };
@@ -64,7 +62,6 @@ const buildBallot = (method, question, positions, maxChoices = 0) => {
     case ChoiceMethod.CHOOSE_N:
       return buildEqualWeightBallot(method, question, positions, maxChoices);
     case ChoiceMethod.ORDER:
-      throw Error(`choice method ${ChoiceMethod.ORDER} is unimplemented`);
     case ChoiceMethod.WEIGHT:
       throw Error(`choice method ${ChoiceMethod.WEIGHT} is unimplemented`);
     default:

@@ -110,7 +110,8 @@ test('binary bad vote', async t => {
   t.throws(
     () => E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose(['worms'])),
     {
-      message: 'Not a valid position: "worms"',
+      message:
+        'Some positions in ["worms"] are not valid in ["Fish","Cut Bait"]',
     },
   );
 });
