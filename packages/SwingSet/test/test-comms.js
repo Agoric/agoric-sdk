@@ -426,12 +426,12 @@ test('retire result promise on inbound message', t => {
   _('k>r', [pResult, false, 42]);
   _('a<r', [paResult, false, 42]);
 
-  // Now the kernel c-list entries and the outbound remote c-list entry should
-  // be gone but the inbound remote c-list entry should still be there.  The
-  // result promise should also still be there, but be in a resolved state.
+  // Now the kernel c-list entries should be gone but the inbound/outbound
+  // remote c-list entries should still be there. The result promise should
+  // also still be there, but be in a resolved state.
   t.falsy(state.mapFromKernel(refOf(pResult)));
   t.falsy(state.mapToKernel(plResult));
-  t.falsy(remoteA.mapToRemote(plResult));
+  t.truthy(remoteA.mapToRemote(plResult));
   t.truthy(remoteA.mapFromRemote(refOf(paResult)));
   t.is(state.getPromiseStatus(plResult), 'fulfilled');
 
@@ -439,8 +439,8 @@ test('retire result promise on inbound message', t => {
   _('a>m', oaLarry, 'more', undefined);
   _('k<m', oLarry, 'more', undefined);
 
-  // And now the inbound remote c-list entry and the promise itself should be
-  // gone too.
+  // And now the remote c-list entries and the promise itself should be gone
+  t.falsy(remoteA.mapToRemote(plResult));
   t.falsy(remoteA.mapFromRemote(refOf(paResult)));
   t.is(state.getPromiseStatus(plResult), undefined);
 
@@ -555,16 +555,16 @@ test('retire outbound promises', t => {
   _('k>r', [pPromise1, false, [pPromise2]], [pPromise2, false, [pPromise1]]);
   _('a<r', [paPromise1, false, [paPromise2]], [paPromise2, false, [paPromise1]]);
 
-  // Now the kernel c-list entries and the outbound remote c-list entries should
-  // be gone but the inbound remote c-list entries should still be there
+  // Now the kernel c-list entries should be gone, but the inbound/outgoung
+  // remote c-list entries should still be there
   t.falsy(state.mapFromKernel(refOf(pPromise1)));
   t.falsy(state.mapToKernel(plPromise1));
-  t.falsy(remoteA.mapToRemote(plPromise1));
+  t.truthy(remoteA.mapToRemote(plPromise1));
   t.truthy(remoteA.mapFromRemote(refOf(paPromise1)));
 
   t.falsy(state.mapFromKernel(refOf(pPromise2)));
   t.falsy(state.mapToKernel(plPromise2));
-  t.falsy(remoteA.mapToRemote(plPromise2));
+  t.truthy(remoteA.mapToRemote(plPromise2));
   t.truthy(remoteA.mapFromRemote(refOf(paPromise2)));
 
   // Then the remote sends some traffic, which will contain an ack
@@ -572,7 +572,9 @@ test('retire outbound promises', t => {
   _('k<m', oLarry, 'more', undefined);
 
   // And now the inbound remote c-list entries should be gone too.
+  t.falsy(remoteA.mapToRemote(plPromise1));
   t.falsy(remoteA.mapFromRemote(refOf(paPromise1)));
+  t.falsy(remoteA.mapToRemote(plPromise2));
   t.falsy(remoteA.mapFromRemote(refOf(paPromise2)));
 
   done();

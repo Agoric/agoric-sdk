@@ -35,7 +35,6 @@ export function makeInbound(state) {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
-    remote.deleteToRemoteMapping(lpid);
     remote.enqueueRetirement(rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }

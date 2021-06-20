@@ -67,10 +67,6 @@ export function makeRemote(state, store, remoteID) {
     state.decrementRefCount(lref, `{rref}|${remoteID}|clist`);
   }
 
-  function deleteToRemoteMapping(lref) {
-    store.delete(`${remoteID}.c.${lref}`);
-  }
-
   function nextSendSeqNum() {
     return Number(store.getRequired(`${remoteID}.sendSeq`));
   }
@@ -150,7 +146,6 @@ export function makeRemote(state, store, remoteID) {
     mapToRemote,
     addRemoteMapping,
     deleteRemoteMapping,
-    deleteToRemoteMapping,
     allocateRemoteObject,
     skipRemoteObjectID,
     allocateRemotePromise,
