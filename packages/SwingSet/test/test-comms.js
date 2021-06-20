@@ -13,28 +13,62 @@ import {
 } from './util.js';
 import { commsVatDriver } from './commsVatDriver.js';
 
-test('provideRemoteForLocal', t => {
+test('translation', t => {
   const s = makeState(null, 0);
   s.initialize();
   const fakeSyscall = {};
   const clistKit = makeCListKit(s, fakeSyscall);
-  const { provideRemoteForLocal } = clistKit;
+  const { provideRemoteForLocal, provideLocalForRemote } = clistKit;
   const { remoteID } = s.addRemote('remote1', 'o-1');
+  const lo4 = s.allocateObject('remote0');
+  const lo5 = s.allocateObject('remote0');
+
+  // "export" some objects
 
   // n.b.: duplicated provideRemoteForLocal() call is not a cut-n-paste error
   // but a test that translation is stable
-  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'lo4'), 'ro-20');
-  t.is(provideRemoteForLocal(remoteID, 'lo5'), 'ro-21');
+  t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, lo4), 'ro-20');
+  t.is(provideRemoteForLocal(remoteID, lo5), 'ro-21');
+
+  const r = s.getRemote(remoteID);
+  const seq1 = r.nextSendSeqNum();
+  t.is(r.getLastSent(lo4), seq1);
+  r.advanceSendSeqNum();
+  const seq2 = r.nextSendSeqNum();
+  t.not(r.getLastSent(lo4), seq2);
+  provideRemoteForLocal(remoteID, lo4);
+  t.is(r.getLastSent(lo4), seq2);
+
+  t.deepEqual(s.getImporters(lo4), [remoteID]);
+  const { remoteID: remoteID2 } = s.addRemote('remote2', 'o-2');
+  provideRemoteForLocal(remoteID2, lo4);
+  t.deepEqual(s.getImporters(lo4), [remoteID, remoteID2]);
+
+  r.deleteRemoteMapping(lo4);
+  t.deepEqual(s.getImporters(lo4), [remoteID2]);
+  t.is(r.mapToRemote(lo4, undefined));
+  t.is(r.mapFromRemote(flipRemoteSlot('ro-20')), undefined);
+
+  // now "import" one
+  const lo6 = provideLocalForRemote(remoteID, 'ro-30');
+  t.is(lo6, 'lo12'); // expected
+  t.is(lo6, provideLocalForRemote(remoteID, 'ro-30')); // stable
+  t.is(r.mapToRemote(lo6), 'ro+30');
+  t.is(r.mapFromRemote('ro-30'), lo6);
+  r.deleteRemoteMapping(lo6);
+  t.is(r.mapToRemote(lo6), undefined);
+  t.is(r.mapFromRemote('ro-30'), undefined);
 });
 
 function mockSyscall() {
   const sends = [];
+  const gcs = [];
   const fakestore = new Map();
   const syscall = harden({
-    send(targetSlot, method, args) {
+    send(targetSlot, method, args, _result) {
       sends.push([targetSlot, method, args]);
-      return 'r-1';
+      // return 'r-1';
     },
     subscribe(_targetSlot) {},
     vatstoreGet(key) {
@@ -46,9 +80,32 @@ function mockSyscall() {
     vatstoreDelete(key) {
       fakestore.delete(key);
     },
+    dropImports(vrefs) {
+      gcs.push(['dropImports', vrefs]);
+    },
+    retireImports(vrefs) {
+      gcs.push(['retireImports', vrefs]);
+    },
+    retireExports(vrefs) {
+      gcs.push(['retireExports', vrefs]);
+    },
   });
-  return { syscall, sends };
+  return { syscall, sends, gcs, fakestore };
 }
+
+/*
+function dumpFakestore(fakestore, prefix = '') {
+  const keys = Array.from(fakestore.keys());
+  keys.sort();
+  console.log(`--begin fakestore dump (prefix=${prefix}):`);
+  for (const key of keys) {
+    if (key.startsWith(prefix)) {
+      console.log(`${key} : ${fakestore.get(key)}`);
+    }
+  }
+  console.log(`--end fakestore dump:`);
+}
+*/
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -136,7 +193,7 @@ test('transmit', t => {
 test('receive', t => {
   // look at machine B, which is receiving remote messages aimed at a local
   // vat's object 'bob'
-  const { syscall, sends } = mockSyscall();
+  const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
   state.initialize();
@@ -236,18 +293,203 @@ test('receive', t => {
   //   { message: /unexpected recv seqNum .*/ },
   // );
 
-  // make sure comms can tolerate GC operations, even if they're a no-op
+  // bob!cat(alice, bob, agrippa)
+  const expectedAgrippaKernel = 'o+33';
+  dispatch(
+    makeMessage(
+      receiverID,
+      'receive',
+      encodeArgs(
+        `5:0:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-22;argsbytes`,
+      ),
+    ),
+  );
+  t.deepEqual(sends.shift(), [
+    bobKernel,
+    'cat',
+    capdata('argsbytes', [
+      expectedAliceKernel,
+      bobKernel,
+      expectedAgrippaKernel,
+    ]),
+  ]);
+
+  // upstream GC operations should work
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
+  const gc1 = `1:5:gc:dropExport:ro+20\ngc:dropExport:ro+21`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc1)]);
+
   dispatch(makeRetireExports(expectedAliceKernel, expectedAyanaKernel));
-  // Sending retireImport into a vat that hasn't yet emitted dropImport is
-  // rude, and would only happen if the exporter unilaterally revoked the
-  // object's identity. Normally the kernel would only send retireImport
-  // after receiving dropImport (and sending a dropExport into the exporter,
-  // and getting a retireExport from the exporter, gracefully terminating the
-  // object's identity). We do it the rude way because it's good enough to
-  // test the comms vat can tolerate it, but we may have to update this when
-  // we implement retireImport for real.
-  dispatch(makeRetireImports(bobKernel));
+  const gc2 = `2:5:gc:retireExport:ro+20\ngc:retireExport:ro+21`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc2)]);
+  t.deepEqual(sends, []);
+
+  // sending an upstream drop makes it legal to expect a downstream retire
+  dispatch(makeDropExports(expectedAgrippaKernel));
+  const gc3 = `3:5:gc:dropExport:ro+22`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc3)]);
+  t.deepEqual(sends, []);
+
+  dispatch(
+    makeMessage(receiverID, 'receive', encodeArgs(`6:3:gc:retireImport:ro-22`)),
+  );
+
+  t.deepEqual(gcs.shift(), ['retireExports', [expectedAgrippaKernel]]);
+  t.deepEqual(gcs, []);
+});
+
+test('comms gc', t => {
+  // we exercise comms on machine A, which is communicating with machine B
+  // about various objects that are dropped and retired
+  const { syscall, sends, gcs } = mockSyscall();
+  const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  const { state, clistKit: ck } = debugState.get(dispatch);
+  state.initialize();
+  const transmitterID = 'o-1'; // vat-tp target for B
+  const { remoteID, receiverID } = state.addRemote('B', transmitterID);
+  function didTx(exp) {
+    t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(exp)]);
+  }
+  function rx(msg) {
+    dispatch(makeMessage(receiverID, 'receive', encodeArgs(msg)));
+  }
+
+  // Alice is a Remoteable on some vat of machine A
+  const aliceKernel = 'o-10';
+  // const aliceLocal = ck.provideLocalForKernel(aliceKernel);
+
+  // Bob is ultimately a Remotable on machine B, so is represented as an
+  // export of comms A, and a Presence in all other vats on machine A. Local
+  // vats talk to 'bobKernel'. When comms A sends a message to bob, it will
+  // appear as a syscall.send to 'transmitterID' with a comms message that
+  // targets 'bobRemote'
+  const bobRemoteInbound = 'ro-13';
+  const bobLocal = ck.provideLocalForRemote(remoteID, bobRemoteInbound);
+  const bobRemote = ck.provideRemoteForLocal(remoteID, bobLocal); // outbound
+  const bobKernel = ck.provideKernelForLocal(bobLocal);
+  t.is(bobKernel, 'o+31');
+  t.is(bobRemote, 'ro+13');
+
+  // A exports amy, B drops, then retires
+  let amyKernel = 'o-11';
+  let amyOutbound = 'ro-20'; // expected
+  let amyInbound = flipRemoteSlot(amyOutbound);
+  // bob~.foo(amy)
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
+  didTx(`1:0:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  t.deepEqual(sends, []);
+  // B-> dropExport(amy), causes commsA to syscall.drop
+  rx(`1:1:gc:dropExport:${amyInbound}`);
+  t.deepEqual(gcs.shift(), ['dropImports', [amyKernel]]);
+  t.deepEqual(gcs, []);
+  // B-> retireExport(amy), causes commsA to syscall.retireImport
+  rx(`2:1:gc:retireExport:${amyInbound}`);
+  t.deepEqual(gcs.shift(), ['retireImports', [amyKernel]]);
+  t.deepEqual(gcs, []);
+
+  // A exports amy, B drops+retires in a single message
+  amyKernel = 'o-12';
+  amyOutbound = 'ro-21'; // expected
+  amyInbound = flipRemoteSlot(amyOutbound);
+  // bob~.foo(amy)
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
+  didTx(`2:2:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  t.deepEqual(sends, []);
+  // B-> dropExport(amy)+retireExport(amy), commsA does syscall.drop+retire
+  rx(`3:2:gc:dropExport:${amyInbound}\ngc:retireExport:${amyInbound}`);
+  t.deepEqual(gcs.shift(), ['dropImports', [amyKernel]]);
+  t.deepEqual(gcs.shift(), ['retireImports', [amyKernel]]);
+  t.deepEqual(gcs, []);
+
+  // A exports amy, B drops, A retires, then "Cross A12" from the diagram
+  amyKernel = 'o-13';
+  amyOutbound = 'ro-22'; // expected
+  amyInbound = flipRemoteSlot(amyOutbound);
+  // bob~.foo(amy)
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
+  didTx(`3:3:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  t.deepEqual(sends, []);
+  // B-> dropExport(amy), causes commsA to syscall.drop
+  rx(`4:3:gc:dropExport:${amyInbound}`);
+  t.deepEqual(gcs.shift(), ['dropImports', [amyKernel]]);
+  t.deepEqual(gcs, []);
+  // kernelA retires the import, commsA should forward retireImport to B
+  dispatch(makeRetireImports(amyKernel));
+  didTx(`4:4:gc:retireImport:${amyOutbound}`);
+  t.deepEqual(sends, []);
+  // pretend commsB had a retire in flight, and they crossed on the wire
+  rx(`5:4:gc:retireExport:${amyOutbound}`);
+  // that should be ignored
+  t.deepEqual(gcs, []);
+  t.deepEqual(sends, []);
+
+  // A exports amy, A re-exports amy, B sends uninformed drop, B sends informed drop
+  amyKernel = 'o-14';
+  amyOutbound = 'ro-23'; // expected
+  amyInbound = flipRemoteSlot(amyOutbound);
+  // bob~.foo(amy)
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
+  didTx(`5:5:deliver:${bobRemote}:foo::${amyOutbound};args`); // first export
+  t.deepEqual(sends, []);
+  // B-> dropExport(amy), pretend it's stalled on the wire
+  const uninformed = `6:5:gc:dropExport:${amyInbound}`; // ack=5=first export
+  // bob~.foo(amy) (re-export)
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
+  didTx(`6:5:deliver:${bobRemote}:foo::${amyOutbound};args`); // second export
+  t.deepEqual(sends, []);
+  const informed = `7:6:gc:dropExport:${amyInbound}`; // ack=6=second export
+  // first drop finally arrives, should be ignored
+  rx(uninformed);
+  t.deepEqual(gcs, []);
+  rx(informed);
+  t.deepEqual(gcs.shift(), ['dropImports', [amyKernel]]);
+  t.deepEqual(gcs, []);
+
+  // Now we switch roles, A *imports* bert from B. To import bert, first give
+  // B access to alice.
+  let bertInbound = 'ro-24';
+  let bertKernel = 'o+32'; // expected
+  let bertOutbound = flipRemoteSlot(bertInbound);
+  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [aliceKernel])));
+  const aliceOutbound = `ro-24`; // expected
+  const aliceInbound = flipRemoteSlot(aliceOutbound);
+  didTx(`7:7:deliver:${bobRemote}:foo::${aliceOutbound};args`);
+
+  // alice~.bar(bert)
+  rx(`8:6:deliver:${aliceInbound}:bar::${bertInbound};args`); // first import
+  let barmsg = [aliceKernel, 'bar', capdata('args', [bertKernel])];
+  t.deepEqual(sends.shift(), barmsg);
+  t.deepEqual(sends, []);
+  t.deepEqual(gcs, []);
+
+  // A drops+retires bert
+  dispatch(makeDropExports(bertKernel));
+  didTx(`8:8:gc:dropExport:${bertOutbound}`);
+  t.deepEqual(sends, []);
+  dispatch(makeRetireExports(bertKernel));
+  didTx(`9:8:gc:retireExport:${bertOutbound}`);
+  t.deepEqual(sends, []);
+  // now pretend B sent a retire that crossed on the wire, it should be ignored. Cross B2/3.
+  rx(`9:8:gc:retireImport:${bertInbound}`);
+  t.deepEqual(gcs, []);
+
+  // A drops bert, then B retires
+  bertInbound = 'ro-25';
+  bertKernel = 'o+33'; // expected
+  bertOutbound = flipRemoteSlot(bertInbound);
+  rx(`10:9:deliver:${aliceInbound}:bar::${bertInbound};args`); // first import
+  barmsg = [aliceKernel, 'bar', capdata('args', [bertKernel])];
+  t.deepEqual(sends.shift(), barmsg);
+  t.deepEqual(sends, []);
+  t.deepEqual(gcs, []);
+  dispatch(makeDropExports(bertKernel));
+  didTx(`10:10:gc:dropExport:${bertOutbound}`);
+  t.deepEqual(sends, []);
+  // B retires
+  rx(`11:10:gc:retireImport:${bertInbound}`);
+  t.deepEqual(gcs.shift(), ['retireExports', [bertKernel]]);
+  t.deepEqual(gcs, []);
+  t.deepEqual(sends, []);
 });
 
 // This tests the various pathways through the comms vat driver.  This has the
