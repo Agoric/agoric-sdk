@@ -196,6 +196,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function evict(vatID, makeSnapshot = false) {
     assert(!makeSnapshot, 'not implemented@@@');
     assert(lookup(vatID));
+
+    recent.remove(vatID);
+
     const info = ephemeral.vats.get(vatID);
     if (!info) {
       // console.debug('evict: not online:', vatID);
