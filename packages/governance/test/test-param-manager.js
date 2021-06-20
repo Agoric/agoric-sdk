@@ -100,6 +100,13 @@ test('params one BigInt', async t => {
     },
     'value should be a bigint',
   );
+  t.throws(
+    () => updateBigint(-1000n),
+    {
+      message: '-1000 is negative',
+    },
+    'NAT params must be positive',
+  );
 });
 
 test('params one ratio', async t => {
