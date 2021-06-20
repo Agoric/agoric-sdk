@@ -478,11 +478,6 @@ export function makeVatKeeper(
       `${vatID}.lastSnapshot`,
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
-    console.log('@@@saveSnapshot', {
-      vatID,
-      snapshotID,
-      startPos: endPosition,
-    });
   }
 
   function vatStats() {
