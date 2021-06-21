@@ -2,7 +2,7 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 
-const log = anylogger('block-manager');
+const console = anylogger('block-manager');
 
 const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
@@ -32,11 +32,11 @@ export default function makeBlockManager({
     // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
     function finish() {
-      // log.error('Action', action.type, action.blockHeight, 'is done!');
+      // console.error('Action', action.type, action.blockHeight, 'is done!');
       runTime += Date.now() - start;
     }
 
-    // log.error('Performing action', action);
+    // console.error('Performing action', action);
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
@@ -75,7 +75,16 @@ export default function makeBlockManager({
       default:
         assert.fail(X`${action.type} not recognized`);
     }
-    p.then(finish, finish);
+    // Just attach some callbacks, but don't use the resulting neutered result
+    // promise.
+    p.then(finish, e => {
+      // None of these must fail, and if they do, log them verbosely before
+      // returning to the chain.
+      console.error(action.type, 'error:', e);
+      finish();
+    });
+    // Return the original promise so that the caller gets the original
+    // resolution or rejection.
     return p;
   }
 
@@ -90,7 +99,7 @@ export default function makeBlockManager({
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
       case COMMIT_BLOCK: {
-        verboseBlocks && log.info('block', action.blockHeight, 'commit');
+        verboseBlocks && console.info('block', action.blockHeight, 'commit');
         if (
           computedHeight !== undefined &&
           action.blockHeight !== computedHeight
@@ -104,14 +113,14 @@ export default function makeBlockManager({
       }
 
       case BEGIN_BLOCK: {
-        verboseBlocks && log.info('block', action.blockHeight, 'begin');
+        verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
         for (const a of currentActions) {
           // FIXME: This is a problem, apparently with Cosmos SDK.
           // Need to diagnose.
           if (a.blockHeight !== action.blockHeight) {
-            log.debug(
+            console.debug(
               'Block',
               action.blockHeight,
               'begun with a leftover uncommitted action:',
@@ -194,7 +203,7 @@ export default function makeBlockManager({
 
           const saveTime = Date.now() - start2;
 
-          log.debug(
+          console.debug(
             `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
           );
         }
