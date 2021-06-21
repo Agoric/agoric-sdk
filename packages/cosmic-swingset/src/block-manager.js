@@ -27,6 +27,7 @@ export default function makeBlockManager({
 }) {
   let computedHeight = bootstrapBlock ? undefined : savedHeight;
   let runTime = 0;
+  let chainTime;
 
   async function kernelPerformAction(action) {
     // TODO warner we could change this to run the kernel only during END_BLOCK
@@ -108,6 +109,17 @@ export default function makeBlockManager({
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
         }
+
+        // Save the kernel's computed state just before the chain commits.
+        const start2 = Date.now();
+        await saveOutsideState(computedHeight, savedActions, savedChainSends);
+
+        const saveTime = Date.now() - start2;
+
+        console.debug(
+          `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
+        );
+
         flushChainSends(false);
         break;
       }
@@ -184,7 +196,7 @@ export default function makeBlockManager({
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
           await saveChainState();
-          const chainTime = Date.now() - start;
+          chainTime = Date.now() - start;
 
           // Advance our saved state variables.
           savedActions = currentActions;
@@ -195,17 +207,6 @@ export default function makeBlockManager({
           } else {
             computedHeight = action.blockHeight;
           }
-
-          // Save the kernel's computed state so that we can recover if we ever
-          // reset before Cosmos SDK commit.
-          const start2 = Date.now();
-          await saveOutsideState(computedHeight, savedActions, savedChainSends);
-
-          const saveTime = Date.now() - start2;
-
-          console.debug(
-            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
-          );
         }
 
         currentActions = [];
