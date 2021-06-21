@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
@@ -143,12 +143,15 @@ export const makeZoeStorageManager = createZCFVat => {
         },
         withdrawAndBurn: totalToBurn => {
           // eslint-disable-next-line no-use-before-define
-          zcfAssert.notThrows(() => {
+          try {
             // COMMIT POINT
             const payment = localPooledPurse.withdraw(totalToBurn);
             // Note redundant COMMIT POINT within burn.
             localIssuer.burn(payment, totalToBurn);
-          });
+          } catch (err) {
+            // eslint-disable-next-line no-use-before-define
+            zcfAssert.fail(X`fatal ${err}`);
+          }
         },
       });
       return zoeMint;

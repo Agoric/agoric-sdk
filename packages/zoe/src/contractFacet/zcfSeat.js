@@ -150,7 +150,7 @@ export const createSeatManager = (
       X`At least one seat has a staged allocation but was not included in the call to reallocate`,
     );
 
-    zcfAssert.notThrows(() => {
+    try {
       // No side effects above. All conditions checked which could have
       // caused us to reject this reallocation.
       // COMMIT POINT
@@ -172,7 +172,9 @@ export const createSeatManager = (
       });
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
-    });
+    } catch (err) {
+      zcfAssert.fail(X`fatal ${err}`);
+    }
   };
 
   const reallocate = (/** @type {ZCFSeat[]} */ ...seats) => {

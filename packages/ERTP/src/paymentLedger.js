@@ -113,15 +113,20 @@ export const makePaymentLedger = (
       X`rights were not conserved: ${total} vs ${newTotal}`,
     );
 
-    return fatalAssert.notThrows(() => {
+    let newPayments;
+    try {
       // COMMIT POINT
       payments.forEach(payment => paymentLedger.delete(payment));
 
-    const newPayments = newPaymentBalances.map(balance => {
-      const newPayment = makePayment(allegedName, brand);
-      paymentLedger.init(newPayment, balance);
-      return newPayment;
-    });
+      newPayments = newPaymentBalances.map(balance => {
+        const newPayment = makePayment(allegedName, brand);
+        paymentLedger.init(newPayment, balance);
+        return newPayment;
+      });
+    } catch (err) {
+      fatalAssert.fail(X`fatal ${err}`);
+    }
+    return harden(newPayments);
   };
 
   /** @type {IssuerIsLive} */
@@ -145,10 +150,12 @@ export const makePaymentLedger = (
       assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
       assertAmountConsistent(paymentBalance, optAmount);
-      fatalAssert.notThrows(() => {
+      try {
         // COMMIT POINT.
         paymentLedger.delete(payment);
-      });
+      } catch (err) {
+        fatalAssert.fail(X`fatal ${err}`);
+      }
       return paymentBalance;
     });
   };
@@ -244,13 +251,15 @@ export const makePaymentLedger = (
     // Note: this does not guarantee that optAmount itself is a valid stable amount
     assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
-    fatalAssert.notThrows(() => {
+    try {
       // COMMIT POINT
       // Move the assets in `srcPayment` into this purse, using up the
       // source payment, such that total assets are conserved.
       paymentLedger.delete(srcPayment);
       updatePurseBalance(newPurseBalance);
-    });
+    } catch (err) {
+      fatalAssert.fail(X`fatal ${err}`);
+    }
     return srcPaymentBalance;
   };
 
@@ -268,11 +277,15 @@ export const makePaymentLedger = (
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
     const payment = makePayment(allegedName, brand);
-    // COMMIT POINT
-    // Move the withdrawn assets from this purse into a new payment
-    // which is returned. Total assets must remain conserved.
-    updatePurseBalance(newPurseBalance);
-    paymentLedger.init(payment, amount);
+    try {
+      // COMMIT POINT
+      // Move the withdrawn assets from this purse into a new payment
+      // which is returned. Total assets must remain conserved.
+      updatePurseBalance(newPurseBalance);
+      paymentLedger.init(payment, amount);
+    } catch (err) {
+      fatalAssert.fail(X`fatal ${err}`);
+    }
     return payment;
   };
 

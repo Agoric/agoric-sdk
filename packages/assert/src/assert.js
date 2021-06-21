@@ -40,8 +40,6 @@ const missing = [
   'details',
   'quote',
   'makeAssert',
-  'notThrows',
-  'atomic',
 ].filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
   throw new Error(
