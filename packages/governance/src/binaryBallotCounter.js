@@ -6,6 +6,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
+import { scheduleClose } from './closingRule';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
 
@@ -27,14 +28,15 @@ const makeBinaryBallotCounter = (
   positions,
   threshold,
   tieOutcome = undefined,
+  closingRule,
 ) => {
   assert(
     positions.length === 2,
     X`Binary ballots must have exactly two positions. had ${positions.length}: ${positions}`,
   );
+  assert.typeof(question, 'string');
   assert.typeof(positions[0], 'string');
   assert.typeof(positions[1], 'string');
-  assert.typeof(question, 'string');
   if (tieOutcome) {
     assert(
       positions.includes(tieOutcome),
@@ -116,23 +118,29 @@ const makeBinaryBallotCounter = (
     }
   };
 
+  const closeVoting = () => {
+    isOpen = false;
+    countVotes();
+  };
+
   const sharedFacet = {
     getBallotTemplate: () => template,
     isOpen: () => isOpen,
+    getClosingRule: () => closingRule,
   };
 
   /** @type {VoterFacet} */
   const voterFacet = Far('voterFacet', {
+    ...sharedFacet,
     submitVote: recordBallot,
   });
+
+  // exposed for testing. In contracts, shouldn't be released.
+  const closeFacet = Far('closeFacet', { closeVoting });
 
   /** @type {BallotCounterCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
     ...sharedFacet,
-    closeVoting: () => {
-      isOpen = false;
-      countVotes();
-    },
     getVoterFacet: () => voterFacet,
   });
 
@@ -142,7 +150,7 @@ const makeBinaryBallotCounter = (
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
   });
-  return { publicFacet, creatorFacet };
+  return { publicFacet, creatorFacet, closeFacet };
 };
 
 const start = zcf => {
@@ -151,8 +159,26 @@ const start = zcf => {
   // discount abstentions, we could refactor to provide the quorumCounter as a
   // component.
   // TODO(hibbert) checking the quorum should be pluggable and legible.
-  const { question, positions, quorumThreshold } = zcf.getTerms();
-  return makeBinaryBallotCounter(question, positions, quorumThreshold);
+  const {
+    question,
+    positions,
+    quorumThreshold,
+    tieOutcome,
+    closingRule,
+  } = zcf.getTerms();
+
+  // The closeFacet is exposed for testing, but doesn't escape from a contract
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
+    question,
+    positions,
+    quorumThreshold,
+    tieOutcome,
+    closingRule,
+  );
+
+  scheduleClose(closingRule, closeFacet.closeVoting);
+
+  return { publicFacet, creatorFacet };
 };
 
 harden(start);
