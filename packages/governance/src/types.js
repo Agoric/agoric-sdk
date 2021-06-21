@@ -42,7 +42,7 @@
  * @property {ChoiceMethod} method
  * @property {string} question
  * @property {string[]} positions
- * @property {bigint} maxChoices
+ * @property {number} maxChoices
  */
 
 /**
