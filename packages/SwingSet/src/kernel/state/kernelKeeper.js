@@ -853,7 +853,9 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
         reachable -= 1;
       }
       recognizable -= 1;
-      maybeFreeKrefs.add(kernelSlot);
+      if (!reachable || !recognizable) {
+        maybeFreeKrefs.add(kernelSlot);
+      }
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
 
