@@ -43,7 +43,7 @@
  * @property {ChoiceMethod} method
  * @property {string} question
  * @property {string[]} positions
- * @property {bigint} maxChoices
+ * @property {number} maxChoices
  * @property {ClosingRule} closingRule
  */
 
@@ -53,7 +53,7 @@
  * @property {ChoiceMethod} method
  * @property {string} question
  * @property {string[]} positions
- * @property {bigint} maxChoices
+ * @property {number} maxChoices
  * @property {ClosingRule} closingRule
  * @property {Instance} registrar
  */
@@ -159,4 +159,18 @@
  * @callback CloseVoting
  * @param {ClosingRule} closingRule
  * @param {() => void} closeVoting
+ */
+
+/**
+ * @typedef {Object} AddQuestionReturn
+ * @property {BallotCounterPublicFacet} publicFacet
+ * @property {BallotCounterCreatorFacet} creatorFacet
+ * @property {Instance} instance
+ */
+
+/**
+ * @callback AddQuestion
+ * @param {Installation} voteCounter
+ * @param {BallotDetailsShort} questionDetailsShort
+ * @returns {Promise<AddQuestionReturn>}
  */
