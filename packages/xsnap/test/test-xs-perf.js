@@ -30,6 +30,13 @@ test('meter details', async t => {
     m.delete(ix);
     s1.delete(ix);
   }
+
+  // metering bigint
+  const bn = 12345678901234567n;
+  s1.add(bn * bn * bn);
+
+  // metering regex
+  s1.add('aaaaa!'.match(/^[a-z]+/))
   `);
   const {
     meterUsage: { meterType, ...meters },
@@ -37,7 +44,7 @@ test('meter details', async t => {
 
   t.like(
     meters,
-    { compute: 1_260_073, allocate: 42_074_144 },
+    { compute: 1_260_179, allocate: 42_074_144 },
     'compute, allocate meters should be stable; update METER_TYPE?',
   );
 
@@ -56,7 +63,21 @@ test('meter details', async t => {
     },
     'auxiliary (non-consensus) meters are available',
   );
-  t.is(meterType, 'xs-meter-7');
+  t.is(meterType, 'xs-meter-8');
+});
+
+test('metering regex - REDOS', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  // Java Classname Evil Regex
+  // https://en.wikipedia.org/wiki/ReDoS
+  // http://www.owasp.org/index.php/OWASP_Validation_Regex_Repository
+  const result = await vat.evaluate(`
+  'aaaaaaaaa!'.match(/^(([a-z])+.)+/)
+  `);
+  const { meterUsage: meters } = result;
+  t.like(meters, { compute: 149 });
 });
 
 test('meter details are still available with no limit', async t => {
