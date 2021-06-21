@@ -12,9 +12,11 @@
   "scripts": {
     "build": "yarn build-zcfBundle",
     "test": "ava --verbose",
+    "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m --verbose",
+    "test:swingset": "ava 'test/swingsetTests/**/test-*.js' -T 10m --verbose",
     "test:xs": "yarn test:xs-unit",
     "test:xs-unit": "ava-xs --verbose",
-    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 test/swingsetTests/**/test-*.js",
+    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
