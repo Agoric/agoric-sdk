@@ -70,7 +70,8 @@ function byName(a, b) {
  * 'bootstrap.js'.
  *
  * @param {string} basedir  The directory to scan
- *
+ * @param {Object} [options]
+ * @param {boolean} [options.dev] whether to include devDependencies
  * @returns {SwingSetConfig} a swingset config object: {
  *   bootstrap: "bootstrap",
  *   vats: {
@@ -87,7 +88,8 @@ function byName(a, b) {
  *
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
-export function loadBasedir(basedir) {
+export function loadBasedir(basedir, options = {}) {
+  const { dev = false } = options;
   /** @type { SwingSetConfigDescriptor } */
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
@@ -120,7 +122,7 @@ export function loadBasedir(basedir) {
     // scanning thing is something we decide we want to have long term.
     bootstrapPath = undefined;
   }
-  const config = { vats };
+  const config = { vats, dev };
   if (bootstrapPath) {
     vats.bootstrap = {
       sourceSpec: bootstrapPath,
@@ -385,7 +387,9 @@ export async function initializeSwingset(
         validateBundleDescriptor(desc, groupName, name);
         if (desc.sourceSpec) {
           names.push(name);
-          presumptiveBundles.push(bundleSource(desc.sourceSpec));
+          presumptiveBundles.push(
+            bundleSource(desc.sourceSpec, { dev: config.dev }),
+          );
         } else if (desc.bundleSpec) {
           names.push(name);
           presumptiveBundles.push(fs.readFileSync(desc.bundleSpec));

@@ -10,7 +10,7 @@ const dirname = path.dirname(filename);
 
 async function main(basedir, argv) {
   const dir = path.resolve(`${dirname}/..`, basedir);
-  const config = await loadBasedir(dir);
+  const config = await loadBasedir(dir, { dev: true });
   config.defaultManagerType = 'xs-worker';
   const controller = await buildVatController(config, argv);
   await controller.run();

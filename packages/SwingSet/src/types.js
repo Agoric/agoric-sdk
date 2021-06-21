@@ -163,6 +163,8 @@
 /**
  * @typedef {Object} SwingSetConfig a swingset config object
  * @property {string} [bootstrap]
+ * @property {boolean} [dev] indicates that `devDependencies` of the
+ * surrounding `package.json` should be accessible to bundles.
  * @property { ManagerType } [defaultManagerType]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
