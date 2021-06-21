@@ -181,6 +181,7 @@ function makeManagerKit(
 
   /**
    * @param {StreamPosition | undefined} startPos
+   * @returns { Promise<number?> } number of deliveries, or null if !useTranscript
    */
   async function replayTranscript(startPos = undefined) {
     // console.log('replay from', { vatID, startPos });
@@ -206,7 +207,10 @@ function makeManagerKit(
       }
       transcriptManager.checkReplayError();
       kernelSlog.write({ type: 'finish-replay', vatID });
+      return deliveryNum;
     }
+
+    return null;
   }
 
   /**

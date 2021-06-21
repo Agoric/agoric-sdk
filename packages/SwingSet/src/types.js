@@ -125,7 +125,7 @@
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: (startPos?: unknown) => Promise<void>,
+ *              replayTranscript: (startPos?: unknown) => Promise<number?>,
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager

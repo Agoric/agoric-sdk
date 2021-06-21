@@ -118,7 +118,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const { enablePipelining = false } = options;
 
     const lastSnapshot = vatKeeper.getLastSnapshot();
-    await manager.replayTranscript(
+    const entriesReplayed = await manager.replayTranscript(
       lastSnapshot ? lastSnapshot.startPos : undefined,
     );
 
@@ -128,7 +128,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       enablePipelining,
       options,
     };
-    // console.log('ensure -> online:', vatID, options);
+    console.log(
+      vatID,
+      'online:',
+      options.managerType,
+      options.description || '',
+      'transcript entries replayed:',
+      entriesReplayed,
+    );
     ephemeral.vats.set(vatID, result);
     // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
