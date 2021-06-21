@@ -44,7 +44,7 @@
  * @property {string} question
  * @property {string[]} positions
  * @property {bigint} maxChoices
- * @property {ClosureRule} closureRule
+ * @property {ClosingRule} closingRule
  */
 
 /**
@@ -54,7 +54,7 @@
  * @property {string} question
  * @property {string[]} positions
  * @property {number} maxChoices
- * @property {ClosureRule} closureRule
+ * @property {ClosingRule} closingRule
  * @property {Instance} registrar
  */
 

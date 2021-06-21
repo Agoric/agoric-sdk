@@ -27,7 +27,7 @@ async function committeeBinaryStart(
     positions: ['Eeny', 'Meeny'],
     quorumThreshold: 3n,
     tieOutcome: undefined,
-    closureRule: {
+    closingRule: {
       timer,
       deadline: 3n,
     },
