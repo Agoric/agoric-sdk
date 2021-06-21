@@ -83,15 +83,13 @@ static char* fxWriteNetStringError(int code);
 // The order of the callbacks materially affects how they are introduced to
 // code that runs from a snapshot, so must be consistent in the face of
 // upgrade.
-#define mxSnapshotCallbackCount 6
+#define mxSnapshotCallbackCount 5
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_issueCommand, // 0
-	// fx_Array_prototype_meter, // 1
-	NULL, // 1
-	fx_print, // 2
-	fx_setImmediate, // 3
-	fx_gc, // 4
-	fx_performance_now, // 5
+	fx_print, // 1
+	fx_setImmediate, // 2
+	fx_gc, // 3
+	fx_performance_now, // 4
 	// fx_evalScript,
 	// fx_isPromiseJobQueueEmpty,
 	// fx_setInterval,
