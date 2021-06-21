@@ -1,18 +1,30 @@
 @startuml governance invitation linkages
 
 class "Registrar\n(In a Vat)" as Registrar {
-    Question...
-    addQuestion(ballotCounterInstall, question, deadline)
+    Questions[]
+    terms: committeeSize...
+    addQuestion(ballotCounterInstall, question, details)
     questionNotifier()
     #getVoterInvitation()
+    getOpenQuestions()
 }
 
 note "produces VoterInvitations.\nunaware of BallotCounters." as N1
 Registrar .. N1
 
+object BallotDetails {
+    question
+    positions
+    maxChoices
+    closingRule: {timer, deadline}
+    registrar
+}
+
 class "BallotCounter\n(In a Vat)" as BallotCounter {
     Question
     quorumRule
+    closingRule
+    registrar
     --
     makeBallot()
     countVotes()
@@ -20,6 +32,7 @@ class "BallotCounter\n(In a Vat)" as BallotCounter {
     getDeadline()
     +getBallotTemplate()
     +getOutcome()
+    +getStats()
 }
 
 note "unaware of voter registration." as N2
@@ -27,9 +40,12 @@ BallotCounter .. N2
 
 class BallotTemplate {
     question
-    positions
+    maxChoices
+
     choose(position...)
 }
+
+BallotTemplate ..> BallotDetails
 
 object Question {
     name
