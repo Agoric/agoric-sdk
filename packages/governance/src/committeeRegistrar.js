@@ -9,7 +9,7 @@ import { allComparable } from '@agoric/same-structure';
 // Each CommitteeRegistrar represents a particular set of voters. The number of
 // voters is visible in the terms.
 const start = zcf => {
-  // Question => counter's { creatorFacet, publicFacet, instance }
+  // Question => { voter, publicFacet }
   const allQuestions = makeStore('Question');
   const { notifier, updater } = makeNotifierKit();
   const invitations = [];
@@ -29,9 +29,8 @@ const start = zcf => {
     const handler = voterSeat => {
       return Far(`voter${index}`, {
         castBallot: ballot => {
-          const { creatorFacet } = allQuestions.get(ballot.question);
-          const voterFacet = E(creatorFacet).getVoterFacet();
-          return E(voterFacet).submitVote(voterSeat, ballot);
+          const { voter } = allQuestions.get(ballot.question);
+          return E(voter).submitVote(voterSeat, ballot);
         },
       });
     };
@@ -44,23 +43,21 @@ const start = zcf => {
     invitations[i] = makeCommitteeVoterInvitation(i);
   }
 
-  /**
-   * @param {Installation} voteCounter
-   * @param {BallotDetailsShort} questionDetailsShort
-   */
+  /** @type {AddQuestion} */
   const addQuestion = async (voteCounter, questionDetailsShort) => {
     const questionDetails = {
       ...questionDetailsShort,
       registrar: zcf.getInstance(),
     };
+    // facets of the ballot counter. Suppress creatorInvitation and adminFaceet.
     const { creatorFacet, publicFacet, instance } = await E(
       zcf.getZoeService(),
     ).startInstance(voteCounter, {}, questionDetails);
-    const facets = { creatorFacet, publicFacet, instance };
+    const facets = { voter: E(creatorFacet).getVoterFacet(), publicFacet };
 
     updater.updateState(questionDetails.question);
     allQuestions.init(questionDetails.question, facets);
-    return facets;
+    return { creatorFacet, publicFacet, instance };
   };
 
   const creatorFacet = Far('adminFacet', {

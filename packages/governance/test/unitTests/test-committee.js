@@ -40,14 +40,14 @@ async function setupContract() {
   return { registrarStartResult, counterInstallation };
 }
 
-test('committee-no open questions', async t => {
+test('committee-open questions:none', async t => {
   const {
     registrarStartResult: { publicFacet },
   } = await setupContract();
   t.deepEqual(await publicFacet.getOpenQuestions(), []);
 });
 
-test('committee-one open question', async t => {
+test('committee-open question:one', async t => {
   const {
     registrarStartResult: { creatorFacet, publicFacet },
     counterInstallation,
@@ -57,9 +57,9 @@ test('committee-one open question', async t => {
     method: ChoiceMethod.CHOOSE_N,
     question: 'why',
     positions: ['because', 'why not?'],
-    maxChoices: 1n,
+    maxChoices: 1,
     closingRule: {
-      timer: buildManualTimer(),
+      timer: buildManualTimer(console.log),
       deadline: 2n,
     },
   });
@@ -67,7 +67,7 @@ test('committee-one open question', async t => {
   t.deepEqual(await publicFacet.getOpenQuestions(), ['why']);
 });
 
-test('committee-mixed questions', async t => {
+test('committee-open question:mixed', async t => {
   const {
     registrarStartResult: { creatorFacet, publicFacet },
     counterInstallation,
@@ -78,7 +78,7 @@ test('committee-mixed questions', async t => {
     method: ChoiceMethod.CHOOSE_N,
     question: 'why',
     positions: ['because', 'why not?'],
-    maxChoices: 1n,
+    maxChoices: 1,
     closingRule: {
       timer,
       deadline: 4n,
