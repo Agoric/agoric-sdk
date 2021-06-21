@@ -1005,21 +1005,35 @@ test('message to self', async t => {
   p.gcActionsAre([]);
 });
 
-test('terminated vat drops imports', async t => {
+test('terminated vat', async t => {
+  // when a vat is terminated, anything it imported should be dropped, and
+  // its exports should not cause problems when they are released
   const config = {
     vats: {
       bootstrap: {
         sourceSpec: path.join(__dirname, 'gc-dead-vat', 'bootstrap.js'),
+        creationOptions: { managerType: 'local' },
       },
     },
     bootstrap: 'bootstrap',
     bundles: {
       doomed: {
         sourceSpec: path.join(__dirname, 'gc-dead-vat', 'vat-doomed.js'),
+        creationOptions: { managerType: 'xs-worker' },
       },
     },
   };
   const c = await buildVatController(config, []);
+
+  function getRefCountsAndOwners() {
+    const refcounts = {};
+    const data = c.dump();
+    data.objects.forEach(o => (refcounts[o[0]] = [o[2], o[3]]));
+    const owners = {};
+    data.objects.forEach(o => (owners[o[0]] = o[1]));
+    return [refcounts, owners];
+  }
+
   await c.run();
   const bootstrapVat = c.vatNameToID('bootstrap');
   // now find the dynamic vat and figure out what it imports/exports
@@ -1028,13 +1042,17 @@ test('terminated vat drops imports', async t => {
   allVatIDs.sort();
   const doomedVat = allVatIDs[allVatIDs.length - 1];
   t.is(doomedVat, 'v6');
-  const usedByDoomed = c
-    .dump()
-    .kernelTable.filter(o => o[1] === doomedVat)
-    .map(o => [o[0], o[2]]);
-  const vrefs = {};
-  usedByDoomed.forEach(([kref, vref]) => (vrefs[vref] = kref));
+  function vrefsUsedByDoomed() {
+    const usedByDoomed = c
+      .dump()
+      .kernelTable.filter(o => o[1] === doomedVat)
+      .map(o => [o[0], o[2]]);
+    const vrefs = {};
+    usedByDoomed.forEach(([kref, vref]) => (vrefs[vref] = kref));
+    return vrefs;
+  }
   // console.log(`usedByDoomed vrefs`, vrefs);
+  let vrefs = vrefsUsedByDoomed();
   const imports = Object.keys(vrefs).filter(vref => vref.startsWith('o-'));
 
   // there will be one import: exportToDoomed / pin
@@ -1045,49 +1063,85 @@ test('terminated vat drops imports', async t => {
   // we'll watch for this to be deleted when the vat is terminated
   // console.log(`pinKref`, pinKref);
 
-  // find the highest export: exportedRemotable / fromDoomed
-  const exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
+  // find the highest export: doomedExport1 / doomedExport1Presence
+  let exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
   exports.sort();
-  const exportedVref = exports[exports.length - 1];
-  t.is(exportedVref, 'o+1'); // arbitrary
-  const exportedKref = vrefs[exportedVref];
+  const doomedExport1Vref = exports[exports.length - 1];
+  t.is(doomedExport1Vref, 'o+1'); // arbitrary
+  const doomedExport1Kref = vrefs[doomedExport1Vref];
   // this should also be deleted
-  // console.log(`exportedKref`, exportedKref);
+  // console.log(`doomedExport1Kref`, doomedExport1Kref);
 
-  let refcounts = {};
-  let owners = {};
-  c.dump().objects.forEach(o => (refcounts[o[0]] = [o[2], o[3]]));
-  c.dump().objects.forEach(o => (owners[o[0]] = o[1]));
+  let [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[pinKref], [1, 1]);
   t.is(owners[pinKref], bootstrapVat);
-  t.deepEqual(refcounts[exportedKref], [1, 1]);
-  t.is(owners[exportedKref], doomedVat);
+  t.deepEqual(refcounts[doomedExport1Kref], [1, 1]);
+  t.is(owners[doomedExport1Kref], doomedVat);
 
-  c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'startTerminate',
-    capargs([]),
-    'panic',
-  );
+  // Tell bootstrap to give a promise to the doomed vat. The doomed vat will
+  // send a second export in a message to this promise, so the only
+  // non-exporting reference will be on the promise queue.
+  const a0 = capargs([]);
+  c.queueToVatExport('bootstrap', 'o+0', 'stash', a0, 'panic');
   await c.run();
-  // console.log(c.dump());
 
-  refcounts = {};
-  c.dump().objects.forEach(o => (refcounts[o[0]] = [o[2], o[3]]));
-  owners = {};
-  c.dump().objects.forEach(o => (owners[o[0]] = o[1]));
+  // now find the vref/kref for doomedExport2
+  vrefs = vrefsUsedByDoomed();
+  exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
+  exports.sort();
+  const doomedExport2Vref = exports[exports.length - 1];
+  t.is(doomedExport2Vref, 'o+2'); // arbitrary
+  const doomedExport2Kref = vrefs[doomedExport2Vref];
+  [refcounts, owners] = getRefCountsAndOwners();
+  t.deepEqual(refcounts[doomedExport2Kref], [1, 1]); // from promise queue
+
+  c.queueToVatExport('bootstrap', 'o+0', 'startTerminate', a0, 'panic');
+  await c.run();
+
+  [refcounts, owners] = getRefCountsAndOwners();
 
   // the bootstrap vat exports an object ('exportToDoomed') that is only kept
   // alive by the doomed vat's import, so it should be gone by now
   t.deepEqual(refcounts[pinKref], undefined);
   t.is(owners[pinKref], undefined);
-  // however the doomed vat's export is now an orphan: it retains identity,
+  // however the doomed vat's exports are now an orphan: it retains identity,
   // and the bootstrap vat is still importing it
-  t.deepEqual(refcounts[exportedKref], [1, 1]);
-  t.falsy(owners[exportedKref]);
+  t.deepEqual(refcounts[doomedExport1Kref], [1, 1]);
+  t.deepEqual(refcounts[doomedExport2Kref], [1, 1]);
+  t.falsy(owners[doomedExport1Kref]);
+  t.falsy(owners[doomedExport2Kref]);
 
-  t.pass();
+  // send a message to the orphan, to wiggle refcounts some more
+  const r = c.queueToVatExport('bootstrap', 'o+0', 'callOrphan', a0, 'panic');
+  await c.run();
+
+  // when kk.kernelObjectExists was using .owner as a check, this was buggy,
+  // and each message sent to orphaned objects would increment the target's
+  // refcount without a matching decrement. See #3376.
+  [refcounts, owners] = getRefCountsAndOwners();
+  t.deepEqual(refcounts[doomedExport1Kref], [1, 1]);
+  t.deepEqual(c.kpResolution(r), capargs('good'));
+
+  // Both objects stick around until bootstrap drops the orphan
+  // doomedExport1Presence, and rejects the promise to which doomedExport2 is
+  // queued. This should cause both to be collected. Bug #3377 was a crash
+  // with processRefcounts() not handling orphaned objects, triggered by the
+  // doomedExport2 decref.
+  c.queueToVatExport('bootstrap', 'o+0', 'drop', a0, 'panic');
+  await c.run();
+
+  // TODO: however, for some reason neither Node.js nor XS actually drops
+  // 'doomedExport1Presence', despite it clearly going out of scope. I don't
+  // know why. Until we can find way to make it drop, this check is commented
+  // out.
+  [refcounts, owners] = getRefCountsAndOwners();
+  // t.is(refcounts[doomedExport1Kref], undefined);
+  t.falsy(owners[doomedExport1Kref]);
+
+  // TODO: we still fail to clean up the [0,0] kref: #3378 is about finding
+  // somewhere to delete the .refcount key
+  // t.is(refcounts[doomedExport2Kref], undefined);
+  t.falsy(owners[doomedExport2Kref]);
 });
 
 // device receives object from vat a, returns to vat b

@@ -314,7 +314,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   }
 
   function kernelObjectExists(kref) {
-    return kvStore.has(`${kref}.owner`);
+    return kvStore.has(`${kref}.refCount`);
   }
 
   function ownerOfKernelObject(kernelSlot) {
@@ -889,17 +889,19 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
           const { reachable, recognizable } = getObjectRefCount(kref);
           if (reachable === 0) {
             const ownerVatID = ownerOfKernelObject(kref);
-            // eslint-disable-next-line no-use-before-define
-            const vatKeeper = provideVatKeeper(ownerVatID);
-            const isReachable = vatKeeper.getReachableFlag(kref);
-            if (isReachable) {
-              // the reachable count is zero, but the vat doesn't realize it
-              actions.add(`${ownerVatID} dropExport ${kref}`);
-            }
-            if (recognizable === 0) {
-              // TODO: rethink this
-              // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
-              actions.add(`${ownerVatID} retireExport ${kref}`);
+            if (ownerVatID) {
+              // eslint-disable-next-line no-use-before-define
+              const vatKeeper = provideVatKeeper(ownerVatID);
+              const isReachable = vatKeeper.getReachableFlag(kref);
+              if (isReachable) {
+                // the reachable count is zero, but the vat doesn't realize it
+                actions.add(`${ownerVatID} dropExport ${kref}`);
+              }
+              if (recognizable === 0) {
+                // TODO: rethink this
+                // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
+                actions.add(`${ownerVatID} retireExport ${kref}`);
+              }
             }
           }
         }
