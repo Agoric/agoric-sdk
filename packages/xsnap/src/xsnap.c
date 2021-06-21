@@ -50,7 +50,9 @@ static void fxPatchBuiltIns(txMachine* the);
 static void fxPrintUsage();
 
 static void fx_issueCommand(xsMachine *the);
+#if 0
 static void fx_Array_prototype_meter(xsMachine* the);
+#endif
 
 extern void fx_clearTimer(txMachine* the);
 static void fx_destroyTimer(void* data);
@@ -84,7 +86,8 @@ static char* fxWriteNetStringError(int code);
 #define mxSnapshotCallbackCount 6
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_issueCommand, // 0
-	fx_Array_prototype_meter, // 1
+	// fx_Array_prototype_meter, // 1
+	NULL, // 1
 	fx_print, // 2
 	fx_setImmediate, // 3
 	fx_gc, // 4
@@ -859,11 +862,13 @@ void fxFreezeBuiltIns(txMachine* the)
 	mxPop();
 }
 
+#if 0
 void fx_Array_prototype_meter(xsMachine* the)
 {
 	xsIntegerValue length = xsToInteger(xsGet(xsThis, xsID("length")));
 	xsMeterHostFunction(length);
 }
+#endif
 
 void fxPatchBuiltIns(txMachine* machine)
 {
