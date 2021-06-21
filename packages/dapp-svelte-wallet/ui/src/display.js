@@ -36,7 +36,7 @@ export function parseValue(str, displayInfo) {
     X`${str} exceeds ${decimalPlaces} decimal places`,
   );
 
-  return parseInt(`${unitstr}${dec0str0}`, 10);
+  return BigInt(`${unitstr}${dec0str0}`);
 }
 
 /**
