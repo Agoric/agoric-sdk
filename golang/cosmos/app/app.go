@@ -639,10 +639,9 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
-	// Wrap the BaseApp's Commit method
-	res := app.BaseApp.Commit()
+	// Frontrun the BaseApp's Commit method
 	swingset.CommitBlock(app.SwingSetKeeper)
-	return res
+	return app.BaseApp.Commit()
 }
 
 // LoadHeight loads a particular height
