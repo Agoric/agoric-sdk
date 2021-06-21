@@ -1,7 +1,11 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from '../../capdata.js';
-import { makeVatSlot, insistVatType } from '../../parseVatSlots.js';
+import {
+  makeVatSlot,
+  insistVatType,
+  parseVatSlot,
+} from '../../parseVatSlots.js';
 import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
 import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
 import { cdebug } from './cdebug.js';
@@ -83,10 +87,16 @@ export function makeState(syscall, identifierBase = 0) {
   // p.nextID = $NN  // kernel-facing promise identifier allocation counter (p+NN)
   // c.$kfref = $lref // inbound kernel-facing c-list (o+NN/o-NN/p+NN/p-NN -> loNN/lpNN)
   // c.$lref = $kfref // outbound kernel-facing c-list (loNN/lpNN -> o+NN/o-NN/p+NN/p-NN)
+  // cr.$lref = 1 | <missing> // isReachable flag
+  // //imps.$lref.$remoteID = 1 // one key per importer of $lref (FUTURE)
+  // imps.$lref = JSON([remoteIDs]) // importers of $lref
+  // imps.$lref.$remoteID = 1 // one key per importer of $lref
   // meta.$kfref = true // flag that $kfref (o+NN/o-NN) is a directly addressable control object
   //
   // lo.nextID = $NN // local object identifier allocation counter (loNN)
   // lo$NN.owner = r$NN | kernel // owners of local objects (loNN -> rNN)
+  // lo$NN.reachable = $NN // refcount
+  // lo$NN.recognizable = $NN // refcount
   //
   // lp.nextID = $NN // local promise identifier allocation counter (lpNN)
   // lp$NN.status = unresolved | fulfilled | rejected
@@ -108,6 +118,8 @@ export function makeState(syscall, identifierBase = 0) {
   // r$NN.transmitterID = $kfref // transmitter object for sending to remote
   // r$NN.c.$rref = $lref // r$NN inbound c-list (ro+NN/ro-NN/rp+NN/rp-NN -> loNN/lpNN)
   // r$NN.c.$lref = $rref // r$NN outbound c-list (loNN/lpNN -> ro+NN/ro-NN/rp+NN/rp-NN)
+  // r$NN.cr.$lref = 1 | <missing> // isReachable flag
+  // r$NN.lastSent.$lref = $NN // outbound seqnum of last object export
   // r$NN.sendSeq = $NN // counter for outbound message sequence numbers to r$NN
   // r$NN.recvSeq = $NN // counter for inbound message sequence numbers from r$NN
   // r$NN.o.nextID = $NN // r$NN object identifier allocation counter (ro-NN)
@@ -156,7 +168,81 @@ export function makeState(syscall, identifierBase = 0) {
     deleteLocalPromiseState(lpid);
   }
 
-  const deadLocalPromises = new Set();
+  /* we need syscall.vatstoreGetKeys to do it this way
+  function addImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}.${remoteID}`;
+    store.set(key, '1');
+  }
+  function removeImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}.${remoteID}`;
+    store.delete(key);
+  }
+  function getImporters(lref) {
+    const remoteIDs = [];
+    const prefix = `imps.${lref}`;
+    const startKey = `${prefix}.`;
+    const endKey = `${prefix}/`; // '.' and '/' are adjacent
+    for (const k of store.getKeys(startKey, endKey)) {
+      const remoteID = k.slice(0, prefix.length);
+      if (remoteID !== 'kernel') {
+        insistRemoteID(remoteID);
+      }
+      remoteIDs.push(remoteID);
+    }
+    return harden(remoteIDs);
+  }
+  */
+
+  function addImporter(lref, remoteID) {
+    const key = `imps.${lref}`;
+    const value = JSON.parse(store.get(key) || '[]');
+    value.push(remoteID);
+    value.sort();
+    store.set(key, JSON.stringify(value));
+  }
+  function removeImporter(lref, remoteID) {
+    assert(!lref.includes('.'), lref);
+    const key = `imps.${lref}`;
+    let value = JSON.parse(store.get(key) || '[]');
+    value = value.filter(r => r !== remoteID);
+    store.set(key, JSON.stringify(value));
+  }
+  function getImporters(lref) {
+    const key = `imps.${lref}`;
+    const remoteIDs = JSON.parse(store.get(key) || '[]');
+    return harden(remoteIDs);
+  }
+
+  /* A mode of 'clist-import' means we increment recognizable, but not
+   * reachable, because the translation function will call setReachable in a
+   * moment, and the count should only be changed if it wasn't already
+   * reachable. 'clist-export' means we don't touch the count at all. 'other'
+   * is used by resolved promise data and auxdata, and means we increment
+   * both.
+   */
+  const referenceModes = harden(['data', 'clist-export', 'clist-import']);
+
+  function changeRecognizable(lref, delta) {
+    const key = `${lref}.recognizable`;
+    const recognizable = Nat(BigInt(store.getRequired(key))) + delta;
+    store.set(key, `${recognizable}`);
+    return recognizable;
+  }
+
+  function changeReachable(lref, delta) {
+    const key = `${lref}.reachable`;
+    const reachable = Nat(BigInt(store.getRequired(key))) + delta;
+    store.set(key, `${reachable}`);
+    return reachable;
+  }
+
+  const maybeFree = new Set(); // lrefs
+
+  function lrefMightBeFree(lref) {
+    maybeFree.add(lref);
+  }
 
   /**
    * Increment the reference count associated with some local object.
@@ -166,34 +252,39 @@ export function makeState(syscall, identifierBase = 0) {
    *
    * @param {string} lref  Ref of the local object whose refcount is to be incremented.
    * @param {string} _tag  Descriptive label for use in diagnostics
+   * @param {string} mode  Reference type
    */
-  function incrementRefCount(lref, _tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
-      const refCount = Number(store.get(`${lref}.refCount`)) + 1;
+  function incrementRefCount(lref, _tag, mode = 'data') {
+    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
+      const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
-      if (refCount === 1 && deadLocalPromises.has(lref)) {
-        // Oops, turns out the zero refCount was a transient
-        deadLocalPromises.delete(lref);
-      }
       store.set(`${lref}.refCount`, `${refCount}`);
+    }
+    if (type === 'object') {
+      if (mode === 'clist-import' || mode === 'data') {
+        changeRecognizable(lref, 1n);
+      }
+      if (mode === 'data') {
+        changeReachable(lref, 1n);
+      }
     }
   }
 
   /**
-   * Decrement the reference count associated with some local object.
-   *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all local objects.
+   * Decrement the reference counts associated with some local object/promise.
    *
    * @param {string} lref  Ref of the local object whose refcount is to be decremented.
    * @param {string} tag  Descriptive label for use in diagnostics
-   * @returns {boolean} true if the reference count has been decremented to
-   *    zero, false if it is still non-zero
-   * @throws if this tries to decrement the reference count below zero.
+   * @param {string} mode  Reference type
+   * @throws if this tries to decrement a reference count below zero.
    */
-  function decrementRefCount(lref, tag) {
-    if (lref && parseLocalSlot(lref).type === 'promise') {
-      let refCount = Number(store.get(`${lref}.refCount`));
+  function decrementRefCount(lref, tag, mode = 'data') {
+    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    const { type } = parseLocalSlot(lref);
+    if (type === 'promise') {
+      let refCount = parseInt(store.get(`${lref}.refCount`), 10);
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
@@ -209,40 +300,99 @@ export function makeState(syscall, identifierBase = 0) {
         // maybe-dead set, but we do not trigger GC until the entire comms
         // dispatch is complete and any ancillary promises are safely referenced
         // by their subscribers clists.
-        deadLocalPromises.add(lref);
-        return true;
+        maybeFree.add(lref);
       }
     }
-    return false;
+    if (type === 'object') {
+      if (mode === 'clist-import' || mode === 'data') {
+        const recognizable = changeRecognizable(lref, -1n);
+        if (!recognizable) {
+          maybeFree.add(lref);
+        }
+      }
+      if (mode === 'data') {
+        const reachable = changeReachable(lref, -1n);
+        if (!reachable) {
+          maybeFree.add(lref);
+        }
+      }
+    }
   }
 
   /**
-   * Delete any local promises that have zero references.
+   * Delete any local promises that have zero references. Return a list of
+   * work for unreachable/unrecognizable objects.
    *
    * Note that this should only be called *after* all work for a crank is done,
    * because transient zero refCounts are possible during the middle of a crank.
    */
-  function purgeDeadLocalPromises() {
-    if (enableLocalPromiseGC) {
-      for (const lpid of deadLocalPromises.values()) {
-        const refCount = Number(store.get(`${lpid}.refCount`));
-        assert(
-          refCount === 0,
-          X`promise ${lpid} in deadLocalPromises with non-zero refcount`,
-        );
-        let idx = 0;
-        const slots = commaSplit(store.get(`${lpid}.data.slots`));
-        for (const slot of slots) {
-          // Note: the following decrement can result in an addition to the
-          // deadLocalPromises set, which we are in the midst of iterating.
-          // TC39 went to a lot of trouble to ensure that this is kosher.
-          decrementRefCount(slot, `gc|${lpid}|s${idx}`);
-          idx += 1;
+  function processMaybeFree() {
+    const actions = new Set();
+    // We make a copy of the set, iterate over that, then try again, until
+    // the set is empty. TC39 went to a lot of trouble to make sure you can
+    // add things to a Set while iterating over it, but I think our
+    // `!refCount` check could still be fooled, so it seems safer to use this
+    // approach.
+    while (maybeFree.size) {
+      const lrefs = Array.from(maybeFree.values());
+      lrefs.sort();
+      maybeFree.clear();
+      for (const lref of lrefs) {
+        const { type } = parseLocalSlot(lref);
+        if (type === 'promise' && enableLocalPromiseGC) {
+          const s = store.get(`${lref}.refCount`);
+          if (s) {
+            const refCount = parseInt(s, 10);
+            // refCount>0 means they were saved from near-certain death
+            if (!refCount) {
+              let idx = 0;
+              const slots = commaSplit(store.get(`${lref}.data.slots`));
+              for (const slot of slots) {
+                decrementRefCount(slot, `gc|${lref}|s${idx}`);
+                idx += 1;
+              }
+              deleteLocalPromise(lref);
+            }
+          }
         }
-        deleteLocalPromise(lpid);
+        if (type === 'object') {
+          // don't do anything if importers can still reach it
+          const reaKey = `${lref}.reachable`;
+          const reachable = Nat(BigInt(store.getRequired(reaKey)));
+          if (!reachable) {
+            // the object is unreachable
+
+            // eslint-disable-next-line no-use-before-define
+            const { owner, isReachable, isRecognizable } = getOwnerAndStatus(
+              lref,
+            );
+            if (isReachable) {
+              // but the exporter doesn't realize it yet, so schedule a
+              // dropExport to them, which will clear the isReachable flag at
+              // the end of the turn
+              actions.add(`${owner} dropExport ${lref}`);
+            }
+
+            const recKey = `${lref}.recognizable`;
+            const recognizable = Nat(BigInt(store.getRequired(recKey)));
+            if (!recognizable && isRecognizable) {
+              // all importers have given up, but the exporter is still
+              // exporting, so schedule a retireExport to them, which will
+              // delete the clist entry after it's translated.
+              actions.add(`${owner} retireExport ${lref}`);
+            }
+            if (!isRecognizable) {
+              // the exporter has given up, so tell all importers to give up
+              for (const importer of getImporters(lref)) {
+                actions.add(`${importer} retireImport ${lref}`);
+              }
+            }
+          }
+        }
       }
     }
-    deadLocalPromises.clear();
+
+    return actions;
   }
 
   function mapFromKernel(kfref) {
@@ -255,16 +405,74 @@ export function makeState(syscall, identifierBase = 0) {
     return store.get(`c.${lref}`);
   }
 
-  function addKernelMapping(kfref, lref) {
-    store.set(`c.${kfref}`, lref);
-    store.set(`c.${lref}`, kfref);
-    incrementRefCount(lref, `{kfref}|k|clist`);
+  // is/set/clear are used on both imports and exports, but set/clear needs
+  // to be told which one it is
+
+  function isReachableByKernel(lref) {
+    assert.equal(parseLocalSlot(lref).type, 'object');
+    return !!store.get(`cr.${lref}`);
+  }
+  function setReachableByKernel(lref, isImport) {
+    const wasReachable = isReachableByKernel(lref);
+    if (!wasReachable) {
+      store.set(`cr.${lref}`, `1`);
+      if (isImport) {
+        changeReachable(lref, 1n);
+      }
+    }
+  }
+  function clearReachableByKernel(lref, isImport) {
+    const wasReachable = isReachableByKernel(lref);
+    if (wasReachable) {
+      store.delete(`cr.${lref}`);
+      if (isImport) {
+        const reachable = changeReachable(lref, -1n);
+        if (!reachable) {
+          maybeFree.add(lref);
+        }
+      }
+    }
   }
 
-  function deleteKernelMapping(kfref, lref) {
+  // translators should addKernelMapping for new imports/exports, then
+  // setReachableByKernel
+  function addKernelMapping(kfref, lref) {
+    const { type, allocatedByVat } = parseVatSlot(kfref);
+    const isImport = allocatedByVat; // true = kernel is downstream importer
+    store.set(`c.${kfref}`, lref);
+    store.set(`c.${lref}`, kfref);
+    const mode = isImport ? 'clist-import' : 'clist-export';
+    incrementRefCount(lref, `{kfref}|k|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        addImporter(lref, 'kernel');
+      }
+    }
+  }
+
+  // GC or delete-remote should just call deleteKernelMapping without any
+  // extra clearReachableByKernel
+  function deleteKernelMapping(lref) {
+    const kfref = store.get(`c.${lref}`);
+    let mode = 'data'; // close enough
+    const { type, allocatedByVat } = parseVatSlot(kfref);
+    const isImport = allocatedByVat;
+    if (type === 'object') {
+      clearReachableByKernel(lref, isImport);
+      mode = isImport ? 'clist-import' : 'clist-export';
+    }
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
-    decrementRefCount(lref, `{kfref}|k|clist`);
+    decrementRefCount(lref, `{kfref}|k|clist`, mode);
+    if (type === 'object') {
+      if (isImport) {
+        removeImporter(lref, 'kernel');
+      } else {
+        // deleting the upstream/export-side mapping should trigger
+        // processMaybeFree
+        lrefMightBeFree(lref);
+      }
+    }
   }
 
   function hasMetaObject(kfref) {
@@ -296,6 +504,8 @@ export function makeState(syscall, identifierBase = 0) {
     store.set('lo.nextID', `${index + 1n}`);
     const loid = makeLocalSlot('object', index);
     store.set(`${loid}.owner`, owner);
+    store.set(`${loid}.reachable`, `0`);
+    store.set(`${loid}.recognizable`, `0`);
     return loid;
   }
 
@@ -308,6 +518,22 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${lpid}.subscribers`, '');
     store.set(`${lpid}.refCount`, '0');
     return lpid;
+  }
+
+  function getOwnerAndStatus(lref) {
+    const owner = getObject(lref);
+    let isReachable;
+    let isRecognizable;
+    if (owner === 'kernel') {
+      isReachable = isReachableByKernel(lref);
+      isRecognizable = !!mapToKernel(lref);
+    } else {
+      // eslint-disable-next-line no-use-before-define
+      const remote = getRemote(owner);
+      isReachable = remote.isReachable(lref);
+      isRecognizable = !!remote.mapToRemote(lref);
+    }
+    return { owner, isReachable, isRecognizable };
   }
 
   function deciderIsKernel(lpid) {
@@ -462,10 +688,10 @@ export function makeState(syscall, identifierBase = 0) {
     insistVatType('object', transmitterID);
     addMetaObject(transmitterID);
 
-    const index = Number(store.getRequired('r.nextID'));
+    const index = parseInt(store.getRequired('r.nextID'), 10);
     store.set('r.nextID', `${index + 1}`);
     const remoteID = `r${index}`;
-    const idBase = Number(store.get('identifierBase'));
+    const idBase = parseInt(store.get('identifierBase'), 10);
     store.set('identifierBase', `${idBase + 1000}`);
     initializeRemoteState(store, remoteID, idBase, name, transmitterID);
     store.set(nameKey, remoteID);
@@ -494,6 +720,9 @@ export function makeState(syscall, identifierBase = 0) {
 
     mapFromKernel,
     mapToKernel,
+    isReachableByKernel,
+    setReachableByKernel,
+    clearReachableByKernel,
     addKernelMapping,
     deleteKernelMapping,
 
@@ -510,9 +739,15 @@ export function makeState(syscall, identifierBase = 0) {
     getPromiseData,
     allocatePromise,
 
+    addImporter,
+    removeImporter,
+    getImporters,
+
+    changeReachable,
+    lrefMightBeFree,
     incrementRefCount,
     decrementRefCount,
-    purgeDeadLocalPromises,
+    processMaybeFree,
 
     deciderIsKernel,
     deciderIsRemote,

@@ -13,7 +13,13 @@ const UNDEFINED = harden({
   slots: [],
 });
 
-export function makeDeliveryKit(state, syscall, transmit, clistKit) {
+export function makeDeliveryKit(
+  state,
+  syscall,
+  transmit,
+  clistKit,
+  gcFromRemote,
+) {
   const {
     getRemoteForLocal,
     provideRemoteForLocal,
@@ -147,10 +153,7 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
       delim2 >= 0,
       X`received message ${message} lacks ackSeqNum delimiter`,
     );
-    const ackSeqNum = Number.parseInt(
-      message.substring(delim1 + 1, delim2),
-      10,
-    );
+    const ackSeqNum = parseInt(message.substring(delim1 + 1, delim2), 10);
     handleAckFromRemote(remoteID, ackSeqNum);
 
     const msgBody = message.substring(delim2 + 1);
@@ -160,6 +163,9 @@ export function makeDeliveryKit(state, syscall, transmit, clistKit) {
     }
     if (command === 'resolve') {
       return resolveFromRemote(remoteID, msgBody);
+    }
+    if (command === 'gc') {
+      return gcFromRemote(remoteID, msgBody, ackSeqNum);
     }
     assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
   }
