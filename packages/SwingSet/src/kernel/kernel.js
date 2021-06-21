@@ -410,7 +410,9 @@ export default function buildKernel(
     kernelKeeper.incStat('dispatchDeliver');
     // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
-      resolveToError(msg.result, VAT_TERMINATION_ERROR);
+      if (msg.result) {
+        resolveToError(msg.result, VAT_TERMINATION_ERROR);
+      }
     } else {
       const kd = harden(['message', target, msg]);
       // eslint-disable-next-line no-use-before-define
@@ -445,7 +447,7 @@ export default function buildKernel(
       const vatID = kernelKeeper.ownerOfKernelObject(target);
       if (vatID) {
         await deliverToVat(vatID, target, msg);
-      } else {
+      } else if (msg.result) {
         resolveToError(msg.result, VAT_TERMINATION_ERROR);
       }
     } else if (type === 'promise') {
@@ -483,7 +485,7 @@ export default function buildKernel(
             } else {
               kernelKeeper.addMessageToPromiseQueue(target, msg);
             }
-          } else {
+          } else if (msg.result) {
             resolveToError(msg.result, VAT_TERMINATION_ERROR);
           }
         }
