@@ -40,19 +40,21 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
     timer,
   );
 
-  // Setup Bob
-  const bobP = E(vats.bob).build(
-    zoe,
-    issuers,
-    makePayments(bobValues),
-    installations,
-    timer,
-  );
-
   const result = {
     aliceP,
-    bobP,
   };
+
+  // Setup Bob
+  if (bobValues) {
+    const bobP = E(vats.bob).build(
+      zoe,
+      issuers,
+      makePayments(bobValues),
+      installations,
+      timer,
+    );
+    result.bobP = bobP;
+  }
 
   if (carolValues) {
     const carolP = E(vats.carol).build(
@@ -98,6 +100,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         sellItems: await E(zoe).install(cb.sellItems),
         mintAndSellNFT: await E(zoe).install(cb.mintAndSellNFT),
         otcDesk: await E(zoe).install(cb.otcDesk),
+        crashAutoRefund: await E(zoe).install(cb.crashingAutoRefund),
       };
 
       const [testName, startingValues] = argv;

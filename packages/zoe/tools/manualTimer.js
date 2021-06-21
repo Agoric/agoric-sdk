@@ -77,15 +77,15 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   /** @type {ManualTimer} */
   const timer = Far('ManualTimer', {
     // This function will only be called in testing code to advance the clock.
-    async tick(msg) {
+    async tick(_msg) {
       ticks += timeStep;
-      log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
+      // log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);
         schedule.delete(ticks);
         await Promise.allSettled(
           wakers.map(waker => {
-            log(`&& running a task scheduled for ${ticks}. &&`);
+            // log(`&& running a task scheduled for ${ticks}. &&`);
             return E(waker).wake(ticks);
           }),
         );
@@ -101,11 +101,11 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
       );
       if (baseTime <= ticks) {
-        log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
+        // log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
         E(waker).wake(ticks);
         return baseTime;
       }
-      log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
+      // log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
       if (!schedule.has(baseTime)) {
         schedule.init(baseTime, []);
       }

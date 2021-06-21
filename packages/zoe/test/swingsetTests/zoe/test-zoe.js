@@ -13,18 +13,46 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 
 const CONTRACT_FILES = [
-  'automaticRefund',
-  'autoswap',
-  'coveredCall',
   {
-    contractPath: 'auction/secondPriceAuction',
+    contractPath: '/../../../src/contracts/automaticRefund',
+    bundleName: 'automaticRefund',
+  },
+  {
+    contractPath: '/../../../src/contracts/autoswap',
+    bundleName: 'autoswap',
+  },
+  {
+    contractPath: '/../../../src/contracts/coveredCall',
+    bundleName: 'coveredCall',
+  },
+  {
+    contractPath: '/../../../src/contracts/auction/secondPriceAuction',
     bundleName: 'secondPriceAuction',
   },
-  'atomicSwap',
-  'simpleExchange',
-  'sellItems',
-  'mintAndSellNFT',
-  'otcDesk',
+  {
+    contractPath: '/../../../src/contracts/atomicSwap',
+    bundleName: 'atomicSwap',
+  },
+  {
+    contractPath: '/../../../src/contracts/simpleExchange',
+    bundleName: 'simpleExchange',
+  },
+  {
+    contractPath: '/../../../src/contracts/sellItems',
+    bundleName: 'sellItems',
+  },
+  {
+    contractPath: '/../../../src/contracts/mintAndSellNFT',
+    bundleName: 'mintAndSellNFT',
+  },
+  {
+    contractPath: '/../../../src/contracts/otcDesk',
+    bundleName: 'otcDesk',
+  },
+  {
+    contractPath: 'crashingAutoRefund',
+    bundleName: 'crashingAutoRefund',
+  },
 ];
 
 test.before(async t => {
@@ -34,15 +62,8 @@ test.before(async t => {
   const contractBundles = {};
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
-      let bundleName;
-      let contractPath;
-      if (typeof settings === 'string') {
-        bundleName = settings;
-        contractPath = settings;
-      } else {
-        ({ bundleName, contractPath } = settings);
-      }
-      const source = `${__dirname}/../../../src/contracts/${contractPath}`;
+      const { bundleName, contractPath } = settings;
+      const source = `${__dirname}/${contractPath}`;
       const bundle = await bundleSource(source);
       contractBundles[bundleName] = bundle;
     }),
@@ -104,7 +125,6 @@ test.serial('zoe - automaticRefund - valid inputs', async t => {
 const expectedCoveredCallOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doCreateCoveredCall called',
-  '@@ schedule task for:1, currently: 0 @@',
   'The option was exercised. Please collect the assets in your payout.',
   'covered call was shut down due to "Swap completed."',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
@@ -126,7 +146,6 @@ const expectedSwapForOptionOkLog = [
   '=> alice, bob, carol and dave are set up',
   '=> alice.doSwapForOption called',
   'call option made',
-  '@@ schedule task for:100, currently: 0 @@',
   'swap invitation made',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'The option was exercised. Please collect the assets in your payout.',
@@ -153,12 +172,9 @@ test.serial('zoe - swapForOption - valid inputs', async t => {
 
 const expectedSecondPriceAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
-  '@@ schedule task for:1, currently: 0 @@',
   'Carol: The offer has been accepted. Once the contract has been completed, please check your payout',
   'Bob: The offer has been accepted. Once the contract has been completed, please check your payout',
   'Dave: The offer has been accepted. Once the contract has been completed, please check your payout',
-  '@@ tick:1 @@',
-  '&& running a task scheduled for 1. &&',
   'bobMoolaPurse: balance {"brand":{},"value":1}',
   'carolMoolaPurse: balance {"brand":{},"value":0}',
   'daveMoolaPurse: balance {"brand":{},"value":0}',
@@ -293,14 +309,13 @@ test.serial('zoe - sellTickets - valid inputs', async t => {
 const expectedOTCDeskOkLog = [
   '=> alice, bob, carol and dave are set up',
   'Inventory added',
-  '@@ schedule task for:1, currently: 0 @@',
   'The option was exercised. Please collect the assets in your payout.',
   '{"brand":{},"value":3}',
   '{"brand":{},"value":0}',
   'Inventory removed',
   '{"brand":{},"value":2}',
 ];
-test('zoe - otcDesk - valid inputs', async t => {
+test.serial('zoe - otcDesk - valid inputs', async t => {
   const startingValues = [
     [10000, 10000, 10000],
     [10000, 10000, 10000],
@@ -309,20 +324,70 @@ test('zoe - otcDesk - valid inputs', async t => {
   t.deepEqual(dump.log, expectedOTCDeskOkLog);
 });
 
-const expectedBadTimerLog = [
+const throwInOfferLog = [
   '=> alice, bob, carol and dave are set up',
-  '=> alice.doBadTimer called',
-  'is a zoe invitation: true',
+  '=> alice.doThrowInHook called',
+  'counter: 2',
+  'outcome correctly resolves to broken: Error: someException',
+  'counter: 4',
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
   'aliceSimoleanPurse: balance {"brand":{},"value":0}',
+  'counter: 5',
 ];
 
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('zoe - bad timer', async t => {
-  const startingValues = [
-    [3, 0, 0],
-    [0, 0, 0],
-  ];
-  const dump = await main(t, ['badTimer', startingValues]);
-  t.deepEqual(dump.log, expectedBadTimerLog);
+test.serial('ZCF throwing on invitation exercise', async t => {
+  const dump = await main(t, ['throwInOfferHook', [[3, 0, 0]]]);
+  t.deepEqual(dump.log, throwInOfferLog);
+});
+
+const throwInAPILog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doThrowInApiCall called',
+  'throwingAPI should throw Error: someException',
+  'counter: 3',
+];
+
+test.serial('ZCF throwing in API call', async t => {
+  const dump = await main(t, ['throwInApiCall', [[5, 12, 0]]]);
+  t.deepEqual(dump.log, throwInAPILog);
+});
+
+const thrownExceptionInMakeContractILog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doThrowInMakeContract called',
+  'contract creation failed: Error: blowup in makeContract',
+  'newCounter: 2',
+];
+
+test.serial('throw in makeContract call', async t => {
+  const dump = await main(t, ['throwInMakeContract', [[3, 0, 0]]]);
+  t.deepEqual(dump.log, thrownExceptionInMakeContractILog);
+});
+
+const happyTerminationWOffersLog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doHappyTerminationWOffers called',
+  'seat has been exited: [object Promise]',
+  'offer result resolves to undefined: undefined',
+  'happy termination saw "Success"',
+  'second moolaPurse: balance {"brand":{},"value":5}',
+  'second simoleanPurse: balance {"brand":{},"value":0}',
+  'offer correctly refused: "Error: No further offers are accepted"',
+  'can\'t make more invitations because "Error: vat terminated"',
+];
+
+test.serial('happy termination with offers path', async t => {
+  const dump = await main(t, ['happyTerminationWOffers', [[5, 0, 0]]]);
+  t.deepEqual(dump.log, happyTerminationWOffersLog);
+});
+
+const sadTerminationLog = [
+  '=> alice, bob, carol and dave are set up',
+  '=> alice.doSadTermination called',
+  'sad termination saw reject "Sadness"',
+];
+
+test.serial('sad termination path', async t => {
+  const dump = await main(t, ['sadTermination', [[3, 0, 0]]]);
+  t.deepEqual(dump.log, sadTerminationLog);
 });

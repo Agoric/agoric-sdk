@@ -7,6 +7,10 @@ import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers';
 
+async function logCounter(log, publicAPI) {
+  log(`counter: ${await E(publicAPI).getOffersCount()}`);
+}
+
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
   const [moolaPurseP, simoleanPurseP] = purses;
@@ -541,6 +545,170 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
+  // Crashing Contract tests
+
+  const doThrowInHook = async () => {
+    log(`=> alice.doThrowInHook called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+    const proposal = harden({
+      give: { Asset: moola(3) },
+      want: { Price: simoleans(7) },
+      exit: { onDemand: null },
+    });
+    const alicePayments = { Asset: moolaPayment };
+
+    logCounter(log, publicFacet);
+    const invitation = await E(publicFacet).makeThrowingInvitation();
+    const seat = await E(zoe).offer(invitation, proposal, alicePayments);
+
+    E(seat)
+      .getOfferResult()
+      .then(
+        () => assert(false, ' expected outcome to fail'),
+        e => log(`outcome correctly resolves to broken: ${e}`),
+      );
+    logCounter(log, publicFacet);
+    const moolaPayout = await E(seat).getPayout('Asset');
+    const simoleanPayout = await E(seat).getPayout('Price');
+
+    await E(moolaPurseP).deposit(moolaPayout);
+    await E(simoleanPurseP).deposit(simoleanPayout);
+    await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    logCounter(log, publicFacet);
+  };
+
+  const doThrowInApiCall = async () => {
+    log(`=> alice.doThrowInApiCall called`);
+    const installId = installations.crashAutoRefund;
+
+    const { publicFacet } = await E(zoe).startInstance(installId);
+
+    E(publicFacet)
+      .throwSomething()
+      .then(
+        () => assert(false, 'expecting this to throw'),
+        e => log(`throwingAPI should throw ${e}`),
+      );
+
+    // show that the contract is still responsive.
+    logCounter(log, publicFacet);
+  };
+
+  const doThrowInMakeContract = async () => {
+    log(`=> alice.doThrowInMakeContract called`);
+    const installId = installations.crashAutoRefund;
+
+    E(zoe)
+      .startInstance(installId, undefined, { throw: true })
+      .then(
+        () => assert(false, 'contract should not finish creation'),
+        e => log(`contract creation failed: ${e}`),
+      );
+
+    // We should still be able to create new vats.
+    const { publicFacet: publicFacet2 } = await E(zoe).startInstance(installId);
+    log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
+  };
+
+  // contract attempts a clean shutdown, but there are outstanding seats
+  const doHappyTerminationWithOffers = async () => {
+    log(`=> alice.doHappyTerminationWOffers called`);
+    const installId = installations.crashAutoRefund;
+
+    const issuerKeywordRecord = harden({
+      Asset: moolaIssuer,
+      Price: simoleanIssuer,
+    });
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(
+      installId,
+      issuerKeywordRecord,
+    );
+
+    // wait for the contract to finish.
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`happy termination saw "${reason}"`);
+        },
+        e => log(`happy termination saw reject "${e}"`),
+      );
+
+    // Alice submits an offer. The contract will be terminated before resolution
+    const swapProposal = harden({
+      give: { Asset: moola(5) },
+      want: { Price: simoleans(12) },
+      exit: { onDemand: null },
+    });
+    const aliceSwapPayments = { Asset: moolaPayment };
+    const invitation = await E(publicFacet).makeInvitation();
+    const invitation2 = await E(publicFacet).makeInvitation();
+    const seat = await E(zoe).offer(
+      invitation,
+      swapProposal,
+      aliceSwapPayments,
+    );
+    E(seat)
+      .getOfferResult()
+      .then(
+        o => log(`offer result resolves to undefined: ${o}`),
+        e => log(`offer result rejected before fulfillment: "${e}"`),
+      );
+
+    // contract asks for clean termination
+    E(publicFacet).zcfShutdown('Success');
+    log(`seat has been exited: ${E(seat).hasExited()}`);
+
+    const moolaSwapRefund = await E(seat).getPayout('Asset');
+    const simoleanSwapPayout = await E(seat).getPayout('Price');
+
+    const moolaPurse2P = E(moolaIssuer).makeEmptyPurse();
+    const simoleanPurse2P = E(simoleanIssuer).makeEmptyPurse();
+    await E(moolaPurse2P).deposit(moolaSwapRefund);
+    await E(simoleanPurse2P).deposit(simoleanSwapPayout);
+    await showPurseBalance(moolaPurse2P, 'second moolaPurse', log);
+    await showPurseBalance(simoleanPurse2P, 'second simoleanPurse', log);
+
+    // After shutdown, attempts to make offers and invitations fail
+    await E(zoe)
+      .offer(invitation2)
+      .then(
+        () => log(`fail: expected offer to be refused`),
+        e => log(`offer correctly refused: "${e}"`),
+      );
+    E(publicFacet)
+      .makeInvitation()
+      .catch(e => log(`can't make more invitations because "${e}"`));
+  };
+
+  const doSadTermination = async () => {
+    log(`=> alice.doSadTermination called`);
+    const installId = installations.crashAutoRefund;
+
+    const { publicFacet, adminFacet } = await E(zoe).startInstance(installId);
+
+    E(adminFacet)
+      .getVatShutdownPromise()
+      .then(
+        reason => {
+          return log(`sad termination saw "${reason}"`);
+        },
+        e => log(`sad termination saw reject "${e}"`),
+      );
+
+    E(publicFacet).zcfShutdownWithFailure('Sadness');
+  };
+
   return Far('build', {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
@@ -576,6 +744,21 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         }
         case 'badTimer': {
           return doBadTimer();
+        }
+        case 'throwInOfferHook': {
+          return doThrowInHook();
+        }
+        case 'throwInApiCall': {
+          return doThrowInApiCall();
+        }
+        case 'throwInMakeContract': {
+          return doThrowInMakeContract();
+        }
+        case 'happyTerminationWOffers': {
+          return doHappyTerminationWithOffers();
+        }
+        case 'sadTermination': {
+          return doSadTermination();
         }
         default: {
           assert.fail(X`testName ${testName} not recognized`);

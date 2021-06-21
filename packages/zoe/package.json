@@ -11,10 +11,12 @@
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
-    "test": "ava --verbose",
+    "test": "ava",
+    "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m",
+    "test:swingset": "ava 'test/swingsetTests/**/test-*.js' -T 10m",
     "test:xs": "yarn test:xs-unit",
-    "test:xs-unit": "ava-xs --verbose",
-    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 test/swingsetTests/**/test-*.js",
+    "test:xs-unit": "ava-xs",
+    "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
@@ -83,7 +85,7 @@
     "require": [
       "esm"
     ],
-    "timeout": "20m"
+    "timeout": "10m"
   },
   "eslintConfig": {
     "extends": [
