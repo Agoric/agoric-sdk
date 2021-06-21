@@ -63,7 +63,7 @@ test('meter details', async t => {
     },
     'auxiliary (non-consensus) meters are available',
   );
-  // @ts-ignore extra meters not declared on RunResult (yet?)
+  // @ts-ignore extra meters not declared on RunResult (TODO: #3139)
   t.true(meters.mapSetAddCount > 20000);
   t.is(meterType, 'xs-meter-8');
 });
