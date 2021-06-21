@@ -46,13 +46,9 @@ static void fxCheckAliasesError(txMachine* the, txAliasIDList* list, txFlag flag
 static void fxCheckEnvironmentAliases(txMachine* the, txSlot* environment, txAliasIDList* list);
 static void fxCheckInstanceAliases(txMachine* the, txSlot* instance, txAliasIDList* list);
 static void fxFreezeBuiltIns(txMachine* the);
-static void fxPatchBuiltIns(txMachine* the);
 static void fxPrintUsage();
 
 static void fx_issueCommand(xsMachine *the);
-#if 0
-static void fx_Array_prototype_meter(xsMachine* the);
-#endif
 
 extern void fx_clearTimer(txMachine* the);
 static void fx_destroyTimer(void* data);
@@ -335,7 +331,6 @@ ExitCode main(int argc, char* argv[])
 	else {
 		machine = xsCreateMachine(creation, "xsnap", NULL);
 		fxBuildAgent(machine);
-		fxPatchBuiltIns(machine);
 	}
 	if (freeze) {
 		fxFreezeBuiltIns(machine);
@@ -858,33 +853,6 @@ void fxFreezeBuiltIns(txMachine* the)
 	mxFreezeBuiltInCall; mxPush(mxHosts); mxFreezeBuiltInRun; //@@
 
 	mxPop();
-}
-
-#if 0
-void fx_Array_prototype_meter(xsMachine* the)
-{
-	xsIntegerValue length = xsToInteger(xsGet(xsThis, xsID("length")));
-	xsMeterHostFunction(length);
-}
-#endif
-
-void fxPatchBuiltIns(txMachine* machine)
-{
-	// FIXME: This function is disabled because it caused failures.
-	// https://github.com/Moddable-OpenSource/moddable/issues/550
-
-	// TODO: Provide complete metering of builtins and operators.
-#if 0
-	xsBeginHost(machine);
-	xsVars(2);
-	xsVar(0) = xsGet(xsGlobal, xsID("Array"));
-	xsVar(0) = xsGet(xsVar(0), xsID("prototype"));
-	xsVar(1) = xsGet(xsVar(0), xsID("reverse"));
-	xsPatchHostFunction(xsVar(1), fx_Array_prototype_meter);
-	xsVar(1) = xsGet(xsVar(0), xsID("sort"));
-	xsPatchHostFunction(xsVar(1), fx_Array_prototype_meter);
-	xsEndHost(machine);
-#endif
 }
 
 void fxPrintUsage()
