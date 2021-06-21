@@ -136,13 +136,13 @@
  */
 
 /**
- * @typedef {Object} ClosureRule
+ * @typedef {Object} ClosingRule
  * @property {Timer} timer
  * @property {Timestamp} deadline
  */
 
 /**
  * @callback CloseVoting
- * @param {ClosureRule} closureRule
+ * @param {ClosingRule} closingRule
  * @param {() => void} closeVoting
  */

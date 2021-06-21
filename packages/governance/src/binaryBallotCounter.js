@@ -6,7 +6,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
-import { scheduleClose } from './closure';
+import { scheduleClose } from './closingRule';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
 
@@ -28,7 +28,7 @@ const makeBinaryBallotCounter = (
   positions,
   threshold,
   tieOutcome = undefined,
-  closureRule,
+  closingRule,
 ) => {
   assert(
     positions.length === 2,
@@ -126,7 +126,7 @@ const makeBinaryBallotCounter = (
   const sharedFacet = {
     getBallotTemplate: () => template,
     isOpen: () => isOpen,
-    getClosureRule: () => closureRule,
+    getClosingRule: () => closingRule,
   };
 
   /** @type {VoterFacet} */
@@ -136,7 +136,7 @@ const makeBinaryBallotCounter = (
   });
 
   // exposed for testing. In contracts, shouldn't be released.
-  const closeFacet = Far('', { closeVoting });
+  const closeFacet = Far('closeFacet', { closeVoting });
 
   /** @type {BallotCounterCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
@@ -164,7 +164,7 @@ const start = zcf => {
     positions,
     quorumThreshold,
     tieOutcome,
-    closureRule,
+    closingRule,
   } = zcf.getTerms();
 
   // The closeFacet is exposed for testing, but doesn't escape from a contract
@@ -173,10 +173,10 @@ const start = zcf => {
     positions,
     quorumThreshold,
     tieOutcome,
-    closureRule,
+    closingRule,
   );
 
-  scheduleClose(closureRule, closeFacet.closeVoting);
+  scheduleClose(closingRule, closeFacet.closeVoting);
 
   return { publicFacet, creatorFacet };
 };
