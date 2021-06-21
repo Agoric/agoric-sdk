@@ -4,19 +4,26 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
+import { allComparable } from '@agoric/same-structure';
 
 // Each CommitteeRegistrar represents a particular set of voters. The number of
 // voters is visible in the terms.
 const start = zcf => {
+  // Question => counter's { creatorFacet, publicFacet, instance }
   const allQuestions = makeStore('Question');
   const { notifier, updater } = makeNotifierKit();
   const invitations = [];
 
-  const getOpenQuestions = () =>
-    allQuestions.keys().filter(key => {
-      const { pubicFacet } = allQuestions.get(key);
-      return E(pubicFacet).isOpen();
+  const getOpenQuestions = async () => {
+    const isOpenPQuestions = allQuestions.keys().map(key => {
+      const { publicFacet } = allQuestions.get(key);
+      return [E(publicFacet).isOpen(), key];
     });
+    const isOpenQuestions = await allComparable(harden(isOpenPQuestions));
+    return isOpenQuestions
+      .filter(([open, _key]) => open)
+      .map(([_open, key]) => key);
+  };
 
   const makeCommitteeVoterInvitation = index => {
     const handler = voterSeat => {
