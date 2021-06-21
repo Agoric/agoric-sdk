@@ -2,52 +2,220 @@
 <html>
   <head>
     <title>Agoric || Welcome aboard!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700,400&display=swap" rel="stylesheet">
   </head>
 
   <body>
     <style>
+      :root {
+        --primary-color: #e63838;
+        --background-color: #ffffff;
+      }
+
+      html, body {
+        margin: 0;
+      }
+
+      body {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
+      }
+
+      h1 {
+        font-weight: 600;
+      }
+
+      .hdr {
+        text-transform: uppercase;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr auto 0.3fr 0.3fr 1fr 0.3fr 1fr;
+        grid-template-rows: 0.5fr 0.4fr 0.3fr 0.2fr 60px;
+        grid-template-areas:
+          "intro intro intro intro intro intro intro"
+          "dappClient dappClient border-right . cosmosClient cosmosClient cosmosClient"
+          "ag-solo web-solo border-right . keplr . cosmos-helper"
+          "agSoloInstall webSoloInstall border-right . keplrInstall . cosmosHelperInstall"
+          ". . . . . . .";
+        padding-left: 80px;
+        padding-right: 80px;
+
+        height: 100vh;
+      }
+      #intro {
+        grid-area: intro;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+      }
+      #intro > * {
+        margin-right: auto;
+        margin-left: auto;
+      }
+      #dappClient {
+        grid-area: dappClient;
+      }
+      #cosmosClient {
+        grid-area: cosmosClient;
+      }
+      #ag-solo {
+        grid-area: ag-solo;
+      }
+      #keplr {
+        grid-area: keplr;
+      }
+      #keplrInstall {
+        grid-area: keplrInstall;
+      }
+      #agSoloInstall {
+        grid-area: agSoloInstall;
+      }
+      #cosmosHelperInstall {
+        grid-area: cosmosHelperInstall;
+      }
+      #cosmos-helper {
+        grid-area: cosmos-helper;
+      }
+      #web-solo {
+        grid-area: web-solo;
+      }
+      #webSoloInstall {
+        grid-area: webSoloInstall;
+      }
+
       .nodisplay {
         display: none;
       }
+
+      .border-right {
+        grid-area: border-right;
+        margin-left: auto;
+        border-right: solid 3px var(--primary-color);
+        height: 100%;
+      }
+
+      .installButton {
+        display: block;
+        background-color: var(--primary-color);
+        border: none;
+        margin-right: auto;
+        margin-bottom: auto;
+      }
+
+      .installButton a {
+        padding: 15px 20px;
+        background-color: var(--primary-color);
+        color: var(--background-color);
+        text-decoration: none;
+        font-family: 'Inter', sans-serif;
+      }
+
+      @media only screen and (max-width:950px) {
+        .container {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto;
+          grid-template-areas:
+            "intro"
+            "dappClient"
+            "ag-solo"
+            "agSoloInstall"
+            "web-solo"
+            "webSoloInstall"
+            "cosmosClient"
+            "keplr"
+            "keplrInstall"
+            "cosmos-helper"
+            "cosmosHelperInstall"
+            "padding";
+          padding: 20px;
+        }
+
+        .padding {
+          height: 40px;
+          grid-area: padding;
+        }
+
+      }
     </style>
 
+    <main class="container">
+    
+    <div id="intro">
     <h1>Agoric Wallets</h1>
 
-    <p>You need to manage your Agoric assets and crypto keys by using a wallet.</p>
+    <p>Choose the wallet that best suits your needs.</p>
+    </div>
 
-    <h2>Dapp Clients</h2>
+    <div id="dappClient">
+    <h4 class="hdr">Dapp Client Wallet</h4>
 
-    <p>These wallets support offer-safe interaction with Agoric dapps:</p>
+    <p>These wallets support offer-safe interaction with Agoric dapps.</p>
+    </div>
 
-    <table>
-      <tr><th>Name</th> <th>Platform</th> <th>Stability</th></tr>
-      <tr><td><a
-      href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">ag-solo</a></td>
-      <td>Docker</td> <td>Beta</td></tr>
-      <tr class="stability-experimental nodisplay"><td><a href="web-solo/current/">web-solo</a></td>
-      <td>Web Page</td> <td>Experimental</td></tr>
-    </table>
+    <div id="ag-solo">
+      <h2>Ag-Solo</h2>
+
+      <p>Docker-based</p>
+    </div>
+
+    <div id="agSoloInstall" class="installButton">
+      <a
+      href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">Learn
+      How</a>
+    </div>
+
+    <div id="web-solo" class="experimental nodisplay">
+      <h2>Web-Solo</h2>
+
+      <p>Web Page</p>
+    </div>
+
+    <div id="webSoloInstall" class="experimental installButton nodisplay">
+      <a href="web-solo/current/" class="experimental nodisplay">Try It</a>
+    </div>
+
+    <div class="border-right"></div>
     
-    <h2>Cosmos Layer</h2>
+    <div id="cosmosClient">
+      <h4 class="hdr">Cosmos-Layer Wallet</h4>
 
-    <p>These wallets can only be used to manipulate low-level chain tokens, such
-    as the RUN and BLD corresponding to your "bank purses" in the above dapp client
-    wallets:</p>
-      
-    <table>
-      <tr><th>Name</th> <th>Platform</th> <th>Stability</th></tr>
-      <tr><td><a href="keplr/">Keplr</a></td> <td>Browser Extension</td>
-      <td>Stable</td></tr>
-      <tr><td><a
-      href="https://github.com/Agoric/agoric-sdk/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">ag-cosmos-helper</a></td>
-      <td>Command-line</td> <td>Stable</td></tr>
-    </table>
+      <p>These wallets enable trading for chain tokens including  RUN and BLD.
+      To interact with Agoric dapps, you must use a Dapp Client wallet.
+      </p>
+    </div>
+
+    <div id="keplr">
+      <h2>Keplr</h2>
+      <p>Chrome Extension</p>
+    </div>
+
+    <div id="keplrInstall" class="installButton">
+      <a href="keplr/">Install Wallet</a>
+    </div>
+
+    <div id="cosmos-helper">
+      <h2>Ag-Cosmos-Helper</h2>
+      <p>Command-line</p>
+    </div>
+    <div id="cosmosHelperInstall" class="installButton">
+      <a
+      href="https://github.com/Agoric/agoric-sdk/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn
+      How</a>
+    </div>
+
+    <div class="padding"></div>
+  </main>
 
     <script type="module">
       import '@agoric/wallet/components/install-ses-lockdown.js';
-      if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
+      if (window.location.hash.startsWith('#x')) {
         // Don't hide the experimental wallets.
-        document.querySelectorAll('.stability-experimental').forEach(el => el.classList.remove('nodisplay'));
+        document.querySelectorAll('.experimental').forEach(el => el.classList.remove('nodisplay'));
       }
     </script>
   </body>
