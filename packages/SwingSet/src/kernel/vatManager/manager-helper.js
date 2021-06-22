@@ -139,16 +139,19 @@ function makeManagerKit(
   /**
    *
    * @param { VatDeliveryObject } delivery
-   * @returns { Promise<VatDeliveryResult> }
+   * @returns { Promise<VatDeliveryResult> } // or Error
    */
   async function deliver(delivery) {
     if (transcriptManager) {
       transcriptManager.startDispatch(delivery);
     }
+    // metering faults (or other reasons why the vat should be
+    // deterministically terminated) are reported with status= ['error',
+    // err.message, null]. Any non-deterministic error (unexpected worker
+    // termination) is reported by rejection, causing an Error to bubble all
+    // the way up to controller.step/run.
     /** @type { VatDeliveryResult } */
-    const status = await deliverToWorker(delivery).catch(err =>
-      harden(['error', err.message, null]),
-    );
+    const status = await deliverToWorker(delivery);
     insistVatDeliveryResult(status);
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
