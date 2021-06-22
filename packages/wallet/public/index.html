@@ -2,17 +2,19 @@
 <html>
   <head>
     <title>Agoric || Welcome aboard!</title>
+    <link rel="icon" type="image/png" href="web-solo/images/touch/homescreen144.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inter:600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet">
   </head>
 
   <body>
     <style>
       :root {
-        --primary-color: #e63838;
-        --background-color: #ffffff;
+        --mdc-theme-primary: #BB2D40;
+        --mdc-theme-on-primary: white;
       }
 
       html, body {
@@ -95,24 +97,30 @@
       .border-right {
         grid-area: border-right;
         margin-left: auto;
-        border-right: solid 3px var(--primary-color);
+        border-right: solid 3px var(--mdc-theme-primary);
         height: 100%;
       }
 
-      .installButton {
-        display: block;
-        background-color: var(--primary-color);
-        border: none;
-        margin-right: auto;
-        margin-bottom: auto;
+      button {
+        border: 0;
+        border-radius: 0px;
+        font-size: inherit;
       }
 
-      .installButton a {
-        padding: 15px 20px;
-        background-color: var(--primary-color);
-        color: var(--background-color);
-        text-decoration: none;
+      a.button, button {
+        display: inline-block;
+        margin-right: auto;
+        margin-bottom: auto;
         font-family: 'Inter', sans-serif;
+        
+        text-decoration: none;
+        padding: 15px 20px;
+        background-color: var(--mdc-theme-primary);
+        color: var(--mdc-theme-on-primary);
+      }
+
+      a.button.nodisplay {
+        display: none;
       }
 
       @media only screen and (max-width:950px) {
@@ -139,9 +147,17 @@
           height: 40px;
           grid-area: padding;
         }
+      }
 
+      .float-logo {
+        position: absolute;
+        top: 0px;
+        left: 0px;
       }
     </style>
+
+    <div class="float-logo"><a href="https://agoric.com"><img
+    src="web-solo/images/touch/homescreen144.png" height="144" width="144"></a></div>
 
     <main class="container">
     
@@ -163,11 +179,8 @@
       <p>Docker-based</p>
     </div>
 
-    <div id="agSoloInstall" class="installButton">
-      <a
-      href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">Learn
-      How</a>
-    </div>
+    <a class="button" id="agSoloInstall"
+      href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">Learn&nbsp;How</a>
 
     <div id="web-solo" class="experimental nodisplay">
       <h2>Web-Solo</h2>
@@ -175,9 +188,7 @@
       <p>Web Page</p>
     </div>
 
-    <div id="webSoloInstall" class="experimental installButton nodisplay">
-      <a href="web-solo/current/" class="experimental nodisplay">Try It</a>
-    </div>
+    <a class="nodisplay button experimental" id="webSoloInstall" href="web-solo/current/">Try&nbsp;It</a>
 
     <div class="border-right"></div>
     
@@ -194,29 +205,80 @@
       <p>Chrome Extension</p>
     </div>
 
-    <div id="keplrInstall" class="installButton">
-      <a href="keplr/">Install Wallet</a>
-    </div>
+    <button id="keplrInstall">Install&nbsp;Wallet</button>
 
     <div id="cosmos-helper">
       <h2>Ag-Cosmos-Helper</h2>
       <p>Command-line</p>
     </div>
-    <div id="cosmosHelperInstall" class="installButton">
-      <a
-      href="https://github.com/Agoric/agoric-sdk/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn
-      How</a>
-    </div>
+    <a id="cosmosHelperInstall" class="button"
+      href="https://github.com/Agoric/agoric-sdb/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn&nbsp;How</a>
 
     <div class="padding"></div>
   </main>
 
+  <mwc-dialog heading="Install Keplr" id="keplrModal">
+    <div class="instructions nodisplay">You must first <a target="_blank"
+    href="https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap">install
+    the Chrome extension</a> then come back to this page.
+
+    If it is already installed, please enable it and reload this page.
+    </div>
+    
+    <div class="network-config nodisplay">
+      Choose the network to connect:
+      <p>
+      <mwc-select id="networks" fixedMenuPosition label="Network">
+        <mwc-list-item selected value="https://testnet.agoric.net/network-config">Agoric Testnet</mwc-list-item>
+        <mwc-list-item value="https://devnet.agoric.net/network-config">Agoric Devnet</mwc-list-item>
+        <mwc-list-item value="https://stage.agoric.net/network-config">Agoric Stage</mwc-list-item>
+      </mwc-select>
+      <button id="chooseNetworkConfig">Configure</button>
+      </p>
+      <div id="keplr-status"></div>
+    </div>
+  </mwc-dialog>
+
     <script type="module">
       import '@agoric/wallet/components/install-ses-lockdown.js';
+      import '@material/mwc-dialog';
+      import '@material/mwc-select';
+      import '@material/mwc-list/mwc-list-item';
+      import { suggestChain } from '../src/use-keplr.js';
+
       if (window.location.hash.startsWith('#x')) {
         // Don't hide the experimental wallets.
         document.querySelectorAll('.experimental').forEach(el => el.classList.remove('nodisplay'));
       }
+
+      window.addEventListener('load', async _ => {
+        if (window.keplr && window.keplr.enable) {
+          document.querySelector('#keplr-status').innerText = 'Keplr Detected';
+          window.keplr.enable('agoric').finally(_ => {
+            document.querySelectorAll('#keplrModal .network-config').forEach(el => el.classList.remove('nodisplay'));
+            document.querySelector('#keplr-status').innerText = 'Keplr Enabled';
+          });
+          return;
+        }
+        document.querySelectorAll('#keplrModal .instructions').forEach(el => el.classList.remove('nodisplay'));
+      });
+
+      chooseNetworkConfig.addEventListener('click', async ev => {
+        const nc = networks.value;
+        document.querySelector('#keplr-status').innerText = 'Configuring Keplr...';
+        try {
+          await suggestChain(nc);
+          document.querySelector('#keplr-status').innerText = `${networks.selected.text} configured`;
+        } catch (e) {
+          console.log(e);
+          document.querySelector('#keplr-status').innerText = `${e}`;
+        }
+      });
+
+      document.querySelector('#keplrInstall').addEventListener('click', ev => {
+        ev.preventDefault();
+        keplrModal.show();
+      });
     </script>
   </body>
 </html>
