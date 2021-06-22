@@ -6,7 +6,7 @@
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-metering-and-ses';
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';

@@ -34,7 +34,7 @@
     "@agoric/dapp-svelte-wallet": "^0.10.4",
     "@agoric/eventual-send": "^0.13.16",
     "@agoric/import-bundle": "^0.2.16",
-    "@agoric/install-metering-and-ses": "^0.2.15",
+    "@agoric/install-ses": "^0.5.15",
     "@agoric/marshal": "^0.4.13",
     "@agoric/notifier": "^0.3.16",
     "@agoric/promise-kit": "^0.2.15",

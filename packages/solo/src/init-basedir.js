@@ -21,7 +21,7 @@ export default function initBasedir(
   const { env = process.environment } = opts;
   const {
     wallet = DEFAULT_WALLET,
-    defaultManagerType = env.SWINGSET_WORKER_TYPE || 'local',
+    defaultManagerType = env.SWINGSET_WORKER_TYPE || 'xs-worker',
     ...options
   } = opts;
   options.wallet = wallet;

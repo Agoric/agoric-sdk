@@ -8,6 +8,7 @@ import * as babelParser from '@babel/parser';
 import babelGenerate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
 import { makeArchive } from '@endo/compartment-mapper/archive.js';
+import { makeNodeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 import { encodeBase64 } from '@endo/base64';
 
 import { SourceMapConsumer } from 'source-map';
@@ -24,7 +25,7 @@ const HTML_COMMENT_END_RE = new RegExp(`--${'>'}`, 'g');
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
-const read = async location => fs.promises.readFile(new URL(location).pathname);
+const readPowers = makeNodeReadPowers(fs);
 
 function rewriteComment(node, unmapLoc) {
   node.type = 'CommentBlock';
@@ -129,38 +130,31 @@ async function transformSource(
   return babelGenerate(ast, { retainLines: true });
 }
 
-/** @type {BundleSource} */
-export default async function bundleSource(
-  startFilename,
-  moduleFormat = DEFAULT_MODULE_FORMAT,
-  powers = undefined,
-) {
-  if (!SUPPORTED_FORMATS.includes(moduleFormat)) {
-    throw Error(`moduleFormat ${moduleFormat} is not implemented`);
-  }
-  if (moduleFormat === 'endoZipBase64') {
-    // TODO endoZipBase64 format does not yet support the tildot transform, as
-    // Compartment Mapper does not yet reveal a pre-archive transform facility.
-    // Such a facility might be better served by a transform specified in
-    // individual package.jsons and driven by the compartment mapper.
-    const base = new URL(`file://${process.cwd()}`).toString();
-    const entry = new URL(startFilename, base).toString();
-    const bytes = await makeArchive(read, entry, {
-      moduleTransforms: {
-        async mjs(sourceBytes) {
-          const source = textDecoder.decode(sourceBytes);
-          const { code: object } = await transformSource(source, {
-            sourceType: 'module',
-          });
-          const objectBytes = textEncoder.encode(object);
-          return { bytes: objectBytes, parser: 'mjs' };
-        },
+async function bundleZipBase64(startFilename, dev, powers = {}) {
+  const base = new URL(`file://${process.cwd()}`).toString();
+  const entry = new URL(startFilename, base).toString();
+  const bytes = await makeArchive({ ...readPowers, ...powers }, entry, {
+    dev,
+    moduleTransforms: {
+      async mjs(sourceBytes) {
+        const source = textDecoder.decode(sourceBytes);
+        const { code: object } = await transformSource(source, {
+          sourceType: 'module',
+        });
+        const objectBytes = textEncoder.encode(object);
+        return { bytes: objectBytes, parser: 'mjs' };
       },
-    });
-    const endoZipBase64 = encodeBase64(bytes);
-    return { endoZipBase64, moduleFormat };
-  }
+    },
+  });
+  const endoZipBase64 = encodeBase64(bytes);
+  return { endoZipBase64, moduleFormat: 'endoZipBase64' };
+}
 
+async function bundleNestedEvaluateAndGetExports(
+  startFilename,
+  moduleFormat,
+  powers,
+) {
   const {
     commonjsPlugin = commonjs0,
     rollup = rollup0,
@@ -385,4 +379,24 @@ ${sourceMap}`;
 
   // console.log(sourceMap);
   return { source, sourceMap, moduleFormat };
+}
+
+/** @type {BundleSource} */
+export default async function bundleSource(
+  startFilename,
+  options = {},
+  powers = undefined,
+) {
+  if (typeof options === 'string') {
+    options = { format: options };
+  }
+  const { format: moduleFormat = DEFAULT_MODULE_FORMAT, dev = false } = options;
+
+  if (!SUPPORTED_FORMATS.includes(moduleFormat)) {
+    throw Error(`moduleFormat ${moduleFormat} is not implemented`);
+  }
+  if (moduleFormat === 'endoZipBase64') {
+    return bundleZipBase64(startFilename, dev, powers);
+  }
+  return bundleNestedEvaluateAndGetExports(startFilename, moduleFormat, powers);
 }
