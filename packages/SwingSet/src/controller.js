@@ -15,7 +15,7 @@ import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import { xsnap, makeSnapstore } from '@agoric/xsnap';
+import { xsnap, makeSnapstore, recordXSnap } from '@agoric/xsnap';
 
 import engineGC from './engine-gc.js';
 import { WeakRef, FinalizationRegistry } from './weakref.js';
@@ -64,6 +64,21 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
     debug: !!env.XSNAP_DEBUG,
   };
 
+  let doXSnap = xsnap;
+  const { XSNAP_TEST_RECORD } = env;
+  if (XSNAP_TEST_RECORD) {
+    console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
+    let serial = 0;
+    doXSnap = opts => {
+      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      serial += 1;
+      fs.mkdirSync(workerTrace, { recursive: true });
+      return recordXSnap(opts, workerTrace, {
+        writeFileSync: fs.writeFileSync,
+      });
+    };
+  }
+
   /** @type { ReturnType<typeof makeSnapstore> } */
   let snapStore;
 
@@ -90,13 +105,13 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
   async function startXSnap(name, handleCommand, metered) {
     if (supervisorHash) {
       return snapStore.load(supervisorHash, async snapshot => {
-        const xs = xsnap({ snapshot, name, handleCommand, ...xsnapOpts });
+        const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
         await xs.evaluate('null'); // ensure that spawn is done
         return xs;
       });
     }
     const meterOpts = metered ? {} : { meteringLimit: 0 };
-    const worker = xsnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
+    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
     for (const bundle of bundles) {
       assert(
