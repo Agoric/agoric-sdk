@@ -161,7 +161,8 @@ export function makeXsSubprocessFactory({
             message = 'Allocate meter exceeded';
             break;
           default:
-            message = err.message;
+            // non-metering failure. crash.
+            throw err;
         }
         return harden(['error', message, null]);
       }
