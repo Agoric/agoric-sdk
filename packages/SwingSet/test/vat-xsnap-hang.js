@@ -1,7 +1,10 @@
 import { Far } from '@agoric/marshal';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(_vatPowers) {
   return Far('root', {
-    hang() { for (;;) {} },
+    hang() {
+      // eslint-disable-next-line no-empty
+      for (;;) {}
+    },
   });
 }
