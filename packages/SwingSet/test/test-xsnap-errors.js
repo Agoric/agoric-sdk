@@ -1,4 +1,4 @@
-/* global require, __dirname */
+/* global require, __dirname, process */
 // @ts-check
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
@@ -10,6 +10,15 @@ import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subpro
 import { makeStartXSnap } from '../src/controller.js';
 import { capargs } from './util.js';
 
+function suppressUnhandled(t, message) {
+  process.on('unhandledRejection', (reason, promise) => {
+    t.log('TODO: chase down unhandled rejection', reason);
+    // @ts-ignore tsc thinks reason's type is {}
+    t.is(reason.message, message);
+    promise.catch(() => {});
+  });
+}
+
 test('child termination during crank', async t => {
   const makeb = rel => bundleSource(require.resolve(rel), 'getExport');
   const lockdown = await makeb(
@@ -19,42 +28,41 @@ test('child termination during crank', async t => {
     '../src/kernel/vatManager/supervisor-subprocess-xsnap.js',
   );
   const bundles = [lockdown, supervisor];
-  const snapstorePath = undefined; // good enough?
-  /** @type { Record<string, string> } */
-  const env = {};
 
   /** @type { ReturnType<typeof spawn> } */
   let theProc;
-  /** @type { typeof spawn } */
-  const doSpawn = (bin, ...args) => {
-    theProc = spawn(bin, ...args);
-    return theProc;
-  };
+
   const startXSnap = makeStartXSnap(bundles, {
-    snapstorePath,
-    env,
-    spawn: doSpawn,
+    snapstorePath: undefined, // close enough for this test
+    env: {},
+    // @ts-ignore we only need one path thru spawn
+    spawn: (command, args, opts) => {
+      const noMetering = ['-l', '0'];
+      theProc = spawn(command, [args, ...noMetering], opts);
+      return theProc;
+    },
   });
-  /** @type { KernelKeeper } */
+
+  // just enough methods to not crash
+  /** @type { any } */
   const kernelKeeper = {
-    provideVatKeeper: () => null,
-  }; // add just enough methods to not crash
-  /** @type { KernelSlog } */
-  const kernelSlog = {}; // same
-  /** @type { VatPowers } */
-  const allVatPowers = {}; // probably safe to leave empty
+    provideVatKeeper: () => undefined,
+  };
+
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
-    kernelSlog,
-    allVatPowers,
-    testLog: () => {},
+    // @ts-ignore kernelSlog is not used in this test
+    kernelSlog: {},
+    allVatPowers: undefined,
+    testLog: undefined,
   });
 
-  const vatID = 'v1';
   const fn = path.join(__dirname, 'vat-xsnap-hang.js');
   const bundle = await bundleSource(fn);
+
   /** @type { ManagerOptions } */
+  // @ts-ignore close enough for this test
   const managerOptions = {};
   const schandler = _vso => ['ok', null];
   const m = await xsWorkerFactory.createFromBundle(
@@ -68,7 +76,10 @@ test('child termination during crank', async t => {
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 
-  // TODO: disable metering limit
+  suppressUnhandled(
+    t,
+    'Cannot write messages to v1:undefined: read ECONNRESET',
+  );
 
   const p = m.deliver(delivery); // won't resolve until child dies
 
