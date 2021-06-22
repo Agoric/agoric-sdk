@@ -76,8 +76,9 @@ test('child termination during crank', async t => {
 
   t.throwsAsync(p, {
     instanceOf: Error,
-    message: 'something about termination',
+    code: 'SIGTERM',
+    message: 'v1:undefined exited due to signal SIGTERM',
   });
 
-  await p;
+  await p.catch(() => {});
 });
