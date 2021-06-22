@@ -2,7 +2,7 @@
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
-import '@agoric/install-metering-and-ses';
+import '@agoric/install-ses';
 import test from 'ava';
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
@@ -19,8 +19,9 @@ test.before(async t => {
   t.context.data = { kernelBundles, trivialBundle };
 });
 
-async function main(t, mode) {
+async function main(t, mode, defaultManagerType = 'local') {
   const config = await loadBasedir(__dirname);
+  config.defaultManagerType = defaultManagerType;
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];
   const controller = await buildVatController(config, argv, { kernelBundles });
@@ -47,6 +48,6 @@ const contractExhaustedGolden = [
 ];
 
 test('exhaustion', async t => {
-  const dump = await main(t, 'exhaust');
+  const dump = await main(t, 'exhaust', 'xs-worker');
   t.deepEqual(dump.log, contractExhaustedGolden);
 });
