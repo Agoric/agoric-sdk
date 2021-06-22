@@ -30,7 +30,7 @@
         font-weight: 600;
       }
 
-      .hdr {
+      .upcase {
         text-transform: uppercase;
       }
 
@@ -40,9 +40,9 @@
         grid-template-rows: 0.5fr 0.4fr 0.3fr 0.2fr 60px;
         grid-template-areas:
           "intro intro intro intro intro intro intro"
-          "dappClient dappClient border-right . cosmosClient cosmosClient cosmosClient"
+          "dapp-clients dapp-clients border-right . cosmos-clients cosmos-clients cosmos-clients"
           "ag-solo web-solo border-right . keplr . ag-cosmos-helper"
-          "ag-solo-install webSoloInstall border-right . keplr-install . ag-cosmos-helper-install"
+          "ag-solo-install web-solo-install border-right . keplr-install . ag-cosmos-helper-install"
           ". . . . . . .";
         padding-left: 80px;
         padding-right: 80px;
@@ -59,11 +59,11 @@
         margin-right: auto;
         margin-left: auto;
       }
-      #dappClient {
-        grid-area: dappClient;
+      #dapp-clients {
+        grid-area: dapp-clients;
       }
-      #cosmosClient {
-        grid-area: cosmosClient;
+      #cosmos-clients {
+        grid-area: cosmos-clients;
       }
       #ag-solo {
         grid-area: ag-solo;
@@ -86,8 +86,8 @@
       #web-solo {
         grid-area: web-solo;
       }
-      #webSoloInstall {
-        grid-area: webSoloInstall;
+      #web-solo-install {
+        grid-area: web-solo-install;
       }
 
       .nodisplay {
@@ -127,18 +127,18 @@
         display: none;
       }
 
-      @media only screen and (max-width:950px) {
+      @media only screen and (max-width:650px) {
         .container {
           grid-template-columns: 1fr;
           grid-template-rows: none;
           grid-template-areas:
             "intro"
-            "dappClient"
+            "dapp-clients"
             "ag-solo"
             "ag-solo-install"
             "web-solo"
-            "webSoloInstall"
-            "cosmosClient"
+            "web-solo-install"
+            "cosmos-clients"
             "keplr"
             "keplr-install"
             "ag-cosmos-helper"
@@ -181,8 +181,8 @@
     <p>Choose the wallet that best suits your needs.</p>
     </div>
 
-    <div id="dappClient">
-    <h4 class="hdr">Dapp Client Wallet</h4>
+    <div id="dapp-clients">
+    <h4 class="upcase">Dapp Client Wallets</h4>
 
     <p>These wallets support offer-safe interaction with Agoric dapps.</p>
     </div>
@@ -202,16 +202,16 @@
       <p>Web Page</p>
     </div>
 
-    <a class="nodisplay button experimental" id="webSoloInstall" href="web-solo/current/">Try&nbsp;It</a>
+    <a class="nodisplay button experimental" id="web-solo-install" href="web-solo/current/">Try&nbsp;It</a>
 
     <div class="border-right"></div>
     
-    <div id="cosmosClient">
-      <h4 class="hdr">Cosmos-Layer Wallet</h4>
+    <div id="cosmos-clients">
+      <h4 class="upcase">Cosmos-Layer Wallets</h4>
 
-      <p>These wallets enable trading for chain tokens including  RUN and BLD.
-      To interact with Agoric dapps, you must use a Dapp Client wallet.
-      </p>
+      <p>These wallets enable staking and trading chain tokens including RUN and BLD.</p>
+      
+      <p>Unfortunately, you can't use them to interact with Agoric dapps; for that you must use a Dapp Client wallet.</p>
     </div>
 
     <div id="keplr">
