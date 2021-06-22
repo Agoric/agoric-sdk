@@ -15,7 +15,7 @@ const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 const transcript1 = [
   [
     '/xsnap-tests/00000-options.json',
-    '{"os":"Linux","name":"xsnap test worker","debug":false,"meteringLimit":10000000}',
+    '{"os":"Linux","name":"xsnap test worker","debug":false,"meteringLimit":100000000}',
   ],
   [
     '/xsnap-tests/00001-evaluate.dat',
