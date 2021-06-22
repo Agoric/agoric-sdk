@@ -1,4 +1,4 @@
-/* global require */
+/* global require, __dirname */
 // @ts-check
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
