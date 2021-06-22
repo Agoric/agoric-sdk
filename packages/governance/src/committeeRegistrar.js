@@ -28,8 +28,16 @@ const start = zcf => {
   const makeCommitteeVoterInvitation = index => {
     const handler = voterSeat => {
       return Far(`voter${index}`, {
-        castBallot: ballot => {
-          const { voter } = allQuestions.get(ballot.question);
+        castBallot: ballotp => {
+          E.when(ballotp, ballot => {
+            const { voter } = allQuestions.get(ballot.question);
+            return E(voter).submitVote(voterSeat, ballot);
+          });
+        },
+        castBallotFor: (question, positions) => {
+          const { publicFacet: counter, voter } = allQuestions.get(question);
+          const ballotTemplate = E(counter).getBallotTemplate();
+          const ballot = E(ballotTemplate).choose(positions);
           return E(voter).submitVote(voterSeat, ballot);
         },
       });
@@ -49,7 +57,7 @@ const start = zcf => {
       ...questionDetailsShort,
       registrar: zcf.getInstance(),
     };
-    // facets of the ballot counter. Suppress creatorInvitation and adminFaceet.
+    // facets of the ballot counter. Suppress creatorInvitation and adminFacet.
     const { creatorFacet, publicFacet, instance } = await E(
       zcf.getZoeService(),
     ).startInstance(voteCounter, {}, questionDetails);

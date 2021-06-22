@@ -78,10 +78,10 @@ const expectedCommitteeBinaryStartLog = [
   'Bob cast a ballot on Choose for Meeny',
   'Carol cast a ballot on Choose for Eeny',
   'Dave cast a ballot on Choose for Eeny',
-  'Verify ballot from instance: Choose, Eeny,Meeny, choose_n',
   'Emma cast a ballot on Choose for Meeny',
+  'Verify ballot from instance: Choose, Eeny,Meeny, choose_n',
   'Verify: q: Choose, max: 1, committee: TheCommittee',
-  'Verify: registrar: [Alleged: InstanceHandle], counter: [Alleged: InstanceHandle]',
+  'Verify instances: registrar: true, counter: true',
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
@@ -90,7 +90,6 @@ const expectedCommitteeBinaryStartLog = [
 ];
 
 test.serial('zoe - committee binary vote - valid inputs', async t => {
-  // test.serial('zoe - committee binary vote - valid inputs', async t => {
   const dump = await main(t, ['committeeBinaryStart']);
   t.deepEqual(dump.log, expectedCommitteeBinaryStartLog);
 });

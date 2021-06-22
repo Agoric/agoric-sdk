@@ -53,7 +53,8 @@ async function committeeBinaryStart(
   await E(voterCreator).createVoter('Emma', invitations[4], 'Meeny');
 
   // At least one voter should verify that everything is on the up-and-up
-  await E(aliceP).verifyBallot('Choose');
+  const instances = { registrarInstance, ballotInstance };
+  await E(aliceP).verifyBallot('Choose', instances);
 
   E(timer).tick();
   E(timer).tick();

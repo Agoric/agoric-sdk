@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
+import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
@@ -63,18 +64,20 @@ const makeBinaryBallotCounter = (
   const tallyPromise = makePromiseKit();
   const allBallots = makeStore('seat');
 
-  const recordBallot = (seat, filledBallot, shares = 1n) => {
-    assert(
-      filledBallot.question === question,
-      X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
-    );
-    assert(
-      positions.includes(filledBallot.chosen[0]),
-      X`The ballot's choice is not a legal position: ${filledBallot.chosen[0]}.`,
-    );
-    allBallots.has(seat)
-      ? allBallots.set(seat, makeWeightedBallot(filledBallot, shares))
-      : allBallots.init(seat, makeWeightedBallot(filledBallot, shares));
+  const recordBallot = (seat, filledBallotP, shares = 1n) => {
+    return E.when(filledBallotP, filledBallot => {
+      assert(
+        filledBallot.question === question,
+        X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
+      );
+      assert(
+        positions.includes(filledBallot.chosen[0]),
+        X`The ballot's choice is not a legal position: ${filledBallot.chosen[0]}.`,
+      );
+      allBallots.has(seat)
+        ? allBallots.set(seat, makeWeightedBallot(filledBallot, shares))
+        : allBallots.init(seat, makeWeightedBallot(filledBallot, shares));
+    });
   };
 
   const countVotes = () => {

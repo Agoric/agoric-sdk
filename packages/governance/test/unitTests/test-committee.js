@@ -7,7 +7,7 @@ import '@agoric/zoe/exported';
 
 import { E } from '@agoric/eventual-send';
 import { makeZoe } from '@agoric/zoe';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
@@ -17,7 +17,7 @@ const registrarRoot = `${__dirname}/../../src/committeeRegistrar`;
 const counterRoot = `${__dirname}/../../src/binaryBallotCounter`;
 
 async function setupContract() {
-  const zoe = makeZoe(makeFakeVatAdmin(() => {}).admin);
+  const zoe = makeZoe(fakeVatAdmin);
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([
@@ -104,7 +104,8 @@ test('committee-open question:mixed', async t => {
     counterInstallation,
     details3,
   );
-  // We didn't add any votes
+  // We didn't add any votes. getOutcome() will eventually return a broken
+  // promise, but not until some time after tick(). Add a .catch() for it.
   E(counterPublic)
     .getOutcome()
     .catch(e => t.deepEqual(e, 'No quorum'));

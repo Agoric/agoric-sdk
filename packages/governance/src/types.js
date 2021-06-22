@@ -140,7 +140,7 @@
 /**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} seat
- * @param {CompletedBallot} filledBallot
+ * @param {ERef<CompletedBallot>} filledBallot
  * @param {bigint=} weight
  */
 
