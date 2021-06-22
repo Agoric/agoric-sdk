@@ -188,6 +188,7 @@ export const makeZoeStorageManager = createZCFVat => {
       invitationIssuer,
       root,
       adminNode,
+      zcfAssert,
     });
   };
 

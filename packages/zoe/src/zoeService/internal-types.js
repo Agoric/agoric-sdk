@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * Create a purse for a new issuer
  *
@@ -81,6 +83,7 @@
  * @property {Issuer} invitationIssuer
  * @property {Object} root of a RootAndAdminNode
  * @property {AdminNode} adminNode of a RootAndAdminNode
+ * @property {Assert} zcfAssert
  */
 
 /**

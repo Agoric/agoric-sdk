@@ -43,7 +43,7 @@ export const makeStartInstance = (
     );
     // AWAIT ///
 
-    const { adminNode, root } = await zoeInstanceStorageManager;
+    const { adminNode, root, zcfAssert } = await zoeInstanceStorageManager;
     /** @type {ZCFRoot} */
     const zcfRoot = root;
 
@@ -162,10 +162,14 @@ export const makeStartInstance = (
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
       makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
       replaceAllocations: seatHandleAllocations => {
-        seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
-          const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
-          zoeSeatAdmin.replaceAllocation(allocation);
-        });
+        try {
+          seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
+            const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
+            zoeSeatAdmin.replaceAllocation(allocation);
+          });
+        } catch (err) {
+          zcfAssert.fail(X`fatal ${err}`);
+        }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
     });
