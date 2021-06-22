@@ -11,7 +11,7 @@ import '@agoric/babel-standalone';
 
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)
-import '@agoric/install-metering-and-ses';
+import '@agoric/install-ses';
 
 import os from 'os';
 import path from 'path';
