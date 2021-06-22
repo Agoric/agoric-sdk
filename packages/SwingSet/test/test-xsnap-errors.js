@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import path from 'path';
-import spawn from 'child_process';
+import { spawn } from 'child_process';
 import bundleSource from '@agoric/bundle-source';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';
@@ -24,8 +24,10 @@ test('child termination during crank', async t => {
   const env = {};
 
   const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
-  const kernelKeeper = {}; // add just enough methods to not crash
   /** @type { KernelKeeper } */
+  const kernelKeeper = {
+    provideVatKeeper: () => null,
+  }; // add just enough methods to not crash
   /** @type { KernelSlog } */
   const kernelSlog = {}; // same
   /** @type { VatPowers } */
