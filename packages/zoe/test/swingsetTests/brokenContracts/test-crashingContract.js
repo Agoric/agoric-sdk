@@ -5,7 +5,7 @@
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-metering-and-ses';
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
@@ -28,6 +28,7 @@ const generateBundlesP = Promise.all(
 
 async function main(argv) {
   const config = await loadBasedir(__dirname);
+  config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   const controller = await buildVatController(config, argv);
   await controller.run();
