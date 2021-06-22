@@ -41,8 +41,8 @@
         grid-template-areas:
           "intro intro intro intro intro intro intro"
           "dappClient dappClient border-right . cosmosClient cosmosClient cosmosClient"
-          "ag-solo web-solo border-right . keplr . cosmos-helper"
-          "agSoloInstall webSoloInstall border-right . keplrInstall . cosmosHelperInstall"
+          "ag-solo web-solo border-right . keplr . ag-cosmos-helper"
+          "ag-solo-install webSoloInstall border-right . keplr-install . ag-cosmos-helper-install"
           ". . . . . . .";
         padding-left: 80px;
         padding-right: 80px;
@@ -71,17 +71,17 @@
       #keplr {
         grid-area: keplr;
       }
-      #keplrInstall {
-        grid-area: keplrInstall;
+      #keplr-install {
+        grid-area: keplr-install;
       }
-      #agSoloInstall {
-        grid-area: agSoloInstall;
+      #ag-solo-install {
+        grid-area: ag-solo-install;
       }
-      #cosmosHelperInstall {
-        grid-area: cosmosHelperInstall;
+      #ag-cosmos-helper-install {
+        grid-area: ag-cosmos-helper-install;
       }
-      #cosmos-helper {
-        grid-area: cosmos-helper;
+      #ag-cosmos-helper {
+        grid-area: ag-cosmos-helper;
       }
       #web-solo {
         grid-area: web-solo;
@@ -123,22 +123,26 @@
         display: none;
       }
 
+      .little-logo {
+        display: none;
+      }
+
       @media only screen and (max-width:950px) {
         .container {
           grid-template-columns: 1fr;
-          grid-template-rows: auto;
+          grid-template-rows: none;
           grid-template-areas:
             "intro"
             "dappClient"
             "ag-solo"
-            "agSoloInstall"
+            "ag-solo-install"
             "web-solo"
             "webSoloInstall"
             "cosmosClient"
             "keplr"
-            "keplrInstall"
-            "cosmos-helper"
-            "cosmosHelperInstall"
+            "keplr-install"
+            "ag-cosmos-helper"
+            "ag-cosmos-helper-install"
             "padding";
           padding: 20px;
         }
@@ -146,6 +150,13 @@
         .padding {
           height: 40px;
           grid-area: padding;
+        }
+
+        .big-logo {
+          display: none;
+        }
+        .little-logo {
+          display: block;
         }
       }
 
@@ -156,10 +167,13 @@
       }
     </style>
 
-    <div class="float-logo"><a href="https://agoric.com"><img
+  <div class="float-logo"><a href="https://agoric.com"><img class="big-logo"
     src="web-solo/images/touch/homescreen144.png" height="144" width="144"></a></div>
 
-    <main class="container">
+  <div class="float-logo little-logo"><a href="https://agoric.com"><img class="little-logo"
+    src="web-solo/images/touch/homescreen72.png" height="72" width="72"></a></div>
+
+  <main class="container">
     
     <div id="intro">
     <h1>Agoric Wallets</h1>
@@ -179,7 +193,7 @@
       <p>Docker-based</p>
     </div>
 
-    <a class="button" id="agSoloInstall"
+    <a class="button" id="ag-solo-install"
       href="https://agoric.com/documentation/getting-started/beta.html#set-up-a-wallet-agoric-solo-machine">Learn&nbsp;How</a>
 
     <div id="web-solo" class="experimental nodisplay">
@@ -205,19 +219,19 @@
       <p>Chrome Extension</p>
     </div>
 
-    <button id="keplrInstall">Install&nbsp;Wallet</button>
+    <button id="keplr-install">Install&nbsp;Wallet</button>
 
-    <div id="cosmos-helper">
+    <div id="ag-cosmos-helper">
       <h2>Ag-Cosmos-Helper</h2>
       <p>Command-line</p>
     </div>
-    <a id="cosmosHelperInstall" class="button"
-      href="https://github.com/Agoric/agoric-sdb/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn&nbsp;How</a>
+    <a id="ag-cosmos-helper-install" class="button"
+      href="https://github.com/Agoric/agoric-sdk/wiki/Setting-up-an-Agoric-Dapp-Client-with-docker-compose#note-for-incentivized-testnet-participants">Learn&nbsp;How</a>
 
     <div class="padding"></div>
   </main>
 
-  <mwc-dialog heading="Install Keplr" id="keplrModal">
+  <mwc-dialog heading="Install Keplr" id="keplr-modal">
     <div class="instructions nodisplay">You must first <a target="_blank"
     href="https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap">install
     the Chrome extension</a> then come back to this page.
@@ -255,29 +269,30 @@
         if (window.keplr && window.keplr.enable) {
           document.querySelector('#keplr-status').innerText = 'Keplr Detected';
           window.keplr.enable('agoric').finally(_ => {
-            document.querySelectorAll('#keplrModal .network-config').forEach(el => el.classList.remove('nodisplay'));
+            document.querySelectorAll('#keplr-modal .network-config').forEach(el => el.classList.remove('nodisplay'));
             document.querySelector('#keplr-status').innerText = 'Keplr Enabled';
           });
           return;
         }
-        document.querySelectorAll('#keplrModal .instructions').forEach(el => el.classList.remove('nodisplay'));
+        document.querySelectorAll('#keplr-modal .instructions').forEach(el => el.classList.remove('nodisplay'));
       });
 
       chooseNetworkConfig.addEventListener('click', async ev => {
         const nc = networks.value;
-        document.querySelector('#keplr-status').innerText = 'Configuring Keplr...';
+        const st = document.querySelector('#keplr-status');
+        st.innerText = 'Configuring Keplr...';
         try {
           await suggestChain(nc);
-          document.querySelector('#keplr-status').innerText = `${networks.selected.text} configured`;
+          st.innerText = `${networks.selected.text} configured`;
         } catch (e) {
           console.log(e);
-          document.querySelector('#keplr-status').innerText = `${e}`;
+          st.innerText = `${e}`;
         }
       });
 
-      document.querySelector('#keplrInstall').addEventListener('click', ev => {
+      document.querySelector('#keplr-install').addEventListener('click', ev => {
         ev.preventDefault();
-        keplrModal.show();
+        document.querySelector('#keplr-modal').show();
       });
     </script>
   </body>

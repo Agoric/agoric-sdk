@@ -4,7 +4,7 @@ export async function suggestChain(nc) {
   // alert('networkConfig ' + networkConfig.value);
   const res = await fetch(nc);
   if (!res.ok) {
-    throw Error(`Cannot fetch network config: ${res.status}`);
+    throw Error(`Cannot fetch network: ${res.status}`);
   }
   const { chainName: chainId, rpcAddrs } = await res.json();
   const hostname = new URL(nc).hostname;
