@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import 'ses/lockdown';
+import 'ses';
 import '@agoric/eventual-send/shim';
 
 lockdown({ errorTaming: 'unsafe', stackFiltering: 'verbose' });
