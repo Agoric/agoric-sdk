@@ -23,7 +23,18 @@ test('child termination during crank', async t => {
   /** @type { Record<string, string> } */
   const env = {};
 
-  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+  /** @type { ReturnType<typeof spawn> } */
+  let theProc;
+  /** @type { typeof spawn } */
+  const doSpawn = (bin, ...args) => {
+    theProc = spawn(bin, ...args);
+    return theProc;
+  };
+  const startXSnap = makeStartXSnap(bundles, {
+    snapstorePath,
+    env,
+    spawn: doSpawn,
+  });
   /** @type { KernelKeeper } */
   const kernelKeeper = {
     provideVatKeeper: () => null,
@@ -37,7 +48,7 @@ test('child termination during crank', async t => {
     kernelKeeper,
     kernelSlog,
     allVatPowers,
-    testLog: allVatPowers.testLog,
+    testLog: () => {},
   });
 
   const vatID = 'v1';
@@ -46,18 +57,27 @@ test('child termination during crank', async t => {
   /** @type { ManagerOptions } */
   const managerOptions = {};
   const schandler = _vso => ['ok', null];
-  const m = xsWorkerFactory.createFromBundle('v1', bundle, {}, schandler);
+  const m = await xsWorkerFactory.createFromBundle(
+    'v1',
+    bundle,
+    managerOptions,
+    schandler,
+  );
 
   const msg = { method: 'hang', args: capargs([]) };
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 
   // TODO: disable metering limit
-  const p = m.deliver(delivery); // won't resolve until child dies
-  // TODO: somehow kill the child process
 
-  const hang = t.throwsAsync(_ => p, {
+  const p = m.deliver(delivery); // won't resolve until child dies
+
+  theProc.kill();
+
+  t.throwsAsync(p, {
     instanceOf: Error,
     message: 'something about termination',
   });
+
+  await p;
 });
