@@ -62,19 +62,15 @@ async function committeeBinaryStart(
   const bobP = E(voterCreator).createVoter('Bob', invitations[1], 'Meeny');
   const carolP = E(voterCreator).createVoter('Carol', invitations[2], 'Eeny');
   const daveP = E(voterCreator).createVoter('Dave', invitations[3], 'Eeny');
-  const emmaP = await E(voterCreator).createVoter(
-    'Emma',
-    invitations[4],
-    'Meeny',
-  );
+  const emmaP = E(voterCreator).createVoter('Emma', invitations[4], 'Meeny');
   const [alice] = await Promise.all([aliceP, bobP, carolP, daveP, emmaP]);
 
   // At least one voter should verify that everything is on the up-and-up
   const instances = { registrarInstance, ballotInstance };
   await E(alice).verifyBallot(choose, instances);
 
-  E(timer).tick();
-  E(timer).tick();
+  await E(timer).tick();
+  await E(timer).tick();
   await E(timer).tick();
 
   const publicFacet = E(zoe).getPublicFacet(ballotInstance);
@@ -131,7 +127,7 @@ async function committeeBinaryTwoQuestions(
     [choose, onePotato],
     [howHigh, oneFoot],
   ]);
-  const emmaP = await E(voterCreator).createMultiVoter('Emma', invitations[4], [
+  const emmaP = E(voterCreator).createMultiVoter('Emma', invitations[4], [
     [choose, onePotato],
     [howHigh, twoFeet],
   ]);
