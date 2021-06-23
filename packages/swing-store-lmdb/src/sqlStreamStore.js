@@ -36,7 +36,7 @@ export function sqlStreamStore(dbDir, io) {
   const filePath = `${dbDir}/streams.db`; // ISSUE: no path.join?
   const db = sqlite3(
     filePath,
-    // { verbose: console.log }
+    // { verbose: console.log },
   );
   db.exec(`
     create table if not exists streamItem (
@@ -46,6 +46,8 @@ export function sqlStreamStore(dbDir, io) {
       primary key (streamName, position)
     )
   `);
+
+  const streamStatus = new Map();
 
   /**
    * @param {string} streamName
@@ -62,7 +64,7 @@ export function sqlStreamStore(dbDir, io) {
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
     assert(
-      startPosition <= endPosition,
+      startPosition.itemCount <= endPosition.itemCount,
       X`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`,
     );
 
@@ -78,9 +80,25 @@ export function sqlStreamStore(dbDir, io) {
         startPosition.itemCount,
         endPosition.itemCount,
       )) {
+        assert(
+          streamStatus.get(streamName) === 'reading',
+          X`can't read stream ${q(streamName)}, it's been closed`,
+        );
         yield item;
       }
+      streamStatus.delete(streamName);
     }
+
+    assert(
+      !streamStatus.has(streamName),
+      X`can't read stream ${q(streamName)} because it's already in use`,
+    );
+
+    if (startPosition.itemCount === endPosition.itemCount) {
+      return [];
+    }
+
+    streamStatus.set(streamName, 'reading');
 
     return reader();
   }
@@ -93,7 +111,13 @@ export function sqlStreamStore(dbDir, io) {
   const writeStreamItem = (streamName, item, position) => {
     insistStreamName(streamName);
     insistStreamPosition(position);
-    assert.typeof(item, 'string'); // ISSUE: items are strings, right?
+
+    assert(
+      [undefined, 'writing'].includes(streamStatus.get(streamName)),
+      X`can't write stream ${q(streamName)} because it's already in use`,
+    );
+    streamStatus.set(streamName, 'writing');
+
     db.prepare(
       `
       insert into streamItem (streamName, item, position)
@@ -107,11 +131,11 @@ export function sqlStreamStore(dbDir, io) {
   /** @param { string } streamName */
   const closeStream = streamName => {
     insistStreamName(streamName);
-    // ISSUE: auto-commit by default
+    streamStatus.delete(streamName);
   };
 
   const commit = () => {
-    // ISSUE: auto-commit by default
+    // We use the sqlite3 auto-commit API.
   };
 
   return harden({
