@@ -4,10 +4,14 @@ import { assert, details as X, q } from '@agoric/assert';
 
 const STREAM_START = { itemCount: 0 };
 
-/** @param { unknown } streamName */
+/**
+ * @param { unknown } streamName
+ * @returns { asserts streamName is string }
+ */
 function insistStreamName(streamName) {
   assert.typeof(streamName, 'string');
   assert(streamName.match(/^[-\w]+$/), X`invalid stream name ${q(streamName)}`);
+  return undefined;
 }
 
 /**
@@ -81,34 +85,40 @@ export function sqlStreamStore(dbDir, io) {
     return reader();
   }
 
-  return {
-    /**
-     * @param {string} streamName
-     * @param {string} item
-     * @param {StreamPosition} position
-     */
-    writeStreamItem: (streamName, item, position) => {
-      insistStreamName(streamName);
-      insistStreamPosition(position);
-      assert.typeof(item, 'string'); // ISSUE: items are strings, right?
-      db.prepare(
-        `
-        insert into streamItem (streamName, item, position)
-          values (?, ?, ?)
-          on conflict(streamName, position) do update set item = ?
-        `,
-      ).run(streamName, item, position.itemCount, item);
-      return { itemCount: position.itemCount + 1 };
-    },
-    readStream,
-    /** @param { string } streamName */
-    closeStream: streamName => {
-      insistStreamName(streamName);
-      // ISSUE: auto-commit by default
-    },
-    commit: () => {
-      // ISSUE: auto-commit by default
-    },
-    STREAM_START,
+  /**
+   * @param {string} streamName
+   * @param {string} item
+   * @param {StreamPosition} position
+   */
+  const writeStreamItem = (streamName, item, position) => {
+    insistStreamName(streamName);
+    insistStreamPosition(position);
+    assert.typeof(item, 'string'); // ISSUE: items are strings, right?
+    db.prepare(
+      `
+      insert into streamItem (streamName, item, position)
+        values (?, ?, ?)
+        on conflict(streamName, position) do update set item = ?
+      `,
+    ).run(streamName, item, position.itemCount, item);
+    return { itemCount: position.itemCount + 1 };
   };
+
+  /** @param { string } streamName */
+  const closeStream = streamName => {
+    insistStreamName(streamName);
+    // ISSUE: auto-commit by default
+  };
+
+  const commit = () => {
+    // ISSUE: auto-commit by default
+  };
+
+  return harden({
+    writeStreamItem,
+    readStream,
+    closeStream,
+    commit,
+    STREAM_START,
+  });
 }
