@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.16...@agoric/store@0.4.17) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/store
+
+
+
+
+
 ### [0.4.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.15...@agoric/store@0.4.16) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/store

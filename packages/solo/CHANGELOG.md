@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.4...@agoric/solo@0.2.5) (2021-06-23)
+
+
+### Bug Fixes
+
+* **solo:** change default vatManager to 'xs-worker' ([eebaa2d](https://github.com/Agoric/agoric-sdk/commit/eebaa2d75aa2e42786892340af81d137d2058d99)), closes [#3393](https://github.com/Agoric/agoric-sdk/issues/3393)
+* **solo:** finish changing default vatManager to 'xs-worker' ([ea19295](https://github.com/Agoric/agoric-sdk/commit/ea1929548de02d60bdbd8c204c3e032b9a258a63))
+* **solo:** stop using install-metering-and-ses ([b21fb61](https://github.com/Agoric/agoric-sdk/commit/b21fb615016386edd206dfbe8f364cf42398b4d4)), closes [#3373](https://github.com/Agoric/agoric-sdk/issues/3373)
+
+
+
 ### [0.2.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.3...@agoric/solo@0.2.4) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/solo

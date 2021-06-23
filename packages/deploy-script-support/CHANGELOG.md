@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.11...@agoric/deploy-script-support@0.2.12) (2021-06-23)
+
+
+### Bug Fixes
+
+* **deploy-script-support:** Relax constraint on repository clone path ([6ec7a4d](https://github.com/Agoric/agoric-sdk/commit/6ec7a4d440cb60a54dbcd86c5e359bac1689e672))
+
+
+
 ### [0.2.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.10...@agoric/deploy-script-support@0.2.11) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.16.1...@agoric/zoe@0.17.0) (2021-06-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zoe:** handle subtracting empty in a less fragile way (#3345)
+* **zoe:** add method zcf.getInstance() (#3353)
+
+### Code Refactoring
+
+* **zoe:** add method zcf.getInstance() ([#3353](https://github.com/Agoric/agoric-sdk/issues/3353)) ([d8952c2](https://github.com/Agoric/agoric-sdk/commit/d8952c24d03ec7f2c26de9ed2a35c31c32a0a66c))
+* **zoe:** handle subtracting empty in a less fragile way ([#3345](https://github.com/Agoric/agoric-sdk/issues/3345)) ([f51d327](https://github.com/Agoric/agoric-sdk/commit/f51d3270a8a59b4a5fdcac029f6f752fbad3ad59))
+
+
+
 ### [0.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.16.0...@agoric/zoe@0.16.1) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/zoe

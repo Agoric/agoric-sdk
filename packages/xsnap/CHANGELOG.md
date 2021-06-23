@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.4...@agoric/xsnap@0.6.5) (2021-06-23)
+
+
+### Features
+
+* **xsnap:** record / replay xsnap protcol ([616a752](https://github.com/Agoric/agoric-sdk/commit/616a752289d87ae71fd21a0f9533b158667d2d89))
+
+
+### Bug Fixes
+
+* **xsnap:** 1e7 was too small for crank meter limit ([95c52ab](https://github.com/Agoric/agoric-sdk/commit/95c52ab62f7be855d084b70626b67e8ca516714f))
+* **xsnap:** Account for TypedArray and subarrays in Text shim ([3531132](https://github.com/Agoric/agoric-sdk/commit/35311325cdb76c4981cffaffbc9d9b1f8701662a))
+* **xsnap:** don't risk NULL in gxSnapshotCallbacks ([3a6ddbb](https://github.com/Agoric/agoric-sdk/commit/3a6ddbb4b2ab1ab551888ad7e4ec86d32189caf0))
+* **xsnap:** fxMeterHostFunction is no more ([67e6a51](https://github.com/Agoric/agoric-sdk/commit/67e6a512d5c16ec32734e2fb4c046182142b85a0))
+
+
+
 ### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.3...@agoric/xsnap@0.6.4) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/xsnap
