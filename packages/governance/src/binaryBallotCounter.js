@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
+import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
@@ -29,6 +30,7 @@ const makeBinaryBallotCounter = (
   threshold,
   tieOutcome = undefined,
   closingRule,
+  instance,
 ) => {
   assert(
     positions.length === 2,
@@ -44,7 +46,13 @@ const makeBinaryBallotCounter = (
     );
   }
 
-  const template = buildBallot(ChoiceMethod.CHOOSE_N, question, positions, 1);
+  const template = buildBallot(
+    ChoiceMethod.CHOOSE_N,
+    question,
+    positions,
+    1,
+    instance,
+  );
   const ballotDetails = template.getDetails();
 
   assert(
@@ -56,18 +64,20 @@ const makeBinaryBallotCounter = (
   const tallyPromise = makePromiseKit();
   const allBallots = makeStore('seat');
 
-  const recordBallot = (seat, filledBallot, shares = 1n) => {
-    assert(
-      filledBallot.question === question,
-      X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
-    );
-    assert(
-      positions.includes(filledBallot.chosen[0]),
-      X`The ballot's choice is not a legal position: ${filledBallot.chosen[0]}.`,
-    );
-    allBallots.has(seat)
-      ? allBallots.set(seat, makeWeightedBallot(filledBallot, shares))
-      : allBallots.init(seat, makeWeightedBallot(filledBallot, shares));
+  const recordBallot = (seat, filledBallotP, shares = 1n) => {
+    return E.when(filledBallotP, filledBallot => {
+      assert(
+        filledBallot.question === question,
+        X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
+      );
+      assert(
+        positions.includes(filledBallot.chosen[0]),
+        X`The ballot's choice is not a legal position: ${filledBallot.chosen[0]}.`,
+      );
+      allBallots.has(seat)
+        ? allBallots.set(seat, makeWeightedBallot(filledBallot, shares))
+        : allBallots.init(seat, makeWeightedBallot(filledBallot, shares));
+    });
   };
 
   const countVotes = () => {
@@ -144,8 +154,7 @@ const makeBinaryBallotCounter = (
     getVoterFacet: () => voterFacet,
   });
 
-  /** @type {BallotCounterPublicFacet} */
-  const publicFacet = Far('publicFacet', {
+  const publicFacet = Far('preliminaryPublicFacet', {
     ...sharedFacet,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
@@ -174,11 +183,17 @@ const start = zcf => {
     quorumThreshold,
     tieOutcome,
     closingRule,
+    zcf.getInstance(),
   );
 
   scheduleClose(closingRule, closeFacet.closeVoting);
 
-  return { publicFacet, creatorFacet };
+  /** @type {BallotCounterPublicFacet} */
+  const publicFacetWithGetInstance = Far('publicFacet', {
+    ...publicFacet,
+    getInstance: zcf.getInstance,
+  });
+  return { publicFacet: publicFacetWithGetInstance, creatorFacet };
 };
 
 harden(start);

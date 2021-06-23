@@ -25,6 +25,7 @@ const buildEqualWeightBallot = (
   question,
   positions,
   maxChoices = 0,
+  instance,
 ) => {
   const choose = chosenPositions => {
     assert(
@@ -46,21 +47,29 @@ const buildEqualWeightBallot = (
       question,
       positions,
       maxChoices,
+      instance,
     });
 
   return {
+    getBallotCounter: () => instance,
     getDetails,
     choose,
   };
 };
 
 /** @type {BuildBallot} */
-const buildBallot = (method, question, positions, maxChoices = 0) => {
+const buildBallot = (method, question, positions, maxChoices = 0, instance) => {
   assert.typeof(question, 'string');
 
   switch (method) {
     case ChoiceMethod.CHOOSE_N:
-      return buildEqualWeightBallot(method, question, positions, maxChoices);
+      return buildEqualWeightBallot(
+        method,
+        question,
+        positions,
+        maxChoices,
+        instance,
+      );
     case ChoiceMethod.ORDER:
     case ChoiceMethod.WEIGHT:
       throw Error(`choice method ${ChoiceMethod.WEIGHT} is unimplemented`);

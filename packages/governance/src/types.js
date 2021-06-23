@@ -38,7 +38,28 @@
  */
 
 /**
+ * @typedef {Object} QuestionTermsShort
+ *   BallotDetails as provided to the Registrar
+ * @property {ChoiceMethod} method
+ * @property {string} question
+ * @property {string[]} positions
+ * @property {number} maxChoices
+ * @property {ClosingRule} closingRule
+ */
+
+/**
+ * @typedef {Object} QuestionTerms
+ *   BallotDetails after the Registrar adds its Instance
+ * @property {ChoiceMethod} method
+ * @property {string} question
+ * @property {string[]} positions
+ * @property {number} maxChoices
+ * @property {ClosingRule} closingRule
+ * @property {Instance} registrar
+ */
+/**
  * @typedef {Object} BallotDetails
+ *   BallotDetails after the Registrar adds its Instance
  * @property {ChoiceMethod} method
  * @property {string} question
  * @property {string[]} positions
@@ -75,6 +96,7 @@
  * @param {string} question
  * @param {string[]} positions
  * @param {number} maxChoices
+ * @param {Instance} instance - ballotCounter instance
  * @returns {Ballot}
  */
 
@@ -126,7 +148,7 @@
 /**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} seat
- * @param {CompletedBallot} filledBallot
+ * @param {ERef<CompletedBallot>} filledBallot
  * @param {bigint=} weight
  */
 
@@ -145,4 +167,18 @@
  * @callback CloseVoting
  * @param {ClosingRule} closingRule
  * @param {() => void} closeVoting
+ */
+
+/**
+ * @typedef {Object} AddQuestionReturn
+ * @property {BallotCounterPublicFacet} publicFacet
+ * @property {BallotCounterCreatorFacet} creatorFacet
+ * @property {Instance} instance
+ */
+
+/**
+ * @callback AddQuestion
+ * @param {Installation} voteCounter
+ * @param {QuestionTermsShort} questionDetailsShort
+ * @returns {Promise<AddQuestionReturn>}
  */

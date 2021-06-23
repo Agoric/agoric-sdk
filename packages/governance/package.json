@@ -36,14 +36,20 @@
     "@agoric/eventual-send": "^0.13.17",
     "@agoric/marshal": "^0.4.14",
     "@agoric/nat": "^4.1.0",
+    "@agoric/notifier": "^0.3.16",
     "@agoric/promise-kit": "^0.2.16",
+    "@agoric/same-structure": "^0.1.15",
     "@agoric/store": "^0.4.17",
     "@agoric/zoe": "^0.17.0"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.16",
+    "@agoric/babel-standalone": "^7.14.3",
+    "@agoric/bundle-source": "^1.3.9",
+    "@agoric/swingset-vat": "^0.18.0",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "esm": "agoric-labs/esm#Agoric-built",
+    "ses": "^0.13.4"
   },
   "files": [
     "src/",
