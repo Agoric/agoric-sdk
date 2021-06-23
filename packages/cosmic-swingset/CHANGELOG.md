@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.31.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.2...@agoric/cosmic-swingset@0.31.3) (2021-06-23)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** stop using install-metering-and-ses ([3317007](https://github.com/Agoric/agoric-sdk/commit/331700772a3c679643f5cd66a2b9d17b40b4ec1e)), closes [#3373](https://github.com/Agoric/agoric-sdk/issues/3373)
+* move COMMIT_BLOCK immediately before the Cosmos SDK commit ([f0d2e68](https://github.com/Agoric/agoric-sdk/commit/f0d2e686a68cffbee2e97697594a7669051f0b40))
+
+
+
 ### [0.31.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.1...@agoric/cosmic-swingset@0.31.2) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

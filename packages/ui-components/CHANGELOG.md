@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.11...@agoric/ui-components@0.2.12) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/ui-components
+
+
+
+
+
 ### [0.2.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.10...@agoric/ui-components@0.2.11) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/ui-components
