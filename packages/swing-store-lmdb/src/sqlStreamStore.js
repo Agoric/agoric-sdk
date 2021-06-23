@@ -1,5 +1,5 @@
 // @ts-check
-import sqlite3 from 'better-sqlite3';
+import sqlite3ambient from 'better-sqlite3';
 import { assert, details as X, q } from '@agoric/assert';
 
 const STREAM_START = { itemCount: 0 };
@@ -25,8 +25,10 @@ function insistStreamPosition(position) {
 
 /**
  * @param {string} dbDir
+ * @param {{ sqlite3?: typeof import('better-sqlite3') }} [io]
  */
-export function sqlStreamStore(dbDir) {
+export function sqlStreamStore(dbDir, io) {
+  const { sqlite3 = sqlite3ambient } = io || {};
   const filePath = `${dbDir}/streams.db`; // ISSUE: no path.join?
   const db = sqlite3(
     filePath,
