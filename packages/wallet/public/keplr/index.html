@@ -26,7 +26,7 @@
 
     <script type="module">
       import '@agoric/wallet/components/install-ses-lockdown.js';
-      import { suggestChain } from '../../src/use-keplr.js';
+      import { suggestChain } from '@agoric/wallet/components/use-keplr.js';
       window.addEventListener('load', async _ => {
         if (window.keplr) {
           document.querySelectorAll('.instructions').forEach(el => el.classList.add('nodisplay'));

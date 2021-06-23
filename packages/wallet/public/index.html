@@ -258,13 +258,18 @@
       import '@material/mwc-dialog';
       import '@material/mwc-select';
       import '@material/mwc-list/mwc-list-item';
-      import { suggestChain } from '../src/use-keplr.js';
+      import { suggestChain } from '@agoric/wallet/components/use-keplr.js';
 
-      if (window.location.hash.startsWith('#x')) {
-        // Don't hide the experimental wallets.
-        document.querySelectorAll('.experimental').forEach(el => el.classList.remove('nodisplay'));
-      }
-
+      const checkHash = () => {
+        console.log('trying', window.location.hash);
+        if (window.location.hash.startsWith('#x')) {
+          // Don't hide the experimental wallets.
+          document.querySelectorAll('.experimental').forEach(el => el.classList.remove('nodisplay'));
+        }
+      };
+      window.addEventListener('hashchange', ev => checkHash());
+      checkHash();
+      
       window.addEventListener('load', async _ => {
         if (window.keplr && window.keplr.enable) {
           document.querySelector('#keplr-status').innerText = 'Keplr Detected';

@@ -3,6 +3,8 @@
 const portsToTasks = new Map();
 const tasks = new Map();
 
+console.log('sched crossOriginIsolated', self.crossOriginIsolated);
+
 const unicast = (port, obj) => {
   try {
     port.postMessage(obj);

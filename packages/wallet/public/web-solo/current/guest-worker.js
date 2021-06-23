@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 /* global self */
 
-console.log('guest-worker isolated:', self.isCrossOriginIsolated, self);
+console.log('guest-worker isolated:', self.crossOriginIsolated, self);
 
 let tbuf;
 self.addEventListener('message', ev => {
