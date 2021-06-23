@@ -42,6 +42,29 @@ const build = async (log, zoe) => {
           verify(log, question, registrarPublicFacet, instances),
       });
     },
+    createMultiVoter: async (name, invitation, choices) => {
+      const registrarInstance = await E(zoe).getInstance(invitation);
+      const registrarPublicFacet = E(zoe).getPublicFacet(registrarInstance);
+      const seat = E(zoe).offer(invitation);
+      const voteFacet = E(seat).getOfferResult();
+
+      const voteMap = new Map(choices);
+      const votingObserver = Far('voting observer', {
+        updateState: question => {
+          const choice = voteMap.get(question);
+
+          log(`${name} cast a ballot on ${question} for ${choice}`);
+          return E(voteFacet).castBallotFor(question, [choice]);
+        },
+      });
+      const notifier = E(registrarPublicFacet).getQuestionNotifier();
+      observeNotifier(notifier, votingObserver);
+
+      return Far(`Voter ${name}`, {
+        verifyBallot: (question, instances) =>
+          verify(log, question, registrarPublicFacet, instances),
+      });
+    },
   });
 };
 

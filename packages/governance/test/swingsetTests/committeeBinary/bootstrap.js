@@ -10,6 +10,28 @@ const makeVoterVat = async (log, vats, zoe) => {
   return voterCreator;
 };
 
+async function addQuestion(qDetails, closingTime, tools) {
+  const { registrarFacet, installations } = tools;
+  const { question, positions } = qDetails;
+  const closingRule = {
+    timer: tools.timer,
+    deadline: 3n,
+  };
+
+  const ballotDetails = {
+    question,
+    positions,
+    quorumThreshold: 3n,
+    tieOutcome: undefined,
+    closingRule,
+  };
+  const { instance: ballotInstance } = await E(registrarFacet).addQuestion(
+    installations.binaryBallotCounter,
+    ballotDetails,
+  );
+  return ballotInstance;
+}
+
 async function committeeBinaryStart(
   zoe,
   voterCreator,
@@ -22,20 +44,10 @@ async function committeeBinaryStart(
     zoe,
   ).startInstance(installations.committeeRegistrar, {}, registrarTerms);
 
-  const ballotDetails = {
-    question: 'Choose',
-    positions: ['Eeny', 'Meeny'],
-    quorumThreshold: 3n,
-    tieOutcome: undefined,
-    closingRule: {
-      timer,
-      deadline: 3n,
-    },
-  };
-  const { instance: ballotInstance } = await E(registrarFacet).addQuestion(
-    installations.binaryBallotCounter,
-    ballotDetails,
-  );
+  const choose = 'Choose';
+  const details = { question: choose, positions: ['Eeny', 'Meeny'] };
+  const tools = { registrarFacet, installations, timer };
+  const ballotInstance = await addQuestion(details, 3n, tools);
 
   const invitations = await E(registrarFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);
@@ -47,14 +59,19 @@ async function committeeBinaryStart(
   );
 
   const aliceP = E(voterCreator).createVoter('Alice', invitations[0], 'Eeny');
-  E(voterCreator).createVoter('Bob', invitations[1], 'Meeny');
-  E(voterCreator).createVoter('Carol', invitations[2], 'Eeny');
-  E(voterCreator).createVoter('Dave', invitations[3], 'Eeny');
-  await E(voterCreator).createVoter('Emma', invitations[4], 'Meeny');
+  const bobP = E(voterCreator).createVoter('Bob', invitations[1], 'Meeny');
+  const carolP = E(voterCreator).createVoter('Carol', invitations[2], 'Eeny');
+  const daveP = E(voterCreator).createVoter('Dave', invitations[3], 'Eeny');
+  const emmaP = await E(voterCreator).createVoter(
+    'Emma',
+    invitations[4],
+    'Meeny',
+  );
+  const [alice] = await Promise.all([aliceP, bobP, carolP, daveP, emmaP]);
 
   // At least one voter should verify that everything is on the up-and-up
   const instances = { registrarInstance, ballotInstance };
-  await E(aliceP).verifyBallot('Choose', instances);
+  await E(alice).verifyBallot(choose, instances);
 
   E(timer).tick();
   E(timer).tick();
@@ -62,6 +79,91 @@ async function committeeBinaryStart(
 
   const publicFacet = E(zoe).getPublicFacet(ballotInstance);
   await E(publicFacet)
+    .getOutcome()
+    .then(outcome => log(`vote outcome: ${outcome}`))
+    .catch(e => log(`vote failed ${e}`));
+}
+
+async function committeeBinaryTwoQuestions(
+  zoe,
+  voterCreator,
+  timer,
+  log,
+  installations,
+) {
+  log('starting TWO questions test');
+
+  const registrarTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
+  const { creatorFacet: registrarFacet, instance: registrarInstance } = await E(
+    zoe,
+  ).startInstance(installations.committeeRegistrar, {}, registrarTerms);
+
+  const invitations = await E(registrarFacet).getVoterInvitations();
+  const details2 = await E(zoe).getInvitationDetails(invitations[2]);
+
+  log(
+    `invitation details check: ${details2.instance === registrarInstance} ${
+      details2.description
+    }`,
+  );
+
+  const tools = { registrarFacet, installations, timer };
+  const twoPotato = 'Two Potato';
+  const onePotato = 'One Potato';
+  const choose = 'Choose';
+  const howHigh = 'How high?';
+  const oneFoot = '1 foot';
+  const twoFeet = '2 feet';
+
+  const aliceP = E(voterCreator).createMultiVoter('Alice', invitations[0], [
+    [choose, onePotato],
+    [howHigh, oneFoot],
+  ]);
+  const bobP = E(voterCreator).createMultiVoter('Bob', invitations[1], [
+    [choose, onePotato],
+    [howHigh, twoFeet],
+  ]);
+  const carolP = E(voterCreator).createMultiVoter('Carol', invitations[2], [
+    [choose, twoPotato],
+    [howHigh, oneFoot],
+  ]);
+  const daveP = E(voterCreator).createMultiVoter('Dave', invitations[3], [
+    [choose, onePotato],
+    [howHigh, oneFoot],
+  ]);
+  const emmaP = await E(voterCreator).createMultiVoter('Emma', invitations[4], [
+    [choose, onePotato],
+    [howHigh, twoFeet],
+  ]);
+
+  const potato = { question: choose, positions: [onePotato, twoPotato] };
+  const potatoBallotInstance = await addQuestion(potato, 3n, tools);
+
+  const height = { question: howHigh, positions: [oneFoot, twoFeet] };
+  const heightBallotInstance = await addQuestion(height, 4n, tools);
+
+  const [alice, bob] = await Promise.all([aliceP, bobP, carolP, daveP, emmaP]);
+  // At least one voter should verify that everything is on the up-and-up
+  await E(alice).verifyBallot(choose, {
+    registrarInstance,
+    ballotInstance: potatoBallotInstance,
+  });
+  await E(bob).verifyBallot(howHigh, {
+    registrarInstance,
+    ballotInstance: heightBallotInstance,
+  });
+
+  await E(timer).tick();
+  await E(timer).tick();
+  await E(timer).tick();
+  await E(timer).tick();
+
+  await E(E(zoe).getPublicFacet(potatoBallotInstance))
+    .getOutcome()
+    .then(outcome => log(`vote outcome: ${outcome}`))
+    .catch(e => log(`vote failed ${e}`));
+
+  await E(E(zoe).getPublicFacet(heightBallotInstance))
     .getOutcome()
     .then(outcome => log(`vote outcome: ${outcome}`))
     .catch(e => log(`vote failed ${e}`));
@@ -88,6 +190,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   switch (testName) {
     case 'committeeBinaryStart':
       committeeBinaryStart(zoe, voterCreator, timer, log, installations);
+      break;
+    case 'committeeBinaryTwoQuestions':
+      committeeBinaryTwoQuestions(zoe, voterCreator, timer, log, installations);
       break;
     default:
       log(`didn't find test: ${argv}`);

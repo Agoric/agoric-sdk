@@ -93,3 +93,40 @@ test.serial('zoe - committee binary vote - valid inputs', async t => {
   const dump = await main(t, ['committeeBinaryStart']);
   t.deepEqual(dump.log, expectedCommitteeBinaryStartLog);
 });
+
+const expectedCommitteeBinaryTwoQuestionsLog = [
+  '=> voter vat is set up',
+  'starting TWO questions test',
+  'invitation details check: true Voter2',
+  '@@ schedule task for:3, currently: 0 @@',
+  'Alice cast a ballot on Choose for One Potato',
+  'Bob cast a ballot on Choose for One Potato',
+  'Carol cast a ballot on Choose for Two Potato',
+  'Dave cast a ballot on Choose for One Potato',
+  'Emma cast a ballot on Choose for One Potato',
+  '@@ schedule task for:3, currently: 0 @@',
+  'Alice cast a ballot on How high? for 1 foot',
+  'Bob cast a ballot on How high? for 2 feet',
+  'Carol cast a ballot on How high? for 1 foot',
+  'Dave cast a ballot on How high? for 1 foot',
+  'Emma cast a ballot on How high? for 2 feet',
+  'Verify ballot from instance: Choose, One Potato,Two Potato, choose_n',
+  'Verify: q: Choose, max: 1, committee: TheCommittee',
+  'Verify instances: registrar: true, counter: true',
+  'Verify ballot from instance: How high?, 1 foot,2 feet, choose_n',
+  'Verify: q: How high?, max: 1, committee: TheCommittee',
+  'Verify instances: registrar: true, counter: true',
+  '@@ tick:1 @@',
+  '@@ tick:2 @@',
+  '@@ tick:3 @@',
+  '&& running a task scheduled for 3. &&',
+  '&& running a task scheduled for 3. &&',
+  '@@ tick:4 @@',
+  'vote outcome: One Potato',
+  'vote outcome: 1 foot',
+];
+
+test.serial('zoe - committee binary vote - TwoQuestions', async t => {
+  const dump = await main(t, ['committeeBinaryTwoQuestions']);
+  t.deepEqual(dump.log, expectedCommitteeBinaryTwoQuestionsLog);
+});
