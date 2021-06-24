@@ -22,7 +22,6 @@
   "dependencies": {
     "@agoric/assert": "^0.3.2",
     "better-sqlite3": "^7.4.1",
-    "n-readlines": "^1.0.0",
     "node-lmdb": "^0.9.4"
   },
   "devDependencies": {
