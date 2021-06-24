@@ -12,7 +12,7 @@ import { assert, details as X, q } from '@agoric/assert';
  *
  * @typedef {{
  *   offset?: number,
- *   itemCount?: number,
+ *   itemCount: number,
  * }} StreamPosition
  *
  * @typedef {{
