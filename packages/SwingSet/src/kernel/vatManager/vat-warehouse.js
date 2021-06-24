@@ -196,6 +196,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
   /**
    *
+   * does not modify the kernelDB
+   *
    * @param {string} vatID
    * @param {boolean=} makeSnapshot
    * @returns { Promise<unknown> }

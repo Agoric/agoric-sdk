@@ -473,7 +473,6 @@ export function makeVatKeeper(
       return;
     }
     const snapshotID = await manager.makeSnapshot(snapStore);
-    // @@skip crank buffering?
     kvStore.set(
       `${vatID}.lastSnapshot`,
       JSON.stringify({ snapshotID, startPos: endPosition }),
