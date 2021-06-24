@@ -199,11 +199,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * does not modify the kernelDB
    *
    * @param {string} vatID
-   * @param {boolean=} makeSnapshot
    * @returns { Promise<unknown> }
    */
-  async function evict(vatID, makeSnapshot = false) {
-    assert(!makeSnapshot, 'not implemented@@@');
+  async function evict(vatID) {
     assert(lookup(vatID));
 
     recent.remove(vatID);
@@ -311,7 +309,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    */
   async function vatWasTerminated(vatID) {
     try {
-      await evict(vatID, false);
+      await evict(vatID);
     } catch (err) {
       console.debug('vat termination was already reported; ignoring:', err);
     }
