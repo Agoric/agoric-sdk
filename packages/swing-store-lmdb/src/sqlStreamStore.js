@@ -1,4 +1,5 @@
 // @ts-check
+import path from 'path';
 import sqlite3ambient from 'better-sqlite3';
 import { assert, details as X, q } from '@agoric/assert';
 
@@ -33,7 +34,7 @@ function insistStreamPosition(position) {
  */
 export function sqlStreamStore(dbDir, io) {
   const { sqlite3 = sqlite3ambient } = io || {};
-  const filePath = `${dbDir}/streams.db`; // ISSUE: no path.join?
+  const filePath = path.join(dbDir, 'streams.sqlite');
   const db = sqlite3(
     filePath,
     // { verbose: console.log },
@@ -56,11 +57,10 @@ export function sqlStreamStore(dbDir, io) {
    */
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
-    // TODO: enforce exclusive access? DB transactions are isolated.
-    // assert(
-    //   !streamStatus.get(streamName),
-    //   X`can't read stream ${q(streamName)} because it's already in use`,
-    // );
+    assert(
+      !streamStatus.get(streamName),
+      X`can't read stream ${q(streamName)} because it's already in use`,
+    );
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
     assert(
@@ -135,7 +135,10 @@ export function sqlStreamStore(dbDir, io) {
   };
 
   const commit = () => {
-    // We use the sqlite3 auto-commit API.
+    // We use the sqlite3 auto-commit API: every command automatically starts
+    // a new transaction if one is not already in effect, and every
+    // automatically-started transaction is committed when the last SQL
+    // statement finishes. https://sqlite.org/lang_transaction.html
   };
 
   return harden({
