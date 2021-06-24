@@ -190,7 +190,9 @@ function makeWorker(port) {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      gcAndFinalize: makeGcAndFinalize(globalThis.gc),
+      // FIXME(mfig): Here is where GC-per-crank is silently disabled.
+      // We need to do a better analysis of the tradeoffs.
+      gcAndFinalize: makeGcAndFinalize(false && globalThis.gc),
     });
 
     const ls = makeLiveSlots(
