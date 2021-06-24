@@ -256,6 +256,7 @@ export async function initializeSwingset(
     case 'nodeWorker':
     case 'node-subprocess':
     case 'xs-worker':
+    case 'xs-worker-no-gc':
       config.defaultManagerType = defaultManagerType;
       break;
     case undefined:

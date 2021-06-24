@@ -55,6 +55,7 @@ export function makeXsSubprocessFactory({
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
+      gcEveryCrank = true,
       name,
       metered,
       compareSyscalls,
@@ -130,6 +131,7 @@ export function makeXsSubprocessFactory({
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
+      gcEveryCrank,
     ]);
     if (bundleReply[0] === 'dispatchReady') {
       parentLog(vatID, `bundle loaded. dispatch ready.`);
