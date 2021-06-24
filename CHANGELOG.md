@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.0.0...@agoric/sdk@5.1.0) (2021-06-24)
+
+
+### Features
+
+* sqlite-based transcript store ([#3402](https://github.com/Agoric/agoric-sdk/issues/3402)) ([960b013](https://github.com/Agoric/agoric-sdk/commit/960b0139ff415a4d3ac0784c2a68e3c513a8efe4)), closes [#3405](https://github.com/Agoric/agoric-sdk/issues/3405)
+
+
+### Bug Fixes
+
+* upgrade to allow `gentx --keyring-dir=...` ([225e900](https://github.com/Agoric/agoric-sdk/commit/225e900b87fef8a01294402689aea93870ddf89c))
+* use 'local' worker, not xsnap, on both solo and chain ([a061a3e](https://github.com/Agoric/agoric-sdk/commit/a061a3e92f4ab90d293dfb5bff0223a24ed12d87)), closes [#3403](https://github.com/Agoric/agoric-sdk/issues/3403)
+
+
+
 ## [5.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@4.0.0...@agoric/sdk@5.0.0) (2021-06-23)
 
 

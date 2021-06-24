@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Peg-as-us contract",
   "parsers": {
     "js": "mjs"
@@ -31,23 +31,23 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.2",
-    "@agoric/bundle-source": "^1.4.0",
-    "@agoric/captp": "^1.7.16",
-    "@agoric/deploy-script-support": "^0.2.12",
-    "@agoric/ertp": "^0.11.5",
-    "@agoric/eventual-send": "^0.13.17",
-    "@agoric/marshal": "^0.4.14",
+    "@agoric/assert": "^0.3.3",
+    "@agoric/bundle-source": "^1.4.1",
+    "@agoric/captp": "^1.7.17",
+    "@agoric/deploy-script-support": "^0.2.13",
+    "@agoric/ertp": "^0.11.6",
+    "@agoric/eventual-send": "^0.13.18",
+    "@agoric/marshal": "^0.4.15",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.17",
-    "@agoric/promise-kit": "^0.2.16",
-    "@agoric/store": "^0.4.17",
-    "@agoric/swingset-vat": "^0.18.1",
-    "@agoric/vats": "^0.2.5",
-    "@agoric/zoe": "^0.17.0"
+    "@agoric/notifier": "^0.3.18",
+    "@agoric/promise-kit": "^0.2.17",
+    "@agoric/store": "^0.4.18",
+    "@agoric/swingset-vat": "^0.18.2",
+    "@agoric/vats": "^0.2.6",
+    "@agoric/zoe": "^0.17.1"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.16",
+    "@agoric/install-ses": "^0.5.17",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
     "ses": "^0.13.4"
