@@ -1,7 +1,7 @@
 import { Far } from '@agoric/marshal';
 
-export function buildRootObject(_vatParameters, vatPowers) {
-  const { log } = vatPowers;
+export function buildRootObject(vatPowers) {
+  const { testLog: log } = vatPowers;
   let count = 0;
   return Far('root', {
     count() {

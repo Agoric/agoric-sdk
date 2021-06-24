@@ -47,7 +47,11 @@ export const makeLRU = max => {
 /**
  * @param { KernelKeeper } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
- * @param {{ maxVatsOnline?: number, snapshotInterval?: number }=} policyOptions
+ * @param {{
+ *   maxVatsOnline?: number,
+ *   snapshotInitial?: number,
+ *   snapshotInterval?: number,
+ * }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
@@ -55,7 +59,17 @@ export const makeLRU = max => {
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { maxVatsOnline = 50, snapshotInterval = 20 } = policyOptions || {};
+  const {
+    maxVatsOnline = 50,
+    // Often a large contract evaluation is among the first few deliveries,
+    // so let's do a snapshot after just a few deliveries.
+    snapshotInitial = 5,
+    // Then we'll snapshot at invervals of some number of cranks.
+    // Note: some measurements show 10 deliveries per sec on XS
+    //       as of this writing.
+    snapshotInterval = 200,
+  } = policyOptions || {};
+  // Idea: snapshot based on delivery size: after deliveries >10Kb.
   // console.debug('makeVatWarehouse', { policyOptions });
 
   /**
@@ -261,13 +275,34 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    */
   async function maybeSaveSnapshot() {
     if (!lastVatID || !lookup(lastVatID)) {
-      return;
+      return false;
     }
+
     const recreate = true; // PANIC in the failure case
     const { manager } = await ensureVatOnline(lastVatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false;
+    }
+
     const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
-    await vatKeeper.saveSnapshot(manager, snapshotInterval);
+    let reason;
+    const current = vatKeeper.getTranscriptEndPosition().itemCount;
+    if (snapshotInitial === current) {
+      reason = { snapshotInitial };
+    } else {
+      const lastSnapshot = vatKeeper.getLastSnapshot();
+      const done = lastSnapshot ? lastSnapshot.startPos.itemCount : 0;
+      if (current - done >= snapshotInterval) {
+        reason = { snapshotInterval };
+      }
+    }
+    // console.log('maybeSaveSnapshot: reason:', reason);
+    if (!reason) {
+      return false;
+    }
+    await vatKeeper.saveSnapshot(manager);
     lastVatID = undefined;
+    return true;
   }
 
   /**

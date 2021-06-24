@@ -1,8 +1,11 @@
 /* global __dirname */
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
+import fs from 'fs';
 import path from 'path';
+import { tmpName } from 'tmp';
+import { makeSnapstore } from '@agoric/xsnap';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { capargs } from './util.js';
@@ -12,20 +15,42 @@ test('vat reload from snapshot', async t => {
     vats: {
       target: {
         sourceSpec: path.join(__dirname, 'vat-warehouse-reload.js'),
+        creationOptions: { managerType: 'xs-worker' },
       },
     },
   };
-  const hostStorage = provideHostStorage();
+
+  const snapstorePath = path.resolve(__dirname, './fixture-xs-snapshots/');
+  fs.mkdirSync(snapstorePath, { recursive: true });
+  t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
+
+  const snapstore = makeSnapstore(snapstorePath, {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  });
+  const hostStorage = { snapstore, ...provideHostStorage() };
+
   const argv = [];
   await initializeSwingset(config, argv, hostStorage);
 
-  const c1 = await makeSwingsetController(hostStorage);
+  const c1 = await makeSwingsetController(hostStorage, null, {
+    warehousePolicy: { snapshotInterval: 5 },
+  });
   const vatID = c1.vatNameToID('target');
 
   function getPositions() {
-    let start = hostStorage.kvStore.get(`${vatID}.t.startPosition`);
-    let end = hostStorage.kvStore.get(`${vatID}.t.endPosition`);
-    return [Number(start), Number(end)];
+    const lastSnapshot = hostStorage.kvStore.get(`${vatID}.lastSnapshot`);
+    const start = lastSnapshot
+      ? JSON.parse(lastSnapshot).startPos.itemCount
+      : 0;
+    const endPosition = hostStorage.kvStore.get(`${vatID}.t.endPosition`);
+    const end = JSON.parse(endPosition).itemCount;
+    return [start, end];
   }
 
   const expected1 = [];
@@ -33,24 +58,23 @@ test('vat reload from snapshot', async t => {
   expected1.push(`count = 0`);
   await c1.run();
   t.deepEqual(c1.dump().log, expected1);
-  t.deepEqual(getPositions(), [0, 1]); // or something
+  t.deepEqual(getPositions(), [0, 1]);
 
-  for (let i=1; i < 11; i++) {
+  for (let i = 1; i < 11; i += 1) {
     c1.queueToVatExport('target', 'o+0', 'count', capargs([]));
     expected1.push(`count = ${i}`);
   }
   await c1.run();
   t.deepEqual(c1.dump().log, expected1);
-  t.deepEqual(getPositions(), [5, 11]); // or something
+  t.deepEqual(getPositions(), [10, 11]);
   await c1.shutdown();
 
   const c2 = await makeSwingsetController(hostStorage);
-  const expected2 = [];
+  const expected2 = [`count = 10`];
+  t.deepEqual(c2.dump().log, expected2); // replayed 1 delivery
   c2.queueToVatExport('target', 'o+0', 'count', capargs([]));
-  expected2.push(`count = 12`); // or something
+  expected2.push(`count = 11`);
   await c2.run();
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11
-  t.deepEqual(getPositions(), [5, 12]); // or something
-
-
+  t.deepEqual(getPositions(), [10, 12]);
 });
