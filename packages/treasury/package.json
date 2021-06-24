@@ -1,6 +1,6 @@
 {
   "name": "@agoric/treasury",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Core cryptoeconomy contracts",
   "parsers": {
     "js": "mjs"
@@ -34,16 +34,16 @@
     "@agoric/assert": "^0.3.3",
     "@agoric/bundle-source": "^1.4.1",
     "@agoric/captp": "^1.7.17",
-    "@agoric/deploy-script-support": "^0.2.13",
-    "@agoric/ertp": "^0.11.6",
-    "@agoric/eventual-send": "^0.13.18",
-    "@agoric/marshal": "^0.4.15",
+    "@agoric/deploy-script-support": "^0.2.14",
+    "@agoric/ertp": "^0.11.7",
+    "@agoric/eventual-send": "^0.13.19",
+    "@agoric/marshal": "^0.4.16",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.18",
+    "@agoric/notifier": "^0.3.19",
     "@agoric/promise-kit": "^0.2.17",
-    "@agoric/store": "^0.4.18",
-    "@agoric/swingset-vat": "^0.18.2",
-    "@agoric/zoe": "^0.17.1"
+    "@agoric/store": "^0.4.19",
+    "@agoric/swingset-vat": "^0.18.3",
+    "@agoric/zoe": "^0.17.2"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",

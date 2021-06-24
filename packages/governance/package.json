@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Core governance support",
   "parsers": {
     "js": "mjs"
@@ -32,21 +32,21 @@
   "dependencies": {
     "@agoric/assert": "^0.3.3",
     "@agoric/captp": "^1.7.17",
-    "@agoric/ertp": "^0.11.6",
-    "@agoric/eventual-send": "^0.13.18",
-    "@agoric/marshal": "^0.4.15",
+    "@agoric/ertp": "^0.11.7",
+    "@agoric/eventual-send": "^0.13.19",
+    "@agoric/marshal": "^0.4.16",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.18",
+    "@agoric/notifier": "^0.3.19",
     "@agoric/promise-kit": "^0.2.17",
     "@agoric/same-structure": "^0.1.17",
-    "@agoric/store": "^0.4.18",
-    "@agoric/zoe": "^0.17.1"
+    "@agoric/store": "^0.4.19",
+    "@agoric/zoe": "^0.17.2"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
     "@agoric/bundle-source": "^1.4.1",
     "@agoric/install-ses": "^0.5.17",
-    "@agoric/swingset-vat": "^0.18.2",
+    "@agoric/swingset-vat": "^0.18.3",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
     "ses": "^0.13.4"
