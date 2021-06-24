@@ -40,11 +40,11 @@ export function sqlStreamStore(dbDir, io) {
     // { verbose: console.log },
   );
   db.exec(`
-    create table if not exists streamItem (
-      streamName text,
-      position integer,
-      item text,
-      primary key (streamName, position)
+    CREATE TABLE IF NOT EXISTS streamItem (
+      streamName TEXT,
+      position INTEGER,
+      item TEXT,
+      PRIMARY KEY (streamName, position)
     )
   `);
 
@@ -70,10 +70,10 @@ export function sqlStreamStore(dbDir, io) {
 
     function* reader() {
       const query = db.prepare(`
-        select item
-        from streamItem
-        where streamName = ? and position >= ? and position < ?
-        order by position
+        SELECT item
+        FROM streamItem
+        WHERE streamName = ? AND position >= ? AND position < ?
+        ORDER BY position
       `);
       for (const { item } of query.iterate(
         streamName,
@@ -120,9 +120,9 @@ export function sqlStreamStore(dbDir, io) {
 
     db.prepare(
       `
-      insert into streamItem (streamName, item, position)
-        values (?, ?, ?)
-        on conflict(streamName, position) do update set item = ?
+      INSERT INTO streamItem (streamName, item, position)
+        VALUES (?, ?, ?)
+        ON CONFLICT(streamName, position) DO UPDATE SET item = ?
       `,
     ).run(streamName, item, position.itemCount, item);
     return { itemCount: position.itemCount + 1 };
