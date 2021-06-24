@@ -168,9 +168,11 @@ test('binary varying share weights', async t => {
   const austinSeat = makeHandle('Voter');
   const saraSeat = makeHandle('Voter');
 
-  await E(voterFacet).submitVote(aceSeat, template.choose([FISH]), 37n);
-  await E(voterFacet).submitVote(austinSeat, template.choose([BAIT]), 24n);
-  await E(voterFacet).submitVote(saraSeat, template.choose([BAIT]), 11n);
+  await Promise.all([
+    E(voterFacet).submitVote(aceSeat, template.choose([FISH]), 37n),
+    E(voterFacet).submitVote(austinSeat, template.choose([BAIT]), 24n),
+    E(voterFacet).submitVote(saraSeat, template.choose([BAIT]), 11n),
+  ]);
 
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
