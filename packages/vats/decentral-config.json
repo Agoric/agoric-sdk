@@ -5,7 +5,7 @@
       "sourceSpec": "@agoric/zoe/contractFacet"
     }
   },
-  "defaultManagerType": "xs-worker",
+  "defaultManagerType": "local",
   "vats": {
     "bank": {
       "sourceSpec": "./src/vat-bank.js"
