@@ -2,14 +2,12 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
 
-const { freeze } = Object;
-
 /** @param { number } max */
 export const makeLRU = max => {
   /** @type { string[] } */
   const items = [];
 
-  return freeze({
+  return harden({
     /** @param { string } item */
     add: item => {
       const pos = items.indexOf(item);
@@ -26,8 +24,8 @@ export const makeLRU = max => {
       if (items.length <= max) {
         return null;
       }
-      const [lru] = items.splice(0, 1);
-      return lru;
+      const [removed] = items.splice(0, 1);
+      return removed;
     },
 
     get size() {
