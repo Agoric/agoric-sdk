@@ -1,14 +1,14 @@
 /* global __dirname */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 import fs from 'fs';
 import path from 'path';
 import { tmpName } from 'tmp';
-import { makeSnapstore } from '@agoric/xsnap';
-import { provideHostStorage } from '../src/hostStorage.js';
-import { initializeSwingset, makeSwingsetController } from '../src/index.js';
-import { capargs } from './util.js';
+import { makeSnapStore } from '@agoric/xsnap';
+import { provideHostStorage } from '../../src/hostStorage.js';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { capargs } from '../util.js';
 
 test('vat reload from snapshot', async t => {
   const config = {
@@ -24,7 +24,7 @@ test('vat reload from snapshot', async t => {
   fs.mkdirSync(snapstorePath, { recursive: true });
   t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
 
-  const snapstore = makeSnapstore(snapstorePath, {
+  const snapStore = makeSnapStore(snapstorePath, {
     tmpName,
     existsSync: fs.existsSync,
     createReadStream: fs.createReadStream,
@@ -33,7 +33,7 @@ test('vat reload from snapshot', async t => {
     unlink: fs.promises.unlink,
     resolve: path.resolve,
   });
-  const hostStorage = { snapstore, ...provideHostStorage() };
+  const hostStorage = { snapStore, ...provideHostStorage() };
 
   const argv = [];
   await initializeSwingset(config, argv, hostStorage);
