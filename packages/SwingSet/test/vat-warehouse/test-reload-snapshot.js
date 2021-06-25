@@ -20,7 +20,10 @@ test('vat reload from snapshot', async t => {
     },
   };
 
-  const snapstorePath = path.resolve(__dirname, './fixture-xs-snapshots/');
+  const snapstorePath = path.resolve(
+    __dirname,
+    './fixture-test-reload-snapshot/',
+  );
   fs.mkdirSync(snapstorePath, { recursive: true });
   t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
 

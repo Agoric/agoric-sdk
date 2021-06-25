@@ -104,7 +104,7 @@ test('4 vats in warehouse with 2 online', async t => {
 });
 
 test('snapshot after deliveries', async t => {
-  const snapstorePath = path.resolve(__dirname, './fixture-xs-snapshots/');
+  const snapstorePath = path.resolve(__dirname, './fixture-test-warehouse/');
   fs.mkdirSync(snapstorePath, { recursive: true });
   t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
 
