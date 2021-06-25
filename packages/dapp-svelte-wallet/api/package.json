@@ -1,7 +1,7 @@
 {
   "name": "@agoric/dapp-svelte-wallet-api",
   "private": true,
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "Wallet web server handler",
   "scripts": {
     "build": "exit 0",
@@ -14,21 +14,21 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.4.1",
-    "@agoric/eslint-config": "^0.3.10",
-    "@agoric/install-ses": "^0.5.17",
-    "@agoric/vats": "^0.2.7",
+    "@agoric/bundle-source": "^1.4.2",
+    "@agoric/eslint-config": "^0.3.11",
+    "@agoric/install-ses": "^0.5.18",
+    "@agoric/vats": "^0.2.8",
     "ava": "^3.12.1"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.3",
-    "@agoric/ertp": "^0.11.7",
-    "@agoric/eventual-send": "^0.13.19",
-    "@agoric/marshal": "^0.4.16",
-    "@agoric/notifier": "^0.3.19",
-    "@agoric/promise-kit": "^0.2.17",
-    "@agoric/store": "^0.4.19",
-    "@agoric/zoe": "^0.17.2",
+    "@agoric/assert": "^0.3.4",
+    "@agoric/ertp": "^0.11.8",
+    "@agoric/eventual-send": "^0.13.20",
+    "@agoric/marshal": "^0.4.17",
+    "@agoric/notifier": "^0.3.20",
+    "@agoric/promise-kit": "^0.2.18",
+    "@agoric/store": "^0.4.20",
+    "@agoric/zoe": "^0.17.3",
     "esm": "agoric-labs/esm#Agoric-built"
   },
   "eslintConfig": {

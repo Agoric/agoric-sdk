@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.3...@agoric/deployment@1.28.4) (2021-06-25)
+
+
+### Bug Fixes
+
+* **deployment:** ensure that the faucet is given urun ([2e046f7](https://github.com/Agoric/agoric-sdk/commit/2e046f742be5bf01a69555bceb3acff5550b6ab4))
+
+
+
 ### [1.28.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.2...@agoric/deployment@1.28.3) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/deployment
