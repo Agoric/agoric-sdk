@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 /* global process require Buffer */
 // check-validator - Find if there is a validator that matches the current ag-chain-cosmos
-// Michael FIG <mfig@agoric.com>, 2021-05-06
+// Michael FIG <mfig@agoric.com>, 2021-06-25
 const oper = process.argv[2];
 
 const { spawnSync } = require('child_process');
@@ -67,9 +67,9 @@ try {
   let selfParseObj;
   try {
     selfParseObj = JSON.parse(selfParse);
-  } catch (e) {
+  } catch (e2) {
     console.error('Cannot parse', selfParse);
-    throw e;
+    throw e2;
   }
 
   const selfHex = selfParseObj.bytes;
