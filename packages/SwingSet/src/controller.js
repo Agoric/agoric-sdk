@@ -77,7 +77,6 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     };
   }
 
-  let supervisorHash = '';
   /**
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
@@ -90,9 +89,9 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     metered,
     snapshotHash = undefined,
   ) {
-    if (snapStore && (snapshotHash || supervisorHash)) {
-      // console.log('startXSnap from', { supervisorHash, snapshotHash });
-      return snapStore.load(snapshotHash || supervisorHash, async snapshot => {
+    if (snapStore && snapshotHash) {
+      // console.log('startXSnap from', { snapshotHash });
+      return snapStore.load(snapshotHash, async snapshot => {
         const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
         await xs.evaluate('null'); // ensure that spawn is done
         return xs;
@@ -109,10 +108,6 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
       );
       // eslint-disable-next-line no-await-in-loop
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
-    }
-    if (snapStore) {
-      supervisorHash = await snapStore.save(async fn => worker.snapshot(fn));
-      // console.log('startXSnap saved supervisor to', { supervisorHash });
     }
     return worker;
   }

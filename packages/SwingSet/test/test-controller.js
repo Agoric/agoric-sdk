@@ -3,10 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
-import fs from 'fs';
 import { spawn } from 'child_process';
-import { tmpName } from 'tmp';
-import { makeSnapstore } from '@agoric/xsnap';
 import { provideHostStorage } from '../src/hostStorage.js';
 import {
   buildVatController,
@@ -148,27 +145,7 @@ test('static vats are unmetered on XS', async t => {
     },
   );
   t.deepEqual(c.dump().log, ['bootstrap called']);
-  t.deepEqual(limited, [false, false, false]);
-});
-
-test('SwingStore with snapstore', async t => {
-  const snapstorePath = path.resolve(__dirname, './fixture-xs-snapshots/');
-  fs.mkdirSync(snapstorePath, { recursive: true });
-
-  const snapstore = makeSnapstore(snapstorePath, {
-    tmpName,
-    existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    rename: fs.promises.rename,
-    unlink: fs.promises.unlink,
-    resolve: path.resolve,
-  });
-  const hostStorage = { snapstore, ...provideHostStorage() };
-  await buildVatController({}, [], { hostStorage });
-  const supervisorHash = hostStorage.kvStore.get('supervisorHash');
-  t.is(typeof supervisorHash, 'string', 'supervisorHash is available');
-  t.is(supervisorHash.length, 66, 'supervisorHash is available');
+  t.deepEqual(limited, [false, false, false, false]);
 });
 
 test('validate config.defaultManagerType', async t => {

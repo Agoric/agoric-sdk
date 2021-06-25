@@ -2,12 +2,9 @@
 // @ts-check
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
-import { type as osType } from 'os';
 
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
-import { xsnap } from '@agoric/xsnap';
 
 import './types.js';
 import { insistStorageAPI } from './storageAPI.js';
@@ -218,28 +215,6 @@ export function swingsetIsInitialized(hostStorage) {
 }
 
 /**
- * @param {Record<string, BundleGE>} bundles
- * @param {SnapStore} snapstore
- * @param {boolean} debug
- * @typedef { any } BundleGE TODO: types for bundleSource
- * @returns { Promise<string> } hash of supervisor snapshot
- */
-async function snapshotSupervisor(bundles, snapstore, debug) {
-  const worker = xsnap({
-    name: 'supervisor-initial',
-    handleCommand: async bytes => bytes,
-    spawn,
-    os: osType(),
-    debug,
-  });
-  await worker.evaluate(`(${bundles.lockdown.source}\n)()`);
-  await worker.evaluate(`(${bundles.supervisor.source}\n)()`);
-  const supervisorHash = await snapstore.save(async fn => worker.snapshot(fn));
-  await worker.close();
-  return supervisorHash;
-}
-
-/**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {HostStore} hostStorage
@@ -274,9 +249,7 @@ export async function initializeSwingset(
   }
 
   // Use ambient process.env only if caller did not specify.
-  const {
-    env: { SWINGSET_WORKER_TYPE, XSNAP_DEBUG } = process.env,
-  } = runtimeOptions;
+  const { env: { SWINGSET_WORKER_TYPE } = process.env } = runtimeOptions;
   const defaultManagerType = config.defaultManagerType || SWINGSET_WORKER_TYPE;
   switch (defaultManagerType) {
     case 'local':
@@ -298,15 +271,6 @@ export async function initializeSwingset(
   kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
-
-  if (hostStorage.snapstore) {
-    const supervisorHash = await snapshotSupervisor(
-      kernelBundles,
-      hostStorage.snapstore,
-      !!XSNAP_DEBUG,
-    );
-    hostStorage.kvStore.set('supervisorHash', JSON.stringify(supervisorHash));
-  }
 
   if (config.bootstrap && argv) {
     const bootConfig = config.vats[config.bootstrap];
