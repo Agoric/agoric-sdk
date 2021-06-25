@@ -183,17 +183,11 @@ function makeManagerKit(
    * @param {StreamPosition | undefined} startPos
    * @returns { Promise<number?> } number of deliveries, or null if !useTranscript
    */
-  async function replayTranscript(startPos = undefined) {
+  async function replayTranscript(startPos) {
     // console.log('replay from', { vatID, startPos });
 
     if (transcriptManager) {
       const total = vatKeeper.vatStats().transcriptCount;
-      if (!startPos) {
-        const ls = vatKeeper.getLastSnapshot();
-        if (ls) {
-          startPos = ls.startPos;
-        }
-      }
       kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
       let deliveryNum = 0;
       for (const t of vatKeeper.getTranscript(startPos)) {
