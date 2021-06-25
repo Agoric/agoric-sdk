@@ -441,6 +441,15 @@ export function makeVatKeeper(
     return { snapshotID, startPos };
   }
 
+  function transcriptSnapshotStats() {
+    const totalEntries = getTranscriptEndPosition().itemCount;
+    const lastSnapshot = getLastSnapshot();
+    const snapshottedEntries = lastSnapshot
+      ? lastSnapshot.startPos.itemCount
+      : 0;
+    return { totalEntries, snapshottedEntries };
+  }
+
   /**
    * Store a snapshot, if given a snapStore.
    *
@@ -521,7 +530,7 @@ export function makeVatKeeper(
     deleteCListEntry,
     deleteCListEntriesForKernelSlots,
     getTranscript,
-    getTranscriptEndPosition,
+    transcriptSnapshotStats,
     addToTranscript,
     vatStats,
     dumpState,

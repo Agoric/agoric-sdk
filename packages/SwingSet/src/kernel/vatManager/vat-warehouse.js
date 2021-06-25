@@ -286,15 +286,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
     let reason;
-    const current = vatKeeper.getTranscriptEndPosition().itemCount;
-    if (snapshotInitial === current) {
+    const {
+      totalEntries,
+      snapshottedEntries,
+    } = vatKeeper.transcriptSnapshotStats();
+    if (snapshotInitial === totalEntries) {
       reason = { snapshotInitial };
-    } else {
-      const lastSnapshot = vatKeeper.getLastSnapshot();
-      const done = lastSnapshot ? lastSnapshot.startPos.itemCount : 0;
-      if (current - done >= snapshotInterval) {
-        reason = { snapshotInterval };
-      }
+    } else if (totalEntries - snapshottedEntries >= snapshotInterval) {
+      reason = { snapshotInterval };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
     if (!reason) {
