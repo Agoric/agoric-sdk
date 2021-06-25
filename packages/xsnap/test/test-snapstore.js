@@ -13,7 +13,7 @@ import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 import { xsnap } from '../src/xsnap.js';
-import { makeSnapstore } from '../src/snapStore.js';
+import { makeSnapStore } from '../src/snapStore.js';
 import { loader } from './message-tools.js';
 
 const importMeta = { url: `file://${__filename}` };
@@ -63,7 +63,7 @@ test('build temp file; compress to cache file', async t => {
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
   await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -98,7 +98,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.c
   t.teardown(() => pool.removeCallback());
   await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -124,7 +124,7 @@ test('SES bootstrap, save, compress', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -149,7 +149,7 @@ test('create SES worker, save, restore, resume', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,

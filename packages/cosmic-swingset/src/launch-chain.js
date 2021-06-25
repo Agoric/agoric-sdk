@@ -16,7 +16,7 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
-import { makeSnapstore } from '@agoric/xsnap';
+import { makeSnapStore } from '@agoric/xsnap';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -104,7 +104,7 @@ export async function launch(
   const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
   const snapshotDir = path.resolve(kernelStateDBDir, 'xs-snapshots');
   fs.mkdirSync(snapshotDir, { recursive: true });
-  const snapstore = makeSnapstore(snapshotDir, {
+  const snapStore = makeSnapStore(snapshotDir, {
     tmpName,
     existsSync: fs.existsSync,
     createReadStream: fs.createReadStream,
@@ -116,7 +116,7 @@ export async function launch(
   const hostStorage = {
     kvStore,
     streamStore,
-    snapstore,
+    snapStore,
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.

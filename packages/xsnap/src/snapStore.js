@@ -21,7 +21,7 @@ const { freeze } = Object;
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
  */
-export function makeSnapstore(
+export function makeSnapStore(
   root,
   {
     tmpName,

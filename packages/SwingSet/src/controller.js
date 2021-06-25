@@ -47,7 +47,7 @@ function unhandledRejectionHandler(e) {
 /**
  * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
- *   snapStore?: ReturnType<typeof import('@agoric/xsnap').makeSnapstore>,
+ *   snapStore?: SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   env: Record<string, string | undefined>,
  * }} opts
@@ -97,7 +97,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
         return xs;
       });
     }
-    // console.log('fresh xsnap', { snapstore: snapStore });
+    // console.log('fresh xsnap', { snapStore: snapStore });
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
@@ -125,7 +125,6 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   slogFile?: string,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
- *   snapstorePath?: string,
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
@@ -285,7 +284,7 @@ export async function makeSwingsetController(
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {
-    snapStore: hostStorage.snapstore,
+    snapStore: hostStorage.snapStore,
     env,
     spawn,
   });

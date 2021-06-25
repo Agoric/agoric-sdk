@@ -25,7 +25,7 @@ import {
   buildTimer,
 } from '@agoric/swingset-vat';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
-import { makeSnapstore } from '@agoric/xsnap';
+import { makeSnapStore } from '@agoric/xsnap';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 
@@ -139,7 +139,7 @@ async function buildSwingset(
   const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
   const snapshotDir = path.resolve(kernelStateDBDir, 'xs-snapshots');
   fs.mkdirSync(snapshotDir, { recursive: true });
-  const snapstore = makeSnapstore(snapshotDir, {
+  const snapStore = makeSnapStore(snapshotDir, {
     tmpName,
     existsSync: fs.existsSync,
     createReadStream: fs.createReadStream,
@@ -151,7 +151,7 @@ async function buildSwingset(
   const hostStorage = {
     kvStore,
     streamStore,
-    snapstore,
+    snapStore,
   };
 
   if (!swingsetIsInitialized(hostStorage)) {

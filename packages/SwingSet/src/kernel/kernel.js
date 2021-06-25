@@ -128,7 +128,7 @@ export default function buildKernel(
   const {
     kvStore,
     streamStore,
-    snapstore,
+    snapStore,
   } = /** @type { HostStore } */ (hostStorage);
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
@@ -142,7 +142,7 @@ export default function buildKernel(
     enhancedCrankBuffer,
     streamStore,
     kernelSlog,
-    snapstore,
+    snapStore,
   );
 
   const meterManager = makeMeterManager(replaceGlobalMeter);

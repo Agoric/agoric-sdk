@@ -129,7 +129,7 @@
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
- * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapstore> } SnapStore
+ * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
@@ -180,7 +180,7 @@
  * @typedef {{
  *   kvStore: KVStore,
  *   streamStore: StreamStore,
- *   snapstore?: ReturnType<typeof import('@agoric/xsnap').makeSnapstore>
+ *   snapStore?: SnapStore,
  * }} HostStore
  *
  * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus
