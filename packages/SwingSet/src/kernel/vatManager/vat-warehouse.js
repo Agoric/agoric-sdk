@@ -63,7 +63,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     maxVatsOnline = 50,
     // Often a large contract evaluation is among the first few deliveries,
     // so let's do a snapshot after just a few deliveries.
-    snapshotInitial = 5,
+    snapshotInitial = 2,
     // Then we'll snapshot at invervals of some number of cranks.
     // Note: some measurements show 10 deliveries per sec on XS
     //       as of this writing.
