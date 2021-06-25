@@ -44,7 +44,7 @@ async function bootWorker(name, handleCommand, script) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
   return bootWorker(name, handleCommand, bootScript);
 }
 
