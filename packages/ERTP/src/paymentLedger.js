@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, fatalRaise } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
@@ -124,7 +124,9 @@ export const makePaymentLedger = (
         return newPayment;
       });
     } catch (err) {
-      fatalAssert.fail(X`fatal ${err}`);
+      // For some unknown reason, the '@returns {never}` on `fatalRaise`
+      // was not sufficient to make TypeScript happy, so we added the `throw`.
+      throw fatalRaise(fatalAssert, err);
     }
     return harden(newPayments);
   };
@@ -154,7 +156,7 @@ export const makePaymentLedger = (
         // COMMIT POINT.
         paymentLedger.delete(payment);
       } catch (err) {
-        fatalAssert.fail(X`fatal ${err}`);
+        fatalRaise(fatalAssert, err);
       }
       return paymentBalance;
     });
@@ -258,7 +260,7 @@ export const makePaymentLedger = (
       paymentLedger.delete(srcPayment);
       updatePurseBalance(newPurseBalance);
     } catch (err) {
-      fatalAssert.fail(X`fatal ${err}`);
+      fatalRaise(fatalAssert, err);
     }
     return srcPaymentBalance;
   };
@@ -284,7 +286,7 @@ export const makePaymentLedger = (
       updatePurseBalance(newPurseBalance);
       paymentLedger.init(payment, amount);
     } catch (err) {
-      fatalAssert.fail(X`fatal ${err}`);
+      fatalRaise(fatalAssert, err);
     }
     return payment;
   };

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, fatalRaise } from '@agoric/assert';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
@@ -150,7 +150,7 @@ export const makeZoeStorageManager = createZCFVat => {
             localIssuer.burn(payment, totalToBurn);
           } catch (err) {
             // eslint-disable-next-line no-use-before-define
-            zcfAssert.fail(X`fatal ${err}`);
+            fatalRaise(zcfAssert, err);
           }
         },
       });

@@ -74,3 +74,33 @@ function an(str) {
 }
 freeze(an);
 export { an };
+
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * This `fatalRaise` helper function is needed only until we can depend on
+ * https://github.com/endojs/endo/pull/796 . In anticipation, it feature tests
+ * for `fatalAssert.raise`. If absent it fails back to a more awkward use of
+ * `fatalAssert.fail`.
+ *
+ * @deprecated
+ * @param {Assert} fatalAssert
+ * @param {Error} reason
+ * @returns {never}
+ */
+const fatalRaise = (fatalAssert, reason) => {
+  // In order to feature test for a future feature, we must temporarily
+  // ignore that feature's absence from current types.
+  // @ts-ignore
+  if (typeof fatalAssert.raise === 'function') {
+    // Once we can depend on https://github.com/endojs/endo/pull/796 we
+    // should replace all calls to this function with the following line.
+    // The `throw` below is because we don't yet statically know that
+    // `fatalAssert.raise` never returns.
+    // @ts-ignore
+    throw fatalAssert.raise(reason);
+  } else {
+    fatalAssert.fail(details`Terminating due to ${reason}`);
+  }
+};
+freeze(fatalRaise);
+export { fatalRaise };

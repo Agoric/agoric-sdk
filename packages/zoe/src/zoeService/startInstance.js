@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, fatalRaise } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
@@ -168,7 +168,7 @@ export const makeStartInstance = (
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         } catch (err) {
-          zcfAssert.fail(X`fatal ${err}`);
+          fatalRaise(zcfAssert, err);
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),

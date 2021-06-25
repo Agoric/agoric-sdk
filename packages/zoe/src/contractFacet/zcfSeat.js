@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, fatalRaise } from '@agoric/assert';
 import {
   makeWeakStore as makeNonVOWeakStore,
   makeStore as makeNonVOStore,
@@ -173,7 +173,7 @@ export const createSeatManager = (
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     } catch (err) {
-      zcfAssert.fail(X`fatal ${err}`);
+      fatalRaise(zcfAssert, err);
     }
   };
 
