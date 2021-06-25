@@ -51,30 +51,47 @@ console.log('Fetching current node pubkey...');
 const ret2 = spawnSync('ag-chain-cosmos', ['tendermint', 'show-validator']);
 const selfPub = ret2.stdout.toString('utf-8').trim();
 console.log(selfPub);
-console.log('Fetching current node hex...');
-const ret3 = spawnSync('ag-cosmos-helper', [
-  'keys',
-  'parse',
-  '--output=json',
-  selfPub,
-]);
-const selfParse = ret3.stdout.toString('utf-8');
-let selfParseObj;
+
+const selfObj = {};
 try {
-  selfParseObj = JSON.parse(selfParse);
+  selfObj.pk = JSON.parse(selfPub);
 } catch (e) {
-  console.error('Cannot parse', selfParse);
-  throw e;
+  console.log('Fetching current node hex...');
+  const ret3 = spawnSync('ag-cosmos-helper', [
+    'keys',
+    'parse',
+    '--output=json',
+    selfPub,
+  ]);
+  const selfParse = ret3.stdout.toString('utf-8');
+  let selfParseObj;
+  try {
+    selfParseObj = JSON.parse(selfParse);
+  } catch (e) {
+    console.error('Cannot parse', selfParse);
+    throw e;
+  }
+
+  const selfHex = selfParseObj.bytes;
+  console.log(selfHex);
+  selfObj.pkHex = selfHex;
 }
 
-const selfHex = selfParseObj.bytes;
-console.log(selfHex);
-
 console.log('Matching pubkeys...');
-const lselfHex = selfHex.toLowerCase();
-const match = opKeys.find(({ pkHex }) =>
-  lselfHex.endsWith(pkHex.toLowerCase()),
-);
+const lselfHex = selfObj.pkHex && selfObj.pkHex.toLowerCase();
+const match = opKeys.find(({ pk, pkHex }) => {
+  if (selfObj.pk && pk) {
+    if (selfObj.pk['@type'] === pk['@type'] && selfObj.pk.key === pk.key) {
+      return true;
+    }
+  }
+  if (lselfHex && pkHex) {
+    if (lselfHex.endsWith(pkHex.toLowerCase())) {
+      return true;
+    }
+  }
+  return false;
+});
 
 if (!match) {
   console.log(JSON.stringify(narrow, null, 2));
