@@ -48,8 +48,6 @@ async function bootSESWorker(name, handleCommand) {
   return bootWorker(name, handleCommand, bootScript);
 }
 
-/** @type {(fn: string) => number} */
-const Kb = fn => Math.round(fs.statSync(fn).size / 1024);
 /** @type {(fn: string, fullSize: number) => number} */
 const relativeSize = (fn, fullSize) =>
   Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
@@ -110,11 +108,6 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.c
   const h = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
   });
-  t.is(
-    h,
-    '423b87e56728d794bc4596eecca67b1eca753dedf438b1da040e899933d0a0ed',
-    'XS snapshot is deterministic',
-  );
 
   const zfile = path.resolve(pool.name, `${h}.gz`);
   t.is(
