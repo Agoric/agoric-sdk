@@ -52,6 +52,7 @@ const enableKernelGC = true;
 // v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
+// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
