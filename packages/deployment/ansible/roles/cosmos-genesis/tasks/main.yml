@@ -50,7 +50,7 @@
   become_user: "{{ service }}"
   shell: "\
     {{ service }} add-genesis-account \
-      {{ faucet }} {{ STAKER_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
+      {{ faucet }} {{ FAUCET_TOKENS }},{{ BOOTSTRAP_TOKENS }}"
 
 - name: "Add {{ STAKER_INIT_COINS }} coins to {{ STAKER }}-{{ STAKER_NODE }}"
   become: yes

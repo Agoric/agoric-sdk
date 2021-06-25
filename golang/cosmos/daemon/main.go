@@ -60,7 +60,7 @@ func RunWithController(sendToController cmd.Sender) {
 	// Exit on Control-C and kill.
 	// Without this explicitly, ag-chain-cosmos ignores them.
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
 		os.Exit(98)
