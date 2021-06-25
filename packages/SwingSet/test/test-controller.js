@@ -311,6 +311,14 @@ test('bootstrap export', async t => {
     'right.obj0.bar 2 true',
   ]);
   removeTriple(kt, fooP, bootstrapVatID, 'p+5'); // pruned promise
+
+  // retired imports from bootstrap vat
+  removeTriple(kt, vatAdminSvc, bootstrapVatID, 'o-54');
+  removeTriple(kt, comms0, bootstrapVatID, 'o-50');
+  removeTriple(kt, left0, bootstrapVatID, 'o-51');
+  removeTriple(kt, right0, bootstrapVatID, 'o-52');
+  removeTriple(kt, timer0, bootstrapVatID, 'o-53');
+  removeTriple(kt, vattp0, bootstrapVatID, 'o-55');
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
@@ -330,5 +338,13 @@ test('bootstrap export', async t => {
   await c.run();
 
   removeTriple(kt, barP, leftVatID, 'p+5'); // pruned promise
+
+  // everybody else folds up and goes home
+  removeTriple(kt, comms0, commsVatID, 'o+0');
+  removeTriple(kt, left0, leftVatID, 'o+0');
+  removeTriple(kt, right0, leftVatID, 'o-50');
+  removeTriple(kt, right0, rightVatID, 'o+0');
+  removeTriple(kt, timer0, timerVatID, 'o+0');
+  removeTriple(kt, vattp0, vatTPVatID, 'o+0');
   checkKT(t, c, kt);
 });
