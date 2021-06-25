@@ -21,10 +21,11 @@
  * TODO: liveSlotsConsole...
  * See validateManagerOptions() in factory.js
  *
- * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
+ * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
  * @typedef {{
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,
+ *   gcEveryCrank?: boolean,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,

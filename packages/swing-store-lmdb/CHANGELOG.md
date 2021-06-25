@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.2...@agoric/swing-store-lmdb@0.5.3) (2021-06-24)
+
+
+### Features
+
+* sqlite-based transcript store ([#3402](https://github.com/Agoric/agoric-sdk/issues/3402)) ([960b013](https://github.com/Agoric/agoric-sdk/commit/960b0139ff415a4d3ac0784c2a68e3c513a8efe4)), closes [#3405](https://github.com/Agoric/agoric-sdk/issues/3405)
+
+
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.1...@agoric/swing-store-lmdb@0.5.2) (2021-06-23)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb

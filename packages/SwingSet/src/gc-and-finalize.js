@@ -66,9 +66,12 @@
 
 export function makeGcAndFinalize(gcPower) {
   if (typeof gcPower !== 'function') {
-    console.warn(
-      Error(`no gcPower() function; skipping finalizer provocation`),
-    );
+    if (gcPower !== false) {
+      // We weren't explicitly disabled, so warn.
+      console.warn(
+        Error(`no gcPower() function; skipping finalizer provocation`),
+      );
+    }
   }
   return async function gcAndFinalize() {
     if (typeof gcPower !== 'function') {

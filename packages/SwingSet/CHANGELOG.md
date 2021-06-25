@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.2...@agoric/swingset-vat@0.18.3) (2021-06-24)
+
+
+### Bug Fixes
+
+* maybe the best of both worlds: xs-worker but no explicit gc() ([8d38e9a](https://github.com/Agoric/agoric-sdk/commit/8d38e9a3d50987cd21e642e330d482e6e733cd3c))
+
+
+
+### [0.18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.1...@agoric/swingset-vat@0.18.2) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/swingset-vat
+
+
+
+
+
 ### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.0...@agoric/swingset-vat@0.18.1) (2021-06-23)
 
 

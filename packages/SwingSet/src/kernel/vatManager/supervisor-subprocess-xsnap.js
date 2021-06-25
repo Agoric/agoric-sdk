@@ -147,6 +147,7 @@ function makeWorker(port) {
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} enableVatstore
+   * @param {boolean} [gcEveryCrank]
    * @returns { Promise<Tagged> }
    */
   async function setBundle(
@@ -156,6 +157,7 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
     enableVatstore,
+    gcEveryCrank,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
@@ -190,7 +192,9 @@ function makeWorker(port) {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      gcAndFinalize: makeGcAndFinalize(globalThis.gc),
+      // FIXME(mfig): Here is where GC-per-crank is silently disabled.
+      // We need to do a better analysis of the tradeoffs.
+      gcAndFinalize: makeGcAndFinalize(gcEveryCrank && globalThis.gc),
     });
 
     const ls = makeLiveSlots(
@@ -234,6 +238,7 @@ function makeWorker(port) {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[4];
         const enableVatstore = !!args[5];
+        const gcEveryCrank = args[6] === undefined ? true : !!args[6];
         return setBundle(
           args[0],
           args[1],
@@ -241,6 +246,7 @@ function makeWorker(port) {
           args[3],
           enableDisavow,
           enableVatstore,
+          gcEveryCrank,
         );
       }
       case 'deliver': {
