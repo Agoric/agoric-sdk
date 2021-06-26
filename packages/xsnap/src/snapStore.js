@@ -109,8 +109,6 @@ export function makeSnapStore(
       await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
       );
-      const basename = snapFile.split('/').slice(-1)[0]; // @@WIP
-      await rename(snapFile, resolve(root, `${h}-${basename}`)); // @@WIP
       return h;
     }, 'save-raw');
   }
