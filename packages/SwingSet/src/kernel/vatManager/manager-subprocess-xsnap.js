@@ -23,7 +23,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns { VatManagerFactory }
@@ -109,8 +109,16 @@ export function makeXsSubprocessFactory({
       return encoder.encode(JSON.stringify(tagged));
     }
 
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const lastSnapshot = vatKeeper.getLastSnapshot();
+
     // start the worker and establish a connection
-    const worker = await startXSnap(`${vatID}:${name}`, handleCommand, metered);
+    const worker = await startXSnap(
+      `${vatID}:${name}`,
+      handleCommand,
+      metered,
+      lastSnapshot ? lastSnapshot.snapshotID : undefined,
+    );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
@@ -122,22 +130,26 @@ export function makeXsSubprocessFactory({
       return { ...result, reply: [tag, ...rest] };
     }
 
-    parentLog(vatID, `instructing worker to load bundle..`);
-    const { reply: bundleReply } = await issueTagged([
-      'setBundle',
-      vatID,
-      bundle,
-      vatParameters,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-      gcEveryCrank,
-    ]);
-    if (bundleReply[0] === 'dispatchReady') {
-      parentLog(vatID, `bundle loaded. dispatch ready.`);
+    if (lastSnapshot) {
+      parentLog(vatID, `snapshot loaded. dispatch ready.`);
     } else {
-      const [_tag, errName, message] = bundleReply;
-      assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      parentLog(vatID, `instructing worker to load bundle..`);
+      const { reply: bundleReply } = await issueTagged([
+        'setBundle',
+        vatID,
+        bundle,
+        vatParameters,
+        virtualObjectCacheSize,
+        enableDisavow,
+        enableVatstore,
+        gcEveryCrank,
+      ]);
+      if (bundleReply[0] === 'dispatchReady') {
+        parentLog(vatID, `bundle loaded. dispatch ready.`);
+      } else {
+        const [_tag, errName, message] = bundleReply;
+        assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      }
     }
 
     /**
@@ -184,7 +196,15 @@ export function makeXsSubprocessFactory({
     function shutdown() {
       return worker.close().then(_ => undefined);
     }
-    return mk.getManager(shutdown);
+    /**
+     * @param {SnapStore} snapStore
+     * @returns {Promise<string>}
+     */
+    function makeSnapshot(snapStore) {
+      return snapStore.save(fn => worker.snapshot(fn));
+    }
+
+    return mk.getManager(shutdown, makeSnapshot);
   }
 
   return harden({ createFromBundle });

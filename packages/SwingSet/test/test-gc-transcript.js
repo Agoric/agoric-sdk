@@ -21,6 +21,7 @@ function setup(storedTranscript = []) {
       return storedTranscript;
     },
     closeTranscript() {},
+    getLastSnapshot: () => undefined,
   };
   const kernelKeeper = {
     provideVatKeeper() {

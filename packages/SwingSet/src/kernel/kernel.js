@@ -125,7 +125,11 @@ export default function buildKernel(
   } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  const { kvStore, streamStore } = /** @type { HostStore } */ (hostStorage);
+  const {
+    kvStore,
+    streamStore,
+    snapStore,
+  } = /** @type { HostStore } */ (hostStorage);
   insistStorageAPI(kvStore);
   const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
   const vatAdminRootKref = kvStore.get('vatAdminRootKref');
@@ -138,6 +142,7 @@ export default function buildKernel(
     enhancedCrankBuffer,
     streamStore,
     kernelSlog,
+    snapStore,
   );
 
   const meterManager = makeMeterManager(replaceGlobalMeter);
@@ -673,6 +678,8 @@ export default function buildKernel(
       if (!didAbort) {
         kernelKeeper.processRefcounts();
         kernelKeeper.saveStats();
+        // eslint-disable-next-line no-use-before-define
+        await vatWarehouse.maybeSaveSnapshot();
       }
       commitCrank();
       kernelKeeper.incrementCrankNumber();

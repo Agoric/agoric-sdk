@@ -145,7 +145,7 @@ test('static vats are unmetered on XS', async t => {
     },
   );
   t.deepEqual(c.dump().log, ['bootstrap called']);
-  t.deepEqual(limited, [false, false, false]);
+  t.deepEqual(limited, [false, false, false, false]);
 });
 
 test('validate config.defaultManagerType', async t => {

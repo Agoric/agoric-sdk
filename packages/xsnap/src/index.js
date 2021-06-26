@@ -6,5 +6,5 @@ export {
   ErrorSignal,
   METER_TYPE,
 } from '../api.js';
-export { makeSnapstore } from './snapStore.js';
+export { makeSnapStore } from './snapStore.js';
 export { recordXSnap, replayXSnap } from './replay.js';

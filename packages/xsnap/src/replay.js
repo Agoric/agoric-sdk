@@ -99,12 +99,10 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     return folder.file(fn);
   };
 
-  /** @param { Uint8Array } msg */
-  const echo = msg => msg;
+  const { handleCommand: handle = msg => msg } = options;
 
   /** @param { Uint8Array} msg */
   async function handleCommand(msg) {
-    const { handleCommand: handle = echo } = options;
     const result = await handle(msg);
     nextFile('reply').put(result);
     return result;
