@@ -616,6 +616,10 @@ export default function buildKernel(
       return `@${message.target} <- ${msg.method}(${argList}) : @${result}`;
     } else if (message.type === 'notify') {
       return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+      // eslint-disable-next-line no-use-before-define
+    } else if (gcMessages.includes(message.type)) {
+      // prettier-ignore
+      return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
     } else {
       return `unknown message type ${message.type}`;
     }

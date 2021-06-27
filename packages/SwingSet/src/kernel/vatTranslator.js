@@ -242,6 +242,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       clearReachableFlag(kref);
       return kref;
     });
+    kdebug(`syscall[${vatID}].dropImports(${krefs.join(' ')})`);
     // we've done all the work here, during translation
     return harden(['dropImports', krefs]);
   }
@@ -261,6 +262,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
+    kdebug(`syscall[${vatID}].retireImports(${krefs.join(' ')})`);
     // we've done all the work here, during translation
     return harden(['retireImports', krefs]);
   }
@@ -277,6 +279,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
+    kdebug(`syscall[${vatID}].retireExports(${krefs.join(' ')})`);
     // retireExports still has work to do
     return harden(['retireExports', krefs]);
   }
