@@ -69,26 +69,31 @@ func newBalances(opts ...balancesOption) balances {
 
 // decodeBalances unmarshals a JSON-encoded vbankBalanceUpdate into normalized balances.
 // A nil input returns a nil balances.
-func decodeBalances(encoded []byte) (balances, error) {
+func decodeBalances(encoded []byte) (balances, uint64, error) {
 	if encoded == nil {
-		return nil, nil
+		return nil, 0, nil
 	}
 	balanceUpdate := vbankBalanceUpdate{}
 	err := json.Unmarshal(encoded, &balanceUpdate)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if balanceUpdate.Type != "VBANK_BALANCE_UPDATE" {
-		return nil, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
+		return nil, 0, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
 	}
 	b := newBalances()
 	for _, u := range balanceUpdate.Updated {
 		account(u.Address, coin(u.Denom, u.Amount))(b)
 	}
-	return b, nil
+	return b, balanceUpdate.Nonce, nil
 }
 
 func Test_marshalBalanceUpdate(t *testing.T) {
+	bank := &mockBank{balance: map[string]sdk.Coin{
+		addr1: sdk.NewInt64Coin("moola", 392),
+	}}
+	keeper, ctx := makeTestKit(bank)
+
 	tests := []struct {
 		name             string
 		addressToBalance map[string]sdk.Coins
@@ -132,16 +137,20 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 			),
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			encoded, err := marshalBalanceUpdate(tt.addressToBalance)
+			encoded, err := marshalBalanceUpdate(ctx, keeper, tt.addressToBalance)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("marshalBalanceUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			got, err := decodeBalances(encoded)
+			got, gotNonce, err := decodeBalances(encoded)
 			if err != nil {
 				t.Fatalf("decode balance error = %v", err)
+			}
+			nonce := uint64(i)
+			if gotNonce != nonce {
+				t.Errorf("invalid nonce = %+v, want %+v", gotNonce, nonce)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("marshalBalanceUpdate() = %+v, want %+v", got, tt.want)
@@ -266,11 +275,15 @@ func Test_Receive_Give(t *testing.T) {
 		t.Fatalf("got error = %v", err)
 	}
 	want := newBalances(account(addr1, coin("urun", "1000")))
-	got, err := decodeBalances([]byte(ret))
+	got, gotNonce, err := decodeBalances([]byte(ret))
 	if err != nil {
 		t.Errorf("decode balances error = %v", err)
 	} else if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
+	}
+	nonce := uint64(1)
+	if gotNonce != nonce {
+		t.Errorf("got nonce %+v, want %+v", gotNonce, nonce)
 	}
 	wantCalls := []string{
 		"MintCoins vbank 1000urun",
@@ -403,11 +416,15 @@ func Test_Receive_Grab(t *testing.T) {
 		t.Fatalf("got error = %v", err)
 	}
 	want := newBalances(account(addr1, coin("ubld", "1000")))
-	got, err := decodeBalances([]byte(ret))
+	got, gotNonce, err := decodeBalances([]byte(ret))
 	if err != nil {
 		t.Errorf("decode balances error = %v", err)
 	} else if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
+	}
+	nonce := uint64(1)
+	if gotNonce != nonce {
+		t.Errorf("invalid nonce = %+v, want %+v", gotNonce, nonce)
 	}
 	wantCalls := []string{
 		"SendCoinsFromAccountToModule " + addr1 + " vbank 500ubld",
@@ -476,10 +493,17 @@ func Test_EndBlock_Events(t *testing.T) {
 	if len(msgsSent) != 1 {
 		t.Errorf("got msgs = %v, want one message", msgsSent)
 	}
-	gotMsg, err := decodeBalances([]byte(msgsSent[0]))
+	gotMsg, gotNonce, err := decodeBalances([]byte(msgsSent[0]))
 	if err != nil {
 		t.Errorf("decode balances error = %v", err)
-	} else if !reflect.DeepEqual(gotMsg, wantMsg) {
+	}
+
+	nonce := uint64(1)
+	if gotNonce != nonce {
+		t.Errorf("invalid nonce = %+v, want %+v", gotNonce, nonce)
+	}
+
+	if !reflect.DeepEqual(gotMsg, wantMsg) {
 		t.Errorf("got sent message %v, want %v", gotMsg, wantMsg)
 	}
 }
