@@ -17,7 +17,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath';
 export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
-  abandonContractWithFailure,
+  shutdownWithFailure,
 ) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
@@ -173,7 +173,7 @@ export const createSeatManager = (
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     } catch (err) {
-      abandonContractWithFailure(err);
+      shutdownWithFailure(err);
       throw err;
     }
   };

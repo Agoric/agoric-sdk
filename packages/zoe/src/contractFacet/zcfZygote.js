@@ -42,6 +42,9 @@ export const makeZCFZygote = (
     instantiate: instantiateIssuerStorage,
   } = makeIssuerStorage();
 
+  /**
+   * @param {Error} reason
+   */
   const shutdownWithFailure = reason => {
     E(zoeInstanceAdmin).failAllSeats(reason);
     // eslint-disable-next-line no-use-before-define
@@ -49,11 +52,6 @@ export const makeZCFZygote = (
     // @ts-ignore powers is not typed correctly:
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
-  };
-
-  const abandonContractWithFailure = reason => {
-    shutdownWithFailure(reason);
-    throw reason;
   };
 
   const {
@@ -64,7 +62,7 @@ export const makeZCFZygote = (
   } = createSeatManager(
     zoeInstanceAdmin,
     getAssetKindByBrand,
-    abandonContractWithFailure,
+    shutdownWithFailure,
   );
 
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
@@ -239,7 +237,7 @@ export const makeZCFZygote = (
       powers.exitVat(completion);
     },
     shutdownWithFailure,
-    assert: makeAssert(abandonContractWithFailure),
+    assert: makeAssert(shutdownWithFailure),
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
     makeEmptySeatKit,

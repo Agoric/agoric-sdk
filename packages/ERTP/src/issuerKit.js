@@ -17,7 +17,7 @@ const makeIssuerKit = (
   allegedName,
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
-  optAbandonWithFailure = undefined,
+  optTerminateWithFailure = undefined,
 ) => {
   assert.typeof(allegedName, 'string');
   assert(
@@ -47,7 +47,7 @@ const makeIssuerKit = (
     brand,
     assetKind,
     cleanDisplayInfo,
-    optAbandonWithFailure,
+    optTerminateWithFailure,
   );
 
   return harden({

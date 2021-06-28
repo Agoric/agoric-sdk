@@ -120,7 +120,7 @@ export const makeZoeStorageManager = createZCFVat => {
         assetKind,
         displayInfo,
         // eslint-disable-next-line no-use-before-define
-        abandonZcfVatWithFailure,
+        adminNode.terminateWithFailure,
       );
       const localIssuerRecord = makeIssuerRecord(
         localBrand,
@@ -155,7 +155,7 @@ export const makeZoeStorageManager = createZCFVat => {
             localIssuer.burn(payment, totalToBurn);
           } catch (err) {
             // eslint-disable-next-line no-use-before-define
-            abandonZcfVatWithFailure(err);
+            adminNode.terminateWithFailure(err);
             throw err;
           }
         },
@@ -176,11 +176,6 @@ export const makeZoeStorageManager = createZCFVat => {
     const makeInvitation = setupMakeInvitation(instance, installation);
 
     const { root, adminNode } = await createZCFVat();
-
-    const abandonZcfVatWithFailure = reason => {
-      adminNode.terminateWithFailure(reason);
-      throw reason;
-    };
 
     return harden({
       getTerms: instanceRecordManager.getTerms,
