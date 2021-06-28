@@ -69,17 +69,12 @@ async function dropPresence(t, dropExport) {
     t.is(objs[krefA], undefined);
     t.is(objs[krefB], undefined);
   } else {
-    // until #3161 is fixed, the importing vat hasn't yet told the kernel that
-    // the objects are unrecognizable, so the refcounts will be 0,1
-    t.deepEqual(objs[krefA], [bootstrapID, 0, 1]);
-    t.deepEqual(objs[krefB], [bootstrapID, 0, 1]);
-
-    // but when #3161 is fixed, the objects should be retired too, so the c-list
-    // mappings and valToSlot tables will be empty.
-    // t.is(objs[krefA], undefined);
-    // t.is(objs[krefB], undefined);
+    // the objects should be retired too, so the c-list mappings and valToSlot
+    // tables will be empty.
+    t.is(objs[krefA], undefined);
+    t.is(objs[krefB], undefined);
   }
 }
 
 test('drop presence (export retains)', t => dropPresence(t, false));
-test('drop presence (export drops)', t => dropPresence(t, true));
+test.skip('drop presence (export drops)', t => dropPresence(t, true));
