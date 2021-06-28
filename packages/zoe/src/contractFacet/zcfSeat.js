@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, fatalRaise } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import {
   makeWeakStore as makeNonVOWeakStore,
   makeStore as makeNonVOStore,
@@ -17,7 +17,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath';
 export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
-  zcfAssert,
+  abandonContractWithFailure,
 ) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
@@ -173,7 +173,8 @@ export const createSeatManager = (
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     } catch (err) {
-      fatalRaise(zcfAssert, err);
+      abandonContractWithFailure(err);
+      throw err;
     }
   };
 

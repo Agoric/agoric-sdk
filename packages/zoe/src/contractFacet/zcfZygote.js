@@ -51,14 +51,21 @@ export const makeZCFZygote = (
     powers.exitVatWithFailure(reason);
   };
 
-  const zcfAssert = makeAssert(shutdownWithFailure);
+  const abandonContractWithFailure = reason => {
+    shutdownWithFailure(reason);
+    throw reason;
+  };
 
   const {
     makeZCFSeat,
     reallocate,
     reallocateInternal,
     dropAllReferences,
-  } = createSeatManager(zoeInstanceAdmin, getAssetKindByBrand, zcfAssert);
+  } = createSeatManager(
+    zoeInstanceAdmin,
+    getAssetKindByBrand,
+    abandonContractWithFailure,
+  );
 
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
 
@@ -232,7 +239,7 @@ export const makeZCFZygote = (
       powers.exitVat(completion);
     },
     shutdownWithFailure,
-    assert: zcfAssert,
+    assert: makeAssert(abandonContractWithFailure),
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
     makeEmptySeatKit,

@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, fatalRaise } from '@agoric/assert';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
@@ -116,7 +115,13 @@ export const makeZoeStorageManager = createZCFVat => {
         brand: localBrand,
         displayInfo: localDisplayInfo,
         // eslint-disable-next-line no-use-before-define
-      } = makeIssuerKit(keyword, assetKind, displayInfo, zcfAssert);
+      } = makeIssuerKit(
+        keyword,
+        assetKind,
+        displayInfo,
+        // eslint-disable-next-line no-use-before-define
+        abandonZcfVatWithFailure,
+      );
       const localIssuerRecord = makeIssuerRecord(
         localBrand,
         localIssuer,
@@ -150,7 +155,8 @@ export const makeZoeStorageManager = createZCFVat => {
             localIssuer.burn(payment, totalToBurn);
           } catch (err) {
             // eslint-disable-next-line no-use-before-define
-            fatalRaise(zcfAssert, err);
+            abandonZcfVatWithFailure(err);
+            throw err;
           }
         },
       });
@@ -171,7 +177,10 @@ export const makeZoeStorageManager = createZCFVat => {
 
     const { root, adminNode } = await createZCFVat();
 
-    const zcfAssert = assert.makeAssert(adminNode.terminateWithFailure);
+    const abandonZcfVatWithFailure = reason => {
+      adminNode.terminateWithFailure(reason);
+      throw reason;
+    };
 
     return harden({
       getTerms: instanceRecordManager.getTerms,
@@ -188,7 +197,6 @@ export const makeZoeStorageManager = createZCFVat => {
       invitationIssuer,
       root,
       adminNode,
-      zcfAssert,
     });
   };
 

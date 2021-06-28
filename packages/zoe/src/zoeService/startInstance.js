@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, fatalRaise } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
@@ -43,7 +43,7 @@ export const makeStartInstance = (
     );
     // AWAIT ///
 
-    const { adminNode, root, zcfAssert } = await zoeInstanceStorageManager;
+    const { adminNode, root } = await zoeInstanceStorageManager;
     /** @type {ZCFRoot} */
     const zcfRoot = root;
 
@@ -168,7 +168,8 @@ export const makeStartInstance = (
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         } catch (err) {
-          fatalRaise(zcfAssert, err);
+          adminNode.terminateWithFailure(err);
+          throw err;
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),

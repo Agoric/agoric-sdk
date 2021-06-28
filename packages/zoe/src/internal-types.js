@@ -262,7 +262,7 @@
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {Assert} zcfAssert
+ * @param {Raise} abandonContractWithFailure
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,

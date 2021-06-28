@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, fatalRaise } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
@@ -20,7 +20,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {Assert} fatalAssert
+ * @param {Raise=} optAbandonWithFailure
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -28,8 +28,25 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
-  fatalAssert,
+  optAbandonWithFailure = undefined,
 ) => {
+  const abandonLedgerWithFailure = reason => {
+    // TODO destroy ledger state.
+    // We need to defensively destroy the ledger state because:
+    // If the `optAbandonWithFailure` is absent, or misbehaves by returning,
+    // the most violent termination we can fall back to is to throw. However,
+    // by itself, a throw does not make the ledger state unreachable. Just in
+    // case both
+    //   * we were only able to throw
+    //   * the ledger was still reached after it was allegedly abandoned
+    // we must ensure that the corrupted state it was left in cannot be
+    // mistaken for working state.
+    if (optAbandonWithFailure !== undefined) {
+      optAbandonWithFailure(reason);
+    }
+    throw reason;
+  };
+
   /** @type {WeakStore<Payment, Amount>} */
   const paymentLedger = makeWeakStore('payment');
 
@@ -124,9 +141,8 @@ export const makePaymentLedger = (
         return newPayment;
       });
     } catch (err) {
-      // For some unknown reason, the '@returns {never}` on `fatalRaise`
-      // was not sufficient to make TypeScript happy, so we added the `throw`.
-      throw fatalRaise(fatalAssert, err);
+      abandonLedgerWithFailure(err);
+      throw err;
     }
     return harden(newPayments);
   };
@@ -156,7 +172,8 @@ export const makePaymentLedger = (
         // COMMIT POINT.
         paymentLedger.delete(payment);
       } catch (err) {
-        fatalRaise(fatalAssert, err);
+        abandonLedgerWithFailure(err);
+        throw err;
       }
       return paymentBalance;
     });
@@ -260,7 +277,8 @@ export const makePaymentLedger = (
       paymentLedger.delete(srcPayment);
       updatePurseBalance(newPurseBalance);
     } catch (err) {
-      fatalRaise(fatalAssert, err);
+      abandonLedgerWithFailure(err);
+      throw err;
     }
     return srcPaymentBalance;
   };
@@ -286,7 +304,8 @@ export const makePaymentLedger = (
       updatePurseBalance(newPurseBalance);
       paymentLedger.init(payment, amount);
     } catch (err) {
-      fatalRaise(fatalAssert, err);
+      abandonLedgerWithFailure(err);
+      throw err;
     }
     return payment;
   };
