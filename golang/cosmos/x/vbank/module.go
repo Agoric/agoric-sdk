@@ -183,7 +183,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	}
 
 	// Dump all the addressToBalances entries to SwingSet.
-	bz, err := marshalBalanceUpdate(addressToBalance)
+	bz, err := marshalBalanceUpdate(ctx, am.keeper, addressToBalance)
 	if err != nil {
 		panic(err)
 	}

@@ -41,15 +41,13 @@ type vbankBalanceUpdate struct {
 	Updated []vbankSingleBalanceUpdate `json:"updated"`
 }
 
-var nonce uint64
-
-func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error) {
+func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) ([]byte, error) {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
 		return nil, nil
 	}
 
-	nonce += 1
+	nonce := keeper.GetNextNonce(ctx)
 	event := vbankBalanceUpdate{
 		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
@@ -129,7 +127,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(addressToBalances)
+		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
 		if err != nil {
 			return "", err
 		}
@@ -154,7 +152,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(addressToBalances)
+		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
 		if err != nil {
 			return "", err
 		}

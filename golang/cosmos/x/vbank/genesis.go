@@ -27,11 +27,14 @@ func DefaultGenesisState() *types.GenesisState {
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
-	keeper.SetGenesis(ctx, *data)
+	keeper.SetParams(ctx, data.GetParams())
+	keeper.SetState(ctx, data.GetState())
 	return []abci.ValidatorUpdate{}
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
-	gs := k.GetGenesis(ctx)
+	var gs types.GenesisState
+	gs.Params = k.GetParams(ctx)
+	gs.State = k.GetState(ctx)
 	return &gs
 }

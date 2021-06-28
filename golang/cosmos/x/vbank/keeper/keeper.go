@@ -7,7 +7,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 )
 
-const genesisKey string = "genesis"
 const paramsKey string = "params"
 const stateKey string = "state"
 
@@ -37,23 +36,6 @@ func NewKeeper(
 		feeCollectorName: feeCollectorName,
 		CallToController: callToController,
 	}
-}
-
-func (k Keeper) GetGenesis(ctx sdk.Context) types.GenesisState {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(genesisKey))
-	var gs types.GenesisState
-	k.cdc.MustUnmarshalLengthPrefixed(bz, &gs)
-	return gs
-}
-
-func (k Keeper) SetGenesis(ctx sdk.Context, data types.GenesisState) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set([]byte(genesisKey), k.cdc.MustMarshalLengthPrefixed(&data))
-	params := types.Params{
-		FeeEpochDurationBlocks: data.GetParams().FeeEpochDurationBlocks,
-	}
-	k.SetParams(ctx, params)
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
@@ -112,4 +94,11 @@ func (k Keeper) SetState(ctx sdk.Context, state types.State) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&state)
 	store.Set([]byte(stateKey), bz)
+}
+
+func (k Keeper) GetNextNonce(ctx sdk.Context) uint64 {
+	state := k.GetState(ctx)
+	state.LastNonce = state.GetLastNonce() + 1
+	k.SetState(ctx, state)
+	return state.LastNonce
 }
