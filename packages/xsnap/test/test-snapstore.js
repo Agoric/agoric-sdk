@@ -14,10 +14,11 @@ import test from 'ava';
 import tmp from 'tmp';
 import { xsnap } from '../src/xsnap.js';
 import { makeSnapStore } from '../src/snapStore.js';
-import { loader } from './message-tools.js';
+import { options, loader } from './message-tools.js';
 
 const importMeta = { url: `file://${__filename}` };
 const ld = loader(importMeta.url, fs.promises.readFile); // WARNING: ambient
+const io = { spawn, os: osType() }; // WARNING: ambien
 
 /**
  * @param {string} name
@@ -175,4 +176,59 @@ test('create SES worker, save, restore, resume', async t => {
 test.failing('XS + SES snapshots should be deterministic', t => {
   const h = 'abc';
   t.is('66244b4bfe92ae9138d24a9b50b492d231f6a346db0cf63543d200860b423724', h);
+});
+
+test('load many snapshots', async t => {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.log({ pool });
+  //t.teardown(() => pool.removeCallback());
+
+  const store = makeSnapStore(pool.name, {
+    ...tmp,
+    ...path,
+    ...fs,
+    ...fs.promises,
+  });
+
+  const names = Array.from(Array(3).keys()).map(n => `vat${n}`);
+  const savedHashes = await Promise.all(
+    names.map(async name => {
+      // t.log({ name });
+      const worker = xsnap({ ...options(io), name });
+      t.teardown(() => worker.terminate());
+      await worker.evaluate(`
+        globalThis.send = it => issueCommand(ArrayBuffer.fromString(it));
+        globalThis.name = "${name}";
+      `);
+      const h = await store.save(async fn => {
+        // t.log({ fn });
+        await worker.snapshot(fn);
+      });
+      await worker.close();
+      return h;
+    }),
+  );
+  t.log({ savedHashes });
+  const loadedNames = await Promise.all(
+    savedHashes.map(async hash => {
+      const opts = options(io);
+      const worker = await store.load(hash, async snapshot => {
+        // t.log({ snapshot });
+        const xs = xsnap({ ...opts, snapshot });
+        // TMP KLUDGE: wrap evaluate, issueCommand to remove tmp file. :-/
+        const evaluate = async code => {
+          const out = await xs.evaluate(code);
+          await store.unlink(snapshot);
+          return out;
+        };
+        return { ...xs, evaluate };
+      });
+      t.teardown(() => worker.terminate());
+
+      await worker.evaluate(`send(name)`);
+      await worker.close();
+      return opts.messages[0];
+    }),
+  );
+  t.deepEqual(names, loadedNames);
 });

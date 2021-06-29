@@ -119,16 +119,16 @@ export function makeSnapStore(
    * @template T
    */
   async function load(hash, loadRaw) {
-    return withTempName(async raw => {
-      await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
-      const actual = await fileHash(raw);
-      // console.log('load', { raw, hash });
-      assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
-      // be sure to await loadRaw before exiting withTempName
-      const result = await loadRaw(raw);
-      return result;
-    }, `${hash}-load`);
+    const raw = await ptmpName({
+      tmpdir: root,
+      template: `${hash}-load-XXXXXX.xss`,
+      keep: true,
+    });
+    await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
+    const actual = await fileHash(raw);
+    assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
+    return loadRaw(raw);
   }
 
-  return freeze({ load, save });
+  return freeze({ load, save, unlink });
 }

@@ -93,8 +93,23 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
       // console.log('startXSnap from', { snapshotHash });
       return snapStore.load(snapshotHash, async snapshot => {
         const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
-        await xs.evaluate('null'); // ensure that spawn is done
-        return xs;
+        // TMP KLUDGE: wrap evaluate, issueCommand to remove tmp file. :-/
+        const evaluate = async code => {
+          const out = await xs.evaluate(code);
+          await snapStore.unlink(snapshot);
+          return out;
+        };
+        const issueCommand = async bytes => {
+          const out = await xs.issueCommand(bytes);
+          await snapStore.unlink(snapshot);
+          return out;
+        };
+        const issueStringCommand = async str => {
+          const out = await xs.issueStringCommand(str);
+          await snapStore.unlink(snapshot);
+          return out;
+        };
+        return { ...xs, evaluate, issueCommand, issueStringCommand };
       });
     }
     // console.log('fresh xsnap', { snapStore: snapStore });
