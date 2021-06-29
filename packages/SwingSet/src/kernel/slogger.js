@@ -137,12 +137,12 @@ export function makeSlogger(slogCallbacks, writeObj) {
     }
 
     // kd: kernelDelivery, vd: vatDelivery
-    function delivery(newCrankNum, newDeliveryNum, kd, vd) {
+    function delivery(newCrankNum, newDeliveryNum, kd, vd, replay = false) {
       assertOldState(IDLE, 'reentrant delivery?');
       state = DELIVERY;
       crankNum = newCrankNum;
       deliveryNum = newDeliveryNum;
-      const when = { crankNum, vatID, deliveryNum };
+      const when = { crankNum, vatID, deliveryNum, replay };
       write({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
 
