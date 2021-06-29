@@ -163,7 +163,7 @@ test('create SES worker, save, restore, resume', async t => {
 
   const worker = await store.load(h, async snapshot => {
     const xs = xsnap({ name: 'ses-resume', snapshot, os: osType(), spawn });
-    await xs.evaluate('0');
+    await xs.isReady();
     return xs;
   });
   t.teardown(() => worker.close());

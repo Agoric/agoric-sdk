@@ -239,6 +239,18 @@ export function xsnap(options) {
   }
 
   /**
+   * @returns {Promise<void>}
+   */
+  async function isReady() {
+    const result = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`R`));
+      await runToIdle();
+    });
+    baton = result.catch(() => {});
+    return Promise.race([vatCancelled, result]);
+  }
+
+  /**
    * @param {Uint8Array} message
    * @returns {Promise<RunResult<Uint8Array>>}
    */
@@ -305,6 +317,7 @@ export function xsnap(options) {
   return freeze({
     issueCommand,
     issueStringCommand,
+    isReady,
     close,
     terminate,
     evaluate,
