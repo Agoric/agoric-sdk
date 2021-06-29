@@ -320,6 +320,8 @@ ExitCode main(int argc, char* argv[])
 		if (snapshot.stream) {
 			machine = fxReadSnapshot(&snapshot, "xsnap", NULL);
 			fclose(snapshot.stream);
+			// collect after restore from snapshots for consistency
+			fx_gc(machine);
 		}
 		else
 			snapshot.error = errno;
