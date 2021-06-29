@@ -93,7 +93,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
       // console.log('startXSnap from', { snapshotHash });
       return snapStore.load(snapshotHash, async snapshot => {
         const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
-        await xs.evaluate('null'); // ensure that spawn is done
+        await xs.isReady();
         return xs;
       });
     }
