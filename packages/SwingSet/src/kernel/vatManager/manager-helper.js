@@ -166,17 +166,26 @@ function makeManagerKit(
     assert(transcriptManager, `delivery replay with no transcript`);
     transcriptManager.startReplay();
     transcriptManager.startReplayDelivery(expectedSyscalls);
-    kernelSlog.write({
-      type: 'start-replay-delivery',
+
+    // we slog the replay just like the original, but some fields are missing
+    const newCrankNum = undefined; // TODO think of a way to correlate this
+    const kd = undefined;
+    const vd = delivery;
+    const replay = true;
+    const finish = kernelSlog.delivery(
       vatID,
-      delivery,
+      newCrankNum,
       deliveryNum,
-    });
-    await deliver(delivery);
+      kd,
+      vd,
+      replay,
+    );
+    const status = await deliver(delivery);
+    finish(status);
     transcriptManager.finishReplayDelivery();
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
-    kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
+    return status;
   }
 
   /**
@@ -189,7 +198,15 @@ function makeManagerKit(
     if (transcriptManager) {
       const total = vatKeeper.vatStats().transcriptCount;
       kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-      let deliveryNum = 0;
+      // TODO glean deliveryNum better, make sure we get the post-snapshot
+      // transcript starting point right. getTranscript() should probably
+      // return [deliveryNum, t] pairs. Think about how to provide an
+      // accurate crankNum, because I'm not sure I want that in transcript.
+      // I'm guarding against `.itemCount` being missing because that's
+      // supposed to be a private field of StreamPosition, but now that we've
+      // switched streamStore to sqlite it might be reasonable to make it
+      // public (or just define StreamPosition to be an integer).
+      let deliveryNum = (startPos && startPos.itemCount) || 0;
       for (const t of vatKeeper.getTranscript(startPos)) {
         // if (deliveryNum % 100 === 0) {
         //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
@@ -224,6 +241,7 @@ function makeManagerKit(
       // its sleep. Gently prevent their twitching paws from doing anything.
 
       // but if the puppy deviates one inch from previous twitches, explode
+      kernelSlog.syscall(vatID, undefined, vso);
       const data = transcriptManager.simulateSyscall(vso);
       return harden(['ok', data]);
     }
