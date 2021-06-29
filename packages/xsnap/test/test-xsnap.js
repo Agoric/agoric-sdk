@@ -335,3 +335,55 @@ test('normal close of pathological script', async t => {
   await vat.terminate();
   await hang;
 });
+
+/**
+ * have a loop that allocates+frees an object on each pass,
+ * run it N times, take a snapshot, keep running it until
+ * an organic GC happens (watching the metering results to tell),
+ * then restart from the snapshot and count
+ * how many loops you need until GC happens, compare
+ */
+test('do snapshots affect GC timing?', async t => {
+  const work = tmp.fileSync({ postfix: '.xss' });
+  t.teardown(() => work.removeCallback());
+
+  const opts = options(io);
+  const vat1 = xsnap(opts);
+  t.teardown(() => vat1.terminate());
+
+  await vat1.evaluate(`
+    globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+    globalThis.allocFree = qty => {
+      for (let ix = 0; ix < qty; ix += 1) {
+        const ephemeral = {};
+      }
+    }
+  `);
+
+  const loop = async (vat, limit) => {
+    let gcCount = 0;
+    let evalQty = 0;
+    for (evalQty = 0; gcCount === 0 && evalQty < limit; evalQty += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const x = await vat.evaluate(`
+        allocFree(300);
+        send(true);
+      `);
+      gcCount = x.meterUsage.garbageCollectionCount;
+      // t.log({ gcCount });
+    }
+    return evalQty;
+  };
+
+  await loop(vat1, 20);
+  await vat1.snapshot(work.name);
+  const snapshotToGC = await loop(vat1, 1000);
+  await vat1.close();
+
+  const vat2 = xsnap({ ...opts, snapshot: work.name });
+  t.teardown(() => vat2.terminate());
+  const restoreToGC = await loop(vat2, 1000);
+
+  t.log({ snapshotToGC, restoreToGC });
+  t.is(snapshotToGC, restoreToGC, 'same with and without snapshot');
+});
