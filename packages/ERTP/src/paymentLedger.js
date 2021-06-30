@@ -20,7 +20,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {ShutdownWithFailure=} optTerminateWithFailure
+ * @param {ShutdownWithFailure=} optShutdownWithFailure
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -28,23 +28,14 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
-  optTerminateWithFailure = undefined,
+  optShutdownWithFailure = undefined,
 ) => {
   /** @type {ShutdownWithFailure} */
-  const destroyLedgerWithFailure = reason => {
-    // TODO destroy ledger state.
-    // https://github.com/Agoric/agoric-sdk/issues/3434
-    // We need to defensively destroy the ledger state because:
-    // If the `optTerminateWithFailure` is absent or returns,
-    // the most violent termination we can fall back to is to throw. However,
-    // by itself, a throw does not make the ledger state unreachable. Just in
-    // case both
-    //   * optTerminateWithFailure returns
-    //   * the ledger was still reached after it was may have been corrupted
-    // we must ensure that the corrupted state it was left in cannot be
-    // mistaken for working state.
-    if (optTerminateWithFailure !== undefined) {
-      optTerminateWithFailure(reason);
+  const shutdownLedgerWithFailure = reason => {
+    // TODO This should also destroy ledger state.
+    // See https://github.com/Agoric/agoric-sdk/issues/3434
+    if (optShutdownWithFailure !== undefined) {
+      optShutdownWithFailure(reason);
     }
     throw reason;
   };
@@ -143,7 +134,7 @@ export const makePaymentLedger = (
         return newPayment;
       });
     } catch (err) {
-      destroyLedgerWithFailure(err);
+      shutdownLedgerWithFailure(err);
       throw err;
     }
     return harden(newPayments);
@@ -174,7 +165,7 @@ export const makePaymentLedger = (
         // COMMIT POINT.
         paymentLedger.delete(payment);
       } catch (err) {
-        destroyLedgerWithFailure(err);
+        shutdownLedgerWithFailure(err);
         throw err;
       }
       return paymentBalance;
@@ -279,7 +270,7 @@ export const makePaymentLedger = (
       paymentLedger.delete(srcPayment);
       updatePurseBalance(newPurseBalance);
     } catch (err) {
-      destroyLedgerWithFailure(err);
+      shutdownLedgerWithFailure(err);
       throw err;
     }
     return srcPaymentBalance;
@@ -306,7 +297,7 @@ export const makePaymentLedger = (
       updatePurseBalance(newPurseBalance);
       paymentLedger.init(payment, amount);
     } catch (err) {
-      destroyLedgerWithFailure(err);
+      shutdownLedgerWithFailure(err);
       throw err;
     }
     return payment;
