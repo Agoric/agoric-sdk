@@ -1,6 +1,6 @@
 // @ts-check
 import JSON5 from 'json5';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AssetKind } from '@agoric/ertp';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;

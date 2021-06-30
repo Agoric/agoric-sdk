@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+
 
 /**
  * Parse the string as a setValue

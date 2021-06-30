@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@agoric/import-bundle';
 import { makeLiveSlots } from '../liveSlots.js';
 import { makeManagerKit } from './manager-helper.js';

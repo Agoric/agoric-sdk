@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { sameStructure } from '@agoric/same-structure';
 import { AmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from './helpers';

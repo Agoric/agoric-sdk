@@ -1,7 +1,7 @@
 /* global __dirname process */
 import { Command } from 'commander';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import cosmosMain from './cosmos';
 import deployMain from './deploy';
 import initMain from './init';

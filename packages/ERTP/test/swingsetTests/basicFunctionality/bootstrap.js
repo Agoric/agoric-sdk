@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeIssuerKit, AmountMath } from '../../../src';
 
 export function buildRootObject(vatPowers, vatParameters) {

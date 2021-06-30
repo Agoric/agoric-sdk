@@ -12,7 +12,7 @@ import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundl
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';

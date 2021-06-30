@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { natSafeMath } from '../../contractSupport';
 
 // A pool seat has Central and Secondary keywords, and a swap seat has

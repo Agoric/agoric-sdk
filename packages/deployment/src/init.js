@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup';
 import { shellEscape } from './run';
 

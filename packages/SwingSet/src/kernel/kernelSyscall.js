@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistMessage } from '../message.js';
 import { insistCapData } from '../capdata.js';

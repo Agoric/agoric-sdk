@@ -1,7 +1,7 @@
 // @ts-check
 
 import { generateSparseInts } from '@agoric/sparse-ints';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { models as crcmodels } from 'polycrc';

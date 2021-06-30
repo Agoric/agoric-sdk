@@ -2,7 +2,7 @@
 // @ts-nocheck
 
 // NOTE: We can't import these because they're not in scope before lockdown.
-// import { assert, details as X } from '@agoric/assert';
+// const { details: X } = assert;
 
 // WARNING: Global Mutable State!
 // This state is communicated to `assert` that makes it available to the

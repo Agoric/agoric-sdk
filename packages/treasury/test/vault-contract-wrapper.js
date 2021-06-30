@@ -4,7 +4,7 @@ import '@agoric/zoe/src/types';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
+
 import { E } from '@agoric/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';

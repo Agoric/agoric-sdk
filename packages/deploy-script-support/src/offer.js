@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+
 import { AmountMath } from '@agoric/ertp';
 
 /** @type {MakeOfferAndFindInvitationAmount} */

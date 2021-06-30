@@ -1,6 +1,7 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
+const { details } = assert;
+mport { assert, details } from '@agoric/assert';
 import '@agoric/zoe/exported';
 
 import { captureNum } from './helpers/captureNum';

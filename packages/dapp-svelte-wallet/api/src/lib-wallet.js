@@ -11,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from '@agoric/ertp';

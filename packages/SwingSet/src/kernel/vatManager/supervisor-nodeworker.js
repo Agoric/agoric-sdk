@@ -6,7 +6,7 @@ import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
 import '../../types.js';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import engineGC from '../../engine-gc.js';

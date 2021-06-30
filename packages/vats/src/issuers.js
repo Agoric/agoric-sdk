@@ -1,5 +1,5 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+
 import { Nat } from '@agoric/nat';
 
 export const CENTRAL_ISSUER_NAME = 'RUN';

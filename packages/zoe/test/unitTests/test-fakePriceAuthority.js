@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { assert } from '@agoric/assert';
+
 import buildManualTimer from '../../tools/manualTimer';
 
 import { setup } from './setupBasicMints';

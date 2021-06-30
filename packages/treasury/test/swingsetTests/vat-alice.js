@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { AmountMath } from '@agoric/ertp';
 
 const build = async (log, zoe, brands, payments, timer) => {

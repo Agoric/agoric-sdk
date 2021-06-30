@@ -1,5 +1,5 @@
 import { basename } from 'path';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   finishCosmosApp,
   finishTendermintConfig,

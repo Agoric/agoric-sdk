@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { provideHostStorage } from '../src/hostStorage.js';

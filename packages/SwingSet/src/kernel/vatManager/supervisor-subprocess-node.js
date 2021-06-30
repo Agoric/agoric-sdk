@@ -4,7 +4,7 @@ import '@agoric/install-ses';
 import anylogger from 'anylogger';
 import fs from 'fs';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import engineGC from '../../engine-gc.js';

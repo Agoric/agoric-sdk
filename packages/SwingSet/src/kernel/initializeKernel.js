@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 import { makeMarshal, Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { assertKnownOptions } from '../assertOptions';
 import { insistVatID } from './id';
 import { makeVatSlot } from '../parseVatSlots';

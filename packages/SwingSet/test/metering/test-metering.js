@@ -5,7 +5,7 @@ import { replaceGlobalMeter } from './install-global-metering.js';
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 import '@agoric/install-ses';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import bundleSource from '@agoric/bundle-source';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeter, makeMeteringTransformer } from '@agoric/transform-metering';

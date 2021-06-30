@@ -5,7 +5,7 @@ import {
   natSafeMath,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport';
-import { assert } from '@agoric/assert';
+
 import { AmountMath } from '@agoric/ertp';
 
 const { multiply, isGTE } = natSafeMath;

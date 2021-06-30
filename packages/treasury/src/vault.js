@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/zoe/exported';
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,

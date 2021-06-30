@@ -1,4 +1,5 @@
-import { assert, details } from '@agoric/assert';
+const { details } = assert;
+mport { assert, details } from '@agoric/assert';
 import { captureNum } from './helpers/captureNum';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
 

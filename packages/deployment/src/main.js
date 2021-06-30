@@ -4,7 +4,7 @@ import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { dirname, basename } from 'path';
 import { doInit } from './init';
 import { shellMetaRegexp, shellEscape } from './run';

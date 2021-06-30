@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@agoric/marshal';
 import { makeSharedMap } from '../../../src/sharedMap';
 import { makeSharingService } from '../../../src/sharing';

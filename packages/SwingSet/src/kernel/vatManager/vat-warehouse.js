@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X, quote as q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { makeVatTranslators } from '../vatTranslator.js';
 
 /** @param { number } max */

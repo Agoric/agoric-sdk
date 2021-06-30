@@ -5,7 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
 import '../../exported';
-import { assert } from '@agoric/assert';
+
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract

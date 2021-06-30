@@ -3,7 +3,7 @@
 /* global makeKind makeWeakStore */
 
 import { importBundle } from '@agoric/import-bundle';
-import { assert } from '@agoric/assert';
+
 import { handlePWarning } from '../handleWarning';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {

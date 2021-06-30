@@ -6,7 +6,7 @@ import path from 'path';
 import lmdb from 'node-lmdb';
 import sqlite3 from 'better-sqlite3';
 
-import { assert } from '@agoric/assert';
+
 
 import { sqlStreamStore } from './sqlStreamStore.js';
 

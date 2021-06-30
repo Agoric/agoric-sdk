@@ -1,7 +1,7 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { mustBeComparable, sameStructure } from '@agoric/same-structure';
 
 import '../types';

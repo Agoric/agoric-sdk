@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 

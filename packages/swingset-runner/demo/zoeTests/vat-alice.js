@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';

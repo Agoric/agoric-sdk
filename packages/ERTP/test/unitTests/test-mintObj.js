@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { assert } from '@agoric/assert';
+
 
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src';
 

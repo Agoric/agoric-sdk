@@ -10,7 +10,7 @@ import {
 
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeWithQueue } from '@agoric/vats/src/queue';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
 import { launch } from './launch-chain';

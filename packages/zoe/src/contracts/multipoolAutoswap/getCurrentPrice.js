@@ -2,7 +2,7 @@
 
 import '../../../exported';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 /**
  * Build functions to calculate prices for multipoolAutoswap. Four methods are

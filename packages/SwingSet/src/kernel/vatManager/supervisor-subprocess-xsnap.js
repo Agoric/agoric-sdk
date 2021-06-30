@@ -1,6 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import '../../types.js';

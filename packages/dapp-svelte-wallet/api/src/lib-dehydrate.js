@@ -2,7 +2,7 @@
 
 import { makeMarshal } from '@agoric/marshal';
 import makeStore from '@agoric/store';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 
 /**
  * @typedef {string[]} Path

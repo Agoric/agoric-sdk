@@ -1,7 +1,7 @@
 // @ts-check
 import '../../exported';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';

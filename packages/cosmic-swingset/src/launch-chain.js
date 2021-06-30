@@ -14,7 +14,7 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import { makeSnapStore } from '@agoric/xsnap';
 import {

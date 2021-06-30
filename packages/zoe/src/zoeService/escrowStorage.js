@@ -3,7 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 
 import './types';
 import './internal-types';

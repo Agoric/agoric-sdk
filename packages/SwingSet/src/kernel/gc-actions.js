@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from './id.js';
 

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+
 import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

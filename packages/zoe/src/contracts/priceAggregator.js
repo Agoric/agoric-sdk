@@ -6,7 +6,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import makeStore from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   calculateMedian,
   natSafeMath,

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@agoric/eventual-send';
 
 import { arrayToObj } from './objArrayConversion';

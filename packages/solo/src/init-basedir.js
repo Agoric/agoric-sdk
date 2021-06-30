@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import anylogger from 'anylogger';
 
 const log = anylogger('ag-solo:init');

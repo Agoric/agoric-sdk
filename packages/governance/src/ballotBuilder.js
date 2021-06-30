@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // CHOOSE_N: voter indicates up to N they find acceptable (N might be 1).
 // ORDER: voter lists their choices from most to least favorite.

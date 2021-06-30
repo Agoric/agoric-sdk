@@ -11,7 +11,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
-import { assert } from '@agoric/assert';
+
 import { makeTracer } from '../src/makeTracer';
 
 const vaultRoot = './vault-contract-wrapper.js';

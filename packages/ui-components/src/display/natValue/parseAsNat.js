@@ -1,5 +1,6 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+const { details } = assert;
+mport { assert, details } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import '@agoric/ertp/exported';
 

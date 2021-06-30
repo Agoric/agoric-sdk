@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
 

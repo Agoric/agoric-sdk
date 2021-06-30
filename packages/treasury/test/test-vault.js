@@ -12,7 +12,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
+
 import { makeTracer } from '../src/makeTracer';
 
 const vaultRoot = './vault-contract-wrapper.js';

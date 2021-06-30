@@ -9,7 +9,7 @@ import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';

@@ -2,7 +2,7 @@
 
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { assert } from '@agoric/assert';
+
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 

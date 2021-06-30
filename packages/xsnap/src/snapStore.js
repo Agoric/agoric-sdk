@@ -2,7 +2,7 @@
 import { createHash } from 'crypto';
 import { pipeline } from 'stream';
 import { createGzip, createGunzip } from 'zlib';
-import { assert, details as d } from '@agoric/assert';
+const { details: d } = assert;
 import { promisify } from 'util';
 
 const pipe = promisify(pipeline);

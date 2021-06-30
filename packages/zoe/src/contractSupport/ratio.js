@@ -1,7 +1,7 @@
 // @ts-check
 
 import './types';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath';
 

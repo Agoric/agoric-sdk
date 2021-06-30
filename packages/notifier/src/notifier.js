@@ -3,7 +3,7 @@
 /// <reference types="ses"/>
 
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assert } from '@agoric/assert';
+
 import { Far } from '@agoric/marshal';
 import {
   makeAsyncIterableFromNotifier,

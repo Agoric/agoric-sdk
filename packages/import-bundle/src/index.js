@@ -1,6 +1,6 @@
 import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 import { decodeBase64 } from '@endo/base64';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { wrapInescapableCompartment } from './compartment-wrapper.js';
 
 // importBundle takes the output of bundle-source, and returns a namespace

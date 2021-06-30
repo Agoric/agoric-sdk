@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp/';
 import { makeNotifierKit } from '@agoric/notifier';
 

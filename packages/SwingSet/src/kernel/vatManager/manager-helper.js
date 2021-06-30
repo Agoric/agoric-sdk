@@ -1,5 +1,5 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+
 import '../../types.js';
 import { insistVatDeliveryResult } from '../../message.js';
 import { makeTranscriptManager } from './transcript.js';

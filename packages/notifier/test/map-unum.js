@@ -8,7 +8,7 @@
 // from test/ to src/
 
 // @ts-check
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import {
   makeNotifierKit,
   makeSubscriptionKit,

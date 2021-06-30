@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+
 import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 

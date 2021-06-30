@@ -4,7 +4,7 @@
 // FIXME: This is just hacked together for the legacy wallet.
 
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export default async function deployWallet(
   homePromise,

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export function parseReachableAndVatSlot(value) {
   assert.typeof(value, 'string', X`non-string value: ${value}`);

@@ -5,7 +5,7 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 import { launch } from './launch-chain';
 import makeBlockManager from './block-manager';

@@ -3,7 +3,7 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { isPromise } from '@agoric/promise-kit';
 
 import './types.js';

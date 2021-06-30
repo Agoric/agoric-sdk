@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+
 import { isNatValue } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

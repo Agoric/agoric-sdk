@@ -7,7 +7,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 // noinspection ES6PreferShortImport
 import { setup } from '../setupBasicMints';
 import { setupNonFungible } from '../setupNonFungibleMints';

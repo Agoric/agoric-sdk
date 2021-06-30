@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-import { assert } from '@agoric/assert';
+
 import { AmountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

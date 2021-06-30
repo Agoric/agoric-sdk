@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';

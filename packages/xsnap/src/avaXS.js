@@ -14,7 +14,7 @@ Usage:
 import '@agoric/babel-standalone';
 /* eslint-disable no-await-in-loop */
 import '@agoric/install-ses';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses

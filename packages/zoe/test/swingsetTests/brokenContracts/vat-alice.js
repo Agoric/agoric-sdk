@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 async function logCounter(log, publicAPI) {

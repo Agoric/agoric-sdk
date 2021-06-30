@@ -4,7 +4,7 @@ import makeStore from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';

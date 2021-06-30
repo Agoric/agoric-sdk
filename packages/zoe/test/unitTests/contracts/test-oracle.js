@@ -7,7 +7,7 @@ import bundleSource from '@agoric/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@agoric/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';

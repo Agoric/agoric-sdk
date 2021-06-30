@@ -3,7 +3,7 @@
 import '../../../exported';
 import './types';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';

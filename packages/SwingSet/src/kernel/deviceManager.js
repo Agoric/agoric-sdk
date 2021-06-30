@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../capdata.js';
 

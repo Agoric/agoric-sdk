@@ -5,7 +5,7 @@ import { test } from '../tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import engineGC from '../src/engine-gc.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';

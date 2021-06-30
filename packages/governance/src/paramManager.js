@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';

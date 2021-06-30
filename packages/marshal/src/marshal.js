@@ -4,7 +4,7 @@
 /// <reference types="ses"/>
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import {
   PASS_STYLE,
   passStyleOf,

@@ -7,7 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 import makeStore from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@agoric/marshal';
 
 import '@agoric/store/exported';

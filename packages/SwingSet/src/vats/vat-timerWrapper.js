@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 

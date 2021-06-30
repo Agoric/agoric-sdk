@@ -5,7 +5,7 @@ import {
   openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that

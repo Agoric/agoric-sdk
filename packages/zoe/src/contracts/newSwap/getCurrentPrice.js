@@ -2,7 +2,7 @@
 
 import '../../../exported';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AmountMath } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 

@@ -1,6 +1,6 @@
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 const log = anylogger('outbound');
 

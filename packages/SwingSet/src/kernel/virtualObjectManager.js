@@ -1,4 +1,4 @@
-import { assert, details as X, quote as q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { parseVatSlot } from '../parseVatSlots.js';
 // import { kdebug } from './kdebug.js';
 

@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@agoric/import-bundle';
 import { assertKnownOptions } from '../assertOptions.js';
 import { makeVatManagerFactory } from './vatManager/factory.js';

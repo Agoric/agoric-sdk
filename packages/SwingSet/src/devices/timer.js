@@ -1,7 +1,7 @@
 /* global require */
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 /**
  * Endowments for a Timer device that can be made available to SwingSet vats.

@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { wrapInescapableCompartment } from '../src/compartment-wrapper.js';
 
 // We build a transform that allows oldSrc to increment the odometer, but not

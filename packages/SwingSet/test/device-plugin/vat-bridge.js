@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export function buildRootObject(vatPowers, _vatParameters) {
   const log = vatPowers.testLog;

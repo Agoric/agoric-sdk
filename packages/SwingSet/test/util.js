@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');

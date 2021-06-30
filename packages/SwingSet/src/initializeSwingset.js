@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import bundleSource from '@agoric/bundle-source';
 
 import './types.js';

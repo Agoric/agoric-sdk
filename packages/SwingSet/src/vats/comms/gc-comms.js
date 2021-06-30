@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+
 import { parseVatSlot } from '../../parseVatSlots.js';
 import { parseRemoteSlot } from './parseRemoteSlot.js';
 
