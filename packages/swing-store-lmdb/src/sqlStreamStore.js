@@ -113,10 +113,9 @@ export function sqlStreamStore(dbDir, io) {
     insistStreamPosition(position);
 
     assert(
-      [undefined, 'writing'].includes(streamStatus.get(streamName)),
+      !streamStatus.get(streamName),
       X`can't write stream ${q(streamName)} because it's already in use`,
     );
-    streamStatus.set(streamName, 'writing');
 
     db.prepare(
       `
