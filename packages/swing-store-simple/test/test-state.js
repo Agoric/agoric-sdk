@@ -85,9 +85,6 @@ test('streamStore mode interlock', t => {
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);
 
-  t.throws(() => streamStore.readStream('st1', start, s1pos), {
-    message: `can't read stream "st1" because it's already in use`,
-  });
   streamStore.closeStream('st1');
 
   const reader = streamStore.readStream('st1', start, s1pos);
