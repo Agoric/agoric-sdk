@@ -42,9 +42,7 @@ export const makeZCFZygote = (
     instantiate: instantiateIssuerStorage,
   } = makeIssuerStorage();
 
-  /**
-   * @param {Error} reason
-   */
+  /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
     E(zoeInstanceAdmin).failAllSeats(reason);
     // eslint-disable-next-line no-use-before-define

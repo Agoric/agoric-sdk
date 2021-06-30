@@ -114,7 +114,6 @@ export const makeZoeStorageManager = createZCFVat => {
         issuer: localIssuer,
         brand: localBrand,
         displayInfo: localDisplayInfo,
-        // eslint-disable-next-line no-use-before-define
       } = makeIssuerKit(
         keyword,
         assetKind,

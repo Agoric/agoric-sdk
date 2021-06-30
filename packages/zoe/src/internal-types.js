@@ -52,7 +52,7 @@
  * @typedef {Object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {(reason: TerminationReason) => void} fail called with the reason
+ * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  */
 
@@ -83,7 +83,7 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -117,7 +117,7 @@
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -214,7 +214,7 @@
  * terminated. If the contract terminates with a failure, the promise will be
  * rejected with the reason. If the contract terminates successfully, the
  * promise will fulfill to the completion value.
- * @property {(reason: TerminationReason) => void} terminateWithFailure
+ * @property {ShutdownWithFailure} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure.
  */
 

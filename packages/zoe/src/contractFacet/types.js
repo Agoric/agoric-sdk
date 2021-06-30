@@ -4,10 +4,6 @@
 /**
  * @typedef {any} Completion
  * Any passable non-thenable. Often an explanatory string.
- *
- * @typedef {Error|any} TerminationReason
- * Something provided as an explanation to a termination request. Usually an
- * Error but not required to be so.
  */
 
 /**
@@ -34,7 +30,7 @@
  * saving
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown
- * @property {(reason: TerminationReason) => void} shutdownWithFailure
+ * @property {ShutdownWithFailure} shutdownWithFailure
  * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer} getInvitationIssuer

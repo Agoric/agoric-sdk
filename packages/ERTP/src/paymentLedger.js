@@ -20,7 +20,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {((reason: Error) => void)=} optTerminateWithFailure
+ * @param {ShutdownWithFailure=} optTerminateWithFailure
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -30,6 +30,7 @@ export const makePaymentLedger = (
   displayInfo,
   optTerminateWithFailure = undefined,
 ) => {
+  /** @type {ShutdownWithFailure} */
   const destroyLedgerWithFailure = reason => {
     // TODO destroy ledger state.
     // We need to defensively destroy the ledger state because:
