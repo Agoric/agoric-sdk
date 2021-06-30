@@ -67,6 +67,18 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
+func validateBalanceUpdate(vbu vbankBalanceUpdate) error {
+	if vbu.Type != "VBANK_BALANCE_UPDATE" {
+		return fmt.Errorf("bad balance update type: %s", vbu.Type)
+	}
+	for i, u := range vbu.Updated {
+		if i > 0 && vbu.Updated.Less(i, i-1) {
+			return fmt.Errorf("unordered balance update %v is before %v", vbu.Updated[i-1], u)
+		}
+	}
+	return nil
+}
+
 // decodeBalances unmarshals a JSON-encoded vbankBalanceUpdate into normalized balances.
 // A nil input returns a nil balances.
 func decodeBalances(encoded []byte) (balances, uint64, error) {
@@ -78,15 +90,13 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	if balanceUpdate.Type != "VBANK_BALANCE_UPDATE" {
-		return nil, 0, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
+	err = validateBalanceUpdate(balanceUpdate)
+	if err != nil {
+		return nil, 0, err
 	}
 	b := newBalances()
 	fmt.Printf("updated balances %v\n", balanceUpdate.Updated)
-	for i, u := range balanceUpdate.Updated {
-		if i < len(balanceUpdate.Updated)-1 && balanceUpdate.Updated.Less(i+1, i) {
-			return nil, 0, fmt.Errorf("unordered balance update %v is before %v", u, balanceUpdate.Updated[i+1])
-		}
+	for _, u := range balanceUpdate.Updated {
 		account(u.Address, coin(u.Denom, u.Amount))(b)
 	}
 	return b, balanceUpdate.Nonce, nil
@@ -103,7 +113,6 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 		addressToBalance map[string]sdk.Coins
 		want             balances
 		wantErr          bool
-		encoded          []byte
 	}{
 		{
 			name:             "empty",
