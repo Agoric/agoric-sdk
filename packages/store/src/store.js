@@ -2,8 +2,9 @@
 
 // @ts-check
 
-const { details: X, quote: q } = assert;
 import { isEmptyNonRemotableObject } from './helpers.js';
+
+const { details: X, quote: q } = assert;
 
 /**
  * Distinguishes between adding a new key (init) and updating or

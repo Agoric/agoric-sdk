@@ -2,9 +2,10 @@
 
 // @ts-check
 
-const { details: X, quote: q } = assert;
 import { isEmptyNonRemotableObject } from './helpers.js';
 import './types.js';
+
+const { details: X, quote: q } = assert;
 
 /**
  * @template {Record<any, any>} K

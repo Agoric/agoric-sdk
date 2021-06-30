@@ -523,7 +523,9 @@ export function makeMarshal(
               errorId === undefined
                 ? `Remote${EC.name}`
                 : `Remote${EC.name}(${errorId})`;
-            const error = assert.error(`${message}`, EC, { errorName });
+            const error = assert.error(`${message}`, EC);
+            // TODO How did it ever work?
+            error.name = errorName;
             return error;
           }
 

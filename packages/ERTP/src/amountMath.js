@@ -134,7 +134,7 @@ const assertLooksLikeValue = value => {
   assert(looksLikeValue(value), X`value ${value} must be a Nat or an array`);
 };
 
-/** @type {(brand: Brand, msg?: Details) => void} */
+/** @type {(brand: Brand, msg?: import('../../../../../endojs/endo/packages/ses').Details) => void} */
 const assertLooksLikeBrand = (
   brand,
   msg = X`The brand ${brand} doesn't look like a brand.`,

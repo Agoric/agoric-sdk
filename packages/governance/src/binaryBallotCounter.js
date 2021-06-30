@@ -1,6 +1,5 @@
 // @ts-check
 
-const { details: X } = assert;
 import { makeStore } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
@@ -8,6 +7,8 @@ import { Far } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 import { scheduleClose } from './closingRule';
+
+const { details: X } = assert;
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
 
