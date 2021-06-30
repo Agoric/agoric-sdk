@@ -20,6 +20,7 @@ import '@agoric/store/exported';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
+ * @param {ShutdownWithFailure=} optShutdownWithFailure
  * @returns {{ issuer: Issuer, mint: Mint }}
  */
 export const makePaymentLedger = (
@@ -27,7 +28,18 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
+  optShutdownWithFailure = undefined,
 ) => {
+  /** @type {ShutdownWithFailure} */
+  const shutdownLedgerWithFailure = reason => {
+    // TODO This should also destroy ledger state.
+    // See https://github.com/Agoric/agoric-sdk/issues/3434
+    if (optShutdownWithFailure !== undefined) {
+      optShutdownWithFailure(reason);
+    }
+    throw reason;
+  };
+
   /** @type {WeakStore<Payment, Amount>} */
   const paymentLedger = makeWeakStore('payment');
 
@@ -111,15 +123,20 @@ export const makePaymentLedger = (
       X`rights were not conserved: ${total} vs ${newTotal}`,
     );
 
-    // commit point
-    payments.forEach(payment => paymentLedger.delete(payment));
+    let newPayments;
+    try {
+      // COMMIT POINT
+      payments.forEach(payment => paymentLedger.delete(payment));
 
-    const newPayments = newPaymentBalances.map(balance => {
-      const newPayment = makePayment(allegedName, brand);
-      paymentLedger.init(newPayment, balance);
-      return newPayment;
-    });
-
+      newPayments = newPaymentBalances.map(balance => {
+        const newPayment = makePayment(allegedName, brand);
+        paymentLedger.init(newPayment, balance);
+        return newPayment;
+      });
+    } catch (err) {
+      shutdownLedgerWithFailure(err);
+      throw err;
+    }
     return harden(newPayments);
   };
 
@@ -144,8 +161,13 @@ export const makePaymentLedger = (
       assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
       assertAmountConsistent(paymentBalance, optAmount);
-      // Commit point.
-      paymentLedger.delete(payment);
+      try {
+        // COMMIT POINT.
+        paymentLedger.delete(payment);
+      } catch (err) {
+        shutdownLedgerWithFailure(err);
+        throw err;
+      }
       return paymentBalance;
     });
   };
@@ -156,7 +178,7 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountConsistent(srcPaymentBalance, optAmount);
-      // Commit point.
+      // Note COMMIT POINT within reallocate.
       const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
       return payment;
     });
@@ -172,7 +194,7 @@ export const makePaymentLedger = (
         .map(paymentLedger.get)
         .reduce(add, emptyAmount);
       assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Commit point.
+      // Note COMMIT POINT within reallocate.
       const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
       return payment;
     });
@@ -186,7 +208,7 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Commit point
+      // Note COMMIT POINT within reallocate.
       const newPayments = reallocate(
         [srcPayment],
         [paymentAmountA, paymentAmountB],
@@ -200,7 +222,7 @@ export const makePaymentLedger = (
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       amounts = amounts.map(coerce);
-      // Commit point
+      // Note COMMIT POINT within reallocate.
       const newPayments = reallocate([srcPayment], amounts);
       return newPayments;
     });
@@ -241,11 +263,16 @@ export const makePaymentLedger = (
     // Note: this does not guarantee that optAmount itself is a valid stable amount
     assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
-    // Commit point
-    // Move the assets in `srcPayment` into this purse, using up the
-    // source payment, such that total assets are conserved.
-    paymentLedger.delete(srcPayment);
-    updatePurseBalance(newPurseBalance);
+    try {
+      // COMMIT POINT
+      // Move the assets in `srcPayment` into this purse, using up the
+      // source payment, such that total assets are conserved.
+      paymentLedger.delete(srcPayment);
+      updatePurseBalance(newPurseBalance);
+    } catch (err) {
+      shutdownLedgerWithFailure(err);
+      throw err;
+    }
     return srcPaymentBalance;
   };
 
@@ -263,11 +290,16 @@ export const makePaymentLedger = (
     amount = coerce(amount);
     const newPurseBalance = subtract(currentBalance, amount);
     const payment = makePayment(allegedName, brand);
-    // Commit point
-    // Move the withdrawn assets from this purse into a new payment
-    // which is returned. Total assets must remain conserved.
-    updatePurseBalance(newPurseBalance);
-    paymentLedger.init(payment, amount);
+    try {
+      // COMMIT POINT
+      // Move the withdrawn assets from this purse into a new payment
+      // which is returned. Total assets must remain conserved.
+      updatePurseBalance(newPurseBalance);
+      paymentLedger.init(payment, amount);
+    } catch (err) {
+      shutdownLedgerWithFailure(err);
+      throw err;
+    }
     return payment;
   };
 
