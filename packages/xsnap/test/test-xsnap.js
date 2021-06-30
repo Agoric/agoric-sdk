@@ -348,42 +348,55 @@ test('do snapshots affect GC timing?', async t => {
   t.teardown(() => work.removeCallback());
 
   const opts = options(io);
-  const vat1 = xsnap(opts);
-  t.teardown(() => vat1.terminate());
 
-  await vat1.evaluate(`
-    globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  const allocFree = `
     globalThis.allocFree = qty => {
       for (let ix = 0; ix < qty; ix += 1) {
         const ephemeral = {};
       }
     }
-  `);
+  `;
 
-  const loop = async (vat, limit) => {
+  const loop = async (vat, gcnum, limit) => {
     let gcCount = 0;
     let evalQty = 0;
-    for (evalQty = 0; gcCount === 0 && evalQty < limit; evalQty += 1) {
+    for (evalQty = 0; gcCount < gcnum && evalQty < limit; evalQty += 1) {
       // eslint-disable-next-line no-await-in-loop
       const x = await vat.evaluate(`
-        allocFree(300);
-        send(true);
+        allocFree(10000);
       `);
       gcCount = x.meterUsage.garbageCollectionCount;
-      // t.log({ gcCount });
     }
+    // t.log({ gcCount, gcnum, evalQty, limit });
     return evalQty;
   };
 
-  await loop(vat1, 20);
-  await vat1.snapshot(work.name);
-  const snapshotToGC = await loop(vat1, 1000);
-  await vat1.close();
+  const vatA = xsnap(opts);
+  t.teardown(() => vatA.terminate());
 
-  const vat2 = xsnap({ ...opts, snapshot: work.name });
-  t.teardown(() => vat2.terminate());
-  const restoreToGC = await loop(vat2, 1000);
+  const vatB = xsnap(opts);
+  t.teardown(() => vatB.terminate());
+  await vatA.evaluate(allocFree);
+  await vatB.evaluate(allocFree);
 
-  t.log({ snapshotToGC, restoreToGC });
-  t.is(snapshotToGC, restoreToGC, 'same with and without snapshot');
+  t.is(18, await loop(vatA, 1, 18));
+  t.is(18, await loop(vatB, 1, 18));
+
+  await vatB.snapshot(work.name);
+  const vatC = xsnap({ ...opts, snapshot: work.name });
+  t.teardown(() => vatC.terminate());
+
+  // A, B, and C _should_ be in the same state,
+  // except for garbageCollectionCount.
+
+  const DONT_RUN_AWAY = 1000;
+  const continueAToGC = await loop(vatA, 1, DONT_RUN_AWAY);
+  const snapshotBToGC = await loop(vatB, 2, DONT_RUN_AWAY);
+  await vatB.close();
+  const restoreCToGC = await loop(vatC, 1, 1000);
+
+  t.log({ continueAToGC, snapshotBToGC, restoreCToGC });
+
+  t.is(snapshotBToGC, restoreCToGC, 'same after snapshot');
+  t.is(continueAToGC, snapshotBToGC, 'same with and without snapshot');
 });
