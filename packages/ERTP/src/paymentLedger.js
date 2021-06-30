@@ -33,6 +33,7 @@ export const makePaymentLedger = (
   /** @type {ShutdownWithFailure} */
   const destroyLedgerWithFailure = reason => {
     // TODO destroy ledger state.
+    // https://github.com/Agoric/agoric-sdk/issues/3434
     // We need to defensively destroy the ledger state because:
     // If the `optTerminateWithFailure` is absent or returns,
     // the most violent termination we can fall back to is to throw. However,
