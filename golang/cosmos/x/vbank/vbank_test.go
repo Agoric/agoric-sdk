@@ -67,6 +67,18 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
+func validateBalanceUpdate(vbu vbankBalanceUpdate) error {
+	if vbu.Type != "VBANK_BALANCE_UPDATE" {
+		return fmt.Errorf("bad balance update type: %s", vbu.Type)
+	}
+	for i, u := range vbu.Updated {
+		if i > 0 && vbu.Updated.Less(i, i-1) {
+			return fmt.Errorf("unordered balance update %v is before %v", vbu.Updated[i-1], u)
+		}
+	}
+	return nil
+}
+
 // decodeBalances unmarshals a JSON-encoded vbankBalanceUpdate into normalized balances.
 // A nil input returns a nil balances.
 func decodeBalances(encoded []byte) (balances, uint64, error) {
@@ -78,10 +90,12 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	if balanceUpdate.Type != "VBANK_BALANCE_UPDATE" {
-		return nil, 0, fmt.Errorf("bad balance update type: %s", balanceUpdate.Type)
+	err = validateBalanceUpdate(balanceUpdate)
+	if err != nil {
+		return nil, 0, err
 	}
 	b := newBalances()
+	fmt.Printf("updated balances %v\n", balanceUpdate.Updated)
 	for _, u := range balanceUpdate.Updated {
 		account(u.Address, coin(u.Denom, u.Amount))(b)
 	}
@@ -277,8 +291,9 @@ func Test_Receive_Give(t *testing.T) {
 	want := newBalances(account(addr1, coin("urun", "1000")))
 	got, gotNonce, err := decodeBalances([]byte(ret))
 	if err != nil {
-		t.Errorf("decode balances error = %v", err)
-	} else if !reflect.DeepEqual(got, want) {
+		t.Fatalf("decode balances error = %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	nonce := uint64(1)
@@ -418,8 +433,9 @@ func Test_Receive_Grab(t *testing.T) {
 	want := newBalances(account(addr1, coin("ubld", "1000")))
 	got, gotNonce, err := decodeBalances([]byte(ret))
 	if err != nil {
-		t.Errorf("decode balances error = %v", err)
-	} else if !reflect.DeepEqual(got, want) {
+		t.Fatalf("decode balances error = %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 	nonce := uint64(1)
@@ -495,7 +511,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 	gotMsg, gotNonce, err := decodeBalances([]byte(msgsSent[0]))
 	if err != nil {
-		t.Errorf("decode balances error = %v", err)
+		t.Fatalf("decode balances error = %v", err)
 	}
 
 	nonce := uint64(1)
