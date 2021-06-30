@@ -3,11 +3,12 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-const { details: X, quote: q } = assert;
 import { isPromise } from '@agoric/promise-kit';
 
 import './types.js';
 import '@agoric/assert/exported.js';
+
+const { details: X, quote: q } = assert;
 
 // Setting this flag to true is what allows objects with `null` or
 // `Object.prototype` prototypes to be treated as remotable.  Setting to `false`
@@ -190,7 +191,7 @@ function isPassByCopyRecord(val) {
 /**
  * @callback Checker
  * @param {boolean} cond
- * @param {Details=} details
+ * @param {any=} details // TODO What?
  * @returns {boolean}
  */
 

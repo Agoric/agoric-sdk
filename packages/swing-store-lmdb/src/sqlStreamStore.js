@@ -1,6 +1,7 @@
 // @ts-check
 import path from 'path';
 import sqlite3ambient from 'better-sqlite3';
+
 const { details: X, quote: q } = assert;
 
 const STREAM_START = { itemCount: 0 };

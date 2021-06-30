@@ -4,11 +4,12 @@
 /// <reference types="ses"/>
 
 import { Nat } from '@agoric/nat';
-const { details: X, quote: q } = assert;
 import { getErrorConstructor } from './passStyleOf.js';
 import { QCLASS } from './marshal.js';
 
 import './types.js';
+
+const { details: X, quote: q } = assert;
 
 const { ownKeys } = Reflect;
 

@@ -4,7 +4,6 @@
 /// <reference types="ses"/>
 
 import { Nat } from '@agoric/nat';
-const { details: X, quote: q } = assert;
 import {
   PASS_STYLE,
   passStyleOf,
@@ -15,6 +14,8 @@ import {
 } from './passStyleOf.js';
 
 import './types.js';
+
+const { details: X, quote: q } = assert;
 
 const {
   getPrototypeOf,

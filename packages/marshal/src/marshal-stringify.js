@@ -1,9 +1,10 @@
 // @ts-check
 
-const { details: X } = assert;
 import { makeMarshal } from './marshal.js';
 
 import './types.js';
+
+const { details: X } = assert;
 
 /** @type {ConvertValToSlot<any>} */
 const doNotConvertValToSlot = val =>

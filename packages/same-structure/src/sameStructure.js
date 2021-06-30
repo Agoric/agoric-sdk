@@ -1,6 +1,7 @@
 // @ts-check
 
 import { passStyleOf } from '@agoric/marshal';
+
 const { details: X, quote: q } = assert;
 
 const {

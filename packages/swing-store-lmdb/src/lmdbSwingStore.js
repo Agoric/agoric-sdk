@@ -6,8 +6,6 @@ import path from 'path';
 import lmdb from 'node-lmdb';
 import sqlite3 from 'better-sqlite3';
 
-
-
 import { sqlStreamStore } from './sqlStreamStore.js';
 
 /**
