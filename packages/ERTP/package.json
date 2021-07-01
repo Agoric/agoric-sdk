@@ -1,6 +1,6 @@
 {
   "name": "@agoric/ertp",
-  "version": "0.11.9",
+  "version": "0.11.10",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "parsers": {
     "js": "mjs"
@@ -41,19 +41,19 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.5",
-    "@agoric/eventual-send": "^0.13.21",
-    "@agoric/marshal": "^0.4.18",
+    "@agoric/assert": "^0.3.6",
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/marshal": "^0.4.19",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.21",
-    "@agoric/promise-kit": "^0.2.19",
-    "@agoric/same-structure": "^0.1.19",
-    "@agoric/store": "^0.4.21"
+    "@agoric/notifier": "^0.3.22",
+    "@agoric/promise-kit": "^0.2.20",
+    "@agoric/same-structure": "^0.1.20",
+    "@agoric/store": "^0.4.22"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.4.3",
-    "@agoric/install-ses": "^0.5.19",
-    "@agoric/swingset-vat": "^0.18.5",
+    "@agoric/bundle-source": "^1.4.4",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built"
   },

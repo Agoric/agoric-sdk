@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.8...@agoric/xsnap@0.6.9) (2021-07-01)
+
+
+### Features
+
+* **xsnap:** isReady() eliminates need for .evaluate('null') ([a0493d7](https://github.com/Agoric/agoric-sdk/commit/a0493d7c34c66d008e295ac2b0b86e312a36b5da))
+
+
+
 ### [0.6.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.7...@agoric/xsnap@0.6.8) (2021-06-28)
 
 
