@@ -1,6 +1,6 @@
 {
   "name": "@agoric/treasury",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "Core cryptoeconomy contracts",
   "parsers": {
     "js": "mjs"
@@ -34,7 +34,7 @@
     "@agoric/assert": "^0.3.6",
     "@agoric/bundle-source": "^1.4.4",
     "@agoric/captp": "^1.7.20",
-    "@agoric/deploy-script-support": "^0.2.17",
+    "@agoric/deploy-script-support": "^0.2.18",
     "@agoric/ertp": "^0.11.10",
     "@agoric/eventual-send": "^0.13.22",
     "@agoric/marshal": "^0.4.19",

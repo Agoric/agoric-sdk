@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Peg-as-us contract",
   "parsers": {
     "js": "mjs"
@@ -34,7 +34,7 @@
     "@agoric/assert": "^0.3.6",
     "@agoric/bundle-source": "^1.4.4",
     "@agoric/captp": "^1.7.20",
-    "@agoric/deploy-script-support": "^0.2.17",
+    "@agoric/deploy-script-support": "^0.2.18",
     "@agoric/ertp": "^0.11.10",
     "@agoric/eventual-send": "^0.13.22",
     "@agoric/marshal": "^0.4.19",
@@ -43,7 +43,7 @@
     "@agoric/promise-kit": "^0.2.20",
     "@agoric/store": "^0.4.22",
     "@agoric/swingset-vat": "^0.18.6",
-    "@agoric/vats": "^0.2.10",
+    "@agoric/vats": "^0.2.11",
     "@agoric/zoe": "^0.17.5"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "description": "Helpers and other support for writing deploy scripts",
   "parsers": {
     "js": "mjs"
@@ -50,7 +50,7 @@
     "@agoric/promise-kit": "^0.2.20",
     "@agoric/same-structure": "^0.1.20",
     "@agoric/store": "^0.4.22",
-    "@agoric/vats": "^0.2.10",
+    "@agoric/vats": "^0.2.11",
     "@agoric/zoe": "^0.17.5"
   },
   "devDependencies": {

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [5.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.4.0...@agoric/sdk@5.4.1) (2021-07-01)
+
+
+### Bug Fixes
+
+* retreat from `xs-worker-no-gc` to `xs-worker` ([ce5ce00](https://github.com/Agoric/agoric-sdk/commit/ce5ce00c6a07d59ee249bfd736a3d5a66c8b903f))
+
+
+
 ## [5.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.3.0...@agoric/sdk@5.4.0) (2021-07-01)
 
 
