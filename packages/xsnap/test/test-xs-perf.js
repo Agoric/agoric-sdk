@@ -68,6 +68,27 @@ test('meter details', async t => {
   t.is(meterType, 'xs-meter-8');
 });
 
+test('isReady does not compute / allocate', async t => {
+  const opts = options(io);
+  const vat1 = xsnap(opts);
+  t.teardown(() => vat1.terminate());
+  const vat2 = xsnap(opts);
+  t.teardown(() => vat2.terminate());
+
+  await vat1.evaluate('null');
+  const { meterUsage: m1 } = await vat1.evaluate('null');
+  t.log(m1);
+
+  await vat2.evaluate('null');
+  await vat2.isReady();
+  const { meterUsage: m2 } = await vat2.evaluate('null');
+
+  t.log(m2);
+
+  t.is(m1.compute, m2.compute);
+  t.is(m1.allocate, m2.allocate);
+});
+
 test('metering regex - REDOS', async t => {
   const opts = options(io);
   const vat = xsnap(opts);

@@ -71,6 +71,7 @@ const start = zcf => {
   };
 
   const zcfShutdown = completion => zcf.shutdown(completion);
+  /** @type {ShutdownWithFailure} */
   const zcfShutdownWithFailure = reason => zcf.shutdownWithFailure(reason);
 
   const makeSwapInvitation = () =>

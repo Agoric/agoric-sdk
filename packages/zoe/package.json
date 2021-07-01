@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.17.2",
+  "version": "0.17.5",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "parsers": {
     "js": "mjs"
@@ -42,23 +42,23 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.3",
-    "@agoric/bundle-source": "^1.4.1",
-    "@agoric/ertp": "^0.11.7",
-    "@agoric/eventual-send": "^0.13.19",
-    "@agoric/import-bundle": "^0.2.19",
-    "@agoric/marshal": "^0.4.16",
+    "@agoric/assert": "^0.3.6",
+    "@agoric/bundle-source": "^1.4.4",
+    "@agoric/ertp": "^0.11.10",
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/import-bundle": "^0.2.22",
+    "@agoric/marshal": "^0.4.19",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.19",
-    "@agoric/promise-kit": "^0.2.17",
-    "@agoric/same-structure": "^0.1.17",
-    "@agoric/store": "^0.4.19",
-    "@agoric/swingset-vat": "^0.18.3",
-    "@agoric/transform-metering": "^1.4.16"
+    "@agoric/notifier": "^0.3.22",
+    "@agoric/promise-kit": "^0.2.20",
+    "@agoric/same-structure": "^0.1.20",
+    "@agoric/store": "^0.4.22",
+    "@agoric/swingset-vat": "^0.18.6",
+    "@agoric/transform-metering": "^1.4.19"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/install-ses": "^0.5.17",
+    "@agoric/install-ses": "^0.5.20",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
     "ses": "^0.13.4"

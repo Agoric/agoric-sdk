@@ -310,11 +310,6 @@ export async function initializeSwingset(
   // it to comms
   config.vats.vattp = {
     bundle: kernelBundles.vattp,
-    creationOptions: {
-      // we saw evidence of vattp dropping messages, and out of caution,
-      // we're keeping it on an in-kernel worker for now. See #3039.
-      managerType: 'local',
-    },
   };
 
   // timer wrapper vat is added automatically, but TODO: bootstraps must

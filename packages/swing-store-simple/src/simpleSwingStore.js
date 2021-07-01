@@ -12,7 +12,7 @@ import { assert, details as X, q } from '@agoric/assert';
  *
  * @typedef {{
  *   offset?: number,
- *   itemCount?: number,
+ *   itemCount: number,
  * }} StreamPosition
  *
  * @typedef {{
@@ -228,18 +228,12 @@ export function initSimpleSwingStore() {
     let stream = streams.get(streamName);
     if (!stream) {
       stream = [];
-      streamStatus.set(streamName, 'write');
       streams.set(streamName, stream);
     } else {
-      const status = streamStatus.get(streamName);
-      if (!status) {
-        streamStatus.set(streamName, 'write');
-      } else {
-        assert(
-          status === 'write',
-          X`can't write stream ${q(streamName)} because it's already in use`,
-        );
-      }
+      assert(
+        !streamStatus.get(streamName),
+        X`can't write stream ${q(streamName)} because it's already in use`,
+      );
     }
     stream[position.itemCount] = item;
     return harden({ itemCount: position.itemCount + 1 });

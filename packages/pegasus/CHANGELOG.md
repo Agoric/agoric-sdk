@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.7...@agoric/pegasus@0.3.8) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
+### [0.3.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.6...@agoric/pegasus@0.3.7) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
+### [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.5...@agoric/pegasus@0.3.6) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
+### [0.3.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.4...@agoric/pegasus@0.3.5) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
 ### [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.3...@agoric/pegasus@0.3.4) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/pegasus

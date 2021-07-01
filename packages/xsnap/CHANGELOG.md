@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.8...@agoric/xsnap@0.6.9) (2021-07-01)
+
+
+### Features
+
+* **xsnap:** isReady() eliminates need for .evaluate('null') ([a0493d7](https://github.com/Agoric/agoric-sdk/commit/a0493d7c34c66d008e295ac2b0b86e312a36b5da))
+
+
+
+### [0.6.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.7...@agoric/xsnap@0.6.8) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+### Bug Fixes
+
+* snapStore tmp files were kept for debugging ([#3420](https://github.com/Agoric/agoric-sdk/issues/3420)) ([9d9560d](https://github.com/Agoric/agoric-sdk/commit/9d9560db488b67c8dfbc8dbba23967d5059dd071))
+
+
+
+### [0.6.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.6...@agoric/xsnap@0.6.7) (2021-06-25)
+
+
+### Bug Fixes
+
+* **xsnap:** update XS: new WeakMap design, fixed Promise drops ([8eeec28](https://github.com/Agoric/agoric-sdk/commit/8eeec2808ee7596d0b08a362d182c65a8828fba3)), closes [#3406](https://github.com/Agoric/agoric-sdk/issues/3406) [#3118](https://github.com/Agoric/agoric-sdk/issues/3118)
+
+
+
 ### [0.6.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.5...@agoric/xsnap@0.6.6) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/xsnap

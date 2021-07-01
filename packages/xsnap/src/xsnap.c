@@ -370,6 +370,9 @@ ExitCode main(int argc, char* argv[])
 			char command = *nsbuf;
 			// fprintf(stderr, "command: len %d %c arg: %s\n", nslen, command, nsbuf + 1);
 			switch(command) {
+			case 'R': // isReady
+				fxWriteNetString(toParent, ".", "", 0);
+				break;
 			case '?':
 			case 'e':
 				xsBeginCrank(machine, gxCrankMeteringLimit);

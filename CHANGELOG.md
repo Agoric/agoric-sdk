@@ -3,6 +3,65 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [5.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.4.0...@agoric/sdk@5.4.1) (2021-07-01)
+
+
+### Bug Fixes
+
+* retreat from `xs-worker-no-gc` to `xs-worker` ([ce5ce00](https://github.com/Agoric/agoric-sdk/commit/ce5ce00c6a07d59ee249bfd736a3d5a66c8b903f))
+
+
+
+## [5.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.3.0...@agoric/sdk@5.4.0) (2021-07-01)
+
+
+### Features
+
+* **xsnap:** isReady() eliminates need for .evaluate('null') ([a0493d7](https://github.com/Agoric/agoric-sdk/commit/a0493d7c34c66d008e295ac2b0b86e312a36b5da))
+* issue 3161, track recognizable objects used by VOM so other objects can be GC'd ([85303c5](https://github.com/Agoric/agoric-sdk/commit/85303c5290e3606132aca00b1fc5afa748ea89a3))
+
+
+### Bug Fixes
+
+* **swingset:** don't perturb XS heap state when loading snapshot ([52171a1](https://github.com/Agoric/agoric-sdk/commit/52171a12af41b326b07024735aad5b18e883a9b5))
+* **vbank:** ensure that multiple balance updates are sorted ([204790f](https://github.com/Agoric/agoric-sdk/commit/204790f4c70e198cc06fe54e9205a71567ca6c83))
+* make 'bootstrap export' test less sensitive to cross-engine GC variation ([9be7dfc](https://github.com/Agoric/agoric-sdk/commit/9be7dfcf137a8457c3e577e15b94ee01400825ca))
+* repair stream store self-interference problem ([948d837](https://github.com/Agoric/agoric-sdk/commit/948d837c5eb25e0085480804d9d2d4bab0729818)), closes [#3437](https://github.com/Agoric/agoric-sdk/issues/3437)
+
+
+
+## [5.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.2.0...@agoric/sdk@5.3.0) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+### Bug Fixes
+
+* **vbank:** be sure to persist nonce state in the KVStore ([9dc151a](https://github.com/Agoric/agoric-sdk/commit/9dc151a26c13c84351dba237d2e550f0cabb3d49))
+* snapStore tmp files were kept for debugging ([#3420](https://github.com/Agoric/agoric-sdk/issues/3420)) ([9d9560d](https://github.com/Agoric/agoric-sdk/commit/9d9560db488b67c8dfbc8dbba23967d5059dd071))
+
+
+
+## [5.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.1.1...@agoric/sdk@5.2.0) (2021-06-25)
+
+
+### Features
+
+* **swingset:** introduce 'xs-worker-no-gc' for forward compat ([e46cd88](https://github.com/Agoric/agoric-sdk/commit/e46cd883449c02559e2c0c49b66e26695b4b99da))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** update check-validator.js for Cosmos 0.43.x ([7b94577](https://github.com/Agoric/agoric-sdk/commit/7b9457708ea1d0ecc78fb71a77d700ac8cfbbc04))
+* **cosmos:** have daemon also trap os.Interrupt for good luck ([9854446](https://github.com/Agoric/agoric-sdk/commit/98544462b469cce8b3365223fc31a4ca305e610f))
+* **deployment:** ensure that the faucet is given urun ([2e046f7](https://github.com/Agoric/agoric-sdk/commit/2e046f742be5bf01a69555bceb3acff5550b6ab4))
+* **xsnap:** update XS: new WeakMap design, fixed Promise drops ([8eeec28](https://github.com/Agoric/agoric-sdk/commit/8eeec2808ee7596d0b08a362d182c65a8828fba3)), closes [#3406](https://github.com/Agoric/agoric-sdk/issues/3406) [#3118](https://github.com/Agoric/agoric-sdk/issues/3118)
+
+
+
 ### [5.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.1.0...@agoric/sdk@5.1.1) (2021-06-24)
 
 

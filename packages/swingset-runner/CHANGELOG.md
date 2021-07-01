@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.9...@agoric/swingset-runner@0.13.10) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.8...@agoric/swingset-runner@0.13.9) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.7...@agoric/swingset-runner@0.13.8) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
 ### [0.13.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.6...@agoric/swingset-runner@0.13.7) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/swingset-runner

@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.10...@agoric/solo@0.2.11) (2021-07-01)
+
+
+### Bug Fixes
+
+* retreat from `xs-worker-no-gc` to `xs-worker` ([ce5ce00](https://github.com/Agoric/agoric-sdk/commit/ce5ce00c6a07d59ee249bfd736a3d5a66c8b903f))
+
+
+
+### [0.2.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.9...@agoric/solo@0.2.10) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
+### [0.2.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.8...@agoric/solo@0.2.9) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+
+### [0.2.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.7...@agoric/solo@0.2.8) (2021-06-25)
+
+
+### Features
+
+* **swingset:** introduce 'xs-worker-no-gc' for forward compat ([e46cd88](https://github.com/Agoric/agoric-sdk/commit/e46cd883449c02559e2c0c49b66e26695b4b99da))
+
+
+
 ### [0.2.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.2.6...@agoric/solo@0.2.7) (2021-06-24)
 
 

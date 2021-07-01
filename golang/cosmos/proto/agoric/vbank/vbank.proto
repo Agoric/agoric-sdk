@@ -22,10 +22,14 @@ message State {
     // NOTE: Tracking manually since there is no bank call for getting a
     // module account balance by name.
     repeated cosmos.base.v1beta1.Coin rewardPool = 1
-        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+        ];
 
     // rewardRate is the amount of reward, if available, to send to the
     // fee collector module on every block.
     repeated cosmos.base.v1beta1.Coin rewardRate = 2
         [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+        
+    // lastNonce is a sequence number for communicating with the VM.
+    uint64 lastNonce = 3;
 }

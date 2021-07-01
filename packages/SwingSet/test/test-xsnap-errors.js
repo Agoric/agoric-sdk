@@ -46,7 +46,9 @@ test('child termination during crank', async t => {
   // just enough methods to not crash
   /** @type { any } */
   const kernelKeeper = {
-    provideVatKeeper: () => undefined,
+    provideVatKeeper: () => ({
+      getLastSnapshot: () => undefined,
+    }),
   };
 
   const xsWorkerFactory = makeXsSubprocessFactory({

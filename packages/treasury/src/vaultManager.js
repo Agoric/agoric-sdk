@@ -18,6 +18,8 @@ import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
 import { makeTracer } from './makeTracer';
 
+const { details: X } = assert;
+
 const trace = makeTracer(' VM ');
 
 // Each VaultManager manages a single collateralType. It owns an autoswap
@@ -182,10 +184,14 @@ export function makeVaultManager(
     updateState: updateTime =>
       chargeAllVaults(updateTime, poolIncrementSeat).catch(_ => {}),
     fail: reason => {
-      zcf.shutdownWithFailure(`Unable to continue without a timer: ${reason}`);
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${reason}`),
+      );
     },
     finish: done => {
-      zcf.shutdownWithFailure(`Unable to continue without a timer: ${done}`);
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${done}`),
+      );
     },
   };
 

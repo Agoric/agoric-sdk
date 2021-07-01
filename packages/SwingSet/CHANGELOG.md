@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.5...@agoric/swingset-vat@0.18.6) (2021-07-01)
+
+
+### Features
+
+* issue 3161, track recognizable objects used by VOM so other objects can be GC'd ([85303c5](https://github.com/Agoric/agoric-sdk/commit/85303c5290e3606132aca00b1fc5afa748ea89a3))
+
+
+### Bug Fixes
+
+* **swingset:** don't perturb XS heap state when loading snapshot ([52171a1](https://github.com/Agoric/agoric-sdk/commit/52171a12af41b326b07024735aad5b18e883a9b5))
+* make 'bootstrap export' test less sensitive to cross-engine GC variation ([9be7dfc](https://github.com/Agoric/agoric-sdk/commit/9be7dfcf137a8457c3e577e15b94ee01400825ca))
+
+
+
+### [0.18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.4...@agoric/swingset-vat@0.18.5) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+
+### [0.18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.3...@agoric/swingset-vat@0.18.4) (2021-06-25)
+
+
+### Features
+
+* **swingset:** introduce 'xs-worker-no-gc' for forward compat ([e46cd88](https://github.com/Agoric/agoric-sdk/commit/e46cd883449c02559e2c0c49b66e26695b4b99da))
+
+
+
 ### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.2...@agoric/swingset-vat@0.18.3) (2021-06-24)
 
 

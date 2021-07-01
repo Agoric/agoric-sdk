@@ -1188,12 +1188,11 @@ test('device transfer', async t => {
   function getRefCounts() {
     return kvStore.get(`${kref}.refCount`); // e.g. "1,1"
   }
-  // the device should hold a reachable+recognizable reference and since
-  // liveslots is not yet emitting `retireImport`, vat-left (which forgot
-  // about amy) is still holding a 'recognizable' reference, making the
-  // expected count 1,2 . If deviceKeeper.js failed to establish a reference,
+  // the device should hold a reachable+recognizable reference, vat-left (which
+  // forgot about amy) does not contribute to either form of revcount, making
+  // the expected count 1,1. If deviceKeeper.js failed to establish a reference,
   // the count would have reached 0,1, and amy would have been collected.
-  t.is(getRefCounts(), '1,2');
+  t.is(getRefCounts(), '1,1');
 
   // now tell vat-right to retrieve amy from the device
   c.queueToVatExport('right', 'o+0', 'getAmy', capargs([]), 'none');

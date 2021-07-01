@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.31.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.8...@agoric/cosmic-swingset@0.31.9) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.7...@agoric/cosmic-swingset@0.31.8) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.6...@agoric/cosmic-swingset@0.31.7) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+
+### [0.31.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.5...@agoric/cosmic-swingset@0.31.6) (2021-06-25)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** update check-validator.js for Cosmos 0.43.x ([7b94577](https://github.com/Agoric/agoric-sdk/commit/7b9457708ea1d0ecc78fb71a77d700ac8cfbbc04))
+
+
+
 ### [0.31.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.4...@agoric/cosmic-swingset@0.31.5) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

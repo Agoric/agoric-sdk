@@ -1,11 +1,55 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
+
+/** @param { number } max */
+export const makeLRU = max => {
+  /** @type { string[] } */
+  const items = [];
+
+  return harden({
+    /** @param { string } item */
+    add: item => {
+      const pos = items.indexOf(item);
+      // already most recently used
+      if (pos + 1 === max) {
+        return null;
+      }
+      // remove from former position
+      if (pos >= 0) {
+        items.splice(pos, 1);
+      }
+      items.push(item);
+      // not yet full
+      if (items.length <= max) {
+        return null;
+      }
+      const [removed] = items.splice(0, 1);
+      return removed;
+    },
+
+    get size() {
+      return items.length;
+    },
+
+    /** @param { string } item */
+    remove: item => {
+      const pos = items.indexOf(item);
+      if (pos >= 0) {
+        items.splice(pos, 1);
+      }
+    },
+  });
+};
 
 /**
  * @param { KernelKeeper } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
- * @param {{ maxVatsOnline?: number }=} policyOptions
+ * @param {{
+ *   maxVatsOnline?: number,
+ *   snapshotInitial?: number,
+ *   snapshotInterval?: number,
+ * }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
@@ -13,14 +57,24 @@ import { makeVatTranslators } from '../vatTranslator.js';
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { maxVatsOnline = 50 } = policyOptions || {};
+  const {
+    maxVatsOnline = 50,
+    // Often a large contract evaluation is among the first few deliveries,
+    // so let's do a snapshot after just a few deliveries.
+    snapshotInitial = 2,
+    // Then we'll snapshot at invervals of some number of cranks.
+    // Note: some measurements show 10 deliveries per sec on XS
+    //       as of this writing.
+    snapshotInterval = 200,
+  } = policyOptions || {};
+  // Idea: snapshot based on delivery size: after deliveries >10Kb.
   // console.debug('makeVatWarehouse', { policyOptions });
 
   /**
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
-   *   options: { name?: string, description?: string },
+   *   options: { name?: string, description?: string, managerType?: ManagerType },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('../vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -52,6 +106,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
+    assert(kernelKeeper.vatIsAlive(vatID), X`${q(vatID)}: not alive`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { source, options } = vatKeeper.getSourceAndOptions();
 
@@ -69,13 +124,15 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
         return vatLoader.createVatDynamically;
       }
     };
-    // console.log('provide: creating from bundle', vatID);
     const manager = await chooseLoader()(vatID, source, translators, options);
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    await manager.replayTranscript();
+    const lastSnapshot = vatKeeper.getLastSnapshot();
+    const entriesReplayed = await manager.replayTranscript(
+      lastSnapshot ? lastSnapshot.startPos : undefined,
+    );
 
     const result = {
       manager,
@@ -83,6 +140,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       enablePipelining,
       options,
     };
+    console.log(
+      vatID,
+      'online:',
+      options.managerType,
+      options.description || '',
+      'transcript entries replayed:',
+      entriesReplayed,
+    );
     ephemeral.vats.set(vatID, result);
     // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
@@ -139,17 +204,25 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     return { enablePipelining };
   }
 
+  const recent = makeLRU(maxVatsOnline);
+
   /**
    *
+   * does not modify the kernelDB
+   *
    * @param {string} vatID
-   * @param {boolean=} makeSnapshot
    * @returns { Promise<unknown> }
    */
-  async function evict(vatID, makeSnapshot = false) {
-    assert(!makeSnapshot, 'not implemented');
+  async function evict(vatID) {
     assert(lookup(vatID));
+
+    recent.remove(vatID);
+
     const info = ephemeral.vats.get(vatID);
-    if (!info) return undefined;
+    if (!info) {
+      // console.debug('evict: not online:', vatID);
+      return undefined;
+    }
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
     kernelKeeper.closeVatTranscript(vatID);
@@ -158,9 +231,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();
   }
-
-  /** @type { string[] } */
-  const recent = [];
 
   /**
    * Simple fixed-size LRU cache policy
@@ -173,27 +243,63 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @param {string} currentVatID
    */
   async function applyAvailabilityPolicy(currentVatID) {
-    // console.log('applyAvailabilityPolicy', currentVatID, recent);
-    const pos = recent.indexOf(currentVatID);
-    // console.debug('applyAvailabilityPolicy', { currentVatID, recent, pos });
-    // already most recently used
-    if (pos + 1 === maxVatsOnline) return;
-    if (pos >= 0) recent.splice(pos, 1);
-    recent.push(currentVatID);
-    // not yet full
-    if (recent.length <= maxVatsOnline) return;
-    const [lru] = recent.splice(0, 1);
-    // console.debug('evicting', { lru });
+    const lru = recent.add(currentVatID);
+    if (!lru) {
+      return;
+    }
+    // const {
+    //   options: { description, managerType },
+    // } = ephemeral.vats.get(lru) || assert.fail();
+    // console.info('evict', lru, description, managerType, 'for', currentVatID);
     await evict(lru);
   }
+
+  /** @type { string | undefined } */
+  let lastVatID;
 
   /** @type {(vatID: string, d: VatDeliveryObject) => Promise<Tagged> } */
   async function deliverToVat(vatID, delivery) {
     await applyAvailabilityPolicy(vatID);
-    const recreate = true; // PANIC in the failure case
+    lastVatID = vatID;
 
+    const recreate = true; // PANIC in the failure case
     const { manager } = await ensureVatOnline(vatID, recreate);
     return manager.deliver(delivery);
+  }
+
+  /**
+   * Save a snapshot of most recently used vat,
+   * depending on snapshotInterval.
+   */
+  async function maybeSaveSnapshot() {
+    if (!lastVatID || !lookup(lastVatID)) {
+      return false;
+    }
+
+    const recreate = true; // PANIC in the failure case
+    const { manager } = await ensureVatOnline(lastVatID, recreate);
+    if (!manager.makeSnapshot) {
+      return false;
+    }
+
+    const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
+    let reason;
+    const {
+      totalEntries,
+      snapshottedEntries,
+    } = vatKeeper.transcriptSnapshotStats();
+    if (snapshotInitial === totalEntries) {
+      reason = { snapshotInitial };
+    } else if (totalEntries - snapshottedEntries >= snapshotInterval) {
+      reason = { snapshotInterval };
+    }
+    // console.log('maybeSaveSnapshot: reason:', reason);
+    if (!reason) {
+      return false;
+    }
+    await vatKeeper.saveSnapshot(manager);
+    lastVatID = undefined;
+    return true;
   }
 
   /**
@@ -235,7 +341,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    */
   async function vatWasTerminated(vatID) {
     try {
-      await evict(vatID, false);
+      await evict(vatID);
     } catch (err) {
       console.debug('vat termination was already reported; ignoring:', err);
     }
@@ -256,6 +362,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     lookup,
     kernelDeliveryToVatDelivery,
     deliverToVat,
+    maybeSaveSnapshot,
 
     // mostly for testing?
     activeVatsInfo: () =>

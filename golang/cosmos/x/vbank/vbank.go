@@ -3,6 +3,7 @@ package vbank
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,26 +36,54 @@ type vbankSingleBalanceUpdate struct {
 	Amount  string `json:"amount"`
 }
 
-type vbankBalanceUpdate struct {
-	Nonce   uint64                     `json:"nonce"`
-	Type    string                     `json:"type"`
-	Updated []vbankSingleBalanceUpdate `json:"updated"`
+// Make vbankManyBalanceUpdates sortable
+type vbankManyBalanceUpdates []vbankSingleBalanceUpdate
+
+var _ sort.Interface = vbankManyBalanceUpdates{}
+
+func (vbu vbankManyBalanceUpdates) Len() int {
+	return len(vbu)
 }
 
-var nonce uint64
+func (vbu vbankManyBalanceUpdates) Less(i int, j int) bool {
+	if vbu[i].Address < vbu[j].Address {
+		return true
+	} else if vbu[i].Address > vbu[j].Address {
+		return false
+	}
+	if vbu[i].Denom < vbu[j].Denom {
+		return true
+	} else if vbu[i].Denom > vbu[j].Denom {
+		return false
+	}
+	return vbu[i].Amount < vbu[j].Amount
+}
 
-func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error) {
+func (vbu vbankManyBalanceUpdates) Swap(i int, j int) {
+	vbu[i], vbu[j] = vbu[j], vbu[i]
+}
+
+type vbankBalanceUpdate struct {
+	Nonce   uint64                  `json:"nonce"`
+	Type    string                  `json:"type"`
+	Updated vbankManyBalanceUpdates `json:"updated"`
+}
+
+func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) ([]byte, error) {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
 		return nil, nil
 	}
 
-	nonce += 1
+	nonce := keeper.GetNextNonce(ctx)
 	event := vbankBalanceUpdate{
 		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
 		Updated: make([]vbankSingleBalanceUpdate, 0, nentries),
 	}
+
+	// Note that Golang randomises the order of iteration, so we have to sort
+	// below to be deterministic.
 	for address, coins := range addressToBalance {
 		for _, coin := range coins {
 			update := vbankSingleBalanceUpdate{
@@ -66,6 +95,8 @@ func marshalBalanceUpdate(addressToBalance map[string]sdk.Coins) ([]byte, error)
 		}
 	}
 
+	// Ensure we have a deterministic order of updates.
+	sort.Sort(event.Updated)
 	return json.Marshal(&event)
 }
 
@@ -129,7 +160,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(addressToBalances)
+		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
 		if err != nil {
 			return "", err
 		}
@@ -154,7 +185,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(addressToBalances)
+		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
 		if err != nil {
 			return "", err
 		}

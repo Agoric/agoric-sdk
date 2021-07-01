@@ -21,7 +21,7 @@ const { freeze } = Object;
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
  */
-export function makeSnapstore(
+export function makeSnapStore(
   root,
   {
     tmpName,
@@ -35,14 +35,17 @@ export function makeSnapstore(
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
-  const tmpOpts = { tmpdir: root, template: 'tmp-XXXXXX.xss' };
   /**
    * @param { (name: string) => Promise<T> } thunk
+   * @param { string= } prefix
    * @returns { Promise<T> }
    * @template T
    */
-  async function withTempName(thunk) {
-    const name = await ptmpName(tmpOpts);
+  async function withTempName(thunk, prefix = 'tmp') {
+    const name = await ptmpName({
+      tmpdir: root,
+      template: `${prefix}-XXXXXX.xss`,
+    });
     let result;
     try {
       result = await thunk(name);
@@ -63,7 +66,7 @@ export function makeSnapstore(
    * @template T
    */
   async function atomicWrite(dest, thunk) {
-    const tmp = await ptmpName(tmpOpts);
+    const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
       result = await thunk(tmp);
@@ -101,12 +104,13 @@ export function makeSnapstore(
     return withTempName(async snapFile => {
       await saveRaw(snapFile);
       const h = await fileHash(snapFile);
+      // console.log('save', { snapFile, h });
       if (existsSync(`${h}.gz`)) return h;
       await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
       );
       return h;
-    });
+    }, 'save-raw');
   }
 
   /**
@@ -118,11 +122,12 @@ export function makeSnapstore(
     return withTempName(async raw => {
       await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
       const actual = await fileHash(raw);
+      // console.log('load', { raw, hash });
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
       // be sure to await loadRaw before exiting withTempName
       const result = await loadRaw(raw);
       return result;
-    });
+    }, `${hash}-load`);
   }
 
   return freeze({ load, save });

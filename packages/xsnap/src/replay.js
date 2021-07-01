@@ -99,12 +99,10 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     return folder.file(fn);
   };
 
-  /** @param { Uint8Array } msg */
-  const echo = msg => msg;
+  const { handleCommand: handle = msg => msg } = options;
 
   /** @param { Uint8Array} msg */
   async function handleCommand(msg) {
-    const { handleCommand: handle = echo } = options;
     const result = await handle(msg);
     nextFile('reply').put(result);
     return result;
@@ -132,6 +130,10 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   const it = xsnap({ ...options, handleCommand });
 
   return freeze({
+    isReady: async () => {
+      nextFile('isReady');
+      return it.isReady();
+    },
     /** @param { Uint8Array } msg */
     issueCommand: async msg => {
       nextFile('issueCommand').put(msg);
@@ -217,6 +219,10 @@ export async function replayXSnap(
       }
       const file = rd.file(step);
       switch (kind) {
+        case 'isReady':
+          // eslint-disable-next-line no-await-in-loop
+          await it.isReady();
+          break;
         case 'evaluate':
           running = it.evaluate(file.getText());
           break;
