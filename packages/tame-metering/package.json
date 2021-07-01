@@ -1,6 +1,6 @@
 {
   "name": "@agoric/tame-metering",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "tame-metering",
   "type": "module",
   "main": "src/index.js",

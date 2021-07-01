@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "1.28.5",
+  "version": "1.28.6",
   "description": "Set up Agoric public chain nodes",
   "parsers": {
     "js": "mjs"
@@ -22,8 +22,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.3.5",
-    "@agoric/install-ses": "^0.5.19",
+    "@agoric/assert": "^0.3.6",
+    "@agoric/install-ses": "^0.5.20",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
@@ -33,7 +33,7 @@
     "temp": "^0.9.0"
   },
   "devDependencies": {
-    "@agoric/eslint-config": "^0.3.12"
+    "@agoric/eslint-config": "^0.3.13"
   },
   "publishConfig": {
     "access": "public"

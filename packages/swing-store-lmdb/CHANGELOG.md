@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.5...@agoric/swing-store-lmdb@0.5.6) (2021-07-01)
+
+
+### Bug Fixes
+
+* repair stream store self-interference problem ([948d837](https://github.com/Agoric/agoric-sdk/commit/948d837c5eb25e0085480804d9d2d4bab0729818)), closes [#3437](https://github.com/Agoric/agoric-sdk/issues/3437)
+
+
+
 ### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.4...@agoric/swing-store-lmdb@0.5.5) (2021-06-28)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb

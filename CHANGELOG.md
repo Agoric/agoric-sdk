@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.3.0...@agoric/sdk@5.4.0) (2021-07-01)
+
+
+### Features
+
+* **xsnap:** isReady() eliminates need for .evaluate('null') ([a0493d7](https://github.com/Agoric/agoric-sdk/commit/a0493d7c34c66d008e295ac2b0b86e312a36b5da))
+* issue 3161, track recognizable objects used by VOM so other objects can be GC'd ([85303c5](https://github.com/Agoric/agoric-sdk/commit/85303c5290e3606132aca00b1fc5afa748ea89a3))
+
+
+### Bug Fixes
+
+* **swingset:** don't perturb XS heap state when loading snapshot ([52171a1](https://github.com/Agoric/agoric-sdk/commit/52171a12af41b326b07024735aad5b18e883a9b5))
+* **vbank:** ensure that multiple balance updates are sorted ([204790f](https://github.com/Agoric/agoric-sdk/commit/204790f4c70e198cc06fe54e9205a71567ca6c83))
+* make 'bootstrap export' test less sensitive to cross-engine GC variation ([9be7dfc](https://github.com/Agoric/agoric-sdk/commit/9be7dfcf137a8457c3e577e15b94ee01400825ca))
+* repair stream store self-interference problem ([948d837](https://github.com/Agoric/agoric-sdk/commit/948d837c5eb25e0085480804d9d2d4bab0729818)), closes [#3437](https://github.com/Agoric/agoric-sdk/issues/3437)
+
+
+
 ## [5.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.2.0...@agoric/sdk@5.3.0) (2021-06-28)
 
 
