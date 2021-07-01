@@ -12,6 +12,7 @@ import { xsnap } from '../src/xsnap.js';
 import { ExitCode, ErrorCode } from '../api.js';
 
 import { options, decode, encode, loader } from './message-tools.js';
+import { unlinkSync } from 'fs';
 
 const importMeta = { url: `file://${__filename}` };
 
@@ -334,4 +335,39 @@ test('normal close of pathological script', async t => {
   await Promise.race([vat.close().then(() => t.fail()), hang, delay(10)]);
   await vat.terminate();
   await hang;
+});
+
+test.failing('GC after snapshot vs restore', async t => {
+  const worker = xsnap({ ...options(io), meteringLimit: 0 });
+  t.teardown(worker.terminate);
+  const { meterUsage: { garbageCollectionCount: gcs1 } } = await worker.evaluate(`
+  print(Array.from(Array(2_000_000).keys()).length)
+  `);
+  t.log({ gcs1 });
+  t.true(gcs1 > 0);
+
+  const snapshot = './bloated.xss';
+  await worker.snapshot(snapshot);
+  t.teardown(() => unlinkSync(snapshot));
+  const clone = xsnap({ ...options(io), snapshot });
+  let workerGC = gcs1;
+  let cloneGC = 0;
+  let iters = 0;
+  const tmpAlloc = `
+    const tmp = { x: { y: { z: {} } } };
+  `;
+  for (; workerGC === gcs1; iters += 1) {
+    const {
+      meterUsage: { garbageCollectionCount: gcs3 },
+      // eslint-disable-next-line no-await-in-loop
+    } = await worker.evaluate(tmpAlloc);
+    workerGC = gcs3;
+    const {
+      meterUsage: { garbageCollectionCount: gcs4 },
+      // eslint-disable-next-line no-await-in-loop
+    } = await clone.evaluate(tmpAlloc);
+    cloneGC = gcs4;
+  }
+  t.log({ gcs1, workerGC, cloneGC, iters });
+  t.is(workerGC - gcs1, cloneGC);
 });
