@@ -371,3 +371,39 @@ test.failing('GC after snapshot vs restore', async t => {
   t.log({ gcs1, workerGC, cloneGC, iters });
   t.is(workerGC - gcs1, cloneGC);
 });
+
+test.failing('GC after snapshot, alternative', async t => {
+  const spacious = xsnap({ ...options(io), meteringLimit: 0 });
+  t.teardown(spacious.terminate);
+  const setup = `(() => { let x = Array(2_000).map(() => ({})); x = null; gc(); })()`;
+  const { meterUsage: { garbageCollectionCount: initialGCs } } = await spacious.evaluate(setup);
+  t.log({ initialGCs });
+  t.true(initialGCs > 0);
+
+  const snapshot = './bloated2.xss';
+  await spacious.snapshot(snapshot);
+  t.teardown(() => unlinkSync(snapshot));
+  const tight = xsnap({ ...options(io), snapshot });
+  const tmpAlloc = `
+  for (i = 0; i < 3_000; i++) {
+    let x = {};
+    x = null;
+  }
+  `;
+
+  for (let i = 0; i < 3_000; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await spacious.evaluate(tmpAlloc);
+    // eslint-disable-next-line no-await-in-loop
+    await tight.evaluate(tmpAlloc);
+  }
+  const {
+    meterUsage: { garbageCollectionCount: spaciousGCs },
+  } = await spacious.evaluate(tmpAlloc);
+  const {
+    meterUsage: { garbageCollectionCount: tightGCs },
+  } = await tight.evaluate(tmpAlloc);
+
+  t.log({ initialGCs, spaciousGCs, tightGCs });
+  t.is(spaciousGCs, tightGCs);
+});
