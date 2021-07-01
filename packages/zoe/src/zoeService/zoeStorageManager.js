@@ -114,7 +114,13 @@ export const makeZoeStorageManager = createZCFVat => {
         issuer: localIssuer,
         brand: localBrand,
         displayInfo: localDisplayInfo,
-      } = makeIssuerKit(keyword, assetKind, displayInfo);
+      } = makeIssuerKit(
+        keyword,
+        assetKind,
+        displayInfo,
+        // eslint-disable-next-line no-use-before-define
+        adminNode.terminateWithFailure,
+      );
       const localIssuerRecord = makeIssuerRecord(
         localBrand,
         localIssuer,
@@ -136,11 +142,21 @@ export const makeZoeStorageManager = createZCFVat => {
         },
         mintAndEscrow: totalToMint => {
           const payment = localMint.mintPayment(totalToMint);
+          // Note COMMIT POINT within deposit.
           localPooledPurse.deposit(payment, totalToMint);
         },
         withdrawAndBurn: totalToBurn => {
-          const payment = localPooledPurse.withdraw(totalToBurn);
-          localIssuer.burn(payment, totalToBurn);
+          // eslint-disable-next-line no-use-before-define
+          try {
+            // COMMIT POINT
+            const payment = localPooledPurse.withdraw(totalToBurn);
+            // Note redundant COMMIT POINT within burn.
+            localIssuer.burn(payment, totalToBurn);
+          } catch (err) {
+            // eslint-disable-next-line no-use-before-define
+            adminNode.terminateWithFailure(err);
+            throw err;
+          }
         },
       });
       return zoeMint;
@@ -158,6 +174,8 @@ export const makeZoeStorageManager = createZCFVat => {
 
     const makeInvitation = setupMakeInvitation(instance, installation);
 
+    const { root, adminNode } = await createZCFVat();
+
     return harden({
       getTerms: instanceRecordManager.getTerms,
       getIssuers: instanceRecordManager.getIssuers,
@@ -171,7 +189,8 @@ export const makeZoeStorageManager = createZCFVat => {
       deleteInstanceAdmin,
       makeInvitation,
       invitationIssuer,
-      createZCFVat,
+      root,
+      adminNode,
     });
   };
 

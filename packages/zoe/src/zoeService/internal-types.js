@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * Create a purse for a new issuer
  *
@@ -77,9 +79,10 @@
  * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
- * @property {CreateZCFVat} createZCFVat
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {Issuer} invitationIssuer
+ * @property {Object} root of a RootAndAdminNode
+ * @property {AdminNode} adminNode of a RootAndAdminNode
  */
 
 /**

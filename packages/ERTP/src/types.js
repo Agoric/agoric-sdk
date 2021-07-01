@@ -356,10 +356,30 @@
  */
 
 /**
+ * @callback ShutdownWithFailure
+ * Called to shut something down because something went wrong, where the reason
+ * is supposed to be an Error that describes what went wrong. Some valid
+ * implementations of `ShutdownWithFailure` will never return, either
+ * because they throw or because they immediately shutdown the enclosing unit
+ * of computation. However, they also might return, so the caller should
+ * follow this call by their own defensive `throw reason;` if appropriate.
+ *
+ * @param {Error} reason
+ * @returns {void}
+ */
+
+/**
  * @callback MakeIssuerKit
  * @param {string} allegedName
  * @param {AssetKind} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
+ * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * in the middle of an atomic action (which btw should never happen), it
+ * potentially leaves its ledger in a corrupted state. If this function was
+ * provided, then it the failed atomic action will call it, so that some
+ * larger unit of computation, like the enclosing vat, can be shutdown
+ * before anything else is corrupted by that corrupted state.
+ * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit}
  *
  * The allegedName becomes part of the brand in asset descriptions. The

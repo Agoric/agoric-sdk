@@ -736,16 +736,13 @@ test('GC syscall.dropImports', async t => {
     slots: [arg],
   });
 
-  const todo = false; // enable this once we have VOM.vrefIsRecognizable
-  if (todo) {
-    // and since the vat never used the Presence in a WeakMap/WeakSet, they
-    // cannot recognize it either, and will emit retireImports
-    const l3 = log.shift();
-    t.deepEqual(l3, {
-      type: 'retireImports',
-      slots: [arg],
-    });
-  }
+  // and since the vat never used the Presence in a WeakMap/WeakSet, they
+  // cannot recognize it either, and will emit retireImports
+  const l3 = log.shift();
+  t.deepEqual(l3, {
+    type: 'retireImports',
+    slots: [arg],
+  });
 
   t.deepEqual(log, []);
 });

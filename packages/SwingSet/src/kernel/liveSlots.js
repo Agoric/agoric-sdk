@@ -202,11 +202,10 @@ function build(
         // eslint-disable-next-line no-lonely-if, no-use-before-define
         if (!isVrefReachable(vref)) {
           importsToDrop.push(vref);
-          // and retireExport if unrecognizable (TODO: needs
-          // VOM.vrefIsRecognizable)
-          // if (!vrefIsRecognizable(vref)) {
-          //   importsToRetire.push(vref);
-          // }
+          // eslint-disable-next-line no-use-before-define
+          if (!isVrefRecognizable(vref)) {
+            importsToRetire.push(vref);
+          }
         }
       }
     }
@@ -421,6 +420,7 @@ function build(
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,
+    isVrefRecognizable,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,

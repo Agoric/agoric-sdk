@@ -41,6 +41,7 @@ export const doLiquidation = async (
     zcf.shutdown('your loan had to be liquidated');
   };
 
+  /** @type {ShutdownWithFailure} */
   const closeWithFailure = err => {
     lenderSeat.fail(err);
     collateralSeat.fail(err);
