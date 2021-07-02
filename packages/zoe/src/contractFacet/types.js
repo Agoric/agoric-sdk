@@ -42,6 +42,7 @@
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => void} stopAcceptingOffers
+ * @property {() => Instance} getInstance
  */
 
 /**

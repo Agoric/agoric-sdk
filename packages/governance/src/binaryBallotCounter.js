@@ -1,12 +1,18 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { makeStore } from '@agoric/store';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
-
 import { E } from '@agoric/eventual-send';
-import { ChoiceMethod, buildBallot } from './ballotBuilder';
+import { Far, passStyleOf } from '@agoric/marshal';
+import { makePromiseKit } from '@agoric/promise-kit';
+import { sameStructure } from '@agoric/same-structure';
+import { makeStore } from '@agoric/store';
+
+import {
+  ChoiceMethod,
+  buildBallot,
+  verifyQuestionFormat,
+  positionIncluded,
+} from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
@@ -23,60 +29,85 @@ const makeQuorumCounter = quorumThreshold => {
   return Far('checker', { check });
 };
 
-// Exported for testing purposes
-const makeBinaryBallotCounter = (
-  question,
-  positions,
-  threshold,
-  tieOutcome = undefined,
-  closingRule,
-  instance,
-) => {
+const validateBinaryBallotSpec = ballotSpec => {
+  const positions = ballotSpec.positions;
   assert(
     positions.length === 2,
     X`Binary ballots must have exactly two positions. had ${positions.length}: ${positions}`,
   );
-  assert.typeof(question, 'string');
-  assert.typeof(positions[0], 'string');
-  assert.typeof(positions[1], 'string');
-  if (tieOutcome) {
-    assert(
-      positions.includes(tieOutcome),
-      X`The default outcome on a tie must be one of the positions, not ${tieOutcome}`,
-    );
-  }
-
-  const template = buildBallot(
-    ChoiceMethod.CHOOSE_N,
-    question,
-    positions,
-    1,
-    instance,
+  assert(
+    ballotSpec.maxChoices <= positions.length,
+    X`Choices must not exceed length`,
   );
-  const ballotDetails = template.getDetails();
+  assert(
+    positions.every(
+      p => passStyleOf(p) === 'copyRecord',
+      X`positions must be records`,
+    ),
+  );
+
+  verifyQuestionFormat(ballotSpec.electionType, ballotSpec.question);
 
   assert(
-    ballotDetails.method === ChoiceMethod.CHOOSE_N,
-    X`Binary ballot counter only works with CHOOSE_N`,
+    positions.every(
+      p => passStyleOf(p) === 'copyRecord',
+      X`positions must be records`,
+    ),
   );
+
+  assert(
+    ballotSpec.maxChoices === 1,
+    X`Can only choose 1 item on a binary ballot`,
+  );
+  assert(
+    ballotSpec.method === ChoiceMethod.CHOOSE_N,
+    X`${ballotSpec.method} must be CHOOSE_N`,
+  );
+  assert(
+    positionIncluded(positions, ballotSpec.tieOutcome),
+    X`The default outcome on a tie must be one of the positions, not ${ballotSpec.tieOutcome}`,
+  );
+
+  // We don't check the quorumRule or quorumThreshold here. The quorumThreshold
+  // is provided by the Registrar that creates this ballotCounter, since only it
+  // can translate the quorumRule to a required number of votes.
+};
+
+// Notice that BinaryBallotCounter is designed to run as a Zoe contract. The
+// business part of the contract is extracted here so it can be tested
+// independently. The standard Zoe start function is at the bottom of this file.
+
+/** @type {BuildBallotCounter} */
+const makeBinaryBallotCounter = (ballotSpec, threshold, instance) => {
+  validateBinaryBallotSpec(ballotSpec);
+
+  const ballot = buildBallot(ballotSpec, instance);
+  const details = ballot.getDetails();
+  const { handle } = details;
+
   let isOpen = true;
+  const positions = ballotSpec.positions;
   const outcomePromise = makePromiseKit();
   const tallyPromise = makePromiseKit();
+  // The Registrar is responsible for creating a unique seat for each voter.
+  // This ballotCounter allows voters to re-vote, and replaces their previous
+  // choice with the new selection.
   const allBallots = makeStore('seat');
 
-  const recordBallot = (seat, filledBallotP, shares = 1n) => {
+  const submitVote = (seat, filledBallotP, shares = 1n) => {
     return E.when(filledBallotP, filledBallot => {
       assert(
-        filledBallot.question === question,
-        X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
+        filledBallot.handle === handle,
+        X`Ballot not for this question; wrong handle`,
       );
       assert(
-        positions.includes(filledBallot.chosen[0]),
+        positionIncluded(positions, filledBallot.chosen[0]),
         X`The ballot's choice is not a legal position: ${filledBallot.chosen[0]}.`,
       );
+      const finalBallot = makeWeightedBallot(filledBallot, shares);
       allBallots.has(seat)
-        ? allBallots.set(seat, makeWeightedBallot(filledBallot, shares))
-        : allBallots.init(seat, makeWeightedBallot(filledBallot, shares));
+        ? allBallots.set(seat, finalBallot)
+        : allBallots.init(seat, finalBallot);
     });
   };
 
@@ -86,18 +117,16 @@ const makeBinaryBallotCounter = (
     // ballot template has position choices; Each ballot in allBallots should
     // match. count the valid ballots and report results.
     let spoiled = 0n;
-    const tally = {
-      [positions[0]]: 0n,
-      [positions[1]]: 0n,
-    };
+    const tally = [0n, 0n];
 
-    allBallots.values().forEach(({ ballot, shares }) => {
+    allBallots.values().forEach(({ ballot: b, shares }) => {
       assert(
-        ballot.chosen.length === 1,
+        b.chosen.length === 1,
         X`A binary ballot must contain exactly one choice.`,
       );
-      const choice = ballot.chosen[0];
-      if (!ballotDetails.positions.includes(choice)) {
+
+      const choice = positions.findIndex(p => sameStructure(p, b.chosen[0]));
+      if (choice < 0) {
         spoiled += shares;
       } else {
         tally[choice] += shares;
@@ -108,8 +137,8 @@ const makeBinaryBallotCounter = (
       spoiled,
       votes: allBallots.entries().length,
       results: [
-        { position: positions[0], total: tally[positions[0]] },
-        { position: positions[1], total: tally[positions[1]] },
+        { position: positions[0], total: tally[0] },
+        { position: positions[1], total: tally[1] },
       ],
     };
     tallyPromise.resolve(stats);
@@ -119,12 +148,12 @@ const makeBinaryBallotCounter = (
       return;
     }
 
-    if (tally[positions[0]] > tally[positions[1]]) {
+    if (tally[0] > tally[1]) {
       outcomePromise.resolve(positions[0]);
-    } else if (tally[positions[1]] > tally[positions[0]]) {
+    } else if (tally[1] > tally[0]) {
       outcomePromise.resolve(positions[1]);
     } else {
-      outcomePromise.resolve(tieOutcome);
+      outcomePromise.resolve(ballotSpec.tieOutcome);
     }
   };
 
@@ -134,15 +163,15 @@ const makeBinaryBallotCounter = (
   };
 
   const sharedFacet = {
-    getBallotTemplate: () => template,
+    getBallotTemplate: () => ballot,
+    getBallotDetails: () => details,
     isOpen: () => isOpen,
-    getClosingRule: () => closingRule,
   };
 
   /** @type {VoterFacet} */
   const voterFacet = Far('voterFacet', {
     ...sharedFacet,
-    submitVote: recordBallot,
+    submitVote,
   });
 
   // exposed for testing. In contracts, shouldn't be released.
@@ -158,9 +187,14 @@ const makeBinaryBallotCounter = (
     ...sharedFacet,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
+    getDetails: () => details,
   });
   return { publicFacet, creatorFacet, closeFacet };
 };
+
+// The contract wrapper extracts the terms and runs makeBinaryBallotCounter().
+// It schedules the closing of the vote, finally inserting the contract
+// instance in the publicFacet before returning public and creator facets.
 
 const start = zcf => {
   // There are a variety of ways of counting quorums. The parameters must be
@@ -168,25 +202,15 @@ const start = zcf => {
   // discount abstentions, we could refactor to provide the quorumCounter as a
   // component.
   // TODO(hibbert) checking the quorum should be pluggable and legible.
-  const {
-    question,
-    positions,
-    quorumThreshold,
-    tieOutcome,
-    closingRule,
-  } = zcf.getTerms();
-
+  const { ballotSpec, quorumThreshold } = zcf.getTerms();
   // The closeFacet is exposed for testing, but doesn't escape from a contract
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    question,
-    positions,
+    ballotSpec,
     quorumThreshold,
-    tieOutcome,
-    closingRule,
     zcf.getInstance(),
   );
 
-  scheduleClose(closingRule, closeFacet.closeVoting);
+  scheduleClose(ballotSpec.closingRule, closeFacet.closeVoting);
 
   /** @type {BallotCounterPublicFacet} */
   const publicFacetWithGetInstance = Far('publicFacet', {
