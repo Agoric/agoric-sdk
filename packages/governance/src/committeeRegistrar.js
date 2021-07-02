@@ -63,12 +63,25 @@ const start = zcf => {
     ).startInstance(voteCounter, {}, questionDetails);
     const facets = { voter: E(creatorFacet).getVoterFacet(), publicFacet };
 
-    updater.updateState(questionDetails.question);
-    allQuestions.init(questionDetails.question, facets);
+    // if the question name isn't unique, the request will fail.
+    allQuestions.init(questionDetails.ballotSpec.question, facets);
+    updater.updateState(questionDetails.ballotSpec.question);
     return { creatorFacet, publicFacet, instance };
   };
 
+  // providing access to addQuestion() in an invitation allows the
+  // ElectionManager to verify that it's from the Registrar.
+  const getQuestionInvitation = () => {
+    const questionHandler = () => {
+      return Far('addQuestion hook', {
+        addQuestion,
+      });
+    };
+    return zcf.makeInvitation(questionHandler, 'add Questions');
+  };
+
   const creatorFacet = Far('adminFacet', {
+    getQuestionInvitation,
     addQuestion,
     getVoterInvitations: () => invitations,
     getQuestionNotifier: () => notifier,
