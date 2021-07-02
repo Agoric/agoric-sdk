@@ -4,13 +4,15 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
+import { ChoiceMethod, makeBallotSpec } from '../../../src/ballotBuilder';
+
 const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);
   log(`=> voter vat is set up`);
   return voterCreator;
 };
 
-async function addQuestion(qDetails, closingTime, tools) {
+const addQuestion = async (qDetails, closingTime, tools) => {
   const { registrarFacet, installations } = tools;
   const { question, positions } = qDetails;
   const closingRule = {
@@ -18,27 +20,31 @@ async function addQuestion(qDetails, closingTime, tools) {
     deadline: 3n,
   };
 
-  const ballotDetails = {
+  const ballotSpec = makeBallotSpec(
+    ChoiceMethod.CHOOSE_N,
     question,
     positions,
-    quorumThreshold: 3n,
-    tieOutcome: undefined,
+    1,
+  );
+  const ballotDetails = {
+    ballotSpec,
     closingRule,
+    quorumThreshold: 3n,
   };
   const { instance: ballotInstance } = await E(registrarFacet).addQuestion(
     installations.binaryBallotCounter,
     ballotDetails,
   );
   return ballotInstance;
-}
+};
 
-async function committeeBinaryStart(
+const committeeBinaryStart = async (
   zoe,
   voterCreator,
   timer,
   log,
   installations,
-) {
+) => {
   const registrarTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
   const { creatorFacet: registrarFacet, instance: registrarInstance } = await E(
     zoe,
@@ -78,15 +84,15 @@ async function committeeBinaryStart(
     .getOutcome()
     .then(outcome => log(`vote outcome: ${outcome}`))
     .catch(e => log(`vote failed ${e}`));
-}
+};
 
-async function committeeBinaryTwoQuestions(
+const committeeBinaryTwoQuestions = async (
   zoe,
   voterCreator,
   timer,
   log,
   installations,
-) {
+) => {
   log('starting TWO questions test');
 
   const registrarTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
@@ -163,7 +169,7 @@ async function committeeBinaryTwoQuestions(
     .getOutcome()
     .then(outcome => log(`vote outcome: ${outcome}`))
     .catch(e => log(`vote failed ${e}`));
-}
+};
 
 const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const log = vatPowers.testLog;

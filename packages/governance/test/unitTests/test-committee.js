@@ -11,12 +11,12 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
-import { ChoiceMethod } from '../../src/ballotBuilder';
+import { ChoiceMethod, makeBallotSpec } from '../../src/ballotBuilder';
 
 const registrarRoot = `${__dirname}/../../src/committeeRegistrar`;
 const counterRoot = `${__dirname}/../../src/binaryBallotCounter`;
 
-async function setupContract() {
+const setupContract = async () => {
   const zoe = makeZoe(fakeVatAdmin);
 
   // pack the contract
@@ -38,7 +38,7 @@ async function setupContract() {
 
   /** @type {ContractFacet} */
   return { registrarStartResult, counterInstallation };
-}
+};
 
 test('committee-open questions:none', async t => {
   const {
@@ -53,11 +53,14 @@ test('committee-open question:one', async t => {
     counterInstallation,
   } = await setupContract();
 
+  const ballotSpec = makeBallotSpec(
+    ChoiceMethod.CHOOSE_N,
+    'why',
+    ['because', 'why not?'],
+    1,
+  );
   const details = harden({
-    method: ChoiceMethod.CHOOSE_N,
-    question: 'why',
-    positions: ['because', 'why not?'],
-    maxChoices: 1,
+    ballotSpec,
     closingRule: {
       timer: buildManualTimer(console.log),
       deadline: 2n,
@@ -74,11 +77,14 @@ test('committee-open question:mixed', async t => {
   } = await setupContract();
 
   const timer = buildManualTimer(console.log);
+  const ballotSpec = makeBallotSpec(
+    ChoiceMethod.CHOOSE_N,
+    'why',
+    ['because', 'why not?'],
+    1,
+  );
   const details = harden({
-    method: ChoiceMethod.CHOOSE_N,
-    question: 'why',
-    positions: ['because', 'why not?'],
-    maxChoices: 1,
+    ballotSpec,
     closingRule: {
       timer,
       deadline: 4n,
@@ -86,15 +92,22 @@ test('committee-open question:mixed', async t => {
   });
   await E(creatorFacet).addQuestion(counterInstallation, details);
 
-  const details2 = harden({
-    ...details,
+  const ballotSpec2 = {
+    ...ballotSpec,
     question: 'why2',
+  };
+  const details2 = harden({
+    ballotSpec: ballotSpec2,
+    closingRule: details.closingRule,
   });
   await E(creatorFacet).addQuestion(counterInstallation, details2);
 
-  const details3 = harden({
-    ...details,
+  const ballotSpec3 = {
+    ...ballotSpec,
     question: 'why3',
+  };
+  const details3 = harden({
+    ballotSpec: ballotSpec3,
     closingRule: {
       timer,
       deadline: 1n,

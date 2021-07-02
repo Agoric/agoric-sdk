@@ -6,9 +6,8 @@ import { observeNotifier } from '@agoric/notifier';
 
 const verify = async (log, question, registrarPublicFacet, instances) => {
   const ballotTemplate = E(registrarPublicFacet).getBallot(question);
-  const { positions, method, question: q, maxChoices, instance } = await E(
-    ballotTemplate,
-  ).getDetails();
+  const { ballotSpec, instance } = await E(ballotTemplate).getDetails();
+  const { positions, method, question: q, maxChoices } = ballotSpec;
   log(`Verify ballot from instance: ${question}, ${positions}, ${method}`);
   const c = await E(registrarPublicFacet).getName();
   log(`Verify: q: ${q}, max: ${maxChoices}, committee: ${c}`);
@@ -68,8 +67,7 @@ const build = async (log, zoe) => {
   });
 };
 
-export function buildRootObject(vatPowers) {
-  return Far('root', {
+export const buildRootObject = vatPowers =>
+  Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
-}

@@ -20,13 +20,18 @@ const ChoiceMethod = {
   WEIGHT: 'weight',
 };
 
-const buildEqualWeightBallot = (
-  method,
-  question,
-  positions,
-  maxChoices = 0,
-  instance,
-) => {
+const makeBallotSpec = (method, question, positions, maxChoices = 0) => {
+  assert.typeof(question, 'string');
+  assert(maxChoices <= positions.length, X`Choices must not exceed length`);
+  assert(
+    positions.every(p => typeof p === 'string', X`positions must be strings`),
+  );
+
+  return { method, question, positions, maxChoices };
+};
+
+const buildEqualWeightBallot = (ballotSpec, instance, closingRule) => {
+  const { question, positions, maxChoices } = ballotSpec;
   const choose = chosenPositions => {
     assert(
       chosenPositions.length <= maxChoices,
@@ -43,11 +48,9 @@ const buildEqualWeightBallot = (
 
   const getDetails = () =>
     harden({
-      method,
-      question,
-      positions,
-      maxChoices,
+      ballotSpec,
       instance,
+      closingRule,
     });
 
   return {
@@ -58,18 +61,13 @@ const buildEqualWeightBallot = (
 };
 
 /** @type {BuildBallot} */
-const buildBallot = (method, question, positions, maxChoices = 0, instance) => {
+const buildBallot = (ballotSpec, instance, closingRule) => {
+  const { question, method } = ballotSpec;
   assert.typeof(question, 'string');
 
   switch (method) {
     case ChoiceMethod.CHOOSE_N:
-      return buildEqualWeightBallot(
-        method,
-        question,
-        positions,
-        maxChoices,
-        instance,
-      );
+      return buildEqualWeightBallot(ballotSpec, instance, closingRule);
     case ChoiceMethod.ORDER:
     case ChoiceMethod.WEIGHT:
       throw Error(`choice method ${ChoiceMethod.WEIGHT} is unimplemented`);
@@ -80,4 +78,4 @@ const buildBallot = (method, question, positions, maxChoices = 0, instance) => {
 
 harden(buildBallot);
 
-export { ChoiceMethod, buildBallot };
+export { ChoiceMethod, buildBallot, makeBallotSpec };

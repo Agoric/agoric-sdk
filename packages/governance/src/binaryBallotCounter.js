@@ -25,13 +25,13 @@ const makeQuorumCounter = quorumThreshold => {
 
 // Exported for testing purposes
 const makeBinaryBallotCounter = (
-  question,
-  positions,
+  ballotSpec,
   threshold,
-  tieOutcome = undefined,
   closingRule,
   instance,
+  tieOutcome = undefined,
 ) => {
+  const { question, positions, maxChoices, method } = ballotSpec;
   assert(
     positions.length === 2,
     X`Binary ballots must have exactly two positions. had ${positions.length}: ${positions}`,
@@ -39,6 +39,9 @@ const makeBinaryBallotCounter = (
   assert.typeof(question, 'string');
   assert.typeof(positions[0], 'string');
   assert.typeof(positions[1], 'string');
+  assert(maxChoices === 1, X`Can only choose 1 item on a binary ballot`);
+  assert(method === ChoiceMethod.CHOOSE_N, X`${method} must be CHOOSE_N`);
+
   if (tieOutcome) {
     assert(
       positions.includes(tieOutcome),
@@ -46,17 +49,11 @@ const makeBinaryBallotCounter = (
     );
   }
 
-  const template = buildBallot(
-    ChoiceMethod.CHOOSE_N,
-    question,
-    positions,
-    1,
-    instance,
-  );
+  const template = buildBallot(ballotSpec, instance, closingRule);
   const ballotDetails = template.getDetails();
 
   assert(
-    ballotDetails.method === ChoiceMethod.CHOOSE_N,
+    ballotDetails.ballotSpec.method === ChoiceMethod.CHOOSE_N,
     X`Binary ballot counter only works with CHOOSE_N`,
   );
   let isOpen = true;
@@ -97,7 +94,7 @@ const makeBinaryBallotCounter = (
         X`A binary ballot must contain exactly one choice.`,
       );
       const choice = ballot.chosen[0];
-      if (!ballotDetails.positions.includes(choice)) {
+      if (!ballotDetails.ballotSpec.positions.includes(choice)) {
         spoiled += shares;
       } else {
         tally[choice] += shares;
@@ -136,7 +133,6 @@ const makeBinaryBallotCounter = (
   const sharedFacet = {
     getBallotTemplate: () => template,
     isOpen: () => isOpen,
-    getClosingRule: () => closingRule,
   };
 
   /** @type {VoterFacet} */
@@ -169,21 +165,18 @@ const start = zcf => {
   // component.
   // TODO(hibbert) checking the quorum should be pluggable and legible.
   const {
-    question,
-    positions,
+    ballotSpec,
     quorumThreshold,
-    tieOutcome,
     closingRule,
+    tieOutcome,
   } = zcf.getTerms();
-
   // The closeFacet is exposed for testing, but doesn't escape from a contract
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    question,
-    positions,
+    ballotSpec,
     quorumThreshold,
-    tieOutcome,
     closingRule,
     zcf.getInstance(),
+    tieOutcome,
   );
 
   scheduleClose(closingRule, closeFacet.closeVoting);
