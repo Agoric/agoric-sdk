@@ -6,12 +6,15 @@ import '@agoric/zoe/exported.js';
 
 import path from 'path';
 import { E } from '@agoric/eventual-send';
-import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
-import { ChoiceMethod } from '../../src/ballotBuilder.js';
+import {
+  ChoiceMethod,
+  makeBallotSpec,
+  ElectionType,
+  QuorumRule,
+} from '../../src/ballotBuilder.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -19,10 +22,10 @@ const dirname = path.dirname(filename);
 const registrarRoot = `${dirname}/../../src/committeeRegistrar.js`;
 const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
-async function setupContract() {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
+const setupContract = async () => {
   const feePurse = E(zoeService).makeFeePurse();
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([
@@ -43,7 +46,7 @@ async function setupContract() {
 
   /** @type {ContractFacet} */
   return { registrarStartResult, counterInstallation };
-}
+};
 
 test('committee-open questions:none', async t => {
   const {
@@ -58,18 +61,25 @@ test('committee-open question:one', async t => {
     counterInstallation,
   } = await setupContract();
 
-  const details = harden({
-    method: ChoiceMethod.CHOOSE_N,
-    question: 'why',
-    positions: ['because', 'why not?'],
-    maxChoices: 1,
-    closingRule: {
+  const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
+  const ballotSpec = makeBallotSpec(
+    ChoiceMethod.CHOOSE_N,
+    harden({ text: 'why' }),
+    positions,
+    ElectionType.SURVEY,
+    1,
+    {
       timer: buildManualTimer(console.log),
       deadline: 2n,
     },
-  });
-  await E(creatorFacet).addQuestion(counterInstallation, details);
-  t.deepEqual(await publicFacet.getOpenQuestions(), ['why']);
+    QuorumRule.HALF,
+    positions[1],
+  );
+  await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
+  const question = await publicFacet.getOpenQuestions();
+  const ballot = E(publicFacet).getBallot(question[0]);
+  const ballotDetails = await E(ballot).getDetails();
+  t.deepEqual(ballotDetails.question.text, 'why');
 });
 
 test('committee-open question:mixed', async t => {
@@ -79,35 +89,39 @@ test('committee-open question:mixed', async t => {
   } = await setupContract();
 
   const timer = buildManualTimer(console.log);
-  const details = harden({
-    method: ChoiceMethod.CHOOSE_N,
-    question: 'why',
-    positions: ['because', 'why not?'],
-    maxChoices: 1,
-    closingRule: {
-      timer,
-      deadline: 4n,
-    },
-  });
-  await E(creatorFacet).addQuestion(counterInstallation, details);
+  const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
+  const ballotSpec = makeBallotSpec(
+    ChoiceMethod.CHOOSE_N,
+    harden({ text: 'why' }),
+    positions,
+    ElectionType.SURVEY,
+    1,
+    { timer, deadline: 4n },
+    QuorumRule.HALF,
+    positions[1],
+  );
+  await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
 
-  const details2 = harden({
-    ...details,
-    question: 'why2',
-  });
-  await E(creatorFacet).addQuestion(counterInstallation, details2);
+  const ballotSpec2 = {
+    ...ballotSpec,
+    question: harden({ text: 'why2' }),
+    closingRule: ballotSpec.closingRule,
+    quorumRule: QuorumRule.HALF,
+  };
+  await E(creatorFacet).addQuestion(counterInstallation, ballotSpec2);
 
-  const details3 = harden({
-    ...details,
-    question: 'why3',
+  const ballotSpec3 = {
+    ...ballotSpec,
+    question: harden({ text: 'why3' }),
     closingRule: {
       timer,
       deadline: 1n,
     },
-  });
+    quorumRule: QuorumRule.HALF,
+  };
   const { publicFacet: counterPublic } = await E(creatorFacet).addQuestion(
     counterInstallation,
-    details3,
+    ballotSpec3,
   );
   // We didn't add any votes. getOutcome() will eventually return a broken
   // promise, but not until some time after tick(). Add a .catch() for it.
@@ -117,5 +131,6 @@ test('committee-open question:mixed', async t => {
 
   timer.tick();
 
-  t.deepEqual(await publicFacet.getOpenQuestions(), ['why', 'why2']);
+  const questions = await publicFacet.getOpenQuestions();
+  t.deepEqual(questions.length, 2);
 });
