@@ -46,6 +46,7 @@ export const makeLRU = max => {
  * @param { KernelKeeper } kernelKeeper
  * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
  * @param {{
+ *   consensusMode: boolean,
  *   maxVatsOnline?: number,
  *   snapshotInitial?: number,
  *   snapshotInterval?: number,
@@ -58,6 +59,8 @@ export const makeLRU = max => {
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   const {
+    // Whether to eliminate all vat nodeterminism.
+    consensusMode = false,
     maxVatsOnline = 50,
     // Often a large contract evaluation is among the first few deliveries,
     // so let's do a snapshot after just a few deliveries.
@@ -108,7 +111,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     assert(kernelKeeper.vatIsAlive(vatID), X`${q(vatID)}: not alive`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const { source, options } = vatKeeper.getSourceAndOptions();
+    const { source, options } = vatKeeper.getSourceAndOptions(consensusMode);
 
     const translators = provideTranslators(vatID);
 
@@ -140,7 +143,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       enablePipelining,
       options,
     };
-    console.log(
+    console.info(
       vatID,
       'online:',
       options.managerType,

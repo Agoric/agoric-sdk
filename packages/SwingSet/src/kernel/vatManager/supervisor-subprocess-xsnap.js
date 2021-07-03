@@ -16,6 +16,7 @@ import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
+  makeVatConsole,
 } from './supervisor-helper.js';
 
 const encoder = new TextEncoder();
@@ -119,26 +120,8 @@ function makeWorker(port) {
   /** @type { ((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>) | null } */
   let dispatch = null;
 
-  /**
-   * TODO: consider other methods per SES VirtualConsole.
-   * See https://github.com/Agoric/agoric-sdk/issues/2146
-   *
-   * @param { string } tag
-   */
-  function makeConsole(tag) {
-    const log = level => (...args) => {
-      const jsonSafeArgs = JSON.parse(`${q(args)}`);
-      port.send(['console', level, tag, ...jsonSafeArgs]);
-    };
-    const cons = {
-      debug: log('debug'),
-      log: log('log'),
-      info: log('info'),
-      warn: log('warn'),
-      error: log('error'),
-    };
-    return harden(cons);
-  }
+  /** @type {unknown} */
+  let currentConsensusMode;
 
   /**
    * @param {unknown} vatID
@@ -147,6 +130,7 @@ function makeWorker(port) {
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} enableVatstore
+   * @param {boolean} consensusMode
    * @param {boolean} [gcEveryCrank]
    * @returns { Promise<Tagged> }
    */
@@ -157,6 +141,7 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
     enableVatstore,
+    consensusMode,
     gcEveryCrank,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
@@ -208,9 +193,35 @@ function makeWorker(port) {
       gcTools,
     );
 
+    const makeLog = level => {
+      return (...args) => {
+        // TODO: use more faithful stringification
+        const jsonSafeArgs = JSON.parse(`${q(args)}`);
+        port.send(['console', level, ...jsonSafeArgs]);
+      };
+    };
+    const logger = {
+      debug: makeLog('debug'),
+      log: makeLog('log'),
+      info: makeLog('info'),
+      warn: makeLog('warn'),
+      error: makeLog('error'),
+    };
+
+    // Enable or disable the console accordingly.
+    currentConsensusMode = consensusMode;
     const endowments = {
       ...ls.vatGlobals,
-      console: makeConsole(`SwingSet:vatWorker`),
+      console: makeVatConsole(
+        logger,
+        // We have to dynamically wrap the consensus mode so that it can change
+        // during the lifetime of the supervisor (which when snapshotting, is
+        // restored to its current heap across restarts, not actually stopping
+        // until the vat is terminated).
+        (fn, args) => {
+          currentConsensusMode || fn(...args);
+        },
+      ),
       assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
@@ -238,7 +249,8 @@ function makeWorker(port) {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[4];
         const enableVatstore = !!args[5];
-        const gcEveryCrank = args[6] === undefined ? true : !!args[6];
+        const consensusMode = !!args[6];
+        const gcEveryCrank = args[7] === undefined ? true : !!args[7];
         return setBundle(
           args[0],
           args[1],
@@ -246,12 +258,14 @@ function makeWorker(port) {
           args[3],
           enableDisavow,
           enableVatstore,
+          consensusMode,
           gcEveryCrank,
         );
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        const [vatDeliveryObject] = args;
+        const [vatDeliveryObject, consensusMode] = args;
+        currentConsensusMode = consensusMode;
         insistVatDeliveryObject(vatDeliveryObject);
         return dispatch(vatDeliveryObject);
       }

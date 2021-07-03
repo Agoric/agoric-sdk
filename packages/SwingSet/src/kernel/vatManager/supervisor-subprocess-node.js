@@ -23,6 +23,7 @@ import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
+  makeVatConsole,
 } from './supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
@@ -31,15 +32,6 @@ function workerLog(first, ...args) {
 }
 
 workerLog(`supervisor started`);
-
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
 
 let dispatch;
 
@@ -76,6 +68,7 @@ fromParent.on('data', ([type, ...margs]) => {
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
+      consensusMode,
     ] = margs;
 
     function testLog(...args) {
@@ -110,9 +103,13 @@ fromParent.on('data', ([type, ...margs]) => {
       gcTools,
     );
 
+    // Enable or disable the console accordingly.
     const endowments = {
       ...ls.vatGlobals,
-      console: makeConsole(`SwingSet:vatWorker`),
+      console: makeVatConsole(
+        anylogger(`SwingSet:vat:${vatID}`),
+        !consensusMode,
+      ),
       assert,
     };
 

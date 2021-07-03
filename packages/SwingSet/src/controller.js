@@ -123,7 +123,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: { maxVatsOnline?: number },
+ *   warehousePolicy?: { maxVatsOnline?: number, consensusMode?: boolean },
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
@@ -420,7 +420,7 @@ export async function makeSwingsetController(
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: { maxVatsOnline?: number },
+ *   warehousePolicy?: { maxVatsOnline?: number, consensusMode?: boolean },
  *   slogFile?: string,
  * }} runtimeOptions
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore

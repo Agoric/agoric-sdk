@@ -17,6 +17,7 @@ import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
+  makeVatConsole,
 } from './supervisor-helper.js';
 
 assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
@@ -27,15 +28,6 @@ function workerLog(first, ...args) {
 }
 
 workerLog(`supervisor started`);
-
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
 
 function sendUplink(msg) {
   assert(msg instanceof Array, X`msg must be an Array`);
@@ -58,6 +50,7 @@ parentPort.on('message', ([type, ...margs]) => {
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
+      consensusMode,
     ] = margs;
 
     function testLog(...args) {
@@ -96,7 +89,10 @@ parentPort.on('message', ([type, ...margs]) => {
 
     const endowments = {
       ...ls.vatGlobals,
-      console: makeConsole(`SwingSet:vatWorker`),
+      console: makeVatConsole(
+        anylogger(`SwingSet:vat:${vatID}`),
+        !consensusMode,
+      ),
       assert,
     };
 

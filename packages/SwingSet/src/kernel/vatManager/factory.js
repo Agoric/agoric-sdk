@@ -52,6 +52,7 @@ export function makeVatManagerFactory({
 
   function validateManagerOptions(managerOptions) {
     assertKnownOptions(managerOptions, [
+      'consensusMode',
       'enablePipelining',
       'managerType',
       'gcEveryCrank',
