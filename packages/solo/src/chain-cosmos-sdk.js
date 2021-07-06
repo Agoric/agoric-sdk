@@ -11,7 +11,6 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
 
 const log = anylogger('chain-cosmos-sdk');
 
@@ -30,6 +29,7 @@ Send:
 to ${FAUCET_ADDRESS}`;
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+const WAIT_FOR_SWINGSET_DELAY_MS = 2 * 1000;
 
 const WAS_CANCELLED_EXCEPTION = {
   toString() {
@@ -381,6 +381,10 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
   // Begin the block notifier cycle.
   const blockNotifier = getBlockNotifier();
 
+  let currentMessages = [];
+  let currentAck = -1;
+  let lastAck = -1;
+
   /**
    * This function is entered at most the same number of times
    * as the blockNotifier announces a new block.
@@ -389,6 +393,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
    *
    * @param {number=} lastBlockUpdate
    */
+  let totalDeliveries = 0;
   const recurseEachNewBlock = (lastBlockUpdate = undefined) => {
     blockNotifier
       .getUpdateSince(lastBlockUpdate)
@@ -406,7 +411,113 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
             // console.debug('have outbox', outbox, ack);
             inbound(GCI, outbox, ack);
           })
-          .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e));
+          .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e))
+          .then(
+            () =>
+              new Promise(resolve =>
+                setTimeout(resolve, WAIT_FOR_SWINGSET_DELAY_MS),
+              ),
+          )
+          .then(async () => {
+            const messages = currentMessages;
+            currentMessages = [];
+            const ack = currentAck;
+            if (ack <= lastAck && !messages.length) {
+              return undefined;
+            }
+
+            let tmpInfo;
+            try {
+              totalDeliveries += 1;
+              log(
+                `delivering to chain (trips=${totalDeliveries})`,
+                GCI,
+                messages[0],
+                messages[1],
+              );
+
+              tmpInfo = await new Promise((resolve, reject) => {
+                tempOpen({ prefix: 'ag-solo-cosmos-deliver.' }, (err, info) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  return resolve(info);
+                });
+              });
+
+              try {
+                await new Promise((resolve, reject) => {
+                  fs.write(
+                    tmpInfo.fd,
+                    // TODO: remove this JSON.stringify([currentMessages, currentAck]): change
+                    // 'deliverMailboxReq' to have more structure than a single string, and
+                    // have the CLI handle variable args better
+                    JSON.stringify([messages, ack]),
+                    err => {
+                      if (err) {
+                        return reject(err);
+                      }
+                      return resolve();
+                    },
+                  );
+                });
+              } finally {
+                await new Promise((resolve, reject) => {
+                  fs.close(tmpInfo.fd, e => {
+                    if (e) {
+                      return reject(e);
+                    }
+                    return resolve();
+                  });
+                });
+              }
+
+              const args = [
+                'tx',
+                'swingset',
+                'deliver',
+                '--keyring-backend=test',
+                `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
+                '--gas=auto',
+                '--gas-adjustment=1.2',
+                '--from=ag-solo',
+                '--yes',
+              ];
+
+              // We just try a single delivery per block.
+              const qret = await queuedHelper(
+                'deliver',
+                1, // one delivery running at a time
+                args,
+                ret => {
+                  const { stderr, stdout } = ret;
+                  const errMsg = stderr.trimRight();
+                  if (errMsg) {
+                    log.error(errMsg);
+                  }
+                  log.debug(`helper said: ${stdout}`);
+                  const out = JSON.parse(stdout);
+                  if (Number(out.code) === 0) {
+                    // We submitted the transaction successfully.
+                    if (ack > lastAck) {
+                      lastAck = ack;
+                    }
+                    return {};
+                  }
+                  // Put back the deliveries we tried to make.
+                  currentMessages = messages.concat(currentMessages);
+                  assert.fail(X`Unexpected output: ${stdout.trimRight()}`);
+                },
+                undefined,
+                {}, // defaultIfCancelled
+              );
+              return qret;
+            } finally {
+              if (tmpInfo) {
+                await fs.promises.unlink(tmpInfo.path);
+              }
+            }
+          });
         recurseEachNewBlock(updateCount);
       });
   };
@@ -414,104 +525,16 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
   // Begin the block consumer.
   recurseEachNewBlock();
 
-  let totalDeliveries = 0;
   async function deliver(newMessages, acknum) {
-    let tmpInfo;
-    try {
-      totalDeliveries += 1;
-      log(
-        `delivering to chain (trips=${totalDeliveries})`,
-        GCI,
-        newMessages,
-        acknum,
-      );
-
-      // Peer and submitter are combined in the message format (i.e. we removed
-      // the extra 'myAddr' after 'tx swingset deliver'). All messages from
-      // solo vats are "from" the signer, and messages relayed from another
-      // chain will have other data to demonstrate which chain it comes from
-
-      // TODO: remove this JSON.stringify([newMessages, acknum]): change
-      // 'deliverMailboxReq' to have more structure than a single string, and
-      // have the CLI handle variable args better
-
-      tmpInfo = await new Promise((resolve, reject) => {
-        tempOpen({ prefix: 'ag-solo-cosmos-deliver.' }, (err, info) => {
-          if (err) {
-            return reject(err);
-          }
-          return resolve(info);
-        });
-      });
-
-      try {
-        await new Promise((resolve, reject) => {
-          fs.write(tmpInfo.fd, JSON.stringify([newMessages, acknum]), err => {
-            if (err) {
-              return reject(err);
-            }
-            return resolve();
-          });
-        });
-      } finally {
-        await new Promise((resolve, reject) => {
-          fs.close(tmpInfo.fd, e => {
-            if (e) {
-              return reject(e);
-            }
-            return resolve();
-          });
-        });
-      }
-
-      const args = [
-        'tx',
-        'swingset',
-        'deliver',
-        '--keyring-backend=test',
-        `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
-        '--gas=auto',
-        '--gas-adjustment=1.2',
-        '--from=ag-solo',
-        '--broadcast-mode=block', // Don't return until committed.
-        '--yes',
-      ];
-
-      // If we send two messages back-to-back too quickly, the second one
-      // may use the same seqnum as the first, so it will be rejected by the
-      // signature-checking auth/ante handler on the chain. Therefore, we need
-      // to queue our deliver() calls and not allow one to proceed until the
-      // others have finished.
-      const qret = await queuedHelper(
-        'deliver',
-        undefined, // allow the queue to grow unbounded, and never cancel deliveries
-        args,
-        ret => {
-          const { stderr, stdout } = ret;
-          const errMsg = stderr.trimRight();
-          if (errMsg) {
-            log.error(errMsg);
-          }
-          log.debug(`helper said: ${stdout}`);
-          const out = JSON.parse(stdout);
-          if (Number(out.height) > 0) {
-            // We submitted the transaction successfully.
-            return {};
-          }
-          assert.fail(X`Unexpected output: ${stdout.trimRight()}`);
-        },
-        undefined,
-        {}, // defaultIfCancelled
-      );
-      return qret;
-    } finally {
-      if (tmpInfo) {
-        await fs.promises.unlink(tmpInfo.path);
-      }
+    if (acknum > currentAck) {
+      currentAck = acknum;
+    }
+    if (newMessages.length) {
+      currentMessages = currentMessages.concat(newMessages);
     }
   }
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return makeBatchedDeliver(deliver);
+  return deliver;
 }
