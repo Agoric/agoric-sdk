@@ -93,13 +93,17 @@ COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
 	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT) to come live..."
-	@while ! curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status >/dev/null; do \
+	@while true; do \
+	  block=$$(curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status | jq -r .result.sync_info.latest_block_height); \
+		if test -z "$$start"; then \
+		  start=$$block; \
+		elif test $$block -gt $$start; then \
+		  break; \
+		fi; \
 		echo -n '.'; \
-		sleep 5; \
+		sleep 1; \
 	done
 	@echo ' done!'
-	# TODO: find a way to tell when the chain is ready without a race.
-	sleep 10 # Generous timeout to wait for chain to be ready
 
 t1-provision-one-with-powers: wait-for-cosmos
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
