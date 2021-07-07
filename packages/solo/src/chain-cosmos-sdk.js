@@ -16,15 +16,15 @@ const log = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
 const FAUCET_ADDRESS =
-  '#faucet channel on Discord (https://agoric.com/discord)';
+  'the appropriate faucet channel on Discord (https://agoric.com/discord)';
 
-const adviseEgress = myAddr =>
+const adviseEgress = egressAddr =>
   `\
 
 
 Send:
 
-  !faucet client ${myAddr}
+  !faucet client ${egressAddr}
 
 to ${FAUCET_ADDRESS}`;
 
@@ -43,11 +43,43 @@ const CANCEL_USE_DEFAULT = {
   },
 };
 
+const makeTempFile = async (prefix, contents) => {
+  const tmpInfo = await new Promise((resolve, reject) => {
+    tempOpen({ prefix }, (err, info) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(info);
+    });
+  });
+
+  try {
+    await new Promise((resolve, reject) => {
+      fs.write(tmpInfo.fd, contents, err => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve();
+      });
+    });
+  } finally {
+    await new Promise((resolve, reject) => {
+      fs.close(tmpInfo.fd, e => {
+        if (e) {
+          return reject(e);
+        }
+        return resolve();
+      });
+    });
+  }
+  return tmpInfo;
+};
+
 export async function connectToChain(
   basedir,
   GCI,
   rpcAddresses,
-  myAddr,
+  helperAddr,
   inbound,
   chainID,
 ) {
@@ -83,6 +115,38 @@ export async function connectToChain(
   shuffle(rpcAddresses);
 
   const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
+
+  const readOrDefault = (file, dflt) =>
+    fs.promises
+      .readFile(file, { encoding: 'utf-8' })
+      .catch(e => {
+        if (e.code === 'ENOENT') {
+          return dflt;
+        }
+        throw e;
+      })
+      .then(str => str.trim());
+
+  // The helper account may only have the authority to send messages on behalf
+  // of the client, which has been set up by the client with something like:
+  //
+  // ag-cosmos-helper tx authz grant $(cat ag-cosmos-helper-address) \
+  // generic --msg-type=/agoric.swingset.MsgDeliverInbound \
+  // --from=$(cat cosmos-client-account)
+  const clientAddr = await readOrDefault(
+    path.join(basedir, 'cosmos-client-account'),
+    helperAddr,
+  );
+
+  // The helper address may not have a token balance, and instead uses a
+  // separate fee account, set up with something like:
+  //
+  // ag-cosmos-helper tx feegrant grant --period=5 --period-limit=200000urun \
+  // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
+  const feeAccountAddr = await readOrDefault(
+    path.join(basedir, 'cosmos-fee-account'),
+    '',
+  );
 
   const queued = {};
 
@@ -246,7 +310,7 @@ export async function connectToChain(
     queuedHelper(
       'getMailbox',
       1, // Only one helper running at a time.
-      ['query', 'swingset', 'mailbox', myAddr, '-ojson'],
+      ['query', 'swingset', 'mailbox', clientAddr, '-ojson'],
       // eslint-disable-next-line consistent-return
       ret => {
         const { stdout, stderr } = ret;
@@ -270,7 +334,7 @@ export async function connectToChain(
 
   // Validate that our chain egress exists.
   await retryRpcAddr(async rpcAddr => {
-    const args = ['query', 'swingset', 'egress', myAddr];
+    const args = ['query', 'swingset', 'egress', clientAddr];
     const fullArgs = [
       ...args,
       `--chain-id=${chainID}`,
@@ -291,7 +355,9 @@ export async function connectToChain(
     if (!r.stdout) {
       console.error(`\
 =============
-${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
+${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
+        clientAddr,
+      )}
 =============
 `);
       return undefined;
@@ -432,57 +498,65 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
               log(
                 `delivering to chain (trips=${totalDeliveries})`,
                 GCI,
-                messages[0],
-                messages[1],
+                messages,
+                ack,
               );
 
-              tmpInfo = await new Promise((resolve, reject) => {
-                tempOpen({ prefix: 'ag-solo-cosmos-deliver.' }, (err, info) => {
-                  if (err) {
-                    return reject(err);
-                  }
-                  return resolve(info);
-                });
-              });
+              // TODO: remove this JSON.stringify([currentMessages, currentAck]): change
+              // 'deliverMailboxReq' to have more structure than a single string, and
+              // have the CLI handle variable args better
+              tmpInfo = await makeTempFile(
+                'ag-solo-cosmos-deliver.',
+                JSON.stringify([messages, ack]),
+              );
 
-              try {
-                await new Promise((resolve, reject) => {
-                  fs.write(
-                    tmpInfo.fd,
-                    // TODO: remove this JSON.stringify([currentMessages, currentAck]): change
-                    // 'deliverMailboxReq' to have more structure than a single string, and
-                    // have the CLI handle variable args better
-                    JSON.stringify([messages, ack]),
-                    err => {
-                      if (err) {
-                        return reject(err);
-                      }
-                      return resolve();
-                    },
-                  );
-                });
-              } finally {
-                await new Promise((resolve, reject) => {
-                  fs.close(tmpInfo.fd, e => {
-                    if (e) {
-                      return reject(e);
+              // Deliver message over file, as it could be big.
+              let args = ['tx', 'swingset', 'deliver', `@${tmpInfo.path}`];
+              if (clientAddr !== helperAddr) {
+                const genDone = makePromiseKit();
+                execFile(
+                  HELPER,
+                  [
+                    'tx',
+                    'swingset',
+                    'deliver',
+                    '--generate-only',
+                    `--chain-id=${chainID}`,
+                    `--from=${clientAddr}`,
+                    `@${tmpInfo.path}`,
+                  ],
+                  { maxBuffer: MAX_BUFFER_SIZE },
+                  (error, stdout, stderr) => {
+                    if (error) {
+                      return genDone.reject(error);
                     }
-                    return resolve();
-                  });
-                });
+                    return genDone.resolve({ stdout, stderr });
+                  },
+                );
+
+                // Reuse the file to send the constructed transaction.
+                const { stdout, stderr } = await genDone.promise;
+                if (stderr) {
+                  throw Error(`Error creating swingset delivery tx; ${stderr}`);
+                }
+                await fs.promises.writeFile(tmpInfo.path, stdout);
+
+                args = ['tx', 'authz', 'exec', tmpInfo.path];
               }
 
-              const args = [
-                'tx',
-                'swingset',
-                'deliver',
+              args.push(
                 '--keyring-backend=test',
-                `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
                 '--gas=auto',
-                '--gas-adjustment=1.2',
+                '--gas-adjustment=1.3',
+                '--broadcast-mode=block',
                 '--from=ag-solo',
                 '--yes',
-              ];
+              );
+
+              // Use the feeAccount for any fees.
+              if (feeAccountAddr) {
+                args.push(`--fee-account=${feeAccountAddr}`);
+              }
 
               // We just try a single delivery per block.
               const qret = await queuedHelper(
