@@ -19,7 +19,7 @@ import '@agoric/governance/src/exported';
 // can't redeem them outright, that would drain the utility from the economy.
 
 import { E } from '@agoric/eventual-send';
-import { assert, details, q } from '@agoric/assert';
+import { assert, q, details as X } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import {
   assertProposalShape,
@@ -33,16 +33,18 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
+import { sameStructure } from '@agoric/same-structure';
 
 import { makeTracer } from './makeTracer';
 import { makeVaultManager } from './vaultManager';
 import { makeLiquidationStrategy } from './liquidateMinimum';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees';
 import {
-  makePoolGovernor,
-  makeFeeGovernor,
+  makePoolParamManager,
+  makeFeeParamManager,
   PROTOCOL_FEE_KEY,
   POOL_FEE_KEY,
+  governedParameterTerms as governedParameterLocal,
 } from './params';
 
 const trace = makeTracer('ST');
@@ -57,22 +59,32 @@ export async function start(zcf) {
     timerService,
     liquidationInstall,
     bootstrapPaymentValue = 0n,
+    electionManager,
+    governedParams,
   } = zcf.getTerms();
 
   assert.typeof(
     loanParams.chargingPeriod,
     'bigint',
-    details`chargingPeriod (${q(loanParams.chargingPeriod)}) must be a BigInt`,
+    X`chargingPeriod (${q(loanParams.chargingPeriod)}) must be a BigInt`,
   );
   assert.typeof(
     loanParams.recordingPeriod,
     'bigint',
-    details`recordingPeriod (${q(
-      loanParams.recordingPeriod,
-    )}) must be a BigInt`,
+    X`recordingPeriod (${q(loanParams.recordingPeriod)}) must be a BigInt`,
   );
 
-  const feeGovernor = makeFeeGovernor(loanParams);
+  assert(
+    sameStructure(governedParams, harden(governedParameterLocal)),
+    X`Terms must match ${governedParameterLocal}`,
+  );
+  const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
+  const feeParams = makeFeeParamManager(loanParams);
+  const feeGovernor = await E(governorPublic).governContract(
+    zcf.getInstance(),
+    feeParams,
+    'loanParams',
+  );
 
   const [runMint, govMint] = await Promise.all([
     zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
@@ -126,8 +138,8 @@ export async function start(zcf) {
       timer: timerService,
       // TODO(hibbert): make the AMM use a paramManager. For now, the values
       //  are fixed after creation of an autoswap instance.
-      poolFee: feeGovernor.getParams()[POOL_FEE_KEY].value,
-      protocolFee: feeGovernor.getParams()[PROTOCOL_FEE_KEY].value,
+      poolFee: feeParams.getParams()[POOL_FEE_KEY].value,
+      protocolFee: feeParams.getParams()[PROTOCOL_FEE_KEY].value,
     },
   );
 
@@ -145,8 +157,13 @@ export async function start(zcf) {
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     assert(!collateralTypes.has(collateralBrand));
 
-    const poolGovernor = makePoolGovernor(loanParams, rates);
+    const poolParamManager = makePoolParamManager(loanParams, rates);
     assert(!poolGovernors.has(collateralBrand));
+    const poolGovernor = await E(governorPublic).governContract(
+      zcf.getInstance(),
+      poolParamManager,
+      'poolParams',
+    );
     poolGovernors.init(collateralBrand, poolGovernor);
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
@@ -242,7 +259,7 @@ export async function start(zcf) {
         runMint,
         collateralBrand,
         priceAuthority,
-        poolGovernor.getParams,
+        poolParamManager.getParams,
         reallocateReward,
         timerService,
         liquidationStrategy,
@@ -272,7 +289,7 @@ export async function start(zcf) {
       const { brand: brandIn } = collateralAmount;
       assert(
         collateralTypes.has(brandIn),
-        details`Not a supported collateral type ${brandIn}`,
+        X`Not a supported collateral type ${brandIn}`,
       );
       /** @type {VaultManager} */
       const mgr = collateralTypes.get(brandIn);
@@ -347,7 +364,7 @@ export async function start(zcf) {
     getRunIssuer() {
       return runIssuer;
     },
-    getFeeParams: feeGovernor.getParams,
+    getFeeParams: feeParams.getParams,
   });
 
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(

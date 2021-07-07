@@ -33,8 +33,8 @@
  * @property {() => Instance} getAMM
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Payment} getBootstrapPayment
- * @property {() => ParamManagerFull} getFeeGovernor
- * @property {() => ParamManagerFull} getPoolGovernor
+ * @property {() => ContractGovernor} getFeeGovernor
+ * @property {(Brand) => ContractGovernor} getPoolGovernor
  */
 
 /**
@@ -193,14 +193,14 @@
  */
 
 /**
- * @typedef {Object} FeeGovernor
+ * @typedef {Object} FeeParamManager
  * @property {() => Record<Keyword,ParamDescription>} getParams
  * @property {(bigint) => void} updateProtocolFee
  * @property {(bigint) => void} updatePoolFee
  */
 
 /**
- * @typedef {Object} PoolGovernor
+ * @typedef {Object} PoolParamManager
  * @property {() => Record<Keyword,ParamDescription>} getParams
  * @property {(bigint) => void} updateChargingPeriod
  * @property {(bigint) => void} updateRecordingPeriod

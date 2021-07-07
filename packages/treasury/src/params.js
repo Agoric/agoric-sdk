@@ -13,23 +13,20 @@ export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
-export const governedParameterTerms = () => ({
-  loanParams: {
-    POOL_FEE_KEY,
-    PROTOCOL_FEE_KEY,
-  },
-  poolParams: {
+export const governedParameterTerms = {
+  loanParams: [POOL_FEE_KEY, PROTOCOL_FEE_KEY],
+  poolParams: [
     CHARGING_PERIOD_KEY,
     RECORDING_PERIOD_KEY,
     INITIAL_MARGIN_KEY,
     LIQUIDATION_MARGIN_KEY,
     INTEREST_RATE_KEY,
     LOAN_FEE_KEY,
-  },
-});
+  ],
+};
 
-export const makeFeeGovernor = loanParams => {
-  /** @type {FeeGovernor} */
+export const makeFeeParamManager = loanParams => {
+  /** @type {FeeParamManager} */
   return buildParamManager([
     {
       name: POOL_FEE_KEY,
@@ -44,8 +41,8 @@ export const makeFeeGovernor = loanParams => {
   ]);
 };
 
-export const makePoolGovernor = (loanParams, rates) => {
-  /** @type {PoolGovernor} */
+export const makePoolParamManager = (loanParams, rates) => {
+  /** @type {PoolParamManager} */
   return buildParamManager([
     {
       name: CHARGING_PERIOD_KEY,

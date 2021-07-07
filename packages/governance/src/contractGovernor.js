@@ -130,7 +130,10 @@ const start = zcf => {
       paramSet,
     );
     assert(governed, X`All governed parameters must be mentioned in terms`);
-    governedContracts.init(governedInstance, []);
+    // a contract can have more than a single set of governed params.
+    if (!governedContracts.has(governedInstance)) {
+      governedContracts.init(governedInstance, []);
+    }
 
     return Far('contract governor', {
       /** @type {CreateQuestion} */
