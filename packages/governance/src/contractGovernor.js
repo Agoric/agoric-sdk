@@ -29,7 +29,7 @@ const parametersAreGoverned = async (zoe, governedInstance, mgr, name) => {
   return termsKeys.every(k => governedKeys.includes(k));
 };
 
-/*
+/**
  * ContractGovernor is an ElectionManager that knows its Registrar, and provides
  * a facet that can be plugged into a contract to help create ballot questions
  * that will automatically update contract parameters if passed. The
