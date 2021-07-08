@@ -1,5 +1,5 @@
 /* global setTimeout clearTimeout */
-const DEFAULT_BATCH_TIMEOUT_MS = 1000;
+export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 export function makeBatchedDeliver(
   deliver,
