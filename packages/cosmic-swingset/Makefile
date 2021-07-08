@@ -78,25 +78,24 @@ scenario2-run-chain:
 		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
+# Blow away all client state to try again without resetting the chain.
 scenario2-reset-client:
 	rm -rf t1/$(BASE_PORT)
 	$(AG_SOLO) init t1/$(BASE_PORT) --webport=$(BASE_PORT)
 	$(MAKE) set-local-gci-ingress
 
-scenario2-client-owner: t1/$(BASE_PORT)/owner
-	$(AGCH) --home=t1/$(BASE_PORT)/owner tx authz grant $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address) \
-		generic --msg-type=/agoric.swingset.MsgDeliverInbound --from=solo-owner--keyring-backend=test \
-		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
-	  
+# Declare that the BASE_PORT should draw fees from its owner.
+scenario2-use-fee-account: t1/$(BASE_PORT)/owner-address
+	cp $< t1/$(BASE_PORT)/cosmos-fee-account
 
-scenario2-fee-account: t1/$(BASE_PORT)/owner
-	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test show -a owner > t1/$(BASE_PORT)/cosmos-fee-account
+# Declare that the BASE_PORT should use an egress corresponding to its owner.
+scenario2-use-client-account: t1/$(BASE_PORT)/owner-address
+	cp $< t1/$(BASE_PORT)/cosmos-client-account
 
-scenario2-client-account: t1/$(BASE_PORT)/owner
-	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test show -a owner > t1/$(BASE_PORT)/cosmos-client-account
-
-t1/$(BASE_PORT)/owner:
-	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner
+t1/$(BASE_PORT)/owner-address:
+	rm -rf t1/$(BASE_PORT)/owner
+	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq.address > $@.tmp
+	mv $@.tmp $@
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
