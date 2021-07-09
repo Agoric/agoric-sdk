@@ -65,7 +65,7 @@ async function simpleCall(t) {
   const vatAdminRoot = ['ko20', adminVatID, 'o+0'];
   t.deepEqual(data.kernelTable, [vatAdminRoot]);
 
-  // vat1:o+1 will map to ko21
+  // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
     {

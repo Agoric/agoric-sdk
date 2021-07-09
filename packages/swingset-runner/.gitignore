@@ -3,6 +3,7 @@
 *.sss
 *.jsonlines
 *.naive
+*.sqlite
 slog
 vslog
 vlog
