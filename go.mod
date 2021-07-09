@@ -12,9 +12,9 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
-	github.com/tendermint/tendermint v0.34.10
+	github.com/tendermint/tendermint v0.34.11
 	github.com/tendermint/tm-db v0.6.4
-	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
 )
 
@@ -31,8 +31,9 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 // At least until GetABCIEventHistory() is implemented and released.
 // And also `gentx --keyring-dir=...`
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.43.0-beta1.0.20210623214818-65f9554e0ddf
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.43.0-rc0.agoric
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
+
 // replace github.com/tendermint/tendermint => ../forks/tendermint

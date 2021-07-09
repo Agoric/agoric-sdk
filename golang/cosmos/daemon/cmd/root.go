@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	config "github.com/cosmos/cosmos-sdk/client/config"
@@ -73,7 +75,27 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd)
+			// Allow us to overwrite the SDK's default server config.
+			srvCfg := serverconfig.DefaultConfig()
+			// The SDK's default minimum gas price is set to "" (empty value) inside
+			// app.toml. If left empty by validators, the node will halt on startup.
+			// However, the chain developer can set a default app.toml value for their
+			// validators here.
+			//
+			// In summary:
+			// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
+			//   own app.toml config,
+			// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
+			//   own app.toml to override, or use this default value.
+			//
+			// FIXME: We may want to have Agoric set a min gas price in urun.
+			// For now, we set it to zero so that validators don't have to worry about it.
+			srvCfg.MinGasPrices = "0urun"
+
+			customAppTemplate := serverconfig.DefaultConfigTemplate
+			customAppConfig := *srvCfg
+
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
 		},
 	}
 
