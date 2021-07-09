@@ -63,6 +63,7 @@ const enableKernelGC = true;
 
 // runQueue = JSON(runQueue) // usually empty on disk
 // gcActions = JSON(gcActions) // usually empty on disk
+// pinnedObjects = ko$NN[,ko$NN..]
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
@@ -1055,6 +1056,16 @@ export default function makeKernelKeeper(
     return importers;
   }
 
+  function pinObject(kref) {
+    const pinList = kvStore.get('pinnedObjects') || '';
+    const pinned = new Set(commaSplit(pinList));
+    if (!pinned.has(kref)) {
+      incrementRefCount(kref, 'pin');
+      pinned.add(kref);
+      kvStore.set('pinnedObjects', [...pinned].sort().join(','));
+    }
+  }
+
   // used for debugging, and tests. This returns a JSON-serializable object.
   // It includes references to live (mutable) kernel state, so don't mutate
   // the pieces, and be sure to serialize/deserialize before passing it
@@ -1173,6 +1184,7 @@ export default function makeKernelKeeper(
     kernelObjectExists,
     getImporters,
     deleteKernelObject,
+    pinObject,
 
     addKernelPromise,
     addKernelPromiseForVat,
