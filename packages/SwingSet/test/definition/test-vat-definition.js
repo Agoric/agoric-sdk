@@ -25,13 +25,15 @@ test('create with setup and buildRootObject', async t => {
     },
   };
   const c = await buildVatController(config, []);
-  let r = c.queueToVatExport('setup', 'o+0', 'increment', capargs([]), 'panic');
+  c.pinVatRoot('setup');
+  c.pinVatRoot('liveslots');
+  let r = c.queueToVatRoot('setup', 'increment', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(mUndefined), 'setup incr');
-  r = c.queueToVatExport('setup', 'o+0', 'read', capargs([]), 'panic');
+  r = c.queueToVatRoot('setup', 'read', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(1), 'setup read');
-  r = c.queueToVatExport('setup', 'o+0', 'remotable', capargs([]), 'panic');
+  r = c.queueToVatRoot('setup', 'remotable', capargs([]), 'panic');
   await c.run();
   t.deepEqual(
     c.kpResolution(r),
@@ -39,13 +41,13 @@ test('create with setup and buildRootObject', async t => {
     'setup Remotable/getInterfaceOf',
   );
 
-  r = c.queueToVatExport('liveslots', 'o+0', 'increment', capargs([]), 'panic');
+  r = c.queueToVatRoot('liveslots', 'increment', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(mUndefined), 'ls incr');
-  r = c.queueToVatExport('liveslots', 'o+0', 'read', capargs([]), 'panic');
+  r = c.queueToVatRoot('liveslots', 'read', capargs([]), 'panic');
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs(1), 'ls read');
-  r = c.queueToVatExport('liveslots', 'o+0', 'remotable', capargs([]), 'panic');
+  r = c.queueToVatRoot('liveslots', 'remotable', capargs([]), 'panic');
   await c.run();
   t.deepEqual(
     c.kpResolution(r),

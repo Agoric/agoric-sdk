@@ -29,7 +29,7 @@ async function testTranscriptlessness(t, useTranscript) {
   const c2 = await buildVatController(config, [], {
     hostStorage,
   });
-  c2.queueToVatExport('bootstrap', 'o+0', 'go', capargs([]), 'panic');
+  c2.queueToVatRoot('bootstrap', 'go', capargs([]), 'panic');
   await c2.run();
   if (useTranscript) {
     t.deepEqual(c2.dump().log, [

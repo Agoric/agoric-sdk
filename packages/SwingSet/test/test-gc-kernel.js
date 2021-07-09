@@ -1024,6 +1024,7 @@ test('terminated vat', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  c.pinVatRoot('bootstrap');
 
   function getRefCountsAndOwners() {
     const refcounts = {};
@@ -1082,7 +1083,7 @@ test('terminated vat', async t => {
   // send a second export in a message to this promise, so the only
   // non-exporting reference will be on the promise queue.
   const a0 = capargs([]);
-  c.queueToVatExport('bootstrap', 'o+0', 'stash', a0, 'panic');
+  c.queueToVatRoot('bootstrap', 'stash', a0, 'panic');
   await c.run();
 
   // now find the vref/kref for doomedExport2
@@ -1095,7 +1096,7 @@ test('terminated vat', async t => {
   [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[doomedExport2Kref], [1, 1]); // from promise queue
 
-  c.queueToVatExport('bootstrap', 'o+0', 'startTerminate', a0, 'panic');
+  c.queueToVatRoot('bootstrap', 'startTerminate', a0, 'panic');
   await c.run();
 
   [refcounts, owners] = getRefCountsAndOwners();
@@ -1112,7 +1113,7 @@ test('terminated vat', async t => {
   t.falsy(owners[doomedExport2Kref]);
 
   // send a message to the orphan, to wiggle refcounts some more
-  const r = c.queueToVatExport('bootstrap', 'o+0', 'callOrphan', a0, 'panic');
+  const r = c.queueToVatRoot('bootstrap', 'callOrphan', a0, 'panic');
   await c.run();
 
   // when kk.kernelObjectExists was using .owner as a check, this was buggy,
@@ -1127,7 +1128,7 @@ test('terminated vat', async t => {
   // queued. This should cause both to be collected. Bug #3377 was a crash
   // with processRefcounts() not handling orphaned objects, triggered by the
   // doomedExport2 decref.
-  c.queueToVatExport('bootstrap', 'o+0', 'drop', a0, 'panic');
+  c.queueToVatRoot('bootstrap', 'drop', a0, 'panic');
   await c.run();
 
   // TODO: however, for some reason neither Node.js nor XS actually drops
@@ -1168,6 +1169,7 @@ test('device transfer', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
 
   // The bootstrap() message is already queued. When we call c.step(), it
   // will stash 'amy' in the device, send 'amy' to vat-left, and send the
@@ -1195,7 +1197,7 @@ test('device transfer', async t => {
   t.is(getRefCounts(), '1,1');
 
   // now tell vat-right to retrieve amy from the device
-  c.queueToVatExport('right', 'o+0', 'getAmy', capargs([]), 'none');
+  c.queueToVatRoot('right', 'getAmy', capargs([]), 'none');
   await c.run();
   t.deepEqual(c.dump().log, ['vat-right got amy', 'hi amy from vat-right']);
 });

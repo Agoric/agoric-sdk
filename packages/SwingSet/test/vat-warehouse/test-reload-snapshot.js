@@ -44,6 +44,7 @@ test('vat reload from snapshot', async t => {
   const c1 = await makeSwingsetController(hostStorage, null, {
     warehousePolicy: { initialSnapshot: 2, snapshotInterval: 5 },
   });
+  c1.pinVatRoot('target');
   const vatID = c1.vatNameToID('target');
 
   function getPositions() {
@@ -57,14 +58,14 @@ test('vat reload from snapshot', async t => {
   }
 
   const expected1 = [];
-  c1.queueToVatExport('target', 'o+0', 'count', capargs([]));
+  c1.queueToVatRoot('target', 'count', capargs([]));
   expected1.push(`count = 0`);
   await c1.run();
   t.deepEqual(c1.dump().log, expected1);
   t.deepEqual(getPositions(), [0, 1]);
 
   for (let i = 1; i < 11; i += 1) {
-    c1.queueToVatExport('target', 'o+0', 'count', capargs([]));
+    c1.queueToVatRoot('target', 'count', capargs([]));
     expected1.push(`count = ${i}`);
   }
   await c1.run();
@@ -75,7 +76,7 @@ test('vat reload from snapshot', async t => {
   const c2 = await makeSwingsetController(hostStorage);
   const expected2 = [`count = 7`, `count = 8`, `count = 9`, `count = 10`];
   t.deepEqual(c2.dump().log, expected2); // replayed 4 deliveries
-  c2.queueToVatExport('target', 'o+0', 'count', capargs([]));
+  c2.queueToVatRoot('target', 'count', capargs([]));
   expected2.push(`count = 11`);
   await c2.run();
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11

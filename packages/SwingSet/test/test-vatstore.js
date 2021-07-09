@@ -22,9 +22,10 @@ test('vatstore', async t => {
   const c = await buildVatController(config, [], {
     hostStorage,
   });
+  c.pinVatRoot('bootstrap');
 
   function send(msg, ...args) {
-    c.queueToVatExport('bootstrap', 'o+0', msg, capargs(args));
+    c.queueToVatRoot('bootstrap', msg, capargs(args));
   }
 
   send('get', 'zot');
