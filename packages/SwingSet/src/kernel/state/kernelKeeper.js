@@ -818,6 +818,7 @@ export default function makeKernelKeeper(
         reachable += 1;
       }
       recognizable += 1;
+      // kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
@@ -860,6 +861,7 @@ export default function makeKernelKeeper(
         reachable -= 1;
       }
       recognizable -= 1;
+      // kdebug(`-- ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
       if (!reachable || !recognizable) {
         maybeFreeKrefs.add(kernelSlot);
       }
