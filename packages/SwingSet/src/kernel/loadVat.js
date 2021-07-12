@@ -10,6 +10,7 @@ export function makeVatRootObjectSlot() {
 
 export function makeVatLoader(stuff) {
   const {
+    overrideVatManagerOptions = {},
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
@@ -85,7 +86,6 @@ export function makeVatLoader(stuff) {
   }
 
   const allowedDynamicOptions = [
-    'consensusMode',
     'description',
     'metered',
     'managerType', // TODO: not sure we want vats to be able to control this
@@ -98,7 +98,6 @@ export function makeVatLoader(stuff) {
   ];
 
   const allowedStaticOptions = [
-    'consensusMode',
     'description',
     'name',
     'vatParameters',
@@ -131,9 +130,6 @@ export function makeVatLoader(stuff) {
    * @param {Object} options  an options bag. These options are currently understood:
    *
    * @param {ManagerType} options.managerType
-   *
-   * @param {boolean} options.consensusMode if true,
-   *        turn off debugging features provided to a vat that may cause nondeterminism
    *
    * @param {number} options.virtualObjectCacheSize
    *
@@ -203,7 +199,6 @@ export function makeVatLoader(stuff) {
       isDynamic ? allowedDynamicOptions : allowedStaticOptions,
     );
     const {
-      consensusMode,
       metered = isDynamic,
       vatParameters = {},
       managerType,
@@ -234,7 +229,6 @@ export function makeVatLoader(stuff) {
     );
 
     const managerOptions = {
-      consensusMode,
       managerType,
       bundle: vatSourceBundle,
       metered,
@@ -248,6 +242,7 @@ export function makeVatLoader(stuff) {
       virtualObjectCacheSize,
       useTranscript,
       name,
+      ...overrideVatManagerOptions,
     };
 
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
@@ -269,6 +264,7 @@ export function makeVatLoader(stuff) {
       enableSetup: true,
       managerType: 'local',
       useTranscript: true,
+      ...overrideVatManagerOptions,
     };
     const translators = makeVatTranslators(vatID, kernelKeeper);
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);

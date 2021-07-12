@@ -95,13 +95,10 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
-  /**
-   * @param {boolean} consensusMode
-   */
-  function getSourceAndOptions(consensusMode) {
+  function getSourceAndOptions() {
     const source = JSON.parse(kvStore.get(`${vatID}.source`));
     const options = JSON.parse(kvStore.get(`${vatID}.options`));
-    return harden({ source, options: { ...options, consensusMode } });
+    return harden({ source, options });
   }
 
   function getOptions() {

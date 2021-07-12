@@ -80,7 +80,7 @@ async function buildSwingset(
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { warehousePolicy: { consensusMode }, slogCallbacks, slogFile },
+    { overrideVatManagerOptions: { consensusMode }, slogCallbacks, slogFile },
   );
 
   // We DON'T want to run the kernel yet, only when the application decides

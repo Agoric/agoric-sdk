@@ -206,9 +206,7 @@ function makeVatConsole(logger, wrapper = true) {
   const cons = Object.fromEntries(
     ['debug', 'log', 'info', 'warn', 'error'].map(level => {
       if (wrapper === false) {
-        // Static wrapper that never enables.  We create unique no-op functions
-        // so that the different log methods cannot be compared to detect this
-        // mode.
+        // Static wrapper that never enables.
         return [level, () => {}];
       }
 
