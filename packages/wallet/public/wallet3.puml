@@ -1,0 +1,173 @@
+@startuml 
+autonumber "<size:9>00:"
+'skinparam handwritten true
+skinparam shadowing false
+skinparam sequence {
+    BoxBorderColor DarkSlateGrey
+    GroupBorderColor DarkSlateGrey
+    GroupBorderThickness 1
+    ArrowColor DarkSlateGrey
+    ActorBorderColor DarkSlateGrey
+    LifeLineBorderColor DarkSlateGrey
+    LifeLineBackgroundColor #A9DCDF
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantBackgroundColor Wheat
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantFontColor DarkSlateGrey
+}
+
+actor alice
+box "Browser" #AntiqueWhite
+    boundary walletUI
+    boundary walletBridge
+    boundary simpExUI
+    collections walletBridge_37
+end box
+entity walletHost
+entity simpExHost
+box "Chain" #LightBlue
+    control BOARD
+    control mailboxAdmin
+    control zoe
+    control simpExContract
+end box
+
+alice -> walletHost ++ : GET wallet
+walletHost -> walletUI ++ : CREATE UI
+deactivate walletHost
+walletUI -> walletBridge : CREATE wallet bridge
+walletUI --> alice -- : 
+
+alice -> simpExHost ++ : GET web page
+simpExHost --> simpExUI ++ : CREATE UI
+
+deactivate simpExHost
+
+simpExUI -> walletBridge ++ : connect "a78a8d"
+walletBridge -> walletHost ++ : connect "a78a8d"?
+walletHost -> BOARD : get "a78a8d"
+
+note left
+    TODO dean review initial connection
+end note
+BOARD --> walletHost : return simpleEx publicAPI
+
+alt if the simpExHandle is NOT known
+    walletHost -> walletUI ++ : approve?
+    walletUI -> alice -- : approve? "unknown contract 3"
+    walletHost --> walletBridge -- : approved
+    walletBridge -> walletBridge_37 ** : CREATE wallet 
+end
+deactivate walletBridge
+
+
+simpExUI -> walletBridge_37 : walletGetPurses
+walletBridge_37 -> walletHost : walletGetPurses("simpEx_37")
+alt supporting offer tracking as well
+    simpExUI -> walletBridge_37 : walletGetInbox()
+    walletBridge_37 -> walletHost : walletGetInbox("simpEx_37")
+    alt WE AREN'T DOING THIS
+        walletHost -> simpExContract : getStatus(offerHandles)
+    end alt
+    walletHost --> walletBridge_37 : offerDescs
+    walletBridge_37 --> simpExUI : offerDescs
+end
+simpExUI --> alice : present balances and outstanding offers
+deactivate simpExUI
+
+simpExUI -> walletBridge_37 : walletGetMailbocIDForBrand "a78a8d"
+return mailboxID "aR7nd0mUs3r"
+
+note left
+  TODO  sort out initial connection
+end note
+
+alice -> alice : decide offer
+alice -> simpExUI : construct offer
+note right
+  contract UI send proposal info to wallet and m akeInvite  request to contract
+  They must be combined when the user approves the offer
+end note
+
+group makeInvite step
+  simpExUI -> simpExHost : sendInvite "aR7nd0mUs3r"
+  simpExHost -> simpExHost : decide which makeInvite variant to use
+  simpExHost -> simpExContract : <makeInvite>
+  note over zoe
+    the Host chooses which invite making operation to invoke
+  end note
+  return invite
+  simpExHost -> mailboxAdmin : sendPayment "aR7nd0mUs3r" invite
+  mailboxAdmin --> walletHost : notify via Purse update notification
+end group
+
+group proposal to wallet
+  simpExUI -> walletBridge_37 : propose(offerTerms)
+  note right
+      id: client timestamp,
+      invite: { instanceHandle: boardID, inviteDesc } // inviteDesc is a string
+      proposalTemplate: {
+            give: {
+              Tip: {
+                // The pursePetname identifies which purse we want to use
+                pursePetname: selects.$tipPurse.value,
+                extent: Number($inputAmount.value),
+              },
+            },
+            ...optWant,
+            exit: { onDemand: null },
+          }
+  end note
+
+  walletBridge_37 -> walletHost ++ : propose offerTerms
+  walletHost --> walletBridge_37 -- : new offer ID
+  walletBridge_37 --> simpExUI : offer ID
+end group
+
+note over walletBridge_37, walletHost
+  requires that the offer has been delivered, so might be triggered by that
+end note
+
+walletHost -> walletHost : compileOffer
+walletHost -> walletHost : getInviteForOffer
+note right
+  search for an invite that matches on inviteHandle and inviteDesc
+  invitePurse.getCurrentAmount()
+    .filter(a => a.instanceHandle === offer.instanceHandle
+                  && a.inviteDesc === offer.inviteDesc)
+  ?? there's a race to receive the invite
+end note
+
+
+walletHost -> walletUI : approve? offerTerms
+
+walletUI -> alice : display offer in list
+
+alice -> walletUI : approve offer
+note right
+    rename current "accept" to "approve"
+end note
+
+walletUI -> walletHost : offerTerms approved
+
+
+walletHost -> zoe : offer(invite, proposal, payment)
+zoe --> walletHost : { payoutP, offerHandle, outcome, cancelObj? }
+zoe -> simpExContract : invoke offerHook
+
+simpExUI --> alice : offer pending
+
+simpExContract -> simpExContract : make trade
+simpExContract --> zoe : reallocate
+simpExContract --> zoe : complete(offerHandle)
+zoe --> walletHost !! : resolve payoutP
+
+walletHost --> walletBridge_37 : update offers
+walletBridge_37 --> simpExUI : update offers
+simpExUI --> alice : update offers
+@enduml
+
+
+
+
+```

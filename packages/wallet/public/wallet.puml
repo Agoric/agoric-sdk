@@ -1,0 +1,114 @@
+@startuml 
+autonumber "<size:9>00:"
+'skinparam handwritten true
+skinparam shadowing false
+skinparam sequence {
+    BoxBorderColor DarkSlateGrey
+    GroupBorderColor DarkSlateGrey
+    GroupBorderThickness 1
+    ArrowColor DarkSlateGrey
+    ActorBorderColor DarkSlateGrey
+    LifeLineBorderColor DarkSlateGrey
+    LifeLineBackgroundColor #A9DCDF
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantBackgroundColor Wheat
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantFontColor DarkSlateGrey
+}
+
+actor alice
+box "Browser" #AntiqueWhite
+    boundary walletUI
+    boundary walletBridge
+    boundary simpExUI
+    collections walletBridge_37
+end box
+entity walletHost
+entity simpExHost
+box "Chain" #LightBlue
+    control REGISTRY
+    control zoe
+    control simpExContract
+end box
+
+alice -> walletHost ++ : GET wallet
+walletHost -> walletUI ++ : CREATE UI
+deactivate walletHost
+walletUI -> walletBridge : CREATE wallet bridge
+walletUI --> alice -- : 
+
+alice -> simpExHost ++ : GET web page
+simpExHost --> simpExUI ++ : CREATE UI
+
+deactivate simpExHost
+
+simpExUI -> walletBridge ++ : connect "simpEx_37"
+walletBridge -> walletHost ++ : connect "simpEx_37"?
+walletHost -> REGISTRY : get "simpEx_37"
+
+alt using getInstance
+    REGISTRY --> walletHost : return simpExHandle
+    walletHost -> zoe : getInstance(simpExHandle)
+    zoe --> walletHost : instanceRecord{terms, roles, publicAPI} incl. Issuers
+    zoe --> simpExContract : get connected
+else relying on redeem
+    REGISTRY --> walletHost : return simpleEx publicAPI
+end
+alt if the simpExHandle is NOT known
+    walletHost -> walletUI ++ : approve?
+    walletUI -> alice -- : approve?
+    walletHost --> walletBridge -- : approved
+    walletBridge -> walletBridge_37 ** : CREATE wallet 
+end
+deactivate walletBridge
+
+
+simpExUI -> walletBridge_37 : getBalances
+walletBridge_37 -> walletHost : getBalances("simpEx_37")
+alt supporting offer tracking as well
+    simpExUI -> walletBridge_37 : getOfferDescriptions()
+    walletBridge_37 -> walletHost : getOfferDescriptions("simpEx_37")
+    alt WE AREN'T DOING THIS
+        walletHost -> simpExContract : getStatus(offerHandles)
+    end alt
+    walletHost --> walletBridge_37 : offerDescs
+    walletBridge_37 --> simpExUI : offerDescs
+end
+simpExUI --> alice : present balances and outstanding offers
+deactivate simpExUI
+
+alice -> alice : decide offer
+alice -> simpExUI : construct offer
+simpExUI -> walletBridge_37 : propose(offerTerms)
+note right
+    {offer: {TokenA: {brand: "simolean_23", extent: 4}},
+     want : {TokenB: {brand: "quatloo_789", extent: 5}}}
+end note
+walletBridge_37 -> walletHost ++ : propose offerTerms
+walletHost -> walletUI : approve? offerTerms
+
+walletUI -> alice : approve?
+walletUI -> walletHost : offerTerms approved
+walletHost -> simpExContract : getInvite
+simpExContract --> walletHost : invite, offerHandle
+walletHost -> zoe : redeem(invite, offerTerms, payment)
+zoe --> walletHost : seat, payoutP
+walletHost -> simpExContract : addOrder
+walletHost --> walletBridge_37 -- : new offer ID
+walletBridge_37 --> simpExUI : offer ID
+simpExUI --> alice : offer pending
+
+simpExContract -> simpExContract : make trade
+simpExContract --> zoe : reallocate
+simpExContract --> zoe : exit(offerHandle)
+zoe --> walletHost !! : resolve payoutP
+
+walletHost --> walletBridge_37 : update offers
+walletBridge_37 --> simpExUI : update offers
+simpExUI --> alice : update offers
+@enduml
+
+
+
+
+```

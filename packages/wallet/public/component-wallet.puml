@@ -1,0 +1,179 @@
+@startuml 
+autonumber "<size:9>00:"
+'skinparam handwritten true
+skinparam shadowing false
+skinparam sequence {
+    BoxBorderColor DarkSlateGrey
+    GroupBorderColor DarkSlateGrey
+    GroupBorderThickness 1
+    ArrowColor DarkSlateGrey
+    ActorBorderColor DarkSlateGrey
+    LifeLineBorderColor DarkSlateGrey
+    LifeLineBackgroundColor #A9DCDF
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantBackgroundColor Wheat
+    ParticipantBorderColor DarkSlateGrey
+    ParticipantFontColor DarkSlateGrey
+}
+
+actor alice
+box "Browser" #AntiqueWhite
+    boundary signerUI
+    boundary walletUI
+    boundary simpExUI
+    boundary walletBridge
+end box
+entity walletHost
+entity simpExHost
+box "Chain" #LightBlue
+    control BOARD
+    control zoe
+    control simpExContract
+    control mailboxAdmin
+    control grant
+end box
+
+alice -> walletHost ++ : GET wallet
+walletHost -> walletUI ++ : CREATE UI
+deactivate walletHost
+
+alice -> simpExHost ++ : GET simpEx
+simpExHost --> simpExUI ++ : CREATE UI
+
+deactivate simpExHost
+
+simpExUI -> walletHost ++ : <agoric-wallet-bridge>
+walletHost -> walletBridge ++ : CREATE
+deactivate walletHost
+
+simpExUI -> walletBridge : connect simpExOrigin
+walletBridge -> walletHost ++ : connect simpExOrigin
+walletHost -> walletBridge : connected
+
+alt if the simpExOrigin is NOT known
+    walletHost -> walletUI : approve?
+    walletUI --> alice : approve?\n"Alleged simpEx https://..."
+    walletHost -> walletBridge : connected
+end
+
+walletBridge -> simpExUI : connected
+simpExUI -> walletBridge : getZoe()\n\~.getPublicFacet(getBoard()\n\~.getValue("a78a8d"))
+walletBridge -> walletHost : ...
+walletHost -> BOARD : getValue "a78a8d"
+BOARD --> walletHost : simpEx instance
+walletHost -> zoe : getPublicFacet(simpEx instance)
+zoe --> walletHost : simpEx publicAPI
+walletHost --> walletBridge : simpEx publicAPI
+walletBridge --> simpExUI : simpEx publicAPI
+
+simpExUI -> walletBridge : <agoric-wallet-purses>
+walletBridge -> walletHost : walletGetPurses("simpEx")
+alt supporting offer tracking as well
+    simpExUI -> walletBridge : walletGetInbox()
+    walletBridge -> walletHost : walletGetInbox("simpEx")
+    walletHost --> walletBridge : offerDescs
+    walletBridge --> simpExUI : offerDescs
+end
+simpExUI --> alice : present balances and outstanding offers
+
+simpExUI -> walletBridge : walletGetAddress
+return depositFacet "agoric1..."
+
+note left
+  TODO  sort out initial connection
+end note
+
+alice -> alice : decide offer
+alice -> simpExUI : construct offer
+note right
+  contract UI send proposal info to wallet and m akeInvite  request to contract
+  They must be combined when the user approves the offer
+end note
+
+group makeInvite step
+  simpExUI -> simpExHost ++ : sendInvite "agoric1..."
+  simpExHost -> simpExHost : decide which makeInvite variant to use
+  simpExHost -> simpExContract : <makeInvite>
+  note over zoe
+    the Host chooses which invite making operation to invoke
+  end note
+  simpExHost -> mailboxAdmin : sendPayment "agoric1..." invite
+  return invite
+  mailboxAdmin --> walletHost : notify via Purse update notification
+end group
+
+group proposal to wallet
+  simpExUI -> walletBridge : propose(offerTerms)
+  note right
+      id: client timestamp,
+      invite: inviteAmount
+      proposalTemplate: {
+            give: {
+              Tip: {
+                purseID: <agoric-wallet-purses>.value,
+                amount: Number($inputAmount.value),
+              },
+            },
+            ...optWant,
+            exit: { onDemand: null },
+          }
+  end note
+
+  walletBridge -> walletHost ++ : propose offerTerms
+  walletHost --> walletBridge -- : new offer ID
+  walletBridge --> simpExUI : offer ID
+end group
+
+note over walletBridge, walletHost
+  requires that the offer has been delivered, so might be triggered by that
+end note
+
+walletHost -> walletHost : compileOffer
+walletHost -> walletHost : getInviteForOffer
+note right
+  search for an invite that matches on inviteHandle and inviteDesc
+  invitePurse.getCurrentAmount()
+    .filter(a => a.instanceHandle === offer.instanceHandle
+                  && a.inviteDesc === offer.inviteDesc)
+  ?? there's a race to receive the invite
+end note
+
+
+walletHost -> walletUI : approve? offerTerms
+
+walletUI -> alice : display offer in list
+
+alice -> walletUI : approve offer
+note right
+    rename current "accept" to "approve"
+end note
+
+alt if separate signing authority is available
+  walletUI -> walletHost : create grant for offerTerms
+  walletHost -> grant : create grant
+  walletUI -> signerUI ++ : request grant signature
+  signerUI -> alice : display grant signature request
+  alice -> signerUI : sign grant
+  signerUI -> grant : broadcast grant signature
+  deactivate signerUI
+  grant -> walletHost : grant is signed
+end
+
+walletUI -> walletHost : offerTerms approved
+
+
+walletHost -> zoe : offer(invite, proposal, payment)
+zoe --> walletHost : { payoutP, offerHandle, outcome, cancelObj? }
+zoe -> simpExContract : invoke offerHook
+
+simpExUI --> alice : offer pending
+
+simpExContract -> simpExContract : make trade
+simpExContract --> zoe : reallocate
+simpExContract --> zoe : complete\n(offerHandle)
+zoe --> walletHost !! : resolve payoutP
+
+walletHost --> walletBridge : update offers
+walletBridge --> simpExUI : update offers
+simpExUI --> alice : update offers
+@enduml

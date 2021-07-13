@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" type="image/png" href="../images/touch/homescreen144.png" />
+  <title>Agoric Wallet App</title>
+</head>
+<body>
+  <h1>Wallet Connect 3</h1>
+
+  <script type="module">
+    if (navigator.registerProtocolHandler) {
+      const handleWcUrl = new URL(location.href);
+      handleWcUrl.searchParams.append('walletconnect', 'REPLACEME');
+      const protocolHandler = handleWcUrl.href.replace('REPLACEME', '%s');
+      console.log('would register', protocolHandler);
+      navigator.registerProtocolHandler('web+agoricwallet', protocolHandler, 'Agoric Wallet handler');
+    }
+
+  </script>
+</body>
+</html>
