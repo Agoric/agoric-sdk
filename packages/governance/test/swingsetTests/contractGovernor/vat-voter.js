@@ -10,9 +10,9 @@ const build = async (log, zoe) => {
       const voteFacet = E(seat).getOfferResult();
 
       return Far(`Voter ${name}`, {
-        castBallotFor: async (qName, choice) => {
+        castBallotFor: async (handle, choice) => {
           log(`Voter ${name} cast a ballot for ${choice}`);
-          return E(voteFacet).castBallotFor(qName, [choice]);
+          return E(voteFacet).castBallotFor(handle, [choice]);
         },
         validate: async (
           counterInstance,
@@ -28,47 +28,42 @@ const build = async (log, zoe) => {
           const electionManagerP = E.get(governedTermsP).electionManager;
           const governedParamP = E.get(governedTermsP).governedParams;
           const governorPublicP = E(zoe).getPublicFacet(await electionManagerP);
-          const registrarIFromGovernorP = E(governorPublicP).getRegistrar();
+          const registrarPublicFromGovernorP = E(
+            governorPublicP,
+          ).getRegistrar();
+          const registrarIFromGovernorP = E(
+            registrarPublicFromGovernorP,
+          ).getInstance();
 
-          const governsContractP = E(governorPublicP).governsContract(
-            governedInstance,
-          );
           const counterPublicP = E(zoe).getPublicFacet(counterInstance);
-          const ballotTemplateP = E(counterPublicP).getBallotTemplate();
-          const ballotDetails = E(ballotTemplateP).getDetails();
-          const ballotSpecP = E.get(ballotDetails).ballotSpec;
+          const ballotSpecP = E.get(E(counterPublicP).getDetails()).ballotSpec;
 
           const [
             electionManager,
             registrarIFromGovernor,
             governedParam,
             ballotSpec,
-            governsContract,
           ] = await Promise.all([
             electionManagerP,
             registrarIFromGovernorP,
             governedParamP,
             ballotSpecP,
-            governsContractP,
           ]);
-          const governorMatches = electionManager === governorInstance;
-          const registrarsMatch = registrarIFromGovernor === registrarInstance;
-          const contractParam = governedParam.contractParams;
-          const included = ballotSpec.question.includes(contractParam);
 
+          const governorMatches = electionManager === governorInstance;
           log(
             `governor from governed ${
               governorMatches ? 'matches' : 'does not match'
             } governor instance`,
           );
-          log(
-            `The governor claims ${
-              governsContract ? 'to ' : 'not to '
-            } govern the contract`,
-          );
+
+          const contractParam = governedParam.contractParams;
+          const included = ballotSpec.question.param === contractParam[0];
           log(
             `"${contractParam}" ${included ? 'is' : 'is not'} in the question`,
           );
+
+          const registrarsMatch = registrarIFromGovernor === registrarInstance;
           log(
             `registrar from governor ${
               registrarsMatch ? 'matches' : 'does not match'

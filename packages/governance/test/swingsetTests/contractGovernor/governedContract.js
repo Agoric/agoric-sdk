@@ -13,27 +13,33 @@ export const governedParameterTerms = {
   contractParams: [MALLEABLE_NUMBER],
 };
 
-/* @type {ContractStartFn} */
+/** @type {ContractStartFn} */
 const start = async zcf => {
-  const { electionManager, governedParams } = zcf.getTerms();
+  const {
+    /** @type {Instance} */ electionManager,
+    /** @type {ParamDescriptions} */ governedParams,
+  } = zcf.getTerms();
+  /** @type {ERef<GovernorPublic>} */
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
-  const paramManager = buildParamManager([
+  const paramDesc = [
     {
       name: MALLEABLE_NUMBER,
       value: 602214090000000000000000n,
       type: ParamType.NAT,
     },
-  ]);
+  ];
+  const paramManager = buildParamManager(paramDesc);
+
   assert(
     sameStructure(governedParams, harden(governedParameterTerms)),
     X`Terms must include ${MALLEABLE_NUMBER}`,
   );
 
-  const gCreator = await E(governorPublic).governContract(
-    zcf.getInstance(),
-    paramManager,
-    'contractParams',
-  );
+  // There's only one paramManager, so just return it.
+  const getParamMgrAccessor = () =>
+    Far('paramManagerAccessor', {
+      get: () => paramManager,
+    });
 
   const publicFacet = Far('public face of governed contract', {
     getState: () => paramManager.getParams().MalleableNumber,
@@ -41,7 +47,8 @@ const start = async zcf => {
   });
 
   const creatorFacet = Far('creator facet of governed contract', {
-    getContractGovernor: () => gCreator,
+    getContractGovernor: () => electionManager,
+    getParamMgrAccessor,
   });
   return { publicFacet, creatorFacet };
 };

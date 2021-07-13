@@ -4,7 +4,12 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
-import { ChoiceMethod, makeBallotSpec } from '../../../src/ballotBuilder';
+import {
+  ChoiceMethod,
+  makeBallotSpec,
+  QuorumRule,
+  ElectionType,
+} from '../../../src/ballotBuilder';
 
 const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);
@@ -12,9 +17,9 @@ const makeVoterVat = async (log, vats, zoe) => {
   return voterCreator;
 };
 
-const addQuestion = async (qDetails, closingTime, tools) => {
+const addQuestion = async (qDetails, closingTime, tools, quorumRule) => {
   const { registrarFacet, installations } = tools;
-  const { question, positions } = qDetails;
+  const { question, positions, electionType } = qDetails;
   const closingRule = {
     timer: tools.timer,
     deadline: 3n,
@@ -24,18 +29,18 @@ const addQuestion = async (qDetails, closingTime, tools) => {
     ChoiceMethod.CHOOSE_N,
     question,
     positions,
+    electionType,
     1,
   );
   const ballotDetails = {
     ballotSpec,
     closingRule,
-    quorumThreshold: 3n,
+    quorumRule,
   };
-  const { instance: ballotInstance } = await E(registrarFacet).addQuestion(
-    installations.binaryBallotCounter,
-    ballotDetails,
-  );
-  return ballotInstance;
+  const { instance: ballotInstance, publicFacet } = await E(
+    registrarFacet,
+  ).addQuestion(installations.binaryBallotCounter, ballotDetails);
+  return { ballotInstance, ballotPublic: publicFacet };
 };
 
 const committeeBinaryStart = async (
@@ -51,9 +56,19 @@ const committeeBinaryStart = async (
   ).startInstance(installations.committeeRegistrar, {}, registrarTerms);
 
   const choose = 'Choose';
-  const details = { question: choose, positions: ['Eeny', 'Meeny'] };
+  const electionType = ElectionType.SURVEY;
+  const details = {
+    question: choose,
+    positions: ['Eeny', 'Meeny'],
+    electionType,
+  };
   const tools = { registrarFacet, installations, timer };
-  const ballotInstance = await addQuestion(details, 3n, tools);
+  const { ballotInstance } = await addQuestion(
+    details,
+    3n,
+    tools,
+    QuorumRule.HALF,
+  );
 
   const invitations = await E(registrarFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);
@@ -138,11 +153,29 @@ const committeeBinaryTwoQuestions = async (
     [howHigh, twoFeet],
   ]);
 
-  const potato = { question: choose, positions: [onePotato, twoPotato] };
-  const potatoBallotInstance = await addQuestion(potato, 3n, tools);
+  const potato = {
+    question: choose,
+    positions: [onePotato, twoPotato],
+    electionType: ElectionType.SURVEY,
+  };
+  const { ballotInstance: potatoBallotInstance } = await addQuestion(
+    potato,
+    3n,
+    tools,
+    QuorumRule.HALF,
+  );
 
-  const height = { question: howHigh, positions: [oneFoot, twoFeet] };
-  const heightBallotInstance = await addQuestion(height, 4n, tools);
+  const height = {
+    question: howHigh,
+    positions: [oneFoot, twoFeet],
+    electionType: ElectionType.SURVEY,
+  };
+  const { ballotInstance: heightBallotInstance } = await addQuestion(
+    height,
+    4n,
+    tools,
+    QuorumRule.HALF,
+  );
 
   const [alice, bob] = await Promise.all([aliceP, bobP, carolP, daveP, emmaP]);
   // At least one voter should verify that everything is on the up-and-up

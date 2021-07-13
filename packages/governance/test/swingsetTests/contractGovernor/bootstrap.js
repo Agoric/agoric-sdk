@@ -10,32 +10,22 @@ const contractGovernorStart = async (
   timer,
   log,
   installations,
-  governorPublic,
-  governedInstance,
-  governedCreator,
+  voteCreator,
 ) => {
   const rule = {
     timer,
     deadline: 3n,
   };
 
-  const governor = await E(governedCreator).getContractGovernor();
-  E(governorPublic)
-    .governsContract(governedInstance)
-    .then(doesGovern => {
-      log(`Governor recognizes governed: ${doesGovern}`);
-    });
-
-  const details = await E(governor).createQuestion(
+  const { details, instance } = await E(voteCreator).voteOnParamChange(
     'MalleableNumber',
     299792458n,
     installations.binaryBallotCounter,
-    governedInstance,
     rule,
+    'contractParams',
   );
 
-  const counters = await E(governor).getBallotCounters();
-  E(E(zoe).getPublicFacet(counters[0]))
+  E(E(zoe).getPublicFacet(instance))
     .getOutcome()
     .then(outcome => log(`vote outcome: ${outcome}`))
     .catch(e => log(`vote failed ${e}`));
@@ -77,30 +67,6 @@ const startRegistrar = async (zoe, installations) => {
   return { committeeCreator, registrarInstance };
 };
 
-const startGovernor = async (
-  registrarInstance,
-  zoe,
-  installations,
-  committeeCreator,
-) => {
-  const governorTerms = { registrarInstance };
-  const {
-    instance: governorInstance,
-    publicFacet: governorPublicFacet,
-    creatorFacet,
-  } = await E(zoe).startInstance(
-    installations.contractGovernor,
-    {},
-    governorTerms,
-  );
-
-  await E(creatorFacet).setRegistrar(
-    E(committeeCreator).getQuestionInvitation(),
-  );
-
-  return { governorPublicFacet, governorInstance };
-};
-
 const createCommittee = async (committeeCreator, voterCreator) => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
@@ -115,11 +81,13 @@ const createCommittee = async (committeeCreator, voterCreator) => {
 const votersVote = async (detailsP, votersP, selections) => {
   const [voters, details] = await Promise.all([votersP, detailsP]);
   const {
-    ballotSpec: { question, positions },
+    ballotSpec: { positions },
+    handle,
   } = details;
+
   await Promise.all(
     voters.map((v, i) => {
-      return E(v).castBallotFor(question, positions[selections[i]]);
+      return E(v).castBallotFor(handle, positions[selections[i]]);
     }),
   );
 };
@@ -127,11 +95,21 @@ const votersVote = async (detailsP, votersP, selections) => {
 const oneVoterValidate = async (
   votersP,
   detailsP,
-  governedInstance,
+  governedInstanceP,
   registrarInstance,
-  governorInstance,
+  governorInstanceP,
 ) => {
-  const [voters, details] = await Promise.all([votersP, detailsP]);
+  const [
+    voters,
+    details,
+    governedInstance,
+    governorInstance,
+  ] = await Promise.all([
+    votersP,
+    detailsP,
+    governedInstanceP,
+    governorInstanceP,
+  ]);
   const { instance } = details;
 
   E(voters[0]).validate(
@@ -142,7 +120,8 @@ const oneVoterValidate = async (
   );
 };
 
-const checkContractState = async (zoe, timer, contractInstance, log) => {
+const checkContractState = async (zoe, timer, contractInstanceP, log) => {
+  const contractInstance = await contractInstanceP;
   const contractPublic = E(zoe).getPublicFacet(contractInstance);
   let state = await E(contractPublic).getState();
 
@@ -166,25 +145,17 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   );
 
   log(`=> voter and registrar vats are set up`);
-  const { governorPublicFacet, governorInstance } = await startGovernor(
-    registrarInstance,
+
+  const { creatorFacet: governor, instance: governorInstance } = await E(
     zoe,
-    installations,
+  ).startInstance(installations.contractGovernor);
+  const governedContract = await E(governor).startGovernedInstance(
     committeeCreator,
-  );
-
-  const governedParams = governedParameterTerms;
-  const governedTerms = { electionManager: governorInstance, governedParams };
-
-  const {
-    instance: governedInstance,
-    publicFacet: _governedPublicFacet,
-    creatorFacet: governedCreator,
-  } = await E(zoe).startInstance(
     installations.governedContract,
     {},
-    governedTerms,
+    { governedParams: governedParameterTerms },
   );
+  const governedInstance = E(governedContract).getInstance();
 
   const [testName] = argv;
   switch (testName) {
@@ -195,9 +166,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         timer,
         log,
         installations,
-        governorPublicFacet,
-        governedInstance,
-        governedCreator,
+        governedContract,
       );
       await votersVote(detailsP, votersP, [0, 1, 1, 0, 0]);
       await oneVoterValidate(

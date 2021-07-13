@@ -81,7 +81,6 @@ const main = async (t, argv) => {
 
 const expectedcontractGovernorStartLog = [
   '=> voter and registrar vats are set up',
-  'Governor recognizes governed: true',
   '@@ schedule task for:3, currently: 0 @@',
   'Voter Alice cast a ballot for change MalleableNumber to "[299792458n]".',
   'Voter Bob cast a ballot for leave MalleableNumber unchanged.',
@@ -94,7 +93,6 @@ const expectedcontractGovernorStartLog = [
   '&& running a task scheduled for 3. &&',
   'vote outcome: change MalleableNumber to "[299792458n]".',
   'governor from governed matches governor instance',
-  'The governor claims to  govern the contract',
   '"MalleableNumber" is in the question',
   'registrar from governor matches',
   'current value of MalleableNumber is 299792458',

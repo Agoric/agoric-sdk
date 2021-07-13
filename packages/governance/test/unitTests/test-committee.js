@@ -11,7 +11,12 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
-import { ChoiceMethod, makeBallotSpec } from '../../src/ballotBuilder';
+import {
+  ChoiceMethod,
+  makeBallotSpec,
+  ElectionType,
+  QuorumRule,
+} from '../../src/ballotBuilder';
 
 const registrarRoot = `${__dirname}/../../src/committeeRegistrar`;
 const counterRoot = `${__dirname}/../../src/binaryBallotCounter`;
@@ -57,6 +62,7 @@ test('committee-open question:one', async t => {
     ChoiceMethod.CHOOSE_N,
     'why',
     ['because', 'why not?'],
+    ElectionType.SURVEY,
     1,
   );
   const details = harden({
@@ -65,9 +71,13 @@ test('committee-open question:one', async t => {
       timer: buildManualTimer(console.log),
       deadline: 2n,
     },
+    quorumRule: QuorumRule.HALF,
   });
   await E(creatorFacet).addQuestion(counterInstallation, details);
-  t.deepEqual(await publicFacet.getOpenQuestions(), ['why']);
+  const question = await publicFacet.getOpenQuestions();
+  const ballot = E(publicFacet).getBallot(question[0]);
+  const ballotDetails = await E(ballot).getDetails();
+  t.deepEqual(ballotDetails.ballotSpec.question, 'why');
 });
 
 test('committee-open question:mixed', async t => {
@@ -81,6 +91,7 @@ test('committee-open question:mixed', async t => {
     ChoiceMethod.CHOOSE_N,
     'why',
     ['because', 'why not?'],
+    ElectionType.SURVEY,
     1,
   );
   const details = harden({
@@ -89,6 +100,7 @@ test('committee-open question:mixed', async t => {
       timer,
       deadline: 4n,
     },
+    quorumRule: QuorumRule.HALF,
   });
   await E(creatorFacet).addQuestion(counterInstallation, details);
 
@@ -99,6 +111,7 @@ test('committee-open question:mixed', async t => {
   const details2 = harden({
     ballotSpec: ballotSpec2,
     closingRule: details.closingRule,
+    quorumRule: QuorumRule.HALF,
   });
   await E(creatorFacet).addQuestion(counterInstallation, details2);
 
@@ -112,6 +125,7 @@ test('committee-open question:mixed', async t => {
       timer,
       deadline: 1n,
     },
+    quorumRule: QuorumRule.HALF,
   });
   const { publicFacet: counterPublic } = await E(creatorFacet).addQuestion(
     counterInstallation,
@@ -125,5 +139,6 @@ test('committee-open question:mixed', async t => {
 
   timer.tick();
 
-  t.deepEqual(await publicFacet.getOpenQuestions(), ['why', 'why2']);
+  const questions = await publicFacet.getOpenQuestions();
+  t.deepEqual(questions.length, 2);
 });

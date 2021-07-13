@@ -5,12 +5,18 @@ import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
 
 const verify = async (log, question, registrarPublicFacet, instances) => {
-  const ballotTemplate = E(registrarPublicFacet).getBallot(question);
-  const { ballotSpec, instance } = await E(ballotTemplate).getDetails();
-  const { positions, method, question: q, maxChoices } = ballotSpec;
+  const handles = await E(registrarPublicFacet).getOpenQuestions();
+  const detailsP = handles.map(h => {
+    const ballot = E(registrarPublicFacet).getBallot(h);
+    return E(ballot).getDetails();
+  });
+  const detailsPlural = await Promise.all(detailsP);
+  const details = detailsPlural.find(d => d.ballotSpec.question === question);
+  const { ballotSpec, instance } = details;
+  const { positions, method, question: ques, maxChoices } = ballotSpec;
   log(`Verify ballot from instance: ${question}, ${positions}, ${method}`);
   const c = await E(registrarPublicFacet).getName();
-  log(`Verify: q: ${q}, max: ${maxChoices}, committee: ${c}`);
+  log(`Verify: q: ${ques}, max: ${maxChoices}, committee: ${c}`);
   const registrarInstance = await E(registrarPublicFacet).getInstance();
   log(
     `Verify instances: registrar: ${registrarInstance ===
@@ -28,9 +34,9 @@ const build = async (log, zoe) => {
       const voteFacet = E(seat).getOfferResult();
 
       const votingObserver = Far('voting observer', {
-        updateState: question => {
-          log(`${name} cast a ballot on ${question} for ${choice}`);
-          return E(voteFacet).castBallotFor(question, [choice]);
+        updateState: details => {
+          log(`${name} cast a ballot for ${choice}`);
+          return E(voteFacet).castBallotFor(details.handle, [choice]);
         },
       });
       const notifier = E(registrarPublicFacet).getQuestionNotifier();
@@ -49,11 +55,13 @@ const build = async (log, zoe) => {
 
       const voteMap = new Map(choices);
       const votingObserver = Far('voting observer', {
-        updateState: question => {
-          const choice = voteMap.get(question);
+        updateState: details => {
+          const choice = voteMap.get(details.ballotSpec.question);
 
-          log(`${name} cast a ballot on ${question} for ${choice}`);
-          return E(voteFacet).castBallotFor(question, [choice]);
+          log(
+            `${name} cast a ballot on ${details.ballotSpec.question} for ${choice}`,
+          );
+          return E(voteFacet).castBallotFor(details.handle, [choice]);
         },
       });
       const notifier = E(registrarPublicFacet).getQuestionNotifier();
