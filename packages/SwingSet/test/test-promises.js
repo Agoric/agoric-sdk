@@ -173,6 +173,7 @@ test('refcount while queued', async t => {
     path.resolve(__dirname, 'basedir-promises-3'),
   );
   const c = await buildVatController(config, [], t.context.data);
+  c.pinVatRoot('bootstrap');
 
   // bootstrap() sets up an unresolved promise (p2, the result promise of
   // right~.one()) with vat-right as the decider, and enqueues a message
@@ -180,7 +181,7 @@ test('refcount while queued', async t => {
   await c.run();
 
   // then we tell that vat to resolve pk1 to a value (4)
-  c.queueToVatExport('bootstrap', 'o+0', 'two', capargs([]), 'ignore');
+  c.queueToVatRoot('bootstrap', 'two', capargs([]), 'ignore');
   await c.run();
 
   // Now we have a resolved promise 'pk1' whose only reference is the
@@ -192,13 +193,7 @@ test('refcount while queued', async t => {
   // tell vat-right to resolve p2, which should transfer the 'four' message
   // from the p2 promise queue to the run-queue for vat-right. That message
   // will be delivered, with a new promise that is promptly resolved to '3'.
-  const kpid4 = c.queueToVatExport(
-    'right',
-    'o+0',
-    'three',
-    capargs([]),
-    'ignore',
-  );
+  const kpid4 = c.queueToVatRoot('right', 'three', capargs([]), 'ignore');
   await c.run();
   t.deepEqual(c.kpResolution(kpid4), capargs([true, 3]));
 });

@@ -411,6 +411,7 @@ export async function main() {
       config,
       bootstrapArgv,
       hostStorage,
+      { verbose },
       runtimeOptions,
     );
     swingStore.commit();
@@ -424,6 +425,11 @@ export async function main() {
     deviceEndowments,
     runtimeOptions,
   );
+  if (benchmarkRounds > 0) {
+    // Pin the vat root that will run benchmark rounds so it'll still be there
+    // when it comes time to run them.
+    controller.pinVatRoot(launchIndirectly ? 'launcher' : 'bootstrap');
+  }
 
   let blockNumber = 0;
   let statLogger = null;
@@ -560,9 +566,8 @@ export async function main() {
     let totalSteps = 0;
     let totalDeltaT = 0n;
     for (let i = 0; i < rounds; i += 1) {
-      const roundResult = controller.queueToVatExport(
+      const roundResult = controller.queueToVatRoot(
         launchIndirectly ? 'launcher' : 'bootstrap',
-        'o+0',
         'runBenchmarkRound',
         args,
         'ignore',

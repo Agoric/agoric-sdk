@@ -77,11 +77,11 @@ test('bootstrap failure', async t => {
 
 async function extraMessage(t, mode, status, body, slots) {
   const controller = await beginning(t, 'data');
+  controller.pinVatRoot('bootstrap');
   await controller.run();
   const args = { body: `["${mode}"]`, slots: [] };
-  const extraResult = controller.queueToVatExport(
+  const extraResult = controller.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'extra',
     args,
     'ignore',

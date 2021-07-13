@@ -18,6 +18,7 @@ async function makeController(managerType, runtimeOptions) {
   config.vats.target3 = config.vats.target;
   config.vats.target4 = config.vats.target;
   const c = await buildVatController(config, [], runtimeOptions);
+  c.pinVatRoot('bootstrap');
   return c;
 }
 
@@ -78,7 +79,7 @@ async function runSteps(c, t) {
   await c.run();
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
-    c.queueToVatExport(vat, 'o+0', 'append', capargs([1]));
+    c.queueToVatRoot(vat, 'append', capargs([1]));
     // eslint-disable-next-line no-await-in-loop
     await c.run();
     t.log(

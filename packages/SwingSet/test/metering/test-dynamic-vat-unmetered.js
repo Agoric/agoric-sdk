@@ -31,6 +31,7 @@ test('unmetered dynamic vat', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
@@ -43,9 +44,8 @@ test('unmetered dynamic vat', async t => {
   );
 
   // 'createVat' will import the bundle
-  c.queueToVatExport(
+  c.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'createVat',
     capargs([dynamicVatBundle, { metered: false }]),
     'panic',
@@ -54,7 +54,7 @@ test('unmetered dynamic vat', async t => {
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'run', capargs([]), 'panic');
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -62,13 +62,7 @@ test('unmetered dynamic vat', async t => {
   // Tell the dynamic vat to call `Array(4e9)`. If metering was in place,
   // this would be rejected. Without metering, it's harmless (Arrays are
   // lazy).
-  c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'explode',
-    capargs(['allocate']),
-    'panic',
-  );
+  c.queueToVatRoot('bootstrap', 'explode', capargs(['allocate']), 'panic');
   await c.run();
   t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
 });

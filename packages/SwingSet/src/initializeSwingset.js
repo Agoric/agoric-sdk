@@ -9,6 +9,7 @@ import bundleSource from '@agoric/bundle-source';
 import './types.js';
 import { insistStorageAPI } from './storageAPI.js';
 import { initializeKernel } from './kernel/initializeKernel.js';
+import { kdebugEnable } from './kernel/kdebug.js';
 
 /**
  * @param {X[]} xs
@@ -218,7 +219,7 @@ export function swingsetIsInitialized(hostStorage) {
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {HostStore} hostStorage
- * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
+ * @param {{ kernelBundles?: Record<string, string>, verbose?: boolean }} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
@@ -266,7 +267,10 @@ export async function initializeSwingset(
       assert.fail(X`unknown manager type ${defaultManagerType}`);
   }
 
-  const { kernelBundles = await buildKernelBundles() } = initializationOptions;
+  const {
+    kernelBundles = await buildKernelBundles(),
+    verbose,
+  } = initializationOptions;
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
@@ -386,5 +390,8 @@ export async function initializeSwingset(
   await bundleBundles(config.vats, 'vats');
   await bundleBundles(config.devices, 'devices');
 
+  if (verbose) {
+    kdebugEnable(true);
+  }
   return initializeKernel(config, hostStorage);
 }

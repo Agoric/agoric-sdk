@@ -45,6 +45,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
 
   popt('crankNumber');
   popt('kernel.defaultManagerType');
+  popt('pinnedObjects');
   popt('vatAdminRootKref');
   popt('gcActions');
   popt('kernelStats');
@@ -77,12 +78,23 @@ export function dumpStore(swingStore, outfile, rawMode) {
   pgroup('kd');
   gap();
 
+  let starting = true;
   for (const [dn, d] of devs.entries()) {
+    if (starting) {
+      starting = false;
+    } else {
+      gap();
+    }
     p(`// device ${d} (${dn})`);
     popt(`${d}.options`);
     poptBig('bundle', `${d}.source`);
     popt(`${d}.o.nextID`);
+    popt(`${d}.deviceState`);
     for (const key of groupKeys(`${d}.c.kd`)) {
+      const val = popt(key);
+      popt(`${d}.c.${val}`);
+    }
+    for (const key of groupKeys(`${d}.c.ko`)) {
       const val = popt(key);
       popt(`${d}.c.${val}`);
     }
@@ -121,7 +133,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
   gap();
 
   const vatInfo = [];
-  let starting = true;
+  starting = true;
   for (const [vn, v] of vats.entries()) {
     if (starting) {
       starting = false;

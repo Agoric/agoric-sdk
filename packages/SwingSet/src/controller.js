@@ -22,7 +22,6 @@ import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
 import { insistStorageAPI } from './storageAPI.js';
 import { insistCapData } from './capdata.js';
-import { parseVatSlot } from './parseVatSlots.js';
 import { provideHostStorage } from './hostStorage.js';
 import {
   swingsetIsInitialized,
@@ -361,6 +360,12 @@ export async function makeSwingsetController(
       return defensiveCopy(kernel.getStatus());
     },
 
+    pinVatRoot(vatName) {
+      const vatID = kernel.vatNameToID(vatName);
+      const kref = kernel.getRootObject(vatID);
+      kernel.pinObject(kref);
+    },
+
     // these are for tests
 
     kpStatus(kpid) {
@@ -379,17 +384,15 @@ export async function makeSwingsetController(
 
     /**
      * @param {string} vatName
-     * @param {string} exportID
      * @param {string} method
      * @param {CapData<unknown>} args
      * @param {ResolutionPolicy} resultPolicy
      */
-    queueToVatExport(vatName, exportID, method, args, resultPolicy = 'ignore') {
+    queueToVatRoot(vatName, method, args, resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
-      parseVatSlot(exportID);
       assert.typeof(method, 'string');
       insistCapData(args);
-      const kref = kernel.addExport(vatID, exportID);
+      const kref = kernel.getRootObject(vatID);
       const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
       if (kpid) {
         kernel.kpRegisterInterest(kpid);

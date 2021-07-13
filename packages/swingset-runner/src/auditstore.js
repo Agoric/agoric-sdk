@@ -1,7 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
+import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable';
+import { parseVatSlot } from '@agoric/swingset-vat/src/parseVatSlots';
 
 /* eslint-disable no-use-before-define */
-export function auditRefCounts(store) {
+export function auditRefCounts(store, doDump, printPrefix) {
   const refCounts = new Map();
   const refSites = new Map();
 
@@ -12,6 +14,24 @@ export function auditRefCounts(store) {
       const val = store.get(key);
       incRefCount(store.get(`${v}.c.${val}`), `clist.${v}`);
     }
+    for (const key of store.getKeys(`${v}.c.ko`, `${v}.c.ko~`)) {
+      const val = store.get(key);
+      const { isReachable, vatSlot } = parseReachableAndVatSlot(val);
+      const { allocatedByVat } = parseVatSlot(vatSlot);
+      const tag = isReachable ? 'R' : '_';
+      if (!allocatedByVat) {
+        incRefCount(
+          store.get(`${v}.c.${vatSlot}`),
+          `clist.${v}.${tag}`,
+          !isReachable,
+        );
+      }
+    }
+  }
+
+  const pinnedObjects = commaSplit(store.get('pinnedObjects'));
+  for (const pinned of pinnedObjects) {
+    incRefCount(pinned, 'pin');
   }
 
   const runQueue = JSON.parse(store.get('runQueue'));
@@ -37,10 +57,7 @@ export function auditRefCounts(store) {
         }
         break;
       }
-      case 'fulfilledToPresence':
-        incRefCount(store.get(`${kpid}.slot`), `${kpid}.slot`);
-        break;
-      case 'fulfilledToData':
+      case 'fulfilled':
       case 'rejected': {
         let slotNum = 0;
         for (const slot of commaSplit(store.get(`${kpid}.data.slots`))) {
@@ -54,14 +71,38 @@ export function auditRefCounts(store) {
     }
   }
 
-  for (const kpid of refCounts.keys()) {
-    const stored = store.get(`${kpid}.refCount`);
-    const computed = `${refCounts.get(kpid)}`;
-    if (stored !== computed) {
+  for (const kref of Array.from(refCounts.keys()).sort()) {
+    let storedReach;
+    let storedRecog;
+    const [computedReach, computedRecog] = refCounts.get(kref);
+    if (kref.startsWith('kp')) {
+      storedReach = Number(store.get(`${kref}.refCount`));
+      storedRecog = storedReach;
+    } else {
+      [storedReach, storedRecog] = commaSplit(
+        store.get(`${kref}.refCount`),
+      ).map(Number);
+    }
+    let dumpIt = false;
+    if (storedReach !== computedReach || storedRecog !== computedRecog) {
+      if (printPrefix) {
+        console.log('\nRefCount audit failures:');
+        printPrefix = false;
+      }
       console.log(
-        `refCount mismatch ${kpid} stored=${stored} computed=${computed}`,
+        `refCount mismatch ${kref} stored=${storedReach},${storedRecog} computed=${computedReach},${computedRecog}`,
       );
-      for (const site of refSites.get(kpid)) {
+      dumpIt = true;
+    } else if (doDump) {
+      if (printPrefix) {
+        console.log('\nRefCount dump:');
+        printPrefix = false;
+      }
+      console.log(`refCount ${kref} ${storedReach},${storedRecog}`);
+      dumpIt = true;
+    }
+    if (dumpIt) {
+      for (const site of refSites.get(kref)) {
         console.log(`    ${site}`);
       }
     }
@@ -83,17 +124,24 @@ export function auditRefCounts(store) {
     }
   }
 
-  function incRefCount(kpid, site) {
-    if (kpid && kpid.startsWith('kp')) {
-      let refCount = refCounts.get(kpid);
+  function incRefCount(kref, site, reachableOnly) {
+    if (kref && (kref.startsWith('kp') || kref.startsWith('ko'))) {
+      let refCount = refCounts.get(kref);
       if (refCount) {
-        refCount += 1;
-        refSites.get(kpid).push(site);
+        refCount[1] += 1;
+        if (!reachableOnly) {
+          refCount[0] += 1;
+        }
+        refSites.get(kref).push(site);
       } else {
-        refCount = 1;
-        refSites.set(kpid, [site]);
+        if (reachableOnly) {
+          refCount = [0, 1];
+        } else {
+          refCount = [1, 1];
+        }
+        refSites.set(kref, [site]);
       }
-      refCounts.set(kpid, refCount);
+      refCounts.set(kref, refCount);
     }
   }
 

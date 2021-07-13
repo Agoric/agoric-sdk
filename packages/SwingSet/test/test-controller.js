@@ -65,8 +65,8 @@ async function simpleCall(t) {
   const vatAdminRoot = ['ko20', adminVatID, 'o+0'];
   t.deepEqual(data.kernelTable, [vatAdminRoot]);
 
-  // vat1:o+1 will map to ko21
-  controller.queueToVatExport('vat1', 'o+1', 'foo', capdata('args'));
+  // vat1:o+0 will map to ko21
+  controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
     {
       msg: {
@@ -80,7 +80,7 @@ async function simpleCall(t) {
   ]);
   await controller.run();
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
-    target: 'o+1',
+    target: 'o+0',
     method: 'foo',
     args: capdata('args'),
   });
@@ -161,6 +161,7 @@ test('bootstrap export', async t => {
     path.resolve(__dirname, 'basedir-controller-3'),
   );
   const c = await buildVatController(config);
+  c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');
   const commsVatID = c.vatNameToID('comms');

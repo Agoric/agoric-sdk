@@ -32,13 +32,14 @@ async function dropPresence(t, dropExport) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
   t.teardown(c.shutdown);
   await c.run();
 
   const bootstrapID = c.vatNameToID('bootstrap');
-  c.queueToVatExport('bootstrap', 'o+0', 'one', capargs([]));
+  c.queueToVatRoot('bootstrap', 'one', capargs([]));
   if (dropExport) {
-    c.queueToVatExport('bootstrap', 'o+0', 'drop', capargs([]));
+    c.queueToVatRoot('bootstrap', 'drop', capargs([]));
     await c.step();
   }
   await c.step();

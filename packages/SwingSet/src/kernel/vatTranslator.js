@@ -89,7 +89,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const vrefs = krefs.map(kref =>
       mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts),
     );
-    krefs.map(vatKeeper.clearReachableFlag);
+    krefs.map(kref => vatKeeper.clearReachableFlag(kref, 'dropE'));
     const vatDelivery = harden(['dropExports', vrefs]);
     return vatDelivery;
   }
@@ -239,7 +239,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
       // and we clear the reachable flag, which might the decrement the
       // reachable refcount, which might tag the kref for processing
-      clearReachableFlag(kref);
+      clearReachableFlag(kref, 'dropI');
       return kref;
     });
     kdebug(`syscall[${vatID}].dropImports(${krefs.join(' ')})`);

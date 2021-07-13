@@ -8,7 +8,7 @@ import { makeVatSlot } from '../parseVatSlots';
 import { insistStorageAPI } from '../storageAPI';
 import { wrapStorage } from './state/storageWrapper';
 import makeKernelKeeper from './state/kernelKeeper';
-import { doAddExport, doQueueToKref } from './kernel';
+import { exportRootObject, doQueueToKref } from './kernel';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -82,11 +82,10 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
-        // about creation/termination of dynamic vats. doAddExport will
-        // increment the refcount so it won't go away, despite being
-        // unreferenced by any other vat.
-        const rootVref = makeVatRootObjectSlot();
-        const kref = doAddExport(kernelKeeper, vatID, rootVref);
+        // about creation/termination of dynamic vats.
+        const kref = exportRootObject(kernelKeeper, vatID);
+        // Pin, to prevent it being GC'd when only the kvStore points to it
+        kernelKeeper.pinObject(kref);
         kvStore.set('vatAdminRootKref', kref);
         gotVatAdminRootKref = true;
       }
@@ -193,8 +192,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     });
     const args = harden([vatObj0s, deviceObj0s]);
     // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
-    const rootVref = makeVatRootObjectSlot();
-    const rootKref = doAddExport(kernelKeeper, bootstrapVatID, rootVref);
+    const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
     const resultKpid = doQueueToKref(
       kernelKeeper,
       rootKref,

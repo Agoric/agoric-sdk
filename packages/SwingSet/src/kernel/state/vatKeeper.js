@@ -124,7 +124,7 @@ export function makeVatKeeper(
     assert.equal(isReachable, false, X`${kernelSlot} was reachable, oops`);
   }
 
-  function setReachableFlag(kernelSlot) {
+  function setReachableFlag(kernelSlot, _tag) {
     const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { isReachable, vatSlot } = parseReachableAndVatSlot(
@@ -137,11 +137,12 @@ export function makeVatKeeper(
       // eslint-disable-next-line prefer-const
       let { reachable, recognizable } = getObjectRefCount(kernelSlot);
       reachable += 1;
+      // kdebug(`++ ${kernelSlot} ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
 
-  function clearReachableFlag(kernelSlot) {
+  function clearReachableFlag(kernelSlot, _tag) {
     const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { isReachable, vatSlot } = parseReachableAndVatSlot(
@@ -159,6 +160,7 @@ export function makeVatKeeper(
       // eslint-disable-next-line prefer-const
       let { reachable, recognizable } = getObjectRefCount(kernelSlot);
       reachable -= 1;
+      // kdebug(`-- ${kernelSlot} ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
       if (reachable === 0) {
         addMaybeFreeKref(kernelSlot);
@@ -244,7 +246,7 @@ export function makeVatKeeper(
     if (setReachable) {
       if (allocatedByVat) {
         // exports are marked as reachable, if they weren't already
-        setReachableFlag(kernelSlot);
+        setReachableFlag(kernelSlot, `${vatID}|vk|clistR`);
       } else {
         // imports must be reachable
         const { isReachable } = getReachableAndVatSlot(vatID, kernelSlot);
@@ -313,7 +315,7 @@ export function makeVatKeeper(
     if (setReachable) {
       if (!allocatedByVat) {
         // imports are marked as reachable, if they weren't already
-        setReachableFlag(kernelSlot);
+        setReachableFlag(kernelSlot, `${vatID}|kv|clistR`);
       } else {
         // if the kernel is sending non-reachable exports back into
         // exporting vat, that's a kernel bug
@@ -367,7 +369,7 @@ export function makeVatKeeper(
     // First, make sure the reachable flag is clear, which might reduce the
     // reachable refcount. Note that we need the clist entry to find this, so
     // decref before delete.
-    clearReachableFlag(kernelSlot);
+    clearReachableFlag(kernelSlot, `${vatID}|del|clistR`);
 
     // Then decrementRefCount only the recognizable portion of the refcount.
     // `decrementRefCount` is a nop if the object is already gone.

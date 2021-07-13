@@ -113,7 +113,7 @@ test.serial('d1', async t => {
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   await c.step();
-  c.queueToVatExport('bootstrap', 'o+0', 'step1', capargs([]));
+  c.queueToVatRoot('bootstrap', 'step1', capargs([]));
   await c.step();
   t.deepEqual(c.dump().log, [
     'callNow',
@@ -144,6 +144,7 @@ async function test2(t, mode) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [mode], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
+  c.pinVatRoot('bootstrap');
   await c.step();
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
@@ -510,8 +511,8 @@ test.serial('liveslots throws when D() gets promise', async t => {
   // If that isn't working as expected, and the promise makes it to
   // syscall.callNow, the translator will notice and kill the vat. We send a
   // ping() to it to make sure it's still alive. If the vat were dead,
-  // queueToVatExport would throw because the vat was deleted.
-  c.queueToVatExport('bootstrap', 'o+0', 'ping', capargs([]), 'panic');
+  // queueToVatRoot would throw because the vat was deleted.
+  c.queueToVatRoot('bootstrap', 'ping', capargs([]), 'panic');
   await c.run();
 
   // If the translator doesn't catch the promise and it makes it to the device,
@@ -543,7 +544,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
   // now check that the vat was terminated: this should throw an exception
   // because the entire bootstrap vat was deleted
-  t.throws(() => c.queueToVatExport('bootstrap', 'o+0', 'ping', capargs([])), {
+  t.throws(() => c.queueToVatRoot('bootstrap', 'ping', capargs([])), {
     message: /vat name .* must exist, but doesn't/,
   });
 });

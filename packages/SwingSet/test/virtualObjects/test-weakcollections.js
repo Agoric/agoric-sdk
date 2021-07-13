@@ -35,6 +35,7 @@ test('weakMap in vat', async t => {
   const hostStorage = provideHostStorage();
   const bootstrapResult = await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   await c.run();
@@ -42,7 +43,7 @@ test('weakMap in vat', async t => {
 
   async function doSimple(method) {
     const sendArgs = capargs([], []);
-    const r = c.queueToVatExport('bootstrap', 'o+0', method, sendArgs);
+    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     return c.kpResolution(r);

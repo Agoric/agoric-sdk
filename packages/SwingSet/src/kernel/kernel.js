@@ -20,7 +20,7 @@ import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { getKpidsToRetire } from './cleanup.js';
 import { processNextGCAction } from './gc-actions.js';
 
-import { makeVatRootObjectSlot, makeVatLoader } from './loadVat.js';
+import { makeVatLoader } from './loadVat.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 
@@ -43,6 +43,20 @@ function makeError(message, name = 'Error') {
 
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
+/**
+ * Provide the kref of a vat's root object, as if it had been exported.
+ *
+ * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state.
+ * @param {string} vatID  Vat ID of the vat whose root kref is sought.
+ *
+ * @returns {string} the kref of the root object of the given vat.
+ */
+export function exportRootObject(kernelKeeper, vatID) {
+  insistVatID(vatID);
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+  return vatKeeper.mapVatSlotToKernelSlot('o+0');
+}
+
 /*
  * Pretend that a vat just exported an object, and increment the refcount on
  * the resulting kref so nothing tries to delete it for being unreferenced.
@@ -60,8 +74,7 @@ export function doAddExport(kernelKeeper, fromVatID, vref) {
 
 /**
  * Enqueue a message to some kernel object, as if the message had been sent
- * by some other vat. This requires a kref as a target, so use e.g.
- * doAddExport to acquire one and increment its refcount to keep it alive.
+ * by some other vat. This requires a kref as a target.
  *
  * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state
  * @param {string} kref  Target of the message
@@ -234,6 +247,10 @@ export default function buildKernel(
     parseKernelSlot(what);
     const vatKeeper = kernelKeeper.provideVatKeeper(forVatID);
     return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
+  }
+
+  function pinObject(kref) {
+    kernelKeeper.pinObject(kref);
   }
 
   function addExport(fromVatID, vatSlot) {
@@ -576,7 +593,7 @@ export default function buildKernel(
     function makeSuccessResponse() {
       // build success message, giving admin vat access to the new vat's root
       // object
-      const kernelRootObjSlot = addExport(vatID, makeVatRootObjectSlot());
+      const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
       return {
         body: JSON.stringify([
           vatID,
@@ -1068,6 +1085,10 @@ export default function buildKernel(
 
     addImport,
     addExport,
+    getRootObject(vatID) {
+      return exportRootObject(kernelKeeper, vatID);
+    },
+    pinObject,
     vatNameToID,
     deviceNameToID,
     queueToKref,
