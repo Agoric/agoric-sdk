@@ -150,7 +150,9 @@ export function makeLocalVatManagerFactory(tools) {
     const endowments = harden({
       ...vatEndowments,
       ...ls.vatGlobals,
-      console: makeVatConsole(vatConsole, !consensusMode),
+      console: makeVatConsole(vatConsole, (logger, args) => {
+        consensusMode || logger(...args);
+      }),
       assert,
     });
     const inescapableTransforms = [];

@@ -200,29 +200,25 @@ export { makeSupervisorSyscall };
  *
  * @param {Record<'debug' | 'log' | 'info' | 'warn' | 'error', (...args: any[]) => void>} logger
  * the backing log method
- * @param {boolean | ((logger: any, args: any[]) => void)} [wrapper]
+ * @param {(logger: any, args: any[]) => void} [wrapper]
  */
-function makeVatConsole(logger, wrapper = true) {
+function makeVatConsole(logger, wrapper) {
+  assert.typeof(
+    wrapper,
+    'function',
+    X`Invalid VatConsole wrapper value ${wrapper}`,
+  );
   const cons = Object.fromEntries(
     ['debug', 'log', 'info', 'warn', 'error'].map(level => {
-      if (wrapper === false) {
-        // Static wrapper that never enables.
-        return [level, () => {}];
-      }
-
       const backingLog = logger[level];
-      if (wrapper === true) {
-        // Static wrapper that always enables.
-        return [level, backingLog];
-      }
 
-      // Dynamic wrapper that may change its mind.
-      assert.typeof(
-        wrapper,
-        'function',
-        X`Invalid VatConsole wrapper value ${wrapper}`,
-      );
-      return [level, (...args) => wrapper(backingLog, args)];
+      return [
+        level,
+        (...args) => {
+          // Wrap the actual backing log message, in case there is logic to impose.
+          wrapper(backingLog, args);
+        },
+      ];
     }),
   );
 

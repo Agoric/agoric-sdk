@@ -200,7 +200,7 @@ function makeWorker(port) {
         port.send(['console', level, ...jsonSafeArgs]);
       };
     };
-    const logger = {
+    const forwardingLogger = {
       debug: makeLog('debug'),
       log: makeLog('log'),
       info: makeLog('info'),
@@ -213,13 +213,13 @@ function makeWorker(port) {
     const endowments = {
       ...ls.vatGlobals,
       console: makeVatConsole(
-        logger,
+        forwardingLogger,
         // We have to dynamically wrap the consensus mode so that it can change
         // during the lifetime of the supervisor (which when snapshotting, is
         // restored to its current heap across restarts, not actually stopping
         // until the vat is terminated).
-        (fn, args) => {
-          currentConsensusMode || fn(...args);
+        (logger, args) => {
+          currentConsensusMode || logger(...args);
         },
       ),
       assert,

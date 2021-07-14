@@ -91,7 +91,9 @@ parentPort.on('message', ([type, ...margs]) => {
       ...ls.vatGlobals,
       console: makeVatConsole(
         anylogger(`SwingSet:vat:${vatID}`),
-        !consensusMode,
+        (logger, args) => {
+          consensusMode || logger(...args);
+        },
       ),
       assert,
     };
