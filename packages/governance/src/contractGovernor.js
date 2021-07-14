@@ -49,7 +49,7 @@ const start = async zcf => {
       electionManager: zcf.getInstance(),
     };
 
-    const { creatorFacet, instance } = await E(zoe).startInstance(
+    const { creatorFacet, instance, publicFacet } = await E(zoe).startInstance(
       governedContractInstallation,
       issuerKeywordRecord,
       augmentedTerms,
@@ -68,6 +68,7 @@ const start = async zcf => {
       voteOnParamChange,
       getCreatorFacet: () => creatorFacet,
       getInstance: () => governedInstance,
+      getPublicFacet: () => publicFacet,
     });
   };
 
