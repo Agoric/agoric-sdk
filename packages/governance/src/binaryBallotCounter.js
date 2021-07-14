@@ -6,7 +6,11 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
 import { E } from '@agoric/eventual-send';
-import { ChoiceMethod, buildBallot } from './ballotBuilder';
+import {
+  ChoiceMethod,
+  buildBallot,
+  verifyQuestionFormat,
+} from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
@@ -24,21 +28,28 @@ const makeQuorumCounter = quorumThreshold => {
 };
 
 // Exported for testing purposes
+/** @type {BuildBallotCounter} */
 const makeBinaryBallotCounter = (
-  question,
-  positions,
+  ballotSpec,
   threshold,
-  tieOutcome = undefined,
   closingRule,
   instance,
+  tieOutcome = undefined,
 ) => {
+  const { positions, maxChoices, method } = ballotSpec;
   assert(
     positions.length === 2,
     X`Binary ballots must have exactly two positions. had ${positions.length}: ${positions}`,
   );
-  assert.typeof(question, 'string');
+
+  verifyQuestionFormat(ballotSpec.electionType, ballotSpec.question);
+
   assert.typeof(positions[0], 'string');
   assert.typeof(positions[1], 'string');
+
+  assert(maxChoices === 1, X`Can only choose 1 item on a binary ballot`);
+  assert(method === ChoiceMethod.CHOOSE_N, X`${method} must be CHOOSE_N`);
+
   if (tieOutcome) {
     assert(
       positions.includes(tieOutcome),
@@ -46,17 +57,12 @@ const makeBinaryBallotCounter = (
     );
   }
 
-  const template = buildBallot(
-    ChoiceMethod.CHOOSE_N,
-    question,
-    positions,
-    1,
-    instance,
-  );
-  const ballotDetails = template.getDetails();
+  const ballot = buildBallot(ballotSpec, instance, closingRule);
+  const details = ballot.getDetails();
+  const { handle } = details;
 
   assert(
-    ballotDetails.method === ChoiceMethod.CHOOSE_N,
+    ballotSpec.method === ChoiceMethod.CHOOSE_N,
     X`Binary ballot counter only works with CHOOSE_N`,
   );
   let isOpen = true;
@@ -64,11 +70,11 @@ const makeBinaryBallotCounter = (
   const tallyPromise = makePromiseKit();
   const allBallots = makeStore('seat');
 
-  const recordBallot = (seat, filledBallotP, shares = 1n) => {
+  const submitVote = (seat, filledBallotP, shares = 1n) => {
     return E.when(filledBallotP, filledBallot => {
       assert(
-        filledBallot.question === question,
-        X`Ballot not for this question ${filledBallot.question} should have been ${question}`,
+        filledBallot.handle === handle,
+        X`Ballot not for this question; wrong handle`,
       );
       assert(
         positions.includes(filledBallot.chosen[0]),
@@ -91,13 +97,13 @@ const makeBinaryBallotCounter = (
       [positions[1]]: 0n,
     };
 
-    allBallots.values().forEach(({ ballot, shares }) => {
+    allBallots.values().forEach(({ ballot: b, shares }) => {
       assert(
-        ballot.chosen.length === 1,
+        b.chosen.length === 1,
         X`A binary ballot must contain exactly one choice.`,
       );
-      const choice = ballot.chosen[0];
-      if (!ballotDetails.positions.includes(choice)) {
+      const choice = b.chosen[0];
+      if (!details.ballotSpec.positions.includes(choice)) {
         spoiled += shares;
       } else {
         tally[choice] += shares;
@@ -134,15 +140,15 @@ const makeBinaryBallotCounter = (
   };
 
   const sharedFacet = {
-    getBallotTemplate: () => template,
+    getBallotTemplate: () => ballot,
+    getBallotDetails: () => details,
     isOpen: () => isOpen,
-    getClosingRule: () => closingRule,
   };
 
   /** @type {VoterFacet} */
   const voterFacet = Far('voterFacet', {
     ...sharedFacet,
-    submitVote: recordBallot,
+    submitVote,
   });
 
   // exposed for testing. In contracts, shouldn't be released.
@@ -158,6 +164,7 @@ const makeBinaryBallotCounter = (
     ...sharedFacet,
     getOutcome: () => outcomePromise.promise,
     getStats: () => tallyPromise.promise,
+    getDetails: () => details,
   });
   return { publicFacet, creatorFacet, closeFacet };
 };
@@ -169,21 +176,18 @@ const start = zcf => {
   // component.
   // TODO(hibbert) checking the quorum should be pluggable and legible.
   const {
-    question,
-    positions,
+    ballotSpec,
     quorumThreshold,
-    tieOutcome,
     closingRule,
+    tieOutcome,
   } = zcf.getTerms();
-
   // The closeFacet is exposed for testing, but doesn't escape from a contract
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    question,
-    positions,
+    ballotSpec,
     quorumThreshold,
-    tieOutcome,
     closingRule,
     zcf.getInstance(),
+    tieOutcome,
   );
 
   scheduleClose(closingRule, closeFacet.closeVoting);

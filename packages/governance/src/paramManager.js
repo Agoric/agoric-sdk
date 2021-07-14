@@ -112,18 +112,27 @@ const parse = paramDesc => {
     return harden(descriptions);
   };
 
-  return { getParams, manager };
+  const getParam = name => {
+    return harden({
+      name,
+      type: typesAndValues[name].type,
+      value: typesAndValues[name].value,
+    });
+  };
+
+  return { getParams, getParam, manager };
 };
 
 /** @type {BuildParamManager} */
 const buildParamManager = paramDesc => {
-  const { getParams, manager } = parse(paramDesc);
+  const { getParams, getParam, manager } = parse(paramDesc);
 
   return Far('param manager', {
     getParams,
+    getParam,
     ...manager,
   });
 };
 harden(buildParamManager);
 
-export { ParamType, buildParamManager };
+export { ParamType, buildParamManager, assertType };
