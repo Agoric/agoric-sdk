@@ -94,7 +94,7 @@ scenario2-use-client-account: t1/$(BASE_PORT)/owner-address
 
 t1/$(BASE_PORT)/owner-address:
 	rm -rf t1/$(BASE_PORT)/owner
-	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq.address > $@.tmp
+	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq -r .address > $@.tmp
 	mv $@.tmp $@
 
 # Provision and start a client.

@@ -189,6 +189,18 @@ export async function connectToChain(
     });
   };
 
+  const captureHelperOutput = async (txArgs, dstFile) => {
+    // Just run the helper as usual.
+    const { stdout, stderr } = await runHelper(txArgs);
+    if (stderr) {
+      throw Error(`Error capturing helper output: ${stderr}`);
+    }
+
+    // This is a separate step in case the dstFile is used as input for the
+    // runHelper command.
+    await fs.promises.writeFile(dstFile, stdout);
+  };
+
   const getMailbox = async () => {
     const { stdout, stderr } = await runHelper([
       'query',
@@ -332,14 +344,41 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   const { notifier: sendNotifier, updater: sendUpdater } = makeNotifierKit();
 
-  let totalDeliveries = 0;
+  // An array of [seqnum, message] ordered by unique seqnum.
   let messagePool = [];
+
+  // Atomically add to the message pool, ensuring the pool is sorted by unique
+  // sequence number.
+  const addToMessagePool = newMessages => {
+    // Add the new messages.
+    const bigPool = messagePool.concat(newMessages);
+
+    // Sort the big pool by sequence number.
+    const sortedPool = bigPool.sort((a, b) => a[0] - b[0]);
+
+    // Only keep messages that have a unique sequence number.
+    const uniquePool = sortedPool.filter(
+      (a, i) =>
+        // Index 0 is always kept.
+        i === 0 ||
+        // Others are only kept if not the same as the prior sequence.
+        a[0] !== sortedPool[i - 1][0],
+    );
+
+    // Replace the old message pool.
+    messagePool = uniquePool;
+  };
+
+  let totalDeliveries = 0;
   let highestAck = -1;
   let sequenceNumber = 0n;
   const sendFromMessagePool = async () => {
     let tmpInfo;
+
+    // We atomically drain the message pool.
     const messages = messagePool;
     messagePool = [];
+
     try {
       totalDeliveries += 1;
       console.log(
@@ -358,40 +397,22 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       );
 
       // Deliver message over file, as it could be big.
-      let args = ['tx', 'swingset', 'deliver', `@${tmpInfo.path}`];
+      let txArgs = ['tx', 'swingset', 'deliver', `@${tmpInfo.path}`];
+
+      // Is our helper different from the SwingSet client address?
       if (clientAddr !== helperAddr) {
-        const genDone = makePromiseKit();
-        execFile(
-          HELPER,
-          [
-            'tx',
-            'swingset',
-            'deliver',
-            '--generate-only',
-            `--chain-id=${chainID}`,
-            `--from=${clientAddr}`,
-            `@${tmpInfo.path}`,
-          ],
-          { maxBuffer: MAX_BUFFER_SIZE },
-          (error, stdout, stderr) => {
-            if (error) {
-              return genDone.reject(error);
-            }
-            return genDone.resolve({ stdout, stderr });
-          },
+        // Get the encoded message into our file.
+        await captureHelperOutput(
+          [...txArgs, '--generate-only', `--from=${clientAddr}`],
+          tmpInfo.path,
         );
 
-        // Reuse the file to send the constructed transaction.
-        const { stdout, stderr } = await genDone.promise;
-        if (stderr) {
-          throw Error(`Error creating swingset delivery tx; ${stderr}`);
-        }
-        await fs.promises.writeFile(tmpInfo.path, stdout);
-
-        args = ['tx', 'authz', 'exec', tmpInfo.path];
+        // Indirect the transaction broadcasting through the `authz` module.
+        txArgs = ['tx', 'authz', 'exec', tmpInfo.path];
       }
 
-      args.push(
+      // Now add the arguments to actually sign and broadcast the transaction.
+      txArgs.push(
         '--keyring-backend=test',
         '--gas=auto',
         '--gas-adjustment=1.3',
@@ -401,7 +422,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // Use the feeAccount for any fees.
       if (feeAccountAddr) {
-        args.push(`--fee-account=${feeAccountAddr}`);
+        txArgs.push(`--fee-account=${feeAccountAddr}`);
       }
 
       // We just try a single delivery per block.
@@ -410,7 +431,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         retry = false;
         // eslint-disable-next-line no-await-in-loop
         const { stderr, stdout } = await runHelper([
-          ...args,
+          ...txArgs,
           `--sequence=${sequenceNumber}`,
         ]);
 
@@ -447,7 +468,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       }
     } catch (e) {
       // Put back the deliveries we tried to make.
-      messagePool = messagePool.concat(messages);
+      messagePool = messages.concat(messagePool);
+      messagePool.sort((a, b) => a[0] - b[0]);
       throw e;
     } finally {
       if (tmpInfo) {
@@ -524,7 +546,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       doSend = true;
     }
     if (newMessages.length) {
-      messagePool = messagePool.concat(newMessages);
+      addToMessagePool(newMessages);
       doSend = true;
     }
 
