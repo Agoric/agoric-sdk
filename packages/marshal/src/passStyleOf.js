@@ -347,7 +347,8 @@ harden(assertCanBeRemotable);
 export { assertCanBeRemotable };
 
 /**
- * @param {Remotable} val
+ * @template {PrimaryRemotable} T
+ * @param {Remotable<T>} val
  * @param {Checker} [check]
  * @returns {boolean}
  */
@@ -368,7 +369,8 @@ function checkRemotable(val, check = x => x) {
 }
 
 /**
- * @param {Remotable} val
+ * @template {PrimaryRemotable} T
+ * @param {Remotable<T>} val
  */
 const assertRemotable = val => {
   checkRemotable(val, assertChecker);
@@ -390,34 +392,10 @@ harden(getInterfaceOf);
 export { getInterfaceOf };
 
 /**
- * objects can only be passed in one of two/three forms:
- * 1: pass-by-remote: all properties (own and inherited) are methods,
- *    the object itself is of type object, not function
- * 2: pass-by-copy: all string-named own properties are data, not methods
- *    the object must inherit from objectPrototype or null
- * 3: the empty object is pass-by-remote, for identity comparison
+ * How should this value be passed? What kind of `Passable` is it?
  *
- * all objects must be frozen
- *
- * anything else will throw an error if you try to serialize it
- * with these restrictions, our remote call/copy protocols expose all useful
- * behavior of these objects: pass-by-remote objects have no other data (so
- * there's nothing else to copy), and pass-by-copy objects have no other
- * behavior (so there's nothing else to invoke)
- *
- * How would val be passed?  For primitive values, the answer is
- *   * 'null' for null
- *   * throwing an error for a symbol, whether registered or not.
- *   * that value's typeof string for all other primitive values
- * For frozen objects, the possible answers
- *   * 'copyRecord' for non-empty records with only data properties
- *   * 'copyArray' for arrays with only data properties
- *   * 'copyError' for instances of Error with only data properties
- *   * 'remotable' for non-array objects with only method properties
- *   * 'promise' for genuine promises only
- *   * throwing an error on anything else, including thenables.
- * We export passStyleOf so other algorithms can use this module's
- * classification.
+ * See `PassStyle` and `Passable` in ./types.js for an explanation of the
+ * cases.
  *
  * @param {Passable} val
  * @returns {PassStyle}
@@ -443,14 +421,15 @@ export function passStyleOf(val) {
         typeof val.then !== 'function',
         X`Cannot pass non-promise thenables`,
       );
-      if (isPassByCopyError(val)) {
-        return 'copyError';
-      }
       if (isPassByCopyArray(val)) {
         return 'copyArray';
       }
       if (isPassByCopyRecord(val)) {
         return 'copyRecord';
+      }
+      // TODO recognize CopySet and CopyMap
+      if (isPassByCopyError(val)) {
+        return 'copyError';
       }
       assertRemotable(val);
       // console.log(`--- @@marshal: pass-by-ref object without Far/Remotable`);

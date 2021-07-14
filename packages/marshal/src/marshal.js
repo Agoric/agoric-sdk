@@ -78,6 +78,11 @@ function pureCopy(val, already = new WeakMap()) {
       return harden(copy);
     }
 
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(passStyle)} not yet implemented.`);
+    }
+
     case 'copyError': {
       const unk = /** @type {unknown} */ (val);
       const err = /** @type {Error} */ (unk);
@@ -358,6 +363,10 @@ export function makeMarshal(
               const result = val.map(encode);
               unfinished.delete(val);
               return result;
+            }
+            case 'copySet':
+            case 'copyMap': {
+              assert.fail(X`${q(passStyle)} not yet implemented.`);
             }
             case 'copyError': {
               if (errorTagging === 'on') {
