@@ -1,6 +1,7 @@
 /* global require */
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Nat } from '@agoric/nat';
+import { parse, stringify } from '@agoric/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
@@ -21,7 +22,7 @@ export default function buildCommand(broadcastCallback) {
     responses.set(count, { resolve, reject });
     assert(inboundCallback, X`inboundCommand before registerInboundCallback`);
     try {
-      inboundCallback(count, JSON.stringify(obj));
+      inboundCallback(count, stringify(obj));
     } catch (e) {
       console.error(`error running inboundCallback:`, e);
     }
@@ -29,7 +30,7 @@ export default function buildCommand(broadcastCallback) {
   }
 
   function sendBroadcast(kBodyString) {
-    const obj = JSON.parse(`${kBodyString}`);
+    const obj = parse(`${kBodyString}`);
     broadcastCallback(obj);
   }
 
@@ -41,12 +42,7 @@ export default function buildCommand(broadcastCallback) {
   function deliverResponse(kCount, kIsReject, kResponseString) {
     const count = Nat(kCount);
     const isReject = Boolean(kIsReject);
-    let obj;
-    // TODO: is this safe against kernel-realm trickery? It's awfully handy
-    // to let the kernel-side result be 'undefined'
-    if (kResponseString !== undefined) {
-      obj = JSON.parse(`${kResponseString}`);
-    }
+    const obj = parse(`${kResponseString}`);
     // TODO this might not qualify as an error, it needs more thought
     // See https://github.com/Agoric/agoric-sdk/pull/2406#discussion_r575561554
     assert(responses.has(count), X`unknown response index ${count}`);
