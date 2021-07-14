@@ -553,7 +553,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const bldAttMaker = await E(attCreatorFacet).getAttMaker(address);
 
         // To be used in the wallet, like:
-        // E(bldAttMaker).addLien(bldAmount, expiration) => {
+        // E(bldAttMaker).makeAttestations(bldAmount, expiration) => {
         //   GOV: govAttPayment,
         //   LOC: locAttPayment,
         // }

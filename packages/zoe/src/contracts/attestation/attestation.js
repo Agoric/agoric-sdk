@@ -182,7 +182,7 @@ const start = async zcf => {
   const creatorFacet = {
     getLiened, // called by cosmos
     getAttMaker, // called by createUserBundle in bootstrap.js
-    slash, // called by cosmos
+    slashed, // called by cosmos
   };
 
   return harden({ creatorFacet, publicFacet });
