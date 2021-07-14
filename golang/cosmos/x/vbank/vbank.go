@@ -121,7 +121,7 @@ func rewardRate(pool sdk.Coins, blocks int64) sdk.Coins {
 }
 
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
-	fmt.Println("vbank.go downcall", str)
+	// fmt.Println("vbank.go downcall", str)
 	keeper := ch.keeper
 
 	var msg portMessage
@@ -223,13 +223,13 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
 	}
 
-	fmt.Println("vbank.go downcall reply", ret, err)
+	// fmt.Println("vbank.go downcall reply", ret, err)
 	return
 }
 
 func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
-	// fmt.Println("ibc.go upcall", send)
+	// fmt.Println("vbank.go upcall", send)
 	reply, err := am.keeper.CallToController(ctx, send)
-	// fmt.Println("ibc.go upcall reply", reply, err)
+	// fmt.Println("vbank.go upcall reply", reply, err)
 	return reply, err
 }

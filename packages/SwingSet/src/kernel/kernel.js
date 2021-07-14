@@ -135,6 +135,7 @@ export default function buildKernel(
     verbose,
     defaultManagerType = 'local',
     warehousePolicy,
+    overrideVatManagerOptions = {},
   } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
@@ -800,6 +801,7 @@ export default function buildKernel(
     panic,
     buildVatSyscallHandler,
     vatAdminRootKref,
+    overrideVatManagerOptions,
   });
 
   const vatWarehouse = makeVatWarehouse(

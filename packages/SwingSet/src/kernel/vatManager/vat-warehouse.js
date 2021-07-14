@@ -140,7 +140,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       enablePipelining,
       options,
     };
-    console.log(
+    console.info(
       vatID,
       'online:',
       options.managerType,

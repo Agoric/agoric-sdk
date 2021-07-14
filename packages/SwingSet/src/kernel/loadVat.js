@@ -10,6 +10,7 @@ export function makeVatRootObjectSlot() {
 
 export function makeVatLoader(stuff) {
   const {
+    overrideVatManagerOptions = {},
     vatManagerFactory,
     kernelSlog,
     makeVatConsole,
@@ -241,6 +242,7 @@ export function makeVatLoader(stuff) {
       virtualObjectCacheSize,
       useTranscript,
       name,
+      ...overrideVatManagerOptions,
     };
 
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
@@ -262,6 +264,7 @@ export function makeVatLoader(stuff) {
       enableSetup: true,
       managerType: 'local',
       useTranscript: true,
+      ...overrideVatManagerOptions,
     };
     const translators = makeVatTranslators(vatID, kernelKeeper);
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);

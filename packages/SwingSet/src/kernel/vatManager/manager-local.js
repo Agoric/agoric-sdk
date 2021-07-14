@@ -7,6 +7,7 @@ import {
   makeSupervisorDispatch,
   makeMeteredDispatch,
   makeSupervisorSyscall,
+  makeVatConsole,
 } from './supervisor-helper.js';
 
 export function makeLocalVatManagerFactory(tools) {
@@ -91,6 +92,7 @@ export function makeLocalVatManagerFactory(tools) {
     vatSyscallHandler,
   ) {
     const {
+      consensusMode,
       metered = false,
       enableDisavow = false,
       enableSetup = false,
@@ -148,7 +150,9 @@ export function makeLocalVatManagerFactory(tools) {
     const endowments = harden({
       ...vatEndowments,
       ...ls.vatGlobals,
-      console: vatConsole,
+      console: makeVatConsole(vatConsole, (logger, args) => {
+        consensusMode || logger(...args);
+      }),
       assert,
     });
     const inescapableTransforms = [];

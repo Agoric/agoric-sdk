@@ -23,6 +23,7 @@
  *
  * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
  * @typedef {{
+ *   consensusMode: boolean,
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,
  *   gcEveryCrank?: boolean,
@@ -34,7 +35,7 @@
  *   virtualObjectCacheSize: number,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
- *   vatConsole: unknown,
+ *   vatConsole: Console,
  *   liveSlotsConsole?: Console,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */

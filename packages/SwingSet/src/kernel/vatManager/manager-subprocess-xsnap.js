@@ -51,6 +51,7 @@ export function makeXsSubprocessFactory({
   ) {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
+      consensusMode,
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
@@ -60,6 +61,7 @@ export function makeXsSubprocessFactory({
       metered,
       compareSyscalls,
       useTranscript,
+      vatConsole,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
@@ -86,9 +88,9 @@ export function makeXsSubprocessFactory({
           return mk.syscallFromWorker(vso);
         }
         case 'console': {
-          const [level, tag, ...rest] = args;
-          if (typeof level === 'string' && level in console) {
-            console[level](tag, ...rest);
+          const [level, ...rest] = args;
+          if (typeof level === 'string' && level in vatConsole) {
+            vatConsole[level](...rest);
           } else {
             console.error('bad console level', level);
           }
@@ -142,6 +144,7 @@ export function makeXsSubprocessFactory({
         virtualObjectCacheSize,
         enableDisavow,
         enableVatstore,
+        consensusMode,
         gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {
@@ -160,7 +163,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `sending delivery`, delivery);
       let result;
       try {
-        result = await issueTagged(['deliver', delivery]);
+        result = await issueTagged(['deliver', delivery, consensusMode]);
       } catch (err) {
         parentLog('issueTagged error:', err.code, err.message);
         let message;
