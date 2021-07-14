@@ -1,0 +1,290 @@
+// @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+
+import '../../../exported';
+
+import { setup } from '../setupBasicMints';
+import {
+  makeSimpleFeePool,
+  makePoolChargeFeeInX,
+  makePoolExractPartialFee,
+  makeStrategicFeePool,
+} from './pools';
+
+function formatTrade(trade) {
+  return `${trade.deltaX}, ${trade.deltaY}, ${trade.k}`;
+}
+
+// Trade values chosen from successive digits of Pi
+function applyTrades(t, pool, moola, bucks, firstResult) {
+  pool.tradeIn(moola(107));
+  t.deepEqual(pool.getTrades(), [firstResult]);
+  pool.tradeOut(bucks(325));
+  pool.tradeOut(bucks(147));
+  pool.tradeIn(moola(371));
+  pool.tradeOut(moola(237));
+
+  pool.tradeOut(moola(2384));
+  pool.tradeOut(bucks(6264));
+  pool.tradeIn(moola(3383));
+  pool.tradeOut(moola(2795));
+
+  pool.tradeOut(moola(28848));
+  pool.tradeIn(bucks(19716));
+  pool.tradeIn(moola(93993));
+  pool.tradeIn(moola(75105));
+
+  pool.tradeIn(bucks(8209749));
+  pool.tradeOut(bucks(4459230));
+  pool.tradeIn(moola(7816406));
+  pool.tradeOut(moola(2862089));
+}
+
+// With no fee, K grows consistently because the pool benefits from roundoff
+test('no fee', t => {
+  const { moola, bucks } = setup();
+  console.log(`NO FEE`);
+
+  const pool = makeSimpleFeePool(moola(30000n), bucks(80000n));
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -284n,
+    k: 2400009612n,
+    x: 30107n,
+    y: 79716n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatTrade(trade));
+  }
+});
+
+// With a small fee, K grows at >30BP per trade.
+test('simple fee', t => {
+  const { moola, bucks } = setup();
+  console.log(`SIMPLE FEE`);
+
+  const pool = makeSimpleFeePool(moola(30000n), bucks(80000n), 30n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatTrade(trade));
+  }
+});
+
+function formatComplexTrade(trade) {
+  return `${trade.deltaX}, ${trade.deltaY}, ${trade.pay}, ${trade.get}, ${
+    trade.k
+  }, ${trade.protocol}, ${trade.specifyX ? 'X' : 'Y'}`;
+}
+
+// Charge a portion of the fee in moola, paid on every trade
+test('charge fee in moola', t => {
+  const { moola, bucks } = setup();
+  console.log(`MOOLA FEE`);
+
+  const pool = makePoolChargeFeeInX(moola(30000n), bucks(80000n), 30n, 6n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    pay: -107n,
+    get: 283n,
+    protocol: 0n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatComplexTrade(trade));
+  }
+});
+
+// Charge a portion of the fee in moola, paid on every trade
+test.skip('convert fee to moola', t => {
+  const { moola, bucks } = setup();
+  console.log(`EXTRACT FEE`);
+
+  const pool = makePoolExractPartialFee(moola(30000n), bucks(80000n), 30n, 6n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    pay: -107n,
+    get: 283n,
+    protocol: 0n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatComplexTrade(trade));
+  }
+});
+
+test('new strategy', t => {
+  const { moola, bucks } = setup();
+  console.log(`new charging Strategy`);
+
+  const pool = makeStrategicFeePool(moola(30000n), bucks(80000n), 30n, 6n);
+  applyTrades(t, pool, moola, bucks, {
+    deltaX: 107n,
+    deltaY: -283n,
+    k: 2400039719n,
+    x: 30107n,
+    y: 79717n,
+    pay: -107n,
+    get: 283n,
+    protocol: 0n,
+    specifyX: true,
+  });
+
+  for (const trade of pool.getTrades()) {
+    console.log(formatComplexTrade(trade));
+  }
+});
+
+function logSimpleTrade(label, trade) {
+  console.log(
+    `${label},${-trade.deltaX}, ${-trade.deltaY}, ${trade.deltaX}, ${
+      trade.deltaY
+    }, ${trade.x}, ${trade.y}`,
+  );
+}
+
+function logStrategicTrade(trade) {
+  console.log(
+    `Strategic,${trade.pay}, ${trade.get}, ${trade.deltaX}, ${trade.deltaY}, ${trade.x}, ${trade.y}, ${trade.protocol}`,
+  );
+}
+
+test('compare Strategies tradeOut Bucks', t => {
+  const { moola, bucks } = setup();
+  console.log(`  tradeOut BUCKS`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeOut(bucks(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeOut(bucks(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeOut(bucks(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeOut Moola ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeOut MOOLA`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeOut(moola(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeOut(moola(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeOut(moola(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeIn Moola ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeIn MOOLA`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeIn(moola(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeIn(moola(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeIn(moola(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
+
+test('compare Strategies tradeIn Bucks ', t => {
+  const { moola, bucks } = setup();
+  console.log(` tradeIn BUCKS`);
+  const moolaStart = 3000000000000n;
+  const bucksStart = 8000000000000n;
+  const valueOut = 50000000;
+
+  const noFeePool = makeSimpleFeePool(moola(moolaStart), bucks(bucksStart), 0n);
+  noFeePool.tradeIn(bucks(valueOut));
+  logSimpleTrade('no Fee', noFeePool.getTrades()[0]);
+
+  const simpleFeePool = makeSimpleFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+  );
+  simpleFeePool.tradeIn(bucks(valueOut));
+  logSimpleTrade('Simple', simpleFeePool.getTrades()[0]);
+
+  const strategicPool = makeStrategicFeePool(
+    moola(moolaStart),
+    bucks(bucksStart),
+    30n,
+    6n,
+  );
+  strategicPool.tradeIn(bucks(valueOut));
+  logStrategicTrade(strategicPool.getTrades()[0]);
+  t.pass();
+});
