@@ -45,7 +45,17 @@ test('child compartment cannot access start powers', async t => {
   await vat.evaluate(script);
   await vat.close();
 
-  t.deepEqual(opts.messages, ['err was TypeError: Not available']);
+  // Temporarily tolerate Endo behavior before and after
+  // https://github.com/endojs/endo/pull/822
+  // TODO Simplify once depending on SES post #822
+  // t.deepEqual(opts.messages, [
+  //   'err was TypeError: Function.prototype.constructor is not a valid constructor.',
+  // ]);
+  t.assert(
+    opts.messages[0] === 'err was TypeError: Not available' ||
+      opts.messages[0] ===
+        'err was TypeError: Function.prototype.constructor is not a valid constructor.',
+  );
 });
 
 test('SES deep stacks work on xsnap', async t => {
