@@ -258,7 +258,7 @@
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
- * @param {ERef<Payment>}
+ * @param {ERef<Payment>} payment
  * @returns {Promise<Amount>}
  *
  */

@@ -548,6 +548,16 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         const bank = await E(bankManager).getBankForAddress(address);
 
+        // attCreatorFacet needs to be the creatorFacet returned from
+        // instantiating the attestation contract
+        const bldAttMaker = await E(attCreatorFacet).getAttMaker(address);
+
+        // To be used in the wallet, like:
+        // E(bldAttMaker).addLien(bldAmount, expiration) => {
+        //   GOV: govAttPayment,
+        //   LOC: locAttPayment,
+        // }
+
         // Separate out the purse-creating payments from the bank payments.
         const faucetPaymentInfo = [];
         await Promise.all(
