@@ -3,56 +3,50 @@
 class "Registrar\n(In a Vat)" as Registrar {
     Questions[]
     terms: committeeSize...
-    addQuestion(ballotCounterInstall, question, details)
-    questionNotifier()
+    +questionNotifier()
+    +getOpenQuestions()
+    +getInstance()
+    +getBallot()
     #getVoterInvitation()
-    getOpenQuestions()
+    -addQuestion(ballotCounterInstall, question, details)
 }
 
 note "produces VoterInvitations.\nunaware of BallotCounters." as N1
 Registrar .. N1
 
-object BallotDetails {
-    question
-    positions
-    maxChoices
-    closingRule: {timer, deadline}
-    registrar
-}
-
 class "BallotCounter\n(In a Vat)" as BallotCounter {
-    Question
-    quorumRule
-    closingRule
-    registrar
+    terms\n   {ballotSpec, quorum, closingRule, tieOutcome}
     --
-    makeBallot()
-    countVotes()
-    submitVote()
-    getDeadline()
-    +getBallotTemplate()
+    +getDetails()
     +getOutcome()
     +getStats()
+    #countVotes()
+    -submitVote()
+    -getVoterFacet()
 }
 
-note "unaware of voter registration." as N2
+note "unaware of voter registration.\n Only Registrar hands out voterFacets" as N2
 BallotCounter .. N2
 
-class BallotTemplate {
-    question
-    maxChoices
+class BallotDetails {
+    handle
+    ballotSpec
+    counterInstance
+    closingRule: {timer, deadline}
 
     choose(position...)
 }
 
-BallotTemplate ..> BallotDetails
-
-object Question {
-    name
-    positionA
-    positionB
-    ...
+object BallotSpec {
+    Method { CHOOSE_N | ORDER | WEIGHT }
+    Type { ParamChange | Election | Survey }
+    --
+    question
+    positions
+    maxChoices
 }
+
+BallotDetails ..> BallotSpec
 
 class "ElectionManager\n(in a Vat)" as ElectionManager {
     Registrar
@@ -75,9 +69,7 @@ Registrar --> VoterInvitation
 Registrar --|> BallotCounter
 Registrar --|> VoterFacet
 VoterInvitation -> VoterFacet
-VoterFacet -> BallotTemplate
-BallotCounter --|> BallotTemplate
-
-BallotTemplate ..> Question
+VoterFacet -> BallotDetails
+BallotCounter <|--|> BallotDetails
 
 @enduml

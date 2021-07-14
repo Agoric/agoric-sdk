@@ -1,0 +1,46 @@
+@startuml contract governance
+
+Object ParamManager {
+    paramDesc[] { name, type, value }
+    --
+    +getParams()
+    +getParam()
+    -updateFoo()
+}
+
+class GovernedContract {
+    +terms: { electionManager, governedParams }
+    +getState()
+    +getContractGovernor()
+    -getContractGovernor
+    -getParamManagerAccessor
+}
+
+class ContractGovernor {
+    +ElectionManager
+
+    +getRegistrar()
+    +getGovernedContract()
+    -startGovernedInstance(registrar, governed, ...)
+}
+
+object GovernedContractFacet {
+    provides access to the GovernedContract
+    --
+    getCreatorFacet()
+    getInstance()
+    getPublicFacet()
+    voteOnParamChange()
+}
+
+note "GovernedContract calls buildParamManager(paramDesc); \nmakes paramMgr state public\nparamMgrAccessor goes in creatorFacet" as N1
+GovernedContract .. N1
+GovernedContract --> ParamManager
+ContractGovernor --> GovernedContract
+ContractGovernor --> GovernedContractFacet
+
+note "ContractGovernor starts GovernedContract\nstartGovernedInstance => GovernedContractFacet\n  in its creatorFacet" as N2
+ContractGovernor .. N2
+
+
+@enduml
