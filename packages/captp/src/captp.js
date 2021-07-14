@@ -12,6 +12,11 @@ import {
 } from '@agoric/marshal';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
+import { assert, details as X } from '@agoric/assert';
+
+import { makeTrap, nearTrapImpl } from './trap.js';
+
+import './types.js';
 
 export { E };
 
@@ -21,13 +26,27 @@ export { E };
  */
 
 /**
+ * @param {any} maybeThenable
+ * @returns {boolean}
+ */
+const isThenable = maybeThenable =>
+  maybeThenable && typeof maybeThenable.then === 'function';
+
+/**
  * @typedef {Object} CapTPOptions the options to makeCapTP
  * @property {(err: any) => void} onReject
  * @property {typeof defaultRemotable} Remotable
  * @property {typeof defaultFar} Far
  * @property {typeof defaultMakeMarshal} makeMarshal
- * @property {number} epoch
+ * @property {number} epoch an integer tag to attach to all messages in order to
+ * assist in ignoring earlier defunct instance's messages
+ * @property {TrapGuest} trapGuest if specified, enable this CapTP (guest) to
+ * use Trap(target) to block while the recipient (host) resolves and
+ * communicates the message
+ * @property {TrapHost} trapHost if specified, enable this CapTP (host) to serve
+ * objects marked with makeTrapHandler to synchronous clients (guests)
  */
+
 /**
  * Create a CapTP connection.
  *
@@ -36,20 +55,30 @@ export { E };
  * @param {any} bootstrapObj the object to export to the other side
  * @param {Partial<CapTPOptions>} opts options to the connection
  */
-export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
+export const makeCapTP = (
+  ourId,
+  rawSend,
+  bootstrapObj = undefined,
+  opts = {},
+) => {
   const {
     onReject = err => console.error('CapTP', ourId, 'exception:', err),
     Remotable = defaultRemotable,
     makeMarshal = defaultMakeMarshal,
+    Far = defaultFar,
     epoch = 0,
+    trapGuest,
+    trapHost,
   } = opts;
 
   const disconnectReason = id =>
     Error(`${JSON.stringify(id)} connection closed`);
 
+  const trapGiveMore = new Map();
+
   /** @type {any} */
   let unplug = false;
-  async function quietReject(reason = undefined, returnIt = true) {
+  const quietReject = async (reason = undefined, returnIt = true) => {
     if ((unplug === false || reason !== unplug) && reason !== undefined) {
       onReject(reason);
     }
@@ -62,23 +91,25 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     const p = Promise.reject(reason);
     p.catch(_ => {});
     return p;
-  }
+  };
 
   /**
    * @param {Record<string, any>} obj
    */
-  function send(obj) {
+  const send = obj => {
     // Don't throw here if unplugged, just don't send.
     if (unplug === false) {
       rawSend(obj);
     }
-  }
+  };
 
-  // convertValToSlot and convertSlotToVal both perform side effects,
-  // populating the c-lists (imports/exports/questions/answers) upon
-  // marshalling/unmarshalling.  As we traverse the datastructure representing
-  // the message, we discover what we need to import/export and send relevant
-  // messages across the wire.
+  /**
+   * convertValToSlot and convertSlotToVal both perform side effects,
+   * populating the c-lists (imports/exports/questions/answers) upon
+   * marshalling/unmarshalling.  As we traverse the datastructure representing
+   * the message, we discover what we need to import/export and send relevant
+   * messages across the wire.
+   */
   const { serialize, unserialize } = makeMarshal(
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
@@ -92,8 +123,11 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     },
   );
 
+  /** @type {WeakMap<any, CapTPSlot>} */
   const valToSlot = new WeakMap(); // exports looked up by val
+  /** @type {Map<CapTPSlot, any>} */
   const slotToVal = new Map(); // reverse
+  const exportedTrapHandlers = new WeakSet();
 
   // Used to construct slot names for promises/non-promises.
   // In this verison of CapTP we use strings for export/import slot names.
@@ -104,17 +138,28 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
   // the question key
   let lastQuestionID = 0;
 
+  /** @type {Map<number, any>} */
   const questions = new Map(); // chosen by us
+  /** @type {Map<number, any>} */
   const answers = new Map(); // chosen by our peer
+  /** @type {Map<number, any>} */
   const imports = new Map(); // chosen by our peer
 
-  // Called at marshalling time.  Either retrieves an existing export, or if
-  // not yet exported, records this exported object.  If a promise, sets up a
-  // promise listener to inform the other side when the promise is
-  // fulfilled/broken.
+  /**
+   * Called at marshalling time.  Either retrieves an existing export, or if
+   * not yet exported, records this exported object.  If a promise, sets up a
+   * promise listener to inform the other side when the promise is
+   * fulfilled/broken.
+   *
+   * @type {ConvertValToSlot<CapTPSlot>}
+   */
   function convertValToSlot(val) {
     if (!valToSlot.has(val)) {
-      // new export
+      /**
+       * new export
+       *
+       * @type {CapTPSlot}
+       */
       let slot;
       if (isPromise(val)) {
         // This is a promise, so we're going to increment the lastPromiseId
@@ -140,12 +185,16 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
             }),
         );
       } else {
-        // Since this isn't a promise, we instead increment the lastExportId
-        // and use that to construct the slot name.
-        // Non-promises are prefaced with 'o+'.
+        // Since this isn't a promise, we instead increment the lastExportId and
+        // use that to construct the slot name.  Non-promises are prefaced with
+        // 'o+' for normal objects, or `t+` for syncable.
         lastExportID += 1;
         const exportID = lastExportID;
-        slot = `o+${exportID}`;
+        if (exportedTrapHandlers.has(val)) {
+          slot = `t+${exportID}`;
+        } else {
+          slot = `o+${exportID}`;
+        }
       }
       // Now record the export in both valToSlot and slotToVal so we can look it
       // up from either the value or the slot name later.
@@ -154,7 +203,9 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     }
     // At this point, the value is guaranteed to be exported, so return the
     // associated slot number.
-    return valToSlot.get(val);
+    const slot = valToSlot.get(val);
+    assert.typeof(slot, 'string');
+    return slot;
   }
 
   /**
@@ -163,17 +214,32 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
    *
    * @returns {[number, ReturnType<typeof makeRemoteKit>]}
    */
-  function makeQuestion() {
+  const makeQuestion = () => {
     lastQuestionID += 1;
     const questionID = lastQuestionID;
     // eslint-disable-next-line no-use-before-define
     const pr = makeRemoteKit(questionID);
     questions.set(questionID, pr);
+
+    // To fix #2846:
+    // We return 'p' to the handler, and the eventual resolution of 'p' will
+    // be used to resolve the caller's Promise, but the caller never sees 'p'
+    // itself. The caller got back their Promise before the handler ever got
+    // invoked, and thus before queueMessage was called. If that caller
+    // passes the Promise they received as argument or return value, we want
+    // it to serialize as resultVPID. And if someone passes resultVPID to
+    // them, we want the user-level code to get back that Promise, not 'p'.
+    lastPromiseID += 1;
+    const promiseID = lastPromiseID;
+    const resultVPID = `p+${promiseID}`;
+    valToSlot.set(pr.p, resultVPID);
+    slotToVal.set(resultVPID, pr.p);
+
     return [questionID, pr];
-  }
+  };
 
   // Make a remote promise for `target` (an id in the questions table)
-  function makeRemoteKit(target) {
+  const makeRemoteKit = target => {
     // This handler is set up such that it will transform both
     // attribute access and method invocation of this remote promise
     // as also being questions / remote handled promises
@@ -189,6 +255,20 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
           questionID,
           target,
           method: serialize(harden([prop])),
+        });
+        return harden(pr.p);
+      },
+      applyFunction(_o, args) {
+        if (unplug !== false) {
+          return quietReject(unplug);
+        }
+        const [questionID, pr] = makeQuestion();
+        send({
+          type: 'CTP_CALL',
+          epoch,
+          questionID,
+          target,
+          method: serialize(harden([null, args])),
         });
         return harden(pr.p);
       },
@@ -221,9 +301,13 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     pr.p.catch(e => quietReject(e, false));
 
     return harden(pr);
-  }
+  };
 
-  // Set up import
+  /**
+   * Set up import
+   *
+   * @type {ConvertSlotToVal<CapTPSlot>}
+   */
   function convertSlotToVal(theirSlot, iface = undefined) {
     let val;
     // Invert slot direction from other side.
@@ -238,7 +322,7 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     if (!slotToVal.has(slot)) {
       // Make a new handled promise for the slot.
       const pr = makeRemoteKit(slot);
-      if (slot[0] === 'o') {
+      if (slot[0] === 'o' || slot[0] === 't') {
         // A new remote presence
         const pres = pr.resPres();
         if (iface === undefined) {
@@ -280,7 +364,8 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
       //   to fulfill
       // target: Slot id of the target to be invoked.  Checks against
       //   answers first; otherwise goes through unserializer
-      const { questionID, target } = obj;
+      const { questionID, target, trap } = obj;
+
       const [prop, args] = unserialize(obj.method);
       let val;
       if (answers.has(target)) {
@@ -294,33 +379,85 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
           slots: [target],
         });
       }
-      // If `args` is supplied, we're applying a method... otherwise this is
+
+      /** @type {(isReject: boolean, value: any) => void} */
+      let sendReturn = (isReject, value) => {
+        send({
+          type: 'CTP_RETURN',
+          epoch,
+          answerID: questionID,
+          [isReject ? 'exception' : 'result']: serialize(harden(value)),
+        });
+      };
+      if (trap) {
+        try {
+          assert(
+            exportedTrapHandlers.has(val),
+            X`Refused Trap(${val}) because target was not registered with makeTrapHandler`,
+          );
+          assert.typeof(
+            trapHost,
+            'function',
+            X`CapTP cannot answer Trap(x) without a trapHost function`,
+          );
+          sendReturn = async (isReject, value) => {
+            const serialized = serialize(harden(value));
+            const giveMore = trapHost([isReject, serialized]);
+            if (giveMore) {
+              assert.typeof(
+                giveMore,
+                'function',
+                X`CapTP trapHost.reply result can only be a giveMore function`,
+              );
+              trapGiveMore.set(questionID, giveMore);
+            }
+          };
+        } catch (e) {
+          sendReturn(true, e);
+          throw e;
+        }
+      }
+
+      // If `args` is supplied, we're applying a method or function... otherwise this is
       // property access
-      const hp = args
-        ? HandledPromise.applyMethod(val, prop, args)
-        : HandledPromise.get(val, prop);
+      let hp;
+      if (!args) {
+        hp = HandledPromise.get(val, prop);
+      } else if (prop === null) {
+        hp = HandledPromise.applyFunction(val, args);
+      } else {
+        hp = HandledPromise.applyMethod(val, prop, args);
+      }
+
       // Answer with our handled promise
       answers.set(questionID, hp);
+
       // Set up promise resolver for this handled promise to send
       // message to other vat when fulfilled/broken.
       return hp
-        .then(res =>
-          send({
-            type: 'CTP_RETURN',
-            epoch,
-            answerID: questionID,
-            result: serialize(harden(res)),
-          }),
-        )
-        .catch(rej =>
-          send({
-            type: 'CTP_RETURN',
-            epoch,
-            answerID: questionID,
-            exception: serialize(harden(rej)),
-          }),
-        )
+        .then(res => sendReturn(false, res))
+        .catch(rej => sendReturn(true, rej))
         .catch(rej => quietReject(rej, false));
+    },
+    // Have the host serve more of the reply.
+    CTP_TRAP_TAKE_MORE: async obj => {
+      assert(trapHost, X`CTP_TRAP_TAKE_MORE is impossible without a trapHost`);
+      const giveMore = trapGiveMore.get(obj.questionID);
+      trapGiveMore.delete(obj.questionID);
+      assert.typeof(
+        giveMore,
+        'function',
+        X`CTP_TRAP_TAKE_MORE did not expect ${obj.questionID}`,
+      );
+      const nextGiveMore = giveMore(obj.data);
+      if (nextGiveMore) {
+        assert.typeof(
+          nextGiveMore,
+          'function',
+          X`CapTP giveMore result can only be another giveMore function`,
+        );
+        trapGiveMore.set(obj.questionID, nextGiveMore);
+      }
     },
     // Answer to one of our questions.
     async CTP_RETURN(obj) {
@@ -411,22 +548,150 @@ export function makeCapTP(ourId, rawSend, bootstrapObj = undefined, opts = {}) {
     dispatch({ type: 'CTP_DISCONNECT', epoch, reason });
   };
 
-  return harden({ abort, dispatch, getBootstrap, serialize, unserialize });
-}
+  const makeTrapHandler = (name, obj) => {
+    const far = Far(name, obj);
+    exportedTrapHandlers.add(far);
+    return far;
+  };
+
+  // Put together our return value.
+  const rets = {
+    abort,
+    dispatch,
+    getBootstrap,
+    serialize,
+    unserialize,
+    makeTrapHandler,
+    Trap: /** @type {Trap | undefined} */ (undefined),
+  };
+
+  if (trapGuest) {
+    assert.typeof(trapGuest, 'function', X`opts.trapGuest must be a function`);
+
+    // Create the Trap proxy maker.
+    const makeTrapImpl = implMethod => (target, ...implArgs) => {
+      assert(
+        Promise.resolve(target) !== target,
+        X`Trap(${target}) target cannot be a promise`,
+      );
+
+      const slot = valToSlot.get(target);
+      assert(
+        slot && slot[1] === '-',
+        X`Trap(${target}) target was not imported`,
+      );
+      assert(
+        slot[0] === 't',
+        X`Trap(${target}) imported target was not created with makeTrapHandler`,
+      );
+
+      // Send a "trap" message.
+      lastQuestionID += 1;
+      const questionID = lastQuestionID;
+
+      // Encode the "method" parameter of the CTP_CALL.
+      let method;
+      switch (implMethod) {
+        case 'get': {
+          const [prop] = implArgs;
+          method = serialize(harden([prop]));
+          break;
+        }
+        case 'applyFunction': {
+          const [args] = implArgs;
+          method = serialize(harden([null, args]));
+          break;
+        }
+        case 'applyMethod': {
+          const [prop, args] = implArgs;
+          method = serialize(harden([prop, args]));
+          break;
+        }
+        default: {
+          assert.fail(X`Internal error; unrecognized implMethod ${implMethod}`);
+        }
+      }
+
+      // Set up the trap call with its identifying information and a way to send
+      // messages over the current CapTP data channel.
+      let isFirst = true;
+      const [isException, serialized] = trapGuest({
+        implMethod,
+        slot,
+        implArgs,
+        takeMore: data => {
+          if (isFirst) {
+            // Send the call metadata over the connection.
+            isFirst = false;
+            send({
+              type: 'CTP_CALL',
+              epoch,
+              trap: true, // This is the magic marker.
+              questionID,
+              target: slot,
+              method,
+            });
+          } else {
+            send({
+              type: 'CTP_TRAP_TAKE_MORE',
+              epoch,
+              questionID,
+              data,
+            });
+          }
+        },
+      });
+
+      const value = unserialize(serialized);
+      assert(
+        !isThenable(value),
+        X`Trap() reply cannot be a Thenable; have ${value}`,
+      );
+
+      if (isException) {
+        throw value;
+      }
+      return value;
+    };
+
+    /** @type {TrapImpl} */
+    const trapImpl = {
+      applyFunction: makeTrapImpl('applyFunction'),
+      applyMethod: makeTrapImpl('applyMethod'),
+      get: makeTrapImpl('get'),
+    };
+    harden(trapImpl);
+
+    rets.Trap = makeTrap(trapImpl);
+  }
+
+  return harden(rets);
+};
+
+/**
+ * @typedef {Object} LoopbackOpts
+ * @property {typeof defaultFar} Far
+ */
 
 /**
  * Create an async-isolated channel to an object.
  *
  * @param {string} ourId
- * @returns {{ makeFar<T>(x: T): ERef<T>, makeNear<T>(x: T): ERef<T>  }}
+ * @param {Partial<LoopbackOpts>} [opts]
+ * @returns {{
+ *   makeFar<T>(x: T): ERef<T>,
+ *   makeNear<T>(x: T): ERef<T>,
+ *   makeTrapHandler<T>(x: T): T,
+ *   Trap: Trap
+ * }}
  */
-export function makeLoopback(ourId) {
+export const makeLoopback = (ourId, opts = {}) => {
+  const { Far = defaultFar } = opts;
   let nextNonce = 0;
   const nonceToRef = new Map();
 
-  // TODO use the correct Far, which is not currently in scope here.
   const bootstrap = harden({
-    refGetter: defaultFar('captp bootstrap', {
+    refGetter: Far('refGetter', {
       getRef(nonce) {
         // Find the local ref for the specified nonce.
         const xFar = nonceToRef.get(nonce);
@@ -436,18 +701,44 @@ export function makeLoopback(ourId) {
     }),
   });
 
+  const slotBody = JSON.stringify({
+    '@qclass': 'slot',
+    index: 0,
+  });
+
   // Create the tunnel.
   let farDispatch;
-  const { dispatch: nearDispatch, getBootstrap: getFarBootstrap } = makeCapTP(
-    `near-${ourId}`,
-    o => farDispatch(o),
-    bootstrap,
-  );
-  const { dispatch, getBootstrap: getNearBootstrap } = makeCapTP(
-    `far-${ourId}`,
-    nearDispatch,
-    bootstrap,
-  );
+  const {
+    Trap,
+    dispatch: nearDispatch,
+    getBootstrap: getFarBootstrap,
+  } = makeCapTP(`near-${ourId}`, o => farDispatch(o), bootstrap, {
+    trapGuest: ({ implMethod, slot, implArgs }) => {
+      let value;
+      let isException = false;
+      try {
+        // Cross the boundary to pull out the far object.
+        // eslint-disable-next-line no-use-before-define
+        const far = farUnserialize({ body: slotBody, slots: [slot] });
+        value = nearTrapImpl[implMethod](far, implArgs[0], implArgs[1]);
+      } catch (e) {
+        isException = true;
+        value = e;
+      }
+      harden(value);
+      // eslint-disable-next-line no-use-before-define
+      return [isException, farSerialize(value)];
+    },
+  });
+  assert(Trap);
+
+  const {
+    makeTrapHandler,
+    dispatch,
+    getBootstrap: getNearBootstrap,
+    unserialize: farUnserialize,
+    serialize: farSerialize,
+  } = makeCapTP(`far-${ourId}`, nearDispatch, bootstrap);
   farDispatch = dispatch;
 
   const farGetter = E.get(getFarBootstrap()).refGetter;
@@ -470,5 +761,7 @@ export function makeLoopback(ourId) {
   return {
     makeFar: makeRefMaker(farGetter),
     makeNear: makeRefMaker(nearGetter),
+    makeTrapHandler,
+    Trap,
   };
-}
+};
