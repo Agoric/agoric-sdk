@@ -2,7 +2,7 @@
 
 import '@agoric/install-ses';
 import process from 'process';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
 const log = console.log;
 
@@ -47,7 +47,7 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kvStore, commit } = openLMDBSwingStore(stateDBDir);
 
   if (range) {
     for (const k of kvStore.getKeys(`${key}.`, `${key}/`)) {

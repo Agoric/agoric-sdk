@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeManagerKit } from './manager-helper';
+import { makeManagerKit } from './manager-helper.js';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
@@ -17,10 +17,13 @@ export function makeNodeSubprocessFactory(tools) {
 
   function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
+      consensusMode,
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
@@ -32,6 +35,7 @@ export function makeNodeSubprocessFactory(tools) {
       vatSyscallHandler,
       false,
       compareSyscalls,
+      useTranscript,
     );
 
     // start the worker and establish a connection
@@ -107,6 +111,8 @@ export function makeNodeSubprocessFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
+      consensusMode,
     ]);
 
     function shutdown() {

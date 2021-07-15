@@ -126,6 +126,7 @@ export const checkNoNewOffers = async (t, zcf) => {
 };
 
 export const makeSeatKit = async (zcf, proposal, payments) => {
+  /** @type {ZCFSeat} */
   let zcfSeat;
   const invitation = zcf.makeInvitation(seat => {
     zcfSeat = seat;

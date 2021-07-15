@@ -3,8 +3,8 @@ import {
   flipRemoteSlot,
   insistRemoteType,
   parseRemoteSlot,
-} from './parseRemoteSlot';
-import { cdebug } from './cdebug';
+} from './parseRemoteSlot.js';
+import { cdebug } from './cdebug.js';
 
 function rname(remote) {
   return `${remote.remoteID()} (${remote.name()})`;
@@ -27,7 +27,7 @@ export function makeInbound(state) {
       subscribers.indexOf(remoteID) === -1,
       X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
     );
-    remote.deleteRemoteMapping(rpid, lpid);
+    remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
   }
 
@@ -35,7 +35,6 @@ export function makeInbound(state) {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
-    remote.deleteToRemoteMapping(lpid);
     remote.enqueueRetirement(rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
   }
@@ -50,8 +49,12 @@ export function makeInbound(state) {
 
   function getLocalForRemote(remoteID, rref) {
     const remote = state.getRemote(remoteID);
-    const lref = remote.mapFromRemote(rref);
+    const { mapFromRemote, isReachable } = remote;
+    const lref = mapFromRemote(rref);
     assert(lref, X`${rref} must already be in remote ${rname(remote)}`);
+    if (parseRemoteSlot(rref).type === 'object') {
+      assert(isReachable(lref), `remote sending to unreachable ${lref}`);
+    }
     return lref;
   }
 
@@ -94,8 +97,10 @@ export function makeInbound(state) {
     // previously, or if we're the ones who sent it to them earlier, it will be
     // in the inbound table already.
     const remote = state.getRemote(remoteID);
-    if (!remote.mapFromRemote(rref)) {
-      const { type } = parseRemoteSlot(rref);
+    const { type, allocatedByRecipient } = parseRemoteSlot(rref);
+    // !allocatedByRecipient means we're willing to allocate
+    let lref = remote.mapFromRemote(rref);
+    if (!lref) {
       if (type === 'object') {
         addLocalObjectForRemote(remote, rref);
       } else if (type === 'promise') {
@@ -103,8 +108,26 @@ export function makeInbound(state) {
       } else {
         assert.fail(X`cannot accept type ${type} from remote`);
       }
+      lref = remote.mapFromRemote(rref);
     }
-    return remote.mapFromRemote(rref);
+
+    // in either case, we need to mark imports or re-imports as reachable
+    if (type === 'object') {
+      // Senders are very polite and always translate rrefs into the
+      // recipient's number space. So if we receive ro-2 from the remote
+      // (!allocatedByRecipient), that means it was allocated by the remote,
+      // and this is an exporting reference. We're willing to allocate an
+      // lref on this inbound pathway.
+      const doSetReachable = !allocatedByRecipient;
+      if (doSetReachable) {
+        // the remote is exporting, not importing
+        const isImport = false;
+        remote.setReachable(lref, isImport);
+      }
+      assert(remote.isReachable(lref), `remote using unreachable ${lref}`);
+    }
+
+    return lref;
   }
 
   function provideLocalForRemoteResult(remoteID, result) {

@@ -11,13 +11,13 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api';
-import { defer } from './defer';
-import * as netstring from './netstring';
-import * as node from './node-stream';
+import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
+import { defer } from './defer.js';
+import * as netstring from './netstring.js';
+import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
-const DEFAULT_CRANK_METERING_LIMIT = 1e7;
+export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
 
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
@@ -239,6 +239,18 @@ export function xsnap(options) {
   }
 
   /**
+   * @returns {Promise<void>}
+   */
+  async function isReady() {
+    const result = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`R`));
+      await runToIdle();
+    });
+    baton = result.catch(() => {});
+    return Promise.race([vatCancelled, result]);
+  }
+
+  /**
    * @param {Uint8Array} message
    * @returns {Promise<RunResult<Uint8Array>>}
    */
@@ -305,6 +317,7 @@ export function xsnap(options) {
   return freeze({
     issueCommand,
     issueStringCommand,
+    isReady,
     close,
     terminate,
     evaluate,

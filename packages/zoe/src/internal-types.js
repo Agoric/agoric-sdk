@@ -52,9 +52,8 @@
  * @typedef {Object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {(reason: TerminationReason) => void} fail called with the reason
+ * @property {ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
- * @property {() => Allocation} getCurrentAllocation
  */
 
 /**
@@ -84,7 +83,7 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -102,9 +101,9 @@
 
 /**
  * @callback ZoeInstanceAdminMakeInvitation
- * @param invitationHandle: InvitationHandle,
- * @param description: string,
- * @param customProperties: Record<string, any>=,
+ * @param {InvitationHandle} invitationHandle
+ * @param {string} description
+ * @param {Record<string, any>=} customProperties
  * @returns {Payment}
  */
 
@@ -118,7 +117,7 @@
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {(reason: TerminationReason) => void} failAllSeats
+ * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -174,7 +173,7 @@
  *
  * @callback ExecuteContract
  * @param {SourceBundle} bundle
- * @param {ZoeService} zoeService
+ * @param {Promise<ZoeService>} zoeServicePromise
  * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
@@ -215,10 +214,8 @@
  * terminated. If the contract terminates with a failure, the promise will be
  * rejected with the reason. If the contract terminates successfully, the
  * promise will fulfill to the completion value.
- * @property {(reason: TerminationReason) => void} terminateWithFailure
+ * @property {ShutdownWithFailure} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure.
- * @property {() => Object} adminData
- * returns some statistics about the vat in which the contract is running.
  */
 
 /**
@@ -252,18 +249,20 @@
 
 /**
  * @callback ReallocateInternal
- * @param {SeatStaging[]} seatStagings
+ * @param {ZCFSeat[]} seats
  * @returns {void}
  */
 
 /**
  *
  * @callback CreateSeatManager
- * The SeatManager holds the active zcfSeats and seatStagings and can
- * reallocate and make new zcfSeats.
  *
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin
+ * The SeatManager holds the active zcfSeats and can reallocate and
+ * make new zcfSeats.
+ *
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {ShutdownWithFailure} shutdownWithFailure
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,

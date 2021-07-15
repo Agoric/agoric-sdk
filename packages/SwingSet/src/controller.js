@@ -1,7 +1,6 @@
 /* global require */
 // @ts-check
 import fs from 'fs';
-import path from 'path';
 import process from 'process';
 import re2 from 're2';
 import { performance } from 'perf_hooks';
@@ -9,26 +8,25 @@ import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
-import { tmpName } from 'tmp';
 
 import { assert, details as X } from '@agoric/assert';
 import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMeteringTransformer } from '@agoric/transform-metering';
-import { xsnap, makeSnapstore } from '@agoric/xsnap';
+import { xsnap, recordXSnap } from '@agoric/xsnap';
 
-import { WeakRef, FinalizationRegistry } from './weakref';
-import { startSubprocessWorker } from './spawnSubprocessWorker';
-import { waitUntilQuiescent } from './waitUntilQuiescent';
-import { gcAndFinalize } from './gc-and-finalize';
-import { insistStorageAPI } from './storageAPI';
-import { insistCapData } from './capdata';
-import { parseVatSlot } from './parseVatSlots';
-import { provideHostStorage } from './hostStorage';
+import engineGC from './engine-gc.js';
+import { WeakRef, FinalizationRegistry } from './weakref.js';
+import { startSubprocessWorker } from './spawnSubprocessWorker.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { insistStorageAPI } from './storageAPI.js';
+import { insistCapData } from './capdata.js';
+import { provideHostStorage } from './hostStorage.js';
 import {
   swingsetIsInitialized,
   initializeSwingset,
-} from './initializeSwingset';
+} from './initializeSwingset.js';
 
 /** @param {string} tag */
 function makeConsole(tag) {
@@ -48,12 +46,12 @@ function unhandledRejectionHandler(e) {
 /**
  * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
- *   snapstorePath?: string,
+ *   snapStore?: SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   env: Record<string, string | undefined>,
  * }} opts
  */
-export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
+export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
@@ -63,39 +61,44 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
     debug: !!env.XSNAP_DEBUG,
   };
 
-  /** @type { ReturnType<typeof makeSnapstore> } */
-  let snapStore;
-
-  if (snapstorePath) {
-    fs.mkdirSync(snapstorePath, { recursive: true });
-
-    snapStore = makeSnapstore(snapstorePath, {
-      tmpName,
-      existsSync: fs.existsSync,
-      createReadStream: fs.createReadStream,
-      createWriteStream: fs.createWriteStream,
-      rename: fs.promises.rename,
-      unlink: fs.promises.unlink,
-      resolve: path.resolve,
-    });
+  let doXSnap = xsnap;
+  const { XSNAP_TEST_RECORD } = env;
+  if (XSNAP_TEST_RECORD) {
+    console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
+    let serial = 0;
+    doXSnap = opts => {
+      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      serial += 1;
+      fs.mkdirSync(workerTrace, { recursive: true });
+      return recordXSnap(opts, workerTrace, {
+        writeFileSync: fs.writeFileSync,
+      });
+    };
   }
 
-  let supervisorHash = '';
   /**
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
    * @param { boolean } [metered]
+   * @param { string } [snapshotHash]
    */
-  async function startXSnap(name, handleCommand, metered) {
-    if (supervisorHash) {
-      return snapStore.load(supervisorHash, async snapshot => {
-        const xs = xsnap({ snapshot, name, handleCommand, ...xsnapOpts });
-        await xs.evaluate('null'); // ensure that spawn is done
+  async function startXSnap(
+    name,
+    handleCommand,
+    metered,
+    snapshotHash = undefined,
+  ) {
+    if (snapStore && snapshotHash) {
+      // console.log('startXSnap from', { snapshotHash });
+      return snapStore.load(snapshotHash, async snapshot => {
+        const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
+        await xs.isReady();
         return xs;
       });
     }
+    // console.log('fresh xsnap', { snapStore: snapStore });
     const meterOpts = metered ? {} : { meteringLimit: 0 };
-    const worker = xsnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
+    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
     for (const bundle of bundles) {
       assert(
@@ -104,9 +107,6 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
       );
       // eslint-disable-next-line no-await-in-loop
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
-    }
-    if (snapStore) {
-      supervisorHash = await snapStore.save(async fn => worker.snapshot(fn));
     }
     return worker;
   }
@@ -123,7 +123,8 @@ export function makeStartXSnap(bundles, { snapstorePath, env, spawn }) {
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
  *   testTrackDecref?: unknown,
- *   snapstorePath?: string,
+ *   warehousePolicy?: { maxVatsOnline?: number },
+ *   overrideVatManagerOptions?: { consensusMode?: boolean },
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
@@ -145,8 +146,9 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
-    snapstorePath,
     spawn = ambientSpawn,
+    warehousePolicy = {},
+    overrideVatManagerOptions = {},
   } = runtimeOptions;
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -272,7 +274,7 @@ export async function makeSwingsetController(
     const supercode = require.resolve(
       './kernel/vatManager/supervisor-subprocess-node.js',
     );
-    const args = ['--expose-gc', '-r', 'esm', supercode];
+    const args = ['-r', 'esm', supercode];
     return startSubprocessWorker(process.execPath, args);
   }
 
@@ -282,7 +284,11 @@ export async function makeSwingsetController(
     // @ts-ignore assume supervisorBundle is set
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
-  const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+  const startXSnap = makeStartXSnap(bundles, {
+    snapStore: hostStorage.snapStore,
+    env,
+    spawn,
+  });
 
   const kernelEndowments = {
     waitUntilQuiescent,
@@ -299,10 +305,11 @@ export async function makeSwingsetController(
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
-    gcAndFinalize,
+    gcAndFinalize: makeGcAndFinalize(engineGC),
   };
 
-  const kernelOptions = { verbose };
+  const kernelOptions = { verbose, warehousePolicy, overrideVatManagerOptions };
+  /** @type { ReturnType<typeof import('./kernel').default> } */
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {
@@ -310,6 +317,13 @@ export async function makeSwingsetController(
   }
 
   await kernel.start();
+
+  /**
+   * @param {T} x
+   * @returns {T}
+   * @template T
+   */
+  const defensiveCopy = x => JSON.parse(JSON.stringify(x));
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
@@ -321,7 +335,7 @@ export async function makeSwingsetController(
     writeSlogObject,
 
     dump() {
-      return JSON.parse(JSON.stringify(kernel.dump()));
+      return defensiveCopy(kernel.dump());
     },
 
     verboseDebugMode(flag) {
@@ -341,7 +355,17 @@ export async function makeSwingsetController(
     },
 
     getStats() {
-      return JSON.parse(JSON.stringify(kernel.getStats()));
+      return defensiveCopy(kernel.getStats());
+    },
+
+    getStatus() {
+      return defensiveCopy(kernel.getStatus());
+    },
+
+    pinVatRoot(vatName) {
+      const vatID = kernel.vatNameToID(vatName);
+      const kref = kernel.getRootObject(vatID);
+      kernel.pinObject(kref);
     },
 
     // these are for tests
@@ -360,14 +384,21 @@ export async function makeSwingsetController(
       return kernel.deviceNameToID(deviceName);
     },
 
-    queueToVatExport(vatName, exportID, method, args, resultPolicy = 'ignore') {
+    /**
+     * @param {string} vatName
+     * @param {string} method
+     * @param {CapData<unknown>} args
+     * @param {ResolutionPolicy} resultPolicy
+     */
+    queueToVatRoot(vatName, method, args, resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
-      parseVatSlot(exportID);
       assert.typeof(method, 'string');
       insistCapData(args);
-      const kref = kernel.addExport(vatID, exportID);
+      const kref = kernel.getRootObject(vatID);
       const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
-      kernel.kpRegisterInterest(kpid);
+      if (kpid) {
+        kernel.kpRegisterInterest(kpid);
+      }
       return kpid;
     },
   });
@@ -391,7 +422,9 @@ export async function makeSwingsetController(
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   testTrackDecref?: unknown,
- *   snapstorePath?: string,
+ *   warehousePolicy?: { maxVatsOnline?: number },
+ *   overrideVatManagerOptions?: { consensusMode?: boolean },
+ *   slogFile?: string,
  * }} runtimeOptions
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  */
@@ -406,13 +439,15 @@ export async function buildVatController(
     kernelBundles,
     debugPrefix,
     slogCallbacks,
-    snapstorePath,
+    warehousePolicy,
+    slogFile,
   } = runtimeOptions;
   const actualRuntimeOptions = {
     verbose,
     debugPrefix,
     slogCallbacks,
-    snapstorePath,
+    warehousePolicy,
+    slogFile,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;

@@ -1,10 +1,10 @@
 /* eslint-disable no-await-in-loop */
-import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering';
+import replaceGlobalMeter from '@agoric/tame-metering/src/install-global-metering.js';
 
 // eslint-disable-next-line import/order
 import test from 'ava';
 
-import { makeMeter, makeWithMeter } from '../src/index';
+import { makeMeter, makeWithMeter } from '../src/index.js';
 
 test('meter running', async t => {
   const { meter, refillFacet } = makeMeter({ budgetCombined: 10 });

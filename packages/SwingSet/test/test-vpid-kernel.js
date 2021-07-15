@@ -1,16 +1,16 @@
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
 import { assert, details as X } from '@agoric/assert';
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { provideHostStorage } from '../src/hostStorage';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { provideHostStorage } from '../src/hostStorage.js';
 
-import buildKernel from '../src/kernel/index';
-import { initializeKernel } from '../src/kernel/initializeKernel';
+import buildKernel from '../src/kernel/index.js';
+import { initializeKernel } from '../src/kernel/initializeKernel.js';
 
-import { buildDispatch } from './util';
+import { buildDispatch } from './util.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

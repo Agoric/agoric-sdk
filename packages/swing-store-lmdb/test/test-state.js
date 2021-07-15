@@ -9,10 +9,10 @@ import test from 'ava';
 import { getAllState } from '@agoric/swing-store-simple';
 
 import {
-  initSwingStore,
-  openSwingStore,
+  initLMDBSwingStore,
+  openLMDBSwingStore,
   isSwingStore,
-} from '../src/lmdbSwingStore';
+} from '../src/lmdbSwingStore.js';
 
 function testKVStore(t, store) {
   const kvStore = store.kvStore;
@@ -54,7 +54,7 @@ test('storageInLMDB under SES', t => {
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const store = initSwingStore(dbDir);
+  const store = initLMDBSwingStore(dbDir);
   const { commit, close } = store;
   testKVStore(t, store);
   commit();
@@ -62,7 +62,7 @@ test('storageInLMDB under SES', t => {
   close();
   t.is(isSwingStore(dbDir), true);
 
-  const store2 = openSwingStore(dbDir);
+  const store2 = openLMDBSwingStore(dbDir);
   const { close: close2 } = store2;
   t.deepEqual(getAllState(store2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
@@ -74,7 +74,7 @@ test('streamStore read/write', t => {
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const { streamStore, commit, close } = initLMDBSwingStore(dbDir);
 
   const start = streamStore.STREAM_START;
   let s1pos = start;
@@ -117,14 +117,10 @@ test('streamStore mode interlock', t => {
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const { streamStore, commit, close } = initLMDBSwingStore(dbDir);
   const start = streamStore.STREAM_START;
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);
-
-  t.throws(() => streamStore.readStream('st1', start, s1pos), {
-    message: `can't read stream "st1" because it's already in use`,
-  });
   streamStore.closeStream('st1');
 
   const reader = streamStore.readStream('st1', start, s1pos);

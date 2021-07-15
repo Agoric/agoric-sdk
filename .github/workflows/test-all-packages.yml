@@ -505,7 +505,7 @@ jobs:
       env:
         ESM_DISABLE_CACHE: true
 
-  test-zoe:
+  test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
     needs: build
     runs-on: ubuntu-latest
@@ -538,8 +538,46 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (zoe)
-      timeout-minutes: 20
-      run: cd packages/zoe && yarn test
+      timeout-minutes: 30
+      run: cd packages/zoe && yarn test:unit
+      env:
+        ESM_DISABLE_CACHE: true
+
+  test-zoe-swingset:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: ['14.x', '16.x']
+        node-version: ['14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (zoe)
+      timeout-minutes: 30
+      run: cd packages/zoe && yarn test:swingset
       env:
         ESM_DISABLE_CACHE: true
 

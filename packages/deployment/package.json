@@ -1,42 +1,46 @@
 {
   "name": "@agoric/deployment",
-  "version": "1.27.2",
+  "version": "1.28.6",
   "description": "Set up Agoric public chain nodes",
   "parsers": {
     "js": "mjs"
   },
   "private": true,
-  "main": "main.js",
+  "main": "src/main.js",
+  "bin": {
+    "ag-setup-cosmos": "src/entrypoint.cjs"
+  },
   "scripts": {
     "test": "exit 0",
     "test:xs": "exit 0",
     "build": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.2.12",
-    "@agoric/install-ses": "^0.5.13",
+    "@agoric/assert": "^0.3.6",
+    "@agoric/install-ses": "^0.5.20",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
-    "esm": "^3.2.25",
+    "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^6.3.1",
     "minimist": "^1.2.0",
     "node-fetch": "^2.6.0",
     "temp": "^0.9.0"
   },
   "devDependencies": {
-    "@agoric/eslint-config": "^0.3.6"
+    "@agoric/eslint-config": "^0.3.13"
   },
   "publishConfig": {
     "access": "public"
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

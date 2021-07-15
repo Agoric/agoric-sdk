@@ -6,22 +6,22 @@
 // `test.serial` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
 // TODO restore
-// import { test } from '../tools/prepare-test-env-ava';
-import '../tools/prepare-test-env';
+// import { test } from '../tools/prepare-test-env-ava.js';
+import '../tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
-import { provideHostStorage } from '../src/hostStorage';
+import { provideHostStorage } from '../src/hostStorage.js';
 import {
   initializeSwingset,
   makeSwingsetController,
   buildVatController,
   buildKernelBundles,
-} from '../src/index';
-import { buildLoopbox } from '../src/devices/loopbox';
-import { buildPatterns } from './message-patterns';
+} from '../src/index.js';
+import { buildLoopbox } from '../src/devices/loopbox.js';
+import { buildPatterns } from './message-patterns.js';
 
 // This exercises all the patterns in 'message-patterns.js' twice (once with
 // vatA/vatB connected directly through the kernel, and a second time with
@@ -81,6 +81,7 @@ test.before(async t => {
       enablePipelining: true,
       enableSetup: true,
       managerType: 'local',
+      useTranscript: false,
     },
   };
   const moreVatTP = { bundle: kernelBundles.vattp };
@@ -137,6 +138,9 @@ export async function runVatsInComms(t, name) {
   const devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,
+      parameters: {
+        senders: ['A', 'B', 'C'],
+      },
     },
   };
   const config = { ...commsConfig, devices };

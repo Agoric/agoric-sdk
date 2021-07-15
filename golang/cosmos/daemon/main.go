@@ -3,6 +3,8 @@ package daemon
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
@@ -55,6 +57,15 @@ func Run() {
 
 // RunWithController starts the app with a custom upcall handler.
 func RunWithController(sendToController cmd.Sender) {
+	// Exit on Control-C and kill.
+	// Without this explicitly, ag-chain-cosmos ignores them.
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		os.Exit(98)
+	}()
+
 	config := sdk.GetConfig()
 	SetConfigDefaults(config)
 	config.Seal()

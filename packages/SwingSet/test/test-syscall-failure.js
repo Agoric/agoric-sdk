@@ -1,9 +1,9 @@
 /* global require */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/hostStorage';
-import { buildVatController } from '../src';
+import { provideHostStorage } from '../src/hostStorage.js';
+import { buildVatController } from '../src/index.js';
 
 async function vatSyscallFailure(t, beDynamic) {
   const config = {
@@ -40,7 +40,9 @@ async function vatSyscallFailure(t, beDynamic) {
       '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
     );
     t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
-    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 8);
+    t.true(
+      Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length > 0,
+    );
     t.is(kvStore.get('vat.name.badvatStatic'), badVatID);
   }
   await controller.run();

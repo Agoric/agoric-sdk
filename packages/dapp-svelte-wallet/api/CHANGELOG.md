@@ -3,6 +3,85 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.11](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.10...@agoric/dapp-svelte-wallet-api@0.9.11) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.10](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.9...@agoric/dapp-svelte-wallet-api@0.9.10) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.9](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.8...@agoric/dapp-svelte-wallet-api@0.9.9) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.8](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.7...@agoric/dapp-svelte-wallet-api@0.9.8) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.7](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.6...@agoric/dapp-svelte-wallet-api@0.9.7) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.6](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.5...@agoric/dapp-svelte-wallet-api@0.9.6) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.5](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.4...@agoric/dapp-svelte-wallet-api@0.9.5) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.4](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.3...@agoric/dapp-svelte-wallet-api@0.9.4) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
+
+
+
+
+
+### [0.9.3](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.2...@agoric/dapp-svelte-wallet-api@0.9.3) (2021-06-15)
+
+
+### Features
+
+* use 'engine-gc.js' to get the Node.js garbage collector ([0153529](https://github.com/Agoric/agoric/commit/0153529cbfc0b7da2d1ec434b32b2171bc246f93))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove references to @agoric/registrar ([ec6cc6d](https://github.com/Agoric/agoric/commit/ec6cc6d8f1da9ec5a38420b501562eaebfbdc76c))
+
+
+
 ## [0.9.2](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.1...@agoric/dapp-svelte-wallet-api@0.9.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-api

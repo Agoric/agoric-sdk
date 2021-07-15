@@ -1,6 +1,6 @@
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 
 // We don't test that WeakRefs actually work, we only make sure we can
 // interact with them without crashing. This exercises the fake no-op WeakRef

@@ -6,10 +6,10 @@ import {
   observeIteration,
   makeSubscriptionKit,
   makeSubscription,
-} from '../src/index';
-import { paula, alice, bob, carol } from './iterable-testing-tools';
+} from '../src/index.js';
+import { paula, alice, bob, carol } from './iterable-testing-tools.js';
 
-import '../src/types';
+import '../src/types.js';
 
 test('subscription for-await-of success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();

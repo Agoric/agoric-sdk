@@ -6,27 +6,25 @@ import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { xsnap } from '../src/xsnap';
-import { makeSnapstore } from '../src/snapStore';
+import { xsnap } from '../src/xsnap.js';
+import { makeSnapStore } from '../src/snapStore.js';
+import { loader } from './message-tools.js';
 
-const importMetaUrl = new URL(`file://${__filename}`);
-
-const asset = async (...segments) =>
-  fs.promises.readFile(
-    path.join(importMetaUrl.pathname, '..', ...segments),
-    'utf-8',
-  );
+const importMeta = { url: `file://${__filename}` };
+const ld = loader(importMeta.url, fs.promises.readFile); // WARNING: ambient
 
 /**
  * @param {string} name
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ * @param {string} script to execute
  */
-async function bootWorker(name, handleCommand) {
+async function bootWorker(name, handleCommand, script) {
   const worker = xsnap({
     os: osType(),
     spawn,
@@ -37,17 +35,35 @@ async function bootWorker(name, handleCommand) {
     // debug: !!env.XSNAP_DEBUG,
   });
 
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  await worker.evaluate(bootScript);
+  await worker.evaluate(script);
   return worker;
 }
+
+/**
+ * @param {string} name
+ * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ */
+async function bootSESWorker(name, handleCommand) {
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  return bootWorker(name, handleCommand, bootScript);
+}
+
+/** @type {(fn: string, fullSize: number) => number} */
+const relativeSize = (fn, fullSize) =>
+  Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
+
+const snapSize = {
+  raw: 417,
+  SESboot: 858,
+  compression: 0.1,
+};
 
 test('build temp file; compress to cache file', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
   await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
@@ -68,36 +84,26 @@ test('build temp file; compress to cache file', async t => {
     'temp file should have been deleted after withTempName',
   );
   const dest = path.resolve(pool.name, `${hash}.gz`);
-  t.truthy(fs.existsSync(dest));
+  t.truthy(fs.existsSync(dest), 'save() produces file named after hash');
   const gz = fs.readFileSync(dest);
-  t.is(gz.toString('hex'), '1f8b08000000000000034b4c4a0600c241243503000000');
+  const contents = zlib.gunzipSync(gz);
+  t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
 });
 
-test('bootstrap, save, compress', async t => {
-  const vat = await bootWorker('ses-boot1', async m => m);
+test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.compression}x`, async t => {
+  const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
   await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
     ...fs.promises,
   });
-
-  await vat.evaluate('globalThis.x = harden({a: 1})');
-
-  /** @type {(fn: string, fullSize: number) => number} */
-  const relativeSize = (fn, fullSize) =>
-    Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
-
-  const snapSize = {
-    raw: 858,
-    compression: 0.1,
-  };
 
   const h = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
@@ -111,26 +117,53 @@ test('bootstrap, save, compress', async t => {
   );
 });
 
-test('create, save, restore, resume', async t => {
+test('SES bootstrap, save, compress', async t => {
+  const vat = await bootSESWorker('ses-boot1', async m => m);
+  t.teardown(() => vat.close());
+
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
-  await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapstore(pool.name, {
+  const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
     ...fs.promises,
   });
 
-  const vat0 = await bootWorker('ses-boot2', async m => m);
+  await vat.evaluate('globalThis.x = harden({a: 1})');
+
+  const h = await store.save(async snapFile => {
+    await vat.snapshot(snapFile);
+  });
+
+  const zfile = path.resolve(pool.name, `${h}.gz`);
+  t.is(
+    relativeSize(zfile, snapSize.SESboot),
+    snapSize.compression,
+    'compressed snapshots are smaller',
+  );
+});
+
+test('create SES worker, save, restore, resume', async t => {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+
+  const store = makeSnapStore(pool.name, {
+    ...tmp,
+    ...path,
+    ...fs,
+    ...fs.promises,
+  });
+
+  const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
   await vat0.evaluate('globalThis.x = harden({a: 1})');
   const h = await store.save(vat0.snapshot);
 
   const worker = await store.load(h, async snapshot => {
     const xs = xsnap({ name: 'ses-resume', snapshot, os: osType(), spawn });
-    await xs.evaluate('0');
+    await xs.isReady();
     return xs;
   });
   t.teardown(() => worker.close());
@@ -139,7 +172,7 @@ test('create, save, restore, resume', async t => {
 });
 
 // see https://github.com/Agoric/agoric-sdk/issues/2776
-test.failing('xs snapshots should be deterministic', t => {
+test.failing('XS + SES snapshots should be deterministic', t => {
   const h = 'abc';
   t.is('66244b4bfe92ae9138d24a9b50b492d231f6a346db0cf63543d200860b423724', h);
 });

@@ -3,7 +3,8 @@ module github.com/Agoric/agoric-sdk
 go 1.15
 
 require (
-	github.com/cosmos/cosmos-sdk v0.42.4
+	github.com/cosmos/cosmos-sdk v0.43.0-beta1
+	github.com/cosmos/ibc-go v1.0.0-alpha2.0.20210603063624-832044782f10
 	github.com/gogo/protobuf v1.3.3
 	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa // indirect
 	github.com/gorilla/mux v1.8.0
@@ -11,10 +12,10 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
-	github.com/tendermint/tendermint v0.34.10
+	github.com/tendermint/tendermint v0.34.11
 	github.com/tendermint/tm-db v0.6.4
-	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f
-	google.golang.org/grpc v1.37.0
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+	google.golang.org/grpc v1.38.0
 )
 
 // Silence a warning on MacOS
@@ -29,8 +30,10 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 // replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210310191408-9156bacf449c
 
 // At least until GetABCIEventHistory() is implemented and released.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.34.4-0.20210504041254-7cead73a2b33
+// And also `gentx --keyring-dir=...`
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.43.0-rc0.agoric
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
+
 // replace github.com/tendermint/tendermint => ../forks/tendermint

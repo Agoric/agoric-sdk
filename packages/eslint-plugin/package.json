@@ -1,6 +1,6 @@
 {
   "name": "@agoric/eslint-plugin",
-  "version": "0.3.2",
+  "version": "0.3.9",
   "description": "Agoric-specific ESLint plugin",
   "keywords": [
     "eslint",
@@ -14,7 +14,8 @@
     "test:xs": "exit 0",
     "build": "exit 0",
     "lint-fix": "exit 0",
-    "lint-check": "exit 0"
+    "lint-check": "exit 0",
+    "lint": "exit 0"
   },
   "dependencies": {
     "requireindex": "~1.1.0"

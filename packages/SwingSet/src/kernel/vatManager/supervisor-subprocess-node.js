@@ -7,19 +7,24 @@ import fs from 'fs';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
-import { WeakRef, FinalizationRegistry } from '../../weakref';
-import { gcAndFinalize } from '../../gc-and-finalize';
-import { arrayEncoderStream, arrayDecoderStream } from '../../worker-protocol';
+import engineGC from '../../engine-gc.js';
+import { WeakRef, FinalizationRegistry } from '../../weakref.js';
+import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import {
+  arrayEncoderStream,
+  arrayDecoderStream,
+} from '../../worker-protocol.js';
 import {
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../../netstring';
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
-import { makeLiveSlots } from '../liveSlots';
+} from '../../netstring.js';
+import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
+import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+  makeVatConsole,
+} from './supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -27,15 +32,6 @@ function workerLog(first, ...args) {
 }
 
 workerLog(`supervisor started`);
-
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
 
 let dispatch;
 
@@ -71,6 +67,8 @@ fromParent.on('data', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
+      consensusMode,
     ] = margs;
 
     function testLog(...args) {
@@ -92,7 +90,7 @@ fromParent.on('data', ([type, ...margs]) => {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      gcAndFinalize,
+      gcAndFinalize: makeGcAndFinalize(engineGC),
     });
     const ls = makeLiveSlots(
       syscall,
@@ -101,12 +99,19 @@ fromParent.on('data', ([type, ...margs]) => {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
     );
 
+    // Enable or disable the console accordingly.
     const endowments = {
       ...ls.vatGlobals,
-      console: makeConsole(`SwingSet:vatWorker`),
+      console: makeVatConsole(
+        anylogger(`SwingSet:vat:${vatID}`),
+        (logger, args) => {
+          consensusMode || logger(...args);
+        },
+      ),
       assert,
     };
 

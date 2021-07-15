@@ -30,18 +30,21 @@
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE
 
+- name: "Specially set JSON valconspub"
+  set_fact:
+    valconspub: "{{ lookup('file', data + '/' + inventory_hostname + '/pubkey') | string }}"
+
 - name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"
   become: true
   shell: "\
     ag-cosmos-helper tx staking create-validator --keyring-backend=test \
       --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_SELF_DELEGATION }} \
-      --moniker={{ moniker | default(inventory_hostname) }} --pubkey={{ valconspub }} \
+      --moniker={{ moniker | default(inventory_hostname) }} --pubkey='{{ valconspub }}' \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \
       --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
       --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
   vars:
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
-    valconspub: "{{ lookup('file', data + '/' + inventory_hostname + '/pubkey') }}"
   when: inventory_hostname != STAKER_NODE

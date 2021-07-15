@@ -8,9 +8,9 @@ import { Far } from '@agoric/marshal';
 import {
   makeAsyncIterableFromNotifier,
   observeIteration,
-} from './asyncIterableAdaptor';
+} from './asyncIterableAdaptor.js';
 
-import './types';
+import './types.js';
 
 /**
  * @template T
@@ -93,6 +93,7 @@ export const makeNotifierKit = (...args) => {
         value: state,
         updateCount: currentUpdateCount,
       });
+      assert(currentResponse);
       nextPromiseKit.resolve(currentResponse);
       nextPromiseKit = makePromiseKit();
     },
@@ -109,6 +110,7 @@ export const makeNotifierKit = (...args) => {
         value: finalState,
         updateCount: currentUpdateCount,
       });
+      assert(currentResponse);
       nextPromiseKit.resolve(currentResponse);
       nextPromiseKit = undefined;
     },

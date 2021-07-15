@@ -6,12 +6,24 @@ import path from 'path';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 
-import './types';
-import { insistStorageAPI } from './storageAPI';
-import { initializeKernel } from './kernel/initializeKernel';
+import './types.js';
+import { insistStorageAPI } from './storageAPI.js';
+import { initializeKernel } from './kernel/initializeKernel.js';
+import { kdebugEnable } from './kernel/kdebug.js';
 
+/**
+ * @param {X[]} xs
+ * @param {Y[]} ys
+ * @returns {[X, Y][]}
+ * @template X, Y
+ */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const { keys, values, fromEntries } = Object;
+/**
+ * @param {Record<string, Promise<V>>} obj
+ * @returns {Promise<Record<string, V>>}
+ * @template V
+ */
 const allValues = async obj =>
   fromEntries(zip(keys(obj), await Promise.all(values(obj))));
 
@@ -207,7 +219,7 @@ export function swingsetIsInitialized(hostStorage) {
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {HostStore} hostStorage
- * @param {{ kernelBundles?: Record<string, string> }} initializationOptions
+ * @param {{ kernelBundles?: Record<string, string>, verbose?: boolean }} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
@@ -245,6 +257,7 @@ export async function initializeSwingset(
     case 'nodeWorker':
     case 'node-subprocess':
     case 'xs-worker':
+    case 'xs-worker-no-gc':
       config.defaultManagerType = defaultManagerType;
       break;
     case undefined:
@@ -254,7 +267,10 @@ export async function initializeSwingset(
       assert.fail(X`unknown manager type ${defaultManagerType}`);
   }
 
-  const { kernelBundles = await buildKernelBundles() } = initializationOptions;
+  const {
+    kernelBundles = await buildKernelBundles(),
+    verbose,
+  } = initializationOptions;
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
@@ -290,6 +306,7 @@ export async function initializeSwingset(
       // non-local workers any time soon.
       enableSetup: true,
       managerType: 'local',
+      useTranscript: false,
     },
   };
 
@@ -297,11 +314,6 @@ export async function initializeSwingset(
   // it to comms
   config.vats.vattp = {
     bundle: kernelBundles.vattp,
-    creationOptions: {
-      // we saw evidence of vattp dropping messages, and out of caution,
-      // we're keeping it on an in-kernel worker for now. See #3039.
-      managerType: 'local',
-    },
   };
 
   // timer wrapper vat is added automatically, but TODO: bootstraps must
@@ -378,5 +390,8 @@ export async function initializeSwingset(
   await bundleBundles(config.vats, 'vats');
   await bundleBundles(config.devices, 'devices');
 
+  if (verbose) {
+    kdebugEnable(true);
+  }
   return initializeKernel(config, hostStorage);
 }

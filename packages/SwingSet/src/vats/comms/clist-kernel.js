@@ -1,7 +1,7 @@
 import { assert, details as X } from '@agoric/assert';
-import { parseVatSlot, insistVatType } from '../../parseVatSlots';
-import { parseLocalSlot } from './parseLocalSlots';
-import { cdebug } from './cdebug';
+import { parseVatSlot, insistVatType } from '../../parseVatSlots.js';
+import { parseLocalSlot } from './parseLocalSlots.js';
+import { cdebug } from './cdebug.js';
 
 export function makeKernel(state, syscall) {
   // *-KernelForLocal: comms vat sending out to kernel
@@ -15,17 +15,25 @@ export function makeKernel(state, syscall) {
   // been retired or not, and create a new (short-lived) identifier to reference
   // resolved promises if necessary.
 
+  const isReachable = state.isReachableByKernel;
+  const setReachable = state.setReachableByKernel;
+  // const clearReachable = state.clearReachableByKernel;
+
   function getKernelForLocal(lref) {
     const kfref = state.mapToKernel(lref);
     assert(kfref, X`${lref} must already be mapped to a kernel-facing ID`);
+    const { type, allocatedByVat } = parseVatSlot(kfref);
+    if (type === 'object' && !allocatedByVat) {
+      // comms import, kernel export, make sure we can stil reach it
+      assert(isReachable(lref), X`comms sending to unreachable import ${lref}`);
+    }
     return kfref;
   }
 
   function provideKernelForLocal(lref) {
-    if (!state.mapToKernel(lref)) {
-      let kfref;
-      const { type } = parseLocalSlot(lref);
-
+    const { type } = parseLocalSlot(lref);
+    let kfref = state.mapToKernel(lref);
+    if (!kfref) {
       if (type === 'object') {
         kfref = state.allocateKernelObjectID();
       } else if (type === 'promise') {
@@ -44,7 +52,21 @@ export function makeKernel(state, syscall) {
       state.addKernelMapping(kfref, lref);
       cdebug(`comms add mapping l->k ${kfref}<=>${lref}`);
     }
-    return state.mapToKernel(lref);
+
+    if (type === 'object') {
+      // we setReachable in the same cases that we're willing to allocate a
+      // kfref
+      const { allocatedByVat } = parseVatSlot(kfref);
+      const doSetReachable = allocatedByVat;
+      if (doSetReachable) {
+        // the kernel is an importer in this case
+        const isImport = true;
+        setReachable(lref, isImport);
+      }
+      assert(isReachable(lref), X`comms sending unreachable ${lref}`);
+    }
+
+    return kfref;
   }
 
   function provideKernelForLocalResult(lpid) {
@@ -72,7 +94,7 @@ export function makeKernel(state, syscall) {
       !kernelIsSubscribed,
       X`attempt to retire subscribed promise ${kfpid}`,
     );
-    state.deleteKernelMapping(kfpid, lpid);
+    state.deleteKernelMapping(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
   }
 
@@ -81,6 +103,13 @@ export function makeKernel(state, syscall) {
   function getLocalForKernel(kfref) {
     const lref = state.mapFromKernel(kfref);
     assert(lref, X`${kfref} must already be mapped to a local ID`);
+    if (parseVatSlot(kfref).type === 'object') {
+      // comms export, kernel import, it must be reachable
+      assert(
+        isReachable(lref),
+        X`kernel sending to unreachable import ${lref}`,
+      );
+    }
     return lref;
   }
 
@@ -123,15 +152,26 @@ export function makeKernel(state, syscall) {
         assert.fail(X`cannot accept type ${type} from kernel`);
       }
     }
-
     const lref = state.mapFromKernel(kfref);
+
     if (type === 'promise') {
       if (!allocatedByVat) {
         if (!doNotSubscribeSet || !doNotSubscribeSet.has(kfref)) {
           syscall.subscribe(kfref);
         }
       }
+    } else if (type === 'object') {
+      // we setReachable in the same cases that we're willing to allocate an
+      // lref
+      const doSetReachable = !allocatedByVat;
+      if (doSetReachable) {
+        // the kernel is an exporter in this case
+        const isImport = false;
+        setReachable(lref, isImport);
+      }
+      assert(isReachable(lref), `kernel using unreachable ${lref}`);
     }
+
     return lref;
   }
 

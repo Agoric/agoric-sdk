@@ -1,1 +1,1 @@
-import '@agoric/xsnap/lib/ses-boot';
+import '@agoric/xsnap/lib/ses-boot.js';

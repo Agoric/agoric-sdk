@@ -9,7 +9,7 @@
 
 - name: Synchronize Agoric SDK
   synchronize:
-    src: "/usr/src/agoric-sdk/"
+    src: "{{ AGORIC_SDK }}/"
     dest: "/usr/src/agoric-sdk/"
     dirs: yes
     delete: yes

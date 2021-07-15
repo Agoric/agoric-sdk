@@ -30,6 +30,7 @@ test('makeAndStoreInstanceRecord', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
   const fakeInstallation = { getBundle: () => bundle };
+  const fakeInstance = /** @type {Instance} */ ({});
   const customTerms = harden({ time: 2n });
   const issuers = harden({
     Currency: currencyKit.issuer,
@@ -48,6 +49,7 @@ test('makeAndStoreInstanceRecord', async t => {
     assertUniqueKeyword,
   } = makeAndStoreInstanceRecord(
     fakeInstallation,
+    fakeInstance,
     customTerms,
     issuers,
     brands,
@@ -55,6 +57,7 @@ test('makeAndStoreInstanceRecord', async t => {
 
   t.deepEqual(getInstanceRecord(), {
     installation: fakeInstallation,
+    instance: fakeInstance,
     terms: { time: 2n, issuers, brands },
   });
 
@@ -70,7 +73,8 @@ test('makeAndStoreInstanceRecord', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, AssetKind.NAT, {
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
+      assetKind: AssetKind.NAT,
       decimalPlaces: 18,
     }),
   );
@@ -82,6 +86,7 @@ test('makeInstanceRecordStorage', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
   const fakeInstallation = { getBundle: () => bundle };
+  const fakeInstance = /** @type {Instance} */ ({});
   const issuers = harden({
     Currency: currencyKit.issuer,
     Ticket: ticketKit.issuer,
@@ -101,11 +106,13 @@ test('makeInstanceRecordStorage', async t => {
   } = makeInstanceRecordStorage();
   instantiate({
     installation: fakeInstallation,
+    instance: fakeInstance,
     terms: { time: 2n, issuers, brands },
   });
 
   t.deepEqual(getInstanceRecord(), {
     installation: fakeInstallation,
+    instance: fakeInstance,
     terms: { time: 2n, issuers, brands },
   });
 
@@ -121,7 +128,8 @@ test('makeInstanceRecordStorage', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, AssetKind.NAT, {
+    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
+      assetKind: AssetKind.NAT,
       decimalPlaces: 18,
     }),
   );

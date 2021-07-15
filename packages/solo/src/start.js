@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
+import { tmpName } from 'tmp'; // TODO: reconcile tmp vs. temp
 import { fork } from 'child_process';
 import { promisify } from 'util';
 // import { createHash } from 'crypto';
@@ -23,7 +24,8 @@ import {
   buildPlugin,
   buildTimer,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { makeSnapStore } from '@agoric/xsnap';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 
@@ -134,10 +136,22 @@ async function buildSwingset(
     plugin: { ...plugin.endowments },
   };
 
-  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
+  const snapshotDir = path.resolve(kernelStateDBDir, 'xs-snapshots');
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  const snapStore = makeSnapStore(snapshotDir, {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  });
   const hostStorage = {
     kvStore,
     streamStore,
+    snapStore,
   };
 
   if (!swingsetIsInitialized(hostStorage)) {

@@ -1,11 +1,14 @@
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
-import { ExitCode } from '@agoric/xsnap/api';
-import { makeManagerKit } from './manager-helper';
+import { ExitCode } from '@agoric/xsnap/api.js';
+import { makeManagerKit } from './manager-helper.js';
 
-import { insistVatSyscallObject, insistVatDeliveryResult } from '../../message';
-import '../../types';
-import './types';
+import {
+  insistVatSyscallObject,
+  insistVatDeliveryResult,
+} from '../../message.js';
+import '../../types.js';
+import './types.js';
 
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
@@ -20,14 +23,13 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: SyncHandler, metered?: boolean) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns { VatManagerFactory }
  *
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
- * @typedef { (msg: Uint8Array) => Uint8Array } SyncHandler
- * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
+ * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
  */
 export function makeXsSubprocessFactory({
   kernelKeeper,
@@ -49,12 +51,17 @@ export function makeXsSubprocessFactory({
   ) {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
+      consensusMode,
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
+      gcEveryCrank = true,
       name,
       metered,
       compareSyscalls,
+      useTranscript,
+      vatConsole,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
@@ -67,6 +74,7 @@ export function makeXsSubprocessFactory({
       vatSyscallHandler,
       true,
       compareSyscalls,
+      useTranscript,
     );
 
     /** @type { (item: Tagged) => unknown } */
@@ -80,9 +88,9 @@ export function makeXsSubprocessFactory({
           return mk.syscallFromWorker(vso);
         }
         case 'console': {
-          const [level, tag, ...rest] = args;
-          if (typeof level === 'string' && level in console) {
-            console[level](tag, ...rest);
+          const [level, ...rest] = args;
+          if (typeof level === 'string' && level in vatConsole) {
+            vatConsole[level](...rest);
           } else {
             console.error('bad console level', level);
           }
@@ -96,15 +104,23 @@ export function makeXsSubprocessFactory({
       }
     }
 
-    /** @type { (msg: Uint8Array) => Uint8Array } */
-    function handleCommand(msg) {
+    /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
+    async function handleCommand(msg) {
       // parentLog('handleCommand', { length: msg.byteLength });
       const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
       return encoder.encode(JSON.stringify(tagged));
     }
 
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const lastSnapshot = vatKeeper.getLastSnapshot();
+
     // start the worker and establish a connection
-    const worker = await startXSnap(`${vatID}:${name}`, handleCommand, metered);
+    const worker = await startXSnap(
+      `${vatID}:${name}`,
+      handleCommand,
+      metered,
+      lastSnapshot ? lastSnapshot.snapshotID : undefined,
+    );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
@@ -116,20 +132,27 @@ export function makeXsSubprocessFactory({
       return { ...result, reply: [tag, ...rest] };
     }
 
-    parentLog(vatID, `instructing worker to load bundle..`);
-    const { reply: bundleReply } = await issueTagged([
-      'setBundle',
-      vatID,
-      bundle,
-      vatParameters,
-      virtualObjectCacheSize,
-      enableDisavow,
-    ]);
-    if (bundleReply[0] === 'dispatchReady') {
-      parentLog(vatID, `bundle loaded. dispatch ready.`);
+    if (lastSnapshot) {
+      parentLog(vatID, `snapshot loaded. dispatch ready.`);
     } else {
-      const [_tag, errName, message] = bundleReply;
-      assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      parentLog(vatID, `instructing worker to load bundle..`);
+      const { reply: bundleReply } = await issueTagged([
+        'setBundle',
+        vatID,
+        bundle,
+        vatParameters,
+        virtualObjectCacheSize,
+        enableDisavow,
+        enableVatstore,
+        consensusMode,
+        gcEveryCrank,
+      ]);
+      if (bundleReply[0] === 'dispatchReady') {
+        parentLog(vatID, `bundle loaded. dispatch ready.`);
+      } else {
+        const [_tag, errName, message] = bundleReply;
+        assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+      }
     }
 
     /**
@@ -140,7 +163,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `sending delivery`, delivery);
       let result;
       try {
-        result = await issueTagged(['deliver', delivery]);
+        result = await issueTagged(['deliver', delivery, consensusMode]);
       } catch (err) {
         parentLog('issueTagged error:', err.code, err.message);
         let message;
@@ -155,7 +178,8 @@ export function makeXsSubprocessFactory({
             message = 'Allocate meter exceeded';
             break;
           default:
-            message = err.message;
+            // non-metering failure. crash.
+            throw err;
         }
         return harden(['error', message, null]);
       }
@@ -175,7 +199,15 @@ export function makeXsSubprocessFactory({
     function shutdown() {
       return worker.close().then(_ => undefined);
     }
-    return mk.getManager(shutdown);
+    /**
+     * @param {SnapStore} snapStore
+     * @returns {Promise<string>}
+     */
+    function makeSnapshot(snapStore) {
+      return snapStore.save(fn => worker.snapshot(fn));
+    }
+
+    return mk.getManager(shutdown, makeSnapshot);
   }
 
   return harden({ createFromBundle });

@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-redeclare
 /* global setImmediate setTimeout */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 test('Promise queue should be higher priority than IO/timer queue', async t => {
   const log = [];

@@ -3,9 +3,9 @@
 import 'ses';
 
 import { decodeBase64 } from '@endo/base64';
-import { parseArchive } from '@agoric/compartment-mapper';
+import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 import test from 'ava';
-import bundleSource from '..';
+import bundleSource from '../src/index.js';
 
 function evaluate(src, endowments) {
   const c = new Compartment(endowments, {}, {});

@@ -3,6 +3,73 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.5...@agoric/deployment@1.28.6) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
+### [1.28.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.4...@agoric/deployment@1.28.5) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
+### [1.28.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.3...@agoric/deployment@1.28.4) (2021-06-25)
+
+
+### Bug Fixes
+
+* **deployment:** ensure that the faucet is given urun ([2e046f7](https://github.com/Agoric/agoric-sdk/commit/2e046f742be5bf01a69555bceb3acff5550b6ab4))
+
+
+
+### [1.28.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.2...@agoric/deployment@1.28.3) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
+### [1.28.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.1...@agoric/deployment@1.28.2) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/deployment
+
+
+
+
+
+### [1.28.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.0...@agoric/deployment@1.28.1) (2021-06-16)
+
+
+### Bug Fixes
+
+* **deployment:** many tweaks to make more robust ([16ce07d](https://github.com/Agoric/agoric-sdk/commit/16ce07d1269e66a016a0326ecc6ca4d42a76f75d))
+
+
+
+## [1.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.27.2...@agoric/deployment@1.28.0) (2021-06-15)
+
+
+### Features
+
+* for Keplr support (and presumably other wallets) we need CORS ([7986548](https://github.com/Agoric/agoric-sdk/commit/7986548c528e282c129175f0292d3db6b00a9468))
+* **deployment:** --genesis=FILE and unique digitalocean SSH keys ([00d69da](https://github.com/Agoric/agoric-sdk/commit/00d69dab293f166e8e17adc05b0121dd99534adf))
+* **deployment:** fetch --genesis=<url> ([e706e74](https://github.com/Agoric/agoric-sdk/commit/e706e747e8cdd54ed74f525b91d2d3fc2db61254))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove genesis bootstrap config; use just add-genesis-account ([fdc1255](https://github.com/Agoric/agoric-sdk/commit/fdc1255d66c702e8970ecf795be191dcf2291c39))
+
+
+
 ## [1.27.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.27.1...@agoric/deployment@1.27.2) (2021-05-10)
 
 

@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
-import { assertKnownOptions } from '../../assertOptions';
-import { makeLocalVatManagerFactory } from './manager-local';
-import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker';
-import { makeNodeSubprocessFactory } from './manager-subprocess-node';
-import { makeXsSubprocessFactory } from './manager-subprocess-xsnap';
+import { assertKnownOptions } from '../../assertOptions.js';
+import { makeLocalVatManagerFactory } from './manager-local.js';
+import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';
+import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
+import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
 export function makeVatManagerFactory({
   allVatPowers,
@@ -52,16 +52,19 @@ export function makeVatManagerFactory({
 
   function validateManagerOptions(managerOptions) {
     assertKnownOptions(managerOptions, [
+      'consensusMode',
       'enablePipelining',
       'managerType',
+      'gcEveryCrank',
       'setup',
       'bundle',
       'metered',
       'enableDisavow',
       'enableSetup',
       'liveSlotsConsole',
-      'notifyTermination',
+      'enableVatstore',
       'virtualObjectCacheSize',
+      'useTranscript',
       'vatParameters',
       'vatConsole',
       'name',
@@ -88,15 +91,16 @@ export function makeVatManagerFactory({
       enableSetup,
     } = managerOptions;
 
-    if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
-      console.warn(
-        `TODO: support metered with ${managerType}; using local as work-around`,
-      );
+    if (
+      metered &&
+      managerType !== 'local' &&
+      managerType !== 'xs-worker' &&
+      managerType !== 'xs-worker-no-gc'
+    ) {
+      console.warn(`TODO: support metered with ${managerType}`);
     }
     if (setup && managerType !== 'local') {
-      console.warn(
-        `TODO: stop using setup() with ${managerType}; using local as work-around`,
-      );
+      console.warn(`TODO: stop using setup() with ${managerType}`);
     }
     if (managerType === 'local' || enableSetup) {
       if (setup) {
@@ -133,11 +137,19 @@ export function makeVatManagerFactory({
       );
     }
 
-    if (managerType === 'xs-worker') {
+    if (managerType === 'xs-worker' || managerType === 'xs-worker-no-gc') {
+      const transformedOptions = {
+        ...managerOptions,
+        managerType: 'xs-worker',
+      };
+      if (managerOptions.gcEveryCrank === undefined) {
+        // Explicitly enable/disable gcEveryCrank.
+        transformedOptions.gcEveryCrank = managerType !== 'xs-worker-no-gc';
+      }
       return xsWorkerFactory.createFromBundle(
         vatID,
         bundle,
-        managerOptions,
+        transformedOptions,
         vatSyscallHandler,
       );
     }

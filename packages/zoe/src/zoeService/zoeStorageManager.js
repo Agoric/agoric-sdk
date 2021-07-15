@@ -10,6 +10,7 @@ import { makeIssuerStorage } from '../issuerStorage';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
 import { makeIssuerRecord } from '../issuerRecord';
 import { makeEscrowStorage } from './escrowStorage';
+import { createInvitationKit } from './makeInvitation';
 import { makeInstanceAdminStorage } from './instanceAdminStorage';
 import { makeInstallationStorage } from './installationStorage';
 
@@ -22,15 +23,15 @@ import { makeInstallationStorage } from './installationStorage';
  * Manager divides up the resulting capabilities between those needed
  * by a new contract instance (returned as the result of
  * `makeZoeInstanceStorageManager`) and those needed for other purposes.
- */
-
-/**
+ *
+ * @param {CreateZCFVat} createZCFVat - the ability to create a new
+ * ZCF Vat
  * @returns {ZoeStorageManager}
  */
-export const makeZoeStorageManager = () => {
+export const makeZoeStorageManager = createZCFVat => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
-  // mathKind, and displayInfo
+  // assetKind, and displayInfo
   const issuerStorage = makeIssuerStorage();
   issuerStorage.instantiate();
 
@@ -38,6 +39,11 @@ export const makeZoeStorageManager = () => {
   // object should be closely held and tracked: all of the digital
   // assets that users escrow are contained within these purses.
   const escrowStorage = makeEscrowStorage();
+
+  // In order to participate in a contract, users must have
+  // invitations, which are ERTP payments made by Zoe. This code
+  // contains the mint capability for invitations.
+  const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
@@ -63,6 +69,7 @@ export const makeZoeStorageManager = () => {
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,
+    instance,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -84,6 +91,7 @@ export const makeZoeStorageManager = () => {
     // capabilities from the ZCF side.
     const instanceRecordManager = makeAndStoreInstanceRecord(
       installation,
+      instance,
       customTerms,
       issuers,
       brands,
@@ -106,7 +114,13 @@ export const makeZoeStorageManager = () => {
         issuer: localIssuer,
         brand: localBrand,
         displayInfo: localDisplayInfo,
-      } = makeIssuerKit(keyword, assetKind, displayInfo);
+      } = makeIssuerKit(
+        keyword,
+        assetKind,
+        displayInfo,
+        // eslint-disable-next-line no-use-before-define
+        adminNode.terminateWithFailure,
+      );
       const localIssuerRecord = makeIssuerRecord(
         localBrand,
         localIssuer,
@@ -128,11 +142,21 @@ export const makeZoeStorageManager = () => {
         },
         mintAndEscrow: totalToMint => {
           const payment = localMint.mintPayment(totalToMint);
+          // Note COMMIT POINT within deposit.
           localPooledPurse.deposit(payment, totalToMint);
         },
         withdrawAndBurn: totalToBurn => {
-          const payment = localPooledPurse.withdraw(totalToBurn);
-          localIssuer.burn(payment, totalToBurn);
+          // eslint-disable-next-line no-use-before-define
+          try {
+            // COMMIT POINT
+            const payment = localPooledPurse.withdraw(totalToBurn);
+            // Note redundant COMMIT POINT within burn.
+            localIssuer.burn(payment, totalToBurn);
+          } catch (err) {
+            // eslint-disable-next-line no-use-before-define
+            adminNode.terminateWithFailure(err);
+            throw err;
+          }
         },
       });
       return zoeMint;
@@ -148,6 +172,10 @@ export const makeZoeStorageManager = () => {
         Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
       );
 
+    const makeInvitation = setupMakeInvitation(instance, installation);
+
+    const { root, adminNode } = await createZCFVat();
+
     return harden({
       getTerms: instanceRecordManager.getTerms,
       getIssuers: instanceRecordManager.getIssuers,
@@ -159,6 +187,10 @@ export const makeZoeStorageManager = () => {
       withdrawPayments: escrowStorage.withdrawPayments,
       initInstanceAdmin,
       deleteInstanceAdmin,
+      makeInvitation,
+      invitationIssuer,
+      root,
+      adminNode,
     });
   };
 
@@ -166,6 +198,7 @@ export const makeZoeStorageManager = () => {
     makeZoeInstanceStorageManager,
     getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
+    invitationIssuer,
     install,
     getPublicFacet,
     getBrands,

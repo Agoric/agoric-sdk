@@ -1,6 +1,6 @@
 {
   "name": "@agoric/captp",
-  "version": "1.7.13",
+  "version": "1.7.20",
   "description": "Capability Transfer Protocol for distributed objects",
   "parsers": {
     "js": "mjs"
@@ -30,19 +30,20 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint 'lib/*.js'"
+    "lint": "eslint 'lib/*.js'"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.13",
+    "@agoric/install-ses": "^0.5.20",
     "ava": "^3.12.1"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.13.14",
-    "@agoric/marshal": "^0.4.11",
-    "@agoric/nat": "^4.0.0",
-    "@agoric/promise-kit": "^0.2.13",
-    "esm": "^3.2.5"
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/marshal": "^0.4.19",
+    "@agoric/nat": "^4.1.0",
+    "@agoric/promise-kit": "^0.2.20",
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
@@ -61,7 +62,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

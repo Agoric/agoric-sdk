@@ -1,4 +1,7 @@
+import fs from 'fs';
+import path from 'path';
 import anylogger from 'anylogger';
+import { tmpName } from 'tmp'; // TODO: reconcile tmp vs. temp
 
 import {
   buildMailbox,
@@ -12,7 +15,8 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { makeSnapStore } from '@agoric/xsnap';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -33,7 +37,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
-  { debugName = undefined, slogCallbacks, slogFile },
+  { consensusMode, debugName = undefined, slogCallbacks, slogFile },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = loadSwingsetConfigFile(vatconfig);
@@ -76,7 +80,7 @@ async function buildSwingset(
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogCallbacks, slogFile },
+    { overrideVatManagerOptions: { consensusMode }, slogCallbacks, slogFile },
   );
 
   // We DON'T want to run the kernel yet, only when the application decides
@@ -94,13 +98,26 @@ export async function launch(
   debugName = undefined,
   meterProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
+  consensusMode = false,
 ) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, commit } = openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, commit } = openLMDBSwingStore(kernelStateDBDir);
+  const snapshotDir = path.resolve(kernelStateDBDir, 'xs-snapshots');
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  const snapStore = makeSnapStore(snapshotDir, {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  });
   const hostStorage = {
     kvStore,
     streamStore,
+    snapStore,
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
@@ -123,6 +140,7 @@ export async function launch(
       debugName,
       slogCallbacks,
       slogFile,
+      consensusMode,
     },
   );
 

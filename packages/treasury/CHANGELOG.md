@@ -3,6 +3,89 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.7...@agoric/treasury@0.5.8) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.6...@agoric/treasury@0.5.7) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.5...@agoric/treasury@0.5.6) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.4...@agoric/treasury@0.5.5) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.3...@agoric/treasury@0.5.4) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.2...@agoric/treasury@0.5.3) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.1...@agoric/treasury@0.5.2) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.0...@agoric/treasury@0.5.1) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.4.2...@agoric/treasury@0.5.0) (2021-06-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zoe:** new reallocate API to assist with reviewing conservation of rights (#3184)
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
+
+
+### Code Refactoring
+
+* **zoe:** new reallocate API to assist with reviewing conservation of rights ([#3184](https://github.com/Agoric/agoric-sdk/issues/3184)) ([f34e5ea](https://github.com/Agoric/agoric-sdk/commit/f34e5eae0812a9823d40d2d05ba98522c7846f2a))
+
+
+
 ## [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.4.1...@agoric/treasury@0.4.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/treasury

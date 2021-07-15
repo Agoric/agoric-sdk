@@ -1,9 +1,9 @@
 // @ts-check
 
-import '../types';
+import '../types.js';
 
-import { makeWeakStore } from '../weak-store';
-import { makeStore } from '../store';
+import { makeWeakStore } from '../weak-store.js';
+import { makeStore } from '../store.js';
 
 /**
  * @callback MakeBackingStore

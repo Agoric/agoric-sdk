@@ -1,7 +1,9 @@
+// @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
+import { parseReachableAndVatSlot } from './reachable';
 import { insistEnhancedStorageAPI } from '../../storageAPI';
 import {
   insistKernelType,
@@ -9,6 +11,7 @@ import {
   parseKernelSlot,
 } from '../parseKernelSlots';
 import { insistCapData } from '../../capdata';
+import { insistMessage } from '../../message';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
 import { kdebug } from '../kdebug';
 import {
@@ -16,7 +19,7 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '../metrics';
 
-const enableKernelPromiseGC = true;
+const enableKernelGC = true;
 
 // Kernel state lives in a key-value store. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
@@ -46,8 +49,10 @@ const enableKernelPromiseGC = true;
 //   $R is 'R' when reachable, '_' when merely recognizable
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
+// v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
+// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -57,9 +62,12 @@ const enableKernelPromiseGC = true;
 // d$NN.options = JSON
 
 // runQueue = JSON(runQueue) // usually empty on disk
+// gcActions = JSON(gcActions) // usually empty on disk
+// pinnedObjects = ko$NN[,ko$NN..]
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
+// ko$NN.refCount = $NN,$MM  // reachable count, recognizable count
 // kd.nextID = $NN
 // kd$NN.owner = $vatID
 // kp.nextID = $NN
@@ -99,11 +107,27 @@ const FIRST_DEVNODE_ID = 30n;
 const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
 
-export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
+/**
+ * @param {KVStorePlus} kvStore
+ * @param {StreamStore} streamStore
+ * @param {KernelSlog} kernelSlog
+ * @param {SnapStore=} snapStore
+ */
+export default function makeKernelKeeper(
+  kvStore,
+  streamStore,
+  kernelSlog,
+  snapStore = undefined,
+) {
   insistEnhancedStorageAPI(kvStore);
 
+  /**
+   * @param {string} key
+   * @returns {string}
+   */
   function getRequired(key) {
     assert(kvStore.has(key), X`storage lacks required key ${key}`);
+    // @ts-ignore already checked .has()
     return kvStore.get(key);
   }
 
@@ -132,9 +156,9 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kernelStats[`${key}Max`] = 0;
   });
 
-  function incStat(stat) {
+  function incStat(stat, delta = 1) {
     assert.typeof(kernelStats[stat], 'number');
-    kernelStats[stat] += 1;
+    kernelStats[stat] += delta;
     const maxStat = `${stat}Max`;
     if (
       kernelStats[maxStat] !== undefined &&
@@ -144,7 +168,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     const upStat = `${stat}Up`;
     if (kernelStats[upStat] !== undefined) {
-      kernelStats[upStat] += 1;
+      kernelStats[upStat] += delta;
     }
   }
 
@@ -170,7 +194,8 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   }
 
   const ephemeral = harden({
-    vatKeepers: new Map(), // vatID -> vatKeeper
+    /** @type { Map<string, VatKeeper> } */
+    vatKeepers: new Map(),
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
@@ -203,6 +228,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
     kvStore.set('kd.nextID', `${FIRST_DEVNODE_ID}`);
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
+    kvStore.set('gcActions', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
@@ -217,18 +243,86 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   }
 
   function getBundle(name) {
-    return harden(JSON.parse(kvStore.get(`bundle.${name}`)));
+    return harden(JSON.parse(getRequired(`bundle.${name}`)));
   }
 
-  function addKernelObject(ownerID) {
+  function getGCActions() {
+    return new Set(JSON.parse(getRequired(`gcActions`)));
+  }
+
+  function setGCActions(actions) {
+    const a = Array.from(actions);
+    a.sort();
+    kvStore.set('gcActions', JSON.stringify(a));
+  }
+
+  function addGCActions(newActions) {
+    const actions = getGCActions();
+    for (const action of newActions) {
+      assert.typeof(action, 'string', 'addGCActions given bad action');
+      const [vatID, type, koid] = action.split(' ');
+      insistVatID(vatID);
+      assert(
+        ['dropExport', 'retireExport', 'retireImport'].includes(type),
+        `bad GCAction ${action} (type='${type}')`,
+      );
+      insistKernelType('object', koid);
+      actions.add(action);
+    }
+    setGCActions(actions);
+  }
+
+  /**
+   * @param { string } vatID
+   * @param { string } kernelSlot
+   */
+  function getReachableAndVatSlot(vatID, kernelSlot) {
+    const kernelKey = `${vatID}.c.${kernelSlot}`;
+    return parseReachableAndVatSlot(kvStore.get(kernelKey));
+  }
+
+  function getObjectRefCount(kernelSlot) {
+    const data = kvStore.get(`${kernelSlot}.refCount`);
+    assert(data, `getObjectRefCount(${kernelSlot}) was missing`);
+    const [reachable, recognizable] = commaSplit(data).map(Number);
+    assert(
+      reachable <= recognizable,
+      `refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`,
+    );
+    return { reachable, recognizable };
+  }
+
+  function setObjectRefCount(kernelSlot, { reachable, recognizable }) {
+    assert.typeof(reachable, 'number');
+    assert.typeof(recognizable, 'number');
+    assert(
+      reachable >= 0 && recognizable >= 0,
+      `${kernelSlot} underflow ${reachable},${recognizable}`,
+    );
+    assert(
+      reachable <= recognizable,
+      `refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`,
+    );
+    kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
+  }
+
+  function addKernelObject(ownerID, id = undefined) {
+    // providing id= is only for unit tests
     insistVatID(ownerID);
-    const id = Nat(BigInt(getRequired('ko.nextID')));
+    if (id === undefined) {
+      id = Nat(BigInt(getRequired('ko.nextID')));
+      kvStore.set('ko.nextID', `${id + 1n}`);
+    }
     kdebug(`Adding kernel object ko${id} for ${ownerID}`);
-    kvStore.set('ko.nextID', `${id + 1n}`);
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
+    setObjectRefCount(s, { reachable: 0, recognizable: 0 });
     incStat('kernelObjects');
     return s;
+  }
+
+  function kernelObjectExists(kref) {
+    return kvStore.has(`${kref}.refCount`);
   }
 
   function ownerOfKernelObject(kernelSlot) {
@@ -238,6 +332,12 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       insistVatID(owner);
     }
     return owner;
+  }
+
+  function deleteKernelObject(koid) {
+    kvStore.delete(`${koid}.owner`);
+    kvStore.delete(`${koid}.refCount`);
+    // TODO: decref auxdata slots and delete auxdata, when #2069 is added
   }
 
   function addKernelDeviceNode(deviceID) {
@@ -300,7 +400,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
         p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
         p.queue = Array.from(
           kvStore.getPrefixedValues(`${kernelSlot}.queue.`),
-        ).map(JSON.parse);
+        ).map(s => JSON.parse(s));
         break;
       case 'fulfilled':
       case 'rejected':
@@ -375,6 +475,30 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
   function resolveKernelPromise(kernelSlot, rejected, capdata) {
     insistKernelType('promise', kernelSlot);
     insistCapData(capdata);
+
+    let idx = 0;
+    for (const dataSlot of capdata.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
+
+    // Re-queue all messages, so they can be delivered to the resolution.
+    // This is a lateral move, so we retain their original refcounts. TODO:
+    // this is slightly lazy, sending the message back to the same promise
+    // that just got resolved. When this message makes it to the front of the
+    // run-queue, we'll look up the resolution. Instead, we could maybe look
+    // up the resolution *now* and set the correct target early. Doing that
+    // might make it easier to remove the Promise Table entry earlier.
+    const p = getKernelPromise(kernelSlot);
+    const runQueue = JSON.parse(getRequired('runQueue'));
+    for (const msg of p.queue) {
+      const entry = harden({ type: 'send', target: kernelSlot, msg });
+      runQueue.push(entry);
+    }
+    kvStore.set('runQueue', JSON.stringify(runQueue));
+    incStat('runQueueLength', p.queue.length);
+
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
 
@@ -391,50 +515,78 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function cleanupAfterTerminatedVat(vatID) {
     insistVatID(vatID);
-    ephemeral.vatKeepers.delete(vatID);
-    const koPrefix = `${vatID}.c.o+`;
-    const kpPrefix = `${vatID}.c.p`;
+    // eslint-disable-next-line no-use-before-define
+    const vatKeeper = provideVatKeeper(vatID);
+    const exportPrefix = `${vatID}.c.o+`;
+    const importPrefix = `${vatID}.c.o-`;
+    const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
-    for (const k of kvStore.getKeys(`${vatID}.`, `${vatID}/`)) {
-      // The current store semantics ensure this iteration is lexicographic.
-      // Any changes to the creation of the list of promises to be rejected (and
-      // thus to the order in which they *get* rejected) need to preserve this
-      // ordering in order to preserve determinism.  TODO: we would like to
-      // shift to a different deterministic ordering scheme that is less fragile
-      // in the face of potential changes in the nature of the database being
-      // used.
-      if (k.startsWith(koPrefix)) {
-        // The void for an object exported by a vat will always be of the form
-        // `o+NN`.  The '+' means that the vat exported the object (rather than
-        // importing it) and therefor the object is owned by (i.e., within) the
-        // vat.  The corresponding void->koid c-list entry will thus always
-        // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
-        // must also delete the corresponding kernel owner entry for the object,
-        // since the object will no longer be accessible.
-        const koid = kvStore.get(k);
-        const ownerKey = `${koid}.owner`;
-        const ownerVat = kvStore.get(ownerKey);
-        if (ownerVat === vatID) {
-          kvStore.delete(ownerKey);
-        }
-      } else if (k.startsWith(kpPrefix)) {
-        // The vpid for a promise imported or exported by a vat (and thus
-        // potentially a promise for which the vat *might* be the decider) will
-        // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
-        // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
-        // independent of whether the promise was imported or exported, so we
-        // have to look up the corresponding kernel promise table entry to see
-        // whether the vat is the decider or not.  If it is, we add the promise
-        // to the list of promises that must be rejected because the dead vat
-        // will never be able to act upon them.
-        const kpid = kvStore.get(k);
-        const p = getKernelPromise(kpid);
-        if (p.state === 'unresolved' && p.decider === vatID) {
-          kernelPromisesToReject.push(kpid);
-        }
+
+    // Note: ASCII order is "+,-./", and we rely upon this to split the
+    // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
+    // more sophisticated database, we'd keep each section in a separate
+    // table.
+
+    // The current store semantics ensure this iteration is lexicographic.
+    // Any changes to the creation of the list of promises to be rejected (and
+    // thus to the order in which they *get* rejected) need to preserve this
+    // ordering in order to preserve determinism.  TODO: we would like to
+    // shift to a different deterministic ordering scheme that is less fragile
+    // in the face of potential changes in the nature of the database being
+    // used.
+
+    // first, scan for exported objects, which must be orphaned
+    for (const k of kvStore.getKeys(`${vatID}.c.o+`, `${vatID}.c.o,`)) {
+      assert(k.startsWith(exportPrefix), k);
+      // The void for an object exported by a vat will always be of the form
+      // `o+NN`.  The '+' means that the vat exported the object (rather than
+      // importing it) and therefor the object is owned by (i.e., within) the
+      // vat.  The corresponding void->koid c-list entry will thus always
+      // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
+      // must also delete the corresponding kernel owner entry for the object,
+      // since the object will no longer be accessible.
+      const kref = kvStore.get(k);
+      const ownerKey = `${kref}.owner`;
+      const ownerVat = kvStore.get(ownerKey);
+      assert.equal(ownerVat, vatID, `export ${kref} not owned by late vat`);
+      kvStore.delete(ownerKey);
+    }
+
+    // then scan for imported objects, which must be decrefed
+    for (const k of kvStore.getKeys(`${vatID}.c.o-`, `${vatID}.c.o.`)) {
+      assert(k.startsWith(importPrefix), k);
+      // abandoned imports: delete the clist entry as if the vat did a
+      // drop+retire
+      const kref = kvStore.get(k);
+      const vref = k.slice(`${vatID}.c.`.length);
+      vatKeeper.deleteCListEntry(kref, vref);
+      // that will also delete both db keys
+    }
+
+    // now find all orphaned promises, which must be rejected
+    for (const k of kvStore.getKeys(`${vatID}.c.p`, `${vatID}.c.p.`)) {
+      assert(k.startsWith(promisePrefix), k);
+      // The vpid for a promise imported or exported by a vat (and thus
+      // potentially a promise for which the vat *might* be the decider) will
+      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
+      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
+      // independent of whether the promise was imported or exported, so we
+      // have to look up the corresponding kernel promise table entry to see
+      // whether the vat is the decider or not.  If it is, we add the promise
+      // to the list of promises that must be rejected because the dead vat
+      // will never be able to act upon them.
+      const kpid = kvStore.get(k);
+      const p = getKernelPromise(kpid);
+      if (p.state === 'unresolved' && p.decider === vatID) {
+        kernelPromisesToReject.push(kpid);
       }
+    }
+
+    // now loop back through everything and delete it all
+    for (const k of kvStore.getKeys(`${vatID}.`, `${vatID}/`)) {
       kvStore.delete(k);
     }
+
     // TODO: deleting entries from the dynamic vat IDs list requires a linear
     // scan of the list; arguably this collection ought to be represented in a
     // different way that makes it efficient to remove an entry from it, though
@@ -466,6 +618,28 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
     insistKernelType('promise', kernelSlot);
+    insistMessage(msg);
+
+    // Each message on a promise's queue maintains a refcount to the promise
+    // itself. This isn't strictly necessary (the promise will be kept alive
+    // by the deciding vat's clist, or the queued message that holds this
+    // promise as its result), but it matches our policy with run-queue
+    // messages (each holds a refcount on its target), and makes it easier to
+    // transfer these messages back to the run-queue in
+    // resolveKernelPromise() (which doesn't touch any of the refcounts).
+
+    // eslint-disable-next-line no-use-before-define
+    incrementRefCount(kernelSlot, `pq|${kernelSlot}|t`);
+    if (msg.result) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(msg.result, `pq|${kernelSlot}|r`);
+    }
+    let idx = 0;
+    for (const kref of msg.args.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(kref, `pq|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
 
     const p = getKernelPromise(kernelSlot);
     assert(
@@ -594,82 +768,170 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return JSON.parse(getRequired('vat.dynamicIDs'));
   }
 
-  const deadKernelPromises = new Set();
+  // As refcounts are decremented, we accumulate a set of krefs for which
+  // action might need to be taken:
+  //   * promises which are now resolved and unreferenced can be deleted
+  //   * objects which are no longer reachable: export can be dropped
+  //   * objects which are no longer recognizable: export can be retired
+
+  // This set is ephemeral: it lives in RAM, grows as deliveries and syscalls
+  // cause decrefs, and is harvested by processRefcounts(). This needs to be
+  // called in the same transaction window as the syscalls/etc which prompted
+  // the change, else removals might be lost (not performed during the next
+  // replay).
+
+  const maybeFreeKrefs = new Set();
+  /** @param { string } kref */
+  function addMaybeFreeKref(kref) {
+    insistKernelType('object', kref);
+    maybeFreeKrefs.add(kref);
+  }
 
   /**
    * Increment the reference count associated with some kernel object.
    *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all objects with kernel slots.
+   * We track references to promises and objects, but not devices. Promises
+   * have only a "reachable" count, whereas objects track both "reachable"
+   * and "recognizable" counts.
    *
-   * @param {string} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {string} _tag
+   * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
+   * @param {string?} tag  Debugging note with rough source of the reference.
+   * @param { { isExport?: boolean, onlyRecognizable?: boolean } } options
+   * 'isExport' means the reference comes from a clist export, which counts
+   * for promises but not objects. 'onlyRecognizable' means the reference
+   * provides only recognition, not reachability
    */
-  function incrementRefCount(kernelSlot, _tag) {
-    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+  function incrementRefCount(kernelSlot, tag, options = {}) {
+    const { isExport = false, onlyRecognizable = false } = options;
+    assert(
+      kernelSlot,
+      `incrementRefCount called with empty kernelSlot, tag=${tag}`,
+    );
+    const { type } = parseKernelSlot(kernelSlot);
+    if (type === 'promise') {
       const refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`))) + 1n;
       // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
+    }
+    if (type === 'object' && !isExport) {
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      if (!onlyRecognizable) {
+        reachable += 1;
+      }
+      recognizable += 1;
+      // kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
 
   /**
    * Decrement the reference count associated with some kernel object.
    *
-   * Note that currently we are only reference counting promises, but ultimately
-   * we intend to keep track of all objects with kernel slots.
+   * We track references to promises and objects.
    *
    * @param {string} kernelSlot  The kernel slot whose refcount is to be decremented.
    * @param {string} tag
+   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
+   * 'isExport' means the reference comes from a clist export, which counts
+   * for promises but not objects. 'onlyRecognizable' means the reference
+   * deing deleted only provided recognition, not reachability
    * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
    */
-  function decrementRefCount(kernelSlot, tag) {
-    if (kernelSlot && parseKernelSlot(kernelSlot).type === 'promise') {
+  function decrementRefCount(kernelSlot, tag, options = {}) {
+    const { isExport = false, onlyRecognizable = false } = options;
+    assert(
+      kernelSlot,
+      `decrementRefCount called with empty kernelSlot, tag=${tag}`,
+    );
+    const { type } = parseKernelSlot(kernelSlot);
+    if (type === 'promise') {
       let refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`)));
       assert(refCount > 0n, X`refCount underflow {kernelSlot} ${tag}`);
       refCount -= 1n;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
       if (refCount === 0n) {
-        deadKernelPromises.add(kernelSlot);
+        maybeFreeKrefs.add(kernelSlot);
         return true;
       }
     }
+    if (type === 'object' && !isExport && kernelObjectExists(kernelSlot)) {
+      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
+      if (!onlyRecognizable) {
+        reachable -= 1;
+      }
+      recognizable -= 1;
+      // kdebug(`-- ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
+      if (!reachable || !recognizable) {
+        maybeFreeKrefs.add(kernelSlot);
+      }
+      setObjectRefCount(kernelSlot, { reachable, recognizable });
+    }
+
     return false;
   }
 
-  function purgeDeadKernelPromises() {
-    if (enableKernelPromiseGC) {
-      for (const kpid of deadKernelPromises.values()) {
-        const kp = getKernelPromise(kpid);
-        if (kp.refCount === 0) {
-          let idx = 0;
-          for (const slot of kp.data.slots) {
-            // Note: the following decrement can result in an addition to the
-            // deadKernelPromises set, which we are in the midst of iterating.
-            // TC39 went to a lot of trouble to ensure that this is kosher.
-            decrementRefCount(slot, `gc|${kpid}|s${idx}`);
-            idx += 1;
+  function processRefcounts() {
+    if (enableKernelGC) {
+      const actions = getGCActions(); // local cache
+      // TODO (else buggy): change the iteration to handle krefs that get
+      // added multiple times (while we're iterating), because we might do
+      // different work the second time around. Something like an ordered
+      // Set, and a loop that: pops the first kref off, processes it (maybe
+      // adding more krefs), repeats until the thing is empty.
+      for (const kref of maybeFreeKrefs.values()) {
+        const { type } = parseKernelSlot(kref);
+        if (type === 'promise') {
+          const kpid = kref;
+          const kp = getKernelPromise(kpid);
+          if (kp.refCount === 0) {
+            let idx = 0;
+            for (const slot of kp.data.slots) {
+              // Note: the following decrement can result in an addition to the
+              // maybeFreeKrefs set, which we are in the midst of iterating.
+              // TC39 went to a lot of trouble to ensure that this is kosher.
+              decrementRefCount(slot, `gc|${kpid}|s${idx}`);
+              idx += 1;
+            }
+            deleteKernelPromise(kpid);
           }
-          deleteKernelPromise(kpid);
+        }
+        if (type === 'object') {
+          const { reachable, recognizable } = getObjectRefCount(kref);
+          if (reachable === 0) {
+            const ownerVatID = ownerOfKernelObject(kref);
+            if (ownerVatID) {
+              // eslint-disable-next-line no-use-before-define
+              const vatKeeper = provideVatKeeper(ownerVatID);
+              const isReachable = vatKeeper.getReachableFlag(kref);
+              if (isReachable) {
+                // the reachable count is zero, but the vat doesn't realize it
+                actions.add(`${ownerVatID} dropExport ${kref}`);
+              }
+              if (recognizable === 0) {
+                // TODO: rethink this
+                // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
+                actions.add(`${ownerVatID} retireExport ${kref}`);
+              }
+            }
+          }
         }
       }
+      setGCActions(actions);
     }
-    deadKernelPromises.clear();
+    maybeFreeKrefs.clear();
   }
 
-  function getVatKeeper(vatID) {
+  function provideVatKeeper(vatID) {
     insistVatID(vatID);
-    return ephemeral.vatKeepers.get(vatID);
-  }
-
-  function allocateVatKeeper(vatID) {
-    insistVatID(vatID);
+    const found = ephemeral.vatKeepers.get(vatID);
+    if (found !== undefined) {
+      return found;
+    }
     if (!kvStore.has(`${vatID}.o.nextID`)) {
       initializeVatState(kvStore, streamStore, vatID);
     }
-    assert(!ephemeral.vatKeepers.has(vatID), X`vatID ${vatID} already defined`);
     const vk = makeVatKeeper(
       kvStore,
       streamStore,
@@ -677,14 +939,47 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       vatID,
       addKernelObject,
       addKernelPromiseForVat,
+      kernelObjectExists,
       incrementRefCount,
       decrementRefCount,
+      getObjectRefCount,
+      setObjectRefCount,
+      getReachableAndVatSlot,
+      addMaybeFreeKref,
       incStat,
       decStat,
       getCrankNumber,
+      snapStore,
     );
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;
+  }
+
+  function vatIsAlive(vatID) {
+    insistVatID(vatID);
+    return kvStore.has(`${vatID}.o.nextID`);
+  }
+
+  /**
+   * Cease writing to the vat's transcript.
+   *
+   * @param { string } vatID
+   */
+  function closeVatTranscript(vatID) {
+    insistVatID(vatID);
+    const transcriptStream = `transcript-${vatID}`;
+    streamStore.closeStream(transcriptStream);
+  }
+
+  /**
+   * NOTE: caller is responsible to closeVatTranscript()
+   * before evicting a VatKeeper.
+   *
+   * @param {string} vatID
+   */
+  function evictVatKeeper(vatID) {
+    insistVatID(vatID);
+    ephemeral.vatKeepers.delete(vatID);
   }
 
   function getAllVatIDs() {
@@ -726,7 +1021,8 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
       initializeDeviceState(kvStore, deviceID);
     }
     if (!ephemeral.deviceKeepers.has(deviceID)) {
-      const dk = makeDeviceKeeper(kvStore, deviceID, addKernelDeviceNode);
+      const tools = { addKernelDeviceNode, incrementRefCount };
+      const dk = makeDeviceKeeper(kvStore, deviceID, tools);
       ephemeral.deviceKeepers.set(deviceID, dk);
     }
     return ephemeral.deviceKeepers.get(deviceID);
@@ -744,6 +1040,32 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     return harden(deviceIDs);
   }
 
+  function getImporters(koid) {
+    // TODO maintain an index instead of scanning every single vat
+    const importers = [];
+    function doesImport(vatID) {
+      return provideVatKeeper(vatID).importsKernelSlot(koid);
+    }
+    importers.push(...getDynamicVats().filter(doesImport));
+    importers.push(
+      ...getStaticVats()
+        .map(nameAndVatID => nameAndVatID[1])
+        .filter(doesImport),
+    );
+    importers.sort();
+    return importers;
+  }
+
+  function pinObject(kref) {
+    const pinList = kvStore.get('pinnedObjects') || '';
+    const pinned = new Set(commaSplit(pinList));
+    if (!pinned.has(kref)) {
+      incrementRefCount(kref, 'pin');
+      pinned.add(kref);
+      kvStore.set('pinnedObjects', [...pinned].sort().join(','));
+    }
+  }
+
   // used for debugging, and tests. This returns a JSON-serializable object.
   // It includes references to live (mutable) kernel state, so don't mutate
   // the pieces, and be sure to serialize/deserialize before passing it
@@ -753,11 +1075,11 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     const kernelTable = [];
 
     for (const vatID of getAllVatIDs()) {
-      const vk = getVatKeeper(vatID);
+      const vk = provideVatKeeper(vatID);
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
-        vk.closeTranscript();
+        closeVatTranscript(vatID);
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },
@@ -808,12 +1130,28 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     }
     promises.sort((a, b) => compareStrings(a.id, b.id));
 
+    const objects = [];
+    const nextObjectID = Nat(BigInt(getRequired('ko.nextID')));
+    for (let i = FIRST_OBJECT_ID; i < nextObjectID; i += 1n) {
+      const koid = makeKernelSlot('object', i);
+      if (kvStore.has(`${koid}.refCount`)) {
+        const owner = kvStore.get(`${koid}.owner`); // missing for orphans
+        const { reachable, recognizable } = getObjectRefCount(koid);
+        objects.push([koid, owner, reachable, recognizable]);
+      }
+    }
+
+    const gcActions = Array.from(getGCActions());
+    gcActions.sort();
+
     const runQueue = JSON.parse(getRequired('runQueue'));
 
     return harden({
       vatTables,
       kernelTable,
       promises,
+      objects,
+      gcActions,
       runQueue,
     });
   }
@@ -828,7 +1166,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
 
     getCrankNumber,
     incrementCrankNumber,
-    purgeDeadKernelPromises,
+    processRefcounts,
 
     incStat,
     decStat,
@@ -836,8 +1174,17 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     loadStats,
     getStats,
 
+    getGCActions,
+    setGCActions,
+    addGCActions,
+
+    addKernelObject,
     ownerOfKernelObject,
     ownerOfKernelDevice,
+    kernelObjectExists,
+    getImporters,
+    deleteKernelObject,
+    pinObject,
 
     addKernelPromise,
     addKernelPromiseForVat,
@@ -851,6 +1198,7 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     clearDecider,
     incrementRefCount,
     decrementRefCount,
+    getObjectRefCount,
 
     addToRunQueue,
     isRunQueueEmpty,
@@ -861,8 +1209,10 @@ export default function makeKernelKeeper(kvStore, streamStore, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
-    allocateVatKeeper,
-    getVatKeeper,
+    provideVatKeeper,
+    vatIsAlive,
+    evictVatKeeper,
+    closeVatTranscript,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,

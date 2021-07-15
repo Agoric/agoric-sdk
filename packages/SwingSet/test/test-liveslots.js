@@ -6,10 +6,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { gcAndFinalize } from '../src/gc-and-finalize';
-import { makeLiveSlots } from '../src/kernel/liveSlots';
-import { buildSyscall, makeDispatch } from './liveslots-helpers';
+import engineGC from '../src/engine-gc.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { makeLiveSlots } from '../src/kernel/liveSlots.js';
+import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   capargs,
   capargsOneSlot,
@@ -323,6 +324,7 @@ test('liveslots retires outbound promise IDs after reject', async t => {
 });
 
 test('liveslots retains pending exported promise', async t => {
+  const gcAndFinalize = makeGcAndFinalize(engineGC);
   const { log, syscall } = buildSyscall();
   let watch;
   const success = [];
@@ -661,6 +663,7 @@ test('disavow', async t => {
 });
 
 test('liveslots retains device nodes', async t => {
+  const gcAndFinalize = makeGcAndFinalize(engineGC);
   const { syscall } = buildSyscall();
   let watch;
   const recognize = new WeakSet(); // real WeakSet
@@ -733,16 +736,13 @@ test('GC syscall.dropImports', async t => {
     slots: [arg],
   });
 
-  const todo = false; // enable this once we have VOM.vrefIsRecognizable
-  if (todo) {
-    // and since the vat never used the Presence in a WeakMap/WeakSet, they
-    // cannot recognize it either, and will emit retireImports
-    const l3 = log.shift();
-    t.deepEqual(l3, {
-      type: 'retireImports',
-      slots: [arg],
-    });
-  }
+  // and since the vat never used the Presence in a WeakMap/WeakSet, they
+  // cannot recognize it either, and will emit retireImports
+  const l3 = log.shift();
+  t.deepEqual(l3, {
+    type: 'retireImports',
+    slots: [arg],
+  });
 
   t.deepEqual(log, []);
 });
@@ -929,7 +929,16 @@ test('dropImports', async t => {
     return root;
   }
 
-  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, undefined, false, gcTools);
+  const ls = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    undefined,
+    false,
+    false,
+    gcTools,
+  );
   const { setBuildRootObject, dispatch, deadSet } = ls;
   setBuildRootObject(build);
   const allFRs = gcTools.getAllFRs();
@@ -1098,5 +1107,72 @@ test('GC dispatch.dropExports', async t => {
     type: 'retireExports',
     slots: [ex1],
   });
+  t.deepEqual(log, []);
+});
+
+test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
+  const { log, syscall } = buildSyscall();
+  let wr;
+  function build(_vatPowers) {
+    let ex1;
+    const root = Far('root', {
+      hold() {
+        ex1 = Far('export', {});
+        wr = new WeakRef(ex1);
+        return ex1;
+      },
+      two() {},
+      drop() {
+        // eslint-disable-next-line no-unused-vars
+        ex1 = undefined; // drop the last userspace strongref
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  // rp1 = root~.hold()
+  // ex1 = await rp1
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'hold', capargs([]), rp1));
+  const l1 = log.shift();
+  const ex1 = l1.resolutions[0][2].slots[0];
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+  });
+  t.deepEqual(log, []);
+
+  // the exported Remotable should be held in place by exportedRemotables
+  // until we tell the vat we don't need it any more
+  t.truthy(wr.deref());
+
+  // an intermediate message will trigger GC, but the presence is still held
+  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  t.truthy(wr.deref());
+
+  // now tell the vat we don't need a strong reference to that export.
+  await dispatch(makeDropExports(ex1));
+
+  // that removes the liveslots strongref, but the vat's remains in place
+  t.truthy(wr.deref());
+
+  // now the kernel tells the vat we can't even recognize the export
+  await dispatch(makeRetireExports(ex1));
+
+  // that ought to delete the table entry, but doesn't affect the vat
+  // strongref
+  t.truthy(wr.deref());
+
+  // now tell the vat to drop its strongref
+  await dispatch(makeMessage(rootA, 'drop', capargs([])));
+
+  // which should let the export be collected
+  t.falsy(wr.deref());
+
+  // the vat should *not* emit `syscall.retireExport`, because it already
+  // received a dispatch.retireExport
   t.deepEqual(log, []);
 });

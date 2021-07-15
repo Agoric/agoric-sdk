@@ -1,8 +1,8 @@
 // @ts-check
 import { assert } from '@agoric/assert';
-import '../../types';
-import { insistVatDeliveryResult } from '../../message';
-import { makeTranscriptManager } from './transcript';
+import '../../types.js';
+import { insistVatDeliveryResult } from '../../message.js';
+import { makeTranscriptManager } from './transcript.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
@@ -47,7 +47,8 @@ import { makeTranscriptManager } from './transcript';
 
 /**
  *
- * @typedef { { getManager: (shutdown: () => Promise<void>) => VatManager,
+ * @typedef { { getManager: (shutdown: () => Promise<void>,
+ *                           makeSnapshot?: (ss: SnapStore) => Promise<string>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -112,14 +113,18 @@ function makeManagerKit(
   vatSyscallHandler,
   workerCanBlock,
   compareSyscalls,
+  useTranscript,
 ) {
   assert(kernelSlog);
-  const vatKeeper = kernelKeeper.getVatKeeper(vatID);
-  const transcriptManager = makeTranscriptManager(
-    vatKeeper,
-    vatID,
-    compareSyscalls,
-  );
+  const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+  let transcriptManager;
+  if (useTranscript) {
+    transcriptManager = makeTranscriptManager(
+      vatKeeper,
+      vatID,
+      compareSyscalls,
+    );
+  }
 
   /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
   let deliverToWorker;
@@ -135,22 +140,30 @@ function makeManagerKit(
   /**
    *
    * @param { VatDeliveryObject } delivery
-   * @returns { Promise<VatDeliveryResult> }
+   * @returns { Promise<VatDeliveryResult> } // or Error
    */
   async function deliver(delivery) {
-    transcriptManager.startDispatch(delivery);
+    if (transcriptManager) {
+      transcriptManager.startDispatch(delivery);
+    }
+    // metering faults (or other reasons why the vat should be
+    // deterministically terminated) are reported with status= ['error',
+    // err.message, null]. Any non-deterministic error (unexpected worker
+    // termination) is reported by rejection, causing an Error to bubble all
+    // the way up to controller.step/run.
     /** @type { VatDeliveryResult } */
-    const status = await deliverToWorker(delivery).catch(err =>
-      harden(['error', err.message, null]),
-    );
+    const status = await deliverToWorker(delivery);
     insistVatDeliveryResult(status);
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
-    transcriptManager.finishDispatch();
+    if (transcriptManager) {
+      transcriptManager.finishDispatch();
+    }
     return status;
   }
 
   async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
+    assert(transcriptManager, `delivery replay with no transcript`);
     transcriptManager.startReplay();
     transcriptManager.startReplayDelivery(expectedSyscalls);
     kernelSlog.write({
@@ -166,21 +179,32 @@ function makeManagerKit(
     kernelSlog.write({ type: 'finish-replay-delivery', vatID, deliveryNum });
   }
 
-  async function replayTranscript() {
-    const total = vatKeeper.vatStats().transcriptCount;
-    kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
-    let deliveryNum = 0;
-    for (const t of vatKeeper.getTranscript()) {
-      // if (deliveryNum % 100 === 0) {
-      //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
-      // }
-      //
-      // eslint-disable-next-line no-await-in-loop
-      await replayOneDelivery(t.d, t.syscalls, deliveryNum);
-      deliveryNum += 1;
+  /**
+   * @param {StreamPosition | undefined} startPos
+   * @returns { Promise<number?> } number of deliveries, or null if !useTranscript
+   */
+  async function replayTranscript(startPos) {
+    // console.log('replay from', { vatID, startPos });
+
+    if (transcriptManager) {
+      const total = vatKeeper.vatStats().transcriptCount;
+      kernelSlog.write({ type: 'start-replay', vatID, deliveries: total });
+      let deliveryNum = 0;
+      for (const t of vatKeeper.getTranscript(startPos)) {
+        // if (deliveryNum % 100 === 0) {
+        //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
+        // }
+        //
+        // eslint-disable-next-line no-await-in-loop
+        await replayOneDelivery(t.d, t.syscalls, deliveryNum);
+        deliveryNum += 1;
+      }
+      transcriptManager.checkReplayError();
+      kernelSlog.write({ type: 'finish-replay', vatID });
+      return deliveryNum;
     }
-    transcriptManager.checkReplayError();
-    kernelSlog.write({ type: 'finish-replay', vatID });
+
+    return null;
   }
 
   /**
@@ -194,7 +218,7 @@ function makeManagerKit(
    * @returns { VatSyscallResult }
    */
   function syscallFromWorker(vso) {
-    if (transcriptManager.inReplay()) {
+    if (transcriptManager && transcriptManager.inReplay()) {
       // We're replaying old messages to bring the vat's internal state
       // up-to-date. It will make syscalls like a puppy chasing rabbits in
       // its sleep. Gently prevent their twitching paws from doing anything.
@@ -211,7 +235,9 @@ function makeManagerKit(
       if (data && !workerCanBlock) {
         console.log(`warning: syscall returns data, but worker cannot get it`);
       }
-      transcriptManager.addSyscall(vso, data);
+      if (transcriptManager) {
+        transcriptManager.addSyscall(vso, data);
+      }
     }
     return vres;
   }
@@ -219,10 +245,17 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
+   * @param { (ss: SnapStore) => Promise<string> } makeSnapshot
    * @returns { VatManager }
    */
-  function getManager(shutdown) {
-    return harden({ replayTranscript, replayOneDelivery, deliver, shutdown });
+  function getManager(shutdown, makeSnapshot) {
+    return harden({
+      replayTranscript,
+      replayOneDelivery,
+      deliver,
+      shutdown,
+      makeSnapshot,
+    });
   }
 
   return harden({ getManager, syscallFromWorker, setDeliverToWorker });

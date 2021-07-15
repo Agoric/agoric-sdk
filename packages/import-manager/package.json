@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-manager",
-  "version": "0.2.14",
+  "version": "0.2.22",
   "description": "Share code across vat boundaries",
   "parsers": {
     "js": "mjs"
@@ -14,7 +14,8 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint-check": "yarn lint",
+    "lint": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
@@ -30,10 +31,10 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.13",
-    "@agoric/swingset-vat": "^0.17.2",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src/",
@@ -49,7 +50,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "eslintIgnore": [

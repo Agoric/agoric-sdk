@@ -1,3 +1,3 @@
-import buildKernel from './kernel';
+import buildKernel from './kernel.js';
 
 export default buildKernel;

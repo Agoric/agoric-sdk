@@ -2,8 +2,8 @@ export {
   makeNotifier,
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
-} from './notifier';
-export { makeSubscription, makeSubscriptionKit } from './subscriber';
+} from './notifier.js';
+export { makeSubscription, makeSubscriptionKit } from './subscriber.js';
 export {
   observeNotifier,
   observeIterator,
@@ -13,4 +13,4 @@ export {
   updateFromNotifier,
   // Consider deprecating or not reexporting
   makeAsyncIterableFromNotifier,
-} from './asyncIterableAdaptor';
+} from './asyncIterableAdaptor.js';

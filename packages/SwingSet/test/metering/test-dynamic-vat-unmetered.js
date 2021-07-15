@@ -1,9 +1,12 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';
-import { buildVatController } from '../../src/index';
-import makeNextLog from '../make-nextlog';
+import { buildVatController } from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -28,6 +31,7 @@ test('unmetered dynamic vat', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
@@ -40,9 +44,8 @@ test('unmetered dynamic vat', async t => {
   );
 
   // 'createVat' will import the bundle
-  c.queueToVatExport(
+  c.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'createVat',
     capargs([dynamicVatBundle, { metered: false }]),
     'panic',
@@ -51,7 +54,7 @@ test('unmetered dynamic vat', async t => {
   t.deepEqual(nextLog(), ['created'], 'first create');
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'run', capargs([]), 'panic');
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -59,13 +62,7 @@ test('unmetered dynamic vat', async t => {
   // Tell the dynamic vat to call `Array(4e9)`. If metering was in place,
   // this would be rejected. Without metering, it's harmless (Arrays are
   // lazy).
-  c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'explode',
-    capargs(['allocate']),
-    'panic',
-  );
+  c.queueToVatRoot('bootstrap', 'explode', capargs(['allocate']), 'panic');
   await c.run();
   t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
 });

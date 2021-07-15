@@ -1,6 +1,6 @@
 {
   "name": "@agoric/promise-kit",
-  "version": "0.2.13",
+  "version": "0.2.20",
   "description": "Helper for making promises",
   "parsers": {
     "js": "mjs"
@@ -33,11 +33,11 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/eventual-send": "^0.13.14"
+    "@agoric/eventual-send": "^0.13.22"
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src/",
@@ -45,7 +45,7 @@
   ],
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "eslintIgnore": [

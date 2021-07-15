@@ -3,6 +3,92 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.31.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.8...@agoric/cosmic-swingset@0.31.9) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.7...@agoric/cosmic-swingset@0.31.8) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.6...@agoric/cosmic-swingset@0.31.7) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+
+### [0.31.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.5...@agoric/cosmic-swingset@0.31.6) (2021-06-25)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** update check-validator.js for Cosmos 0.43.x ([7b94577](https://github.com/Agoric/agoric-sdk/commit/7b9457708ea1d0ecc78fb71a77d700ac8cfbbc04))
+
+
+
+### [0.31.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.4...@agoric/cosmic-swingset@0.31.5) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.3...@agoric/cosmic-swingset@0.31.4) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.2...@agoric/cosmic-swingset@0.31.3) (2021-06-23)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** stop using install-metering-and-ses ([3317007](https://github.com/Agoric/agoric-sdk/commit/331700772a3c679643f5cd66a2b9d17b40b4ec1e)), closes [#3373](https://github.com/Agoric/agoric-sdk/issues/3373)
+* move COMMIT_BLOCK immediately before the Cosmos SDK commit ([f0d2e68](https://github.com/Agoric/agoric-sdk/commit/f0d2e686a68cffbee2e97697594a7669051f0b40))
+
+
+
+### [0.31.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.1...@agoric/cosmic-swingset@0.31.2) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+### [0.31.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.0...@agoric/cosmic-swingset@0.31.1) (2021-06-15)
+
+
+### Features
+
+* modify all SwingStore uses to reflect constructor renaming ([9cda6a4](https://github.com/Agoric/agoric-sdk/commit/9cda6a4542bb64d72ddd42d08e2056f5323b18a9))
+* remove no-LMDB fallback from cosmic-swingset ([11dba7a](https://github.com/Agoric/agoric-sdk/commit/11dba7a145711097966ed41b9d36dd2ffdad2846))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove genesis bootstrap config; use just add-genesis-account ([fdc1255](https://github.com/Agoric/agoric-sdk/commit/fdc1255d66c702e8970ecf795be191dcf2291c39))
+* **cosmic-swingset:** slog begin/end-block and input events ([cc77234](https://github.com/Agoric/agoric-sdk/commit/cc77234b3d56b629ef4183990db798e78545526c))
+* update cosmic swingset build instructions ([29fdec4](https://github.com/Agoric/agoric-sdk/commit/29fdec40d6db374385e0a40d2e635a27d1828adb))
+
+
+
 # [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.30.1...@agoric/cosmic-swingset@0.31.0) (2021-05-10)
 
 

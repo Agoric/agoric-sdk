@@ -1,6 +1,6 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
-import { parseVatSlot } from '../parseVatSlots';
-// import { kdebug } from './kdebug';
+import { parseVatSlot } from '../parseVatSlots.js';
+// import { kdebug } from './kdebug.js';
 
 const initializationsInProgress = new WeakSet();
 
@@ -174,7 +174,7 @@ export function makeVirtualObjectManager(
    * @returns {*} an object representing the object's stored state.
    */
   function fetch(vobjID) {
-    return JSON.parse(syscall.vatstoreGet(vobjID));
+    return JSON.parse(syscall.vatstoreGet(`vom.${vobjID}`));
   }
 
   /**
@@ -185,7 +185,7 @@ export function makeVirtualObjectManager(
    * @param {*} rawData  A data object representing the state to be written.
    */
   function store(vobjID, rawData) {
-    syscall.vatstoreSet(vobjID, JSON.stringify(rawData));
+    syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
   }
 
   const cache = makeCache(cacheSize, fetch, store);
@@ -202,7 +202,7 @@ export function makeVirtualObjectManager(
    * a Presence into the state of a virtual object, or the value of a
    * makeWeakStore() instance. We currently never remove anything from the
    * set, but eventually we'll use refcounts within virtual data to figure
-   * out when the vref becomes unreachable, allowing the vat do send a
+   * out when the vref becomes unreachable, allowing the vat to send a
    * dropImport into the kernel and release the object.
    *
    */
@@ -211,7 +211,7 @@ export function makeVirtualObjectManager(
 
   // We track imports, to preserve their vrefs against syscall.dropImport
   // when the Presence goes away.
-  function addReachablePresence(vref) {
+  function addReachablePresenceRef(vref) {
     const { type, allocatedByVat } = parseVatSlot(vref);
     if (type === 'object' && !allocatedByVat) {
       reachableVrefs.add(vref);
@@ -220,6 +220,33 @@ export function makeVirtualObjectManager(
 
   function isVrefReachable(vref) {
     return reachableVrefs.has(vref);
+  }
+
+  /**
+   * Set of all import vrefs which are recognizable by our virtualized data.
+   * These were Presences at one point. We add to this set whenever we use a
+   * Presence as a key into a makeWeakStore() instance or an instance of
+   * VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet. We currently never
+   * remove anything from the set, but eventually we'll use refcounts to figure
+   * out when the vref becomes unrecognizable, allowing the vat to send a
+   * retireImport into the kernel.
+   *
+   */
+  /** @type {Set<string>} of vrefs */
+  const recognizableVrefs = new Set();
+
+  function addRecognizablePresenceValue(value) {
+    const vref = getSlotForVal(value);
+    if (vref) {
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      if (type === 'object' && !allocatedByVat) {
+        recognizableVrefs.add(vref);
+      }
+    }
+  }
+
+  function isVrefRecognizable(vref) {
+    return recognizableVrefs.has(vref);
   }
 
   /**
@@ -235,7 +262,7 @@ export function makeVirtualObjectManager(
    */
   /** @type {Set<Object>} of Remotables */
   const reachableRemotables = new Set();
-  function addReachableRemotable(vref) {
+  function addReachableRemotableRef(vref) {
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type === 'object' && !virtual && allocatedByVat) {
       // exported non-virtual object: Remotable
@@ -308,7 +335,7 @@ export function makeVirtualObjectManager(
       if (vobjID) {
         const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
         if (type === 'object' && (virtual || !allocatedByVat)) {
-          return `ws${storeID}.${vobjID}`;
+          return `vom.ws${storeID}.${vobjID}`;
         }
       }
       return undefined;
@@ -330,9 +357,10 @@ export function makeVirtualObjectManager(
             !syscall.vatstoreGet(vkey),
             X`${q(keyName)} already registered: ${key}`,
           );
+          addRecognizablePresenceValue(key);
           const data = m.serialize(value);
-          data.slots.map(addReachablePresence);
-          data.slots.map(addReachableRemotable);
+          data.slots.map(addReachablePresenceRef);
+          data.slots.map(addReachableRemotableRef);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
           assertKeyDoesNotExist(key);
@@ -354,9 +382,10 @@ export function makeVirtualObjectManager(
         const vkey = virtualObjectKey(key);
         if (vkey) {
           assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
+          addRecognizablePresenceValue(key);
           const data = m.serialize(harden(value));
-          data.slots.map(addReachablePresence);
-          data.slots.map(addReachableRemotable);
+          data.slots.map(addReachablePresenceRef);
+          data.slots.map(addReachableRemotableRef);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
           assertKeyExists(key);
@@ -419,6 +448,7 @@ export function makeVirtualObjectManager(
     set(key, value) {
       const vkey = vrefKey(key);
       if (vkey) {
+        addRecognizablePresenceValue(key);
         virtualObjectMaps.get(this).set(vkey, value);
       } else {
         actualWeakMaps.get(this).set(key, value);
@@ -464,6 +494,7 @@ export function makeVirtualObjectManager(
     add(value) {
       const vkey = vrefKey(value);
       if (vkey) {
+        addRecognizablePresenceValue(value);
         virtualObjectSets.get(this).add(vkey);
       } else {
         actualWeakSets.get(this).add(value);
@@ -594,8 +625,8 @@ export function makeVirtualObjectManager(
             },
             set: value => {
               const serializedValue = m.serialize(value);
-              serializedValue.slots.map(addReachablePresence);
-              serializedValue.slots.map(addReachableRemotable);
+              serializedValue.slots.map(addReachablePresenceRef);
+              serializedValue.slots.map(addReachableRemotableRef);
               ensureState();
               innerSelf.rawData[prop] = serializedValue;
               innerSelf.dirty = true;
@@ -654,8 +685,8 @@ export function makeVirtualObjectManager(
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
           const data = m.serialize(initialData[prop]);
-          data.slots.map(addReachablePresence);
-          data.slots.map(addReachableRemotable);
+          data.slots.map(addReachablePresenceRef);
+          data.slots.map(addReachableRemotableRef);
           rawData[prop] = data;
         } catch (e) {
           console.error(`state property ${String(prop)} is not serializable`);
@@ -680,6 +711,7 @@ export function makeVirtualObjectManager(
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,
+    isVrefRecognizable,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
   });

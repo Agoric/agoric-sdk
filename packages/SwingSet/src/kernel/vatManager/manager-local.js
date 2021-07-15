@@ -1,13 +1,14 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
-import { makeLiveSlots } from '../liveSlots';
-import { makeManagerKit } from './manager-helper';
+import { makeLiveSlots } from '../liveSlots.js';
+import { makeManagerKit } from './manager-helper.js';
 import {
   makeSupervisorDispatch,
   makeMeteredDispatch,
   makeSupervisorSyscall,
-} from './supervisor-helper';
+  makeVatConsole,
+} from './supervisor-helper.js';
 
 export function makeLocalVatManagerFactory(tools) {
   const {
@@ -26,7 +27,13 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, vatSyscallHandler, meterRecord, compareSyscalls) {
+  function prepare(
+    vatID,
+    vatSyscallHandler,
+    meterRecord,
+    compareSyscalls,
+    useTranscript,
+  ) {
     const mtools = harden({ stopGlobalMeter, meterRecord, refillAllMeters });
     const mk = makeManagerKit(
       vatID,
@@ -35,6 +42,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatSyscallHandler,
       true,
       compareSyscalls,
+      useTranscript,
     );
 
     function finish(dispatch) {
@@ -60,12 +68,13 @@ export function makeLocalVatManagerFactory(tools) {
     assert(!managerOptions.metered, X`unsupported`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
 
-    const { vatParameters, compareSyscalls } = managerOptions;
+    const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
     const { syscall, finish } = prepare(
       vatID,
       vatSyscallHandler,
       null,
       compareSyscalls,
+      useTranscript,
     );
     const { testLog } = allVatPowers;
     const helpers = harden({}); // DEPRECATED, todo remove from setup()
@@ -83,14 +92,17 @@ export function makeLocalVatManagerFactory(tools) {
     vatSyscallHandler,
   ) {
     const {
+      consensusMode,
       metered = false,
       enableDisavow = false,
       enableSetup = false,
       vatParameters = {},
       vatConsole,
       liveSlotsConsole,
+      enableVatstore = false,
       virtualObjectCacheSize,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
@@ -112,6 +124,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatSyscallHandler,
       meterRecord,
       compareSyscalls,
+      useTranscript,
     );
 
     const vatPowers = harden({
@@ -129,6 +142,7 @@ export function makeLocalVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       gcTools,
       liveSlotsConsole,
     );
@@ -136,7 +150,9 @@ export function makeLocalVatManagerFactory(tools) {
     const endowments = harden({
       ...vatEndowments,
       ...ls.vatGlobals,
-      console: vatConsole,
+      console: makeVatConsole(vatConsole, (logger, args) => {
+        consensusMode || logger(...args);
+      }),
       assert,
     });
     const inescapableTransforms = [];

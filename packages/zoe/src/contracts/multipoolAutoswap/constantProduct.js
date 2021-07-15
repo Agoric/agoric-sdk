@@ -18,17 +18,15 @@ const calcK = allocation => {
 
 /**
  *
- * @param {SeatStaging[]} stagings
+ * @param {ZCFSeat[]} seats
  */
-export const assertConstantProduct = stagings => {
-  stagings.forEach(seatStaging => {
-    const seat = seatStaging.getSeat();
+export const assertConstantProduct = seats => {
+  seats.forEach(seat => {
     const priorAllocation = seat.getCurrentAllocation();
-    const stagedAllocation = seatStaging.getStagedAllocation();
+    const stagedAllocation = seat.getStagedAllocation();
     if (isPoolSeat(stagedAllocation)) {
       const oldK = calcK(priorAllocation);
       const newK = calcK(stagedAllocation);
-      console.log('oldK', oldK, 'newK', newK);
       assert(
         newK >= oldK,
         X`the product of the pool tokens must not decrease as the result of a trade. ${oldK} decreased to ${newK}`,

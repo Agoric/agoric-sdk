@@ -9,10 +9,13 @@ Usage:
 
 // @ts-check
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 /* eslint-disable no-await-in-loop */
 import '@agoric/install-ses';
 import { assert, details as X, q } from '@agoric/assert';
-import { xsnap } from './xsnap';
+import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
 const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
@@ -33,7 +36,10 @@ const asset = (ref, readFile) =>
 const externals = [
   'ava',
   'ses',
-  '@agoric/ses-ava',
+  '@endo/ses-ava',
+  // TODO Remove babel-standalone preinitialization
+  // https://github.com/endojs/endo/issues/768
+  '@agoric/babel-standalone',
   '@agoric/bundle-source',
   '@agoric/install-ses',
   '@agoric/install-metering-and-ses',

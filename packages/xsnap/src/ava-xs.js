@@ -7,6 +7,10 @@
 // @ts-check
 // eslint-disable-next-line no-global-assign
 require = require('esm')(module);
+
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+require('@agoric/babel-standalone');
 require('@agoric/install-ses');
 const process = require('process');
 const { spawn } = require('child_process');
@@ -16,7 +20,7 @@ const path = require('path');
 const glob = require('glob');
 const bundleSource = require('@agoric/bundle-source').default;
 
-const { main, makeBundleResolve } = require('./avaXS');
+const { main, makeBundleResolve } = require('./avaXS.js');
 
 Promise.resolve()
   .then(_ =>

@@ -1,9 +1,12 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';
-import { buildVatController } from '../../src/index';
-import makeNextLog from '../make-nextlog';
+import { buildVatController } from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -27,6 +30,7 @@ test('metering dynamic vat which imports bundle', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
@@ -39,12 +43,7 @@ test('metering dynamic vat which imports bundle', async t => {
   );
 
   // 'createVat' will import the bundle
-  c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'createVat',
-    capargs([dynamicVatBundle]),
-  );
+  c.queueToVatRoot('bootstrap', 'createVat', capargs([dynamicVatBundle]));
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
 
@@ -52,17 +51,12 @@ test('metering dynamic vat which imports bundle', async t => {
   const grandchildBundle = await bundleSource(
     require.resolve('./grandchild.js'),
   );
-  const r = c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'load',
-    capargs([grandchildBundle]),
-  );
+  const r = c.queueToVatRoot('bootstrap', 'load', capargs([grandchildBundle]));
   await c.run();
   t.deepEqual(c.kpResolution(r), capargs('ok'));
 
   // First, send a message to the grandchild that runs normally
-  c.queueToVatExport('bootstrap', 'o+0', 'bundleRun', capargs([]));
+  c.queueToVatRoot('bootstrap', 'bundleRun', capargs([]));
   await c.run();
 
   t.deepEqual(nextLog(), ['did run'], 'first run ok');
@@ -70,12 +64,7 @@ test('metering dynamic vat which imports bundle', async t => {
   // Now tell the grandchild to exhaust the dynamic vat's meter. The message
   // result promise should be rejected, and the control facet should report
   // the vat's demise
-  c.queueToVatExport(
-    'bootstrap',
-    'o+0',
-    'bundleExplode',
-    capargs(['allocate']),
-  );
+  c.queueToVatRoot('bootstrap', 'bundleExplode', capargs(['allocate']));
   await c.run();
 
   t.deepEqual(
@@ -88,7 +77,7 @@ test('metering dynamic vat which imports bundle', async t => {
   );
 
   // the whole vat should be dead (we use 'run' instead of 'bundleRun')
-  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatRoot('bootstrap', 'run', capargs([]));
   await c.run();
   t.deepEqual(
     nextLog(),

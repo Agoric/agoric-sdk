@@ -1,6 +1,6 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.13",
+  "version": "0.1.20",
   "description": "Deep equals",
   "parsers": {
     "js": "mjs"
@@ -13,8 +13,9 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
@@ -31,12 +32,12 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.12",
-    "@agoric/marshal": "^0.4.11"
+    "@agoric/assert": "^0.3.6",
+    "@agoric/marshal": "^0.4.19"
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src/",
@@ -45,7 +46,7 @@
   ],
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "eslintIgnore": [

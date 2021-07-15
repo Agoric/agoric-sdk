@@ -1,19 +1,19 @@
 /* global WeakRef FinalizationRegistry require */
 // import '@agoric/install-ses';
-import '../tools/install-ses-debug';
+import '../tools/install-ses-debug.js';
 import fs from 'fs';
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
 import bundleSource from '@agoric/bundle-source';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
-import { makeStartXSnap } from '../src/controller';
-import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap';
-import { makeLocalVatManagerFactory } from '../src/kernel/vatManager/manager-local';
-import { makeNodeSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-node';
-import { startSubprocessWorker } from '../src/spawnSubprocessWorker';
-import { requireIdentical } from '../src/kernel/vatManager/transcript';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { makeStartXSnap } from '../src/controller.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';
+import { makeLocalVatManagerFactory } from '../src/kernel/vatManager/manager-local.js';
+import { makeNodeSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-node.js';
+import { startSubprocessWorker } from '../src/spawnSubprocessWorker.js';
+import { requireIdentical } from '../src/kernel/vatManager/transcript.js';
 
 async function makeBundles() {
   const srcGE = rel => bundleSource(require.resolve(rel), 'getExport');
@@ -44,7 +44,7 @@ async function replay(transcriptFile, worker = 'xs-worker') {
   let factory;
 
   const fakeKernelKeeper = {
-    getVatKeeper: _vatID => ({
+    provideVatKeeper: _vatID => ({
       addToTranscript: () => undefined,
     }),
   };

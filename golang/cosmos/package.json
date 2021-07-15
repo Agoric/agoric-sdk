@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmos",
-  "version": "0.26.2",
+  "version": "0.26.9",
   "description": "Connect JS to the Cosmos blockchain SDK",
   "parsers": {
     "js": "mjs"
@@ -23,7 +23,7 @@
     "bindings": "^1.2.1"
   },
   "devDependencies": {
-    "esm": "^3.2.5",
+    "esm": "agoric-labs/esm#Agoric-built",
     "napi-thread-safe-callback": "0.0.6",
     "node-addon-api": "^1.7.1"
   },
@@ -35,7 +35,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk/packages/connector-cosmos",
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "files": [

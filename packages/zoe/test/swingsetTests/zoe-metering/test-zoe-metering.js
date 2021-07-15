@@ -1,12 +1,15 @@
 /* global process __dirname */
 
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-metering-and-ses';
+import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
-import bundleSource from '../../bundle-source';
+import bundleSource from '@agoric/bundle-source';
 
 // Don't let unhandled promises crash our process.
 process.on('unhandledRejection', e => console.log('unhandled rejection', e));
@@ -30,6 +33,7 @@ const generateBundlesP = Promise.all(
 
 async function main(argv) {
   const config = await loadBasedir(__dirname);
+  config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   const controller = await buildVatController(config, argv);
   await controller.run();

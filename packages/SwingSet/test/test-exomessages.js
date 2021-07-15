@@ -1,7 +1,7 @@
 /* global require */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { buildVatController } from '../src/index';
+import { buildVatController } from '../src/index.js';
 
 async function beginning(t, mode) {
   const config = {
@@ -77,11 +77,11 @@ test('bootstrap failure', async t => {
 
 async function extraMessage(t, mode, status, body, slots) {
   const controller = await beginning(t, 'data');
+  controller.pinVatRoot('bootstrap');
   await controller.run();
   const args = { body: `["${mode}"]`, slots: [] };
-  const extraResult = controller.queueToVatExport(
+  const extraResult = controller.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'extra',
     args,
     'ignore',

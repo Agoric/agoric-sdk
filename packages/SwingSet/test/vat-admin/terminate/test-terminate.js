@@ -1,9 +1,12 @@
 /* global __dirname */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import path from 'path';
 import test from 'ava';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../../../src/hostStorage';
+import { provideHostStorage } from '../../../src/hostStorage.js';
 
 import {
   buildVatController,
@@ -123,6 +126,7 @@ test('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
+    c1.pinVatRoot('bootstrap');
     await c1.run();
     t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
     t.deepEqual(c1.dump().log, [
@@ -142,9 +146,8 @@ test('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
-    const r2 = c2.queueToVatExport(
+    const r2 = c2.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'speakAgain',
       capargs([]),
       'panic',
@@ -200,6 +203,7 @@ test('dead vat state removed', async t => {
     hostStorage,
     kernelBundles: t.context.data.kernelBundles,
   });
+  controller.pinVatRoot('bootstrap');
   await controller.run();
   t.deepEqual(
     controller.kpResolution(controller.bootstrapResult),
@@ -208,9 +212,9 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 8);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 9);
 
-  controller.queueToVatExport('bootstrap', 'o+0', 'phase2', capargs([]));
+  controller.queueToVatRoot('bootstrap', 'phase2', capargs([]));
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);

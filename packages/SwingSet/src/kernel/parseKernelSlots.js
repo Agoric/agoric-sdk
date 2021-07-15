@@ -17,7 +17,7 @@ import { assert, details as X } from '@agoric/assert';
  *      id: Nat
  *   }
  *
- * @param {string} s  The string to be parsed, as described above.
+ * @param {unknown} s  The string to be parsed, as described above.
  *
  * @returns {{type: 'object' | 'device' | 'promise', id: number}} a kernel slot object corresponding to the parameter.
  *
@@ -47,7 +47,7 @@ export function parseKernelSlot(s) {
  * Generate a kernel slot reference string given a type and id.
  *
  * @param {'object' | 'device' | 'promise'} type  The type
- * @param {number} id    The id, a Nat.
+ * @param {bigint | number} id    The id, a Nat.
  *
  * @returns {string} the corresponding kernel slot reference string.
  *

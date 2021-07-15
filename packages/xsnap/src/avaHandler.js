@@ -46,12 +46,16 @@ const testRequire = function require(specifier) {
       return test;
     case 'ses':
       return undefined;
-    case '@agoric/ses-ava':
+    case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@agoric/install-ses':
       return undefined;
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');
+      return undefined;
+    // TODO Remove babel-standalone preinitialization
+    // https://github.com/endojs/endo/issues/768
+    case '@agoric/babel-standalone':
       return undefined;
     case '@agoric/bundle-source':
       return bundleSource;

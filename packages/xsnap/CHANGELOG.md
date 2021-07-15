@@ -3,6 +3,92 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.8...@agoric/xsnap@0.6.9) (2021-07-01)
+
+
+### Features
+
+* **xsnap:** isReady() eliminates need for .evaluate('null') ([a0493d7](https://github.com/Agoric/agoric-sdk/commit/a0493d7c34c66d008e295ac2b0b86e312a36b5da))
+
+
+
+### [0.6.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.7...@agoric/xsnap@0.6.8) (2021-06-28)
+
+
+### Features
+
+* demand-paged vats are reloaded from heap snapshots ([#2848](https://github.com/Agoric/agoric-sdk/issues/2848)) ([cb239cb](https://github.com/Agoric/agoric-sdk/commit/cb239cbb27943ad58c304d85ee9b61ba917af79c)), closes [#2273](https://github.com/Agoric/agoric-sdk/issues/2273) [#2277](https://github.com/Agoric/agoric-sdk/issues/2277) [#2422](https://github.com/Agoric/agoric-sdk/issues/2422)
+
+
+### Bug Fixes
+
+* snapStore tmp files were kept for debugging ([#3420](https://github.com/Agoric/agoric-sdk/issues/3420)) ([9d9560d](https://github.com/Agoric/agoric-sdk/commit/9d9560db488b67c8dfbc8dbba23967d5059dd071))
+
+
+
+### [0.6.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.6...@agoric/xsnap@0.6.7) (2021-06-25)
+
+
+### Bug Fixes
+
+* **xsnap:** update XS: new WeakMap design, fixed Promise drops ([8eeec28](https://github.com/Agoric/agoric-sdk/commit/8eeec2808ee7596d0b08a362d182c65a8828fba3)), closes [#3406](https://github.com/Agoric/agoric-sdk/issues/3406) [#3118](https://github.com/Agoric/agoric-sdk/issues/3118)
+
+
+
+### [0.6.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.5...@agoric/xsnap@0.6.6) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/xsnap
+
+
+
+
+
+### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.4...@agoric/xsnap@0.6.5) (2021-06-23)
+
+
+### Features
+
+* **xsnap:** record / replay xsnap protcol ([616a752](https://github.com/Agoric/agoric-sdk/commit/616a752289d87ae71fd21a0f9533b158667d2d89))
+
+
+### Bug Fixes
+
+* **xsnap:** 1e7 was too small for crank meter limit ([95c52ab](https://github.com/Agoric/agoric-sdk/commit/95c52ab62f7be855d084b70626b67e8ca516714f))
+* **xsnap:** Account for TypedArray and subarrays in Text shim ([3531132](https://github.com/Agoric/agoric-sdk/commit/35311325cdb76c4981cffaffbc9d9b1f8701662a))
+* **xsnap:** don't risk NULL in gxSnapshotCallbacks ([3a6ddbb](https://github.com/Agoric/agoric-sdk/commit/3a6ddbb4b2ab1ab551888ad7e4ec86d32189caf0))
+* **xsnap:** fxMeterHostFunction is no more ([67e6a51](https://github.com/Agoric/agoric-sdk/commit/67e6a512d5c16ec32734e2fb4c046182142b85a0))
+
+
+
+### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.3...@agoric/xsnap@0.6.4) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/xsnap
+
+
+
+
+
+### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.2...@agoric/xsnap@0.6.3) (2021-06-15)
+
+
+### Features
+
+* use 'engine-gc.js' to get the Node.js garbage collector ([0153529](https://github.com/Agoric/agoric-sdk/commit/0153529cbfc0b7da2d1ec434b32b2171bc246f93))
+* **xsnap:** add gcAndFinalize, tests ([343d908](https://github.com/Agoric/agoric-sdk/commit/343d9081b84205902e47e4f4f4fef3b97e6dfe45)), closes [#2660](https://github.com/Agoric/agoric-sdk/issues/2660)
+* **xsnap:** refined metering: stack, arrays ([9c48919](https://github.com/Agoric/agoric-sdk/commit/9c4891948c0ba3e8edc564035ad16a949e8b6bd0))
+
+
+### Bug Fixes
+
+* be more explicit when gc() is not enabled, but not repetitive ([b3f7757](https://github.com/Agoric/agoric-sdk/commit/b3f775704a2a9373623d3c6f24726e14ec8d0056))
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
+* **xs-worker:** respect !managerOptions.metered ([#3078](https://github.com/Agoric/agoric-sdk/issues/3078)) ([84fa8c9](https://github.com/Agoric/agoric-sdk/commit/84fa8c984bc0bccb2482007d69dfb01773de6c74))
+* **xsnap:** free netstring in issueCommand() ([127e58a](https://github.com/Agoric/agoric-sdk/commit/127e58ac45bc9ea316733bbe6790936ba1b28f56))
+* **xsnap:** handle malloc() failure ([67d2581](https://github.com/Agoric/agoric-sdk/commit/67d25812985ce590cda10e2774be885b16fa67fb))
+
+
+
 ## [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.1...@agoric/xsnap@0.6.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/xsnap

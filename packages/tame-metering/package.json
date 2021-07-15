@@ -1,20 +1,16 @@
 {
   "name": "@agoric/tame-metering",
-  "version": "1.3.9",
+  "version": "2.0.6",
   "description": "tame-metering",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint": "eslint '**/*.{js,jsx}'",
     "build": "exit 0"
-  },
-  "dependencies": {
-    "esm": "^3.2.5"
   },
   "devDependencies": {
     "ava": "^3.12.1"
@@ -41,14 +37,11 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "require": [
-      "esm"
-    ],
     "timeout": "2m"
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

@@ -1,37 +1,24 @@
+// @ts-check
+/* global __filename */
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import * as childProcess from 'child_process';
+
+import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
-import * as path from 'path';
-import { xsnap } from '../src/xsnap';
 
-const importModuleUrl = `file://${__filename}`;
+import { xsnap } from '../src/xsnap.js';
 
-const asset = async (...segments) =>
-  fs.promises.readFile(
-    path.join(importModuleUrl.replace('file:/', ''), '..', ...segments),
-    'utf-8',
-  );
+import { options, loader } from './message-tools.js';
 
-const decoder = new TextDecoder();
+const importMeta = { url: `file://${__filename}` };
 
-const xsnapOptions = {
-  spawn: childProcess.spawn,
-  os: os.type(),
-};
-
-function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
+const ld = loader(importMeta.url, fs.promises.readFile);
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const name = 'SES lockdown worker';
   const vat = xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
@@ -49,21 +36,31 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(bootScript);
 
-  const script = await asset('escapeCompartment.js');
+  const script = await ld.asset('escapeCompartment.js');
   await vat.evaluate(script);
   await vat.close();
 
-  t.deepEqual(opts.messages, ['err was TypeError: Not available']);
+  // Temporarily tolerate Endo behavior before and after
+  // https://github.com/endojs/endo/pull/822
+  // TODO Simplify once depending on SES post #822
+  // t.deepEqual(opts.messages, [
+  //   'err was TypeError: Function.prototype.constructor is not a valid constructor.',
+  // ]);
+  t.assert(
+    opts.messages[0] === 'err was TypeError: Not available' ||
+      opts.messages[0] ===
+        'err was TypeError: Function.prototype.constructor is not a valid constructor.',
+  );
 });
 
 test('SES deep stacks work on xsnap', async t => {
-  const bootScript = await asset('..', 'dist', 'bundle-ses-boot.umd.js');
-  const opts = options();
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(bootScript);
   await vat.evaluate(`
@@ -75,8 +72,30 @@ test('SES deep stacks work on xsnap', async t => {
     const msg = getStackString(err);
     send(msg);
   `);
-  const [stackInErr, msg] = opts.messages.map(JSON.parse);
+  const [stackInErr, msg] = opts.messages.map(s => JSON.parse(s));
   t.assert(!stackInErr);
   t.is(typeof msg, 'string');
   t.assert(msg.length >= 1);
+});
+
+test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
+  const vat = xsnap(opts);
+  await vat.evaluate(bootScript);
+  await vat.evaluate(`
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+
+    const string = '0123456789';
+    const bytes = encoder.encode(string).subarray(1, 4);
+    send(bytes instanceof Uint8Array);
+    send(ArrayBuffer.isView(bytes));
+    const restring = decoder.decode(bytes);
+    send(restring === string.slice(1, 4));
+  `);
+  for (const pass of opts.messages.map(s => JSON.parse(s))) {
+    t.assert(pass);
+  }
 });

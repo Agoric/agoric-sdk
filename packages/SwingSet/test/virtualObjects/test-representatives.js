@@ -1,16 +1,16 @@
 /* global __dirname */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
 
-import { provideHostStorage } from '../../src/hostStorage';
+import { provideHostStorage } from '../../src/hostStorage.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
-} from '../../src/index';
-import makeNextLog from '../make-nextlog';
+} from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -41,15 +41,15 @@ test('virtual object representatives', async t => {
   };
 
   const c = await buildVatController(config, []);
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   await c.run();
   t.deepEqual(c.kpResolution(c.bootstrapResult), capargs('bootstrap done'));
 
   async function doTestA(mode, result) {
-    const r = c.queueToVatExport(
+    const r = c.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'testA',
       capargs([`thing${mode}`, mode]),
     );
@@ -62,9 +62,8 @@ test('virtual object representatives', async t => {
   await doTestA(2, 'ko26');
 
   async function doTestB(mode, result) {
-    const r = c.queueToVatExport(
+    const r = c.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'testB',
       capargs([`thing${mode}`, mode]),
     );
@@ -84,9 +83,8 @@ test('virtual object representatives', async t => {
   await doTestB(6, 'ko30');
 
   async function doTestC(mode) {
-    const r = c.queueToVatExport(
+    const r = c.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'testC',
       capargs([`thing${mode}`, mode]),
     );
@@ -100,9 +98,8 @@ test('virtual object representatives', async t => {
   await doTestC(10);
 
   async function doTestD(mode) {
-    const r = c.queueToVatExport(
+    const r = c.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'testD',
       capargs([`thing${mode}`, mode]),
     );
@@ -114,9 +111,8 @@ test('virtual object representatives', async t => {
   await doTestD(12);
 
   async function doTestE(mode) {
-    const r = c.queueToVatExport(
+    const r = c.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'testE',
       capargs([`thing${mode}`, mode]),
     );
@@ -133,9 +129,8 @@ test('virtual object representatives', async t => {
   await doTestE(19);
   await doTestE(20);
 
-  const rz1 = c.queueToVatExport(
+  const rz1 = c.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'testCacheOverflow',
     capargs([`zot1`, false]),
   );
@@ -144,9 +139,8 @@ test('virtual object representatives', async t => {
   t.deepEqual(nextLog(), []);
   t.deepEqual(c.kpResolution(rz1), slot0('zot', 'ko31'));
 
-  const rz2 = c.queueToVatExport(
+  const rz2 = c.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'testCacheOverflow',
     capargs([`zot2`, true]),
   );
@@ -212,6 +206,7 @@ test('exercise cache', async t => {
     loggingHostStorage,
   );
   const c = await makeSwingsetController(loggingHostStorage, {});
+  c.pinVatRoot('bootstrap');
 
   const nextLog = makeNextLog(c);
 
@@ -230,7 +225,7 @@ test('exercise cache', async t => {
     } else {
       sendArgs = capargs(args);
     }
-    const r = c.queueToVatExport('bootstrap', 'o+0', method, sendArgs);
+    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
@@ -264,7 +259,7 @@ test('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function thingID(num) {
-    return `v1.vs.o+1/${num}`;
+    return `v1.vs.vom.o+1/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({

@@ -3,6 +3,66 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.4.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.18...@agoric/transform-metering@1.4.19) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.17...@agoric/transform-metering@1.4.18) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.16...@agoric/transform-metering@1.4.17) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.15...@agoric/transform-metering@1.4.16) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.14...@agoric/transform-metering@1.4.15) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.13...@agoric/transform-metering@1.4.14) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
+### [1.4.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.12...@agoric/transform-metering@1.4.13) (2021-06-15)
+
+
+### Bug Fixes
+
+* excise @babel/core except from ui-components ([af564f1](https://github.com/Agoric/agoric-sdk/commit/af564f1705bbd8fc53c027e70140a02641b23fa0))
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* remove references to @agoric/babel-parser ([e4b1e2b](https://github.com/Agoric/agoric-sdk/commit/e4b1e2b4bb13436ef53f055136a4a1d5d933d99e))
+* upgrade acorn and babel parser ([048cc92](https://github.com/Agoric/agoric-sdk/commit/048cc925b3090f77e998fef1f3ac26846c4a8f26))
+
+
+
 ## [1.4.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.11...@agoric/transform-metering@1.4.12) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/transform-metering

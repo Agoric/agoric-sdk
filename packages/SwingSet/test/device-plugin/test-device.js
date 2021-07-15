@@ -1,16 +1,16 @@
 /* global require __dirname */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage';
+import { provideHostStorage } from '../../src/hostStorage.js';
 
 import {
   swingsetIsInitialized,
   initializeSwingset,
   makeSwingsetController,
-} from '../../src/index';
-import { buildBridge } from '../../src/devices/bridge';
-import { buildPlugin } from '../../src/devices/plugin';
+} from '../../src/index.js';
+import { buildBridge } from '../../src/devices/bridge.js';
+import { buildPlugin } from '../../src/devices/plugin.js';
 
 test.before('initialize storage', t => {
   t.context.hostStorage = provideHostStorage();

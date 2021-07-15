@@ -67,7 +67,6 @@ test('startInstance', async t => {
     creatorFacet,
     publicFacet,
     instance,
-    adminFacet,
     creatorInvitationDetails,
   } = await startInstance(startInstanceConfig);
 
@@ -75,5 +74,4 @@ test('startInstance', async t => {
   t.truthy(creatorFacet);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
   t.is(creatorInvitationDetails.description, 'getRefund');
-  t.is(await E(adminFacet).getVatStats(), undefined);
 });

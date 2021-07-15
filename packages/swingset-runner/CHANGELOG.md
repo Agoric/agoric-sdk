@@ -3,6 +3,89 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.9...@agoric/swingset-runner@0.13.10) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.8...@agoric/swingset-runner@0.13.9) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.7...@agoric/swingset-runner@0.13.8) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.6...@agoric/swingset-runner@0.13.7) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.5...@agoric/swingset-runner@0.13.6) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.4...@agoric/swingset-runner@0.13.5) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.3...@agoric/swingset-runner@0.13.4) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.2...@agoric/swingset-runner@0.13.3) (2021-06-15)
+
+
+### Features
+
+* allow setting of dbsize from swingset-runner command line ([f56df1e](https://github.com/Agoric/agoric-sdk/commit/f56df1eac3c91bdc668a6b8efc455ca0e4e8d212))
+* drive loopbox from config instead of command line ([d0388ff](https://github.com/Agoric/agoric-sdk/commit/d0388ff0650e79824cfe0a2f7ad37971a8647c37))
+* handle kernel failures more gracefully ([8d03175](https://github.com/Agoric/agoric-sdk/commit/8d0317514bcd00c14762d3d5400e5699332bfd74))
+* modify all SwingStore uses to reflect constructor renaming ([9cda6a4](https://github.com/Agoric/agoric-sdk/commit/9cda6a4542bb64d72ddd42d08e2056f5323b18a9))
+* move transcripts out of key-value store and into stream stores ([a128e93](https://github.com/Agoric/agoric-sdk/commit/a128e93803344d8a36140d53d3e7711bec5c2511))
+* remove .jsonlines hack from simple swing store ([ef87997](https://github.com/Agoric/agoric-sdk/commit/ef87997a1519b18f23656b57bf38055fea203f9a))
+* support vats without transcripts, notably the comms vat (to start with) ([18d6050](https://github.com/Agoric/agoric-sdk/commit/18d6050150dae08f03319ca2ffae0fd985e92164)), closes [#3217](https://github.com/Agoric/agoric-sdk/issues/3217)
+* update kernel dump to latest schema ([93cb41d](https://github.com/Agoric/agoric-sdk/commit/93cb41dd3a57aef36f7e8f81dce74c9243abf096))
+* use 'engine-gc.js' to get the Node.js garbage collector ([0153529](https://github.com/Agoric/agoric-sdk/commit/0153529cbfc0b7da2d1ec434b32b2171bc246f93))
+
+
+### Bug Fixes
+
+* checkpoint db after swingset init ([bf5f46b](https://github.com/Agoric/agoric-sdk/commit/bf5f46b7f8bd38600254bb3b019a1563665123c0))
+* make loopbox device compatible with replay ([ce11fff](https://github.com/Agoric/agoric-sdk/commit/ce11fff37da1d1856d4bb6458b08d7ae73267175)), closes [#3260](https://github.com/Agoric/agoric-sdk/issues/3260)
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
+* update dumpstore for new db objects ([b5f6226](https://github.com/Agoric/agoric-sdk/commit/b5f62261eaeb60d5f1a69eff19aaa30d1c5413d1))
+* update slogulator to include latest slog entry types ([25d5d43](https://github.com/Agoric/agoric-sdk/commit/25d5d430f2e307b35aa682fad3f811cb417af7a7))
+
+
+
 ## [0.13.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.1...@agoric/swingset-runner@0.13.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/swingset-runner

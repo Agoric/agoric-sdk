@@ -156,7 +156,6 @@
 /**
  * @typedef {Object} AdminFacet
  * @property {() => Promise<Completion>} getVatShutdownPromise
- * @property {() => any} getVatStats
  */
 
 /**

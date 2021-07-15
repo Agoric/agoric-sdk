@@ -21,7 +21,6 @@ import { E } from '@agoric/eventual-send';
 import { assert, details, q } from '@agoric/assert';
 import makeStore from '@agoric/store';
 import {
-  trade,
   assertProposalShape,
   offerTo,
   getAmountOut,
@@ -77,13 +76,23 @@ export async function start(zcf) {
   // away fees so the tests show that the funds have been removed.
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
-  // We provide an easy way for the vaultManager and vaults to add rewards to
-  // this seat, without directly exposing the seat to them.
-  function stageReward(amount) {
-    const priorReward = rewardPoolSeat.getAmountAllocated('RUN', runBrand);
-    return rewardPoolSeat.stage({
-      RUN: AmountMath.add(priorReward, amount, runBrand),
-    });
+  /**
+   * We provide an easy way for the vaultManager and vaults to add rewards to
+   * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
+   *
+   * @type {ReallocateReward}
+   */
+  function reallocateReward(amount, fromSeat, otherSeat = undefined) {
+    rewardPoolSeat.incrementBy(
+      fromSeat.decrementBy({
+        RUN: amount,
+      }),
+    );
+    if (otherSeat !== undefined) {
+      zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
+    } else {
+      zcf.reallocate(rewardPoolSeat, fromSeat);
+    }
   }
 
   /** @type {Store<Brand,VaultManager>} */
@@ -154,15 +163,11 @@ export async function start(zcf) {
 
       // trade the governance tokens for collateral, putting the
       // collateral on Secondary to be positioned for Autoswap
-      trade(
-        zcf,
-        {
-          seat,
-          gains: { Governance: govAmount },
-          losses: { Collateral: collateralIn },
-        },
-        { seat: govSeat, gains: { Secondary: collateralIn } },
-      );
+      seat.incrementBy(govSeat.decrementBy({ Governance: govAmount }));
+      seat.decrementBy({ Collateral: collateralIn });
+      govSeat.incrementBy({ Secondary: collateralIn });
+
+      zcf.reallocate(govSeat, seat);
       // the collateral is now on the temporary seat
 
       // once we've done that, we can put both the collateral and the minted
@@ -219,7 +224,7 @@ export async function start(zcf) {
         collateralBrand,
         priceAuthority,
         rates,
-        stageReward,
+        reallocateReward,
         timerService,
         loanParams,
         liquidationStrategy,

@@ -3,6 +3,71 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.21...@agoric/sharing-service@0.1.22) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.21](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.20...@agoric/sharing-service@0.1.21) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.20](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.19...@agoric/sharing-service@0.1.20) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.18...@agoric/sharing-service@0.1.19) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.17...@agoric/sharing-service@0.1.18) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.16...@agoric/sharing-service@0.1.17) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.15...@agoric/sharing-service@0.1.16) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
+### [0.1.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.14...@agoric/sharing-service@0.1.15) (2021-06-15)
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.1.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.13...@agoric/sharing-service@0.1.14) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/sharing-service

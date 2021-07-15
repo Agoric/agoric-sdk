@@ -1,12 +1,18 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import { encodeBase64 } from '@endo/base64';
 import * as fs from 'fs';
-import { makeArchive } from '@agoric/compartment-mapper';
+import { makeArchive } from '@endo/compartment-mapper/archive.js';
 
 import bundleSource from '@agoric/bundle-source';
-import test from 'ava';
+import ava from 'ava';
+import { wrapTest } from '@endo/ses-ava';
 import { importBundle } from '../src/index.js';
+
+const test = wrapTest(ava);
 
 const read = async location =>
   fs.promises.readFile(new URL(location, 'file:///').pathname);

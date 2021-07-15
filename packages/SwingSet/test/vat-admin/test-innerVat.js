@@ -1,9 +1,16 @@
 /* global __dirname */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
-import { buildKernelBundles, buildVatController, loadBasedir } from '../../src';
+import {
+  buildKernelBundles,
+  buildVatController,
+  loadBasedir,
+} from '../../src/index.js';
 
 function nonBundleFunction(_E) {
   return {};
@@ -60,18 +67,6 @@ test('error creating vat from non-bundle', async t => {
   t.deepEqual(c.dump().log, [
     'starting non-bundle test',
     'yay, rejected: Error: Vat Creation Error: TypeError: vat creation requires a bundle, not a plain string',
-  ]);
-  await c.run();
-});
-
-test('VatAdmin get vat stats', async t => {
-  const c = await doTestSetup(t, 'vatStats');
-  await c.run();
-  t.deepEqual(c.dump().log, [
-    'starting stats test',
-    '{"deviceCount":0,"objectCount":0,"promiseCount":0,"transcriptCount":0}',
-    '4',
-    '{"deviceCount":0,"objectCount":0,"promiseCount":2,"transcriptCount":2}',
   ]);
   await c.run();
 });

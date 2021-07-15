@@ -1,6 +1,6 @@
 {
   "name": "@agoric/stat-logger",
-  "version": "0.4.9",
+  "version": "0.4.16",
   "description": "Simple library for logging and graphing performance statistics",
   "parsers": {
     "js": "mjs"
@@ -13,8 +13,9 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "dependencies": {
     "canvas": "^2.6.1",
@@ -23,7 +24,7 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "publishConfig": {
     "access": "public"
@@ -39,7 +40,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

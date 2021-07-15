@@ -1,11 +1,14 @@
 /* global __dirname */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import path from 'path';
 import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../../src/hostStorage';
-import { buildKernelBundles, buildVatController } from '../../src';
+import { provideHostStorage } from '../../src/hostStorage.js';
+import { buildKernelBundles, buildVatController } from '../../src/index.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -45,9 +48,9 @@ test('replay bundleSource-based dynamic vat', async t => {
       hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
-    const r1 = c1.queueToVatExport(
+    c1.pinVatRoot('bootstrap');
+    const r1 = c1.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'createBundle',
       capargs([]),
       'panic',
@@ -67,13 +70,7 @@ test('replay bundleSource-based dynamic vat', async t => {
     const c2 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage2,
     });
-    const r2 = c2.queueToVatExport(
-      'bootstrap',
-      'o+0',
-      'check',
-      capargs([]),
-      'panic',
-    );
+    const r2 = c2.queueToVatRoot('bootstrap', 'check', capargs([]), 'panic');
     await c2.run();
     t.deepEqual(c2.kpResolution(r2), capargs('ok'));
   }
@@ -97,9 +94,9 @@ test('replay bundleName-based dynamic vat', async t => {
       hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
-    const r1 = c1.queueToVatExport(
+    c1.pinVatRoot('bootstrap');
+    const r1 = c1.queueToVatRoot(
       'bootstrap',
-      'o+0',
       'createNamed',
       capargs([]),
       'panic',
@@ -115,13 +112,7 @@ test('replay bundleName-based dynamic vat', async t => {
     const c2 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage2,
     });
-    const r2 = c2.queueToVatExport(
-      'bootstrap',
-      'o+0',
-      'check',
-      capargs([]),
-      'panic',
-    );
+    const r2 = c2.queueToVatRoot('bootstrap', 'check', capargs([]), 'panic');
     await c2.run();
     t.deepEqual(c2.kpResolution(r2), capargs('ok'));
   }

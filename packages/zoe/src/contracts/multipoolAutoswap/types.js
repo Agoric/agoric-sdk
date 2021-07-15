@@ -41,7 +41,6 @@
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
- * @property {(newAllocation: Allocation) => SeatStaging} stageSeat
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
  * @property {() => Notifier} getNotifier

@@ -115,7 +115,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   function registerPortHandler(portHandler) {
     lastPort += 1;
     const port = lastPort;
-    portHandlers[port] = portHandler;
+    portHandlers[port] = async (...phArgs) => {
+      try {
+        return await portHandler(...phArgs);
+      } catch (e) {
+        console.error('portHandler threw', e);
+        throw e;
+      }
+    };
     return port;
   }
 
@@ -228,6 +235,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
     const meterProvider = getMeterProvider(console, env);
     const slogFile = env.SLOGFILE;
+    const consensusMode = env.DEBUG === undefined;
     const s = await launch(
       stateDBDir,
       mailboxStorage,
@@ -237,6 +245,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       undefined,
       meterProvider,
       slogFile,
+      consensusMode,
     );
     return s;
   }
@@ -244,8 +253,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   let blockManager;
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
-    if (action.ibcPort) {
-      portNums.dibc = action.ibcPort;
+    if (action.vibcPort) {
+      portNums.dibc = action.vibcPort;
     }
 
     if (action.storagePort) {
@@ -254,8 +263,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.storage = action.storagePort;
     }
 
-    if (action.vpursePort) {
-      portNums.bank = action.vpursePort;
+    if (action.vbankPort) {
+      portNums.bank = action.vbankPort;
     }
 
     if (!blockManager) {

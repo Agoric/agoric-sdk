@@ -1,21 +1,14 @@
-/* global gc FinalizationRegistry WeakRef */
+/* global FinalizationRegistry WeakRef */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '@agoric/xsnap';
-import { gcAndFinalize } from '../src/gc-and-finalize';
+import engineGC from '../src/engine-gc.js';
+import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
 
-test(`have gc() on Node.js`, async t => {
-  t.is(typeof gc, 'function', 'environment is missing top-level gc()');
-  // Under Node.js, you must use `node --expose-gc PROGRAM`. Under AVA+Node,
-  // add `nodeArguments: [ "--expose-gc" ]` to the package.json 'ava:'
-  // stanza. Under XS, make sure your application (e.g. xsnap) provides a
-  // `gc` C callback on the global object.
-});
-
-function setup() {
+function makeVictim() {
   const victim = { doomed: 'oh no' };
   const finalized = ['finalizer not called'];
   const fr = new FinalizationRegistry(_tag => {
@@ -26,13 +19,15 @@ function setup() {
   return { finalized, fr, wr };
 }
 
-async function provokeGC() {
-  // the transition from REACHABLE to UNREACHABLE happens as soon as setup()
+async function provokeGC(myGC) {
+  const gcAndFinalize = makeGcAndFinalize(myGC);
+
+  // the transition from REACHABLE to UNREACHABLE happens as soon as makeVictim()
   // finishes, and the local 'victim' binding goes out of scope
 
   // we must retain the FinalizationRegistry to let the callback fire
   // eslint-disable-next-line no-unused-vars
-  const { finalized, fr, wr } = setup();
+  const { finalized, fr, wr } = makeVictim();
 
   // the transition from UNREACHABLE to COLLECTED can happen at any moment,
   // but is far more likely to happen if we force it
@@ -53,7 +48,7 @@ if (
 }
 
 ltest(`can provoke gc on Node.js`, async t => {
-  const { wrState, finalizerState } = await provokeGC();
+  const { wrState, finalizerState } = await provokeGC(engineGC);
   t.is(wrState, 'weakref is dead');
   t.is(finalizerState, 'finalizer was called');
 });
@@ -81,10 +76,10 @@ test(`can provoke gc on xsnap`, async t => {
   const opts = options();
   const vat = xsnap(opts);
   const code = `
-${gcAndFinalize}
-${setup}
+${makeGcAndFinalize}
+${makeVictim}
 ${provokeGC}
-provokeGC().then(data => issueCommand(ArrayBuffer.fromString(JSON.stringify(data))));
+provokeGC(globalThis.gc).then(data => issueCommand(ArrayBuffer.fromString(JSON.stringify(data))));
 `;
   await vat.evaluate(code);
   await vat.close();

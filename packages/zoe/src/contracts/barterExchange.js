@@ -5,7 +5,7 @@ import makeStore from '@agoric/store';
 import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { trade, satisfies } from '../contractSupport';
+import { satisfies } from '../contractSupport';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -65,27 +65,13 @@ const start = zcf => {
     const matchingTrade = findMatchingTrade(offerDetails, orders);
     if (matchingTrade) {
       // reallocate by giving each side what it wants
-      trade(
-        zcf,
-        {
-          seat: matchingTrade.seat,
-          gains: {
-            Out: matchingTrade.amountOut,
-          },
-          losses: {
-            In: offerDetails.amountOut,
-          },
-        },
-        {
-          seat: offerDetails.seat,
-          gains: {
-            Out: offerDetails.amountOut,
-          },
-          losses: {
-            In: matchingTrade.amountOut,
-          },
-        },
-      );
+      offerDetails.seat.decrementBy({ In: matchingTrade.amountOut });
+      matchingTrade.seat.incrementBy({ Out: matchingTrade.amountOut });
+
+      matchingTrade.seat.decrementBy({ In: offerDetails.amountOut });
+      offerDetails.seat.incrementBy({ Out: offerDetails.amountOut });
+
+      zcf.reallocate(offerDetails.seat, matchingTrade.seat);
       removeFromOrders(matchingTrade);
       offerDetails.seat.exit();
       matchingTrade.seat.exit();

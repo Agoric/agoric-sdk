@@ -1,13 +1,13 @@
 /* global require */
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage';
+import { provideHostStorage } from '../../src/hostStorage.js';
 
-import { initializeSwingset, makeSwingsetController } from '../../src/index';
-import { buildTimer } from '../../src/devices/timer';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { buildTimer } from '../../src/devices/timer.js';
 
-const TimerSrc = require.resolve('../../src/devices/timer-src');
+const TimerSrc = require.resolve('../../src/devices/timer-src.js');
 
 const timerConfig = {
   bootstrap: 'bootstrap',
@@ -33,9 +33,9 @@ test('wake', async t => {
   await initializeSwingset(timerConfig, ['timer'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
-  await c.step();
+  await c.run();
   timer.poll(5);
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, ['starting wake test', 'handler.wake()']);
 });
 
@@ -49,9 +49,9 @@ test('repeater', async t => {
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
-  await c.step();
+  await c.run();
   timer.poll(5);
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
     'next scheduled time: 3',
@@ -69,11 +69,11 @@ test('repeater2', async t => {
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1n);
-  await c.step();
+  await c.run();
   timer.poll(5n);
-  await c.step();
+  await c.run();
   timer.poll(8n);
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
     'next scheduled time: 3',
@@ -92,25 +92,25 @@ test('repeaterZero', async t => {
   await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   timer.poll(1);
-  await c.step();
+  await c.run();
   timer.poll(2);
-  await c.step();
+  await c.run();
   timer.poll(3);
-  await c.step();
+  await c.run();
   timer.poll(4);
-  await c.step();
+  await c.run();
   timer.poll(5);
-  await c.step();
+  await c.run();
   timer.poll(6);
-  await c.step();
+  await c.run();
   timer.poll(7);
-  await c.step();
+  await c.run();
   timer.poll(8);
-  await c.step();
+  await c.run();
   timer.poll(9);
-  await c.step();
+  await c.run();
   timer.poll(10);
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
     'next scheduled time: 3',

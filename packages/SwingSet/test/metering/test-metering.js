@@ -1,6 +1,9 @@
 /* global require */
 // eslint-disable-next-line import/order
-import { replaceGlobalMeter } from './install-global-metering';
+import { replaceGlobalMeter } from './install-global-metering.js';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
@@ -8,7 +11,7 @@ import { importBundle } from '@agoric/import-bundle';
 import { makeMeter, makeMeteringTransformer } from '@agoric/transform-metering';
 import re2 from 're2';
 import test from 'ava';
-import { waitUntilQuiescent } from '../../src/waitUntilQuiescent';
+import { waitUntilQuiescent } from '../../src/waitUntilQuiescent.js';
 
 // Run a function under the control of a meter. The function must not have
 // access to the timer queue (setImmediate or setInterval). Returns a Promise

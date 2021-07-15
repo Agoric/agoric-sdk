@@ -3,6 +3,68 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.6...@agoric/access-token@0.4.7) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### [0.4.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.5...@agoric/access-token@0.4.6) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.4...@agoric/access-token@0.4.5) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### [0.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.3...@agoric/access-token@0.4.4) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.2...@agoric/access-token@0.4.3) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.1...@agoric/access-token@0.4.2) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
+### 0.4.1 (2021-06-15)
+
+
+### Features
+
+* new access-token package for encapsulation from swing-store ([aa52d2e](https://github.com/Agoric/agoric-sdk/commit/aa52d2ea54ec679889db9abdb8cdd6639824f50e))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.3.5...@agoric/swing-store-simple@0.3.6) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/swing-store-simple

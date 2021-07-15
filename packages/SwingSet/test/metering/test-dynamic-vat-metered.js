@@ -1,10 +1,13 @@
 /* global require */
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 import '@agoric/install-metering-and-ses';
 import bundleSource from '@agoric/bundle-source';
 import test from 'ava';
-import { provideHostStorage } from '../../src/hostStorage';
-import { buildKernelBundles, buildVatController } from '../../src/index';
-import makeNextLog from '../make-nextlog';
+import { provideHostStorage } from '../../src/hostStorage.js';
+import { buildKernelBundles, buildVatController } from '../../src/index.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -47,15 +50,15 @@ async function runOneTest(t, explosion, managerType) {
     hostStorage,
     kernelBundles,
   });
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
 
   // 'createVat' will import the bundle
-  c.queueToVatExport(
+  c.queueToVatRoot(
     'bootstrap',
-    'o+0',
     'createVat',
     capargs([dynamicVatBundle, { managerType }]),
   );
@@ -70,17 +73,17 @@ async function runOneTest(t, explosion, managerType) {
   const root = kvStore.get(`${vatID}.c.o+0`);
 
   // and grab a kpid that won't be resolved until the vat dies
-  const r = c.queueToVatExport('bootstrap', 'o+0', 'getNever', capargs([]));
+  const r = c.queueToVatRoot('bootstrap', 'getNever', capargs([]));
   await c.run();
   const neverArgs = c.kpResolution(r);
   const neverKPID = neverArgs.slots[0];
 
   // First, send a message to the dynamic vat that runs normally
-  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatRoot('bootstrap', 'run', capargs([]));
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
   t.is(kvStore.get(`${root}.owner`), vatID);
-  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 10);
+  t.true(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length > 0);
   // neverKPID should still be unresolved
   t.is(kvStore.get(`${neverKPID}.state`), 'unresolved');
 
@@ -90,7 +93,7 @@ async function runOneTest(t, explosion, managerType) {
   // message result promise should be rejected, and the control facet should
   // report the vat's demise.  Remnants of the killed vat should be gone
   // from the kernel state store.
-  c.queueToVatExport('bootstrap', 'o+0', 'explode', capargs([explosion]));
+  c.queueToVatRoot('bootstrap', 'explode', capargs([explosion]));
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 0);
   t.is(kvStore.get(`${root}.owner`), undefined);
@@ -125,7 +128,7 @@ async function runOneTest(t, explosion, managerType) {
   );
 
   // the dead vat should stay dead
-  c.queueToVatExport('bootstrap', 'o+0', 'run', capargs([]));
+  c.queueToVatRoot('bootstrap', 'run', capargs([]));
   await c.run();
   t.deepEqual(nextLog(), ['run exploded: Error: vat terminated'], 'stay dead');
 }

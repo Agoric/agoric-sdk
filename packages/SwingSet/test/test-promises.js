@@ -1,5 +1,5 @@
 /* global __dirname */
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
@@ -7,7 +7,8 @@ import {
   buildVatController,
   loadBasedir,
   buildKernelBundles,
-} from '../src/index';
+} from '../src/index.js';
+import { capargs } from './util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -165,4 +166,34 @@ test('circular promise resolution data', async t => {
     },
   ];
   t.deepEqual(c.dump().promises, expectedPromises);
+});
+
+test('refcount while queued', async t => {
+  const config = await loadBasedir(
+    path.resolve(__dirname, 'basedir-promises-3'),
+  );
+  const c = await buildVatController(config, [], t.context.data);
+  c.pinVatRoot('bootstrap');
+
+  // bootstrap() sets up an unresolved promise (p2, the result promise of
+  // right~.one()) with vat-right as the decider, and enqueues a message
+  // (p2~.four(pk)) which contains a second unresolved promise 'pk1'
+  await c.run();
+
+  // then we tell that vat to resolve pk1 to a value (4)
+  c.queueToVatRoot('bootstrap', 'two', capargs([]), 'ignore');
+  await c.run();
+
+  // Now we have a resolved promise 'pk1' whose only reference is the
+  // arguments of a message queued to a promise. We're exercising the promise
+  // retirement reference counting: if it allows the 'pk1' refcount to reach
+  // zero, the promise will be collected, and an error will occur when 'p2'
+  // is resolved.
+
+  // tell vat-right to resolve p2, which should transfer the 'four' message
+  // from the p2 promise queue to the run-queue for vat-right. That message
+  // will be delivered, with a new promise that is promptly resolved to '3'.
+  const kpid4 = c.queueToVatRoot('right', 'three', capargs([]), 'ignore');
+  await c.run();
+  t.deepEqual(c.kpResolution(kpid4), capargs([true, 3]));
 });

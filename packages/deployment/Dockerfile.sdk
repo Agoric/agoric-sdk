@@ -13,14 +13,14 @@ RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
-FROM node:12-buster AS build-js
+FROM node:14.15-buster AS build-js
 ARG MODDABLE_COMMIT_HASH
 ARG MODDABLE_URL
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
 
-RUN yarn install --frozen-lockfile --ignore-scripts
+RUN yarn install --frozen-lockfile --ignore-scripts --network-timeout 100000
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
@@ -35,11 +35,11 @@ RUN MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" MODDABLE_URL="$MODDABLE_URL" ya
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable
 RUN find . -name node_modules -prune -print0 | xargs -0 rm -rf
-RUN yarn install --frozen-lockfile --production
+RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
 ###############################
 # The install container.
-FROM node:12-buster AS install
+FROM node:14.15-buster AS install
 
 # Install some conveniences.
 RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y

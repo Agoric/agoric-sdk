@@ -3,6 +3,75 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.21...@agoric/import-bundle@0.2.22) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.21](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.20...@agoric/import-bundle@0.2.21) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.20](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.19...@agoric/import-bundle@0.2.20) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.18...@agoric/import-bundle@0.2.19) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.17...@agoric/import-bundle@0.2.18) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.16...@agoric/import-bundle@0.2.17) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.15...@agoric/import-bundle@0.2.16) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/import-bundle
+
+
+
+
+
+### [0.2.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.14...@agoric/import-bundle@0.2.15) (2021-06-15)
+
+
+### Bug Fixes
+
+* **import-bundle:** Add missing ses-ava import ([bc89bf9](https://github.com/Agoric/agoric-sdk/commit/bc89bf9479b1a06be0eaeb175b7a2329c2bbe744))
+* ensure replacements of globals can't be bypassed ([3d2a230](https://github.com/Agoric/agoric-sdk/commit/3d2a230822eed17e87a62ebe9df2609d9dcaa372))
+* incorporate changes from review feedback ([dcca675](https://github.com/Agoric/agoric-sdk/commit/dcca6750df50f6db4daff4f794968450a43d1b0e))
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
+
+
+
 ## [0.2.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.13...@agoric/import-bundle@0.2.14) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/import-bundle

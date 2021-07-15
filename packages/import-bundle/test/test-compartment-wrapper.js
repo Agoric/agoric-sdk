@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { wrapInescapableCompartment } from '../src/compartment-wrapper.js';
@@ -118,7 +118,12 @@ function check(t, c, odometer, n) {
   const Con = Object.getPrototypeOf(c.globalThis.Compartment).constructor;
   t.throws(
     () => new Con(),
-    { message: /Not available/ },
+    {
+      // Temporarily tolerate Endo behavior before and after
+      // https://github.com/endojs/endo/pull/822
+      // TODO Simplify once depending on SES post #822
+      message: /Not available|Function\.prototype\.constructor is not a valid constructor\./,
+    },
     `${n} .constructor is tamed`,
   );
 

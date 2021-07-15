@@ -1,14 +1,16 @@
 // @ts-check
 
-// import '@agoric/marshal/src/types';
+// import '@agoric/marshal/src/types.js';
 
 /**
  * @typedef {CapData<string>} SwingSetCapData
  */
 
 /**
+ * @typedef {{ moduleFormat: unknown }} Bundle
+ *
  * @typedef {{
- *   bundle: unknown,
+ *   bundle: Bundle,
  *   enableSetup: false,
  * }} HasBundle
  * @typedef {{
@@ -16,18 +18,25 @@
  *   enableSetup: true,
  * }} HasSetup
  *
- * TODO: metered...
- *
+ * TODO: liveSlotsConsole...
  * See validateManagerOptions() in factory.js
- * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
+ *
+ * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
  * @typedef {{
+ *   consensusMode: boolean,
+ *   enablePipelining?: boolean,
  *   managerType: ManagerType,
+ *   gcEveryCrank?: boolean,
  *   metered?: boolean,
  *   enableDisavow?: boolean,
+ *   useTranscript?: boolean,
+ *   enableVatstore?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
+ *   vatConsole: Console,
+ *   liveSlotsConsole?: Console,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
@@ -68,6 +77,8 @@
  * result?: string,
  * }} Message
  *
+ * @typedef { 'sendOnly' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
+ *
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
  * @typedef { [tag: 'notify', resolutions: string[] ]} VatDeliveryNotify
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
@@ -103,34 +114,35 @@
  *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { { getTranscript: (startPos?: Object) => TranscriptEntry[],
- *              vatStats: () => VatStats,
- *             } } VatKeeper
- * @typedef { { getVatKeeper: (vatID: string) => VatKeeper } } KernelKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
+ * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
  * @typedef { { write: ({}) => void,
  *             } } KernelSlog
  *
  * @typedef { { createFromBundle: (vatID: string,
- *                                 bundle: unknown,
- *                                 managerOptions: unknown,
+ *                                 bundle: Bundle,
+ *                                 managerOptions: ManagerOptions,
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: () => void,
+ *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
+ *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
+ * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
 /**
  * @typedef {{
- *   sourceSpec: string // path to the source code
+ *   sourceSpec: string // path to pre-bundled root
  * }} SourceSpec
  * @typedef {{
- *   bundleSpec: string
+ *   bundleSpec: string // path to bundled code
  * }} BundleSpec
  * @typedef {{
- *   bundle: unknown
+ *   bundle: Bundle
  * }} BundleRef
  * @typedef {(SourceSpec | BundleSpec | BundleRef ) & {
  *   creationOptions?: Record<string, any>,
@@ -158,12 +170,19 @@
  */
 
 /**
+ * @typedef {{ bundleName: string} | { bundle: Bundle }} SourceOfBundle
+ */
+/**
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
+ * @typedef { import('@agoric/swing-store-simple').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
  *
  * @typedef {{
  *   kvStore: KVStore,
  *   streamStore: StreamStore,
+ *   snapStore?: SnapStore,
  * }} HostStore
+ *
+ * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus
  */

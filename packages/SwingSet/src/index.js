@@ -1,14 +1,14 @@
-export { buildVatController, makeSwingsetController } from './controller';
+export { buildVatController, makeSwingsetController } from './controller.js';
 export {
   swingsetIsInitialized,
   initializeSwingset,
   buildKernelBundles,
   loadBasedir,
   loadSwingsetConfigFile,
-} from './initializeSwingset';
+} from './initializeSwingset.js';
 
-export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
-export { buildTimer } from './devices/timer';
-export { buildBridge } from './devices/bridge';
-export { default as buildCommand } from './devices/command';
-export { buildPlugin } from './devices/plugin';
+export { buildMailboxStateMap, buildMailbox } from './devices/mailbox.js';
+export { buildTimer } from './devices/timer.js';
+export { buildBridge } from './devices/bridge.js';
+export { default as buildCommand } from './devices/command.js';
+export { buildPlugin } from './devices/plugin.js';

@@ -11,7 +11,6 @@ import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   depositToSeat,
-  trade,
   assertNatAssetKind,
   makeRatio,
   multiplyBy,
@@ -138,15 +137,12 @@ const start = zcf => {
         X`wanted option not a match`,
       );
 
-      trade(
-        zcf,
-        { seat: depositSeat, gains: spreadAmount },
-        {
-          seat: collateralSeat,
-          gains: { Collateral: newCollateral },
-          losses: spreadAmount,
-        },
+      depositSeat.incrementBy(collateralSeat.decrementBy(spreadAmount));
+      collateralSeat.incrementBy(
+        depositSeat.decrementBy({ Collateral: newCollateral }),
       );
+
+      zcf.reallocate(collateralSeat, depositSeat);
       depositSeat.exit();
     };
 

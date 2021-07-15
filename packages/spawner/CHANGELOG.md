@@ -3,6 +3,72 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.21...@agoric/spawner@0.4.22) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.21](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.20...@agoric/spawner@0.4.21) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.20](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.19...@agoric/spawner@0.4.20) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.18...@agoric/spawner@0.4.19) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.17...@agoric/spawner@0.4.18) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.16...@agoric/spawner@0.4.17) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.15...@agoric/spawner@0.4.16) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
+### [0.4.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.14...@agoric/spawner@0.4.15) (2021-06-15)
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+* Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
+
+
+
 ## [0.4.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.13...@agoric/spawner@0.4.14) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/spawner

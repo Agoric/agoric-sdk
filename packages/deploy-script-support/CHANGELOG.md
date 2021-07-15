@@ -3,6 +3,80 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.17...@agoric/deploy-script-support@0.2.18) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.16...@agoric/deploy-script-support@0.2.17) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.15...@agoric/deploy-script-support@0.2.16) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.14...@agoric/deploy-script-support@0.2.15) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.13...@agoric/deploy-script-support@0.2.14) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.12...@agoric/deploy-script-support@0.2.13) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.11...@agoric/deploy-script-support@0.2.12) (2021-06-23)
+
+
+### Bug Fixes
+
+* **deploy-script-support:** Relax constraint on repository clone path ([6ec7a4d](https://github.com/Agoric/agoric-sdk/commit/6ec7a4d440cb60a54dbcd86c5e359bac1689e672))
+
+
+
+### [0.2.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.10...@agoric/deploy-script-support@0.2.11) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
+### [0.2.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.9...@agoric/deploy-script-support@0.2.10) (2021-06-15)
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.2.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.8...@agoric/deploy-script-support@0.2.9) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

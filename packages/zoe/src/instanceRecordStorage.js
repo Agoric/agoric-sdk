@@ -109,6 +109,7 @@ export const makeInstanceRecordStorage = () => {
  * Put together the instance record
  *
  * @param {Installation} installation
+ * @param {Instance} instance
  * @param {Object} customTerms
  * @param {IssuerKeywordRecord} issuers
  * @param {BrandKeywordRecord} brands
@@ -116,12 +117,14 @@ export const makeInstanceRecordStorage = () => {
  */
 export const makeAndStoreInstanceRecord = (
   installation,
+  instance,
   customTerms,
   issuers,
   brands,
 ) => {
   const instanceRecord = harden({
     installation,
+    instance,
     terms: {
       ...customTerms,
       issuers,

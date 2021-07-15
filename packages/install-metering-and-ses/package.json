@@ -1,6 +1,6 @@
 {
   "name": "@agoric/install-metering-and-ses",
-  "version": "0.2.13",
+  "version": "0.2.20",
   "description": "tame metering and install SES at import time",
   "parsers": {
     "js": "mjs"
@@ -10,18 +10,19 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/transform-metering": "^1.4.12",
+    "@agoric/transform-metering": "^1.4.19",
     "ava": "^3.12.1",
-    "esm": "^3.2.5"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.13.14",
-    "@agoric/install-ses": "^0.5.13",
-    "@agoric/tame-metering": "^1.3.9"
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/tame-metering": "^2.0.6"
   },
   "files": [
     "*.js"
@@ -38,7 +39,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "eslintIgnore": [

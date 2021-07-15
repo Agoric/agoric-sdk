@@ -4,9 +4,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
-import { makeStore, makeWeakStore } from '../src/index';
-import { isEmptyNonRemotableObject } from '../src/helpers';
-import '../src/types';
+import { makeStore, makeWeakStore } from '../src/index.js';
+import { isEmptyNonRemotableObject } from '../src/helpers.js';
+import '../src/types.js';
 
 test('empty object check', t => {
   const f = isEmptyNonRemotableObject;

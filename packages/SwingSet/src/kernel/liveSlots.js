@@ -3,10 +3,10 @@
 import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
-import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots';
-import { insistCapData } from '../capdata';
-import { insistMessage } from '../message';
-import { makeVirtualObjectManager } from './virtualObjectManager';
+import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
+import { insistCapData } from '../capdata.js';
+import { insistMessage } from '../message.js';
+import { makeVirtualObjectManager } from './virtualObjectManager.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -23,6 +23,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {boolean} enableDisavow
+ * @param {boolean} enableVatstore
  * @param {*} vatPowers
  * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
@@ -40,6 +41,7 @@ function build(
   forVatID,
   cacheSize,
   enableDisavow,
+  enableVatstore,
   vatPowers,
   vatParameters,
   gcTools,
@@ -200,11 +202,10 @@ function build(
         // eslint-disable-next-line no-lonely-if, no-use-before-define
         if (!isVrefReachable(vref)) {
           importsToDrop.push(vref);
-          // and retireExport if unrecognizable (TODO: needs
-          // VOM.vrefIsRecognizable)
-          // if (!vrefIsRecognizable(vref)) {
-          //   importsToRetire.push(vref);
-          // }
+          // eslint-disable-next-line no-use-before-define
+          if (!isVrefRecognizable(vref)) {
+            importsToRetire.push(vref);
+          }
         }
       }
     }
@@ -419,6 +420,7 @@ function build(
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,
+    isVrefRecognizable,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -463,7 +465,7 @@ function build(
       slotToVal.set(slot, new WeakRef(val));
       if (type === 'object') {
         deadSet.delete(slot);
-        droppedRegistry.register(val, slot);
+        droppedRegistry.register(val, slot, val);
       }
     }
     return valToSlot.get(val);
@@ -486,7 +488,7 @@ function build(
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
       deadSet.delete(slot); // might have been FINALIZED before, no longer
-      droppedRegistry.register(val, slot);
+      droppedRegistry.register(val, slot, val);
     }
   }
 
@@ -837,7 +839,7 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots acting upon dropExports`);
+    // console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
     for (const vref of vrefs) {
       const wr = slotToVal.get(vref);
       const o = wr && wr.deref();
@@ -847,18 +849,57 @@ function build(
     }
   }
 
+  function retireOneExport(vref) {
+    insistVatType('object', vref);
+    const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+    assert(allocatedByVat);
+    assert.equal(type, 'object');
+    if (virtual) {
+      // virtual object: ignore for now, but TODO we must still not make
+      // syscall.retireExport for vrefs that were already retired by the
+      // kernel
+      // console.log(`-- liveslots ignoring retireExports ${vref}`);
+    } else {
+      // Remotable
+      // console.log(`-- liveslots acting on retireExports ${vref}`);
+      const wr = slotToVal.get(vref);
+      if (wr) {
+        const val = wr.deref();
+        if (val) {
+          // it's fine to still have a value, that just means the kernel
+          // (and other vats) have completely forgotten about this, but we
+          // still know about it
+
+          if (exportedRemotables.has(val)) {
+            // however this is weird: we still think the Remotable is
+            // reachable, otherwise we would have removed it from
+            // exportedRemotables. The kernel was supposed to send
+            // dispatch.dropExports first.
+            console.log(`err: kernel retired undropped ${vref}`);
+            // TODO: find a way to make this more severe, it's cause for
+            // panicing the kernel, except that vats don't have that
+            // authority. It's *not* cause for terminating the vat, since
+            // it wasn't necessarily our fault.
+            return;
+          }
+          valToSlot.delete(val);
+          droppedRegistry.unregister(val);
+        }
+        slotToVal.delete(vref);
+      }
+    }
+  }
+
   function retireExports(vrefs) {
     assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireExports`);
+    vrefs.forEach(retireOneExport);
   }
 
   function retireImports(vrefs) {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    console.log(`-- liveslots ignoring retireImports`);
+    // console.log(`-- liveslots ignoring retireImports ${vrefs.join(',')}`);
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -916,10 +957,31 @@ function build(
     if (enableDisavow) {
       vpow.disavow = disavow;
     }
+    if (enableVatstore) {
+      vpow.vatstore = harden({
+        get: key => {
+          assert.typeof(key, 'string');
+          return syscall.vatstoreGet(`vvs.${key}`);
+        },
+        set: (key, value) => {
+          assert.typeof(key, 'string');
+          assert.typeof(value, 'string');
+          syscall.vatstoreSet(`vvs.${key}`, value);
+        },
+        delete: key => {
+          assert.typeof(key, 'string');
+          syscall.vatstoreDelete(`vvs.${key}`);
+        },
+      });
+    }
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
-    assert.equal(passStyleOf(rootObject), 'remotable');
+    assert.equal(
+      passStyleOf(rootObject),
+      'remotable',
+      `buildRootObject() (${buildRootObject}) returned ${rootObject}, which is not Far`,
+    );
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
@@ -1029,6 +1091,7 @@ function build(
  * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
+ * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Console} [liveSlotsConsole]
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
@@ -1062,6 +1125,7 @@ export function makeLiveSlots(
   vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
+  enableVatstore = false,
   gcTools,
   liveSlotsConsole = console,
 ) {
@@ -1074,6 +1138,7 @@ export function makeLiveSlots(
     forVatID,
     cacheSize,
     enableDisavow,
+    enableVatstore,
     allVatPowers,
     vatParameters,
     gcTools,
@@ -1101,6 +1166,7 @@ export function makeMarshaller(syscall, gcTools) {
     syscall,
     'forVatID',
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+    false,
     false,
     {},
     {},

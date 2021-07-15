@@ -1,3 +1,3 @@
-import { buildCommsDispatch } from './dispatch';
+import { buildCommsDispatch } from './dispatch.js';
 
 export default buildCommsDispatch;

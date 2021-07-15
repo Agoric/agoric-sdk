@@ -6,7 +6,11 @@
  * for virtual objects: makeKind, makeWeakStore
  */
 
-import './install-ses-debug';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
+
+import './install-ses-debug.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager';
 
 const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager({

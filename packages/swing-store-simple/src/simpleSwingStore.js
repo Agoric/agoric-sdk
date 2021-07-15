@@ -12,7 +12,7 @@ import { assert, details as X, q } from '@agoric/assert';
  *
  * @typedef {{
  *   offset?: number,
- *   itemCount?: number,
+ *   itemCount: number,
  * }} StreamPosition
  *
  * @typedef {{
@@ -34,11 +34,11 @@ import { assert, details as X, q } from '@agoric/assert';
 const streamPeek = new WeakMap(); // for tests to get raw access to the streams
 
 /**
- * Do the work of `initSwingStore` and `openSwingStore`.
+ * Create a swingset store that based on an in-memory map.
  *
  * @returns {SwingStore}
  */
-function makeSwingStore() {
+export function initSimpleSwingStore() {
   const state = new Map();
 
   /**
@@ -228,18 +228,12 @@ function makeSwingStore() {
     let stream = streams.get(streamName);
     if (!stream) {
       stream = [];
-      streamStatus.set(streamName, 'write');
       streams.set(streamName, stream);
     } else {
-      const status = streamStatus.get(streamName);
-      if (!status) {
-        streamStatus.set(streamName, 'write');
-      } else {
-        assert(
-          status === 'write',
-          X`can't write stream ${q(streamName)} because it's already in use`,
-        );
-      }
+      assert(
+        !streamStatus.get(streamName),
+        X`can't write stream ${q(streamName)} because it's already in use`,
+      );
     }
     stream[position.itemCount] = item;
     return harden({ itemCount: position.itemCount + 1 });
@@ -270,50 +264,6 @@ function makeSwingStore() {
   streamPeek.set(streamStore, streams);
 
   return harden({ kvStore, streamStore, commit, close });
-}
-
-/**
- * Create a swingset store that is an in-memory map.
- *
- * @param {string=} dirPath  Optional path to a directory in which database files
- *   might be kept, if this were a persistent form of swingset store.  If a path
- *   is provided, a warning will be output to the console.  This parameter is
- *   provided so that the in-memory store may be substituted for a persistent
- *   store for testing or debugging purposes without needing to change the
- *   client.
- *
- * @returns {SwingStore}
- */
-export function initSwingStore(dirPath) {
-  if (dirPath) {
-    console.log(
-      `Warning: initSwingStore ignoring dirPath, simpleStore is memory only`,
-    );
-  }
-  return makeSwingStore();
-}
-
-/**
- * Open a swingset store that is an in-memory map.  Note that "open" is a
- * misnomer here, because you will always get a fresh, empty store.  This entry
- * point is provided for testing purposes only.
- *
- * @param {string=} dirPath  Optional path to a directory in which database files
- *   might be kept, if this were a persistent form of swingset store.  If a path
- *   is provided, a warning will be output to the console.  This parameter is
- *   provided so that the in-memory store may be substituted for a persistent
- *   store for testing or debugging purposes without needing to change the
- *   client.
- *
- * @returns {SwingStore}
- */
-export function openSwingStore(dirPath) {
-  if (dirPath) {
-    console.log(
-      `Warning: openSwingStore ignoring dirPath, simpleStore is memory only`,
-    );
-  }
-  return makeSwingStore();
 }
 
 /**

@@ -14,6 +14,9 @@ export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 // 5 seconds is about as fast as we can go without penalising validators.
 export const BLOCK_CADENCE_S = 5;
 
+export const EPOCH_DURATION_S = 60 * 60; // 1 hour
+export const BLOCKS_PER_EPOCH = Math.floor(EPOCH_DURATION_S / BLOCK_CADENCE_S);
+
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 
@@ -25,11 +28,16 @@ export const DEFAULT_API_PORT = 1317;
 // Rewrite the app.toml.
 export function finishCosmosApp({
   appToml,
+  enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
 }) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
+
+  if (enableCors) {
+    app.api['enabled-unsafe-cors'] = true;
+  }
 
   // Offset the GRPC listener from our rpc port.
   app.grpc.address = `0.0.0.0:${rpcPort +
@@ -56,6 +64,7 @@ export function finishCosmosApp({
 // Rewrite the config.toml.
 export function finishTendermintConfig({
   configToml,
+  enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
   persistentPeers = '',
@@ -79,6 +88,14 @@ export function finishTendermintConfig({
   config.p2p.seeds = seeds;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
   config.rpc.max_body_bytes = 15 * 10 ** 6;
+
+  if (
+    enableCors &&
+    (!config.rpc.cors_allowed_origins ||
+      config.rpc.cors_allowed_origins.length === 0)
+  ) {
+    config.rpc.cors_allowed_origins = ['*'];
+  }
 
   if (exportMetrics) {
     const promPort = rpcPort - DEFAULT_RPC_PORT + DEFAULT_PROM_PORT;
@@ -132,6 +149,14 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
+
+  // Until we have epoched distribution, we manually set the fee disbursement.
+  if (
+    genesis.app_state.vbank.params &&
+    genesis.app_state.vbank.params.feeEpochDurationBlocks
+  ) {
+    genesis.app_state.vbank.params.feeEpochDurationBlocks = BLOCKS_PER_EPOCH;
+  }
 
   // Use the same consensus_params.
   if ('consensus_params' in exported) {

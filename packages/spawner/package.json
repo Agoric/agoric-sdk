@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.4.14",
+  "version": "0.4.22",
   "description": "Wrapper for JavaScript map",
   "parsers": {
     "js": "mjs"
@@ -14,8 +14,9 @@
     "build-bundle-spawn": "node -r esm scripts/build-bundle-spawn.js",
     "test": "ava",
     "test:xs": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "repository": {
     "type": "git",
@@ -31,18 +32,18 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.12",
-    "@agoric/eventual-send": "^0.13.14",
-    "@agoric/import-bundle": "^0.2.14",
-    "@agoric/marshal": "^0.4.11"
+    "@agoric/assert": "^0.3.6",
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/import-bundle": "^0.2.22",
+    "@agoric/marshal": "^0.4.19"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.3.7",
-    "@agoric/install-metering-and-ses": "^0.2.13",
-    "@agoric/install-ses": "^0.5.13",
-    "@agoric/swingset-vat": "^0.17.2",
+    "@agoric/babel-standalone": "^7.14.3",
+    "@agoric/bundle-source": "^1.4.4",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src/",
@@ -50,7 +51,7 @@
   ],
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "eslintIgnore": [

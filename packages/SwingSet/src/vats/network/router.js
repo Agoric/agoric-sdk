@@ -4,11 +4,11 @@ import { E as defaultE } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network';
+import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
-import '@agoric/store/exported';
-import './types';
-import './internal-types';
+import '@agoric/store/exported.js';
+import './types.js';
+import './internal-types.js';
 
 /**
  * @typedef {Object} Router A delimited string router implementation

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
-import { openSwingStore } from '@agoric/swing-store-lmdb';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
 import { auditRefCounts } from './auditstore';
@@ -17,6 +17,7 @@ FLAGS may be:
   --raw       - dump the kernel state database as key/value pairs,
                 alphabetically without annotation
   --refcounts - audit kernel promise reference counts
+  --refdump   - dump reference count analysis
   --auditonly - only audit, don't dump
   --help      - print this helpful usage information
   --out PATH  - output dump to PATH ("-" indicates stdout, the default)
@@ -56,6 +57,7 @@ export function main() {
   let refCounts = false;
   let justStats = false;
   let doDump = true;
+  let refDump = false;
   let outfile;
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -68,7 +70,13 @@ export function main() {
         refCounts = true;
         break;
       case '--auditonly':
+        refCounts = true;
         doDump = false;
+        break;
+      case '--refdump':
+        refCounts = true;
+        doDump = false;
+        refDump = true;
         break;
       case '--stats':
         justStats = true;
@@ -106,7 +114,7 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  const swingStore = openSwingStore(kernelStateDBDir);
+  const swingStore = openLMDBSwingStore(kernelStateDBDir);
   if (justStats) {
     const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
     const cranks = Number(swingStore.kvStore.get('crankNumber'));
@@ -116,7 +124,7 @@ export function main() {
       dumpStore(swingStore, outfile, rawMode);
     }
     if (refCounts) {
-      auditRefCounts(swingStore.kvStore);
+      auditRefCounts(swingStore.kvStore, refDump, doDump);
     }
   }
 }

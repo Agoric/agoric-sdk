@@ -1,13 +1,14 @@
 import { assert, details as X } from '@agoric/assert';
-import { makeVatSlot, insistVatType, parseVatSlot } from '../../parseVatSlots';
-import { insistMessage } from '../../message';
-import { makeState } from './state';
-import { deliverToController } from './controller';
-import { insistCapData } from '../../capdata';
+import { makeVatSlot } from '../../parseVatSlots.js';
+import { insistMessage } from '../../message.js';
+import { makeState } from './state.js';
+import { deliverToController } from './controller.js';
+import { insistCapData } from '../../capdata.js';
 
-import { makeCListKit } from './clist';
-import { makeDeliveryKit } from './delivery';
-import { cdebug } from './cdebug';
+import { makeCListKit } from './clist.js';
+import { makeDeliveryKit } from './delivery.js';
+import { makeGCKit } from './gc-comms.js';
+import { cdebug } from './cdebug.js';
 
 export const debugState = new WeakMap();
 
@@ -36,8 +37,16 @@ export function buildCommsDispatch(
     syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
   }
 
-  const deliveryKit = makeDeliveryKit(state, syscall, transmit, clistKit);
+  const gcKit = makeGCKit(state, syscall, transmit);
+  const { gcFromRemote, gcFromKernel, processGC } = gcKit;
 
+  const deliveryKit = makeDeliveryKit(
+    state,
+    syscall,
+    transmit,
+    clistKit,
+    gcFromRemote,
+  );
   const { sendFromKernel, resolveFromKernel, messageFromRemote } = deliveryKit;
 
   // our root object (o+0) is the Comms Controller
@@ -128,7 +137,7 @@ export function buildCommsDispatch(
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    args.slots.map(s =>
+    args.slots.forEach(s =>
       assert(
         !state.hasMetaObject(s),
         X`comms meta-object ${s} not allowed in message args`,
@@ -137,69 +146,66 @@ export function buildCommsDispatch(
     return sendFromKernel(target, method, args, result);
   }
 
-  function deliver(target, method, args, resultP) {
-    const result = doDeliver(target, method, args, resultP);
-    state.purgeDeadLocalPromises();
-    return result;
+  function filterMetaObjects(vrefs) {
+    // Sometimes the bootstrap vat doesn't care very much about comms and
+    // allows the root object (the "controller") to be dropped, or one of the
+    // receiver objects we create during addRemote(). gc-comms.js doesn't
+    // know about these meta objects, so filter them out. Also, always filter
+    // out the controller (o+0) even if it isn't in the meta table, because
+    // some unit tests (test-demos-comms.js) create a comms vat but never
+    // talk to it, which means we never get a delivery, so initializeState()
+    // is never called, so o+0 is never added to the meta table.
+    return vrefs.filter(
+      vref => !(vref === controller || state.hasMetaObject(vref)),
+    );
   }
 
-  function notify(resolutions) {
-    resolveFromKernel(resolutions);
-    state.purgeDeadLocalPromises();
-  }
-
-  function dropExports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring dropExports`);
-  }
-
-  function retireExports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring retireExports`);
-  }
-
-  function retireImports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    console.log(`-- comms ignoring retireImports`);
-  }
-
-  function dispatch(vatDeliveryObject) {
+  function doDispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'message': {
         const [targetSlot, msg] = args;
         insistMessage(msg);
-        deliver(targetSlot, msg.method, msg.args, msg.result);
-        return;
+        doDeliver(targetSlot, msg.method, msg.args, msg.result);
+        break;
       }
       case 'notify': {
         const [resolutions] = args;
-        notify(resolutions);
-        return;
+        resolveFromKernel(resolutions);
+        break;
       }
       case 'dropExports': {
         const [vrefs] = args;
-        dropExports(vrefs);
-        return;
+        assert(Array.isArray(vrefs));
+        gcFromKernel({ dropExports: filterMetaObjects(vrefs) });
+        break;
       }
       case 'retireExports': {
         const [vrefs] = args;
-        retireExports(vrefs);
+        assert(Array.isArray(vrefs));
+        gcFromKernel({ retireExports: filterMetaObjects(vrefs) });
         break;
       }
       case 'retireImports': {
         const [vrefs] = args;
-        retireImports(vrefs);
+        assert(Array.isArray(vrefs));
+        gcFromKernel({ retireImports: filterMetaObjects(vrefs) });
         break;
       }
       default:
         assert.fail(X`unknown delivery type ${type}`);
+    }
+    processGC();
+  }
+
+  function dispatch(vatDeliveryObject) {
+    try {
+      doDispatch(vatDeliveryObject);
+    } catch (e) {
+      console.log(`error during comms.dispatch`);
+      console.log(vatDeliveryObject);
+      console.log(e);
+      throw e;
     }
   }
   harden(dispatch);

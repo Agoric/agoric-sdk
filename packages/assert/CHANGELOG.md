@@ -3,6 +3,72 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.5...@agoric/assert@0.3.6) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+### [0.3.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.4...@agoric/assert@0.3.5) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+### [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.3...@agoric/assert@0.3.4) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+### [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.2...@agoric/assert@0.3.3) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.1...@agoric/assert@0.3.2) (2021-06-23)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.0...@agoric/assert@0.3.1) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.2.12...@agoric/assert@0.3.0) (2021-06-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **assert:** Converts `@agoric/assert` from emulated ESM with `node -r esm` to Node.js ESM proper.
+
+### Features
+
+* **assert:** RESM to NESM ([d991df7](https://github.com/Agoric/agoric-sdk/commit/d991df7c0b56bd8c7eb0995bddfbd473010a7726))
+
+
+### Bug Fixes
+
+* Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
+
+
+
 ## [0.2.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.2.11...@agoric/assert@0.2.12) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/assert

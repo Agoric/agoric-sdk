@@ -89,18 +89,22 @@ proto-lint: proto-tools
 proto-check-breaking: proto-tools
 	buf check breaking --against-input '.git#branch=master'
 
-TMVER = v0.34.3
-COSMOSVER = v0.42.4
+TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
+COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
+IBCVER = 832044782f10
+t:
+	echo "X$(COSMOSVER)X"
 
-TM_URL           = https://raw.githubusercontent.com/tendermint/tendermint/$(TMVER)/proto/tendermint
-GOGO_PROTO_URL   = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-IBC_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/$(COSMOSVER)/proto/ibc/core
-COSMOS_SDK_PROTO_URL = https://raw.githubusercontent.com/cosmos/cosmos-sdk/$(COSMOSVER)/proto/cosmos/base
+TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
+GOGO_PROTO_URL   := https://raw.githubusercontent.com/regen-network/protobuf/cosmos
+IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go)/proto/ibc/core
+COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
 IBC_CHANNEL_TYPES = third_party/proto/ibc/core/channel/v1
 IBC_CLIENT_TYPES = third_party/proto/ibc/core/client/v1
 SDK_QUERY_TYPES  	= third_party/proto/cosmos/base/query/v1beta1
+SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
 
 proto-update-deps:
 	mkdir -p $(GOGO_PROTO_TYPES)
@@ -113,7 +117,10 @@ proto-update-deps:
 	curl -sSL $(IBC_PROTO_URL)/client/v1/client.proto > $(IBC_CLIENT_TYPES)/client.proto
 
 	mkdir -p $(SDK_QUERY_TYPES)
-	curl -sSL $(COSMOS_SDK_PROTO_URL)/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto
+	curl -sSL $(COSMOS_SDK_PROTO_URL)/base/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto
+
+	mkdir -p $(SDK_UPGRADE_TYPES)
+	curl -sSL $(COSMOS_SDK_PROTO_URL)/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto
 
 
 UNAME_S ?= $(shell uname -s)

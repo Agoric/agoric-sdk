@@ -14,8 +14,6 @@ import {
   checkPayouts,
 } from './helpers';
 
-import { trade } from '../../../../src/contractSupport';
-
 test('test doLiquidation with mocked autoswap', async t => {
   const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();
   // Set up the lender seat. At this point the lender has nothing.
@@ -49,23 +47,13 @@ test('test doLiquidation with mocked autoswap', async t => {
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
 
-    trade(
-      zcf,
-      {
-        seat: fakePoolSeat,
-        gains: {
-          Secondary: collateral,
-        },
-        losses: {
-          Central: price,
-        },
-      },
-      {
-        seat: swapSeat,
-        gains: { Out: price },
-        losses: { In: collateral },
-      },
-    );
+    swapSeat.decrementBy({ In: collateral });
+    fakePoolSeat.incrementBy({ Secondary: collateral });
+
+    fakePoolSeat.decrementBy({ Central: price });
+    swapSeat.incrementBy({ Out: price });
+
+    zcf.reallocate(swapSeat, fakePoolSeat);
 
     swapSeat.exit();
     return `Swap successfully completed.`;

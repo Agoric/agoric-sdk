@@ -8,7 +8,10 @@
 // for more explanation of these lockdown options.
 
 import 'ses';
-import '@agoric/eventual-send/shim';
+import '@agoric/eventual-send/shim.js';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 
 lockdown({
   // The default `{errorTaming: 'safe'}` setting, if possible, redacts the

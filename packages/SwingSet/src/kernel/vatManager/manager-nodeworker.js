@@ -2,7 +2,7 @@
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeManagerKit } from './manager-helper';
+import { makeManagerKit } from './manager-helper.js';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
@@ -37,10 +37,13 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
   function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
+      consensusMode,
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
       compareSyscalls,
+      useTranscript,
     } = managerOptions;
     assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
@@ -55,6 +58,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       vatSyscallHandler,
       false,
       compareSyscalls,
+      useTranscript,
     );
 
     // start the worker and establish a connection
@@ -112,6 +116,8 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
+      enableVatstore,
+      consensusMode,
     ]);
 
     function deliverToWorker(delivery) {

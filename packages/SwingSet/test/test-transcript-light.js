@@ -1,11 +1,11 @@
 /* global __dirname */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
-import { provideHostStorage } from '../src/hostStorage';
-import { buildVatController, loadBasedir } from '../src/index';
+import { provideHostStorage } from '../src/hostStorage.js';
+import { buildVatController, loadBasedir } from '../src/index.js';
 
 test('transcript-light load', async t => {
   const config = await loadBasedir(

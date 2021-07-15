@@ -149,8 +149,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   );
 
   const simulateBlock = () =>
-    unhandledSimulateBlock().catch(e => {
-      console.error(e);
+    unhandledSimulateBlock().catch(_ => {
       process.exit(1);
     });
 
@@ -183,8 +182,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   // Start the first pretend block.
   nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
-  // Only use 100ms batches for no specified inter-block delay.
-  // This makes for more deliveries but less overall waiting time.
-  const batchDelayMs = delay ? delay * 1000 : 100;
+  const batchDelayMs = delay ? delay * 1000 : undefined;
   return makeBatchedDeliver(deliver, batchDelayMs);
 }

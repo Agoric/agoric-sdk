@@ -5,7 +5,7 @@ thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
-DELEGATE_COINS=62000000ubld,93000000urun
+DELEGATE_COINS=62000000ubld,9300000urun
 SOLO_COINS=5000000urun
 
 OP=$1
@@ -93,6 +93,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         echo "$ADDR:$DELEGATE_COINS:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0
       fi
+      exit $?
       ;;
     *)
       echo 1>&2 "Unknown operation $OP"

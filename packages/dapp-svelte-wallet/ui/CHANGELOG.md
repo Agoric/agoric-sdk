@@ -3,6 +3,63 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.7.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.13...@agoric/dapp-svelte-wallet-ui@1.7.14) (2021-07-01)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+### [1.7.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.12...@agoric/dapp-svelte-wallet-ui@1.7.13) (2021-06-28)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+### [1.7.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.11...@agoric/dapp-svelte-wallet-ui@1.7.12) (2021-06-25)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+### [1.7.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.10...@agoric/dapp-svelte-wallet-ui@1.7.11) (2021-06-24)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+### [1.7.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.9...@agoric/dapp-svelte-wallet-ui@1.7.10) (2021-06-23)
+
+
+### Bug Fixes
+
+* **wallet:** Nat values are now BigInts, so fix the parse output ([1ff1244](https://github.com/Agoric/agoric-sdk/commit/1ff1244f74e0e438333047d1d63efb6f60c9a1b0))
+
+
+
+### [1.7.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.8...@agoric/dapp-svelte-wallet-ui@1.7.9) (2021-06-16)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
+### [1.7.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.7...@agoric/dapp-svelte-wallet-ui@1.7.8) (2021-06-15)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
+
+
+
+
+
 ## [1.7.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.6...@agoric/dapp-svelte-wallet-ui@1.7.7) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui

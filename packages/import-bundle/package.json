@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-bundle",
-  "version": "0.2.14",
+  "version": "0.2.22",
   "description": "load modules created by @agoric/bundle-source",
   "parsers": {
     "js": "mjs"
@@ -14,20 +14,23 @@
     "test": "ava",
     "test:xs": "exit 0",
     "build": "exit 0",
+    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "eslint '**/*.js'"
+    "lint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.2.12",
-    "@agoric/compartment-mapper": "^0.2.3",
-    "@endo/base64": "^0.1.0"
+    "@agoric/assert": "^0.3.6",
+    "@endo/base64": "^0.2.4",
+    "@endo/compartment-mapper": "^0.4.1"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^1.3.7",
-    "@agoric/install-ses": "^0.5.13",
-    "@agoric/swingset-vat": "^0.17.2",
+    "@agoric/babel-standalone": "^7.14.3",
+    "@agoric/bundle-source": "^1.4.4",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
+    "@endo/ses-ava": "^0.2.4",
     "ava": "^3.12.1",
-    "esm": "^3.2.5"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "README.md",
@@ -43,7 +46,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk/packages/import-bundle",
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

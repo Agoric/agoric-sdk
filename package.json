@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sdk",
-  "version": "2.19.0",
+  "version": "5.4.1",
   "private": true,
   "useWorkspaces": true,
   "workspaces": [
@@ -15,6 +15,7 @@
     "packages/bundle-source",
     "packages/import-bundle",
     "packages/eventual-send",
+    "packages/governance",
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
@@ -51,6 +52,7 @@
     "@typescript-eslint/parser": "^4.18.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
+    "conventional-changelog-conventionalcommits": "^4.6.0",
     "eslint": "^7.23.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-jessie": "^0.0.4",
@@ -76,7 +78,7 @@
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
-    "test": "ava",
+    "test": "yarn workspaces run test",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build",
@@ -88,15 +90,13 @@
     "files": [
       "packages/*/test/**/test-*.js"
     ],
-    "nodeArguments": [
-      "--expose-gc"
-    ],
     "require": [
       "esm"
     ],
     "timeout": "30m"
   },
   "dependencies": {
+    "@endo/eslint-config": "^0.3.9",
     "patch-package": "^6.2.2"
   }
 }

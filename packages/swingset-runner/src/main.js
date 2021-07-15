@@ -1,4 +1,4 @@
-/* global globalThis __dirname */
+/* global __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';
@@ -13,11 +13,12 @@ import {
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
+import engineGC from '@agoric/swingset-vat/src/engine-gc';
 
-import { initSwingStore as initSimpleSwingStore } from '@agoric/swing-store-simple';
+import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
-  initSwingStore as initLMDBSwingStore,
-  openSwingStore as openLMDBSwingStore,
+  initLMDBSwingStore,
+  openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
 import { dumpStore } from './dumpstore';
@@ -51,6 +52,7 @@ FLAGS may be:
   --lmdb           - runs using LMDB as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
+  --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -75,7 +77,6 @@ FLAGS may be:
   --globalmetering - install metering on global objects
   --meter          - run metered vats (implies --globalmetering and --indirect)
   --config FILE    - read swingset config from FILE instead of inferring it
-  --loopbox        - make the loopbox device available to the bootstrap vat
 
 CMD is one of:
   help   - print this helpful usage information
@@ -181,8 +182,8 @@ export async function main() {
   let configPath = null;
   let statsFile = null;
   let dbDir = null;
+  let dbSize = 0;
   let initOnly = false;
-  let loopbox = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -253,6 +254,9 @@ export async function main() {
       case '--dbdir':
         dbDir = argv.shift();
         break;
+      case '--dbsize':
+        dbSize = Number(argv.shift());
+        break;
       case '--raw':
         rawMode = true;
         doDumps = true;
@@ -280,9 +284,6 @@ export async function main() {
       case '--memdb':
       case '--lmdb':
         dbMode = flag;
-        break;
-      case '--loopbox':
-        loopbox = true;
         break;
       case '-v':
       case '--verbose':
@@ -313,11 +314,6 @@ export async function main() {
   }
 
   if (forceGC) {
-    if (!globalThis.gc) {
-      fail(
-        'To use --forcegc you must start node with the --expose-gc command line option',
-      );
-    }
     if (!logMem) {
       log('Warning: --forcegc without --logmem may be a mistake');
     }
@@ -339,35 +335,50 @@ export async function main() {
     config = loadBasedir(basedir);
   }
   const deviceEndowments = {};
-  if (loopbox) {
+  if (config.loopboxSenders) {
     const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
     config.devices = {
       loopbox: {
         sourceSpec: loopboxSrcPath,
+        parameters: {
+          senders: config.loopboxSenders,
+        },
       },
     };
+    delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
   }
-  if (!dbDir) {
-    dbDir = basedir;
-  }
 
   let swingStore;
-  const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
   switch (dbMode) {
     case '--memdb':
+      if (dbDir) {
+        fail('--dbdir only valid with --lmdb');
+      }
+      if (dbSize) {
+        fail('--dbsize only valid with --lmdb');
+      }
       swingStore = initSimpleSwingStore();
       break;
-    case '--lmdb':
+    case '--lmdb': {
+      if (!dbDir) {
+        dbDir = basedir;
+      }
+      const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
+      const dbOptions = {};
+      if (dbSize) {
+        dbOptions.mapSize = dbSize * 1024 * 1024;
+      }
       if (forceReset) {
-        swingStore = initLMDBSwingStore(kernelStateDBDir);
+        swingStore = initLMDBSwingStore(kernelStateDBDir, dbOptions);
       } else {
-        swingStore = openLMDBSwingStore(kernelStateDBDir);
+        swingStore = openLMDBSwingStore(kernelStateDBDir, dbOptions);
       }
       break;
+    }
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
@@ -400,10 +411,11 @@ export async function main() {
       config,
       bootstrapArgv,
       hostStorage,
+      { verbose },
       runtimeOptions,
     );
+    swingStore.commit();
     if (initOnly) {
-      swingStore.commit();
       swingStore.close();
       return;
     }
@@ -413,6 +425,11 @@ export async function main() {
     deviceEndowments,
     runtimeOptions,
   );
+  if (benchmarkRounds > 0) {
+    // Pin the vat root that will run benchmark rounds so it'll still be there
+    // when it comes time to run them.
+    controller.pinVatRoot(launchIndirectly ? 'launcher' : 'bootstrap');
+  }
 
   let blockNumber = 0;
   let statLogger = null;
@@ -448,10 +465,14 @@ export async function main() {
       break;
     }
     case 'step': {
-      const steps = await controller.step();
-      swingStore.commit();
-      swingStore.close();
-      log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      try {
+        const steps = await controller.step();
+        swingStore.commit();
+        swingStore.close();
+        log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
+      } catch (err) {
+        kernelFailure(err);
+      }
       break;
     }
     case 'shell': {
@@ -511,9 +532,13 @@ export async function main() {
       cli.defineCommand('step', {
         help: 'Step the swingset one crank, without commit',
         action: async () => {
-          const steps = await controller.step();
-          log(steps ? 'stepped one crank' : "didn't step, queue is empty");
-          cli.displayPrompt();
+          try {
+            const steps = await controller.step();
+            log(steps ? 'stepped one crank' : "didn't step, queue is empty");
+            cli.displayPrompt();
+          } catch (err) {
+            kernelFailure(err);
+          }
         },
       });
       break;
@@ -541,9 +566,8 @@ export async function main() {
     let totalSteps = 0;
     let totalDeltaT = 0n;
     for (let i = 0; i < rounds; i += 1) {
-      const roundResult = controller.queueToVatExport(
+      const roundResult = controller.queueToVatRoot(
         launchIndirectly ? 'launcher' : 'bootstrap',
-        'o+0',
         'runBenchmarkRound',
         args,
         'ignore',
@@ -580,13 +604,17 @@ export async function main() {
     }
     while (requestedSteps > 0) {
       requestedSteps -= 1;
-      // eslint-disable-next-line no-await-in-loop
-      const stepped = await controller.step();
-      if (stepped < 1) {
-        break;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const stepped = await controller.step();
+        if (stepped < 1) {
+          break;
+        }
+        crankNumber += stepped;
+        actualSteps += stepped;
+      } catch (err) {
+        kernelFailure(err);
       }
-      crankNumber += stepped;
-      actualSteps += stepped;
       if (doDumps) {
         kernelStateDump();
       }
@@ -603,7 +631,7 @@ export async function main() {
     }
     const blockEndTime = readClock();
     if (forceGC) {
-      globalThis.gc();
+      engineGC();
     }
     if (statLogger) {
       blockNumber += 1;
@@ -645,6 +673,11 @@ export async function main() {
       stepLimit -= steps;
     } while ((runAll || stepLimit > 0) && steps >= blockSize);
     return [totalSteps, readClock() - startTime];
+  }
+
+  function kernelFailure(err) {
+    log(`kernel failure in crank ${crankNumber}: ${err}`, err);
+    process.exit(1);
   }
 
   async function commandRun(stepLimit, runInBlockMode) {

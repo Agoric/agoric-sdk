@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.2.9",
+  "version": "0.2.18",
   "description": "Helpers and other support for writing deploy scripts",
   "parsers": {
     "js": "mjs"
@@ -17,9 +17,9 @@
     "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc -p jsconfig.json",
+    "lint": "yarn lint:types && yarn lint:eslint"
   },
   "repository": {
     "type": "git",
@@ -39,25 +39,25 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.2.12",
-    "@agoric/bundle-source": "^1.3.7",
-    "@agoric/ertp": "^0.11.2",
-    "@agoric/eventual-send": "^0.13.14",
-    "@agoric/import-manager": "^0.2.14",
-    "@agoric/marshal": "^0.4.11",
-    "@agoric/nat": "^4.0.0",
-    "@agoric/notifier": "^0.3.14",
-    "@agoric/promise-kit": "^0.2.13",
-    "@agoric/same-structure": "^0.1.13",
-    "@agoric/store": "^0.4.14",
-    "@agoric/vats": "^0.2.2",
-    "@agoric/zoe": "^0.15.7"
+    "@agoric/assert": "^0.3.6",
+    "@agoric/bundle-source": "^1.4.4",
+    "@agoric/ertp": "^0.11.10",
+    "@agoric/eventual-send": "^0.13.22",
+    "@agoric/import-manager": "^0.2.22",
+    "@agoric/marshal": "^0.4.19",
+    "@agoric/nat": "^4.1.0",
+    "@agoric/notifier": "^0.3.22",
+    "@agoric/promise-kit": "^0.2.20",
+    "@agoric/same-structure": "^0.1.20",
+    "@agoric/store": "^0.4.22",
+    "@agoric/vats": "^0.2.11",
+    "@agoric/zoe": "^0.17.5"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.13",
-    "@agoric/swingset-vat": "^0.17.2",
+    "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
     "ava": "^3.12.1",
-    "esm": "^3.2.25"
+    "esm": "agoric-labs/esm#Agoric-built"
   },
   "files": [
     "src",
@@ -74,7 +74,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@agoric"
+      "@endo"
     ]
   },
   "prettier": {

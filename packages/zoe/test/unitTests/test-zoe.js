@@ -80,7 +80,6 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
-    'getVatStats',
   ]);
 });
 
@@ -108,7 +107,6 @@ test(`zoe.startInstance promise for installation`, async t => {
   isEmptyFacet(t, result.publicFacet);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
-    'getVatStats',
   ]);
 });
 

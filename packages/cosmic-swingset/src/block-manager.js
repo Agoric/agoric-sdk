@@ -2,7 +2,7 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 
-const log = anylogger('block-manager');
+const console = anylogger('block-manager');
 
 const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
@@ -10,7 +10,7 @@ const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
 const PLEASE_PROVISION = 'PLEASE_PROVISION';
-const VPURSE_BALANCE_UPDATE = 'VPURSE_BALANCE_UPDATE';
+const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
 
 export default function makeBlockManager({
   deliverInbound,
@@ -27,16 +27,17 @@ export default function makeBlockManager({
 }) {
   let computedHeight = bootstrapBlock ? undefined : savedHeight;
   let runTime = 0;
+  let chainTime;
 
   async function kernelPerformAction(action) {
     // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
     function finish() {
-      // log.error('Action', action.type, action.blockHeight, 'is done!');
+      // console.error('Action', action.type, action.blockHeight, 'is done!');
       runTime += Date.now() - start;
     }
 
-    // log.error('Performing action', action);
+    // console.error('Performing action', action);
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
@@ -53,7 +54,7 @@ export default function makeBlockManager({
         );
         break;
 
-      case VPURSE_BALANCE_UPDATE: {
+      case VBANK_BALANCE_UPDATE: {
         p = doBridgeInbound('bank', action);
         break;
       }
@@ -75,7 +76,16 @@ export default function makeBlockManager({
       default:
         assert.fail(X`${action.type} not recognized`);
     }
-    p.then(finish, finish);
+    // Just attach some callbacks, but don't use the resulting neutered result
+    // promise.
+    p.then(finish, e => {
+      // None of these must fail, and if they do, log them verbosely before
+      // returning to the chain.
+      console.error(action.type, 'error:', e);
+      finish();
+    });
+    // Return the original promise so that the caller gets the original
+    // resolution or rejection.
     return p;
   }
 
@@ -90,7 +100,7 @@ export default function makeBlockManager({
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
       case COMMIT_BLOCK: {
-        verboseBlocks && log.info('block', action.blockHeight, 'commit');
+        verboseBlocks && console.info('block', action.blockHeight, 'commit');
         if (
           computedHeight !== undefined &&
           action.blockHeight !== computedHeight
@@ -99,19 +109,30 @@ export default function makeBlockManager({
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
         }
+
+        // Save the kernel's computed state just before the chain commits.
+        const start2 = Date.now();
+        await saveOutsideState(computedHeight, savedActions, savedChainSends);
+
+        const saveTime = Date.now() - start2;
+
+        console.debug(
+          `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
+        );
+
         flushChainSends(false);
         break;
       }
 
       case BEGIN_BLOCK: {
-        verboseBlocks && log.info('block', action.blockHeight, 'begin');
+        verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
         for (const a of currentActions) {
           // FIXME: This is a problem, apparently with Cosmos SDK.
           // Need to diagnose.
           if (a.blockHeight !== action.blockHeight) {
-            log.debug(
+            console.debug(
               'Block',
               action.blockHeight,
               'begun with a leftover uncommitted action:',
@@ -175,7 +196,7 @@ export default function makeBlockManager({
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
           await saveChainState();
-          const chainTime = Date.now() - start;
+          chainTime = Date.now() - start;
 
           // Advance our saved state variables.
           savedActions = currentActions;
@@ -186,17 +207,6 @@ export default function makeBlockManager({
           } else {
             computedHeight = action.blockHeight;
           }
-
-          // Save the kernel's computed state so that we can recover if we ever
-          // reset before Cosmos SDK commit.
-          const start2 = Date.now();
-          await saveOutsideState(computedHeight, savedActions, savedChainSends);
-
-          const saveTime = Date.now() - start2;
-
-          log.debug(
-            `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
-          );
         }
 
         currentActions = [];

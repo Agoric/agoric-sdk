@@ -1,34 +1,22 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-import * as childProcess from 'child_process';
+
+import * as proc from 'child_process';
 import * as os from 'os';
-import { xsnap } from '../src/xsnap';
 
-const decoder = new TextDecoder();
+import { xsnap } from '../src/xsnap.js';
 
-const xsnapOptions = {
-  name: 'xsnap test worker',
-  spawn: childProcess.spawn,
-  os: os.type(),
-  stderr: 'inherit',
-  stdout: 'inherit',
-};
+import { options } from './message-tools.js';
 
-export function options() {
-  const messages = [];
-  async function handleCommand(message) {
-    messages.push(decoder.decode(message));
-    return new Uint8Array();
-  }
-  return { ...xsnapOptions, handleCommand, messages };
-}
+const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambien
 
 const { entries, fromEntries } = Object;
 
 const shape = obj => fromEntries(entries(obj).map(([p, v]) => [p, typeof v]));
 
 test('meter details', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
@@ -42,6 +30,13 @@ test('meter details', async t => {
     m.delete(ix);
     s1.delete(ix);
   }
+
+  // metering bigint
+  const bn = 12345678901234567n;
+  s1.add(bn * bn * bn);
+
+  // metering regex
+  s1.add('aaaaa!'.match(/^[a-z]+/))
   `);
   const {
     meterUsage: { meterType, ...meters },
@@ -49,7 +44,7 @@ test('meter details', async t => {
 
   t.like(
     meters,
-    { compute: 1_260_073, allocate: 42_074_144 },
+    { compute: 1_260_179, allocate: 42_074_144 },
     'compute, allocate meters should be stable; update METER_TYPE?',
   );
 
@@ -68,11 +63,48 @@ test('meter details', async t => {
     },
     'auxiliary (non-consensus) meters are available',
   );
-  t.is(meterType, 'xs-meter-7');
+  // @ts-ignore extra meters not declared on RunResult (TODO: #3139)
+  t.true(meters.mapSetAddCount > 20000);
+  t.is(meterType, 'xs-meter-8');
+});
+
+test('isReady does not compute / allocate', async t => {
+  const opts = options(io);
+  const vat1 = xsnap(opts);
+  t.teardown(() => vat1.terminate());
+  const vat2 = xsnap(opts);
+  t.teardown(() => vat2.terminate());
+
+  await vat1.evaluate('null');
+  const { meterUsage: m1 } = await vat1.evaluate('null');
+  t.log(m1);
+
+  await vat2.evaluate('null');
+  await vat2.isReady();
+  const { meterUsage: m2 } = await vat2.evaluate('null');
+
+  t.log(m2);
+
+  t.is(m1.compute, m2.compute);
+  t.is(m1.allocate, m2.allocate);
+});
+
+test('metering regex - REDOS', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  // Java Classname Evil Regex
+  // https://en.wikipedia.org/wiki/ReDoS
+  // http://www.owasp.org/index.php/OWASP_Validation_Regex_Repository
+  const result = await vat.evaluate(`
+  'aaaaaaaaa!'.match(/^(([a-z])+.)+/)
+  `);
+  const { meterUsage: meters } = result;
+  t.like(meters, { compute: 149 });
 });
 
 test('meter details are still available with no limit', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap({ ...opts, meteringLimit: 0 });
   t.teardown(() => vat.terminate());
   const result = await vat.evaluate(`
@@ -88,7 +120,7 @@ test('meter details are still available with no limit', async t => {
 });
 
 test('high resolution timer', async t => {
-  const opts = options();
+  const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
@@ -97,7 +129,7 @@ test('high resolution timer', async t => {
       const t = performance.now();
       send(t);
     `);
-  const [milliseconds] = opts.messages.map(JSON.parse);
+  const [milliseconds] = opts.messages.map(s => JSON.parse(s));
   t.log({ milliseconds, date: new Date(milliseconds) });
   t.is('number', typeof milliseconds);
 });

@@ -1,13 +1,14 @@
-/* global __dirname globalThis */
-import { test } from '../../tools/prepare-test-env-ava';
+/* global __dirname */
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import path from 'path';
 
-import { provideHostStorage } from '../../src/hostStorage';
-import { initializeSwingset, makeSwingsetController } from '../../src/index';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager';
-import makeNextLog from '../make-nextlog';
+import engineGC from '../../src/engine-gc.js';
+import { provideHostStorage } from '../../src/hostStorage.js';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -17,17 +18,7 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-let gc;
-function insistGC(t) {
-  if (globalThis.gc) {
-    gc = globalThis.gc;
-  } else {
-    t.fail(`GC needs to be enabled for this test to work`);
-  }
-}
-
 test('weakMap in vat', async t => {
-  insistGC(t);
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'local',
@@ -44,6 +35,7 @@ test('weakMap in vat', async t => {
   const hostStorage = provideHostStorage();
   const bootstrapResult = await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
+  c.pinVatRoot('bootstrap');
   const nextLog = makeNextLog(c);
 
   await c.run();
@@ -51,7 +43,7 @@ test('weakMap in vat', async t => {
 
   async function doSimple(method) {
     const sendArgs = capargs([], []);
-    const r = c.queueToVatExport('bootstrap', 'o+0', method, sendArgs);
+    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     return c.kpResolution(r);
@@ -70,7 +62,7 @@ test('weakMap in vat', async t => {
     'probe of [object Promise] returns fep',
   ]);
   await doSimple('betweenProbes');
-  gc();
+  engineGC();
   const postGCResult = await doSimple('runProbes');
   t.deepEqual(postGCResult, capargs('probes done'));
   t.deepEqual(nextLog(), [
@@ -86,7 +78,6 @@ test('weakMap in vat', async t => {
 });
 
 test('weakMap vref handling', async t => {
-  insistGC(t);
   const log = [];
   const {
     VirtualObjectAwareWeakMap,
