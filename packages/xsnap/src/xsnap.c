@@ -63,6 +63,8 @@ static void fx_setImmediate(txMachine* the);
 // static void fx_setTimeout(txMachine* the);
 static void fx_setTimer(txMachine* the, txNumber interval, txBoolean repeat);
 static void fx_setTimerCallback(txJob* job);
+static void fx_currentMeterLimit(xsMachine* the);
+static void fx_resetMeter(xsMachine* the);
 
 static void fxFulfillModuleFile(txMachine* the);
 static void fxRejectModuleFile(txMachine* the);
@@ -79,13 +81,15 @@ static char* fxWriteNetStringError(int code);
 // The order of the callbacks materially affects how they are introduced to
 // code that runs from a snapshot, so must be consistent in the face of
 // upgrade.
-#define mxSnapshotCallbackCount 5
+#define mxSnapshotCallbackCount 7
 txCallback gxSnapshotCallbacks[mxSnapshotCallbackCount] = {
 	fx_issueCommand, // 0
 	fx_print, // 1
 	fx_setImmediate, // 2
 	fx_gc, // 3
 	fx_performance_now, // 4
+	fx_currentMeterLimit, // 5
+	fx_resetMeter, // 6
 	// fx_evalScript,
 	// fx_isPromiseJobQueueEmpty,
 	// fx_setInterval,
@@ -559,6 +563,8 @@ void fxBuildAgent(xsMachine* the)
 	slot = fxNextSlotProperty(the, slot, the->stack, xsID("performance"), XS_DONT_ENUM_FLAG);
 	mxPop();
 
+	slot = fxNextHostFunctionProperty(the, slot, fx_currentMeterLimit, 1, xsID("currentMeterLimit"), XS_DONT_ENUM_FLAG);
+	slot = fxNextHostFunctionProperty(the, slot, fx_resetMeter, 1, xsID("resetMeter"), XS_DONT_ENUM_FLAG);
 	// mxPush(mxObjectPrototype);
 	// fxNextHostFunctionProperty(the, fxLastProperty(the, fxNewObjectInstance(the)), fx_print, 1, xsID("log"), XS_DONT_ENUM_FLAG);
 	// slot = fxNextSlotProperty(the, slot, the->stack, xsID("console"), XS_DONT_ENUM_FLAG);
@@ -905,6 +911,26 @@ void fx_print(xsMachine* the)
 	}
 	fprintf(stdout, "\n");
 		fflush(stdout);
+}
+
+static void fx_currentMeterLimit(xsMachine* the)
+{
+#if mxMetering
+	xsResult = xsInteger(gxCurrentMeter);
+#endif
+}
+
+static void fx_resetMeter(xsMachine* the)
+{
+#if mxMetering
+	xsIntegerValue argc = xsToInteger(xsArgc);
+	if (argc < 2) {
+		xsTypeError("expected newMeterLimit, newMeterIndex");
+	}
+	xsResult = xsInteger(the->meterIndex);
+	gxCurrentMeter = xsToInteger(xsArg(0));
+	the->meterIndex = xsToInteger(xsArg(1));
+#endif
 }
 
 // void fx_setInterval(txMachine* the)
