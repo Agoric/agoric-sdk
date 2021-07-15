@@ -133,3 +133,49 @@ test('high resolution timer', async t => {
   t.log({ milliseconds, date: new Date(milliseconds) });
   t.is('number', typeof milliseconds);
 });
+
+test('metering can be switched off / on at run-time', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  const { meterUsage: { compute: noUnMeteredCompute } } = await vat.evaluate(`
+      for (let work=0; work < 1000; work++) {}
+      const limit = currentMeterLimit();
+      const before = resetMeter(0, 0);
+      try {
+        // nothing
+      } finally {
+        resetMeter(limit, before);
+      }
+      for (let work=0; work < 1000; work++) {}
+    `);
+  const { meterUsage: { compute: someUnMeteredCompute } } = await vat.evaluate(`
+    for (let work=0; work < 1000; work++) {}
+    const limit = currentMeterLimit();
+    const before = resetMeter(0, 0);
+    try {
+      for (let work=0; work < 2000; work++) {}
+    } finally {
+      resetMeter(limit, before);
+    }
+    for (let work=0; work < 1000; work++) {}
+  `);
+  t.log({ noUnMeteredCompute, someUnMeteredCompute });
+  t.is(noUnMeteredCompute, someUnMeteredCompute);
+});
+
+test('metering switch - start compartment only', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  await vat.evaluate(`
+    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    resetMeter(0, 0);
+    try {
+      (new Compartment()).evalate('resetMeter(0, 0)');
+    } catch (_err) {
+      send('no meteringSwitch in Compartment');
+    }
+  `);
+  await vat.close();
+  t.deepEqual(['no meteringSwitch in Compartment'], opts.messages);
+});
