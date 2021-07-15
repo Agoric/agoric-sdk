@@ -77,6 +77,12 @@ function makeCallbackRegistry(callbacks) {
   });
 }
 
+/**
+ *
+ * @param {*} slogCallbacks
+ * @param {*} makeConsole
+ * @returns { KernelSlog }
+ */
 export function makeDummySlogger(slogCallbacks, makeConsole) {
   const { registerCallback: reg, doneRegistering } = makeCallbackRegistry(
     slogCallbacks,
@@ -96,6 +102,12 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
   return dummySlogger;
 }
 
+/**
+ *
+ * @param {*} slogCallbacks
+ * @param {*} writeObj
+ * @returns { KernelSlog }
+ */
 export function makeSlogger(slogCallbacks, writeObj) {
   const write = writeObj ? e => writeObj(e) : () => 0;
 

@@ -98,8 +98,8 @@
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
  * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
  * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
- * @typedef { [ vpid: string, rejected: boolean, data: SwingSetCapData ]} Resolutions
- * @typedef { [tag: 'resolve', resolutions: Resolutions ]} VatSyscallResolve
+ * @typedef { [ vpid: string, rejected: boolean, data: SwingSetCapData ]} VatResolutions
+ * @typedef { [tag: 'resolve', resolutions: VatResolutions ]} VatSyscallResolve
  * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
@@ -118,13 +118,61 @@
  * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
  * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
  *
+ * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
+ * @typedef { [tag: 'notify', resolutions: string[] ]} KernelDeliveryNotify
+ * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
+ * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
+ * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
+ * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
+ *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
+ *          } KernelDeliveryObject
+ * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
+ * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} KernelSyscallCallNow
+ * @typedef { [tag: 'subscribe', kpid: string ]} KernelSyscallSubscribe
+ * @typedef { [ kpid: string, rejected: boolean, data: SwingSetCapData ]} KernelResolutions
+ * @typedef { [tag: 'resolve', resolutions: KernelResolutions ]} KernelSyscallResolve
+ * @typedef { [tag: 'vatstoreGet', key: string ]} KernelSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} KernelSyscallVatstoreSet
+ * @typedef { [tag: 'vatstoreDelete', key: string ]} KernelSyscallVatstoreDelete
+ * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
+ * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelSyscallRetireImports
+ * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
+ *
+ * @typedef { KernelSyscallSend | KernelSyscallCallNow | KernelSyscallSubscribe
+ *    | KernelSyscallResolve | KernelSyscallVatstoreGet | KernelSyscallVatstoreSet
+ *    | KernelSyscallVatstoreDelete | KernelSyscallDropImports
+ *    | KernelSyscallRetireImports | KernelSyscallRetireExports
+ * } KernelSyscallObject
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | null ]} KernelSyscallResultOk
+ * @typedef { [tag: 'error', err: string ] } KernelSyscallResultError
+ * @typedef { KernelSyscallResultOk | KernelSyscallResultError } KernelSyscallResult
+ *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
  * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
  * @typedef { ReturnType<typeof import('@agoric/xsnap').xsnap> } XSnap
+ * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
+ * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
  * @typedef { { write: ({}) => void,
+ *              vatConsole: (vatID: string, origConsole: {}) => {},
+ *              delivery: (vatID: string,
+ *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
+ *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
+ *                         replay?: boolean) => SlogFinishDelivery,
+ *              syscall: (vatID: string,
+ *                        ksc: KernelSyscallObject | undefined,
+ *                        vsc: VatSyscallObject) => SlogFinishSyscall,
+ *              provideVatSlogger: (vatID: string,
+ *                                  dynamic?: boolean,
+ *                                  description?: string,
+ *                                  name?: string,
+ *                                  vatSourceBundle?: *,
+ *                                  managerType?: string,
+ *                                  vatParameters?: *) => VatSlog,
+ *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
+ * @typedef { * } VatSlog
  *
  * @typedef { { createFromBundle: (vatID: string,
  *                                 bundle: Bundle,

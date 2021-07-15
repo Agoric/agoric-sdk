@@ -140,6 +140,7 @@ export default function buildKernel(
 
   const vatAdminRootKref = hostStorage.kvStore.get('vatAdminRootKref');
 
+  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole);
@@ -430,8 +431,7 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
     const { meterID } = vatKeeper.getOptions();
-    /** @typedef { any } FinishFunction TODO: static types for slog? */
-    /** @type { FinishFunction } */
+    /** @type { SlogFinishDelivery } */
     const finish = kernelSlog.delivery(vatID, crankNum, deliveryNum, kd, vd);
     // Ensure that the vatSlogger is available before clist translation.
     kernelSlog.provideVatSlogger(vatID);
@@ -872,7 +872,7 @@ export default function buildKernel(
         // we leave this catch() with ksc=undefined, so no doKernelSyscall()
       }
 
-      /** @type { FinishFunction } */
+      /** @type { SlogFinishSyscall } */
       const finish = kernelSlog.syscall(vatID, ksc, vatSyscallObject);
 
       if (ksc) {
