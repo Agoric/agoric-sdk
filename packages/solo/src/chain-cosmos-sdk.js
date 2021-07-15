@@ -11,43 +11,68 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
+import {
+  DEFAULT_BATCH_TIMEOUT_MS,
+  makeBatchedDeliver,
+} from '@agoric/vats/src/batched-deliver';
 
-const log = anylogger('chain-cosmos-sdk');
+const console = anylogger('chain-cosmos-sdk');
 
 const HELPER = 'ag-cosmos-helper';
 const FAUCET_ADDRESS =
-  '#faucet channel on Discord (https://agoric.com/discord)';
+  'the appropriate faucet channel on Discord (https://agoric.com/discord)';
 
-const adviseEgress = myAddr =>
+const adviseEgress = egressAddr =>
   `\
 
 
 Send:
 
-  !faucet client ${myAddr}
+  !faucet client ${egressAddr}
 
 to ${FAUCET_ADDRESS}`;
 
+const SEND_RETRY_DELAY_MS = Math.min(DEFAULT_BATCH_TIMEOUT_MS, 500);
+
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 
-const WAS_CANCELLED_EXCEPTION = {
-  toString() {
-    return 'WAS_CANCELLED_EXCEPTION';
-  },
-};
+const makeTempFile = async (prefix, contents) => {
+  const tmpInfo = await new Promise((resolve, reject) => {
+    tempOpen({ prefix }, (err, info) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(info);
+    });
+  });
 
-const CANCEL_USE_DEFAULT = {
-  toString() {
-    return 'CANCEL_USE_DEFAULT';
-  },
+  try {
+    await new Promise((resolve, reject) => {
+      fs.write(tmpInfo.fd, contents, err => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve();
+      });
+    });
+  } finally {
+    await new Promise((resolve, reject) => {
+      fs.close(tmpInfo.fd, e => {
+        if (e) {
+          return reject(e);
+        }
+        return resolve();
+      });
+    });
+  }
+  return tmpInfo;
 };
 
 export async function connectToChain(
   basedir,
   GCI,
   rpcAddresses,
-  myAddr,
+  helperAddr,
   inbound,
   chainID,
 ) {
@@ -84,193 +109,126 @@ export async function connectToChain(
 
   const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
-  const queued = {};
+  const readOrDefault = (file, dflt) =>
+    fs.promises
+      .readFile(file, { encoding: 'utf-8' })
+      .catch(e => {
+        if (e.code === 'ENOENT') {
+          return dflt;
+        }
+        throw e;
+      })
+      .then(str => str.trim());
 
+  // The helper account may only have the authority to send messages on behalf
+  // of the client, which has been set up by the client with something like:
+  //
+  // ag-cosmos-helper tx authz grant $(cat ag-cosmos-helper-address) \
+  // generic --msg-type=/agoric.swingset.MsgDeliverInbound \
+  // --from=$(cat cosmos-client-account)
+  const clientAddr = await readOrDefault(
+    path.join(basedir, 'cosmos-client-account'),
+    helperAddr,
+  );
+
+  // The helper address may not have a token balance, and instead uses a
+  // separate fee account, set up with something like:
+  //
+  // ag-cosmos-helper tx feegrant grant --period=5 --period-limit=200000urun \
+  // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
+  const feeAccountAddr = await readOrDefault(
+    path.join(basedir, 'cosmos-fee-account'),
+    '',
+  );
+
+  let lastGoodRpcAddrIndex = 0;
   async function retryRpcAddr(tryOnce) {
+    let rpcAddrIndex = lastGoodRpcAddrIndex;
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const randomRpcAddr =
-        rpcAddresses[Math.floor(Math.random() * rpcAddresses.length)];
+      const thisRpcAddr = rpcAddresses[rpcAddrIndex];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
       // eslint-disable-next-line no-await-in-loop
-      const ret = await tryOnce(randomRpcAddr);
+      const ret = await tryOnce(thisRpcAddr);
       if (ret !== undefined) {
         // Or returns non-undefined, which we should resolve.
+        lastGoodRpcAddrIndex = rpcAddrIndex;
         return ret;
       }
 
       // It was undefined, so wait, then retry.
       // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, 5000));
+      rpcAddrIndex = (rpcAddrIndex + 1) % rpcAddresses.length;
     }
   }
 
-  function retryHelper(
-    args,
-    parseReturn,
-    stdin,
-    throwIfCancelled = () => undefined,
-    defaultIfCancelled = WAS_CANCELLED_EXCEPTION,
-  ) {
-    return retryRpcAddr(async rpcAddr => {
-      await throwIfCancelled();
-
-      const fullArgs = [
-        ...args,
-        `--chain-id=${chainID}`,
-        `--node=tcp://${rpcAddr}`,
-        `--home=${helperDir}`,
-      ];
-      log.debug(HELPER, ...fullArgs);
-      let ret;
-      try {
-        ret = await new Promise((resolve, reject) => {
-          const proc = execFile(
-            HELPER,
-            fullArgs,
-            { maxBuffer: MAX_BUFFER_SIZE },
-            (error, stdout, stderr) => {
-              if (error) {
-                return reject(error);
-              }
-              return resolve({ stdout, stderr });
-            },
-          );
-          if (stdin) {
-            proc.stdin.write(stdin);
-            proc.stdin.end();
-          }
-        });
-      } catch (e) {
-        log.error(`failed exec:`, e);
-      }
-
-      await throwIfCancelled();
-
-      if (ret) {
-        try {
-          return await parseReturn(ret);
-        } catch (e) {
-          log.error(`Failed to parse return:`, e);
-        }
-      }
-      return undefined;
-    }).catch(e => {
-      if (
-        e === CANCEL_USE_DEFAULT &&
-        defaultIfCancelled !== WAS_CANCELLED_EXCEPTION
-      ) {
-        return defaultIfCancelled;
-      }
-
-      // Just retry.
-      return undefined;
-    });
-  }
-
-  async function queuedHelper(
-    name,
-    maxQueued,
-    args,
-    parseReturn,
-    stdin,
-    defaultIfCancelled,
-  ) {
-    const queue = queued[name] || [];
-    queued[name] = queue;
-    if (maxQueued !== undefined) {
-      while (queue.length > 0 && queue.length >= maxQueued) {
-        // Cancel the excesses from most recent down to the currently-running.
-        // eslint-disable-next-line no-unused-vars
-        const [proceed, cancel] = queue.pop();
-        log.debug(`cancelling ${queue.length}`);
-        cancel();
-      }
-    }
-    let cancelled = false;
-    let resolveWait;
-    const qentry = [
-      () => {
-        // console.debug('proceeding');
-        resolveWait();
-      },
-      () => {
-        // console.debug('cancelling');
-        cancelled = true;
-        resolveWait();
-      },
+  let goodRpcAddr = rpcAddresses[0];
+  const runHelper = (args, stdin = undefined) => {
+    const fullArgs = [
+      ...args,
+      `--chain-id=${chainID}`,
+      `--node=tcp://${goodRpcAddr}`,
+      `--home=${helperDir}`,
     ];
-    queue.push(qentry);
-    const wait = new Promise(resolve => {
-      resolveWait = resolve;
-      if (queue[0] === qentry) {
-        // Wake us immediately, since we're first in queue.
-        // eslint-disable-next-line no-unused-vars
-        const [proceed, cancel] = qentry;
-        proceed();
+    console.debug(HELPER, ...fullArgs);
+    return new Promise(resolve => {
+      const proc = execFile(
+        HELPER,
+        fullArgs,
+        { maxBuffer: MAX_BUFFER_SIZE },
+        (_error, stdout, stderr) => {
+          return resolve({ stdout, stderr });
+        },
+      );
+      if (stdin) {
+        proc.stdin.write(stdin);
+        proc.stdin.end();
       }
     });
+  };
 
-    try {
-      return await retryHelper(
-        args,
-        parseReturn,
-        stdin,
-        async () => {
-          // console.debug(`Waiting for`, wait);
-          await wait;
-          // console.debug(`Wait done, cancelled`, cancelled);
-          if (cancelled) {
-            throw CANCEL_USE_DEFAULT;
-          }
-        },
-        defaultIfCancelled,
-      );
-    } finally {
-      // Remove us from the queue.
-      const i = queue.indexOf(qentry);
-      if (i >= 0) {
-        queue.splice(i, 1);
-      }
-      if (queue[0] !== undefined) {
-        // Wake the next in queue.
-        // eslint-disable-next-line no-unused-vars
-        const [proceed, cancel] = queue[0];
-        proceed();
+  const captureHelperOutput = async (txArgs, dstFile) => {
+    // Just run the helper as usual.
+    const { stdout, stderr } = await runHelper(txArgs);
+    if (stderr) {
+      throw Error(`Error capturing helper output: ${stderr}`);
+    }
+
+    // This is a separate step in case the dstFile is used as input for the
+    // runHelper command.
+    await fs.promises.writeFile(dstFile, stdout);
+  };
+
+  const getMailbox = async () => {
+    const { stdout, stderr } = await runHelper([
+      'query',
+      'swingset',
+      'mailbox',
+      clientAddr,
+      '-ojson',
+    ]);
+
+    const errMsg = stderr.trimRight();
+    if (errMsg) {
+      console.error(errMsg);
+    }
+    if (stdout) {
+      console.debug(`helper said: ${stdout}`);
+      try {
+        // Try to parse the stdout.
+        return JSON.parse(JSON.parse(stdout).value);
+      } catch (e) {
+        assert.fail(X`failed to parse output: ${e}`);
       }
     }
-  }
-
-  const getMailbox = () =>
-    queuedHelper(
-      'getMailbox',
-      1, // Only one helper running at a time.
-      ['query', 'swingset', 'mailbox', myAddr, '-ojson'],
-      // eslint-disable-next-line consistent-return
-      ret => {
-        const { stdout, stderr } = ret;
-        const errMsg = stderr.trimRight();
-        if (errMsg) {
-          log.error(errMsg);
-        }
-        if (stdout) {
-          log.debug(`helper said: ${stdout}`);
-          try {
-            // Try to parse the stdout.
-            return JSON.parse(JSON.parse(stdout).value);
-          } catch (e) {
-            log(`failed to parse output:`, e);
-          }
-        }
-      },
-      undefined,
-      false, // defaultIfCancelled
-    );
+    return undefined;
+  };
 
   // Validate that our chain egress exists.
   await retryRpcAddr(async rpcAddr => {
-    const args = ['query', 'swingset', 'egress', myAddr];
+    const args = ['query', 'swingset', 'egress', clientAddr];
     const fullArgs = [
       ...args,
       `--chain-id=${chainID}`,
@@ -291,7 +249,9 @@ export async function connectToChain(
     if (!r.stdout) {
       console.error(`\
 =============
-${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
+${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
+        clientAddr,
+      )}
 =============
 `);
       return undefined;
@@ -327,6 +287,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       // new websocket to a potentially different RPC server.
       //
       // We use the same notifier, though... it's a stable identity.
+      goodRpcAddr = rpcAddr;
 
       // This promise is for when we're ready to retry.
       const retryPK = makePromiseKit();
@@ -334,7 +295,7 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
       // Open the WebSocket.
       const ws = new WebSocket(`ws://${rpcAddr}/websocket`);
       ws.addEventListener('error', e => {
-        log.debug('WebSocket error', e);
+        console.debug('WebSocket error', e);
       });
 
       // This magic identifier just distinguishes our subscription
@@ -381,6 +342,142 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
   // Begin the block notifier cycle.
   const blockNotifier = getBlockNotifier();
 
+  const { notifier: sendNotifier, updater: sendUpdater } = makeNotifierKit();
+
+  // An array of [seqnum, message] ordered by unique seqnum.
+  let messagePool = [];
+
+  // Atomically add to the message pool, ensuring the pool is sorted by unique
+  // sequence number.
+  const addToMessagePool = newMessages => {
+    // Add the new messages.
+    const bigPool = messagePool.concat(newMessages);
+
+    // Sort the big pool by sequence number.
+    const sortedPool = bigPool.sort((a, b) => a[0] - b[0]);
+
+    // Only keep messages that have a unique sequence number.
+    const uniquePool = sortedPool.filter(
+      (a, i) =>
+        // Index 0 is always kept.
+        i === 0 ||
+        // Others are only kept if not the same as the prior sequence.
+        a[0] !== sortedPool[i - 1][0],
+    );
+
+    // Replace the old message pool.
+    messagePool = uniquePool;
+  };
+
+  let totalDeliveries = 0;
+  let highestAck = -1;
+  let sequenceNumber = 0n;
+  const sendFromMessagePool = async () => {
+    let tmpInfo;
+
+    // We atomically drain the message pool.
+    const messages = messagePool;
+    messagePool = [];
+
+    try {
+      totalDeliveries += 1;
+      console.log(
+        `delivering to chain (trips=${totalDeliveries})`,
+        GCI,
+        messages,
+        highestAck,
+      );
+
+      // TODO: remove this JSON.stringify: change 'deliverMailboxReq' to have
+      // more structure than a single string, and have the CLI handle variable
+      // args better
+      tmpInfo = await makeTempFile(
+        'ag-solo-cosmos-deliver.',
+        JSON.stringify([messages, highestAck]),
+      );
+
+      // Deliver message over file, as it could be big.
+      let txArgs = ['tx', 'swingset', 'deliver', `@${tmpInfo.path}`];
+
+      // Is our helper different from the SwingSet client address?
+      if (clientAddr !== helperAddr) {
+        // Get the encoded message into our file.
+        await captureHelperOutput(
+          [...txArgs, '--generate-only', `--from=${clientAddr}`],
+          tmpInfo.path,
+        );
+
+        // Indirect the transaction broadcasting through the `authz` module.
+        txArgs = ['tx', 'authz', 'exec', tmpInfo.path];
+      }
+
+      // Now add the arguments to actually sign and broadcast the transaction.
+      txArgs.push(
+        '--keyring-backend=test',
+        '--gas=auto',
+        '--gas-adjustment=1.3',
+        '--from=ag-solo',
+        '--yes',
+      );
+
+      // Use the feeAccount for any fees.
+      if (feeAccountAddr) {
+        txArgs.push(`--fee-account=${feeAccountAddr}`);
+      }
+
+      // We just try a single delivery per block.
+      let retry = true;
+      while (retry) {
+        retry = false;
+        // eslint-disable-next-line no-await-in-loop
+        const { stderr, stdout } = await runHelper([
+          ...txArgs,
+          `--sequence=${sequenceNumber}`,
+        ]);
+
+        const errMsg = stderr.trimRight();
+        if (errMsg) {
+          const seqMatch = errMsg.match(
+            /account sequence mismatch, expected (\d+),/,
+          );
+          if (seqMatch) {
+            // Try to resync our sequence number before sending more.
+            console.info(
+              `Resynchronizing ${GCI} sequence number from ${sequenceNumber} to ${seqMatch[1]}`,
+            );
+            sequenceNumber = BigInt(seqMatch[1]);
+            retry = true;
+          } else {
+            console.error(errMsg);
+          }
+        }
+
+        if (!retry) {
+          console.debug(`helper said: ${stdout}`);
+          const out = JSON.parse(stdout);
+
+          assert.equal(
+            parseInt(out.code, 10),
+            0,
+            X`Unexpected output: ${stdout.trimRight()}`,
+          );
+
+          // We submitted the transaction successfully.
+          sequenceNumber += 1n;
+        }
+      }
+    } catch (e) {
+      // Put back the deliveries we tried to make.
+      messagePool = messages.concat(messagePool);
+      messagePool.sort((a, b) => a[0] - b[0]);
+      throw e;
+    } finally {
+      if (tmpInfo) {
+        await fs.promises.unlink(tmpInfo.path);
+      }
+    }
+  };
+
   /**
    * This function is entered at most the same number of times
    * as the blockNotifier announces a new block.
@@ -389,129 +486,76 @@ ${chainID} chain does not yet know of address ${myAddr}${adviseEgress(myAddr)}
    *
    * @param {number=} lastBlockUpdate
    */
-  const recurseEachNewBlock = (lastBlockUpdate = undefined) => {
-    blockNotifier
-      .getUpdateSince(lastBlockUpdate)
-      .then(({ updateCount, value }) => {
-        assert(value, X`${GCI} unexpectedly finished!`);
-        log.debug(`new block on ${GCI}, fetching mailbox`);
-        getMailbox()
-          .then(ret => {
-            if (!ret) {
-              // The getMailbox was cancelled.
-              return;
-            }
-
-            const { outbox, ack } = ret;
-            // console.debug('have outbox', outbox, ack);
-            inbound(GCI, outbox, ack);
-          })
-          .catch(e => log.error(`Failed to fetch ${GCI} mailbox:`, e));
-        recurseEachNewBlock(updateCount);
-      });
+  const recurseEachNewBlock = async (lastBlockUpdate = undefined) => {
+    const { updateCount, value } = await blockNotifier.getUpdateSince(
+      lastBlockUpdate,
+    );
+    assert(value, X`${GCI} unexpectedly finished!`);
+    console.debug(`new block on ${GCI}, fetching mailbox`);
+    await getMailbox()
+      .then(ret => {
+        if (!ret) {
+          return;
+        }
+        const { outbox, ack } = ret;
+        // console.debug('have outbox', outbox, ack);
+        inbound(GCI, outbox, ack);
+      })
+      .catch(e => console.error(`Failed to fetch ${GCI} mailbox:`, e));
+    recurseEachNewBlock(updateCount);
   };
 
   // Begin the block consumer.
   recurseEachNewBlock();
 
-  let totalDeliveries = 0;
+  // Retry sending, but no more than one pending retry at a time.
+  let retryPending;
+  const retrySend = (e = undefined) => {
+    if (e) {
+      console.error(`Error sending`, e);
+    }
+    if (retryPending !== undefined) {
+      return;
+    }
+
+    retryPending = setTimeout(() => {
+      retryPending = undefined;
+      sendUpdater.updateState(true);
+    }, SEND_RETRY_DELAY_MS);
+  };
+
+  // This function ensures we only have one outgoing send operation at a time.
+  const recurseEachSend = async (lastSendUpdate = undefined) => {
+    // See when there is another requested send since our last time.
+    const { updateCount, value } = await sendNotifier.getUpdateSince(
+      lastSendUpdate,
+    );
+    assert(value, X`Sending unexpectedly finished!`);
+
+    await sendFromMessagePool().catch(retrySend);
+    recurseEachSend(updateCount);
+  };
+
+  // Begin the sender.
+  recurseEachSend();
+
   async function deliver(newMessages, acknum) {
-    let tmpInfo;
-    try {
-      totalDeliveries += 1;
-      log(
-        `delivering to chain (trips=${totalDeliveries})`,
-        GCI,
-        newMessages,
-        acknum,
-      );
+    let doSend = false;
+    if (acknum > highestAck) {
+      highestAck = acknum;
+      doSend = true;
+    }
+    if (newMessages.length) {
+      addToMessagePool(newMessages);
+      doSend = true;
+    }
 
-      // Peer and submitter are combined in the message format (i.e. we removed
-      // the extra 'myAddr' after 'tx swingset deliver'). All messages from
-      // solo vats are "from" the signer, and messages relayed from another
-      // chain will have other data to demonstrate which chain it comes from
-
-      // TODO: remove this JSON.stringify([newMessages, acknum]): change
-      // 'deliverMailboxReq' to have more structure than a single string, and
-      // have the CLI handle variable args better
-
-      tmpInfo = await new Promise((resolve, reject) => {
-        tempOpen({ prefix: 'ag-solo-cosmos-deliver.' }, (err, info) => {
-          if (err) {
-            return reject(err);
-          }
-          return resolve(info);
-        });
-      });
-
-      try {
-        await new Promise((resolve, reject) => {
-          fs.write(tmpInfo.fd, JSON.stringify([newMessages, acknum]), err => {
-            if (err) {
-              return reject(err);
-            }
-            return resolve();
-          });
-        });
-      } finally {
-        await new Promise((resolve, reject) => {
-          fs.close(tmpInfo.fd, e => {
-            if (e) {
-              return reject(e);
-            }
-            return resolve();
-          });
-        });
-      }
-
-      const args = [
-        'tx',
-        'swingset',
-        'deliver',
-        '--keyring-backend=test',
-        `@${tmpInfo.path}`, // Deliver message over file, as it could be big.
-        '--gas=auto',
-        '--gas-adjustment=1.2',
-        '--from=ag-solo',
-        '--broadcast-mode=block', // Don't return until committed.
-        '--yes',
-      ];
-
-      // If we send two messages back-to-back too quickly, the second one
-      // may use the same seqnum as the first, so it will be rejected by the
-      // signature-checking auth/ante handler on the chain. Therefore, we need
-      // to queue our deliver() calls and not allow one to proceed until the
-      // others have finished.
-      const qret = await queuedHelper(
-        'deliver',
-        undefined, // allow the queue to grow unbounded, and never cancel deliveries
-        args,
-        ret => {
-          const { stderr, stdout } = ret;
-          const errMsg = stderr.trimRight();
-          if (errMsg) {
-            log.error(errMsg);
-          }
-          log.debug(`helper said: ${stdout}`);
-          const out = JSON.parse(stdout);
-          if (Number(out.height) > 0) {
-            // We submitted the transaction successfully.
-            return {};
-          }
-          assert.fail(X`Unexpected output: ${stdout.trimRight()}`);
-        },
-        undefined,
-        {}, // defaultIfCancelled
-      );
-      return qret;
-    } finally {
-      if (tmpInfo) {
-        await fs.promises.unlink(tmpInfo.path);
-      }
+    if (doSend) {
+      sendUpdater.updateState(true);
     }
   }
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return makeBatchedDeliver(deliver);
+  return makeBatchedDeliver(deliver, SEND_RETRY_DELAY_MS);
 }

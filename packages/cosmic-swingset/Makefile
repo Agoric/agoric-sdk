@@ -78,10 +78,24 @@ scenario2-run-chain:
 		DEBUG=SwingSet:ls,SwingSet:vat \
 		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
 
+# Blow away all client state to try again without resetting the chain.
 scenario2-reset-client:
 	rm -rf t1/$(BASE_PORT)
 	$(AG_SOLO) init t1/$(BASE_PORT) --webport=$(BASE_PORT)
 	$(MAKE) set-local-gci-ingress
+
+# Declare that the BASE_PORT should draw fees from its owner.
+scenario2-use-fee-account: t1/$(BASE_PORT)/owner-address
+	cp $< t1/$(BASE_PORT)/cosmos-fee-account
+
+# Declare that the BASE_PORT should use an egress corresponding to its owner.
+scenario2-use-client-account: t1/$(BASE_PORT)/owner-address
+	cp $< t1/$(BASE_PORT)/cosmos-client-account
+
+t1/$(BASE_PORT)/owner-address:
+	rm -rf t1/$(BASE_PORT)/owner
+	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq -r .address > $@.tmp
+	mv $@.tmp $@
 
 # Provision and start a client.
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
@@ -93,16 +107,22 @@ COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
 	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT) to come live..."
-	@while ! curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status >/dev/null; do \
+	@while true; do \
+	  block=$$(curl -s http://$(COSMOS_RPC_HOST):$(COSMOS_RPC_PORT)/status | jq -r .result.sync_info.latest_block_height); \
+		if test -z "$$start"; then \
+		  start=$$block; \
+		elif test $$block -gt $$start; then \
+		  break; \
+		fi; \
 		echo -n '.'; \
-		sleep 5; \
+		sleep 1; \
 	done
 	@echo ' done!'
-	# TODO: find a way to tell when the chain is ready without a race.
-	sleep 10 # Generous timeout to wait for chain to be ready
 
 t1-provision-one-with-powers: wait-for-cosmos
-	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
+	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
+		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
+		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
@@ -110,9 +130,12 @@ t1-provision-one-with-powers: wait-for-cosmos
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
+	
 
 t1-provision-one: wait-for-cosmos
-	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
+	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
+		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
+		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
@@ -121,8 +144,27 @@ t1-provision-one: wait-for-cosmos
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'; }
 
+t1/$(BASE_PORT)/cosmos-client-account.setup:
+	test ! -f t1/$(BASE_PORT)/cosmos-client-account || \
+	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx authz grant \
+		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address) generic --msg-type=/agoric.swingset.MsgDeliverInbound
+	date > $@
+
+t1/$(BASE_PORT)/cosmos-fee-account.setup:
+	test ! -f t1/$(BASE_PORT)/cosmos-fee-account || \
+	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx feegrant grant \
+		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		--period=5 --period-limit=200urun $$(cat t1/$(BASE_PORT)/cosmos-fee-account) $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address)
+	date > $@
+
 # Actually start the ag-solo.
-t1-start-ag-solo:
+t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/cosmos-fee-account.setup
+	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
+	$(AGCH) query auth account $$addr >/dev/null 2>&1 || \
+		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		bootstrap $$addr 1urun
 	cd t1/$(BASE_PORT) && $(AG_SOLO) start
 
 # scenario3 is a single JS process without any Golang.  However,
