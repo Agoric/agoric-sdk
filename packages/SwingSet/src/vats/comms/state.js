@@ -412,20 +412,20 @@ export function makeState(syscall, identifierBase = 0) {
     assert.equal(parseLocalSlot(lref).type, 'object');
     return !!store.get(`cr.${lref}`);
   }
-  function setReachableByKernel(lref, isImport) {
+  function setReachableByKernel(lref, isImportFromComms) {
     const wasReachable = isReachableByKernel(lref);
     if (!wasReachable) {
       store.set(`cr.${lref}`, `1`);
-      if (isImport) {
+      if (isImportFromComms) {
         changeReachable(lref, 1n);
       }
     }
   }
-  function clearReachableByKernel(lref, isImport) {
+  function clearReachableByKernel(lref, isImportFromComms) {
     const wasReachable = isReachableByKernel(lref);
     if (wasReachable) {
       store.delete(`cr.${lref}`);
-      if (isImport) {
+      if (isImportFromComms) {
         const reachable = changeReachable(lref, -1n);
         if (!reachable) {
           maybeFree.add(lref);
@@ -438,13 +438,14 @@ export function makeState(syscall, identifierBase = 0) {
   // setReachableByKernel
   function addKernelMapping(kfref, lref) {
     const { type, allocatedByVat } = parseVatSlot(kfref);
-    const isImport = allocatedByVat; // true = kernel is downstream importer
+    // isImportFromComms===true means kernel is downstream importer
+    const isImportFromComms = allocatedByVat;
     store.set(`c.${kfref}`, lref);
     store.set(`c.${lref}`, kfref);
-    const mode = isImport ? 'clist-import' : 'clist-export';
+    const mode = isImportFromComms ? 'clist-import' : 'clist-export';
     incrementRefCount(lref, `{kfref}|k|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         addImporter(lref, 'kernel');
       }
     }
@@ -456,16 +457,16 @@ export function makeState(syscall, identifierBase = 0) {
     const kfref = store.get(`c.${lref}`);
     let mode = 'data'; // close enough
     const { type, allocatedByVat } = parseVatSlot(kfref);
-    const isImport = allocatedByVat;
+    const isImportFromComms = allocatedByVat;
     if (type === 'object') {
-      clearReachableByKernel(lref, isImport);
-      mode = isImport ? 'clist-import' : 'clist-export';
+      clearReachableByKernel(lref, isImportFromComms);
+      mode = isImportFromComms ? 'clist-import' : 'clist-export';
     }
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
     decrementRefCount(lref, `{kfref}|k|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         removeImporter(lref, 'kernel');
       } else {
         // deleting the upstream/export-side mapping should trigger
