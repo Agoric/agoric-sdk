@@ -89,3 +89,7 @@ provokeGC(globalThis.gc).then(data => issueCommand(ArrayBuffer.fromString(JSON.s
   t.is(wrState, 'weakref is dead');
   t.is(finalizerState, 'finalizer was called');
 });
+
+// TODO: exercise 'return E(zoe).foo()' like in test-gc-vat from #3482, and
+// demonstrate that Node.js requires 2 setImmediates after the gc() to allow
+// everything to get collected. Then update #3240.
