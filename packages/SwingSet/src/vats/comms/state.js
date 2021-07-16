@@ -227,14 +227,14 @@ export function makeState(syscall, identifierBase = 0) {
   function changeRecognizable(lref, delta) {
     const key = `${lref}.recognizable`;
     const recognizable = Nat(BigInt(store.getRequired(key))) + delta;
-    store.set(key, `${recognizable}`);
+    store.set(key, `${Nat(recognizable)}`);
     return recognizable;
   }
 
   function changeReachable(lref, delta) {
     const key = `${lref}.reachable`;
     const reachable = Nat(BigInt(store.getRequired(key))) + delta;
-    store.set(key, `${reachable}`);
+    store.set(key, `${Nat(reachable)}`);
     return reachable;
   }
 
@@ -260,7 +260,7 @@ export function makeState(syscall, identifierBase = 0) {
     if (type === 'promise') {
       const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
-      store.set(`${lref}.refCount`, `${refCount}`);
+      store.set(`${lref}.refCount`, `${Nat(refCount)}`);
     }
     if (type === 'object') {
       if (mode === 'clist-import' || mode === 'data') {
@@ -288,7 +288,7 @@ export function makeState(syscall, identifierBase = 0) {
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
-      store.set(`${lref}.refCount`, `${refCount}`);
+      store.set(`${lref}.refCount`, `${Nat(refCount)}`);
       if (refCount === 0) {
         // If we are still in the middle of a resolve operation, and this lref
         // is an ancillary promise that was briefly added to the decider's
