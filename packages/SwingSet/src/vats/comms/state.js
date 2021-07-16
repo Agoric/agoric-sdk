@@ -319,6 +319,14 @@ export function makeState(syscall, identifierBase = 0) {
     }
   }
 
+  function getRefCounts(lref) {
+    const reaKey = `${lref}.reachable`;
+    const reachable = Nat(BigInt(store.getRequired(reaKey)));
+    const recKey = `${lref}.recognizable`;
+    const recognizable = Nat(BigInt(store.getRequired(recKey)));
+    return { reachable, recognizable };
+  }
+
   /**
    * Delete any local promises that have zero references. Return a list of
    * work for unreachable/unrecognizable objects.
@@ -748,6 +756,7 @@ export function makeState(syscall, identifierBase = 0) {
     lrefMightBeFree,
     incrementRefCount,
     decrementRefCount,
+    getRefCounts,
     processMaybeFree,
 
     deciderIsKernel,
