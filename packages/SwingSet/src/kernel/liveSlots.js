@@ -293,14 +293,14 @@ function build(
     return harden(presence);
   }
 
-  function makeImportedPromise(vpid) {
+  function makePipelinablePromise(vpid) {
     // Called by convertSlotToVal(type=promise) for incoming promises (a
     // `p-NN` reference), and by queueMessage() for the result of an outbound
     // message (a `p+NN` reference). We build a Promise for application-level
     // code, to which messages can be pipelined, and we prepare for the
     // kernel to tell us that it has been resolved in various ways.
     insistVatType('promise', vpid);
-    lsdebug(`makeImportedPromise(${vpid})`);
+    lsdebug(`makePipelinablePromise(${vpid})`);
 
     // The Promise will we associated with a handler that converts p~.foo() into
     // a syscall.send() that targets the vpid. When the Promise is resolved
@@ -314,7 +314,7 @@ function build(
     const unfulfilledHandler = {
       applyMethod(_o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
-        lsdebug(`makeImportedPromise handler.applyMethod (${vpid})`);
+        lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
           assert.fail(X`mIPromise handler called after resolution`);
@@ -347,7 +347,6 @@ function build(
       },
     });
     importedPromisesByPromiseID.set(vpid, pRec);
-    pendingPromises.add(p);
 
     return harden(p);
   }
@@ -531,7 +530,7 @@ function build(
           !parseVatSlot(slot).allocatedByVat,
           X`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
         );
-        val = makeImportedPromise(slot);
+        val = makePipelinablePromise(slot);
         // ideally we'd wait until .then is called on p before subscribing,
         // but the current Promise API doesn't give us a way to discover
         // this, so we must subscribe right away. If we were using Vows or
@@ -541,6 +540,8 @@ function build(
         } else {
           syscall.subscribe(slot);
         }
+        // keep the imported promise alive until it resolves
+        pendingPromises.add(val);
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
         importedDevices.add(val);
@@ -614,7 +615,7 @@ function build(
     // create a Promise which callers follow for the result, give it a
     // handler so we can pipeline messages to it, and prepare for the kernel
     // to notify us of its resolution
-    const p = makeImportedPromise(resultVPID);
+    const p = makePipelinablePromise(resultVPID);
 
     lsdebug(
       `ls.qm send(${JSON.stringify(targetSlot)}, ${String(
@@ -640,6 +641,8 @@ function build(
     // passes the Promise they received as argument or return value, we want
     // it to serialize as resultVPID. And if someone passes resultVPID to
     // them, we want the user-level code to get back that Promise, not 'p'.
+    // As a result, we do not retain or track 'p'. Only 'returnedP' is
+    // registered and retained by pendingPromises.
 
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
