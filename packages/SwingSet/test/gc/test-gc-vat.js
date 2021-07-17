@@ -16,6 +16,20 @@ function dumpObjects(c) {
   return out;
 }
 
+function dumpClist(c) {
+  // returns array like [ko27/v3/o+1, ..]
+  return c.dump().kernelTable.map(e => `${e[0]}/${e[1]}/${e[2]}`);
+}
+
+function findClist(c, vatID, kref) {
+  for (const e of c.dump().kernelTable) {
+    if (e[0] === kref && e[1] === vatID) {
+      return e[2];
+    }
+  }
+  return undefined;
+}
+
 async function dropPresence(t, dropExport) {
   const config = {
     bootstrap: 'bootstrap',
@@ -78,4 +92,64 @@ async function dropPresence(t, dropExport) {
 }
 
 test('drop presence (export retains)', t => dropPresence(t, false));
-test.skip('drop presence (export drops)', t => dropPresence(t, true));
+test('drop presence (export drops)', t => dropPresence(t, true));
+
+test('forward to fake zoe', async t => {
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourceSpec: path.join(__dirname, 'bootstrap.js'),
+      },
+      target: {
+        sourceSpec: path.join(__dirname, 'vat-target.js'),
+        // creationOptions: { managerType: 'xs-worker' },
+        creationOptions: { managerType: 'local' },
+      },
+      zoe: {
+        sourceSpec: path.join(__dirname, 'vat-fake-zoe.js'),
+      },
+    },
+  };
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  const targetID = c.vatNameToID('target');
+  c.pinVatRoot('target');
+  const zoeID = c.vatNameToID('zoe');
+  c.pinVatRoot('zoe');
+  t.teardown(c.shutdown);
+  await c.run();
+
+  // first we ask vat-fake-zoe for the invitation object, to learn its kref
+
+  const r1 = c.queueToVatRoot('zoe', 'makeInvitationZoe', capargs([]));
+  await c.run();
+  const invitation = c.kpResolution(r1).slots[0];
+  // ko27/v3/o+1 is the export
+  console.log(`invitation: ${invitation}`);
+  console.log(`targetID: ${targetID}`);
+
+  // confirm that zoe is exporting it
+  t.is(findClist(c, zoeID, invitation), 'o+1');
+  t.true(dumpClist(c).includes(`${invitation}/${zoeID}/o+1`));
+  // confirm that vat-target has not seen it yet
+  t.is(findClist(c, targetID, invitation), undefined);
+
+  // console.log(c.dump().kernelTable);
+  console.log(`calling makeInvitation`);
+
+  // Then we ask bootstrap to ask vat-target to ask vat-fake-zoe for the
+  // invitation. We try to mimic the pattern used by a simple
+  // tap-fungible-faucet loadgen task, which is where I observed XS not
+  // releasing the invitation object.
+
+  c.queueToVatRoot('bootstrap', 'makeInvitation0', capargs([]));
+  await c.run();
+  // console.log(c.dump().kernelTable);
+
+  // vat-target should have learned about the invitation object, resolved the
+  // 'makeInvitationTarget' result promise with it, then dropped it
+  t.is(findClist(c, targetID, invitation), undefined);
+});

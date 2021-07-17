@@ -5,10 +5,12 @@ export function buildRootObject() {
   let A = Far('A', { hello() {} });
   let B = Far('B', { hello() {} });
   let target;
+  let zoe;
 
   return Far('root', {
     async bootstrap(vats) {
       target = vats.target;
+      zoe = vats.zoe;
     },
     async one() {
       await E(target).two(A, B);
@@ -16,6 +18,10 @@ export function buildRootObject() {
     drop() {
       A = null;
       B = null;
+    },
+
+    async makeInvitation0() {
+      await E(target).makeInvitationTarget(zoe);
     },
   });
 }
