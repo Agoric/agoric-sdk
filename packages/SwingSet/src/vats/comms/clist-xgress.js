@@ -16,7 +16,7 @@ export function makeIngressEgress(state, provideLocalForRemote) {
     const inboundRRef = makeRemoteSlot('object', true, remoteRefID);
     remote.addRemoteMapping(inboundRRef, loid);
     remote.skipRemoteObjectID(remoteRefID);
-    const isImportFromComms = false; // bug 3483: this should be 'true'
+    const isImportFromComms = true;
     remote.setReachable(loid, isImportFromComms);
 
     // prettier-ignore
