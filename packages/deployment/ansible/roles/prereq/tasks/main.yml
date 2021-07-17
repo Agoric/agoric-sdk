@@ -20,25 +20,30 @@
     - xfsprogs
     - "nodejs={{ NODEJS_VERSION }}.*"
 
-- name: Stat /dev/sda
-  stat:
-    path: /dev/sda
-  register: sda
+- name: Default home_dev for DigitalOcean
+  set_fact:
+    home_dev: /dev/sda
+  when: "home_dev is not defined and provider is defined and provider.startswith('digitalocean')"
 
-- name: Create /dev/sda with XFS
+- name: "Stat {{ home_dev }}"
+  stat:
+    path: "{{ home_dev | default('/nonexistent') }}"
+  register: hdev
+
+- name: "Format {{ home_dev }} with XFS"
   filesystem:
     fstype: xfs
-    dev: /dev/sda
-  when: sda.stat.exists
+    dev: "{{ home_dev }}"
+  when: hdev.stat.exists
 
-- name: Mount /dev/sda
+- name: "Mount {{ home_dev }}"
   mount:
     path: /home
-    src: /dev/sda
+    src: "{{ home_dev }}"
     fstype: auto
     state: mounted
-  when: sda.stat.exists
+  when: hdev.stat.exists
 
 - name: Resize /home with XFS
   shell: "xfs_growfs -n /home"
-  when: sda.stat.exists
+  when: hdev.stat.exists

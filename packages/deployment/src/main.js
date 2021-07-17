@@ -918,11 +918,12 @@ ${name}:
             // These are the validator params.
             roleParams = `
   moniker: Agoric${offset + instance}
-  website: https://testnet.agoric.com
+  website: https://testnet.agoric.net
   identity: https://keybase.io/team/agoric.testnet.validators`;
           }
           const host = `\
 ${node}:${roleParams}
+  provider: ${provider}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${keyFile}'
