@@ -39,6 +39,10 @@ export const makeEscrowStorage = () => {
   const withdrawPayments = allocation => {
     return harden(
       objectMap(allocation, ([keyword, amount]) => {
+        if (amount.value === 0n || AmountMath.isEmpty(amount)) {
+          console.log('EMPTY AMOUNT', keyword, amount.brand);
+          debugger;
+        }
         const purse = brandToPurse.get(amount.brand);
         return [keyword, E(purse).withdraw(amount)];
       }),
