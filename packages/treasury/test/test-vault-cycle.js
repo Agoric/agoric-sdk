@@ -74,6 +74,7 @@ const closeVault = async (zoe, bldBrand, bldPurse, runPurse, vault) => {
     E(runPurse).deposit(runPayout),
     E(bldPurse).deposit(bldPayout),
   ]);
+  return runNeeded;
 };
 
 const makePriceAuthority = (
@@ -246,7 +247,13 @@ test('vault cycle', async t => {
   t.deepEqual(bldBalance, AmountMath.make(bldKit.brand, 0n));
   t.deepEqual(runBalance, AmountMath.make(runBrand, 400n));
 
-  await closeVault(zoe, bldKit.brand, bldPurse, runPurse, vault);
+  const runPaidBack = await closeVault(
+    zoe,
+    bldKit.brand,
+    bldPurse,
+    runPurse,
+    vault,
+  );
 
   const bldBalanceAfterClose = await E(bldPurse).getCurrentAmount();
   const runBalanceAfterClose = await E(runPurse).getCurrentAmount();
@@ -255,6 +262,10 @@ test('vault cycle', async t => {
 
   const vaultSeatPayments = await liquidationPayout;
   console.log(vaultSeatPayments);
-  console.log(await E(runIssuer).getAmountOf(vaultSeatPayments.RUN));
-  console.log(await E(bldKit.issuer).getAmountOf(vaultSeatPayments.Collateral));
+  const runReturned = await E(runIssuer).getAmountOf(vaultSeatPayments.RUN);
+  const collateralReturned = await E(bldKit.issuer).getAmountOf(
+    vaultSeatPayments.Collateral,
+  );
+  t.deepEqual(runReturned, runPaidBack); // this is a bug, the user is getting access to the RUN they paid
+  t.deepEqual(collateralReturned, AmountMath.makeEmpty(bldKit.brand));
 });
