@@ -32,17 +32,9 @@ test('vattp', async t => {
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
-  t.is(
-    mb.deliverInbound(
-      'remote1',
-      [
-        [1, 'msg1'],
-        [2, 'msg2'],
-      ],
-      0,
-    ),
-    true,
-  );
+  const m1 = [1, 'msg1'];
+  const m2 = [2, 'msg2'];
+  t.is(mb.deliverInbound('remote1', [m1, m2], 0), true);
   await c.run();
   t.deepEqual(c.dump().log, [
     'not sending anything',
@@ -51,17 +43,7 @@ test('vattp', async t => {
   ]);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 
-  t.is(
-    mb.deliverInbound(
-      'remote1',
-      [
-        [1, 'msg1'],
-        [2, 'msg2'],
-      ],
-      0,
-    ),
-    false,
-  );
+  t.is(mb.deliverInbound('remote1', [m1, m2], 0), true);
   await c.run();
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 });
@@ -104,19 +86,11 @@ test('vattp 2', async t => {
   t.deepEqual(c.dump().log, ['ch.receive msg1']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 1 } });
 
-  t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), false);
+  t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
 
-  t.is(
-    mb.deliverInbound(
-      'remote1',
-      [
-        [1, 'msg1'],
-        [2, 'msg2'],
-      ],
-      1,
-    ),
-    true,
-  );
+  const m1 = [1, 'msg1'];
+  const m2 = [2, 'msg2'];
+  t.is(mb.deliverInbound('remote1', [m1, m2], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
