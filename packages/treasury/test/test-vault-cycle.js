@@ -50,7 +50,7 @@ const openVault = async (
     E(runPurse).deposit(runPayout),
   ]);
   const offerResult = await E(seatP).getOfferResult();
-  return offerResult.vault;
+  return offerResult;
 };
 
 const closeVault = async (zoe, bldBrand, bldPurse, runPurse, vault) => {
@@ -213,7 +213,7 @@ test('vault cycle', async t => {
 
   E(bldPurse).deposit(bldKit.mint.mintPayment(bldToLock));
 
-  const vault = await openVault(
+  const offerResult1 = await openVault(
     zoe,
     treasuryPublicFacet,
     bldPurse,
@@ -222,9 +222,16 @@ test('vault cycle', async t => {
     wantedRun,
   );
 
+  const {
+    // uiNotifier,
+    // invitationMakers,
+    vault,
+    liquidationPayout,
+  } = offerResult1;
+
   // Open a vault twice in order to get enough run to pay back a loan
   E(bldPurse).deposit(bldKit.mint.mintPayment(bldToLock));
-  const vault2 = await openVault(
+  const offerResult2 = await openVault(
     zoe,
     treasuryPublicFacet,
     bldPurse,
@@ -245,4 +252,9 @@ test('vault cycle', async t => {
   const runBalanceAfterClose = await E(runPurse).getCurrentAmount();
   t.deepEqual(bldBalanceAfterClose, AmountMath.make(bldKit.brand, 100000n));
   t.deepEqual(runBalanceAfterClose, AmountMath.make(runBrand, 190n));
+
+  const vaultSeatPayments = await liquidationPayout;
+  console.log(vaultSeatPayments);
+  console.log(await E(runIssuer).getAmountOf(vaultSeatPayments.RUN));
+  console.log(await E(bldKit.issuer).getAmountOf(vaultSeatPayments.Collateral));
 });
