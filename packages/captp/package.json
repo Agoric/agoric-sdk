@@ -13,14 +13,14 @@
   "author": "Michael FIG <michael@fig.org>",
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "license": "Apache-2.0",
-  "main": "lib/captp.js",
-  "module": "lib/captp.js",
+  "main": "src/index.js",
+  "module": "src/index.js",
   "directories": {
-    "lib": "lib",
+    "src": "src",
     "test": "test"
   },
   "files": [
-    "lib"
+    "src"
   ],
   "repository": {
     "type": "git",
@@ -31,14 +31,18 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint 'lib/*.js'"
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint": "yarn lint:eslint && yarn lint:types",
+    "lint:eslint": "eslint '**/*.js'",
+    "lint:types": "tsc -p jsconfig.json"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.20",
+    "@agoric/swingset-vat": "^0.18.6",
     "ava": "^3.12.1"
   },
   "dependencies": {
+    "@agoric/assert": "^0.3.6",
     "@agoric/eventual-send": "^0.13.22",
     "@agoric/marshal": "^0.4.19",
     "@agoric/nat": "^4.1.0",

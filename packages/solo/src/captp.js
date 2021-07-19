@@ -1,7 +1,4 @@
-// Avoid importing the full captp bundle, which would carry
-// in its own makeHardener, etc.
-import { makeCapTP } from '@agoric/captp/lib/captp';
-import { E } from '@agoric/eventual-send';
+import { E, makeCapTP } from '@agoric/captp';
 
 export const getCapTPHandler = (
   send,

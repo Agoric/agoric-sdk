@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 import { Far } from '@agoric/marshal';
 import test from 'ava';
-import { E, makeCapTP } from '../lib/captp.js';
+import { E, makeCapTP } from '../src/captp.js';
 
 test('try disconnecting captp', async t => {
   const objs = [];
@@ -9,13 +9,11 @@ test('try disconnecting captp', async t => {
   const { getBootstrap, abort } = makeCapTP(
     'us',
     obj => objs.push(obj),
-    // TODO Can we avoid the function wrapper? makeCapTP does the needed test
-    () =>
-      Far('test hello', {
-        method() {
-          return 'hello';
-        },
-      }),
+    Far('test hello', {
+      method() {
+        return 'hello';
+      },
+    }),
     {
       onReject(e) {
         rejected.push(e);
@@ -41,7 +39,7 @@ test('try disconnecting captp', async t => {
   );
   t.deepEqual(
     objs,
-    [{ type: 'CTP_BOOTSTRAP', questionID: 1, epoch: 0 }],
+    [{ type: 'CTP_BOOTSTRAP', questionID: 'us#1', epoch: 0 }],
     'expected bootstrap messages',
   );
   ps.push(
@@ -56,7 +54,7 @@ test('try disconnecting captp', async t => {
   t.deepEqual(
     objs,
     [
-      { type: 'CTP_BOOTSTRAP', questionID: 1, epoch: 0 },
+      { type: 'CTP_BOOTSTRAP', questionID: 'us#1', epoch: 0 },
       { type: 'CTP_DISCONNECT', reason: undefined, epoch: 0 },
     ],
     'expected clean disconnect',
@@ -70,13 +68,11 @@ test('try aborting captp with reason', async t => {
   const { getBootstrap, abort } = makeCapTP(
     'us',
     obj => objs.push(obj),
-    // TODO Can we avoid the function wrapper? makeCapTP does the needed test
-    () =>
-      Far('test hello', {
-        method() {
-          return 'hello';
-        },
-      }),
+    Far('test hello', {
+      method() {
+        return 'hello';
+      },
+    }),
     {
       onReject(e) {
         rejected.push(e);
@@ -102,7 +98,7 @@ test('try aborting captp with reason', async t => {
   );
   t.deepEqual(
     objs,
-    [{ type: 'CTP_BOOTSTRAP', questionID: 1, epoch: 0 }],
+    [{ type: 'CTP_BOOTSTRAP', questionID: 'us#1', epoch: 0 }],
     'expected bootstrap messages',
   );
   ps.push(
@@ -121,7 +117,7 @@ test('try aborting captp with reason', async t => {
   );
   t.deepEqual(
     objs,
-    [{ type: 'CTP_BOOTSTRAP', questionID: 1, epoch: 0 }, aborted],
+    [{ type: 'CTP_BOOTSTRAP', questionID: 'us#1', epoch: 0 }, aborted],
     'expected unclean disconnect',
   );
   await Promise.all(ps);
