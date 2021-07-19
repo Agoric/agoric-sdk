@@ -444,8 +444,12 @@ export default async function start(basedir, argv) {
       if (err) {
         console.error(err);
       }
+      // eslint-disable-next-line no-use-before-define
+      process.off('exit', killDeployment);
     },
   );
+  const killDeployment = () => cp.kill('SIGINT');
+  process.on('exit', killDeployment);
 
   return whenHellFreezesOver.then(() => cp.kill('SIGINT'));
 }
