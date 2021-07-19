@@ -4,6 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 
 const console = anylogger('block-manager');
 
+const BOOTSTRAP_BLOCK = 'BOOTSTRAP_BLOCK';
 const BEGIN_BLOCK = 'BEGIN_BLOCK';
 const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
@@ -15,6 +16,7 @@ const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
 export default function makeBlockManager({
   deliverInbound,
   doBridgeInbound,
+  bootstrapBlock,
   beginBlock,
   endBlock,
   flushChainSends,
@@ -22,10 +24,9 @@ export default function makeBlockManager({
   saveOutsideState,
   savedActions,
   savedHeight,
-  bootstrapBlock,
   verboseBlocks = false,
 }) {
-  let computedHeight = bootstrapBlock ? undefined : savedHeight;
+  let computedHeight = savedHeight;
   let runTime = 0;
   let chainTime;
 
@@ -99,12 +100,21 @@ export default function makeBlockManager({
 
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
+      case BOOTSTRAP_BLOCK: {
+        // This only runs for the very first block on the chain.
+        verboseBlocks && console.info('block bootstrap');
+        if (computedHeight !== 0) {
+          throw Error(
+            `Cannot run a bootstrap block at height ${action.blockHeight}`,
+          );
+        }
+        await bootstrapBlock(action.blockTime);
+        break;
+      }
+
       case COMMIT_BLOCK: {
         verboseBlocks && console.info('block', action.blockHeight, 'commit');
-        if (
-          computedHeight !== undefined &&
-          action.blockHeight !== computedHeight
-        ) {
+        if (action.blockHeight !== computedHeight) {
           throw Error(
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
           );
@@ -150,15 +160,12 @@ export default function makeBlockManager({
         currentActions.push(action);
 
         // eslint-disable-next-line no-use-before-define
-        if (!deepEquals(currentActions, savedActions)) {
+        if (computedHeight > 0 && !deepEquals(currentActions, savedActions)) {
           // We only handle the trivial case.
           const restoreHeight = action.blockHeight - 1;
           // We can reset from -1 or 0 to anything, since that's what happens
           // when genesis.initial_height !== "1".
-          if (
-            computedHeight !== undefined &&
-            restoreHeight !== computedHeight
-          ) {
+          if (restoreHeight !== computedHeight) {
             // Keep throwing forever.
             decohered = Error(
               // TODO unimplemented
@@ -200,13 +207,7 @@ export default function makeBlockManager({
 
           // Advance our saved state variables.
           savedActions = currentActions;
-          if (computedHeight === undefined && action.blockHeight > 1) {
-            // Genesis height is the same as the first block, so we
-            // need to adjust.
-            computedHeight = action.blockHeight - 1;
-          } else {
-            computedHeight = action.blockHeight;
-          }
+          computedHeight = action.blockHeight;
         }
 
         currentActions = [];

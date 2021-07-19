@@ -84,7 +84,7 @@ async function buildSwingset(
   );
 
   // We DON'T want to run the kernel yet, only when the application decides
-  // (either on bootstrap block (-1) or in endBlock).
+  // (either on bootstrap block (0) or in endBlock).
 
   return { controller, mb, bridgeInbound, timer };
 }
@@ -175,21 +175,27 @@ export async function launch(
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
-  let bootstrapBlock;
+  async function bootstrapBlock(blockTime) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-bootstrap-block-start',
+      blockTime,
+    });
+    // This is before the initial block, we need to finish processing the
+    // entire bootstrap before opening for business.
+    await crankScheduler(Infinity);
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-bootstrap-block-end',
+      blockTime,
+    });
+  }
+
   async function endBlock(blockHeight, blockTime) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-start',
       blockHeight,
       blockTime,
     });
-    let numCranks = FIXME_MAX_CRANKS_PER_BLOCK;
-    if (bootstrapBlock) {
-      // This is the initial block, we need to finish processing the entire
-      // bootstrap before opening for business.
-      numCranks = Infinity;
-      bootstrapBlock = false;
-    }
-    await crankScheduler(numCranks);
+    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
       blockHeight,
@@ -248,20 +254,19 @@ export async function launch(
   }
 
   const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    kvStore.get(SWING_STORE_META_KEY) || '[-1, [], []]',
+    kvStore.get(SWING_STORE_META_KEY) || '[0, [], []]',
   );
-  bootstrapBlock = savedHeight < 0;
 
   return {
     deliverInbound,
     doBridgeInbound,
     // bridgeOutbound,
+    bootstrapBlock,
     beginBlock,
     endBlock,
     saveChainState,
     saveOutsideState,
     savedHeight,
-    bootstrapBlock,
     savedActions,
     savedChainSends,
   };
