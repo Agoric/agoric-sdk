@@ -1140,15 +1140,40 @@ export function makeWallet({
           };
           updatePaymentRecord(paymentRecord);
           // Now try depositing.
-          const depositedAmount = await E(purse).deposit(payment);
-          paymentRecord = {
-            ...paymentRecord,
-            status: 'deposited',
-            depositedAmount,
-            ...brandRecord,
-          };
-          updatePaymentRecord(paymentRecord);
-          depositedPK.resolve(depositedAmount);
+          E(purse)
+            .deposit(payment)
+            .then(
+              depositedAmount => {
+                paymentRecord = {
+                  ...paymentRecord,
+                  status: 'deposited',
+                  depositedAmount,
+                  ...brandRecord,
+                };
+                updatePaymentRecord(paymentRecord);
+                depositedPK.resolve(depositedAmount);
+              },
+              e => {
+                console.error(
+                  'Error depositing payment in',
+                  purseOrPetname || 'default purse',
+                  e,
+                );
+                if (purseOrPetname === undefined) {
+                  // Error in auto-deposit purse, just fail.  They can try
+                  // again.
+                  paymentRecord = {
+                    ...paymentRecord,
+                    status: undefined,
+                  };
+                  depositedPK.reject(e);
+                } else {
+                  // Error in designated deposit, so retry automatically without
+                  // a designated purse.
+                  depositedPK.resolve(paymentRecord.actions.deposit(undefined));
+                }
+              },
+            );
           return depositedPK.promise;
         },
         async refresh() {
