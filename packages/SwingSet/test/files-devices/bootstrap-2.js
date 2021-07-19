@@ -49,30 +49,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`calling getState`);
         const s = D(devices.d2).getState();
         log(`got ${s}`);
-      } else if (argv[0] === 'mailbox1') {
-        D(devices.mailbox).add('peer1', 1, 'data1');
-        D(devices.mailbox).add('peer1', 2, 'data2');
-        D(devices.mailbox).add('peer1', 3, 'data3');
-        D(devices.mailbox).ackInbound('peer1', 12);
-        D(devices.mailbox).ackInbound('peer1', 13);
-        D(devices.mailbox).add('peer2', 4, 'data4');
-        D(devices.mailbox).add('peer3', 5, 'data5');
-        D(devices.mailbox).remove('peer1', 1);
-        D(devices.mailbox).remove('peer2', 4, 'data4');
-        // should leave peer1: [data2,data3], peer2: [], peer3: [data5]
-      } else if (argv[0] === 'mailbox2') {
-        const handler = Far('mailbox', {
-          deliverInboundMessages(peer, messages) {
-            log(`dm-${peer}`);
-            messages.forEach(m => {
-              log(`m-${m[0]}-${m[1]}`);
-            });
-          },
-          deliverInboundAck(peer, ack) {
-            log(`da-${peer}-${ack}`);
-          },
-        });
-        D(devices.mailbox).registerInboundHandler(handler);
       } else if (argv[0] === 'command1') {
         D(devices.command).sendBroadcast({ hello: 'everybody' });
       } else if (argv[0] === 'command2') {
