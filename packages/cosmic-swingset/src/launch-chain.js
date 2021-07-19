@@ -184,7 +184,7 @@ export async function launch(
     // entire bootstrap before opening for business.
     await crankScheduler(Infinity);
     controller.writeSlogObject({
-      type: 'cosmic-swingset-bootstrap-block-end',
+      type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
     });
   }
