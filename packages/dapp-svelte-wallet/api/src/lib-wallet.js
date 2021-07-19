@@ -498,6 +498,19 @@ export function makeWallet({
       },
     );
 
+    // Try reclaiming any of our payments that were left unclaimed.
+    const claimMyLeftovers = () =>
+      keywords.forEach((keyword, i) => {
+        const purseOrUndefined = purseKeywordRecord[keyword];
+        // eslint-disable-next-line no-use-before-define
+        addPayment(paymentPs[i], purseOrUndefined);
+      });
+
+    // Gather all of our payments, and if there's an error, reclaim the ones
+    // that were successfuly withdrawn.
+    const withdrawAllPayments = Promise.all(paymentPs);
+    withdrawAllPayments.catch(claimMyLeftovers);
+
     // =====================
     // === AWAITING TURN ===
     // =====================
@@ -505,15 +518,13 @@ export function makeWallet({
     // this await is purely to prevent "embarrassment" of
     // revealing to zoe that we had insufficient funds/assets
     // for the offer.
-    const payments = await Promise.all(paymentPs);
+    const payments = await withdrawAllPayments;
 
     const paymentKeywordRecord = harden(
       Object.fromEntries(keywords.map((keyword, i) => [keyword, payments[i]])),
     );
 
     const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
-
-    // We'll resolve when deposited.
     const depositedP = E(seat)
       .getPayouts()
       .then(payoutObj => {
@@ -526,26 +537,25 @@ export function makeWallet({
             })
             .map((payoutP, payoutIndex) => {
               const keyword = payoutIndexToKeyword[payoutIndex];
-              const purse = purseKeywordRecord[keyword];
-              if (purse && payoutP) {
+              if (payoutP) {
+                // We try to find a purse for this keyword, but even if we don't,
+                // we still make it a normal incoming payment.
+                const purseOrUndefined = purseKeywordRecord[keyword];
+
                 // eslint-disable-next-line no-use-before-define
-                return addPayment(payoutP, purse);
+                return addPayment(payoutP, purseOrUndefined);
               }
               return undefined;
             }),
         );
-      })
-      .finally(() =>
-        // Try reclaiming any payments that were left on the table.
-        keywords.forEach((keyword, i) => {
-          const purse = purseKeywordRecord[keyword];
-          if (purse && payments[i]) {
-            // eslint-disable-next-line no-use-before-define
-            addPayment(payments[i], purse);
-          }
-        }),
-      );
+      });
 
+    // Regardless of the status of the offer, we try to clean up any of our
+    // unclaimed payments.
+    depositedP.finally(claimMyLeftovers);
+
+    // Return a promise that will resolve after successful deposit, as well as
+    // the promise for the seat.
     return { depositedP, seat };
   }
 
