@@ -313,7 +313,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
-      bootstrapAddress: addrs.provision,
     });
     const newConfigToml = finishTendermintConfig({
       configToml,

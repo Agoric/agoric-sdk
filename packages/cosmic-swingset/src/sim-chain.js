@@ -45,7 +45,7 @@ async function makeMapStorage(file) {
 }
 
 export async function connectToFakeChain(basedir, GCI, delay, inbound) {
-  const initialHeight = 1;
+  const initialHeight = 0;
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
@@ -58,9 +58,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     hardcodedClientAddresses: [bootAddress],
     noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
     bootMsg: {
-      bootstrapAddress: 'agoric1simboot',
-      bootstrapValue: `${50000n * 10n ** 6n}`,
-      donationValue: `${5n * 10n ** 6n}`,
+      supplyCoins: [{ denom: 'ubld', amount: `${50000n * 10n ** 6n}` }],
     },
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
@@ -149,7 +147,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   );
 
   const simulateBlock = () =>
-    unhandledSimulateBlock().catch(_ => {
+    unhandledSimulateBlock().catch(e => {
+      console.error(e);
       process.exit(1);
     });
 
@@ -166,16 +165,14 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   }
 
   let genesisBlockP;
-  if (blockHeight < 0) {
+  if (!blockHeight) {
     // The before-first-block is special... do it now.
-    // This emulates what x/swingset does to run an END_BLOCK
-    // with block 1 and genesis transactions before continuing with the real
-    // block 1.
-    blockHeight = initialHeight;
+    // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
+    // before continuing with the real initialHeight.
     genesisBlockP = blockManager(
-      { type: 'END_BLOCK', blockHeight, blockTime },
+      { type: 'BOOTSTRAP_BLOCK', blockTime },
       savedChainSends,
-    );
+    ).then(() => (blockHeight = initialHeight));
   }
   await genesisBlockP;
 
