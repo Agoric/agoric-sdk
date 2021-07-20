@@ -1,4 +1,4 @@
-/* global require, __dirname, process */
+/* global require, __dirname, setTimeout */
 // @ts-check
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
@@ -10,16 +10,7 @@ import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subpro
 import { makeStartXSnap } from '../src/controller.js';
 import { capargs } from './util.js';
 
-function suppressUnhandled(t, message) {
-  process.on('unhandledRejection', (reason, promise) => {
-    t.log('TODO: chase down unhandled rejection', reason);
-    // @ts-ignore tsc thinks reason's type is {}
-    t.is(reason.message, message);
-    promise.catch(() => {});
-  });
-}
-
-test('child termination during crank', async t => {
+test('child termination distinguished from meter exhaustion', async t => {
   const makeb = rel => bundleSource(require.resolve(rel), 'getExport');
   const lockdown = await makeb(
     '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
@@ -78,20 +69,19 @@ test('child termination during crank', async t => {
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 
-  suppressUnhandled(
-    t,
-    'Cannot write messages to v1:undefined: read ECONNRESET',
-  );
-
   const p = m.deliver(delivery); // won't resolve until child dies
 
-  theProc.kill();
+  // please excuse ambient authority
+  setTimeout(
+    () => theProc.kill(),
+    // long enough for the delivery to make it to the XS interpreter,
+    // thus avoiding a race with EPIPE / ECONNRESET
+    250,
+  );
 
-  t.throwsAsync(p, {
+  await t.throwsAsync(p, {
     instanceOf: Error,
     code: 'SIGTERM',
     message: 'v1:undefined exited due to signal SIGTERM',
   });
-
-  await p.catch(() => {});
 });
