@@ -407,39 +407,7 @@ const getInterfaceOf = val => {
 harden(getInterfaceOf);
 export { getInterfaceOf };
 
-/**
- * objects can only be passed in one of two forms:
- * 1: pass-by-remote: all properties (own and inherited) are methods,
- *    the object itself is of type object, not function
- * 2: pass-by-copy: all string-named own properties are data, not methods
- *    the object must inherit from objectPrototype or null
- *
- * all objects must be frozen
- *
- * anything else will throw an error if you try to serialize it
- * with these restrictions, our remote call/copy protocols expose all useful
- * behavior of these objects: pass-by-remote objects have no other data (so
- * there's nothing else to copy), and pass-by-copy objects have no other
- * behavior (so there's nothing else to invoke)
- *
- * How would val be passed?  For primitive values, the answer is
- *   * 'null' for null
- *   * throwing an error for a symbol, whether registered or not.
- *   * that value's typeof string for all other primitive values
- * For frozen objects, the possible answers
- *   * 'copyRecord' for non-empty records with only data properties
- *   * 'copyArray' for arrays with only data properties
- *   * 'copyError' for instances of Error with only data properties
- *   * 'remotable' for non-array objects with only method properties
- *   * 'promise' for genuine promises only
- *   * throwing an error on anything else, including thenables.
- * We export passStyleOf so other algorithms can use this module's
- * classification.
- *
- * @param {Passable} val
- * @returns {PassStyle}
- */
-export function passStyleOf(val) {
+function passStyleOfInternal(val) {
   const typestr = typeof val;
   switch (typestr) {
     case 'object': {
@@ -489,4 +457,61 @@ export function passStyleOf(val) {
       assert.fail(X`Unrecognized typeof ${q(typestr)}`, TypeError);
     }
   }
+}
+
+/**
+ * Purely for performance. Should not affect correctness.
+ * Unfortunately has some minor observability.
+ * By itself this speedup isn't that interesting. However if
+ * we want passStyleOf to detect cycles too
+ * https://github.com/Agoric/agoric-sdk/issues/2478
+ * Then this caching becomes necessary to keep recursive algorithms
+ * from being O(N**2).
+ *
+ * TODO must assess threat from observable mutable static state.
+ */
+const passStyleOfCache = new WeakMap();
+
+/**
+ * objects can only be passed in one of two/three forms:
+ * 1: pass-by-remote: all properties (own and inherited) are methods,
+ *    the object itself is of type object, not function
+ * 2: pass-by-copy: all string-named own properties are data, not methods
+ *    the object must inherit from objectPrototype or null
+ * 3: the empty object is pass-by-remote, for identity comparison
+ *
+ * all objects must be frozen
+ *
+ * anything else will throw an error if you try to serialize it
+ * with these restrictions, our remote call/copy protocols expose all useful
+ * behavior of these objects: pass-by-remote objects have no other data (so
+ * there's nothing else to copy), and pass-by-copy objects have no other
+ * behavior (so there's nothing else to invoke)
+ *
+ * How would val be passed?  For primitive values, the answer is
+ *   * 'null' for null
+ *   * throwing an error for a symbol, whether registered or not.
+ *   * that value's typeof string for all other primitive values
+ * For frozen objects, the possible answers
+ *   * 'copyRecord' for non-empty records with only data properties
+ *   * 'copyArray' for arrays with only data properties
+ *   * 'copyError' for instances of Error with only data properties
+ *   * 'remotable' for non-array objects with only method properties
+ *   * 'promise' for genuine promises only
+ *   * throwing an error on anything else, including thenables.
+ * We export passStyleOf so other algorithms can use this module's
+ * classification.
+ *
+ * @param {Passable} val
+ * @returns {PassStyle}
+ */
+export function passStyleOf(val) {
+  if (passStyleOfCache.has(val)) {
+    return passStyleOfCache.get(val);
+  }
+  const passStyle = passStyleOfInternal(val);
+  if (Object(val) === val) {
+    passStyleOfCache.set(val, passStyle);
+  }
+  return passStyle;
 }
