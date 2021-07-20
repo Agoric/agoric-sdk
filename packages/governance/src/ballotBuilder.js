@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 // CHOOSE_N: voter indicates up to N they find acceptable (N might be 1).
 // ORDER: voter lists their choices from most to least favorite.
@@ -50,11 +51,11 @@ const buildEqualWeightBallot = (
       instance,
     });
 
-  return {
+  return Far('ballot thing', {
     getBallotCounter: () => instance,
     getDetails,
     choose,
-  };
+  });
 };
 
 /** @type {BuildBallot} */
