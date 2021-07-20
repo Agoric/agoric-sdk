@@ -8,7 +8,7 @@ function makePR() {
 
 export function buildRootObject(_vatPowers) {
   const rs = new Map();
-  return harden({
+  return Far('root', {
     genPromise(idx) {
       const [p, r] = makePR();
       rs.set(idx, r);

@@ -1,5 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
 import exchangeBundle from './bundle-simpleExchange';
@@ -10,7 +11,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
   let round = 0;
   let quiet = false;
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       let primeContracts = false;
       for (const arg of vatParameters.argv) {

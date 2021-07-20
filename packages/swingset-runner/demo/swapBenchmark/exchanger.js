@@ -107,7 +107,7 @@ async function build(name, zoe, issuers, payments, installations) {
 }
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  return harden({
+  return Far('root', {
     build: (zoe, issuers, payments, installations) =>
       build(vatParameters.name, zoe, issuers, payments, installations),
   });

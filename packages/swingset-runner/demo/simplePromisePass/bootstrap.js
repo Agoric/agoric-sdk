@@ -5,7 +5,7 @@ const log = console.log;
 log(`=> loading bootstrap.js`);
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       log('=> Bootstrap: bootstrap() called');
       // prettier-ignore

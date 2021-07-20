@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     sayHelloTo(other) {
       log(`=> Alice.sayHelloTo`);
       const answer = E(other).hello();

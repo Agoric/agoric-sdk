@@ -2,7 +2,7 @@
 import { makeZoe } from '@agoric/zoe';
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  return harden({
+  return Far('root', {
     buildZoe: vatAdminSvc => makeZoe(vatAdminSvc, vatParameters.zcfBundleName),
   });
 }

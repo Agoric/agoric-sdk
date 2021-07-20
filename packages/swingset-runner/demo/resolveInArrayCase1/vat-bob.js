@@ -1,7 +1,7 @@
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     thisIsYourPromise(parr) {
       const p = parr[0];
       log('=> Bob: thisIsYourPromise begins');

@@ -6,7 +6,7 @@ log(`=> loading bootstrap.js`);
 
 export function buildRootObject(_vatPowers) {
   log(`=> setup called`);
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       log('=> Alice: bootstrap() called');
       const thingP = E(vats.bob).getThing();

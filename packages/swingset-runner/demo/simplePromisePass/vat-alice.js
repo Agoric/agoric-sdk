@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     sendPromiseTo(other) {
       log('=> Alice: sendPromiseTo() begins');
       let resolver;

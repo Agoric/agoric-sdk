@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { AmountMath } from '../../../src';
 
 function makeAliceMaker(log) {
@@ -62,7 +63,7 @@ function makeAliceMaker(log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeAliceMaker() {
       return harden(makeAliceMaker(vatPowers.testLog));
     },

@@ -66,7 +66,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 };
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     build: (...args) => build(makePrintLog(), ...args),
   });
 }

@@ -10,6 +10,7 @@
  */
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { Far } from '@agoric/marshal';
 
 import { makeWallet } from './lib-wallet';
 import pubsub from './pubsub';
@@ -594,7 +595,7 @@ export function buildRootObject(_vatPowers) {
     );
   }
 
-  return harden({
+  return Far('root', {
     startup,
     getWallet,
     setHTTPObject,
