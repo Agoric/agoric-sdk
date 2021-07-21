@@ -3,7 +3,7 @@ import { Far } from '@agoric/marshal';
 import { AmountMath } from '../../../src';
 
 function makeAliceMaker(log) {
-  return harden({
+  return Far('aliceMaker', {
     make(issuer, brand, oldPaymentP) {
       const alice = harden({
         async testBasicFunctionality() {
