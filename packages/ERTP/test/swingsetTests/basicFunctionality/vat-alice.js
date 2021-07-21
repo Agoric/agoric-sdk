@@ -5,7 +5,7 @@ import { AmountMath } from '../../../src';
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
     make(issuer, brand, oldPaymentP) {
-      const alice = harden({
+      const alice = Far('alice', {
         async testBasicFunctionality() {
           // isLive
           const alive = await E(issuer).isLive(oldPaymentP);
