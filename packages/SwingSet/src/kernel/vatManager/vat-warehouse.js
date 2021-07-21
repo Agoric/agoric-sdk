@@ -303,6 +303,29 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   }
 
   /**
+   * Delete unused snapshots.
+   *
+   * WARNING: caller is responsible to call this only
+   * when all records of snapshot consumers are durably
+   * stored; for example, after commitCrank().
+   *
+   * @param { SnapStore } snapStore
+   */
+  function pruneSnapshots(snapStore) {
+    const todo = kernelKeeper.getUnusedSnapshots();
+    const done = [];
+    for (const snapshotID of todo) {
+      try {
+        snapStore.delete(snapshotID);
+        done.push(snapshotID);
+      } catch (_ignored) {
+        // better luck next time...
+      }
+    }
+    kernelKeeper.forgetUnusedSnapshots(done);
+  }
+
+  /**
    * @param {string} vatID
    * @param {unknown[]} kd
    * @returns { VatDeliveryObject }
@@ -363,6 +386,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     kernelDeliveryToVatDelivery,
     deliverToVat,
     maybeSaveSnapshot,
+    pruneSnapshots,
 
     // mostly for testing?
     activeVatsInfo: () =>

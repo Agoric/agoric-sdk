@@ -130,5 +130,13 @@ export function makeSnapStore(
     }, `${hash}-load`);
   }
 
-  return freeze({ load, save });
+  /**
+   * @param {string} hash
+   * @throws { Error } if there is no such snapshot
+   */
+  function deleteSnapshot(hash) {
+    unlink(resolve(root, `${hash}.gz`));
+  }
+
+  return freeze({ load, save, delete: deleteSnapshot });
 }

@@ -453,6 +453,49 @@ export function makeVatKeeper(
   }
 
   /**
+   * Add vatID to consumers of a snapshot.
+   *
+   * @param {string} snapshotID
+   */
+  function addToSnapshot(snapshotID) {
+    const key = `snapshot.${snapshotID}`;
+    const consumersJSON = kvStore.get(key);
+    const consumers =
+      consumersJSON !== undefined ? JSON.parse(consumersJSON) : [];
+    assert(Array.isArray(consumers));
+
+    // We can't completely rule out the possibility that
+    // a vat will use the same snapshot twice in a row.
+    //
+    // PERFORMANCE NOTE: we assume consumer lists are short;
+    // usually length 1. So O(n) search here is better
+    // than keeping the list sorted.
+    if (!consumers.includes(vatID)) {
+      consumers.push(vatID);
+      kvStore.set(key, JSON.stringify(consumers));
+      // console.log('addToSnapshot result:', { vatID, snapshotID, consumers });
+    }
+  }
+
+  /**
+   * Remove vatID from consumers of a snapshot.
+   *
+   * @param {string} snapshotID
+   */
+  function removeFromSnapshot(snapshotID) {
+    const key = `snapshot.${snapshotID}`;
+    const consumersJSON = kvStore.get(key);
+    assert(consumersJSON, X`cannot remove ${vatID}: ${key} key not defined`);
+    const consumers = JSON.parse(consumersJSON);
+    assert(Array.isArray(consumers));
+    const ix = consumers.indexOf(vatID);
+    assert(ix >= 0);
+    consumers.splice(ix, 1);
+    // console.log('removeFromSnapshot done:', { vatID, snapshotID, consumers });
+    kvStore.set(key, JSON.stringify(consumers));
+  }
+
+  /**
    * Store a snapshot, if given a snapStore.
    *
    * @param { VatManager } manager
@@ -464,11 +507,16 @@ export function makeVatKeeper(
     }
 
     const snapshotID = await manager.makeSnapshot(snapStore);
+    const old = getLastSnapshot();
+    if (old) {
+      removeFromSnapshot(old.snapshotID);
+    }
     const endPosition = getTranscriptEndPosition();
     kvStore.set(
       `${vatID}.lastSnapshot`,
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
+    addToSnapshot(snapshotID);
     return true;
   }
 

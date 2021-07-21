@@ -103,6 +103,26 @@ test('4 vats in warehouse with 2 online', async t => {
   await runSteps(c, t);
 });
 
+function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
+  const inUse = [];
+  for (const k of kvStore.getKeys(`snapshot.`, `snapshot/`)) {
+    const consumers = JSON.parse(kvStore.get(k));
+    if (consumers.length > 0) {
+      const id = k.slice(`snapshot.`.length);
+      inUse.push(id);
+    }
+  }
+  const onDisk = fs.readdirSync(snapstorePath);
+  const extra = [];
+  for (const snapshotPath of onDisk) {
+    const id = snapshotPath.slice(0, -'.gz'.length);
+    if (!inUse.includes(id)) {
+      extra.push(id);
+    }
+  }
+  return { inUse, onDisk, extra };
+}
+
 test('snapshot after deliveries', async t => {
   const snapstorePath = path.resolve(__dirname, './fixture-test-warehouse/');
   fs.mkdirSync(snapstorePath, { recursive: true });
@@ -115,7 +135,16 @@ test('snapshot after deliveries', async t => {
     warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
   });
   t.teardown(c.shutdown);
+
   await runSteps(c, t);
+
+  const { kvStore } = hostStorage;
+  const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
+    kvStore,
+    snapstorePath,
+  );
+  t.log({ inUse, onDisk, extra });
+  t.deepEqual(extra, [], `inUse: ${inUse}, onDisk: ${onDisk}`);
 });
 
 test('LRU eviction', t => {
