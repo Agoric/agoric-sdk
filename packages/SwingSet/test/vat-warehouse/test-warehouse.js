@@ -73,8 +73,6 @@ const steps = [
 ];
 
 async function runSteps(c, t) {
-  t.teardown(c.shutdown);
-
   await c.run();
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
@@ -100,6 +98,8 @@ test('4 vats in warehouse with 2 online', async t => {
   const c = await makeController('xs-worker', {
     warehousePolicy: { maxVatsOnline },
   });
+  t.teardown(c.shutdown);
+
   await runSteps(c, t);
 });
 
@@ -114,6 +114,7 @@ test('snapshot after deliveries', async t => {
     hostStorage,
     warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
   });
+  t.teardown(c.shutdown);
   await runSteps(c, t);
 });
 
