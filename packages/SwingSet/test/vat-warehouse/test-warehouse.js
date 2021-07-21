@@ -5,10 +5,9 @@
 import { test } from '../../tools/prepare-test-env-ava';
 import path from 'path';
 import fs from 'fs';
-import { tmpName } from 'tmp';
 import { makeSnapStore } from '@agoric/xsnap';
 import { loadBasedir, buildVatController } from '../../src/index.js';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
@@ -109,15 +108,7 @@ test('snapshot after deliveries', async t => {
   fs.mkdirSync(snapstorePath, { recursive: true });
   t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
 
-  const snapStore = makeSnapStore(snapstorePath, {
-    tmpName,
-    existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    rename: fs.promises.rename,
-    unlink: fs.promises.unlink,
-    resolve: path.resolve,
-  });
+  const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
   const hostStorage = { snapStore, ...provideHostStorage() };
   const c = await makeController('xs-worker', {
     hostStorage,
