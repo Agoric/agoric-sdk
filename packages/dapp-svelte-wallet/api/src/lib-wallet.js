@@ -508,13 +508,25 @@ export function makeWallet({
       // individual rejections.
       Promise.allSettled(
         keywordPaymentPs.map(async keywordPaymentP => {
-          // Wait for the withdrawal to complete.
+          // Wait for the withdrawal to complete.  This protects against a race
+          // when updating paymentToPurse.
           const [_keyword, payment] = await keywordPaymentP;
+
           // Find out where it came from.
           const purse = paymentToPurse.get(payment);
+          if (purse === undefined) {
+            // We already tried to reclaim this payment, so stop here.
+            return undefined;
+          }
+
           // Now send it back to the purse.
-          // eslint-disable-next-line no-use-before-define
-          return addPayment(payment, purse);
+          try {
+            // eslint-disable-next-line no-use-before-define
+            return addPayment(payment, purse);
+          } finally {
+            // Once we've called addPayment, mark this one as done.
+            paymentToPurse.delete(payment);
+          }
         }),
       );
 
@@ -534,6 +546,12 @@ export function makeWallet({
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
     const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
+    // By the time Zoe settles the seat promise, the escrow should be complete.
+    // Reclaim if it is somehow not.
+    seat.finally(tryReclaimingWithdrawnPayments);
+
+    // Even if the seat doesn't settle, we can still pipeline our request for
+    // payouts.
     const depositedP = E(seat)
       .getPayouts()
       .then(payoutObj => {
@@ -550,7 +568,8 @@ export function makeWallet({
       });
 
     // Regardless of the status of the offer, we try to clean up any of our
-    // unclaimed payments.
+    // unclaimed payments.  Defensively, we want to do this as soon as possible
+    // even if the seat doesn't settle.
     depositedP.finally(tryReclaimingWithdrawnPayments);
 
     // Return a promise that will resolve after successful deposit, as well as
