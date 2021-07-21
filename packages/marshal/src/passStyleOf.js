@@ -544,10 +544,9 @@ const passStyleOfRecur = (val, inProgress) => {
  * @param {Passable} val
  * @returns {PassStyle}
  */
-export const passStyleOf = val => {
-  // Even when a WeakSet is correct, when the set hasa shorter lifetime
+export const passStyleOf = val =>
+  // Even when a WeakSet is correct, when the set has a shorter lifetime
   // than its keys, we prefer a Set due to expected implementation
   // tradeoffs.
-  return passStyleOfRecur(val, new Set());
-};
+  passStyleOfRecur(val, new Set());
 harden(passStyleOf);

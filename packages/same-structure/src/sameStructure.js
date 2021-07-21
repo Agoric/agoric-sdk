@@ -57,18 +57,12 @@ function sameValueZero(x, y) {
 harden(sameValueZero);
 
 /**
- * A *passable* is something that may be marshalled. It consists of a
- * graph of pass-by-copy data terminating in leaves of passable
- * non-pass-by-copy data. These leaves may be promises, or
+ * A *passable* is something that may be marshalled. It consists of an acyclic
+ * graph representing a tree of pass-by-copy data terminating in leaves of
+ * passable non-pass-by-copy data. These leaves may be promises, or
  * pass-by-presence objects. A *comparable* is a passable whose leaves
  * contain no promises. Two comparables can be synchronously compared
  * for structural equivalence.
- *
- * TODO: Currently, all algorithms here treat the pass-by-copy
- * superstructure as a tree. This means that dags are unwound at
- * potentially exponential cost, and cycles cause failure to
- * terminate. We must fix both problems, making all these algorithms
- * graph-aware.
  *
  * We say that a function *reveals* an X when it returns either an X
  * or a promise for an X.
@@ -81,6 +75,7 @@ harden(sameValueZero);
  * @returns {Promise<Comparable>}
  */
 function allComparable(passable) {
+  // passStyleOf now asserts that passable has no pass-by-copy cycles.
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
     case 'null':
