@@ -1,8 +1,9 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   let count = 0;
-  return harden({
+  return Far('root', {
     async elsewhere(other) {
       const val = await E(other).query();
       console.log(`other returns ${val}`);

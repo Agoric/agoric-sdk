@@ -6,7 +6,7 @@ export function buildRootObject() {
   let B = Far('B', { hello() {} });
   let target;
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats) {
       target = vats.target;
     },

@@ -7,6 +7,7 @@ import {
 } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 
 import { natSafeMath } from '../src/contractSupport';
 
@@ -240,7 +241,7 @@ export async function makeFakePriceAuthority(options) {
   }
 
   /** @type {PriceAuthority} */
-  const priceAuthority = {
+  const priceAuthority = Far('fake price authority', {
     getQuoteIssuer: (brandIn, brandOut) => {
       assertBrands(brandIn, brandOut);
       return quoteIssuer;
@@ -305,6 +306,6 @@ export async function makeFakePriceAuthority(options) {
     mutableQuoteWhenGTE: () => {
       throw Error('use ScriptedPriceAuthority');
     },
-  };
+  });
   return priceAuthority;
 }

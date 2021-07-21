@@ -1,7 +1,9 @@
+import { Far } from '@agoric/marshal';
+
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     first() {
       log('=> Bob: in first');
       return `Bob's first answer`;

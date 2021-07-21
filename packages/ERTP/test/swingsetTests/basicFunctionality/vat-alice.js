@@ -1,10 +1,11 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { AmountMath } from '../../../src';
 
 function makeAliceMaker(log) {
-  return harden({
+  return Far('aliceMaker', {
     make(issuer, brand, oldPaymentP) {
-      const alice = harden({
+      const alice = Far('alice', {
         async testBasicFunctionality() {
           // isLive
           const alive = await E(issuer).isLive(oldPaymentP);
@@ -62,7 +63,7 @@ function makeAliceMaker(log) {
 }
 
 export function buildRootObject(vatPowers) {
-  return harden({
+  return Far('root', {
     makeAliceMaker() {
       return harden(makeAliceMaker(vatPowers.testLog));
     },

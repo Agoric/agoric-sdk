@@ -53,7 +53,7 @@ export async function start(zcf) {
   }
 
   /** @type {InnerVaultManager} */
-  const managerMock = {
+  const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
     },
@@ -66,9 +66,9 @@ export async function start(zcf) {
     getInterestRate() {
       return makeRatio(5n, runBrand);
     },
-    collateralBrand,
+    // collateralBrand, // TODO not a method. How did this ever work?
     reallocateReward,
-  };
+  });
 
   const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;
   const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
@@ -105,12 +105,12 @@ export async function start(zcf) {
       liquidationPayout: E(liqSeat).getPayout('Collateral'),
       runMint,
       collateralKit,
-      actions: {
+      actions: Far('vault actions', {
         add() {
           return vault.makeAdjustBalancesInvitation();
         },
         accrueInterestAndAddToPool,
-      },
+      }),
       notifier,
       collateralPayoutP,
     };

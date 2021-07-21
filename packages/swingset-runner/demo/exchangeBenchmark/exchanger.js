@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { showPurseBalance, setupPurses } from './helpers';
 import { makePrintLog } from './printLog';
 
@@ -106,7 +107,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
 }
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  return harden({
+  return Far('root', {
     build: (zoe, issuers, payments, publicFacet) =>
       build(vatParameters.name, zoe, issuers, payments, publicFacet),
   });

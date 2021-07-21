@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 console.log(`=> loading bootstrap.js`);
 
 export function buildRootObject(_vatPowers) {
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       const pX = E(vats.bob).genPromiseX();
       const pY = E(vats.bob).genPromiseY();

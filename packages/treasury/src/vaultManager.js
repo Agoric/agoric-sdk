@@ -13,6 +13,8 @@ import {
 } from '@agoric/zoe/src/contractSupport';
 import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
+
 import { makeVaultKit } from './vault';
 import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
@@ -231,17 +233,17 @@ export function makeVaultManager(
     // the payout object
     return harden({
       uiNotifier: notifier,
-      invitationMakers: {
+      invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
-      },
+      }),
       vault,
       liquidationPayout: collateralPayoutP,
     });
   }
 
   /** @type {VaultManager} */
-  return harden({
+  return Far('vault manager', {
     ...shared,
     makeLoanKit,
     liquidateAll,

@@ -1,5 +1,7 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject() {
-  return harden({
+  return Far('root', {
     explode() {
       // eslint-disable-next-line no-unused-vars
       const hugantuous = Array(4e9); // arbitrarily too big

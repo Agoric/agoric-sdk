@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport';
 import { assert, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 
 import { makeDefaultLiquidationStrategy } from './liquidation';
 import { makeTracer } from './makeTracer';
@@ -88,10 +89,10 @@ export async function start(zcf) {
     };
   }
 
-  const creatorFacet = {
+  const creatorFacet = Far('debtorInvitationCreator', {
     makeDebtorInvitation: runDebt =>
       zcf.makeInvitation(makeDebtorHook(runDebt), 'Liquidate'),
-  };
+  });
 
   return harden({ creatorFacet });
 }
