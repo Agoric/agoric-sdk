@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { showPurseBalance, setupPurses } from './helpers';
 import { makePrintLog } from './printLog';
 

@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 export function buildRootObject() {
   return Far('root', {
     explode() {

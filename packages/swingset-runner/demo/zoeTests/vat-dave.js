@@ -2,6 +2,7 @@ import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { AmountMath } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 import { showPurseBalance, setupIssuers } from './helpers';
 
 import { makePrintLog } from './printLog';

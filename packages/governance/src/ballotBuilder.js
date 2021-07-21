@@ -51,7 +51,7 @@ const buildEqualWeightBallot = (
       instance,
     });
 
-  return Far('ballot thing', {
+  return Far('ballot details', {
     getBallotCounter: () => instance,
     getDetails,
     choose,

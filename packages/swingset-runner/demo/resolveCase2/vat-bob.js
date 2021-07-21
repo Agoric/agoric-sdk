@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {

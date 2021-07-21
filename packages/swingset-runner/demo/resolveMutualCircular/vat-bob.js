@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 function makePR() {
   let r;
   const p = new Promise((resolve, _reject) => {
