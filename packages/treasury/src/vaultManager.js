@@ -243,7 +243,7 @@ export function makeVaultManager(
   }
 
   /** @type {VaultManager} */
-  return harden({
+  return Far('vault manager', {
     ...shared,
     makeLoanKit,
     liquidateAll,
