@@ -16,7 +16,7 @@ import '@agoric/assert/exported.js';
 //
 // TODO: once the policy changes to force remotables to be explicit, remove this
 // flag entirely and fix code that uses it (as if it were always `false`).
-const ALLOW_IMPLICIT_REMOTABLES = true;
+const ALLOW_IMPLICIT_REMOTABLES = false;
 
 const {
   getPrototypeOf,
@@ -236,9 +236,10 @@ export { assertIface };
  *   [Symbol.toStringTag]: string,
  *   toString: () => void }} val the value to verify
  * @param {Checker} [check]
+ * @param {any} original for better diagnostics
  * @returns {boolean}
  */
-const checkRemotableProto = (val, check = x => x) => {
+const checkRemotableProto = (val, check = x => x, original = undefined) => {
   if (
     !(
       check(
@@ -246,7 +247,12 @@ const checkRemotableProto = (val, check = x => x) => {
         X`cannot serialize non-objects like ${val}`,
       ) &&
       check(!Array.isArray(val), X`Arrays cannot be pass-by-remote`) &&
-      check(val !== null, X`null cannot be pass-by-remote`)
+      check(val !== null, X`null cannot be pass-by-remote`) &&
+      check(
+        // @ts-ignore
+        val !== Object.prototype,
+        X`Remotables must now be explictly declared ${original}`,
+      )
     )
   ) {
     return false;
@@ -364,7 +370,7 @@ function checkRemotable(val, check = x => x) {
   if (ALLOW_IMPLICIT_REMOTABLES && (p === null || p === objectPrototype)) {
     return true;
   }
-  return checkRemotableProto(p, check);
+  return checkRemotableProto(p, check, val);
 }
 
 /**

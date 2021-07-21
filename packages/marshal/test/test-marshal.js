@@ -395,10 +395,6 @@ test('records', t => {
   const ser = val => m.serialize(val);
   const unser = capdata => m.unserialize(capdata);
 
-  const noIface = {
-    body: JSON.stringify({ '@qclass': 'slot', index: 0 }),
-    slots: ['slot'],
-  };
   const yesIface = {
     body: JSON.stringify({
       '@qclass': 'slot',
@@ -464,6 +460,7 @@ test('records', t => {
   const NOACC = /Records must not contain accessors/;
   const RECENUM = /Record fields must be enumerable/;
   const NOMETH = /cannot serialize objects with non-methods/;
+  const EXPLICIT = /Remotables must now be explictly declared/;
 
   // empty objects
 
@@ -510,10 +507,10 @@ test('records', t => {
   // interim1: pass-by-ref with warning
   // interim2: reject
   // final: reject
-  t.deepEqual(ser(build('enumStringFunc')), noIface);
-  t.deepEqual(ser(build('enumSymbolFunc')), noIface);
-  t.deepEqual(ser(build('nonenumStringFunc')), noIface);
-  t.deepEqual(ser(build('nonenumSymbolFunc')), noIface);
+  shouldThrow(['enumStringFunc'], EXPLICIT);
+  shouldThrow(['enumSymbolFunc'], EXPLICIT);
+  shouldThrow(['nonenumStringFunc'], EXPLICIT);
+  shouldThrow(['nonenumSymbolFunc'], EXPLICIT);
 
   // Far('iface', { key: data, key: func }) : rejected
   // (some day this might add auxilliary data, but not now
