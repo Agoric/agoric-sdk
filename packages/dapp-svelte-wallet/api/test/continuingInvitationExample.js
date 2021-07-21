@@ -1,6 +1,7 @@
 // @ts-check
 
 import { makeNotifierKit } from '@agoric/notifier';
+import { Far } from '@agoric/marshal';
 
 import '@agoric/zoe/exported';
 
@@ -21,9 +22,9 @@ export const start = zcf => {
     updater.updateState('first offer made');
     return harden({
       uiNotifier: notifier,
-      invitationMakers: {
+      invitationMakers: Far('second thing inviter', {
         SecondThing: makeDoSecondThingInvitation,
-      },
+      }),
     });
   };
 

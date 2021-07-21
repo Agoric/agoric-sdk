@@ -1,4 +1,5 @@
 // @ts-check
+import { Far } from '@agoric/marshal';
 
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
@@ -320,7 +321,7 @@ export async function start(zcf) {
 
   const getBootstrapPayment = mintBootstrapPayment();
 
-  const publicFacet = harden({
+  const publicFacet = Far('stablecoin public facet', {
     getAMM() {
       return autoswapInstance;
     },
@@ -341,7 +342,7 @@ export async function start(zcf) {
   );
 
   /** @type {StablecoinMachine} */
-  const stablecoinMachine = harden({
+  const stablecoinMachine = Far('stableoin machine', {
     makeAddTypeInvitation,
     getAMM() {
       return autoswapInstance;

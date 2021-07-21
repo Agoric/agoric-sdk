@@ -13,6 +13,8 @@ import {
 } from '@agoric/zoe/src/contractSupport';
 import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
+
 import { makeVaultKit } from './vault';
 import { makePrioritizedVaults } from './prioritizedVaults';
 import { liquidate } from './liquidation';
@@ -42,7 +44,7 @@ export function makeVaultManager(
 ) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const shared = {
+  const shared = Far('shared vault something', {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
       return rates.liquidationMargin;
@@ -67,7 +69,7 @@ export function makeVaultManager(
       );
     },
     reallocateReward,
-  };
+  });
 
   // A Map from vaultKits to their most recent ratio of debt to
   // collateralization. (This representation won't be optimized; when we need

@@ -14,6 +14,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
+import { Far } from '@agoric/marshal';
 import { makeTracer } from './makeTracer';
 import { makeInterestCalculator } from './interest';
 
@@ -443,7 +444,7 @@ export function makeVaultKit(
   }
 
   /** @type {Vault} */
-  const vault = harden({
+  const vault = Far('vault', {
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
 
