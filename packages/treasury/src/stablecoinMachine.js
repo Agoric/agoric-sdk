@@ -97,7 +97,7 @@ export async function start(zcf) {
   }
 
   /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeStore(); // Brand -> vaultManager
+  const collateralTypes = makeStore('brand'); // Brand -> vaultManager
 
   const zoe = zcf.getZoeService();
 

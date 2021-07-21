@@ -9,7 +9,7 @@ import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
-const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
+const makeWeightedBallot = (ballot, shares) => harden({ ballot, shares });
 
 const makeQuorumCounter = quorumThreshold => {
   const check = stats => {

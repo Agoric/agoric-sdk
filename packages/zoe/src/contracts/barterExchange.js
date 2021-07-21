@@ -25,7 +25,10 @@ const start = zcf => {
   // bookOrders is a Map of Maps. The first key is the brand of the offer's
   // GIVE, and the second key is the brand of its WANT. For each offer, we
   // store its handle and the amounts for `give` and `want`.
-  const bookOrders = makeStore('bookOrders');
+  const bookOrders = makeStore(
+    'bookOrders',
+    { passableOnly: false }, // Because we're storing a genuine JS Map
+  );
 
   function lookupBookOrders(brandIn, brandOut) {
     if (!bookOrders.has(brandIn)) {

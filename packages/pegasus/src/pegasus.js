@@ -258,7 +258,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @type {WeakStore<Connection, LocalDenomState>}
    */
-  const connectionToLocalDenomState = makeWeakStore('Connection');
+  const connectionToLocalDenomState = makeWeakStore(
+    'Connection',
+    { passableOnly: false }, // Because the value contains a JS Set
+  );
 
   let lastLocalIssuerNonce = 0;
   /**

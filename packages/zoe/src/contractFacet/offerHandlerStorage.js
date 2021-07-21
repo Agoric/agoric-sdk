@@ -6,7 +6,10 @@ import { makeHandle } from '../makeHandle';
 
 export const makeOfferHandlerStorage = () => {
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
-  const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
+  const invitationHandleToHandler = makeNonVOWeakStore(
+    'invitationHandle',
+    { passableOnly: false }, // TODO transitional until we have far functions
+  );
 
   /** @type {(offerHandler: OfferHandler) => InvitationHandle} */
   const storeOfferHandler = offerHandler => {

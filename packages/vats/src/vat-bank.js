@@ -329,7 +329,13 @@ export function buildRootObject(_vatPowers) {
             brand,
           });
           brandToAssetRecord.init(brand, assetRecord);
-          denomToAddressUpdater.init(denom, makeStore('address'));
+          denomToAddressUpdater.init(
+            denom,
+            makeStore(
+              'address',
+              { passableOnly: false }, // no far functions yet
+            ),
+          );
           assetPublication.updateState(
             harden({
               brand,

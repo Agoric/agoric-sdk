@@ -53,7 +53,10 @@ const recordToKey = record =>
   );
 
 export function makeSlogCallbacks({ metricMeter, labels }) {
-  const nameToBaseMetric = makeStore('baseMetricName');
+  const nameToBaseMetric = makeStore(
+    'baseMetricName',
+    { passableOnly: false }, // Does not seem to be a passable
+  );
   nameToBaseMetric.init(
     'swingset_vat_startup',
     metricMeter.createValueRecorder('swingset_vat_startup', {
@@ -99,12 +102,18 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
             metric;
           }
           // Refresh the metric group.
-          nameToMetric = makeStore('metricName');
+          nameToMetric = makeStore(
+            'metricName',
+            { passableOnly: false }, // Does not seem to be a passable
+          );
           groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
         }
       }
     } else {
-      nameToMetric = makeStore('metricName');
+      nameToMetric = makeStore(
+        'metricName',
+        { passableOnly: false }, // Does not seem to be a passable
+      );
       groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
     }
 
