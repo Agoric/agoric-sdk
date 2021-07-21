@@ -158,7 +158,7 @@ export const makePriceAuthorityRegistry = () => {
         priceStore.init(brandOut, harden(record));
       }
 
-      return harden({
+      return Far('deleter', {
         delete() {
           assert.equal(
             priceStore.has(brandOut) && priceStore.get(brandOut),
