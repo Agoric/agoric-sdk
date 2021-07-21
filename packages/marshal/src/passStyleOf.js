@@ -251,7 +251,7 @@ const checkRemotableProto = (val, check = x => x, original = undefined) => {
       check(
         // @ts-ignore
         val !== Object.prototype,
-        X`Remotables must now be explictly declared ${original}`,
+        X`Remotables must now be explictly declared: ${q(original)}`,
       )
     )
   ) {
