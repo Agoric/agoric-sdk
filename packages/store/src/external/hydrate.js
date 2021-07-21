@@ -90,7 +90,7 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
     storeIdToHydrate.init(storeId, makeHydrate());
 
     /** @type {ExternalStore<(...args: A) => T>} */
-    const estore = {
+    const estore = harden({
       makeInstance(...args) {
         const data = adaptArguments(...args);
         // Create a new object with the above guts.
@@ -106,7 +106,7 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
       makeWeakStore() {
         return hstore.makeWeakStore();
       },
-    };
+    });
     return estore;
   }
   return harden(makeHydrateExternalStore);

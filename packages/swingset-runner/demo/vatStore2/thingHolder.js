@@ -42,7 +42,7 @@ function build(name) {
   const thingMaker = makeKind(makeThingInstance);
   let nextThingNumber = 0;
 
-  const myThings = makeWeakStore(); // thing -> inquiry count
+  const myThings = makeWeakStore('thing'); // thing -> inquiry count
 
   return Far('root', {
     async introduce(other) {

@@ -22,7 +22,10 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
   /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
-  const schedule = makeStore('Timestamp');
+  const schedule = makeStore(
+    'Timestamp',
+    { passableOnly: false }, // because the value is mutated after it is stored.
+  );
 
   const makeRepeater = (delaySecs, interval, timer) => {
     assert.typeof(delaySecs, 'bigint');

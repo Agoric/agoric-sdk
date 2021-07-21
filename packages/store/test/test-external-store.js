@@ -107,22 +107,23 @@ test('rewritten code', t => {
   const store = makeVatExternalStore(
     'Hello instance',
     (msg = 'Hello') => ({ msg }),
-    $hinit => $hdata => {
-      let startCount = $hinit && 24;
-      $hinit && (startCount += 1);
-      $hinit && ($hdata.invocationCount = startCount);
-      const obj = {
-        hello(nick) {
-          $hdata.invocationCount += 1;
-          return `${$hdata.msg}, ${nick}!`;
-        },
-        getCount() {
-          return { moduleLevel, invocationCount: $hdata.invocationCount };
-        },
-      };
-      $hinit && obj.hello('init');
-      return obj;
-    },
+    $hinit =>
+      Far('hydrater', $hdata => {
+        let startCount = $hinit && 24;
+        $hinit && (startCount += 1);
+        $hinit && ($hdata.invocationCount = startCount);
+        const obj = Far('hello nick', {
+          hello(nick) {
+            $hdata.invocationCount += 1;
+            return `${$hdata.msg}, ${nick}!`;
+          },
+          getCount() {
+            return { moduleLevel, invocationCount: $hdata.invocationCount };
+          },
+        });
+        $hinit && obj.hello('init');
+        return obj;
+      }),
   );
 
   const h = runTests(t, store.makeInstance);

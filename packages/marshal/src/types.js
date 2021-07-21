@@ -1,8 +1,16 @@
+// TODO getting a mysterious type error if I turn checking on by changing the
+// following "at-" to an "@".
+// at-ts-check
+
 // eslint-disable-next-line spaced-comment
 /// <reference path="extra-types.d.ts" />
 
 /**
- * @typedef { "bigint" | "boolean" | "null" | "number" | "string" | "symbol" | "undefined" | "copyArray" | "copyRecord" | "copyError" | "promise" | "remotable" } PassStyle
+ * @typedef { "bigint" | "boolean" | "null" | "number" |
+ *            "string" | "symbol" | "undefined" |
+ *            "copyArray" | "copyRecord" | "copyError" |
+ *            "promise" | "remotable"
+ * } PassStyle
  */
 
 // TODO declare more precise types throughout this file, so the type system

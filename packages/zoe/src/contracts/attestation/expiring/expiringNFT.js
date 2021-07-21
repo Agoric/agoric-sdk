@@ -44,7 +44,10 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   // Note: `amountLiened` in ExpiringAttElem is of the brand `externalBrand`
 
   /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const lienedAmounts = makeStore('address');
+  const lienedAmounts = makeStore(
+    'address',
+    { passableOnly: false }, // because stored array is pushed onto
+  );
 
   const cannotGetExtension = new Set();
 

@@ -71,7 +71,10 @@ const start = async zcf => {
   const oracleRecords = new Set();
 
   /** @type {Store<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeStore('oracleInstance');
+  const instanceToRecords = makeStore(
+    'oracleInstance',
+    { passableOnly: false }, // because we're storing a raw JS Set
+  );
 
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
 

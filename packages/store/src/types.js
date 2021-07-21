@@ -1,3 +1,5 @@
+// @ts-check
+
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
@@ -6,7 +8,26 @@
  */
 
 /**
- * @template K,V
+ * @typedef {Object} StoreOptions
+ * @property {boolean=} passableOnly transitional. Defaults to falso.
+ * But beware the default passableOnly will switch to true and ultimately be
+ * retired.
+ */
+
+/**
+ * @typedef {Object} WeakStoreOptions
+ * @property {boolean=} longLived Which way to optimize. True means that we
+ * expect this weakStore to outlive most of its keys, in which
+ * case we internally use a `WeakMap`. Otherwise we internally use a `Map`.
+ * Defaults to true, so please mark short lived tables explicitly
+ * @property {boolean=} passableOnly transitional. Defaults to false.
+ * But beware the default passableOnly will switch to true and ultimately be
+ * retired.
+ */
+
+/**
+ * @template {Comparable} K
+ * @template {Passable} V
  * @typedef {Object} Store - A safety wrapper around a Map
  * @property {(key: K) => boolean} has - Check if a key exists
  * @property {(key: K, value: V) => void} init - Initialize the key only if it
@@ -22,7 +43,8 @@
  */
 
 /**
- * @template K,V
+ * @template {Comparable} K
+ * @template {Passable} V
  * @typedef {Object} WeakStore - A safety wrapper around a WeakMap
  * @property {(key: any) => boolean} has - Check if a key exists
  * @property {(key: K, value: V) => void} init - Initialize the key only if it
@@ -41,7 +63,8 @@
  * `init` is only allowed if the key does not already exist. `Get`,
  * `set` and `delete` are only allowed if the key does already exist.
  *
- * @template K,V
+ * @template {Comparable} K
+ * @template {Passable} V
  * @callback MakeWeakStore
  * @param {string} [keyName='key'] - the column name for the key
  * @returns {WeakStore<K,V>}

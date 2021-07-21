@@ -14,7 +14,10 @@ import './types.js';
 export const makeNameHubKit = () => {
   /** @typedef {Partial<PromiseRecord<unknown> & { value: unknown }>} NameRecord */
   /** @type {Store<string, NameRecord>} */
-  const keyToRecord = makeStore('nameKey');
+  const keyToRecord = makeStore(
+    'nameKey',
+    { passableOnly: false }, // a promiseKit is not a passable
+  );
 
   /** @type {NameHub} */
   const nameHub = {

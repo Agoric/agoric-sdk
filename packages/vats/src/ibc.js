@@ -243,7 +243,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const portToPendingConns = makeStore('Port');
 
   /** @type {Store<Endpoint, Endpoint>} */
-  const remoteAddrToLocalSuffix = makeStore();
+  const remoteAddrToLocalSuffix = makeStore('endpoint');
 
   /**
    * @type {ProtocolHandler}

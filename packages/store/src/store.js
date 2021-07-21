@@ -3,7 +3,44 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { isEmptyNonRemotableObject } from './helpers.js';
+import { passStyleOf, Far } from '@agoric/marshal';
+import { mustBeComparable } from '../../same-structure';
+
+const assertKey = (key, passableOnly) => {
+  if (passableOnly) {
+    harden(key); // TODO: Just a transition kludge. Remove when possible.
+    mustBeComparable(key);
+    const passStyle = passStyleOf(key);
+    switch (passStyle) {
+      case 'bigint':
+      case 'boolean':
+      case 'null':
+      case 'number':
+      case 'string':
+      case 'symbol':
+      case 'undefined':
+      case 'remotable': {
+        return;
+      }
+      case 'copyArray':
+      case 'copyRecord':
+      case 'copyError': {
+        assert.fail(X`composite keys not yet allowed: ${key}`);
+      }
+      // case 'promise': is precluded by `mustBeComparable` above
+      default: {
+        assert.fail(X`unexpected passStyle ${passStyle}`);
+      }
+    }
+  }
+};
+
+const assertValue = (value, passableOnly) => {
+  if (passableOnly) {
+    harden(value); // TODO: Just a transition kludge. Remove when possible.
+    passStyleOf(value); // asserts that value is passable
+  }
+};
 
 /**
  * Distinguishes between adding a new key (init) and updating or
@@ -13,45 +50,50 @@ import { isEmptyNonRemotableObject } from './helpers.js';
  * `set` and `delete` are only allowed if the key does already exist.
  *
  * @template K,V
- * @param  {string} [keyName='key'] - the column name for the key
+ * @param {string} [keyName='key'] - the column name for the key
+ * @param {Partial<StoreOptions>=} options
  * @returns {Store<K,V>}
  */
-export function makeStore(keyName = 'key') {
-  const store = new Map();
+export function makeStore(keyName = 'key', { passableOnly = true } = {}) {
+  const m = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!store.has(key), X`${q(keyName)} already registered: ${key}`);
+    assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(store.has(key), X`${q(keyName)} not found: ${key}`);
-  const assertNotBadKey = key =>
-    assert(!isEmptyNonRemotableObject(key), X`${q(keyName)} bad key: ${key}`);
-  return harden({
+    assert(m.has(key), X`${q(keyName)} not found: ${key}`);
+  const store = {
     has: key => {
-      assertNotBadKey(key);
-      return store.has(key);
+      // .has is very accepting
+      return m.has(key);
     },
     init: (key, value) => {
-      assertNotBadKey(key);
+      assertKey(key, passableOnly);
+      assertValue(value, passableOnly);
       assertKeyDoesNotExist(key);
-      store.set(key, value);
+      m.set(key, value);
     },
     get: key => {
-      assertNotBadKey(key);
       assertKeyExists(key);
-      return store.get(key);
+      return m.get(key);
     },
     set: (key, value) => {
-      assertNotBadKey(key);
       assertKeyExists(key);
-      store.set(key, value);
+      assertValue(value, passableOnly);
+      m.set(key, value);
     },
     delete: key => {
-      assertNotBadKey(key);
       assertKeyExists(key);
-      store.delete(key);
+      m.delete(key);
     },
-    keys: () => Array.from(store.keys()),
-    values: () => Array.from(store.values()),
-    entries: () => Array.from(store.entries()),
-  });
+    keys: () => Array.from(m.keys()),
+    values: () => Array.from(m.values()),
+    entries: () => Array.from(m.entries()),
+  };
+  if (passableOnly) {
+    return Far('store', store);
+  } else {
+    // If the store might return a non-passable, then it should
+    // not itself be passable.
+    return harden(store);
+  }
 }
 harden(makeStore);
