@@ -97,7 +97,7 @@ export const makePriceAuthorityRegistry = () => {
    *
    * @type {PriceAuthority}
    */
-  const priceAuthority = Far('price authority', {
+  const priceAuthority = Far('fake price authority', {
     async getQuoteIssuer(brandIn, brandOut) {
       return E(paFor(brandIn, brandOut)).getQuoteIssuer(brandIn, brandOut);
     },
