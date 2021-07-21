@@ -85,7 +85,7 @@ const waitForStatus = ({ setup, running }) => async (
 };
 
 const provisionOutput = async ({ rd, wr, running }) => {
-  const jsonFile = `${PROVISION_DIR}/terraform.json`;
+  const jsonFile = `${PROVISION_DIR}/terraform-output.json`;
   await makeGuardFile({ rd, wr })(jsonFile, async makeFile => {
     const json = await running.needBacktick(`terraform output -json`);
     await makeFile(json);
@@ -859,11 +859,15 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'provision': {
       await inited();
-      if (!(await rd.exists('.terraform'))) {
-        await needDoRun(['terraform', 'init']);
-      }
+
+      // Remove everything that provisioning affects.
+      await needDoRun(['rm', '-rf', PROVISION_DIR]);
+
+      // It is always safe to init.
+      await needDoRun(['terraform', 'init']);
+
+      // Apply the provisioning plan.
       await needDoRun(['terraform', 'apply', ...args.slice(1)]);
-      await needDoRun(['rm', '-f', `${PROVISION_DIR}/*.stamp`]);
       break;
     }
 
@@ -918,11 +922,12 @@ ${name}:
             // These are the validator params.
             roleParams = `
   moniker: Agoric${offset + instance}
-  website: https://testnet.agoric.com
+  website: https://testnet.agoric.net
   identity: https://keybase.io/team/agoric.testnet.validators`;
           }
           const host = `\
 ${node}:${roleParams}
+  provider: ${provider}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${keyFile}'
