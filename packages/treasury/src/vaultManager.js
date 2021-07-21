@@ -233,10 +233,10 @@ export function makeVaultManager(
     // the payout object
     return harden({
       uiNotifier: notifier,
-      invitationMakers: {
+      invitationMakers: Far('why are these methods upper case', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
-      },
+      }),
       vault,
       liquidationPayout: collateralPayoutP,
     });
