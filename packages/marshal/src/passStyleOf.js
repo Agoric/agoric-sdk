@@ -474,15 +474,15 @@ const passStyleOfInternal = (val, inProgress) => {
 };
 
 /**
- * Purely for performance. Should not affect correctness.
- * Unfortunately has some minor observability.
- * By itself this speedup isn't that interesting. However if
- * we want passStyleOf to detect cycles too
- * https://github.com/Agoric/agoric-sdk/issues/2478
- * Then this caching becomes necessary to keep recursive algorithms
- * from being O(N**2).
+ * Purely for performance. However it is mutable static state, and
+ * it does have some observability on proxies. TODO need to assess
+ * whether this creates a static communications channel.
  *
- * TODO must assess threat from observable mutable static state.
+ * passStyleOf does a full recursive walk of pass-by-copy
+ * structures, in order to validate that they are acyclic. In addition
+ * it is used by other algorithms to recursively walk these pass-by-copy
+ * structures, so without this cache, these algorithms could be
+ * O(N**2) or worse.
  *
  * @type {WeakMap<Passable, PassStyle>}
  */
