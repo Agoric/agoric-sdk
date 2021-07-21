@@ -233,7 +233,7 @@ export function makeVaultManager(
     // the payout object
     return harden({
       uiNotifier: notifier,
-      invitationMakers: Far('why are these methods upper case', {
+      invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
       }),
