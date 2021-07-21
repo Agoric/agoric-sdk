@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeStore } from '@agoric/store';
+import { makeLegacyMap, makeStore } from '@agoric/store';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { addToLiened } from '../../../../../src/contracts/attestation/expiring/expiringHelpers.js';
@@ -10,7 +10,9 @@ import { makeHandle } from '../../../../../src/makeHandle.js';
 
 test('add for same address', async t => {
   /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  // Legacy because stored array is pushed onto
+  const store = makeLegacyMap('address');
+
   const address = 'address1';
   const handle1 = makeHandle('attestation');
   const handle2 = makeHandle('attestation');

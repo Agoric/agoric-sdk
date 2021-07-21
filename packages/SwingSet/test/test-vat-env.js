@@ -26,10 +26,10 @@ test('makeKind is in the vat environment', t => {
   t.is(thing1.ping(), 4);
 });
 
-test('makeWeakStore is in the vat environment', t => {
-  // TODO: configure eslint to know that makeWeakStore is a global
+test('makeVirtualScalarWeakMap is in the vat environment', t => {
+  // TODO: configure eslint to know that makeVirtualScalarWeakMap is a global
   // eslint-disable-next-line no-undef
-  const s1 = makeWeakStore();
+  const s1 = makeVirtualScalarWeakMap();
   const k1 = { role: 'key' };
   const o1 = { size: 10, color: 'blue' };
   s1.init(k1, o1);

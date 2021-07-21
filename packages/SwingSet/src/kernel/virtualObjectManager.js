@@ -148,7 +148,7 @@ export function makeCache(size, fetch, store) {
  *    maker function that will produce new virtualized instances of the defined
  *    object type on demand.
  *
- * - `makeWeakStore` creates an instance of WeakStore that can be keyed by these
+ * - `makeVirtualScalarWeakMap` creates an instance of WeakStore that can be keyed by these
  *    virtual objects.
  *
  * - `flushCache` will empty the object manager's cache of in-memory object
@@ -161,7 +161,7 @@ export function makeCache(size, fetch, store) {
  *    or is part of the persistent state of another virtual object that is being
  *    swapped in from storage.
  *
- * `makeKind` and `makeWeakStore` are made available to user vat code as
+ * `makeKind` and `makeVirtualScalarWeakMap` are made available to user vat code as
  * globals.  The other two methods are for internal use by liveslots.
  */
 export function makeVirtualObjectManager(
@@ -266,7 +266,7 @@ export function makeVirtualObjectManager(
    * Set of all import vrefs which are reachable from our virtualized data.
    * These were Presences at one point. We add to this set whenever we store
    * a Presence into the state of a virtual object, or the value of a
-   * makeWeakStore() instance. We currently never remove anything from the
+   * makeVirtualScalarWeakMap() instance. We currently never remove anything from the
    * set, but eventually we'll use refcounts within virtual data to figure
    * out when the vref becomes unreachable, allowing the vat to send a
    * dropImport into the kernel and release the object.
@@ -292,7 +292,7 @@ export function makeVirtualObjectManager(
   /**
    * Set of all import vrefs which are recognizable by our virtualized data.
    * These were Presences at one point. We add to this set whenever we use a
-   * Presence as a key into a makeWeakStore() instance or an instance of
+   * Presence as a key into a makeVirtualScalarWeakMap() instance or an instance of
    * VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet. We currently never
    * remove anything from the set, but eventually we'll use refcounts to figure
    * out when the vref becomes unrecognizable, allowing the vat to send a
@@ -318,7 +318,7 @@ export function makeVirtualObjectManager(
 
   /**
    * Set of all Remotables which are reachable by our virtualized data, e.g.
-   * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
+   * `makeVirtualScalarWeakMap().set(key, remotable)` or `virtualObject.state.foo =
    * remotable`. The serialization process stores the Remotable's vref to
    * disk, but doesn't actually retain the Remotable. To correctly
    * unserialize that offline data later, we must ensure the Remotable
@@ -368,7 +368,7 @@ export function makeVirtualObjectManager(
   let nextWeakStoreID = 1;
 
   /**
-   * This is essentially a copy of makeWeakStore from the @agoric/store package,
+   * This is essentially a copy of makeVirtualScalarWeakMap from the @agoric/store package,
    * modified to key a virtual object representative using its virtual object ID
    * (rather than its object identity) and stash the corresponding value in
    * persistent storage.  Note this means that (1) non-virtual objects all
@@ -388,7 +388,7 @@ export function makeVirtualObjectManager(
    *
    * @returns {WeakStore<K, V>}
    */
-  function makeWeakStore(keyName = 'key') {
+  function makeVirtualScalarWeakMap(keyName = 'key') {
     const backingMap = new WeakMap();
     const storeID = nextWeakStoreID;
     nextWeakStoreID += 1;
@@ -787,7 +787,7 @@ export function makeVirtualObjectManager(
   }
 
   return harden({
-    makeWeakStore,
+    makeVirtualScalarWeakMap,
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,

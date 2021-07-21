@@ -1,7 +1,7 @@
-/* global makeKind makeWeakStore */
+/* global makeKind makeVirtualScalarWeakMap */
 import { Far } from '@agoric/marshal';
 
-const stuff = makeWeakStore();
+const stuff = makeVirtualScalarWeakMap();
 
 let initialSelf;
 

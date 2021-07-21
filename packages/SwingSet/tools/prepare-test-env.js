@@ -3,7 +3,7 @@
  * Prepare Agoric SwingSet vat global environment for testing.
  *
  * installs SES (and does lockdown), plus adds mocks
- * for virtual objects: makeKind, makeWeakStore
+ * for virtual objects: makeKind, makeVirtualScalarWeakMap
  */
 
 // TODO Remove babel-standalone preinitialization
@@ -13,9 +13,9 @@ import '@agoric/babel-standalone';
 import './install-ses-debug.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 
-const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager({
+const { makeKind, makeVirtualScalarWeakMap } = makeFakeVirtualObjectManager({
   cacheSize: 3,
 });
 
 globalThis.makeKind = makeKind;
-globalThis.makeWeakStore = makeWeakStore;
+globalThis.makeVirtualScalarWeakMap = makeVirtualScalarWeakMap;

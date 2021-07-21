@@ -1,7 +1,7 @@
 import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.

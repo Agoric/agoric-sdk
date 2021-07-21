@@ -1,3 +1,5 @@
+# TODO REWRITE
+
 # Vat Secondary Storage
 
 The kernel currently provides two secondary storage mechanisms for the use of (application) code running in a vat:

@@ -1,6 +1,6 @@
 // @ts-check
 
-import makeStore from '@agoric/store';
+import { makeScalarMap, makeLegacyMap } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -219,7 +219,8 @@ export function getPrefixes(addr) {
  */
 export function makeNetworkProtocol(protocolHandler) {
   /** @type {Store<Port, Set<Closable>>} */
-  const currentConnections = makeStore('port');
+  // Legacy because we're storing a JS Set
+  const currentConnections = makeLegacyMap('port');
 
   /**
    * Currently must be a single listenHandler.
@@ -227,12 +228,12 @@ export function makeNetworkProtocol(protocolHandler) {
    *
    * @type {Store<Endpoint, [Port, ListenHandler]>}
    */
-  const listening = makeStore('localAddr');
+  const listening = makeScalarMap('localAddr');
 
   /**
    * @type {Store<string, Port>}
    */
-  const boundPorts = makeStore('localAddr');
+  const boundPorts = makeScalarMap('localAddr');
 
   /**
    * @param {Endpoint} localAddr
@@ -543,7 +544,7 @@ export function makeLoopbackProtocolHandler(
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
-  const listeners = makeStore('localAddr');
+  const listeners = makeScalarMap('localAddr');
 
   const makePortID = makeNonceMaker('port');
 

@@ -77,7 +77,16 @@ function handler(rawMessage) {
       const virtualObjectGlobals =
         // @ts-ignore
         // eslint-disable-next-line no-undef
-        typeof makeKind !== 'undefined' ? { makeKind, makeWeakStore } : {};
+        typeof makeKind !== 'undefined'
+          ? {
+              // @ts-ignore TODO Figure out why these are newly needed
+              // eslint-disable-next-line no-undef
+              makeKind,
+              // @ts-ignore TODO Figure out why these are newly needed
+              // eslint-disable-next-line no-undef
+              makeVirtualScalarWeakMap,
+            }
+          : {};
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,
