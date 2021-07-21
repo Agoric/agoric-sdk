@@ -44,7 +44,7 @@ export function makeVaultManager(
 ) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const shared = Far('shared vault something', {
+  const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
       return rates.liquidationMargin;
@@ -69,7 +69,7 @@ export function makeVaultManager(
       );
     },
     reallocateReward,
-  });
+  };
 
   // A Map from vaultKits to their most recent ratio of debt to
   // collateralization. (This representation won't be optimized; when we need
