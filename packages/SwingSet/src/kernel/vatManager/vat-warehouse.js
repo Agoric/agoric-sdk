@@ -49,6 +49,7 @@ export const makeLRU = max => {
  *   maxVatsOnline?: number,
  *   snapshotInitial?: number,
  *   snapshotInterval?: number,
+ *   snapshotPruneInterval?: number,
  * }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
@@ -66,6 +67,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // Note: some measurements show 10 deliveries per sec on XS
     //       as of this writing.
     snapshotInterval = 200,
+    snapshotPruneInterval = 20,
   } = policyOptions || {};
   // Idea: snapshot based on delivery size: after deliveries >10Kb.
   // console.debug('makeVatWarehouse', { policyOptions });
@@ -302,16 +304,23 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     return true;
   }
 
+  const snapshotPruneIntervalBI = BigInt(snapshotPruneInterval);
+
   /**
-   * Delete unused snapshots.
+   * Delete unused snapshots periodically.
    *
    * WARNING: caller is responsible to call this only
    * when all records of snapshot consumers are durably
    * stored; for example, after commitCrank().
    *
    * @param { SnapStore } snapStore
+   * @param { bigint } crankNumber
    */
-  function pruneSnapshots(snapStore) {
+  function pruneSnapshots(snapStore, crankNumber) {
+    if (crankNumber % snapshotPruneIntervalBI !== 0n) {
+      return;
+    }
+
     const todo = kernelKeeper.getUnusedSnapshots();
     const done = [];
     for (const snapshotID of todo) {
