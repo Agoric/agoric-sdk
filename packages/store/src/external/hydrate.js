@@ -2,8 +2,8 @@
 
 import '../types.js';
 
-import { makeWeakStore } from '../weak-store.js';
-import { makeStore } from '../store.js';
+import { makeLegacyWeakMap } from '../legacyWeakMap.js';
+import { makeLegacyMap } from '../legacyMap.js';
 
 /**
  * @callback MakeBackingStore
@@ -21,13 +21,13 @@ import { makeStore } from '../store.js';
  * @returns {MakeHydrateExternalStore<A, T>}
  */
 export const makeHydrateExternalStoreMaker = makeBackingStore => {
-  /** @type {WeakStore<T, HydrateKey>} */
-  const instanceToKey = makeWeakStore('instance');
+  /** @type {LegacyWeakMap<T, HydrateKey>} */
+  const instanceToKey = makeLegacyWeakMap('instance');
 
   let lastStoreId = 0;
 
   // This has to be a strong store, since it is indexed by ID.
-  const storeIdToHydrate = makeStore('storeId');
+  const storeIdToHydrate = makeLegacyMap('storeId');
 
   /**
    * Create a data object that queues writes to the store.
@@ -90,7 +90,7 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
     storeIdToHydrate.init(storeId, makeHydrate());
 
     /** @type {ExternalStore<(...args: A) => T>} */
-    const estore = {
+    const estore = harden({
       makeInstance(...args) {
         const data = adaptArguments(...args);
         // Create a new object with the above guts.
@@ -103,10 +103,10 @@ export const makeHydrateExternalStoreMaker = makeBackingStore => {
         hstore.init(instanceId, data);
         return hydrateHook.load([storeId, instanceId]);
       },
-      makeWeakStore() {
-        return hstore.makeWeakStore();
+      makeExternalScalarWeakMap() {
+        return hstore.makeExternalScalarWeakMap();
       },
-    };
+    });
     return estore;
   }
   return harden(makeHydrateExternalStore);

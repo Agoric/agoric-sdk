@@ -1,5 +1,5 @@
 // @ts-check
-/* global __dirname makeKind makeWeakStore */
+/* global __dirname makeKind makeVirtualScalarWeakMap */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
@@ -16,6 +16,6 @@ test('makeKind non-swingset', async t => {
   const zoe = makeZoe(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
   t.notThrows(() => makeKind());
-  t.notThrows(() => makeWeakStore());
+  t.notThrows(() => makeVirtualScalarWeakMap());
   await t.notThrowsAsync(() => zoe.startInstance(installation));
 });

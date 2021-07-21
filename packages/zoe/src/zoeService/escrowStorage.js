@@ -2,7 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeScalarWeakMap } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 import './types';
@@ -12,12 +12,12 @@ import { cleanKeywords } from '../cleanProposal';
 import { arrayToObj, objectMap } from '../objArrayConversion';
 
 /**
- * Store the pool purses whose purpose is to escrow assets, with one
+ * StoreMap the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
  */
 export const makeEscrowStorage = () => {
-  /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeNonVOWeakStore('brand');
+  /** @type {StoreWeakMap<Brand, ERef<Purse>>} */
+  const brandToPurse = makeScalarWeakMap('brand');
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {

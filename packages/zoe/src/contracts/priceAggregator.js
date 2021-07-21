@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import makeStore from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
@@ -70,8 +70,9 @@ const start = async zcf => {
   /** @type {Set<OracleRecord>} */
   const oracleRecords = new Set();
 
-  /** @type {Store<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeStore('oracleInstance');
+  /** @type {StoreMap<Instance, Set<OracleRecord>>} */
+  // Legacy because we're storing a raw JS Set
+  const instanceToRecords = makeLegacyMap('oracleInstance');
 
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
 

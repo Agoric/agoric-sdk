@@ -1,10 +1,10 @@
 // @ts-check
 
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeScalarWeakMap } from '@agoric/store';
 
 export const makeInstanceAdminStorage = () => {
-  /** @type {WeakStore<Instance,InstanceAdmin>} */
-  const instanceToInstanceAdmin = makeNonVOWeakStore('instance');
+  /** @type {StoreWeakMap<Instance,InstanceAdmin>} */
+  const instanceToInstanceAdmin = makeScalarWeakMap('instance');
 
   /** @type {GetPublicFacet} */
   const getPublicFacet = instance =>

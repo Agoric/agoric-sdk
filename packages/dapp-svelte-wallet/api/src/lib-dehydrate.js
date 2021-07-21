@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeMarshal } from '@agoric/marshal';
-import makeStore from '@agoric/store';
+import { makeLegacyMap, makeScalarMap } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -31,14 +31,15 @@ const IMPLODE_PREFIX = 'IE:';
 export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
-  const petnameKindToMapping = makeStore('petnameKind');
+  // Legacy because Mappings mix functions and data
+  const petnameKindToMapping = makeLegacyMap('petnameKind');
 
   /** @type {string[]} */
   const searchOrder = [];
 
   // Paths are kept across all kinds.
-  /** @type {Store<any, Path[]>} */
-  const valToPaths = makeStore('value');
+  /** @type {StoreMap<any, Path[]>} */
+  const valToPaths = makeScalarMap('value');
 
   /**
    * @param {string} data
@@ -87,13 +88,15 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   /**
    * @template T
    * @param {string} kind
+   * @param {{useLegacyMap?: boolean}=} legacyOptions
    * @returns {Mapping<T>}
    */
-  const makeMapping = kind => {
+  const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
-    /** @type {Store<T, string>} */
-    const rawValToPetname = makeStore('value');
-    /** @type {Store<T, string | Path>} */
+    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
+    /** @type {StoreMap<T, string>} */
+    const rawValToPetname = makeMap('value');
+    /** @type {StoreMap<T, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -114,9 +117,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return rawValToPetname.values().map(val => explode(val));
       },
     };
-    /** @type {Store<string, T>} */
-    const rawPetnameToVal = makeStore('petname');
-    /** @type {Store<Path | string, T>} */
+    /** @type {StoreMap<string, T>} */
+    const rawPetnameToVal = makeScalarMap('petname');
+    /** @type {StoreMap<Path | string, T>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {
@@ -353,10 +356,11 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     /**
      * @template T
      * @param {string} kind
+     * @param {{useLegacyMap?: boolean}=} legacyOptions
      * @returns {Mapping<T>}
      */
-    makeMapping: kind => {
-      const mapping = makeMapping(kind);
+    makeMapping: (kind, legacyOptions = undefined) => {
+      const mapping = makeMapping(kind, legacyOptions);
       searchOrder.push(kind);
       return mapping;
     },

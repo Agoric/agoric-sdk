@@ -6,7 +6,7 @@ import { Far, Remotable } from '@agoric/marshal';
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
 
-// empty object, used as makeWeakStore() key
+// empty object, used as makeVirtualScalarWeakMap() key
 function makeKeyInstance(_state) {
   return {
     init() {},
@@ -33,8 +33,8 @@ function makeHolderInstance(state) {
 test('VOM tracks reachable vrefs', async t => {
   const vomOptions = { cacheSize: 3 };
   const vom = makeFakeVirtualObjectManager(vomOptions);
-  const { makeWeakStore, makeKind } = vom;
-  const weakStore = makeWeakStore();
+  const { makeVirtualScalarWeakMap, makeKind } = vom;
+  const weakStore = makeVirtualScalarWeakMap();
   const keyMaker = makeKind(makeKeyInstance);
   const holderMaker = makeKind(makeHolderInstance);
 

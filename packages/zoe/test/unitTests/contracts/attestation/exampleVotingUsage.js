@@ -1,7 +1,7 @@
 // @ts-check
 import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 
 import '../../../../src/contracts/attestation/types';
 
@@ -18,12 +18,12 @@ const start = zcf => {
     brands: { Attestation: attestationBrand },
   } = zcf.getTerms();
 
-  /** @type {Store<Handle<'attestation'>, { seat: ZCFSeat,
+  /** @type {StoreMap<Handle<'attestation'>, { seat: ZCFSeat,
    * expiration: Timestamp, amountLiened: Amount}>} */
-  const storedAttestations = makeStore();
+  const storedAttestations = makeScalarMap();
 
-  /** @type {Store<ZCFSeat, string>} */
-  const recordedVotes = makeStore();
+  /** @type {StoreMap<ZCFSeat, string>} */
+  const recordedVotes = makeScalarMap();
 
   const empty = AmountMath.makeEmpty(attestationBrand, AssetKind.SET);
 
@@ -84,8 +84,8 @@ const start = zcf => {
       // For each seat, sum the values in the attestations as long as
       // the expiration is after the currentTime.
 
-      /** @type {Store<ZCFSeat, Amount>} */
-      const sumBySeat = makeStore();
+      /** @type {StoreMap<ZCFSeat, Amount>} */
+      const sumBySeat = makeScalarMap();
 
       storedAttestations
         .values()
@@ -103,8 +103,8 @@ const start = zcf => {
           }
         });
 
-      /** @type {Store<string, Amount>} */
-      const weightedAnswers = makeStore('answers');
+      /** @type {StoreMap<string, Amount>} */
+      const weightedAnswers = makeScalarMap('answers');
 
       recordedVotes.entries().forEach(([seat, answer]) => {
         // The seat may no longer have a weight if an extended

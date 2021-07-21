@@ -4,7 +4,7 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeStore } from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';
 
@@ -13,8 +13,9 @@ import './types.js';
  */
 export const makeNameHubKit = () => {
   /** @typedef {Partial<PromiseRecord<unknown> & { value: unknown }>} NameRecord */
-  /** @type {Store<string, NameRecord>} */
-  const keyToRecord = makeStore('nameKey');
+  /** @type {StoreMap<string, NameRecord>} */
+  // Legacy because a promiseKit is not a passable
+  const keyToRecord = makeLegacyMap('nameKey');
 
   /** @type {NameHub} */
   const nameHub = {

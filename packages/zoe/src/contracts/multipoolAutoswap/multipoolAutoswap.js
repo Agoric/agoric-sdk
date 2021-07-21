@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMap } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
@@ -65,8 +65,8 @@ const start = zcf => {
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
-  /** @type {WeakStore<Brand,Pool>} */
-  const secondaryBrandToPool = makeWeakStore();
+  /** @type {StoreWeakMap<Brand,Pool>} */
+  const secondaryBrandToPool = makeScalarWeakMap('secondaryBrand');
   const getPool = secondaryBrandToPool.get;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;

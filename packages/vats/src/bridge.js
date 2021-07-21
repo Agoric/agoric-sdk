@@ -1,6 +1,6 @@
 // @ts-check
 
-import makeStore from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import '@agoric/store/exported';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
@@ -36,9 +36,9 @@ import { Far } from '@agoric/marshal';
  */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {Store<string, BridgeHandler>}
+   * @type {StoreMap<string, BridgeHandler>}
    */
-  const srcHandlers = makeStore('srcID');
+  const srcHandlers = makeScalarMap('srcID');
 
   function bridgeInbound(srcID, obj) {
     // console.log(

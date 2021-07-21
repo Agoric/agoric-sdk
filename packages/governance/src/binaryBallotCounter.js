@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
@@ -9,7 +9,7 @@ import { E } from '@agoric/eventual-send';
 import { ChoiceMethod, buildBallot } from './ballotBuilder';
 import { scheduleClose } from './closingRule';
 
-const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
+const makeWeightedBallot = (ballot, shares) => harden({ ballot, shares });
 
 const makeQuorumCounter = quorumThreshold => {
   const check = stats => {
@@ -62,7 +62,7 @@ const makeBinaryBallotCounter = (
   let isOpen = true;
   const outcomePromise = makePromiseKit();
   const tallyPromise = makePromiseKit();
-  const allBallots = makeStore('seat');
+  const allBallots = makeScalarMap('seat');
 
   const recordBallot = (seat, filledBallotP, shares = 1n) => {
     return E.when(filledBallotP, filledBallot => {

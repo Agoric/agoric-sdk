@@ -1,10 +1,10 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 
 const makeGetAttMaker = makeAttMaker => {
-  /** @type {Store<Address, AttMaker>} */
-  const addressToAttMaker = makeStore('address');
+  /** @type {StoreMap<Address, AttMaker>} */
+  const addressToAttMaker = makeScalarMap('address');
 
   /** @type {GetAttMaker} */
   const getAttMaker = address => {

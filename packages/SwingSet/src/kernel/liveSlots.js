@@ -932,7 +932,7 @@ function build(
   }
 
   const vatGlobals = harden({
-    makeWeakStore: vom.makeWeakStore,
+    makeVirtualScalarWeakMap: vom.makeVirtualScalarWeakMap,
     makeKind: vom.makeKind,
   });
 

@@ -3,14 +3,14 @@
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { allComparable } from '@agoric/same-structure';
 
 // Each CommitteeRegistrar represents a particular set of voters. The number of
 // voters is visible in the terms.
 const start = zcf => {
   // Question => { voter, publicFacet }
-  const allQuestions = makeStore('Question');
+  const allQuestions = makeScalarMap('Question');
   const { notifier, updater } = makeNotifierKit();
   const invitations = [];
 

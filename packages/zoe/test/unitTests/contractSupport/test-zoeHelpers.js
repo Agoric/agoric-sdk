@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { Far } from '@agoric/marshal';
 
-import makeStore from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { setup } from '../setupBasicMints';
 
 import { defaultAcceptanceMsg, satisfies } from '../../../src/contractSupport';
@@ -16,8 +16,8 @@ test('ZoeHelpers messages', t => {
 });
 
 function makeMockTradingZcfBuilder() {
-  const offers = makeStore('offerHandle');
-  const allocs = makeStore('offerHandle');
+  const offers = makeScalarMap('offerHandle');
+  const allocs = makeScalarMap('offerHandle');
   const reallocatedStagings = [];
 
   return Far('mockTradingZcfBuilder', {

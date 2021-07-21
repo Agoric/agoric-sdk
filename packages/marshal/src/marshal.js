@@ -682,10 +682,22 @@ export { Remotable };
  * @param {T|undefined} [remotable={}] The object used as the remotable
  * @returns {T} remotable, modified for debuggability
  */
-const Far = (farName, remotable = undefined) => {
+export const Far = (farName, remotable = undefined) => {
   const r = remotable === undefined ? {} : remotable;
   return Remotable(`Alleged: ${farName}`, undefined, r);
 };
-
 harden(Far);
-export { Far };
+
+/**
+ * Coerce `func` to a far function that preserves its call behavior.
+ *
+ * @param {string} farName to be used only if `func` is not already a
+ * far function.
+ * @param {(...args: any[]) => any} func
+ */
+export const ToFarFunction = (farName, func) => {
+  if (getInterfaceOf(func) !== undefined) {
+    return func;
+  }
+  return Far(farName, (...args) => func(...args));
+};

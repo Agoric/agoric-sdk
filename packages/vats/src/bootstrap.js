@@ -7,7 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
 
@@ -102,8 +102,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     async function installEconomy(bootstrapPaymentValue) {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
-      /** @type {Store<NameHub, NameAdmin>} */
-      const nameAdmins = makeStore();
+      /** @type {StoreMap<NameHub, NameAdmin>} */
+      const nameAdmins = makeScalarMap('nameHub');
       await Promise.all(
         ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
           async nm => {
@@ -228,8 +228,8 @@ export function buildRootObject(vatPowers, vatParameters) {
       },
     ];
 
-    /** @type {Store<string, import('./issuers').IssuerInitializationRecord>} */
-    const issuerNameToRecord = makeStore();
+    /** @type {StoreMap<string, import('./issuers').IssuerInitializationRecord>} */
+    const issuerNameToRecord = makeScalarMap('issuerName');
     /** @type {Array<[string, import('./issuers').IssuerInitializationRecord]>} */
     const issuerEntries = [
       CENTRAL_ISSUER_ENTRY,

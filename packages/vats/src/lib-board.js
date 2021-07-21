@@ -3,7 +3,7 @@
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import makeStore from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { models as crcmodels } from 'polycrc';
 
 import './types';
@@ -36,8 +36,8 @@ const calcCrc = num => {
  * @returns {Board}
  */
 function makeBoard(seed = 0) {
-  const idToVal = makeStore('boardId');
-  const valToId = makeStore('value');
+  const idToVal = makeScalarMap('boardId');
+  const valToId = makeScalarMap('value');
   const sparseInts = generateSparseInts(seed);
 
   /** @type {Board} */

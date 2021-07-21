@@ -1,7 +1,8 @@
 // Copyright (C) 2019-20 Agoric, under Apache license 2.0
 
 // @ts-check
-import { makeWeakStore } from '../weak-store.js';
+import { makeLegacyWeakMap } from '../legacyWeakMap.js';
+
 import '../types.js';
 
 /**
@@ -17,8 +18,8 @@ import '../types.js';
 export function makeMemoryExternalStore(keyName, maker) {
   return harden({
     makeInstance: maker,
-    makeWeakStore() {
-      return makeWeakStore(keyName);
+    makeExternalScalarWeakMap() {
+      return makeLegacyWeakMap(keyName);
     },
   });
 }

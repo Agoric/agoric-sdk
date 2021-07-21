@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import makeStore from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
 
@@ -14,8 +14,8 @@ const setup = () => {
     simoleans: simoleanBundle,
     bucks: bucksBundle,
   };
-  /** @type {Store<string, Brand>} */
-  const brands = makeStore('brandName');
+  /** @type {StoreMap<string, Brand>} */
+  const brands = makeScalarMap('brandName');
 
   for (const k of Object.getOwnPropertyNames(allBundles)) {
     brands.init(k, allBundles[k].brand);
@@ -39,7 +39,7 @@ const setup = () => {
    * @property {Mint} bucksMint
    * @property {IssuerKit} bucksR
    * @property {IssuerKit} bucksKit
-   * @property {Store<string, Brand>} brands
+   * @property {StoreMap<string, Brand>} brands
    * @property {(value: any) => Amount} moola
    * @property {(value: any) => Amount} simoleans
    * @property {(value: any) => Amount} bucks

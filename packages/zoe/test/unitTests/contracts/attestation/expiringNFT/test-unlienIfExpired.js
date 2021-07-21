@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { unlienExpiredAmounts } from '../../../../../src/contracts/attestation/expiring/unlienExpiredAmounts';
@@ -10,8 +10,8 @@ import { makeAttestationElem } from '../../../../../src/contracts/attestation/ex
 import { makeHandle } from '../../../../../src/makeHandle';
 
 test(`store doesn't have address`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {StoreMap<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMap('address');
   const address = 'address';
   const currentTime = 5n;
   const { brand: externalBrand } = makeIssuerKit('external');
@@ -23,8 +23,8 @@ test(`store doesn't have address`, async t => {
 });
 
 test(`store has address with empty array value`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {StoreMap<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMap('address');
   const address = 'address';
   const currentTime = 5n;
   const { brand: externalBrand } = makeIssuerKit('external');
@@ -38,8 +38,8 @@ test(`store has address with empty array value`, async t => {
 });
 
 test(`store has address with all non-expired values`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {StoreMap<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMap('address');
   const address = 'address';
   const currentTime = 5n;
   const { brand: externalBrand } = makeIssuerKit('external');
@@ -83,8 +83,8 @@ test(`store has address with all non-expired values`, async t => {
 });
 
 test(`store has address with one expired`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {StoreMap<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMap('address');
   const address = 'address';
   const currentTime = 5n;
   const { brand: externalBrand } = makeIssuerKit('external');

@@ -10,6 +10,7 @@ export {
   makeMarshal,
   Remotable,
   Far,
+  ToFarFunction,
 } from './src/marshal.js';
 
 export { stringify, parse } from './src/marshal-stringify.js';

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -43,8 +43,9 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
   // Note: `amountLiened` in ExpiringAttElem is of the brand `externalBrand`
 
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const lienedAmounts = makeStore('address');
+  /** @type {StoreMap<Address,Array<ExpiringAttElem>>} */
+  // Legacy because stored array is pushed onto
+  const lienedAmounts = makeLegacyMap('address');
 
   const cannotGetExtension = new Set();
 

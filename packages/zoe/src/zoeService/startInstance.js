@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeScalarWeakMap } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { makeZoeSeatAdminKit } from './zoeSeat';
@@ -27,8 +27,8 @@ export const makeStartInstance = (
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
   ) => {
-    /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
-    const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
+    /** @type {StoreWeakMap<SeatHandle, ZoeSeatAdmin>} */
+    const seatHandleToZoeSeatAdmin = makeScalarWeakMap('seatHandle');
 
     const { installation, bundle } = await unwrapInstallation(installationP);
     // AWAIT ///

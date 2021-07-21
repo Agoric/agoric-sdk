@@ -5,10 +5,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { Far } from '@agoric/marshal';
 
 import {
-  makeStore,
+  makeScalarMap,
   makeExternalStore,
   makeHydrateExternalStoreMaker,
-  makeWeakStore,
+  makeScalarWeakMap,
 } from '../src/index.js';
 
 import '../src/types.js';
@@ -55,15 +55,15 @@ test('rewritten code', t => {
   let vatHydrateHook;
   const makeVatExternalStore = makeHydrateExternalStoreMaker(hydrateHook => {
     vatHydrateHook = hydrateHook;
-    /** @type {Store<number, HydrateStore>} */
-    const idToStore = makeStore('storeId');
+    /** @type {StoreMap<number, HydrateStore>} */
+    const idToStore = makeScalarMap('storeId');
     return {
       getHydrateStore(storeId) {
         return idToStore.get(storeId);
       },
       makeHydrateStore(storeId, instanceKind) {
         // This implementation is totally leaky.
-        const store = makeStore(`${instanceKind} ids`);
+        const store = makeScalarMap(`${instanceKind} ids`);
 
         // We use JSON here just as a minimal test.  Real implementations will
         // want something like @agoric/marshal.
@@ -78,8 +78,8 @@ test('rewritten code', t => {
           set(id, data) {
             store.set(id, JSON.stringify(data));
           },
-          makeWeakStore() {
-            return makeWeakStore(instanceKind);
+          makeScalarWeakMap() {
+            return makeScalarWeakMap(instanceKind);
           },
         });
         harden(hstore);
@@ -107,22 +107,23 @@ test('rewritten code', t => {
   const store = makeVatExternalStore(
     'Hello instance',
     (msg = 'Hello') => ({ msg }),
-    $hinit => $hdata => {
-      let startCount = $hinit && 24;
-      $hinit && (startCount += 1);
-      $hinit && ($hdata.invocationCount = startCount);
-      const obj = {
-        hello(nick) {
-          $hdata.invocationCount += 1;
-          return `${$hdata.msg}, ${nick}!`;
-        },
-        getCount() {
-          return { moduleLevel, invocationCount: $hdata.invocationCount };
-        },
-      };
-      $hinit && obj.hello('init');
-      return obj;
-    },
+    $hinit =>
+      Far('hydrater', $hdata => {
+        let startCount = $hinit && 24;
+        $hinit && (startCount += 1);
+        $hinit && ($hdata.invocationCount = startCount);
+        const obj = Far('hello nick', {
+          hello(nick) {
+            $hdata.invocationCount += 1;
+            return `${$hdata.msg}, ${nick}!`;
+          },
+          getCount() {
+            return { moduleLevel, invocationCount: $hdata.invocationCount };
+          },
+        });
+        $hinit && obj.hello('init');
+        return obj;
+      }),
   );
 
   const h = runTests(t, store.makeInstance);

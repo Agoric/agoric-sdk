@@ -1,6 +1,8 @@
+# TODO REWRITE
+
 # Store
 
-A wrapper around JavaScript Map. 
+A wrapper around JavaScript Map.
 
 Store adds some additional functionality on top of Map.
 

@@ -35,7 +35,7 @@ function getAccessToken() {
 
   try {
     if (hasAccessToken) {
-      // Store the access token for later use.
+      // StoreMap the access token for later use.
       localStorage.setItem('accessTokenParams', accessTokenParams);
     } else {
       // Try reviving it from localStorage.

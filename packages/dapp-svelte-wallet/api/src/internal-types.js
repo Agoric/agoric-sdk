@@ -50,9 +50,9 @@
  * @typedef {Object} Mapping
  * @property {(petname: Petname) => string} implode
  * @property {(str: string) => Petname} explode
- * @property {WeakStore<T, Petname>} valToPetname
- * @property {WeakStore<T, string[][]>} valToPaths
- * @property {Store<Petname, T>} petnameToVal
+ * @property {StoreWeakMap<T, Petname>} valToPetname
+ * @property {StoreWeakMap<T, string[][]>} valToPaths
+ * @property {StoreMap<Petname, T>} petnameToVal
  * @property {(petname: Petname, val: T) => void} addPetname
  * @property {(path: string[], val: T) => void} addPath
  * @property {(petname: Petname, val: T) => void} renamePetname

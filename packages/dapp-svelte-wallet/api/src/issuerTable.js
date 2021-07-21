@@ -3,7 +3,7 @@
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMap } from '@agoric/store';
 
 import '../exported';
 import './internal-types';
@@ -21,10 +21,10 @@ import './internal-types';
  * remote calls to get the brand and AmountMath and save them.
  */
 const makeIssuerTable = () => {
-  /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeWeakStore('brand');
-  /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeWeakStore('issuer');
+  /** @type {StoreWeakMap<Brand,IssuerRecord>} */
+  const brandToIssuerRecord = makeScalarWeakMap('brand');
+  /** @type {StoreWeakMap<Issuer,IssuerRecord>} */
+  const issuerToIssuerRecord = makeScalarWeakMap('issuer');
 
   /** @type {IssuerTable} */
   const issuerTable = {
