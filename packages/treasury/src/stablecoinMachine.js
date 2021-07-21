@@ -342,7 +342,7 @@ export async function start(zcf) {
   );
 
   /** @type {StablecoinMachine} */
-  const stablecoinMachine = Far('stableoin machine', {
+  const stablecoinMachine = Far('stablecoin machine', {
     makeAddTypeInvitation,
     getAMM() {
       return autoswapInstance;
