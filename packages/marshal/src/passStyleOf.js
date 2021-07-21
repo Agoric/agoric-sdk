@@ -53,6 +53,9 @@ export function getErrorConstructor(name) {
  * to do so, we prefer to let the error test succeed and to couch these
  * complaints as notes on the error.
  *
+ * TODO: BUG: SECURITY: Making this tolerant of malformed errors conflicts with
+ * having passStyleOf be validating.
+ *
  * @param {Passable} val
  * @returns {boolean}
  */
