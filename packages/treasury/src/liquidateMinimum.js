@@ -89,7 +89,7 @@ export async function start(zcf) {
     };
   }
 
-  const creatorFacet = Far('debtor thing creator facet', {
+  const creatorFacet = Far('debtorInvitationCreator', {
     makeDebtorInvitation: runDebt =>
       zcf.makeInvitation(makeDebtorHook(runDebt), 'Liquidate'),
   });
