@@ -482,21 +482,58 @@ export function makeWallet({
 
     const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
-    // We now have everything we need to provide Zoe, so do the actual withdrawal.
-    // Payments are made for the keywords in proposal.give.
-    const keywords = [];
+    // Track from whence our the payment came.
+    /** @type {Map<Payment, Purse>} */
+    const paymentToPurse = new Map();
 
-    const paymentPs = Object.entries(proposal.give || harden({})).map(
-      ([keyword, amount]) => {
+    // We now have everything we need to provide Zoe, so do the actual withdrawals.
+    // Payments are made for the keywords in proposal.give.
+    const keywordPaymentPs = Object.entries(proposal.give || harden({})).map(
+      async ([keyword, amount]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
           purse !== undefined,
           X`purse was not found for keyword ${q(keyword)}`,
         );
-        keywords.push(keyword);
-        return E(purse).withdraw(amount);
+        const payment = await E(purse).withdraw(amount);
+        paymentToPurse.set(payment, purse);
+        return [keyword, payment];
       },
     );
+
+    // Try reclaiming any of our payments that we successfully withdrew, but
+    // were left unclaimed.
+    const tryReclaimingWithdrawnPayments = () =>
+      // Use allSettled to ensure we attempt all the deposits, regardless of
+      // individual rejections.
+      Promise.allSettled(
+        keywordPaymentPs.map(async keywordPaymentP => {
+          // Wait for the withdrawal to complete.  This protects against a race
+          // when updating paymentToPurse.
+          const [_keyword, payment] = await keywordPaymentP;
+
+          // Find out where it came from.
+          const purse = paymentToPurse.get(payment);
+          if (purse === undefined) {
+            // We already tried to reclaim this payment, so stop here.
+            return undefined;
+          }
+
+          // Now send it back to the purse.
+          try {
+            // eslint-disable-next-line no-use-before-define
+            return addPayment(payment, purse);
+          } finally {
+            // Once we've called addPayment, mark this one as done.
+            paymentToPurse.delete(payment);
+          }
+        }),
+      );
+
+    // Gather all of our payments, and if there's an error, reclaim the ones
+    // that were successfuly withdrawn.
+    const withdrawAllPayments = Promise.all(keywordPaymentPs);
+    withdrawAllPayments.catch(tryReclaimingWithdrawnPayments);
 
     // =====================
     // === AWAITING TURN ===
@@ -505,47 +542,38 @@ export function makeWallet({
     // this await is purely to prevent "embarrassment" of
     // revealing to zoe that we had insufficient funds/assets
     // for the offer.
-    const payments = await Promise.all(paymentPs);
-
-    const paymentKeywordRecord = harden(
-      Object.fromEntries(keywords.map((keyword, i) => [keyword, payments[i]])),
-    );
+    const paymentKeywords = await withdrawAllPayments;
+    const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
     const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
+    // By the time Zoe settles the seat promise, the escrow should be complete.
+    // Reclaim if it is somehow not.
+    seat.finally(tryReclaimingWithdrawnPayments);
 
-    // We'll resolve when deposited.
+    // Even if the seat doesn't settle, we can still pipeline our request for
+    // payouts.
     const depositedP = E(seat)
       .getPayouts()
       .then(payoutObj => {
-        const payoutIndexToKeyword = [];
         return Promise.all(
-          Object.entries(payoutObj)
-            .map(([keyword, payoutP], i) => {
-              payoutIndexToKeyword[i] = keyword;
-              return payoutP;
-            })
-            .map((payoutP, payoutIndex) => {
-              const keyword = payoutIndexToKeyword[payoutIndex];
-              const purse = purseKeywordRecord[keyword];
-              if (purse && payoutP) {
-                // eslint-disable-next-line no-use-before-define
-                return addPayment(payoutP, purse);
-              }
-              return undefined;
-            }),
-        );
-      })
-      .finally(() =>
-        // Try reclaiming any payments that were left on the table.
-        keywords.forEach((keyword, i) => {
-          const purse = purseKeywordRecord[keyword];
-          if (purse && payments[i]) {
-            // eslint-disable-next-line no-use-before-define
-            addPayment(payments[i], purse);
-          }
-        }),
-      );
+          Object.entries(payoutObj).map(([keyword, payoutP]) => {
+            // We try to find a purse for this keyword, but even if we don't,
+            // we still make it a normal incoming payment.
+            const purseOrUndefined = purseKeywordRecord[keyword];
 
+            // eslint-disable-next-line no-use-before-define
+            return addPayment(payoutP, purseOrUndefined);
+          }),
+        );
+      });
+
+    // Regardless of the status of the offer, we try to clean up any of our
+    // unclaimed payments.  Defensively, we want to do this as soon as possible
+    // even if the seat doesn't settle.
+    depositedP.finally(tryReclaimingWithdrawnPayments);
+
+    // Return a promise that will resolve after successful deposit, as well as
+    // the promise for the seat.
     return { depositedP, seat };
   }
 
@@ -1130,15 +1158,40 @@ export function makeWallet({
           };
           updatePaymentRecord(paymentRecord);
           // Now try depositing.
-          const depositedAmount = await E(purse).deposit(payment);
-          paymentRecord = {
-            ...paymentRecord,
-            status: 'deposited',
-            depositedAmount,
-            ...brandRecord,
-          };
-          updatePaymentRecord(paymentRecord);
-          depositedPK.resolve(depositedAmount);
+          E(purse)
+            .deposit(payment)
+            .then(
+              depositedAmount => {
+                paymentRecord = {
+                  ...paymentRecord,
+                  status: 'deposited',
+                  depositedAmount,
+                  ...brandRecord,
+                };
+                updatePaymentRecord(paymentRecord);
+                depositedPK.resolve(depositedAmount);
+              },
+              e => {
+                console.error(
+                  'Error depositing payment in',
+                  purseOrPetname || 'default purse',
+                  e,
+                );
+                if (purseOrPetname === undefined) {
+                  // Error in auto-deposit purse, just fail.  They can try
+                  // again.
+                  paymentRecord = {
+                    ...paymentRecord,
+                    status: undefined,
+                  };
+                  depositedPK.reject(e);
+                } else {
+                  // Error in designated deposit, so retry automatically without
+                  // a designated purse.
+                  depositedPK.resolve(paymentRecord.actions.deposit(undefined));
+                }
+              },
+            );
           return depositedPK.promise;
         },
         async refresh() {
