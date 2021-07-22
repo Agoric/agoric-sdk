@@ -695,11 +695,11 @@ export default function buildKernel(
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
       if (!didAbort) {
-        kernelKeeper.processRefcounts();
-        kernelKeeper.saveStats();
         // eslint-disable-next-line no-use-before-define
         await vatWarehouse.maybeSaveSnapshot();
       }
+      kernelKeeper.processRefcounts();
+      kernelKeeper.saveStats();
       commitCrank();
       kernelKeeper.incrementCrankNumber();
     } finally {
