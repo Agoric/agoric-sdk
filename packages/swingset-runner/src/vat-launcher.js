@@ -41,7 +41,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
         // eslint-disable-next-line no-await-in-loop
         const vat = await E(vatMaker).createVatByName(
           bundleName,
-          { metered: vatParameters.metered, vatParameters: harden(subvatParameters) },
+          { vatParameters: harden(subvatParameters) },
         );
         vatRoots[vatName] = vat.root;
       }
