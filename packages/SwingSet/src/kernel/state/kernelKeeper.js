@@ -36,6 +36,7 @@ const enableKernelGC = true;
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
+// meter.nextID = $NN // used to make m$NN
 
 // kernelBundle = JSON(bundle)
 // bundle.$NAME = JSON(bundle)
@@ -53,6 +54,9 @@ const enableKernelGC = true;
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 // v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+
+// m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
+// m$NN.threshold = $NN // notify when .remaining first drops below this
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -90,6 +94,12 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
+function insistMeterID(m) {
+  assert.typeof(m, 'string');
+  assert.equal(m[0], 'm');
+  Nat(BigInt(m.slice(1)));
+}
+
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
 // seeing both kp1 and ko1, which are completely unrelated despite having the
@@ -106,6 +116,7 @@ const FIRST_OBJECT_ID = 20n;
 const FIRST_DEVNODE_ID = 30n;
 const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
+const FIRST_METER_ID = 1n;
 
 /**
  * @param {KVStorePlus} kvStore
@@ -228,6 +239,7 @@ export default function makeKernelKeeper(
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
     kvStore.set('kd.nextID', `${FIRST_DEVNODE_ID}`);
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
+    kvStore.set('meter.nextID', `${FIRST_METER_ID}`);
     kvStore.set('gcActions', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
@@ -704,6 +716,82 @@ export default function makeKernelKeeper(
     kvStore.set('runQueue', JSON.stringify(queue));
     decStat('runQueueLength');
     return msg;
+  }
+
+  function allocateMeter(remaining, threshold) {
+    if (remaining !== 'unlimited') {
+      assert.typeof(remaining, 'bigint');
+      Nat(remaining);
+    }
+    assert.typeof(threshold, 'bigint');
+    Nat(threshold);
+    const nextID = Nat(BigInt(getRequired('meter.nextID')));
+    kvStore.set('meter.nextID', `${nextID + 1n}`);
+    const meterID = `m${nextID}`;
+    kvStore.set(`${meterID}.remaining`, `${remaining}`);
+    kvStore.set(`${meterID}.threshold`, `${threshold}`);
+    return meterID;
+  }
+
+  function addMeterRemaining(meterID, delta) {
+    insistMeterID(meterID);
+    assert.typeof(delta, 'bigint');
+    Nat(delta);
+    /** @type { bigint | string } */
+    let remaining = getRequired(`${meterID}.remaining`);
+    if (remaining !== 'unlimited') {
+      remaining = Nat(BigInt(remaining));
+      kvStore.set(`${meterID}.remaining`, `${remaining + delta}`);
+    }
+  }
+
+  function setMeterThreshold(meterID, threshold) {
+    insistMeterID(meterID);
+    assert.typeof(threshold, 'bigint');
+    Nat(threshold);
+    kvStore.set(`${meterID}.threshold`, `${threshold}`);
+  }
+
+  function getMeter(meterID) {
+    insistMeterID(meterID);
+    /** @type { bigint | string } */
+    let remaining = getRequired(`${meterID}.remaining`);
+    if (remaining !== 'unlimited') {
+      remaining = BigInt(remaining);
+    }
+    const threshold = BigInt(getRequired(`${meterID}.threshold`));
+    return harden({ remaining, threshold });
+  }
+
+  function deductMeter(meterID, spent) {
+    insistMeterID(meterID);
+    assert.typeof(spent, 'bigint');
+    Nat(spent);
+    let underflow = false;
+    let notify = false;
+    /** @type { bigint | string } */
+    let oldRemaining = getRequired(`${meterID}.remaining`);
+    if (oldRemaining !== 'unlimited') {
+      oldRemaining = BigInt(oldRemaining);
+      const threshold = BigInt(getRequired(`${meterID}.threshold`));
+      let remaining = oldRemaining - spent;
+      if (remaining < 0n) {
+        underflow = true;
+        remaining = 0n;
+      }
+      if (remaining < threshold && oldRemaining >= threshold) {
+        // only notify once per crossing
+        notify = true;
+      }
+      kvStore.set(`${meterID}.remaining`, `${Nat(remaining)}`);
+    }
+    return harden({ underflow, notify });
+  }
+
+  function deleteMeter(meterID) {
+    insistMeterID(meterID);
+    kvStore.delete(`${meterID}.remaining`);
+    kvStore.delete(`${meterID}.threshold`);
   }
 
   function hasVatWithName(name) {
@@ -1204,6 +1292,13 @@ export default function makeKernelKeeper(
     isRunQueueEmpty,
     getRunQueueLength,
     getNextMsg,
+
+    allocateMeter,
+    addMeterRemaining,
+    setMeterThreshold,
+    getMeter,
+    deductMeter,
+    deleteMeter,
 
     hasVatWithName,
     getVatIDForName,
