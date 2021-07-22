@@ -1,0 +1,143 @@
+// @ts-check
+
+import { makeStore } from '@agoric/store';
+import { AmountMath, AssetKind } from '@agoric/ertp';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { validateInputs, mintZCFMintPayment } from '../helpers';
+import {
+  makeAttestationElem,
+  addToLiened,
+  hasExpired,
+} from './expiringHelpers';
+import { updateLien } from './updateLien';
+import { unlienIfExpired } from './unlienIfExpired';
+import { extendExpiration as extendExpirationInternal } from './extendExpiration';
+
+// Adds an expiring lien to an amount in response to an incoming call.
+// Can be queried for the current liened amount for an address.
+
+const { quote: q } = assert;
+
+/**
+ * @param {string} attestationTokenName - the name for the attestation
+ * token
+ * @param {Amount} empty - an empty amount in the external brand (i.e.
+ * BLD) that the attestation is about
+ * @param {ContractFacet} zcf
+ * @returns {Promise<{disallowExtensions: DisallowExtensions, addExpiringLien: AddExpiringLien, getLienAmount:
+ * GetLienAmount, makeExtendAttInvitation: MakeExtendAttInvitationInternal, issuer: Issuer, brand: Brand}>}
+ */
+const setupAttestation = async (attestationTokenName, empty, zcf) => {
+  assert(AmountMath.isEmpty(empty), `empty ${q(empty)} was not empty`);
+  const zcfMint = await zcf.makeZCFMint(attestationTokenName, AssetKind.SET);
+  const {
+    brand: attestationBrand,
+    issuer: attestationIssuer,
+  } = zcfMint.getIssuerRecord();
+
+  const externalBrand = empty.brand;
+
+  // Note: `amountLiened` is of the brand `externalBrand`
+
+  /** @type {Store<Address,Array<ExpiringAttElem>>} */
+  const lienedAmounts = makeStore('address');
+
+  const cannotGetExtension = new Set();
+
+  // This request *must* come from the owner of the address. Merely
+  // verifying that the address *could* add a lien is not sufficient.
+  // The owner must consent to adding a lien, and non-owners must not
+  // be able to initiate a lien for another account.
+
+  /** @type {AddExpiringLien} */
+  const addExpiringLien = (address, amount, expiration) => {
+    const amountToLien = validateInputs(externalBrand, address, amount);
+    assert.typeof(expiration, 'bigint');
+
+    const handle = makeHandle('attestation');
+
+    const attestationElem = makeAttestationElem(
+      address,
+      amountToLien,
+      expiration,
+      handle,
+    );
+
+    const amountToMint = AmountMath.make(attestationBrand, [attestationElem]);
+    addToLiened(lienedAmounts, attestationElem);
+
+    return mintZCFMintPayment(zcf, zcfMint, amountToMint);
+  };
+
+  /** @type {GetLienAmount} */
+  const getLienAmount = (address, currentTime) => {
+    assert.typeof(address, 'string');
+    assert.typeof(currentTime, 'bigint');
+
+    // We should first unlien any amounts for which the lien has
+    // expired, then return the total lien still remaining for the address
+    const totalStillLiened = unlienIfExpired(
+      lienedAmounts,
+      empty,
+      address,
+      currentTime,
+    );
+
+    // Remove from cannotGetExtension since there is no lien left
+    if (AmountMath.isEmpty(totalStillLiened)) {
+      cannotGetExtension.delete(address);
+    }
+    return totalStillLiened;
+  };
+
+  const canExtend = address => !cannotGetExtension.has(address);
+  const updateLienedAmounts = newAttestationElem =>
+    updateLien(lienedAmounts, newAttestationElem);
+
+  /** @type {ExtendExpiration} */
+  const extendExpiration = (seat, newExpiration) =>
+    extendExpirationInternal(
+      seat,
+      zcfMint,
+      canExtend,
+      updateLienedAmounts,
+      attestationBrand,
+      newExpiration,
+    );
+
+  // This is only released when the lien is empty
+  /** @type {DisallowExtensions} */
+  const disallowExtensions = address => {
+    assert.typeof(address, 'string');
+    cannotGetExtension.add(address);
+  };
+
+  /** @type {MakeExtendAttInvitationInternal} */
+  const makeExtendAttInvitation = (newExpiration, currentTime) => {
+    // Fail-fast if the newExpiration is already out of date
+    assert(
+      !hasExpired(newExpiration, currentTime),
+      `The attestation could not be extended, as the new expiration ${q(
+        newExpiration,
+      )} is in the past`,
+    );
+    const offerHandler = seat => extendExpiration(seat, newExpiration);
+    return zcf.makeInvitation(offerHandler, 'ExtendAtt', {
+      brand: attestationBrand,
+    });
+  };
+
+  return harden({
+    disallowExtensions,
+    addExpiringLien,
+    getLienAmount,
+    makeExtendAttInvitation, // choice by user to extend expiration
+    issuer: attestationIssuer,
+    brand: attestationBrand,
+  });
+};
+
+harden(setupAttestation);
+export { setupAttestation };
