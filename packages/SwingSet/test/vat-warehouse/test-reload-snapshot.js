@@ -2,8 +2,8 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import fs from 'fs';
 import path from 'path';
+import tmp from 'tmp';
 import { makeSnapStore } from '@agoric/xsnap';
 import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
@@ -19,12 +19,7 @@ test('vat reload from snapshot', async t => {
     },
   };
 
-  const snapstorePath = path.resolve(
-    __dirname,
-    './fixture-test-reload-snapshot/',
-  );
-  fs.mkdirSync(snapstorePath, { recursive: true });
-  t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
+  const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
   const hostStorage = { snapStore, ...provideHostStorage() };

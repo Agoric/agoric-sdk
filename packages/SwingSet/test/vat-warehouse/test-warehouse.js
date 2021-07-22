@@ -3,8 +3,8 @@
 
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava';
-import path from 'path';
 import fs from 'fs';
+import tmp from 'tmp';
 import { makeSnapStore } from '@agoric/xsnap';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
@@ -124,9 +124,7 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
 }
 
 test('snapshot after deliveries', async t => {
-  const snapstorePath = path.resolve(__dirname, './fixture-test-warehouse/');
-  fs.mkdirSync(snapstorePath, { recursive: true });
-  t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
+  const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
   const hostStorage = { snapStore, ...provideHostStorage() };
