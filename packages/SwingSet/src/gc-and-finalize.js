@@ -85,5 +85,7 @@ export function makeGcAndFinalize(gcPower) {
     gcPower();
     // this gives finalizers a chance to run
     await new Promise(setImmediate);
+    // Node.js seems to need another for promises to get cleared out
+    await new Promise(setImmediate);
   };
 }
