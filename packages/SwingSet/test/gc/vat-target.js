@@ -7,5 +7,9 @@ export function buildRootObject() {
       // A=ko26 B=ko27
       await E(A).hello(B);
     },
+
+    makeInvitationTarget(zoe) {
+      return E(zoe).makeInvitationZoe();
+    },
   });
 }
