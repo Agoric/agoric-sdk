@@ -23,10 +23,10 @@
  * ** Withdraw a partial amount of BLD attestation:
  *
  * Must have returned some RUN, or the market value of collateral has
- * risen. Contract calls a publicFacet method in the attestation
- * contract that allows it to split an attestation into multiple
- * versions? Would require no offer safety for the collateral, but
- * that would be true already
+ * risen, or the loan was overcollateralized to start. Contract calls
+ * a publicFacet method in the attestation contract that allows it to
+ * split an attestation into multiple versions? Would require no offer
+ * safety for the collateral, but that would be true already
  *
  * ** Withdraw all BLD attestation:
  *
