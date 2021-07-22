@@ -380,6 +380,13 @@ export default function buildKernel(
 
   let terminationTrigger;
 
+  function resetDeliveryTriggers() {
+    terminationTrigger = undefined;
+  }
+  resetDeliveryTriggers();
+
+  // this is called for syscall.exit (shouldAbortCrank=false), and for any
+  // vat-fatal errors (shouldAbortCrank=true)
   function setTerminationTrigger(vatID, shouldAbortCrank, shouldReject, info) {
     if (shouldAbortCrank) {
       assert(shouldReject);
@@ -389,7 +396,7 @@ export default function buildKernel(
     }
   }
 
-  async function deliverAndLogToVat(vatID, kernelDelivery, vatDelivery) {
+  async function deliverAndLogToVat(vatID, kd, vd) {
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
@@ -397,21 +404,12 @@ export default function buildKernel(
     const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
     /** @typedef { any } FinishFunction TODO: static types for slog? */
     /** @type { FinishFunction } */
-    const finish = kernelSlog.delivery(
-      vatID,
-      crankNum,
-      deliveryNum,
-      kernelDelivery,
-      vatDelivery,
-    );
+    const finish = kernelSlog.delivery(vatID, crankNum, deliveryNum, kd, vd);
     // Ensure that the vatSlogger is available before clist translation.
     kernelSlog.provideVatSlogger(vatID);
     try {
       // eslint-disable-next-line no-use-before-define
-      const deliveryResult = await vatWarehouse.deliverToVat(
-        vatID,
-        vatDelivery,
-      );
+      const deliveryResult = await vatWarehouse.deliverToVat(vatID, vd);
       insistVatDeliveryResult(deliveryResult);
       finish(deliveryResult);
       const [status, problem] = deliveryResult;
@@ -655,7 +653,7 @@ export default function buildKernel(
     }
     try {
       processQueueRunning = Error('here');
-      terminationTrigger = null;
+      resetDeliveryTriggers();
       // Decref everything in the message, under the assumption that most of
       // the time we're delivering to a vat or answering the result promise
       // with an error. If we wind up queueing it on a promise, we'll
@@ -683,16 +681,15 @@ export default function buildKernel(
       }
       let didAbort = false;
       if (terminationTrigger) {
-        const {
-          vatID,
-          shouldAbortCrank,
-          shouldReject,
-          info,
-        } = terminationTrigger;
-        if (shouldAbortCrank) {
+        // the vat is doomed, either voluntarily or from meter/syscall fault
+        const { vatID, shouldReject, info } = terminationTrigger;
+        if (terminationTrigger.shouldAbortCrank) {
+          // errors unwind any changes the vat made
           abortCrank();
           didAbort = true;
         }
+        // state changes reflecting the termination must survive, so these
+        // happen after a possible abortCrank()
         terminateVat(vatID, shouldReject, info);
         kernelSlog.terminateVat(vatID, shouldReject, info);
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
