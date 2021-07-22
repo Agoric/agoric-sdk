@@ -10,9 +10,7 @@ import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { isTamed, tameMetering } from '@agoric/tame-metering';
 import { importBundle } from '@agoric/import-bundle';
-import { makeMeteringTransformer } from '@agoric/transform-metering';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
 import engineGC from './engine-gc.js';
@@ -220,44 +218,12 @@ export async function makeSwingsetController(
   const buildKernel = kernelNS.default;
   writeSlogObject({ type: 'import-kernel-finish' });
 
-  // transformMetering() requires Babel, which imports 'fs' and 'path', so it
-  // cannot be implemented within a non-start-Compartment. We build it out
-  // here and pass it to the kernel, which then passes it to vats. This is
-  // intended to be powerless.
-  const mt = makeMeteringTransformer();
-  function transformMetering(src, getMeter) {
-    // 'getMeter' provides the meter to which the transformation itself is
-    // billed (the COMPUTE meter is charged the length of the source string).
-    // The endowment must be present and truthy, otherwise the transformation
-    // is disabled. TODO: rethink that, and have @agoric/transform-metering
-    // export a simpler function (without 'endowments' or .rewrite).
-    const ss = mt.rewrite({ src, endowments: { getMeter } });
-    return ss.src;
-  }
-  harden(transformMetering);
-
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({
     // re2 is a RegExp work-a-like that disables backtracking expressions for
     // safer memory consumption
     RegExp: re2,
   });
-
-  // It is important that tameMetering() was called by application startup,
-  // before install-ses. Rather than ask applications to capture the return
-  // value and pass it all the way through to here, we just run
-  // tameMetering() again (and rely upon its only-once behavior) to get the
-  // control facet (replaceGlobalMeter), and pass it in through
-  // kernelEndowments. If our enclosing application decided to not tame the
-  // globals, we detect that and refrain from touching it later.
-  const replaceGlobalMeter = isTamed() ? tameMetering() : undefined;
-  if (verbose) {
-    console.log(
-      `SwingSet global metering is ${
-        isTamed() ? 'enabled' : 'disabled (no replaceGlobalMeter)'
-      }`,
-    );
-  }
 
   // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {
@@ -296,8 +262,6 @@ export async function makeSwingsetController(
     debugPrefix,
     vatEndowments,
     makeConsole,
-    replaceGlobalMeter,
-    transformMetering,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,

@@ -14,7 +14,6 @@ import { insistStorageAPI } from '../storageAPI.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../message.js';
 import { insistDeviceID, insistVatID } from './id.js';
-import { makeMeterManager } from './metering.js';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { getKpidsToRetire } from './cleanup.js';
@@ -120,8 +119,6 @@ export default function buildKernel(
     vatEndowments,
     slogCallbacks = {},
     makeConsole,
-    replaceGlobalMeter,
-    transformMetering,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,
@@ -158,8 +155,6 @@ export default function buildKernel(
     kernelSlog,
     snapStore,
   );
-
-  const meterManager = makeMeterManager(replaceGlobalMeter);
 
   let started = false;
 
@@ -717,8 +712,6 @@ export default function buildKernel(
     allVatPowers,
     kernelKeeper,
     vatEndowments,
-    meterManager,
-    transformMetering,
     makeNodeWorker,
     startSubprocessWorkerNode,
     startXSnap,

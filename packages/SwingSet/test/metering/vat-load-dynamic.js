@@ -13,13 +13,9 @@ export function buildRootObject(vatPowers) {
 
     async createVat(bundle, dynamicOptions) {
       control = await E(service).createVat(bundle, dynamicOptions);
-      E(control.adminNode)
-        .done()
-        .then(
-          () => log('finished'),
-          err => log(`terminated: ${err}`),
-        );
-      log(`created`);
+      const done = E(control.adminNode).done();
+      // the caller checks this later, but doesn't wait for it
+      return ['created', done];
     },
 
     getNever() {
@@ -29,27 +25,12 @@ export function buildRootObject(vatPowers) {
       return [neverP];
     },
 
-    async run() {
-      try {
-        await E(control.root).run();
-        log('did run');
-      } catch (err) {
-        log(`run exploded: ${err}`);
-      }
+    run() {
+      return E(control.root).run();
     },
 
-    async explode(how) {
-      try {
-        await E(control.root).explode(how);
-        log('failed to explode');
-      } catch (err) {
-        log(`did explode: ${err}`);
-      }
-    },
-
-    async load(grandchildBundle) {
-      await E(control.root).load(grandchildBundle);
-      return 'ok';
+    explode(how) {
+      return E(control.root).explode(how);
     },
 
     async bundleRun() {

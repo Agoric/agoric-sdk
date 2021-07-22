@@ -9,8 +9,6 @@ import '../../types.js';
 /**
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
- * @typedef { { refill: () => unknown, isExhausted: () => null | Error } } MeterRecord
- * @typedef { { stopGlobalMeter: () => void, meterRecord: MeterRecord, refillAllMeters: () => void } } DispatchMeteringTools
  */
 
 /**
@@ -48,61 +46,6 @@ function makeSupervisorDispatch(dispatch) {
 }
 harden(makeSupervisorDispatch);
 export { makeSupervisorDispatch };
-
-/**
- * @param { VatDeliveryResult } status
- * @param { DispatchMeteringTools } mtools
- * @returns { VatDeliveryResult }
- */
-
-function processLocalMeters(status, mtools) {
-  const { stopGlobalMeter, meterRecord, refillAllMeters } = mtools;
-  stopGlobalMeter();
-  /** @type VatDeliveryResult */
-  status = [...status]; // mutable copy, to add usage
-  if (status[0] === 'ok') {
-    // refill this vat's meter, if any, accumulating its usage for stats
-    if (meterRecord) {
-      // note that refill() won't actually refill an exhausted meter
-      const meterUsage = meterRecord.refill();
-      const exhaustionError = meterRecord.isExhausted();
-      if (exhaustionError) {
-        status = ['error', exhaustionError.message, meterUsage];
-      } else {
-        // We will have ['ok', null, meterUsage]
-        status[2] = meterUsage;
-        // TODO: accumulate used.allocate and used.compute into vatStats
-        // updateStats(status[2]);
-      }
-    }
-    // refill all within-vat -created meters
-    refillAllMeters();
-  }
-  return harden(status);
-}
-
-/**
- * Given an async 'dispatch' function (like the return value of
- * makeSupervisorDispatch), return a version that manages the
- * '@agoric/tame-metering' -style meters.
- *
- * @param { VatDispatcher } dispatchToVat
- * @param { DispatchMeteringTools } mtools
- * @returns { VatDispatcher }
- */
-
-function makeMeteredDispatch(dispatchToVat, mtools) {
-  async function deliver(delivery) {
-    const status = await dispatchToVat(delivery);
-    // TODO: is there any chance the confined code could trigger a metering
-    // fault in a global after it loses agency but before we get to
-    // stopGlobalMeter() ?
-    return processLocalMeters(status, mtools);
-  }
-  return harden(deliver);
-}
-harden(makeMeteredDispatch);
-export { makeMeteredDispatch };
 
 /**
  * This returns a function that is provided to liveslots as the 'syscall'

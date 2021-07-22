@@ -5,7 +5,6 @@ import { makeLiveSlots } from '../liveSlots.js';
 import { makeManagerKit } from './manager-helper.js';
 import {
   makeSupervisorDispatch,
-  makeMeteredDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
 } from './supervisor-helper.js';
@@ -15,26 +14,16 @@ export function makeLocalVatManagerFactory(tools) {
     allVatPowers,
     kernelKeeper,
     vatEndowments,
-    meterManager,
-    transformMetering,
     gcTools,
     kernelSlog,
   } = tools;
 
-  const { makeGetMeter, refillAllMeters, stopGlobalMeter } = meterManager;
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(
-    vatID,
-    vatSyscallHandler,
-    meterRecord,
-    compareSyscalls,
-    useTranscript,
-  ) {
-    const mtools = harden({ stopGlobalMeter, meterRecord, refillAllMeters });
+  function prepare(vatID, vatSyscallHandler, compareSyscalls, useTranscript) {
     const mk = makeManagerKit(
       vatID,
       kernelSlog,
@@ -48,11 +37,7 @@ export function makeLocalVatManagerFactory(tools) {
     function finish(dispatch) {
       assert.typeof(dispatch, 'function');
       // this 'deliverToWorker' never throws, even if liveslots has an internal error
-      const deliverToWorker = makeMeteredDispatch(
-        makeSupervisorDispatch(dispatch),
-        mtools,
-      );
-      mk.setDeliverToWorker(deliverToWorker);
+      mk.setDeliverToWorker(makeSupervisorDispatch(dispatch));
 
       async function shutdown() {
         // local workers don't need anything special to shut down between turns
@@ -65,14 +50,13 @@ export function makeLocalVatManagerFactory(tools) {
   }
 
   function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
-    assert(!managerOptions.metered, X`unsupported`);
+    assert(!managerOptions.metered, `metering unsupported on 'local' workers`);
     assert(setup instanceof Function, 'setup is not an in-realm function');
 
     const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
     const { syscall, finish } = prepare(
       vatID,
       vatSyscallHandler,
-      null,
       compareSyscalls,
       useTranscript,
     );
@@ -91,9 +75,9 @@ export function makeLocalVatManagerFactory(tools) {
     managerOptions,
     vatSyscallHandler,
   ) {
+    assert(!managerOptions.metered, `metering unsupported on 'local' workers`);
     const {
       consensusMode,
-      metered = false,
       enableDisavow = false,
       enableSetup = false,
       vatParameters = {},
@@ -106,23 +90,9 @@ export function makeLocalVatManagerFactory(tools) {
     } = managerOptions;
     assert(vatConsole, 'vats need managerOptions.vatConsole');
 
-    let meterRecord = null;
-    if (metered) {
-      // fail-stop: we refill the meter after each crank (in vatManager
-      // doProcess()), but if the vat exhausts its meter within a single
-      // crank, it will never run again. We set refillEachCrank:false because
-      // we want doProcess to do the refilling itself, so it can count the
-      // usage
-      meterRecord = makeGetMeter({
-        refillEachCrank: false,
-        refillIfExhausted: false,
-      });
-    }
-
     const { syscall, finish } = prepare(
       vatID,
       vatSyscallHandler,
-      meterRecord,
       compareSyscalls,
       useTranscript,
     );
@@ -155,20 +125,11 @@ export function makeLocalVatManagerFactory(tools) {
       }),
       assert,
     });
-    const inescapableTransforms = [];
     const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
-    const inescapableGlobalLexicals = {};
-    if (metered) {
-      const getMeter = meterRecord.getMeter;
-      inescapableTransforms.push(src => transformMetering(src, getMeter));
-      inescapableGlobalLexicals.getMeter = getMeter;
-    }
 
     const vatNS = await importBundle(bundle, {
       filePrefix: `vat-${vatID}/...`,
       endowments,
-      inescapableTransforms,
-      inescapableGlobalLexicals,
       inescapableGlobalProperties,
     });
 

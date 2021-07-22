@@ -9,8 +9,6 @@ export function makeVatManagerFactory({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
-  meterManager,
-  transformMetering,
   makeNodeWorker,
   startSubprocessWorkerNode,
   startXSnap,
@@ -22,8 +20,6 @@ export function makeVatManagerFactory({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
-    meterManager,
-    transformMetering,
     gcTools,
     kernelSlog,
   });

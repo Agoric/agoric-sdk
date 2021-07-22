@@ -1,12 +1,11 @@
-/* global require */
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
-import '@agoric/install-metering-and-ses';
+/* global __dirname */
+// eslint-disable-next-line import/order
+import { test } from '../../tools/prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
+import path from 'path';
 import bundleSource from '@agoric/bundle-source';
-import test from 'ava';
 import { buildVatController } from '../../src/index.js';
-import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -16,23 +15,20 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-const localOnlyForNow = { defaultManagerType: 'local' };
-
 // Dynamic vats can be created without metering
 
 test('unmetered dynamic vat', async t => {
   const config = {
     bootstrap: 'bootstrap',
-    ...localOnlyForNow,
+    defaultManagerType: 'local',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./vat-load-dynamic.js'),
+        sourceSpec: path.join(__dirname, 'vat-load-dynamic.js'),
       },
     },
   };
   const c = await buildVatController(config, []);
   c.pinVatRoot('bootstrap');
-  const nextLog = makeNextLog(c);
 
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
@@ -40,29 +36,41 @@ test('unmetered dynamic vat', async t => {
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (unmetered) dynamic vat
   const dynamicVatBundle = await bundleSource(
-    require.resolve('./metered-dynamic-vat.js'),
+    path.join(__dirname, 'metered-dynamic-vat.js'),
   );
 
   // 'createVat' will import the bundle
-  c.queueToVatRoot(
+  const kp1 = c.queueToVatRoot(
     'bootstrap',
     'createVat',
     capargs([dynamicVatBundle, { metered: false }]),
     'panic',
   );
   await c.run();
-  t.deepEqual(nextLog(), ['created'], 'first create');
+  const res1 = c.kpResolution(kp1);
+  t.is(JSON.parse(res1.body)[0], 'created', res1.body);
+  // const doneKPID = res1.slots[0];
 
-  // First, send a message to the dynamic vat that runs normally
-  c.queueToVatRoot('bootstrap', 'run', capargs([]), 'panic');
+  // Now send a message to the dynamic vat that runs normally
+  const kp2 = c.queueToVatRoot('bootstrap', 'run', capargs([]), 'panic');
   await c.run();
+  t.is(c.kpStatus(kp2), 'fulfilled');
+  t.deepEqual(c.kpResolution(kp2), capargs(42));
 
-  t.deepEqual(nextLog(), ['did run'], 'first run ok');
+  // TODO: find a way to prove that the xsnap child process does not have a
+  // per-crank meter imposed upon it. Previously, this test only exercised
+  // Node.js workers, and used Array(4e9) as code that would be caught by the
+  // injected metering shim, but tolerated by V8 itself (because arrays are
+  // lazy). This was followed by a big='1234'; for (;;) { big += big }, which
+  // triggers a V8 catchable RangeError exception. XS is more literal about
+  // allocation space.
 
-  // Tell the dynamic vat to call `Array(4e9)`. If metering was in place,
-  // this would be rejected. Without metering, it's harmless (Arrays are
-  // lazy).
-  c.queueToVatRoot('bootstrap', 'explode', capargs(['allocate']), 'panic');
-  await c.run();
-  t.deepEqual(nextLog(), ['failed to explode'], 'metering disabled');
+  // We no longer care about injected Node.js metering; we only care about
+  // metering under XS. To test that metering is really turned off on XS, we
+  // must perform an action that requires more than the default per-crank
+  // computron limit, but of course we'd prefer something that doesn't
+  // actually take a lot of time or memory. I don't yet know how to do this.
+  // For now, we're only testing that it is possible to run an XS worker
+  // without a 'meter:' argument, not that the resulting vat is
+  // unconstrained.
 });

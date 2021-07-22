@@ -1,10 +1,8 @@
 /* global __dirname */
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
-import '@agoric/install-metering-and-ses';
+// eslint-disable-next-line import/order
+import { test } from '../../tools/prepare-test-env-ava.js';
+// eslint-disable-next-line import/order
 import path from 'path';
-import test from 'ava';
 import bundleSource from '@agoric/bundle-source';
 import {
   buildKernelBundles,

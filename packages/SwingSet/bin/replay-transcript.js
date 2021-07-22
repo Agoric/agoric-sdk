@@ -79,8 +79,6 @@ async function replay(transcriptFile, worker = 'xs-worker') {
       allVatPowers,
       kernelKeeper: fakeKernelKeeper,
       vatEndowments: {},
-      meterManager: {},
-      transformMetering: undefined,
       gcTools,
       kernelSlog,
     });
