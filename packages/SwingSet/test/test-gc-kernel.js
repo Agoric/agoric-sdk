@@ -22,16 +22,9 @@ import {
   makeDropExports,
   makeRetireExports,
   makeRetireImports,
+  capargs,
   capdataOneSlot,
 } from './util';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
 
 function makeConsole(tag) {
   const log = anylogger(tag);
@@ -42,14 +35,13 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
-function bigintReplacer(_, arg) {
-  if (typeof arg === 'bigint') {
-    return Number(arg);
-  }
-  return arg;
-}
-
 function writeSlogObject(o) {
+  function bigintReplacer(_, arg) {
+    if (typeof arg === 'bigint') {
+      return Number(arg);
+    }
+    return arg;
+  }
   0 && console.log(JSON.stringify(o, bigintReplacer));
 }
 

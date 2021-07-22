@@ -54,6 +54,7 @@ const enableKernelGC = true;
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 // v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+// v$NN.meter = m$NN
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this

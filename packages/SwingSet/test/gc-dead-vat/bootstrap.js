@@ -15,7 +15,7 @@ export function buildRootObject() {
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      vat = await E(vatMaker).createVatByName('doomed', { metered: false });
+      vat = await E(vatMaker).createVatByName('doomed');
       doomedRoot = vat.root;
       await sendExport(doomedRoot);
       const doomedExport1Presence = await E(doomedRoot).getDoomedExport1();

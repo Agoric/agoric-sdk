@@ -257,7 +257,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type { string | undefined } */
   let lastVatID;
 
-  /** @type {(vatID: string, d: VatDeliveryObject) => Promise<Tagged> } */
+  /** @type {(vatID: string, d: VatDeliveryObject) => Promise<VatDeliveryResult> } */
   async function deliverToVat(vatID, delivery) {
     await applyAvailabilityPolicy(vatID);
     lastVatID = vatID;

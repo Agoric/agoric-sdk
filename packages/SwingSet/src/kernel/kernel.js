@@ -1,6 +1,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
+import { stringify } from '@agoric/marshal';
 import { assertKnownOptions } from '../assertOptions.js';
 import { makeVatManagerFactory } from './vatManager/factory.js';
 import { makeVatWarehouse } from './vatManager/vat-warehouse.js';
@@ -374,11 +375,42 @@ export default function buildKernel(
   }
 
   let terminationTrigger;
+  let postAbortActions;
 
   function resetDeliveryTriggers() {
     terminationTrigger = undefined;
+    postAbortActions = {
+      meterDeductions: [], // list of { meterID, compute }
+      meterNotifications: [], // list of meterID
+    };
   }
   resetDeliveryTriggers();
+
+  function notifyMeterThreshold(meterID) {
+    // tell vatAdmin that a meter has dropped below its notifyThreshold
+    const { remaining } = kernelKeeper.getMeter(meterID);
+    const args = { body: stringify(harden([meterID, remaining])), slots: [] };
+    assert.typeof(vatAdminRootKref, 'string', 'vatAdminRootKref missing');
+    queueToKref(vatAdminRootKref, 'meterCrossedThreshold', args, 'logFailure');
+  }
+
+  function deductMeter(meterID, compute, firstTime) {
+    assert.typeof(compute, 'bigint');
+    const res = kernelKeeper.deductMeter(meterID, compute);
+    // we also recode deduction and any notification in postAbortActions,
+    // which are executed if the delivery is being rewound for any reason
+    // (syscall error, res.underflow), so their side-effects survive
+    if (firstTime) {
+      postAbortActions.meterDeductions.push({ meterID, compute });
+    }
+    if (res.notify) {
+      notifyMeterThreshold(meterID);
+      if (firstTime) {
+        postAbortActions.meterNotifications.push(meterID);
+      }
+    }
+    return res.underflow;
+  }
 
   // this is called for syscall.exit (shouldAbortCrank=false), and for any
   // vat-fatal errors (shouldAbortCrank=true)
@@ -391,12 +423,13 @@ export default function buildKernel(
     }
   }
 
-  async function deliverAndLogToVat(vatID, kd, vd) {
+  async function deliverAndLogToVat(vatID, kd, vd, useMeter) {
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const crankNum = kernelKeeper.getCrankNumber();
     const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
+    const { meterID } = vatKeeper.getOptions();
     /** @typedef { any } FinishFunction TODO: static types for slog? */
     /** @type { FinishFunction } */
     const finish = kernelSlog.delivery(vatID, crankNum, deliveryNum, kd, vd);
@@ -412,6 +445,21 @@ export default function buildKernel(
         // probably a metering fault, or a bug in the vat's dispatch()
         console.log(`delivery problem, terminating vat ${vatID}`, problem);
         setTerminationTrigger(vatID, true, true, makeError(problem));
+        return;
+      }
+      if (deliveryResult[0] === 'ok' && useMeter && meterID) {
+        const metering = deliveryResult[2];
+        assert(metering);
+        const consumed = metering.compute;
+        assert.typeof(consumed, 'number');
+        const used = BigInt(consumed);
+        const underflow = deductMeter(meterID, used, true);
+        if (underflow) {
+          console.log(`meter ${meterID} underflow, terminating vat ${vatID}`);
+          const err = makeError('meter underflow, vat terminated');
+          setTerminationTrigger(vatID, true, true, err);
+          return;
+        }
       }
     } catch (e) {
       // log so we get a stack trace
@@ -433,7 +481,7 @@ export default function buildKernel(
       const kd = harden(['message', target, msg]);
       // eslint-disable-next-line no-use-before-define
       const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-      await deliverAndLogToVat(vatID, kd, vd);
+      await deliverAndLogToVat(vatID, kd, vd, true);
     }
   }
 
@@ -546,7 +594,7 @@ export default function buildKernel(
       // eslint-disable-next-line no-use-before-define
       const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
       vatKeeper.deleteCListEntriesForKernelSlots(targets);
-      await deliverAndLogToVat(vatID, kd, vd);
+      await deliverAndLogToVat(vatID, kd, vd, true);
     }
   }
 
@@ -570,7 +618,7 @@ export default function buildKernel(
     }
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-    await deliverAndLogToVat(vatID, kd, vd);
+    await deliverAndLogToVat(vatID, kd, vd, false);
   }
 
   async function processCreateVat(message) {
@@ -682,9 +730,18 @@ export default function buildKernel(
           // errors unwind any changes the vat made
           abortCrank();
           didAbort = true;
+          // but metering deductions or underflow notifications must survive
+          const { meterDeductions, meterNotifications } = postAbortActions;
+          for (const { meterID, compute } of meterDeductions) {
+            deductMeter(meterID, compute, false);
+          }
+          for (const meterID of meterNotifications) {
+            // reads meter.remaining, so must happen after deductMeter
+            notifyMeterThreshold(meterID);
+          }
         }
-        // state changes reflecting the termination must survive, so these
-        // happen after a possible abortCrank()
+        // state changes reflecting the termination must also survive, so
+        // these happen after a possible abortCrank()
         terminateVat(vatID, shouldReject, info);
         kernelSlog.terminateVat(vatID, shouldReject, info);
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
@@ -908,6 +965,13 @@ export default function buildKernel(
         return vatID;
       },
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
+      meterCreate: (remaining, threshold) =>
+        kernelKeeper.allocateMeter(remaining, threshold),
+      meterAddRemaining: (meterID, delta) =>
+        kernelKeeper.addMeterRemaining(meterID, delta),
+      meterSetThreshold: (meterID, threshold) =>
+        kernelKeeper.setMeterThreshold(meterID, threshold),
+      meterGet: meterID => kernelKeeper.getMeter(meterID),
     };
 
     // instantiate all devices

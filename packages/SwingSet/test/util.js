@@ -1,4 +1,5 @@
 import { assert } from '@agoric/assert';
+import { QCLASS } from '@agoric/marshal';
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
@@ -84,12 +85,19 @@ export function extractMessage(vatDeliverObject) {
   return { facetID, method, args, result };
 }
 
-function capdata(body, slots = []) {
+export function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
+function marshalBigIntReplacer(_, arg) {
+  if (typeof arg === 'bigint') {
+    return { [QCLASS]: 'bigint', digits: String(arg) };
+  }
+  return arg;
+}
+
 export function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
+  return capdata(JSON.stringify(args, marshalBigIntReplacer), slots);
 }
 
 export function capdataOneSlot(slot) {

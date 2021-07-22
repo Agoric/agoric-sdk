@@ -87,7 +87,8 @@
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports
  *          } VatDeliveryObject
- * @typedef { [tag: 'ok', message: null, usage: unknown] | [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
+ * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
+ *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
  *
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
  * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow

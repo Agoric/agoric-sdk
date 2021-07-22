@@ -11,6 +11,32 @@ export function buildRootObject(vatPowers) {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 
+    createMeter(remaining, notifyThreshold) {
+      return E(service).createMeter(remaining, notifyThreshold);
+    },
+
+    createUnlimitedMeter() {
+      return E(service).createUnlimitedMeter();
+    },
+
+    addMeterRemaining(meter, remaining) {
+      return E(meter).addRemaining(remaining);
+    },
+
+    setMeterThreshold(meter, threshold) {
+      return E(meter).setThreshold(threshold);
+    },
+
+    getMeter(meter) {
+      return E(meter).get();
+    },
+
+    async whenMeterNotifiesNext(meter) {
+      const notifier = await E(meter).getNotifier();
+      const initial = await E(notifier).getUpdateSince();
+      return E(notifier).getUpdateSince(initial);
+    },
+
     async createVat(bundle, dynamicOptions) {
       control = await E(service).createVat(bundle, dynamicOptions);
       const done = E(control.adminNode).done();
