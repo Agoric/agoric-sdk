@@ -121,8 +121,8 @@ export function makeInbound(state) {
       const doSetReachable = !allocatedByRecipient;
       if (doSetReachable) {
         // the remote is exporting, not importing
-        const isImport = false;
-        remote.setReachable(lref, isImport);
+        const isImportFromComms = false;
+        remote.setReachable(lref, isImportFromComms);
       }
       assert(remote.isReachable(lref), `remote using unreachable ${lref}`);
     }

@@ -63,20 +63,20 @@ export function makeRemote(state, store, remoteID) {
     assert.equal(parseLocalSlot(lref).type, 'object');
     return !!store.get(`${remoteID}.cr.${lref}`);
   }
-  function setReachable(lref, isImport) {
+  function setReachable(lref, isImportFromComms) {
     const wasReachable = isReachable(lref);
     if (!wasReachable) {
       store.set(`${remoteID}.cr.${lref}`, `1`);
-      if (isImport) {
+      if (isImportFromComms) {
         state.changeReachable(lref, 1n);
       }
     }
   }
-  function clearReachable(lref, isImport) {
+  function clearReachable(lref, isImportFromComms) {
     const wasReachable = isReachable(lref);
     if (wasReachable) {
       store.delete(`${remoteID}.cr.${lref}`);
-      if (isImport) {
+      if (isImportFromComms) {
         const reachable = state.changeReachable(lref, -1n);
         if (!reachable) {
           state.lrefMightBeFree(lref);
@@ -108,17 +108,17 @@ export function makeRemote(state, store, remoteID) {
   // rref is what we would get from them, so + means our export
   function addRemoteMapping(rref, lref) {
     const { type, allocatedByRecipient } = parseRemoteSlot(rref);
-    const isImport = allocatedByRecipient;
+    const isImportFromComms = allocatedByRecipient;
     const fromKey = `${remoteID}.c.${rref}`;
     const toKey = `${remoteID}.c.${lref}`;
     assert(!store.get(fromKey), X`already have ${rref}`);
     assert(!store.get(toKey), X`already have ${lref}`);
     store.set(fromKey, lref);
     store.set(toKey, flipRemoteSlot(rref));
-    const mode = isImport ? 'clist-import' : 'clist-export';
+    const mode = isImportFromComms ? 'clist-import' : 'clist-export';
     state.incrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         state.addImporter(lref, remoteID);
         setLastSent(lref, '1'); // should be updated momentarily
       }
@@ -130,16 +130,16 @@ export function makeRemote(state, store, remoteID) {
     const rrefInbound = flipRemoteSlot(rrefOutbound);
     let mode = 'data'; // close enough
     const { type, allocatedByRecipient } = parseRemoteSlot(rrefInbound);
-    const isImport = allocatedByRecipient;
+    const isImportFromComms = allocatedByRecipient;
     if (type === 'object') {
-      clearReachable(lref, isImport);
-      mode = isImport ? 'clist-import' : 'clist-export';
+      clearReachable(lref, isImportFromComms);
+      mode = isImportFromComms ? 'clist-import' : 'clist-export';
     }
     store.delete(`${remoteID}.c.${rrefInbound}`);
     store.delete(`${remoteID}.c.${lref}`);
     state.decrementRefCount(lref, `{rref}|${remoteID}|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         state.removeImporter(lref, remoteID);
         deleteLastSent(lref);
       } else {

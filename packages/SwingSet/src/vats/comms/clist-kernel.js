@@ -60,8 +60,8 @@ export function makeKernel(state, syscall) {
       const doSetReachable = allocatedByVat;
       if (doSetReachable) {
         // the kernel is an importer in this case
-        const isImport = true;
-        setReachable(lref, isImport);
+        const isImportFromComms = true;
+        setReachable(lref, isImportFromComms);
       }
       assert(isReachable(lref), X`comms sending unreachable ${lref}`);
     }
@@ -166,8 +166,8 @@ export function makeKernel(state, syscall) {
       const doSetReachable = !allocatedByVat;
       if (doSetReachable) {
         // the kernel is an exporter in this case
-        const isImport = false;
-        setReachable(lref, isImport);
+        const isImportFromComms = false;
+        setReachable(lref, isImportFromComms);
       }
       assert(isReachable(lref), `kernel using unreachable ${lref}`);
     }

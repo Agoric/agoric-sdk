@@ -110,8 +110,8 @@ function makeGCKit(state, syscall, transmit) {
       // kernel shouldn't double-drop
       assert(state.isReachableByKernel(lref), lref);
       // allocatedByVat means kernel is importing from comms
-      const isImport = true;
-      state.clearReachableByKernel(lref, isImport);
+      const isImportFromComms = true;
+      state.clearReachableByKernel(lref, isImportFromComms);
     }
     for (const kfref of retireExports) {
       const lref = checkFromKernel(kfref, true);
@@ -173,8 +173,8 @@ function makeGCKit(state, syscall, transmit) {
       const { lref, informed } = checkFromRemote(remote, ackSeqNum, rref);
       if (informed) {
         assert(remote.isReachable(lref)); // no double-drop
-        const isImport = true;
-        remote.clearReachable(lref, isImport);
+        const isImportFromComms = true;
+        remote.clearReachable(lref, isImportFromComms);
       }
     }
     for (const rref of retireExports) {
@@ -202,8 +202,9 @@ function makeGCKit(state, syscall, transmit) {
     let kfrefs = [];
     for (const lref of dropExports) {
       assert(state.isReachableByKernel(lref));
-      const isImport = false; // when we drop, kernel is always the exporter
-      state.clearReachableByKernel(lref, isImport);
+      // when we drop, kernel is always the exporter
+      const isImportFromComms = false;
+      state.clearReachableByKernel(lref, isImportFromComms);
       const kfref = state.mapToKernel(lref);
       assert(kfref);
       kfrefs.push(kfref);
@@ -246,8 +247,8 @@ function makeGCKit(state, syscall, transmit) {
 
     for (const lref of dropExports) {
       assert(r.isReachable(lref));
-      const isImport = false; // we send drops to the exporter
-      r.clearReachable(lref, isImport);
+      const isImportFromComms = false; // we send drops to the exporter
+      r.clearReachable(lref, isImportFromComms);
       const rref = r.mapToRemote(lref);
       assert(rref);
       msgs.push(`gc:dropExport:${rref}`);

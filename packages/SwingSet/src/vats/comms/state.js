@@ -227,14 +227,14 @@ export function makeState(syscall, identifierBase = 0) {
   function changeRecognizable(lref, delta) {
     const key = `${lref}.recognizable`;
     const recognizable = Nat(BigInt(store.getRequired(key))) + delta;
-    store.set(key, `${recognizable}`);
+    store.set(key, `${Nat(recognizable)}`);
     return recognizable;
   }
 
   function changeReachable(lref, delta) {
     const key = `${lref}.reachable`;
     const reachable = Nat(BigInt(store.getRequired(key))) + delta;
-    store.set(key, `${reachable}`);
+    store.set(key, `${Nat(reachable)}`);
     return reachable;
   }
 
@@ -260,7 +260,7 @@ export function makeState(syscall, identifierBase = 0) {
     if (type === 'promise') {
       const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
       // cdebug(`++ ${lref}  ${tag} ${refCount}`);
-      store.set(`${lref}.refCount`, `${refCount}`);
+      store.set(`${lref}.refCount`, `${Nat(refCount)}`);
     }
     if (type === 'object') {
       if (mode === 'clist-import' || mode === 'data') {
@@ -288,7 +288,7 @@ export function makeState(syscall, identifierBase = 0) {
       assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
-      store.set(`${lref}.refCount`, `${refCount}`);
+      store.set(`${lref}.refCount`, `${Nat(refCount)}`);
       if (refCount === 0) {
         // If we are still in the middle of a resolve operation, and this lref
         // is an ancillary promise that was briefly added to the decider's
@@ -317,6 +317,14 @@ export function makeState(syscall, identifierBase = 0) {
         }
       }
     }
+  }
+
+  function getRefCounts(lref) {
+    const reaKey = `${lref}.reachable`;
+    const reachable = Nat(BigInt(store.getRequired(reaKey)));
+    const recKey = `${lref}.recognizable`;
+    const recognizable = Nat(BigInt(store.getRequired(recKey)));
+    return { reachable, recognizable };
   }
 
   /**
@@ -412,20 +420,20 @@ export function makeState(syscall, identifierBase = 0) {
     assert.equal(parseLocalSlot(lref).type, 'object');
     return !!store.get(`cr.${lref}`);
   }
-  function setReachableByKernel(lref, isImport) {
+  function setReachableByKernel(lref, isImportFromComms) {
     const wasReachable = isReachableByKernel(lref);
     if (!wasReachable) {
       store.set(`cr.${lref}`, `1`);
-      if (isImport) {
+      if (isImportFromComms) {
         changeReachable(lref, 1n);
       }
     }
   }
-  function clearReachableByKernel(lref, isImport) {
+  function clearReachableByKernel(lref, isImportFromComms) {
     const wasReachable = isReachableByKernel(lref);
     if (wasReachable) {
       store.delete(`cr.${lref}`);
-      if (isImport) {
+      if (isImportFromComms) {
         const reachable = changeReachable(lref, -1n);
         if (!reachable) {
           maybeFree.add(lref);
@@ -438,13 +446,14 @@ export function makeState(syscall, identifierBase = 0) {
   // setReachableByKernel
   function addKernelMapping(kfref, lref) {
     const { type, allocatedByVat } = parseVatSlot(kfref);
-    const isImport = allocatedByVat; // true = kernel is downstream importer
+    // isImportFromComms===true means kernel is downstream importer
+    const isImportFromComms = allocatedByVat;
     store.set(`c.${kfref}`, lref);
     store.set(`c.${lref}`, kfref);
-    const mode = isImport ? 'clist-import' : 'clist-export';
+    const mode = isImportFromComms ? 'clist-import' : 'clist-export';
     incrementRefCount(lref, `{kfref}|k|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         addImporter(lref, 'kernel');
       }
     }
@@ -456,16 +465,16 @@ export function makeState(syscall, identifierBase = 0) {
     const kfref = store.get(`c.${lref}`);
     let mode = 'data'; // close enough
     const { type, allocatedByVat } = parseVatSlot(kfref);
-    const isImport = allocatedByVat;
+    const isImportFromComms = allocatedByVat;
     if (type === 'object') {
-      clearReachableByKernel(lref, isImport);
-      mode = isImport ? 'clist-import' : 'clist-export';
+      clearReachableByKernel(lref, isImportFromComms);
+      mode = isImportFromComms ? 'clist-import' : 'clist-export';
     }
     store.delete(`c.${kfref}`);
     store.delete(`c.${lref}`);
     decrementRefCount(lref, `{kfref}|k|clist`, mode);
     if (type === 'object') {
-      if (isImport) {
+      if (isImportFromComms) {
         removeImporter(lref, 'kernel');
       } else {
         // deleting the upstream/export-side mapping should trigger
@@ -747,6 +756,7 @@ export function makeState(syscall, identifierBase = 0) {
     lrefMightBeFree,
     incrementRefCount,
     decrementRefCount,
+    getRefCounts,
     processMaybeFree,
 
     deciderIsKernel,

@@ -82,8 +82,8 @@ export function makeOutbound(state) {
       const doSetReachable = !allocatedByRecipient;
       if (doSetReachable) {
         // the remote is always importing it
-        const isImport = true;
-        remote.setReachable(lref, isImport);
+        const isImportFromComms = true;
+        remote.setReachable(lref, isImportFromComms);
         // This provideRemoteForLocal was called as part of translating a
         // message to send (either a delivery, in `sendToRemote()`, or a
         // resolution notification, in `resolveToRemote`). Both cases finish

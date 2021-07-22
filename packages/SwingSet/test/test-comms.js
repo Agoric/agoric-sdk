@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import buildCommsDispatch from '../src/vats/comms/index.js';
@@ -63,12 +64,18 @@ test('translation', t => {
 
 function mockSyscall() {
   const sends = [];
+  const resolves = [];
   const gcs = [];
   const fakestore = new Map();
   const syscall = harden({
     send(targetSlot, method, args, _result) {
       sends.push([targetSlot, method, args]);
       // return 'r-1';
+    },
+    resolve(resolutions) {
+      for (const resolution of resolutions) {
+        resolves.push(resolution);
+      }
     },
     subscribe(_targetSlot) {},
     vatstoreGet(key) {
@@ -90,7 +97,7 @@ function mockSyscall() {
       gcs.push(['retireExports', vrefs]);
     },
   });
-  return { syscall, sends, gcs, fakestore };
+  return { syscall, sends, resolves, gcs, fakestore };
 }
 
 /*
@@ -336,6 +343,71 @@ test('receive', t => {
 
   t.deepEqual(gcs.shift(), ['retireExports', [expectedAgrippaKernel]]);
   t.deepEqual(gcs, []);
+});
+
+test('addEgress', t => {
+  const { syscall } = mockSyscall();
+  const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  const { state, clistKit } = debugState.get(dispatch);
+  state.initialize();
+  const { getLocalForKernel, getRemoteForLocal } = clistKit;
+  const transmitterID = 'o-1';
+  const remoteName = 'remote1';
+  const { remoteID } = state.addRemote(remoteName, transmitterID);
+
+  // prepare an object for the remote to access
+  const index = 12;
+  const kfref = 'o-2';
+  const kfrefObj = { '@qclass': 'slot', iface: 'Alleged: export', index: 0 };
+  const args = {
+    body: JSON.stringify([remoteName, index, kfrefObj]),
+    slots: [kfref],
+  };
+  const result = 'p-1';
+  const vdo = ['message', 'o+0', { method: 'addEgress', args, result }];
+  dispatch(vdo);
+
+  const lref = getLocalForKernel(kfref);
+  const { reachable, recognizable } = state.getRefCounts(lref);
+  t.is(reachable, 1n);
+  t.is(recognizable, 1n);
+
+  // the outbound rref should be `ro-12`, since we're exporting it, and the
+  // remote protocol is exceedingly polite
+  const outboundRref = getRemoteForLocal(remoteID, lref);
+  t.is(outboundRref, `ro-${index}`);
+});
+
+test('addIngress', t => {
+  const { syscall, resolves } = mockSyscall();
+  const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  const { state, clistKit } = debugState.get(dispatch);
+  state.initialize();
+  const { getLocalForKernel, getRemoteForLocal } = clistKit;
+  const transmitterID = 'o-1';
+  const remoteName = 'remote1';
+  const { remoteID } = state.addRemote(remoteName, transmitterID);
+
+  // pretend the remote has an object for us to access
+  const index = 12;
+  const iface = 'iface name';
+  const args = { body: JSON.stringify([remoteName, index, iface]), slots: [] };
+  const result = 'p-1';
+  const vdo = ['message', 'o+0', { method: 'addIngress', args, result }];
+  dispatch(vdo);
+
+  t.is(resolves.length, 1);
+  const kfref = resolves[0][2].slots[0];
+  const lref = getLocalForKernel(kfref);
+
+  const { reachable, recognizable } = state.getRefCounts(lref);
+  t.is(reachable, 1n);
+  t.is(recognizable, 1n);
+
+  // the outbound rref should be `ro+12`, since we're importing it, and the
+  // remote protocol is exceedingly polite
+  const outboundRref = getRemoteForLocal(remoteID, lref);
+  t.is(outboundRref, `ro+${index}`);
 });
 
 test('comms gc', t => {
