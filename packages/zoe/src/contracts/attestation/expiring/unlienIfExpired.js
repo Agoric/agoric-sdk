@@ -1,3 +1,5 @@
+// @ts-check
+
 import { AmountMath } from '@agoric/ertp';
 import { hasExpired } from './expiringHelpers';
 

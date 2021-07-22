@@ -26,7 +26,7 @@ test('exampleVotingUsage', async t => {
     decimalPlaces: 6,
   });
 
-  const issuerKit = makeIssuerKit('BLD-ATT-GOV', AssetKind.SET);
+  const issuerKit = makeIssuerKit('BldAttGov', AssetKind.SET);
 
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     installation,

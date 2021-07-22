@@ -3,7 +3,7 @@
 /**
  * ** Create loan:
  *
- * requires an NFT attestation of brand BLD-ATT-LOC, and the amount of
+ * requires an NFT attestation of brand BldAttLoc, and the amount of
  * RUN that can be loaned is about 10% of the value of BLD represented
  * in the attestation value: amount.value[0].value. (We should allow
  * for multiple elements in the value array, not just one, so we need
@@ -11,7 +11,7 @@
  *
  * ** Add more collateral:
  *
- * Escrow more attestations of brand BLD-ATT-LOC. Contract must add
+ * Escrow more attestations of brand BldAttLoc. Contract must add
  * the internal BLD values (amount.value[0].value) together to get a
  * total sum of liened BLD.
  *

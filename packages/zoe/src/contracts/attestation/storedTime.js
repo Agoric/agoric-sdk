@@ -12,6 +12,7 @@ const makeStoredTime = () => {
   const getTime = () => storedTime;
 
   const updateTime = currentTime => {
+    assert.typeof(currentTime, 'bigint');
     assert(
       currentTime >= storedTime,
       X`The currentTime ${q(

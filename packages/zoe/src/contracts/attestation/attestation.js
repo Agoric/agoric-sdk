@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import '../../../exported';
 import { setupAttestation as setupExpiringAttestation } from './expiring/expiringNFT';
@@ -17,7 +18,7 @@ import { makeGetAttMaker } from './attMaker';
 const start = async zcf => {
   const {
     brands: { Underlying: underlyingBrand },
-    authority, // an object representing the authority that has the ability to confirm that the underlying amount is escrowed externally
+    authority, // The authority used to confirm that the underlying assets are escrowed appropriately
     expiringAttName,
     returnableAttName,
   } = zcf.getTerms();
@@ -65,6 +66,10 @@ const start = async zcf => {
   /** @type {Slashed} */
   const slashed = (address, currentTime) => {
     storedTime.updateTime(currentTime);
+    const lienAmount = getLienAmount(address, currentTime);
+    if (AmountMath.isEmpty(lienAmount)) {
+      return; // If there is no lien, do nothing
+    }
     expiringAttManager.disallowExtensions(address);
   };
 
@@ -111,27 +116,27 @@ const start = async zcf => {
     });
   };
 
-  const publicFacet = {
-    makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation, // called by user/dapp/wallet, can also be called from the AttMaker
-    makeExtendAttInvitation, // called by user/dapp/wallet, can also be called from the AttMaker
+  const publicFacet = Far('publicFacet', {
+    makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
+    makeExtendAttInvitation,
     getIssuers: () => {
-      return {
+      return harden({
         returnable: returnableAttManager.issuer,
         expiring: expiringAttManager.issuer,
-      };
+      });
     },
     getBrands: () => {
-      return {
+      return harden({
         returnable: returnableAttManager.brand,
         expiring: expiringAttManager.brand,
-      };
+      });
     },
-  };
+  });
 
   /** @type {MakeAttMaker} */
   const makeAttMaker = address => {
     /** @type {AttMaker} */
-    return harden({
+    return Far('attMaker', {
       makeAttestations: (amountToLien, expiration) =>
         makeAttestationsInternal(address, amountToLien, expiration),
       makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
@@ -141,11 +146,11 @@ const start = async zcf => {
 
   const getAttMaker = makeGetAttMaker(makeAttMaker);
 
-  const creatorFacet = {
-    getLiened, // called by cosmos
-    getAttMaker, // called by createUserBundle in bootstrap.js
-    slashed, // called by cosmos
-  };
+  const creatorFacet = Far('creatorFacet', {
+    getLiened,
+    getAttMaker,
+    slashed,
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

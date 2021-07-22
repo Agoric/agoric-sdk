@@ -9,12 +9,10 @@ import { setupZCFTest } from '../../../zcf/setupZcfTest';
 
 import { setupAttestation } from '../../../../../src/contracts/attestation/expiring/expiringNFT';
 
-const makeDoExtendExpiration = (
-  zoe,
-  zcf,
-  issuer,
-  makeExtendAttInvitation,
-) => async (attestation, newExpiration) => {
+const makeDoExtendExpiration = (zoe, issuer, makeExtendAttInvitation) => async (
+  attestation,
+  newExpiration,
+) => {
   const invitation = makeExtendAttInvitation(newExpiration);
   const attestationAmount = await E(issuer).getAmountOf(attestation);
   const proposal = harden({ give: { Attestation: attestationAmount } });
@@ -84,7 +82,6 @@ test(`typical flow`, async t => {
 
   const doExtendExpiration = makeDoExtendExpiration(
     zoe,
-    zcf,
     attestationIssuer,
     makeExtendAttInvitation,
   );
