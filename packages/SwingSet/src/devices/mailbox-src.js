@@ -5,50 +5,27 @@ import { assert, details as X } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
-  const highestInboundDelivered = harden(new Map());
-  const highestInboundAck = harden(new Map());
 
   let deliverInboundMessages;
   let deliverInboundAck;
 
-  function inboundCallback(hPeer, hMessages, hAck) {
-    const peer = `${hPeer}`;
+  function inboundCallback(peer, messages, ack) {
     if (!deliverInboundMessages) {
       throw new Error(
         `mailbox.inboundCallback(${peer}) called before handler was registered`,
       );
     }
-    const ack = Nat(hAck);
-    let didSomething = false;
-
-    let latestMsg = 0;
-    if (highestInboundDelivered.has(peer)) {
-      latestMsg = highestInboundDelivered.get(peer);
-    }
-    const newMessages = [];
-    hMessages.forEach(m => {
-      const [hNum, hMsg] = m;
-      const num = Nat(hNum);
-      if (num > latestMsg) {
-        newMessages.push([num, `${hMsg}`]);
-        latestMsg = num;
-        highestInboundDelivered.set(peer, latestMsg);
-      }
+    assert.typeof(peer, 'string');
+    messages.forEach(m => {
+      Nat(m[0]);
+      assert.typeof(m[1], 'string');
     });
-    if (newMessages.length) {
-      deliverInboundMessages(peer, harden(newMessages));
-      didSomething = true;
+    Nat(ack);
+    if (messages.length) {
+      deliverInboundMessages(peer, harden(messages));
     }
-    let latestAck = 0;
-    if (highestInboundAck.has(peer)) {
-      latestAck = highestInboundAck.get(peer);
-    }
-    if (ack > latestAck) {
-      highestInboundAck.set(peer, ack);
-      deliverInboundAck(peer, ack);
-      didSomething = true;
-    }
-    return didSomething;
+    deliverInboundAck(peer, ack);
+    return true; // always didSomething
   }
   endowments.registerInboundCallback(inboundCallback);
 
