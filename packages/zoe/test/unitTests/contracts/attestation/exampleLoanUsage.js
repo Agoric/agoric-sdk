@@ -11,9 +11,9 @@
  *
  * ** Add more collateral:
  *
- * Escrow more attestations of brand BldAttLoc. Contract must add
- * the internal BLD values (amount.value[0].value) together to get a
- * total sum of liened BLD.
+ * Escrow more attestations of brand BldAttLoc. Contract must add the
+ * internal BLD values (amount.value[0].value) together to get a total
+ * sum of liened BLD.
  *
  * ** Withdraw more RUN:
  *
@@ -45,4 +45,10 @@
  * attestation is transferred and another person returns it, they
  * cannot unlien more than they liened, and the system should not
  * error if that's the case, just disallow it.
+ *
+ * michaelfig identified an additional problem with fungible
+ * attestation tokens in which redeeming someone else's fungible
+ * tokens can make a user's own fungible attestations tokens
+ * unredeemable, but with no external indications of this new change
+ * in their functionality.
  */

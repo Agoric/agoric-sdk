@@ -13,23 +13,26 @@ const { details: X, quote: q } = assert;
 /**
  * Assert the cosmos-specific prerequisites
  *
- * @param {{getAccountState: (address: Address) => {total: Amount, bonded: Amount, locked: Amount,
- * currentTime: Timestamp}}} cosmos
- * @param {GetLienAmount} getLienAmount
+ * @param {{getAccountState: (address: Address, brand: Brand) => {total: Amount, bonded: Amount, locked: Amount,
+ * currentTime: Timestamp}}} stakeReporter
+ * @param {GetLiened} getLiened
  * @param {Brand} underlyingBrand
  * @param {Address} address
  * @param {Amount} amountToLien
  * @param {Timestamp} expiration
  */
 const assertPrerequisites = async (
-  cosmos,
-  getLienAmount,
+  stakeReporter,
+  getLiened,
   underlyingBrand,
   address,
   amountToLien,
   expiration,
 ) => {
-  const accountState = await E(cosmos).getAccountState(address);
+  const accountState = await E(stakeReporter).getAccountState(
+    address,
+    underlyingBrand,
+  );
   // AWAIT ///
 
   let { total, bonded, locked } = accountState;
@@ -52,7 +55,7 @@ const assertPrerequisites = async (
   // NOTE: the total (and other values in the accountState) may
   // be less than the amount liened, due to slashing affecting the
   // cosmos balances but not affecting the amount liened.
-  const liened = getLienAmount(address, currentTime);
+  const liened = getLiened(address, currentTime, underlyingBrand);
 
   const unliened = subtractOrMakeEmpty(total, liened);
   const bondedAndUnliened = subtractOrMakeEmpty(bonded, liened);

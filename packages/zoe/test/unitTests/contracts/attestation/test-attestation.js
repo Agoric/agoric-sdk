@@ -32,10 +32,10 @@ test('attestation contract basic tests', async t => {
   let currentTime = 10n;
 
   const mockCosmos = Far(
-    'cosmos',
-    /** @type {{getAccountState: (address: Address) => {total: Amount,
+    'stakeReporter',
+    /** @type {{getAccountState: (address: Address, brand: Brand) => {total: Amount,
      * bonded: Amount, locked: Amount, currentTime: Timestamp}}} */ ({
-      getAccountState: () => {
+      getAccountState: (_address, _brand) => {
         return harden({
           total: AmountMath.make(uBrand, 500n),
           bonded: AmountMath.make(uBrand, 200n),
@@ -87,11 +87,8 @@ test('attestation contract basic tests', async t => {
   );
 
   // check that no lien was successful so far
-  const liened = await E(creatorFacet).getLiened(
-    harden([address1]),
-    currentTime,
-  );
-  t.deepEqual(liened, [AmountMath.makeEmpty(uBrand)]);
+  const liened = await E(creatorFacet).getLiened(address1, currentTime, uBrand);
+  t.deepEqual(liened, AmountMath.makeEmpty(uBrand));
 
   // Make a normal lien
   const { returnable: returnable1, expiring: expiring1 } = await E(
@@ -121,10 +118,11 @@ test('attestation contract basic tests', async t => {
   );
 
   const liened2 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened2, [amount50]);
+  t.deepEqual(liened2, amount50);
 
   // Make another normal lien
 
@@ -157,10 +155,11 @@ test('attestation contract basic tests', async t => {
   t.not(expiring1Amount.value[0].handle, expiring2Amount.value[0].handle);
 
   const liened3 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened3, [AmountMath.add(amount50, amount25)]);
+  t.deepEqual(liened3, AmountMath.add(amount50, amount25));
 
   const returnAttestation = async att => {
     const invitation = E(publicFacet).makeReturnAttInvitation();
@@ -186,43 +185,47 @@ test('attestation contract basic tests', async t => {
   // Total liened amount should not change because there are
   // outstanding expiring attestations
   const liened4 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened4, [AmountMath.add(amount50, amount25)]);
+  t.deepEqual(liened4, AmountMath.add(amount50, amount25));
 
   // Move the currentTime forward so the shortExpiration attestation
   // expires (50 bld)
   currentTime = 16n;
   const liened5 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened5, [amount25]); // the amount50 lien expired, leaving 25
+  t.deepEqual(liened5, amount25); // the amount50 lien expired, leaving 25
 
   // Move the currentTime forward so the longExpiration attestation
   // expires. This should not change the total liened because there is
   // an outstanding returnable attestation
   currentTime = 101n;
   const liened6 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened6, [amount25]);
+  t.deepEqual(liened6, amount25);
 
   // Return the last returnable attestation for 25
   await returnAttestation(returnable2);
 
   // Now the liened Amount should be empty
   const liened7 = await E(creatorFacet).getLiened(
-    harden([address1]),
+    address1,
     currentTime,
+    uBrand,
   );
-  t.deepEqual(liened7, [AmountMath.makeEmpty(uBrand)]);
+  t.deepEqual(liened7, AmountMath.makeEmpty(uBrand));
 
   // Slash while there is no lien
   // This should have no effect
-  await E(creatorFacet).slashed(address1, currentTime);
+  await E(creatorFacet).slashed(harden([address1]), currentTime, uBrand);
 
   // Add another lien, extend the expiration, then slash, then try to extend the expiring
   // attestation
@@ -263,7 +266,7 @@ test('attestation contract basic tests', async t => {
     ]),
   );
 
-  await E(creatorFacet).slashed(address1, currentTime);
+  await E(creatorFacet).slashed(harden([address1]), currentTime, uBrand);
 
   // Now try to extend the expiration. This will fail.
   const { userSeat } = await doExtendExpiration(expiring4, 105n);
@@ -274,5 +277,5 @@ test('attestation contract basic tests', async t => {
 });
 
 // TODO: test with various unexpected or strange values from
-// E(cosmos).getAccountState(). Possibly better suited as a unit test
+// E(stakeReporter).getAccountState(). Possibly better suited as a unit test
 // with `assertPrerequisites`

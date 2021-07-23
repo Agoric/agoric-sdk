@@ -47,8 +47,13 @@ const start = async zcf => {
   ]);
   // AWAIT ///
 
-  /** @type {GetLienAmount} */
-  const getLienAmount = (address, currentTime) => {
+  /** @type {GetLiened} */
+  const getLiened = (address, currentTime, brand) => {
+    assert(
+      brand === underlyingBrand,
+      `This contract can only make attestations for ${brand}`,
+    );
+    storedTime.updateTime(currentTime);
     const expiringLienAmount = expiringAttManager.getLienAmount(
       address,
       currentTime,
@@ -57,20 +62,16 @@ const start = async zcf => {
     return max(expiringLienAmount, returnableLienAmount);
   };
 
-  /** @type {GetLiened} */
-  const getLiened = (addresses, currentTime) => {
-    storedTime.updateTime(currentTime);
-    return addresses.map(address => getLienAmount(address, currentTime));
-  };
-
   /** @type {Slashed} */
-  const slashed = (address, currentTime) => {
+  const slashed = (addresses, currentTime) => {
     storedTime.updateTime(currentTime);
-    const lienAmount = getLienAmount(address, currentTime);
-    if (AmountMath.isEmpty(lienAmount)) {
-      return; // If there is no lien, do nothing
-    }
-    expiringAttManager.disallowExtensions(address);
+    addresses.forEach(address => {
+      const lienAmount = getLiened(address, currentTime, underlyingBrand);
+      if (AmountMath.isEmpty(lienAmount)) {
+        return; // If there is no lien, do nothing
+      }
+      expiringAttManager.disallowExtensions(address);
+    });
   };
 
   /** @type {MakeExtendAttInvitation} */
@@ -91,7 +92,7 @@ const start = async zcf => {
 
     const currentTime = await assertPrerequisites(
       authority,
-      getLienAmount,
+      getLiened,
       underlyingBrand,
       address,
       amountToLien,
