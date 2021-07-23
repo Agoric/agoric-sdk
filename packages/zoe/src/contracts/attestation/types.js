@@ -137,7 +137,7 @@
  *
  * On slashing, we disallow any extensions. We do not reduce the liens.
  *
- * @param {Array<Address>} address
+ * @param {Array<Address>} addresses
  * @param {Timestamp} currentTime
  * @returns {void}
  */
@@ -174,7 +174,7 @@
 
 /**
  * @callback GetLiened
- * Get the amount currently liened per address.
+ * Get the amount currently liened for the address and brand.
  *
  * @param {Address} addresses
  * @param {Timestamp} currentTime
