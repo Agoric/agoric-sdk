@@ -1,8 +1,7 @@
 // @ts-check
 
 /**
- * @returns {{getTime: () => Timestamp, updateTime: (currentTime:
- * Timestamp) => void}}
+ * @returns {StoredTime}
  */
 const makeStoredTime = () => {
   let storedTime = 0n;

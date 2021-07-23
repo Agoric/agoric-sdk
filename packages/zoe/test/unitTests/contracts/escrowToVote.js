@@ -70,7 +70,7 @@ const start = zcf => {
         } else {
           seatToResponse.init(voterSeat, response);
         }
-        return `Successfully voted ${response}`;
+        return `Successfully voted '${response}'`;
       },
     });
     return voter;

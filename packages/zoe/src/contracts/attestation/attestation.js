@@ -100,8 +100,9 @@ const start = async zcf => {
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
     assert.typeof(expiration, 'bigint');
 
-    const currentTime = await assertPrerequisites(
+    await assertPrerequisites(
       authorityPromiseKit.promise,
+      storedTime,
       getLiened,
       underlyingBrand,
       address,
@@ -109,7 +110,6 @@ const start = async zcf => {
       expiration,
     );
     // AWAIT ///
-    storedTime.updateTime(currentTime);
 
     const expiringAttPayment = expiringAttManager.addExpiringLien(
       address,

@@ -15,6 +15,7 @@ const { details: X } = assert;
  *
  * @param {ERef<{getAccountState: (address: Address, brand: Brand) => {total: Amount, bonded: Amount, locked: Amount,
  * currentTime: Timestamp}}>} stakeReporter
+ * @param {StoredTime} storedTime
  * @param {GetLiened} getLiened
  * @param {Brand} underlyingBrand
  * @param {Address} address
@@ -23,6 +24,7 @@ const { details: X } = assert;
  */
 const assertPrerequisites = async (
   stakeReporter,
+  storedTime,
   getLiened,
   underlyingBrand,
   address,
@@ -38,6 +40,7 @@ const assertPrerequisites = async (
   let { total, bonded, locked } = accountState;
   const { currentTime } = accountState;
   assert.typeof(currentTime, 'bigint');
+  storedTime.updateTime(currentTime);
   assert(
     expiration > currentTime,
     X`Expiration ${expiration} must be after the current time ${currentTime}`,

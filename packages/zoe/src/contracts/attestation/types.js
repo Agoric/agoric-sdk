@@ -181,3 +181,8 @@
  * @param {Brand} brand
  * @returns {Amount}
  */
+
+/**
+ * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
+ * Timestamp) => void}} StoredTime
+ */
