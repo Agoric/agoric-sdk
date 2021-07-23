@@ -76,7 +76,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     assert.typeof(address, 'string');
     assert.typeof(currentTime, 'bigint');
 
-    // We should first unlien any amounts for which the lien has
+    // We first unlien any amounts for which the lien has
     // expired, then return the total lien still remaining for the address
     const totalStillLiened = unlienExpiredAmounts(
       lienedAmounts,

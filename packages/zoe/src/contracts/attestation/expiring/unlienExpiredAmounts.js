@@ -14,8 +14,6 @@ import { hasExpired } from './expiringHelpers';
  * @returns {Amount} amountLiened
  */
 const unlienExpiredAmounts = (store, empty, address, currentTime) => {
-  let totalStillLiened = empty;
-
   // It is possible that the address does not currently have any
   // lienedAmounts
   if (!store.has(address)) {
@@ -23,13 +21,16 @@ const unlienExpiredAmounts = (store, empty, address, currentTime) => {
   }
 
   const lienedAtStart = store.get(address);
-  const notExpired = lienedAtStart.filter(({ amountLiened, expiration }) => {
+  const notExpired = lienedAtStart.filter(({ expiration }) => {
     if (hasExpired(expiration, currentTime)) {
       return false;
     }
-    totalStillLiened = AmountMath.add(totalStillLiened, amountLiened);
     return true;
   });
+  const totalStillLiened = notExpired.reduce(
+    (soFar, { amountLiened }) => AmountMath.add(soFar, amountLiened),
+    empty,
+  );
   // commit point
 
   store.set(address, notExpired);
