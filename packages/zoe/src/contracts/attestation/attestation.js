@@ -119,7 +119,7 @@ const start = async zcf => {
     });
   };
 
-  const publicFacet = Far('publicFacet', {
+  const publicFacet = Far('attestation publicFacet', {
     makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
     makeExtendAttInvitation,
     getIssuers: () => {
@@ -152,7 +152,7 @@ const start = async zcf => {
   // The authority is used to confirm that the underlying assets are escrowed appropriately.
   const addAuthority = authority => authorityPromiseKit.resolve(authority);
 
-  const creatorFacet = Far('creatorFacet', {
+  const creatorFacet = Far('attestation creatorFacet', {
     getLiened,
     getAttMaker,
     slashed,
