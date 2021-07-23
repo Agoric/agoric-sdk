@@ -3,7 +3,7 @@
 import { makeStore } from '@agoric/store';
 
 const makeGetAttMaker = makeAttMaker => {
-  /** @type {WeakStore<Address, AttMaker>} */
+  /** @type {Store<Address, AttMaker>} */
   const addressToAttMaker = makeStore('address');
 
   /** @type {GetAttMaker} */

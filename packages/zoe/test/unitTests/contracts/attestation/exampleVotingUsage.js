@@ -37,7 +37,7 @@ const start = zcf => {
     const attestationValue = /** @type {SetValue} */ (attestation.value);
 
     attestationValue.forEach(
-      /** @type {ExpiringAttElem} */ attestationElem => {
+      /** @param {ExpiringAttElem} attestationElem */ attestationElem => {
         const { amountLiened, handle, expiration } = attestationElem;
         if (storedAttestations.has(handle)) {
           // We check the newly escrowed attestation against the one we
