@@ -14,7 +14,7 @@ export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName = undefined) => {
   /** @type {CreateZCFVat} */
   const createZCFVat = () =>
     typeof zcfBundleName === 'string'
-      ? E(vatAdminSvc).createVatByName(zcfBundleName)
-      : E(vatAdminSvc).createVat(zcfContractBundle);
+      ? E(vatAdminSvc).createVatByName(zcfBundleName, { metered: true })
+      : E(vatAdminSvc).createVat(zcfContractBundle, { metered: true });
   return createZCFVat;
 };
