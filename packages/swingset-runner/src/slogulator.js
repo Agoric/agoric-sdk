@@ -371,6 +371,11 @@ export function main() {
     }
   }
 
+  function doDeliverDropRetire(delivery, prefix = '') {
+    // prettier-ignore
+    p(`${prefix}recv-${delivery[0]}: [${delivery[1].map(r => pref(r)).join(' ')}]`);
+  }
+
   function doDeliver(delivery, prefix) {
     switch (delivery[0]) {
       case 'message':
@@ -378,6 +383,11 @@ export function main() {
         break;
       case 'notify':
         doDeliverNotify(delivery, prefix);
+        break;
+      case 'dropExports':
+      case 'retireExports':
+      case 'retireImports':
+        doDeliverDropRetire(delivery, prefix);
         break;
       default:
         p(`deliver: unknown deliver type "${delivery[0]}"`);
@@ -456,6 +466,10 @@ export function main() {
     p(`${tag}: ${key} := '${value}'`);
   }
 
+  function doSyscallDropRetire(tag, entry) {
+    p(`send-${tag}: [${entry[1].map(r => pref(r)).join(' ')}]`);
+  }
+
   function doSyscallExit(tag, entry) {
     const failure = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
@@ -487,6 +501,11 @@ export function main() {
         break;
       case 'vatstoreSet':
         doSyscallVatstoreSet(tag, syscall);
+        break;
+      case 'dropImports':
+      case 'retireExports':
+      case 'retireImports':
+        doSyscallDropRetire(tag, syscall);
         break;
       default:
         p(`syscall: unknown syscall ${currentSyscallName}`);
@@ -617,6 +636,9 @@ export function main() {
       case 'subscribe':
       case 'vatstoreDelete':
       case 'vatstoreSet':
+      case 'dropImports':
+      case 'retireExports':
+      case 'retireImports':
         if (value !== null) {
           p(`${tag}: unexpected value ${value}`);
         }
