@@ -5,7 +5,7 @@ import { E } from '@agoric/eventual-send';
 
 import { subtractOrMakeEmpty } from './helpers';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 // TODO: Make the attestation contract more generic by allowing this
 // to be parameterized
@@ -40,9 +40,7 @@ const assertPrerequisites = async (
   assert.typeof(currentTime, 'bigint');
   assert(
     expiration > currentTime,
-    `Expiration ${q(expiration)} must be after the current time ${q(
-      currentTime,
-    )}`,
+    `Expiration '${expiration}' must be after the current time '${currentTime}'`,
   );
 
   total = AmountMath.coerce(underlyingBrand, total);
@@ -65,29 +63,19 @@ const assertPrerequisites = async (
   // Prerequisite: x <= Unliened
   assert(
     AmountMath.isGTE(unliened, amountToLien),
-    X`Only ${q(
-      unliened,
-    )} was unliened, but an attestation was attempted for ${q(amountToLien)}`,
+    X`Only '${unliened}' was unliened, but an attestation was attempted for '${amountToLien}'`,
   );
 
   // Prerequisite: x <= Bonded - Liened
   assert(
     AmountMath.isGTE(bondedAndUnliened, amountToLien),
-    X`Only ${q(
-      bondedAndUnliened,
-    )} was bonded and unliened, but an attestation was attempted for ${q(
-      amountToLien,
-    )}`,
+    X`Only '${bondedAndUnliened}' was bonded and unliened, but an attestation was attempted for '${amountToLien}'`,
   );
 
   // Prerequisite: x <= Unlocked - Liened
   assert(
     AmountMath.isGTE(unlockedAndUnliened, amountToLien),
-    X`Only ${q(
-      unlockedAndUnliened,
-    )} was unlocked and unliened, but an attestation was attempted for ${q(
-      amountToLien,
-    )}`,
+    X`Only '${unlockedAndUnliened}' was unlocked and unliened, but an attestation was attempted for '${amountToLien}'`,
   );
 
   return currentTime;

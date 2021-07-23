@@ -3,8 +3,6 @@
 // TODO: make more efficient. This will slow as the number of
 // ExpiringAttElem per address increases.
 
-const { quote: q } = assert;
-
 /**
  * A helper to actually update the lien record when a lien expiration
  * is extended.
@@ -17,7 +15,7 @@ const updateLien = (store, newAttestationElem) => {
   const { address, handle } = newAttestationElem;
   assert(
     store.has(address),
-    `No previous lien was found for address ${q(address)}`,
+    `No previous lien was found for address '${address}'`,
   );
   const lienedSoFar = store.get(address);
   let foundOldRecord;
@@ -33,9 +31,7 @@ const updateLien = (store, newAttestationElem) => {
 
   assert(
     foundOldRecord,
-    `No previous lien was found for address ${q(address)} and attestation ${q(
-      newAttestationElem,
-    )}`,
+    `No previous lien was found for address '${address}' and attestation '${newAttestationElem}'`,
   );
 
   minusOldRecord.push(newAttestationElem);

@@ -96,8 +96,7 @@ test('happy path', async t => {
 
 test('bad newExpiration', async t => {
   t.throws(() => doTest(t, 0n), {
-    message:
-      'The new expiration "[0n]" must be later than the old expiration "[4n]"',
+    message: "The new expiration '0' must be later than the old expiration '4'",
   });
 });
 
@@ -117,6 +116,6 @@ test('cannot extend', async t => {
   const canExtend = _address => false;
   t.throws(() => doTest(t, 5n, canExtend), {
     message:
-      'The address "address" cannot extend the expiration for attestations',
+      "The address 'address' cannot extend the expiration for attestations",
   });
 });

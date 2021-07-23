@@ -18,8 +18,6 @@ import { extendExpiration as extendExpirationInternal } from './extendExpiration
 // Adds an expiring lien to an amount in response to an incoming call.
 // Can be queried for the current liened amount for an address.
 
-const { quote: q } = assert;
-
 /**
  * @param {string} attestationTokenName - the name for the attestation
  * token
@@ -32,7 +30,7 @@ const { quote: q } = assert;
  * () => Brand}>}
  */
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
-  assert(AmountMath.isEmpty(empty), `empty ${q(empty)} was not empty`);
+  assert(AmountMath.isEmpty(empty), `empty '${empty}' was not empty`);
   const zcfMint = await zcf.makeZCFMint(attestationTokenName, AssetKind.SET);
   const {
     brand: attestationBrand,
@@ -121,9 +119,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     // Fail-fast if the newExpiration is already out of date
     assert(
       !hasExpired(newExpiration, currentTime),
-      `The attestation could not be extended, as the new expiration ${q(
-        newExpiration,
-      )} is in the past`,
+      `The attestation could not be extended, as the new expiration '${newExpiration}' is in the past`,
     );
     const offerHandler = seat => extendExpiration(seat, newExpiration);
     return zcf.makeInvitation(offerHandler, 'ExtendAtt', {

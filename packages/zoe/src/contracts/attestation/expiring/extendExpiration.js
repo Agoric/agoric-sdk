@@ -5,7 +5,7 @@ import { checkOfferShape } from '../helpers';
 
 import { makeAttestationElem } from './expiringHelpers';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 /**
  * A user makes a proposal with a `give` of { Attestation:
@@ -48,14 +48,12 @@ const extendExpiration = (
 
   assert(
     canExtend(address),
-    `The address ${q(address)} cannot extend the expiration for attestations`,
+    `The address '${address}' cannot extend the expiration for attestations`,
   );
 
   assert(
     newExpiration > expiration,
-    `The new expiration ${q(
-      newExpiration,
-    )} must be later than the old expiration ${q(expiration)}`,
+    `The new expiration '${newExpiration}' must be later than the old expiration '${expiration}'`,
   );
   // Importantly, we cannot drop the uniqueHandle and make a new
   // one, because that would allow someone to escrow the newly
