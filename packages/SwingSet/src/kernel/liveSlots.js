@@ -106,10 +106,15 @@ function build(
     // if the vref corresponds to a Remotable, keep a strong reference to it
     // until the kernel tells us to release it
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
-    if (type === 'object' && allocatedByVat && !virtual) {
-      const remotable = slotToVal.get(vref).deref();
-      assert(remotable, X`somehow lost Remotable for ${vref}`);
-      exportedRemotables.add(remotable);
+    if (type === 'object' && allocatedByVat) {
+      if (virtual) {
+        // eslint-disable-next-line no-use-before-define
+        setExported(vref, true);
+      } else {
+        const remotable = slotToVal.get(vref).deref();
+        assert(remotable, X`somehow lost Remotable for ${vref}`);
+        exportedRemotables.add(remotable);
+      }
     }
   }
 
@@ -179,11 +184,6 @@ function build(
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
-  function processDroppedRepresentative(_vref) {
-    // no-op, to be implemented by virtual object manager
-    return false;
-  }
-
   function processDeadSet() {
     let doMore = false;
     const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
@@ -193,7 +193,8 @@ function build(
       assert(type === 'object', `unprepared to track ${type}`);
       if (virtual) {
         // Representative: send nothing, but perform refcount checking
-        doMore = doMore || processDroppedRepresentative(vref);
+        // eslint-disable-next-line no-use-before-define
+        doMore = doMore || possibleVirtualObjectDeath(vref);
       } else if (allocatedByVat) {
         // Remotable: send retireExport
         exportsToRetire.push(vref);
@@ -420,6 +421,8 @@ function build(
     VirtualObjectAwareWeakSet,
     isVrefReachable,
     isVrefRecognizable,
+    setExported,
+    possibleVirtualObjectDeath,
   } = makeVirtualObjectManager(
     syscall,
     allocateExportID,
@@ -511,13 +514,6 @@ function build(
       return val;
     }
     if (virtual) {
-      // Virtual objects should never be put in the slotToVal table, as their
-      // entire raison d'etre is to be absent from memory when they're not being
-      // used.  They *do* get put in the valToSlot table, which is OK because
-      // it's a WeakMap, but they don't get put there here.  Instead, they are
-      // put there by makeVirtualObjectRepresentative, who already has to do
-      // this anyway in the cases of creating virtual objects in the first place
-      // and swapping them in from disk.
       assert.equal(type, 'object');
       val = makeVirtualObjectRepresentative(slot, false);
     } else {
@@ -848,6 +844,10 @@ function build(
       const o = wr && wr.deref();
       if (o) {
         exportedRemotables.delete(o);
+      }
+      const { virtual } = parseVatSlot(vref);
+      if (virtual) {
+        setExported(vref, false);
       }
     }
   }

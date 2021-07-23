@@ -1,3 +1,5 @@
+/* eslint-disable no-use-before-define */
+
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { parseVatSlot } from '../parseVatSlots.js';
 // import { kdebug } from './kdebug.js';
@@ -50,7 +52,10 @@ export function makeCache(size, fetch, store) {
         } else {
           lruHead = undefined;
         }
+        const deadEntry = lruTail;
         lruTail = lruTail.prev;
+        deadEntry.next = undefined;
+        deadEntry.prev = undefined;
       }
     },
     flush() {
@@ -148,7 +153,7 @@ export function makeCache(size, fetch, store) {
  *    instances, writing any changed state to the persistent store.  This
  *    provided for testing; it otherwise has little use.
  *
- * - `makeVirtualObjectRepresentation` will provide a useeable, in-memory
+ * - `makeVirtualObjectRepresentative` will provide a useeable, in-memory
  *    version of a virtual object, given its vat slot ID.  This is used when
  *    deserializing a reference to an object that has been received in a message
  *    or is part of the persistent state of another virtual object that is being
@@ -188,6 +193,61 @@ export function makeVirtualObjectManager(
     syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
   }
 
+  function possibleVirtualObjectDeath(vobjID) {
+    if (!isVrefReachable(vobjID) && !getValForSlot(vobjID)) {
+      const [exported, refCount] = getRefCounts(vobjID);
+      if (exported === 0 && refCount === 0) {
+        syscall.vatstoreDelete(`vom.${vobjID}`);
+        syscall.vatstoreDelete(`vom.${vobjID}.refCount`);
+      }
+    }
+  }
+
+  function getRefCounts(vobjID) {
+    const rawCounts = syscall.vatstoreGet(`vom.${vobjID}.refCount`);
+    if (rawCounts) {
+      return rawCounts.split(' ').map(Number);
+    } else {
+      return [0, 0];
+    }
+  }
+
+  function setRefCounts(vobjID, exported, count) {
+    syscall.vatstoreSet(`vom.${vobjID}.refCount`, `${exported} ${count}`);
+    if (exported === 0 && count === 0) {
+      possibleVirtualObjectDeath(vobjID);
+    }
+  }
+
+  function setExported(vobjID, newSetting) {
+    const [wasExported, refCount] = getRefCounts(vobjID);
+    const isNowExported = Number(newSetting);
+    if (wasExported !== isNowExported) {
+      setRefCounts(vobjID, isNowExported, refCount);
+    }
+  }
+
+  function incRefCount(vobjID) {
+    const [exported, oldCount] = getRefCounts(vobjID);
+    if (oldCount === 0) {
+      // TODO: right now we are not tracking actual refcounts, so for now a
+      // refcount of 0 means never referenced and a refcount of 1 means
+      // referenced at least once in the past.  Once actual refcounts are
+      // working (notably including calling decref at the appropriate times),
+      // take out the above if.
+      setRefCounts(vobjID, exported, oldCount + 1);
+    }
+  }
+
+  // TODO: reenable once used; it's commented out just to make eslint shut up
+  /*
+  function decRefCount(vobjID) {
+    const [exported, oldCount] = getRefCounts(vobjID);
+    assert(oldCount > 0, `attempt to decref ${vobjID} below 0`);
+    setRefCounts(vobjID, exported, oldCount - 1);
+  }
+  */
+
   const cache = makeCache(cacheSize, fetch, store);
 
   /**
@@ -212,8 +272,9 @@ export function makeVirtualObjectManager(
   // We track imports, to preserve their vrefs against syscall.dropImport
   // when the Presence goes away.
   function addReachablePresenceRef(vref) {
-    const { type, allocatedByVat } = parseVatSlot(vref);
-    if (type === 'object' && !allocatedByVat) {
+    // XXX TODO including virtual objects gives lie to the name, but this hack should go away with VO refcounts
+    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+    if (type === 'object' && (!allocatedByVat || virtual)) {
       reachableVrefs.add(vref);
     }
   }
@@ -264,12 +325,16 @@ export function makeVirtualObjectManager(
   const reachableRemotables = new Set();
   function addReachableRemotableRef(vref) {
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
-    if (type === 'object' && !virtual && allocatedByVat) {
-      // exported non-virtual object: Remotable
-      const remotable = getValForSlot(vref);
-      assert(remotable, X`no remotable for ${vref}`);
-      // console.log(`adding ${vref} to reachableRemotables`);
-      reachableRemotables.add(remotable);
+    if (type === 'object' && allocatedByVat) {
+      if (virtual) {
+        incRefCount(vref);
+      } else {
+        // exported non-virtual object: Remotable
+        const remotable = getValForSlot(vref);
+        assert(remotable, X`no remotable for ${vref}`);
+        // console.log(`adding ${vref} to reachableRemotables`);
+        reachableRemotables.add(remotable);
+      }
     }
   }
 
@@ -542,29 +607,35 @@ export function makeVirtualObjectManager(
    * selves, and state data.
    *
    * A representative is the manifestation of a virtual object that vat code has
-   * direct access to.  A given virtual object can have multiple
-   * representatives: one is created when the instance is initially made and
-   * another is generated each time the instance's virtual object ID is
-   * deserialized, either when delivered as part of an incoming message or read
-   * as part of another virtual object's state.  These representatives are not
-   * === but do obey the `sameKey` equivalence relation.  In particular, methods
-   * invoked on them all operate on the same underyling virtual object state.  A
-   * representative is garbage collectable once it becomes unreferenced in the
-   * vat.
+   * direct access to.  A given virtual object can have at most one
+   * representative, which will be created as needed.  This will happen when the
+   * instance is initially made, and can also happen (if it does not already
+   * exist) when the instance's virtual object ID is deserialized, either when
+   * delivered as part of an incoming message or read as part of another virtual
+   * object's state.  A representative will be kept alive in memory as long as
+   * there is a variable somewhere that references it directly or indirectly.
+   * However, if a representative becomes unreferenced in memory it is subject
+   * to garbage collection, leaving the representation that is kept in the vat
+   * store as the record of its state from which a mew representative can be
+   * reconsituted at need.  Since only one representative exists at a time,
+   * references to them may be compared with the equality operator (===).
+   * Although the identity of a representative can change over time, this is
+   * never visible to code running in the vat.  Methods invoked on a
+   * representative always operate on the underyling virtual object state.
    *
    * The inner self represents the in-memory information about an object, aside
    * from its state.  There is an inner self for each virtual object that is
    * currently resident in memory; that is, there is an inner self for each
-   * virtual object for which there is currently at least one representative
-   * present somewhere in the vat.  The inner self maintains two pieces of
-   * information: its corresponding virtual object's virtual object ID, and a
-   * pointer to the virtual object's state in memory if the virtual object's
-   * state is, in fact, currently resident in memory.  If the state is not in
-   * memory, the inner self's pointer to the state is null.  In addition, the
-   * virtual object manager maintains an LRU cache of inner selves.  Inner
-   * selves that are in the cache are not necessarily referenced by any existing
-   * representative, but are available to be used should such a representative
-   * be needed.  How this all works will be explained in a moment.
+   * virtual object for which there is currently a representative present
+   * somewhere in the vat.  The inner self maintains two pieces of information:
+   * its corresponding virtual object's virtual object ID, and a pointer to the
+   * virtual object's state in memory if the virtual object's state is, in fact,
+   * currently resident in memory.  If the state is not in memory, the inner
+   * self's pointer to the state is null.  In addition, the virtual object
+   * manager maintains an LRU cache of inner selves.  Inner selves that are in
+   * the cache are not necessarily referenced by any existing representative,
+   * but are available to be used should such a representative be needed.  How
+   * this all works will be explained in a moment.
    *
    * The state of a virtual object is a collection of mutable properties, each
    * of whose values is itself immutable and serializable.  The methods of a
@@ -573,7 +644,7 @@ export function makeVirtualObjectManager(
    * but a wrapper with accessor methods that both ensure that a representation
    * of the state is in memory when needed and perform deserialization on read
    * and serialization on write; this wrapper is held by the representative, so
-   * that method invocations always see the wrapper belonging to the invoking
+   * that method invocations always sees the wrapper belonging to the invoking
    * representative.  The actual state object holds marshaled serializations of
    * each of the state properties.  When written to persistent storage, this is
    * representated as a JSON-stringified object each of whose properties is one
@@ -585,10 +656,10 @@ export function makeVirtualObjectManager(
    * corresponding inner self is made to point at it, and then the inner self is
    * placed at the head of the LRU cache (causing the least recently used inner
    * self to fall off the end of the cache).  If it *is* in memory, it is
-   * promoted to the head of the LRU cache but the contents of the cache remains
-   * unchanged.  When an inner self falls off the end of the LRU, its reference
-   * to the state is nulled out and the object holding the state becomes garbage
-   * collectable.
+   * promoted to the head of the LRU cache but the overall contents of the cache
+   * remain unchanged.  When an inner self falls off the end of the LRU, its
+   * reference to the state is nulled out and the object holding the state
+   * becomes garbage collectable.
    */
   function makeKind(instanceKitMaker) {
     const kindID = `${allocateExportID()}`;
@@ -712,7 +783,9 @@ export function makeVirtualObjectManager(
     VirtualObjectAwareWeakSet,
     isVrefReachable,
     isVrefRecognizable,
+    setExported,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
+    possibleVirtualObjectDeath,
   });
 }
