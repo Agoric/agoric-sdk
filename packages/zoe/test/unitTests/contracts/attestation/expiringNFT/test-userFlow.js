@@ -140,8 +140,7 @@ test(`typical flow`, async t => {
   );
 
   await t.throwsAsync(() => E(userSeat).getOfferResult(), {
-    message:
-      "The address 'myaddress' cannot extend the expiration for attestations",
+    message: `The address "myaddress" cannot extend the expiration for attestations`,
   });
 
   // refundAttestation has the same value as the extendedAttestation.

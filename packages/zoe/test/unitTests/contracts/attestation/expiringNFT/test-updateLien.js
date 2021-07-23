@@ -17,7 +17,7 @@ test(`store doesn't have address`, async t => {
   const newAttestationElem = makeAttestationElem('address');
 
   t.throws(() => updateLien(store, newAttestationElem), {
-    message: "No previous lien was found for address 'address'",
+    message: 'No previous lien was found for address "address"',
   });
 });
 

@@ -13,6 +13,8 @@ import { max } from './helpers';
 import { assertPrerequisites } from './prerequisites';
 import { makeGetAttMaker } from './attMaker';
 
+const { details: X } = assert;
+
 /**
  * @type {ContractStartFn}
  */
@@ -53,7 +55,7 @@ const start = async zcf => {
   const getLiened = (address, currentTime, brand) => {
     assert(
       brand === underlyingBrand,
-      `This contract can only make attestations for ${brand}`,
+      X`This contract can only make attestations for ${brand}`,
     );
     storedTime.updateTime(currentTime);
     const expiringLienAmount = expiringAttManager.getLienAmount(

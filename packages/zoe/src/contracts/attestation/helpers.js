@@ -5,6 +5,8 @@ import { E } from '@agoric/eventual-send';
 
 import { assertProposalShape } from '../../contractSupport';
 
+const { details: X } = assert;
+
 /**
  * Validate that the address is a string and that the amount is a
  * valid Amount of the right brand. Coerce the amount and return it.
@@ -45,7 +47,7 @@ const checkOfferShape = (seat, attestationBrand) => {
   const attestationAmount = seat.getAmountAllocated('Attestation');
   assert(
     attestationAmount.brand === attestationBrand,
-    `The escrowed attestation ${attestationAmount} was not of the attestation brand${attestationBrand}`,
+    X`The escrowed attestation ${attestationAmount} was not of the attestation brand${attestationBrand}`,
   );
   return attestationAmount;
 };

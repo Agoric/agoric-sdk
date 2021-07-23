@@ -23,7 +23,7 @@ const { details: X } = assert;
  * getBrand: () => Brand}>}
  */
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
-  assert(AmountMath.isEmpty(empty), `empty '${empty}' was not empty`);
+  assert(AmountMath.isEmpty(empty), X`empty ${empty} was not empty`);
   const zcfMint = await zcf.makeZCFMint(attestationTokenName, AssetKind.SET);
   const {
     brand: attestationBrand,
@@ -72,7 +72,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     attestationValue.forEach(({ address, amountLiened: amountReturned }) => {
       assert(
         lienedAmounts.has(address),
-        X`We have no record of anything liened for address '${address}'`,
+        X`We have no record of anything liened for address ${address}`,
       );
       // No need to validate the address and amountLiened because we
       // get the address and the amountLiened from the escrowed
@@ -83,7 +83,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
       // if false.
       assert(
         AmountMath.isGTE(liened, amountReturned),
-        X`The returned amount '${amountReturned}' was greater than the amount liened '${liened}'. Something very wrong occurred.`,
+        X`The returned amount ${amountReturned} was greater than the amount liened ${liened}. Something very wrong occurred.`,
       );
       const updated = AmountMath.subtract(liened, amountReturned);
       lienedAmounts.set(address, updated);

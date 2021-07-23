@@ -74,7 +74,7 @@ test('attestation contract basic tests', async t => {
     () => E(attMaker).makeAttestations(largeAmount, shortExpiration),
     {
       message:
-        'Only \'{"brand":"[Alleged: BLD brand]","value":"[500n]"}\' was unliened, but an attestation was attempted for \'{"brand":"[Alleged: BLD brand]","value":"[1000n]"}\'',
+        'Only {"brand":"[Alleged: BLD brand]","value":"[500n]"} was unliened, but an attestation was attempted for {"brand":"[Alleged: BLD brand]","value":"[1000n]"}',
     },
   );
 
@@ -83,7 +83,7 @@ test('attestation contract basic tests', async t => {
   const expiredExpiration = 1n;
   await t.throwsAsync(
     () => E(attMaker).makeAttestations(amount50, expiredExpiration),
-    { message: "Expiration '1' must be after the current time '10'" },
+    { message: 'Expiration "[1n]" must be after the current time "[10n]"' },
   );
 
   // check that no lien was successful so far
@@ -271,8 +271,7 @@ test('attestation contract basic tests', async t => {
   // Now try to extend the expiration. This will fail.
   const { userSeat } = await doExtendExpiration(expiring4, 105n);
   await t.throwsAsync(() => E(userSeat).getOfferResult(), {
-    message:
-      "The address 'address1' cannot extend the expiration for attestations",
+    message: `The address "address1" cannot extend the expiration for attestations`,
   });
 });
 

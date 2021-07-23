@@ -3,6 +3,8 @@
 // TODO: make more efficient. This will slow as the number of
 // ExpiringAttElem per address increases.
 
+const { details: X } = assert;
+
 /**
  * A helper to actually update the lien record when a lien expiration
  * is extended.
@@ -15,7 +17,7 @@ const updateLien = (store, newAttestationElem) => {
   const { address, handle } = newAttestationElem;
   assert(
     store.has(address),
-    `No previous lien was found for address '${address}'`,
+    X`No previous lien was found for address ${address}`,
   );
   const lienedSoFar = store.get(address);
   let foundOldRecord;
@@ -31,10 +33,20 @@ const updateLien = (store, newAttestationElem) => {
 
   assert(
     foundOldRecord,
-    `No previous lien was found for address '${address}' and attestation '${newAttestationElem}'`,
+    X`No previous lien was found for address ${address} and attestation ${newAttestationElem}`,
   );
 
   minusOldRecord.push(newAttestationElem);
+
+  // Ensure that the handles for this address remain unique. Note that
+  // handles are unique in the entire store due to their construction
+  // using `makeHandle`. This assertion guarantees that the invariant
+  // remains even after updating a lien.
+  const handles = new Set();
+  minusOldRecord.forEach(({ handle: attHandle }) => {
+    assert(!handles.has(attHandle), X`Attestation handles must be unique`);
+    handles.add(attHandle);
+  });
 
   // commit point
   store.set(address, minusOldRecord);

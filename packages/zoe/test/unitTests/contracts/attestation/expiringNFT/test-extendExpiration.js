@@ -28,11 +28,11 @@ const doTest = (
     4n,
     makeHandle('attestation'),
   );
-  const newElem = makeAttestationElem(
+  const elem2 = makeAttestationElem(
     'address',
     amountLiened,
-    newExpiration,
-    elem.handle,
+    5n,
+    makeHandle('attestation'),
   );
 
   let currentAllocation;
@@ -41,7 +41,7 @@ const doTest = (
     currentAllocation = {};
   } else if (moreThanOneElem) {
     currentAllocation = {
-      Attestation: AmountMath.make(attestationBrand, [elem, newElem]),
+      Attestation: AmountMath.make(attestationBrand, [elem, elem2]),
     };
   } else {
     currentAllocation = {
@@ -61,15 +61,35 @@ const doTest = (
       return { want: {}, give: currentAllocation };
     },
   };
+
+  const newElem = makeAttestationElem(
+    'address',
+    amountLiened,
+    newExpiration,
+    elem.handle,
+  );
+  const newElem2 = makeAttestationElem(
+    'address',
+    amountLiened,
+    newExpiration,
+    elem2.handle,
+  );
+
   const zcfMint = {
     burnLosses: (losses, seat) => {
       t.deepEqual(losses, currentAllocation);
       t.is(seat, zcfSeat);
     },
     mintGains: (gains, seat) => {
-      t.deepEqual(gains, {
-        Attestation: AmountMath.make(attestationBrand, [newElem]),
-      });
+      if (moreThanOneElem) {
+        t.deepEqual(gains, {
+          Attestation: AmountMath.make(attestationBrand, [newElem, newElem2]),
+        });
+      } else {
+        t.deepEqual(gains, {
+          Attestation: AmountMath.make(attestationBrand, [newElem]),
+        });
+      }
       t.is(seat, zcfSeat);
     },
   };
@@ -96,7 +116,8 @@ test('happy path', async t => {
 
 test('bad newExpiration', async t => {
   t.throws(() => doTest(t, 0n), {
-    message: "The new expiration '0' must be later than the old expiration '4'",
+    message:
+      'The new expiration "[0n]" must be later than the old expiration "[4n]"',
   });
 });
 
@@ -107,15 +128,12 @@ test('nothing escrowed', async t => {
 });
 
 test('more than one elem', async t => {
-  t.throws(() => doTest(t, 5n, undefined, false, true), {
-    message: /We can currently only extend a single attestation element at a time/,
-  });
+  doTest(t, 6n, undefined, false, true);
 });
 
 test('cannot extend', async t => {
   const canExtend = _address => false;
   t.throws(() => doTest(t, 5n, canExtend), {
-    message:
-      "The address 'address' cannot extend the expiration for attestations",
+    message: `The address "address" cannot extend the expiration for attestations`,
   });
 });
