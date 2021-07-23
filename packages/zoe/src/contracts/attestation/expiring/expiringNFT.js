@@ -12,7 +12,7 @@ import {
   hasExpired,
 } from './expiringHelpers';
 import { updateLien } from './updateLien';
-import { unlienIfExpired } from './unlienIfExpired';
+import { unlienExpiredAmounts } from './unlienExpiredAmounts';
 import { extendExpiration as extendExpirationInternal } from './extendExpiration';
 
 // Adds an expiring lien to an amount in response to an incoming call.
@@ -27,7 +27,9 @@ const { quote: q } = assert;
  * BLD) that the attestation is about
  * @param {ContractFacet} zcf
  * @returns {Promise<{disallowExtensions: DisallowExtensions, addExpiringLien: AddExpiringLien, getLienAmount:
- * GetLienAmount, makeExtendAttInvitation: MakeExtendAttInvitationInternal, issuer: Issuer, brand: Brand}>}
+ * GetLienAmount, makeExtendAttInvitation:
+ * MakeExtendAttInvitationInternal, getIssuer: () => Issuer, getBrand:
+ * () => Brand}>}
  */
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
   assert(AmountMath.isEmpty(empty), `empty ${q(empty)} was not empty`);
@@ -39,7 +41,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
   const externalBrand = empty.brand;
 
-  // Note: `amountLiened` is of the brand `externalBrand`
+  // Note: `amountLiened` in ExpiringAttElem is of the brand `externalBrand`
 
   /** @type {Store<Address,Array<ExpiringAttElem>>} */
   const lienedAmounts = makeStore('address');
@@ -78,7 +80,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
     // We should first unlien any amounts for which the lien has
     // expired, then return the total lien still remaining for the address
-    const totalStillLiened = unlienIfExpired(
+    const totalStillLiened = unlienExpiredAmounts(
       lienedAmounts,
       empty,
       address,
@@ -134,8 +136,8 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     addExpiringLien,
     getLienAmount,
     makeExtendAttInvitation, // choice by user to extend expiration
-    issuer: attestationIssuer,
-    brand: attestationBrand,
+    getIssuer: () => attestationIssuer,
+    getBrand: () => attestationBrand,
   });
 };
 

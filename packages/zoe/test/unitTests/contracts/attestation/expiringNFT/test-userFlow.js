@@ -68,9 +68,12 @@ test(`typical flow`, async t => {
     addExpiringLien,
     getLienAmount,
     makeExtendAttInvitation,
-    issuer: attestationIssuer,
-    brand: attestationBrand,
+    getIssuer,
+    getBrand,
   } = await setupAttestation(attestationTokenName, empty, zcf);
+
+  const attestationIssuer = getIssuer();
+  const attestationBrand = getBrand();
 
   const testAttestationAmount = makeTestAttestationAmount(
     t,

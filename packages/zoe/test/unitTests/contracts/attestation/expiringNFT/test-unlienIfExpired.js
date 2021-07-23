@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeStore } from '@agoric/store';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
-import { unlienIfExpired } from '../../../../../src/contracts/attestation/expiring/unlienIfExpired';
+import { unlienExpiredAmounts } from '../../../../../src/contracts/attestation/expiring/unlienExpiredAmounts';
 import { makeAttestationElem } from '../../../../../src/contracts/attestation/expiring/expiringHelpers';
 import { makeHandle } from '../../../../../src/makeHandle';
 
@@ -17,7 +17,7 @@ test(`store doesn't have address`, async t => {
   const { brand: externalBrand } = makeIssuerKit('external');
   const empty = AmountMath.makeEmpty(externalBrand);
 
-  const result = unlienIfExpired(store, empty, address, currentTime);
+  const result = unlienExpiredAmounts(store, empty, address, currentTime);
   t.true(AmountMath.isEmpty(result));
   t.false(store.has(address));
 });
@@ -32,7 +32,7 @@ test(`store has address with empty array value`, async t => {
 
   store.init(address, []);
 
-  const result = unlienIfExpired(store, empty, address, currentTime);
+  const result = unlienExpiredAmounts(store, empty, address, currentTime);
   t.true(AmountMath.isEmpty(result));
   t.deepEqual(store.get(address), []);
 });
@@ -72,7 +72,7 @@ test(`store has address with all non-expired values`, async t => {
 
   store.init(address, [elem1, elem2, elem3]);
 
-  const result = unlienIfExpired(store, empty, address, currentTime);
+  const result = unlienExpiredAmounts(store, empty, address, currentTime);
   t.true(
     AmountMath.isEqual(
       result,
@@ -117,7 +117,7 @@ test(`store has address with one expired`, async t => {
 
   store.init(address, [elem1, elem2, elem3]);
 
-  const result = unlienIfExpired(store, empty, address, currentTime);
+  const result = unlienExpiredAmounts(store, empty, address, currentTime);
   t.true(AmountMath.isEqual(result, AmountMath.add(bld20, bld40)));
   t.deepEqual(store.get(address), [elem2, elem3]);
 });

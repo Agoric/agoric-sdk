@@ -13,7 +13,7 @@ import { hasExpired } from './expiringHelpers';
  * @param {Timestamp} currentTime
  * @returns {Amount} amountLiened
  */
-const unlienIfExpired = (store, empty, address, currentTime) => {
+const unlienExpiredAmounts = (store, empty, address, currentTime) => {
   let totalStillLiened = empty;
 
   // It is possible that the address does not currently have any
@@ -35,5 +35,5 @@ const unlienIfExpired = (store, empty, address, currentTime) => {
   store.set(address, notExpired);
   return totalStillLiened;
 };
-harden(unlienIfExpired);
-export { unlienIfExpired };
+harden(unlienExpiredAmounts);
+export { unlienExpiredAmounts };

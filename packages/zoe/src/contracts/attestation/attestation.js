@@ -124,14 +124,14 @@ const start = async zcf => {
     makeExtendAttInvitation,
     getIssuers: () => {
       return harden({
-        returnable: returnableAttManager.issuer,
-        expiring: expiringAttManager.issuer,
+        returnable: returnableAttManager.getIssuer(),
+        expiring: expiringAttManager.getIssuer(),
       });
     },
     getBrands: () => {
       return harden({
-        returnable: returnableAttManager.brand,
-        expiring: expiringAttManager.brand,
+        returnable: returnableAttManager.getBrand(),
+        expiring: expiringAttManager.getBrand(),
       });
     },
   });

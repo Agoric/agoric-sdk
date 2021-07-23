@@ -19,7 +19,8 @@ const { details: X, quote: q } = assert;
  * @param {ContractFacet} zcf
  * @returns {Promise<{makeReturnAttInvitation:
  * MakeReturnAttInvitation, addReturnableLien: AddReturnableLien,
- * getLienAmount: GetReturnableLienAmount, issuer: Issuer, brand: Brand}>}
+ * getLienAmount: GetReturnableLienAmount, getIssuer: () => Issuer,
+ * getBrand: () => Brand}>}
  */
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
   assert(AmountMath.isEmpty(empty), `empty ${q(empty)} was not empty`);
@@ -107,8 +108,8 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     makeReturnAttInvitation,
     addReturnableLien,
     getLienAmount,
-    issuer: attestationIssuer,
-    brand: attestationBrand,
+    getIssuer: () => attestationIssuer,
+    getBrand: () => attestationBrand,
   });
 };
 
