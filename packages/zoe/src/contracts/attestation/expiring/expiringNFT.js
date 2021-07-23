@@ -46,6 +46,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
   const cannotGetExtension = new Set();
 
+  // IMPORTANT: only expose this function to the owner of the address.
   // This request *must* come from the owner of the address. Merely
   // verifying that the address *could* add a lien is not sufficient.
   // The owner must consent to adding a lien, and non-owners must not

@@ -83,6 +83,12 @@ const start = async zcf => {
       storedTime.getTime(),
     );
 
+  // IMPORTANT: only expose this function to the owner of the address.
+  // This request *must* come from the owner of the address. Merely
+  // verifying that the address *could* add a lien is not sufficient.
+  // The owner must consent to adding a lien, and non-owners must not
+  // be able to initiate a lien for another account.
+
   /** @type {MakeAttestationsInternal} */
   const makeAttestationsInternal = async (
     address,
@@ -135,6 +141,10 @@ const start = async zcf => {
       });
     },
   });
+
+  // IMPORTANT: The AttMaker should only be given to the owner of the
+  // address. Only the owner should be able to create attestations and
+  // the resulting liens on their underlying tokens.
 
   /** @type {MakeAttMaker} */
   const makeAttMaker = address => {

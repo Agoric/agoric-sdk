@@ -37,6 +37,12 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   /** @type {Store<Address,Amount>} */
   const lienedAmounts = makeStore('address');
 
+  // IMPORTANT: only expose this function to the owner of the address.
+  // This request *must* come from the owner of the address. Merely
+  // verifying that the address *could* add a lien is not sufficient.
+  // The owner must consent to adding a lien, and non-owners must not
+  // be able to initiate a lien for another account.
+
   /** @type {AddReturnableLien} */
   const addReturnableLien = (address, amount) => {
     const amountToLien = validateInputs(externalBrand, address, amount);
