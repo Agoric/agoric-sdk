@@ -31,7 +31,7 @@ test('attestation contract basic tests', async t => {
 
   let currentTime = 10n;
 
-  const mockCosmos = Far(
+  const mockAuthority = Far(
     'stakeReporter',
     /** @type {{getAccountState: (address: Address, brand: Brand) => {total: Amount,
      * bonded: Amount, locked: Amount, currentTime: Timestamp}}} */ ({
@@ -47,7 +47,6 @@ test('attestation contract basic tests', async t => {
   );
 
   const customTerms = harden({
-    authority: mockCosmos,
     expiringAttName: 'BldAttGov',
     returnableAttName: 'BldAttLoc',
   });
@@ -58,6 +57,7 @@ test('attestation contract basic tests', async t => {
     customTerms,
   );
 
+  await E(creatorFacet).addAuthority(mockAuthority);
   const brands = await E(publicFacet).getBrands();
   const issuers = await E(publicFacet).getIssuers();
 

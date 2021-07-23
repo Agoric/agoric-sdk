@@ -3,6 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 import '../../../exported';
 import { setupAttestation as setupExpiringAttestation } from './expiring/expiringNFT';
@@ -18,10 +19,11 @@ import { makeGetAttMaker } from './attMaker';
 const start = async zcf => {
   const {
     brands: { Underlying: underlyingBrand },
-    authority, // The authority used to confirm that the underlying assets are escrowed appropriately
     expiringAttName,
     returnableAttName,
   } = zcf.getTerms();
+
+  const authorityPromiseKit = makePromiseKit();
 
   const { assetKind: underlyingAssetKind } = await E(
     underlyingBrand,
@@ -91,7 +93,7 @@ const start = async zcf => {
     assert.typeof(expiration, 'bigint');
 
     const currentTime = await assertPrerequisites(
-      authority,
+      authorityPromiseKit.promise,
       getLiened,
       underlyingBrand,
       address,
@@ -147,10 +149,14 @@ const start = async zcf => {
 
   const getAttMaker = makeGetAttMaker(makeAttMaker);
 
+  // The authority is used to confirm that the underlying assets are escrowed appropriately.
+  const addAuthority = authority => authorityPromiseKit.resolve(authority);
+
   const creatorFacet = Far('creatorFacet', {
     getLiened,
     getAttMaker,
     slashed,
+    addAuthority,
   });
 
   return harden({ creatorFacet, publicFacet });
