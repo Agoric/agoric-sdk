@@ -31,6 +31,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // test-only state can be provided from contracts
   // to their tests.
   const admin = Far('vatAdmin', {
+    createMeter: () => {},
+    createUnlimitedMeter: () => {},
     createVat: bundle => {
       return harden({
         root: makeRemote(
