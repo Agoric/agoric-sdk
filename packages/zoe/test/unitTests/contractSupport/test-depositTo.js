@@ -11,6 +11,7 @@ import { makeZoe } from '../../..';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { depositToSeat } from '../../../src/contractSupport/zoeHelpers';
 import { makeOffer } from '../makeOffer';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
 
@@ -19,14 +20,15 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = makeZoe(
+  const { /** @type {ERef<ZoeService>} */ zoeService } = makeZoe(
     makeFakeVatAdmin(setJig).admin,
   );
+  const zoe = useChargeAccount(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

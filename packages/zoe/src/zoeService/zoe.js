@@ -49,6 +49,10 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     decimalPlaces: 6,
   });
 
+  const { makeChargeAccount, hasChargeAccount } = makeMakeChargeAccount(
+    runIssuerKit.issuer,
+  );
+
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
   const {
@@ -63,13 +67,14 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getTerms,
     getInstanceAdmin,
     invitationIssuer,
-  } = makeZoeStorageManager(createZCFVat);
+  } = makeZoeStorageManager(createZCFVat, hasChargeAccount);
 
   // Pass the capabilities necessary to create zoe.startInstance
   const startInstance = makeStartInstance(
     zoeServicePromiseKit.promise,
     makeZoeInstanceStorageManager,
     unwrapInstallation,
+    hasChargeAccount,
   );
 
   // Pass the capabilities necessary to create zoe.offer
@@ -78,6 +83,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
+    hasChargeAccount,
   );
 
   // Make the methods that allow users to easily and credibly get
@@ -88,20 +94,20 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getInvitationDetails,
   } = makeInvitationQueryFns(invitationIssuer);
 
-  const { makeChargeAccount } = makeMakeChargeAccount(runIssuerKit.issuer);
-
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
     makeChargeAccount,
+
+    // A chargeAccount is required
     install,
     startInstance,
     offer,
+    getPublicFacet,
 
     // The functions below are getters only and have no impact on
     // state within Zoe
     getInvitationIssuer: () => invitationIssuer,
-    getRunIssuer: () => runIssuerKit.issuer,
-    getPublicFacet,
+    getFeeIssuer: () => runIssuerKit.issuer,
     getBrands,
     getIssuers,
     getTerms,

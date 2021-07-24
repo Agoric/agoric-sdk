@@ -12,6 +12,7 @@ import { E } from '@agoric/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { makeZoe } from '../../../src/zoeService/zoe';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 import '../../../exported';
 import '../../../src/contracts/exported';
@@ -33,9 +34,10 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = makeZoe(
+    const { /** @type {ERef<ZoeService>} */ zoeService } = makeZoe(
       makeFakeVatAdmin().admin,
     );
+    const zoe = useChargeAccount(zoeService);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);

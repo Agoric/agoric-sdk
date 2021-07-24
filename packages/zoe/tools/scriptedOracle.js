@@ -14,7 +14,7 @@ import { E } from '@agoric/eventual-send';
  * @param {Record<string, any>} script
  * @param {Installation} oracleInstallation
  * @param {TimerService} timer
- * @param {ZoeService} zoe
+ * @param {ZoeServiceWChargeAccount} zoe
  * @param {Issuer} feeIssuer
  */
 

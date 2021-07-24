@@ -173,7 +173,7 @@
  *
  * @callback ExecuteContract
  * @param {SourceBundle} bundle
- * @param {Promise<ZoeService>} zoeServicePromise
+ * @param {ZoeServiceWChargeAccount} zoeServicePromise
  * @param {Issuer} invitationIssuer
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord

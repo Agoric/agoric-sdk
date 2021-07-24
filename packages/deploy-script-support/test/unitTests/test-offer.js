@@ -6,6 +6,7 @@ import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeAndUseChargeAccount } from '@agoric/zoe/src/useChargeAccount';
 
 import '../../exported';
 
@@ -37,7 +38,8 @@ test('offer', async t => {
     },
     saveOfferResult: () => {},
   };
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = makeAndUseChargeAccount(zoeService);
 
   const bundle = await bundleSource(
     require.resolve('@agoric/zoe/src/contracts/automaticRefund'),

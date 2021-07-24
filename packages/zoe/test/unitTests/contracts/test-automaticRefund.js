@@ -16,14 +16,14 @@ test('zoe - simplest automaticRefund', async t => {
   const { moolaR, moola, zoe } = setup();
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
 
   // 1: Alice creates an automatic refund instance
   const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
-  const { creatorInvitation } = await zoe.startInstance(
+  const { creatorInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -34,7 +34,11 @@ test('zoe - simplest automaticRefund', async t => {
   });
   const alicePayments = { Contribution: aliceMoolaPayment };
 
-  const seat = await zoe.offer(creatorInvitation, aliceProposal, alicePayments);
+  const seat = await E(zoe).offer(
+    creatorInvitation,
+    aliceProposal,
+    alicePayments,
+  );
 
   const aliceMoolaPayout = await seat.getPayout('Contribution');
 
@@ -91,7 +95,7 @@ test('zoe with automaticRefund', async t => {
   t.plan(11);
   // Setup zoe and mints
   const { moolaR, simoleanR, moola, simoleans, zoe } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -107,15 +111,14 @@ test('zoe with automaticRefund', async t => {
   const bundle = await bundleSource(automaticRefundRoot);
 
   // 1: Alice creates an automatic refund instance
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
     Contribution1: moolaR.issuer,
     Contribution2: simoleanR.issuer,
   });
-  const {
-    creatorInvitation: aliceInvitation,
-    publicFacet,
-  } = await zoe.startInstance(installation, issuerKeywordRecord);
+  const { creatorInvitation: aliceInvitation, publicFacet } = await E(
+    zoe,
+  ).startInstance(installation, issuerKeywordRecord);
 
   // 2: Alice escrows with zoe
   const aliceProposal = harden({
@@ -130,7 +133,7 @@ test('zoe with automaticRefund', async t => {
   // In the 'automaticRefund' trivial contract, you just get your
   // payments back when you make an offer. The offerResult is simply
   // the string 'The offer was accepted'
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceProposal,
     alicePayments,
@@ -144,7 +147,7 @@ test('zoe with automaticRefund', async t => {
   // will do a claim on the invitation with the Zoe invitation issuer and
   // will check that the installation and terms match what he
   // expects
-  const exclusBobInvitation = await invitationIssuer.claim(bobInvitation);
+  const exclusBobInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   const {
     value: [bobInvitationValue],
@@ -169,7 +172,7 @@ test('zoe with automaticRefund', async t => {
   const bobPayments = { Contribution2: bobSimoleanPayment };
 
   // Bob also gets a seat back
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     exclusBobInvitation,
     bobProposal,
     bobPayments,
@@ -237,7 +240,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
 
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
     ContributionA: moolaR.issuer,
     ContributionB: simoleanR.issuer,
@@ -245,36 +248,36 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   const {
     creatorInvitation: aliceInvitation1,
     publicFacet: publicFacet1,
-  } = await zoe.startInstance(installation, issuerKeywordRecord);
+  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
 
   const {
     creatorInvitation: aliceInvitation2,
     publicFacet: publicFacet2,
-  } = await zoe.startInstance(installation, issuerKeywordRecord);
+  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
 
   const {
     creatorInvitation: aliceInvitation3,
     publicFacet: publicFacet3,
-  } = await zoe.startInstance(installation, issuerKeywordRecord);
+  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
 
   const aliceProposal = harden({
     give: { ContributionA: moola(10) },
     want: { ContributionB: simoleans(7) },
   });
 
-  const seat1 = await zoe.offer(
+  const seat1 = await E(zoe).offer(
     aliceInvitation1,
     aliceProposal,
     harden({ ContributionA: aliceMoolaPayments[0] }),
   );
 
-  const seat2 = await zoe.offer(
+  const seat2 = await E(zoe).offer(
     aliceInvitation2,
     aliceProposal,
     harden({ ContributionA: aliceMoolaPayments[1] }),
   );
 
-  const seat3 = await zoe.offer(
+  const seat3 = await E(zoe).offer(
     aliceInvitation3,
     aliceProposal,
     harden({ ContributionA: aliceMoolaPayments[2] }),
@@ -316,12 +319,12 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
     ContributionA: moolaR.issuer,
     ContributionB: simoleanR.issuer,
   });
-  const { creatorInvitation } = await zoe.startInstance(
+  const { creatorInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -332,7 +335,7 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
   });
   const alicePayments = { ContributionA: aliceMoolaPayment };
 
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     creatorInvitation,
     aliceProposal,
     alicePayments,
@@ -373,14 +376,14 @@ test('zoe - automaticRefund non-fungible', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['tigger'])));
 
   // 1: Alice creates an automatic refund instance
   const issuerKeywordRecord = harden({ Contribution: ccIssuer });
-  const { creatorInvitation } = await zoe.startInstance(
+  const { creatorInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -391,7 +394,11 @@ test('zoe - automaticRefund non-fungible', async t => {
   });
   const alicePayments = { Contribution: aliceCcPayment };
 
-  const seat = await zoe.offer(creatorInvitation, aliceProposal, alicePayments);
+  const seat = await E(zoe).offer(
+    creatorInvitation,
+    aliceProposal,
+    alicePayments,
+  );
 
   const aliceCcPayout = await seat.getPayout('Contribution');
 

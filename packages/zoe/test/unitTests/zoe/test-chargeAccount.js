@@ -43,5 +43,6 @@ test('hasChargeAccount', async t => {
   const { makeChargeAccount, hasChargeAccount } = setup();
   const chargeAccount = makeChargeAccount();
 
-  t.true(hasChargeAccount(chargeAccount));
+  t.true(await hasChargeAccount(chargeAccount));
+  t.true(await hasChargeAccount(Promise.resolve(chargeAccount)));
 });

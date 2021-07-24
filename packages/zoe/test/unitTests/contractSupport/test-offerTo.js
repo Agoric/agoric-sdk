@@ -15,6 +15,7 @@ import {
   swapExact,
 } from '../../../src/contractSupport/zoeHelpers';
 import { makeOffer } from '../makeOffer';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
 
@@ -23,14 +24,15 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = makeZoe(
+  const { /** @type {ERef<ZoeService>} */ zoeService } = makeZoe(
     makeFakeVatAdmin(setJig).admin,
   );
+  const zoe = useChargeAccount(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Create TWO instances of the zcfTesterContract which have
   // different keywords

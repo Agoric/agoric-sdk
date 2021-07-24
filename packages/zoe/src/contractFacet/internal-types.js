@@ -17,7 +17,7 @@
  * instance is made.
  *
  * @param {VatPowers} powers
- * @param {ERef<ZoeService>} zoeService
+ * @param {ERef<ZoeServiceWChargeAccount>} zoeService
  * @param {Issuer} invitationIssuer
  * @param {Function | undefined} testJigSetter
  * @returns {ZCFZygote}

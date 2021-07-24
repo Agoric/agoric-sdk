@@ -8,6 +8,7 @@ import { Far } from '@agoric/marshal';
 import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage';
 
 test('makeInstanceAdminStorage', async t => {
+  const hasChargeAccount = _ => Promise.resolve(true);
   const {
     getPublicFacet,
     getBrands,
@@ -16,7 +17,9 @@ test('makeInstanceAdminStorage', async t => {
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage();
+  } = makeInstanceAdminStorage(hasChargeAccount);
+
+  const chargeAccount = {};
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstance2 = Far('mockInstance2', {});
@@ -43,16 +46,16 @@ test('makeInstanceAdminStorage', async t => {
   t.is(getInstanceAdmin(mockInstance1), mockInstanceAdmin1);
 
   // @ts-ignore instance is mocked
-  t.is(getPublicFacet(mockInstance1), 'publicFacet1');
+  t.is(await getPublicFacet(chargeAccount, mockInstance1), 'publicFacet1');
 
   // @ts-ignore instance is mocked
-  t.is(getBrands(mockInstance2), 'brands2');
+  t.is(await getBrands(mockInstance2), 'brands2');
 
   // @ts-ignore instance is mocked
-  t.is(getIssuers(mockInstance1), 'issuers1');
+  t.is(await getIssuers(mockInstance1), 'issuers1');
 
   // @ts-ignore instance is mocked
-  t.is(getTerms(mockInstance1), 'terms1');
+  t.is(await getTerms(mockInstance1), 'terms1');
 
   // @ts-ignore instance is mocked
   deleteInstanceAdmin(mockInstance2);
@@ -63,13 +66,14 @@ test('makeInstanceAdminStorage', async t => {
   });
 
   // @ts-ignore instance is mocked
-  t.throws(() => getPublicFacet(mockInstance2), {
+  await t.throwsAsync(() => getPublicFacet(chargeAccount, mockInstance2), {
     message: '"instance" not found: "[Alleged: mockInstance2]"',
   });
 });
 
 test('add another instance admin for same instance', async t => {
-  const { initInstanceAdmin } = makeInstanceAdminStorage();
+  const hasChargeAccount = _ => Promise.resolve(true);
+  const { initInstanceAdmin } = makeInstanceAdminStorage(hasChargeAccount);
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstanceAdmin1 = Far('mockInstanceAdmin1', {});

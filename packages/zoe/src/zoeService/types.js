@@ -38,31 +38,32 @@
  * object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {MakeChargeAccount} makeChargeAccount
- * @property {GetRunIssuer} getRunIssuer
+ * @property {GetFeeIssuer} getFeeIssuer
  */
 
 /**
  * @callback GetPublicFacet
+ * @param {ERef<ChargeAccount>} chargeAccount
  * @param {Instance} instance
- * @returns {Object}
+ * @returns {Promise<Object>}
  */
 
 /**
  * @callback GetIssuers
  * @param {Instance} instance
- * @returns {IssuerKeywordRecord}
+ * @returns {Promise<IssuerKeywordRecord>}
  */
 
 /**
  * @callback GetBrands
  * @param {Instance} instance
- * @returns {BrandKeywordRecord}
+ * @returns {Promise<BrandKeywordRecord>}
  */
 
 /**
  * @callback GetTerms
  * @param {Instance} instance
- * @returns {Terms}
+ * @returns {Promise<Terms>}
  */
 
 /**
@@ -89,8 +90,10 @@
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
+ * @param {ERef<ChargeAccount>} chargeAccount - the chargeAccount to be
+ * charged for the execution of this call
  * @param {SourceBundle} bundle
- * @returns {Installation}
+ * @returns {Promise<Installation>}
  */
 
 /**
@@ -110,6 +113,7 @@
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  *
+ * @param {ERef<ChargeAccount>} chargeAccount
  * @param {ERef<Installation>} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
@@ -133,6 +137,7 @@
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
  *
+ * @param {ERef<ChargeAccount>} chargeAccount
  * @param {ERef<Invitation>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
@@ -271,13 +276,62 @@
  *
  * Create a RUN purse within Zoe that can be used to pay for execution.
  *
- * @returns {ChargeAccount}
+ * @returns {ERef<ChargeAccount>}
  */
 
 /**
- * @callback GetRunIssuer
+ * @callback GetFeeIssuer
  *
- * Get the RUN issuer from Zoe
+ * Get the Fee issuer from Zoe
  *
- * @returns {Issuer}
+ * @returns {ERef<Issuer>}
+ */
+
+/**
+ * @typedef {Object} ZoeServiceWChargeAccount
+ * @property {() => ERef<Issuer>} getInvitationIssuer
+ * @property {InstallWChargeAccount} install
+ * @property {StartInstanceWChargeAccount} startInstance
+ * @property {OfferWChargeAccount} offer
+ * @property {GetPublicFacetWChargeAccount} getPublicFacet
+ * @property {GetIssuers} getIssuers
+ * @property {GetBrands} getBrands
+ * @property {GetTerms} getTerms
+ * @property {GetInstance} getInstance
+ * @property {GetInstallation} getInstallation
+ * @property {GetInvitationDetails} getInvitationDetails
+ * @property {MakeChargeAccount} makeChargeAccount
+ * @property {GetRunIssuer} getRunIssuer
+ */
+
+/**
+ * @callback OfferWChargeAccount
+ *
+ * @param {ERef<Invitation>} invitation
+ * @param {Proposal=} proposal
+ * @param {PaymentPKeywordRecord=} paymentKeywordRecord
+ * @returns {Promise<UserSeat>} seat
+ */
+
+/**
+ * @callback InstallWChargeAccount
+ *
+ * @param {SourceBundle} bundle
+ * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback StartInstanceWChargeAccount
+ *
+ * @param {ERef<Installation>} installation
+ * @param {IssuerKeywordRecord=} issuerKeywordRecord
+ * @param {Object=} terms
+ * @returns {Promise<StartInstanceResult>}
+ */
+
+/**
+ * @callback GetPublicFacetWChargeAccount
+ *
+ * @param {Instance} instance
+ * @returns {Object}
  */

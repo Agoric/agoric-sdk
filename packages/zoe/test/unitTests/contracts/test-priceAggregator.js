@@ -14,6 +14,7 @@ import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import buildManualTimer from '../../../tools/manualTimer';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 import '../../../exported';
 import '../../../src/contracts/exported';
@@ -27,7 +28,7 @@ import '../../../src/contracts/exported';
 
 /**
  * @typedef {Object} TestContext
- * @property {ZoeService} zoe
+ * @property {ZoeServiceWChargeAccount} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
  * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
  * @property {Amount} feeAmount
@@ -44,9 +45,10 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = makeZoe(
+    const { /** @type {ERef<ZoeService>} */ zoeService } = makeZoe(
       makeFakeVatAdmin().admin,
     );
+    const zoe = useChargeAccount(zoeService);
 
     // Pack the contracts.
     const oracleBundle = await bundleSource(oraclePath);

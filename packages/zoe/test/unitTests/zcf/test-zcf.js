@@ -16,7 +16,12 @@ import { assertAmountsEqual } from '../../zoeTestHelpers';
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const zoeService = zcf.getZoeService();
-  t.is(await zoeService, zoe);
+  // Note that the zoeService from zcf has a chargeAccount associated
+  // with it, so that the zoeService identity is no longer useful
+  t.is(
+    await E(zoeService).getInvitationIssuer(),
+    await E(zoe).getInvitationIssuer(),
+  );
 });
 
 test(`zcf.getInstance`, async t => {
@@ -165,7 +170,7 @@ test(`zcf.assertUniqueKeyword`, async t => {
   zcf.assertUniqueKeyword('MyKeyword');
 });
 
-test(`zcf.saveIssuer & zoe.getTerms`, async t => {
+test(`zcf.saveIssuer & E(zoe).getTerms`, async t => {
   const { moolaKit, simoleanKit, bucksKit } = setup();
   const expected = {
     brands: { A: moolaKit.brand, B: simoleanKit.brand, C: bucksKit.brand },

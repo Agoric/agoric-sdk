@@ -221,7 +221,7 @@ export const makeAutoswapInstance = async (
     ),
   });
 
-  const seat = await zoe.offer(
+  const seat = await E(zoe).offer(
     E(publicFacet).makeAddLiquidityInvitation(),
     proposal,
     payment,

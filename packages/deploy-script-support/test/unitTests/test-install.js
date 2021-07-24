@@ -6,6 +6,7 @@ import { makeZoe } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeBoard } from '@agoric/vats/src/lib-board';
 import bundleSource from '@agoric/bundle-source';
+import { makeAndUseChargeAccount } from '@agoric/zoe/src/useChargeAccount';
 
 import '../../exported';
 
@@ -18,7 +19,8 @@ test('install', async t => {
     require.resolve,
   );
 
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = makeAndUseChargeAccount(zoeService);
 
   let addedInstallation;
 

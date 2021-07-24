@@ -23,7 +23,7 @@ test('barter with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
@@ -34,7 +34,7 @@ test('barter with valid offers', async t => {
 
   // 1: Simon creates a barter instance and spreads the instance far and
   // wide with instructions on how to use it.
-  const { instance } = await zoe.startInstance(installation, {
+  const { instance } = await E(zoe).startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
@@ -53,7 +53,7 @@ test('barter with valid offers', async t => {
   });
   const alicePayments = { In: aliceMoolaPayment };
   // 3: Alice adds her sell order to the exchange
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceSellOrderProposal,
     alicePayments,
@@ -68,7 +68,7 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);
@@ -83,7 +83,7 @@ test('barter with valid offers', async t => {
   const bobPayments = { In: bobSimoleanPayment };
 
   // 5: Bob escrows with zoe
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,

@@ -27,7 +27,7 @@ test('simpleExchange with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -38,7 +38,7 @@ test('simpleExchange with valid offers', async t => {
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
   // and wide with instructions on how to call makeInvitation().
-  const { publicFacet, instance } = await zoe.startInstance(installation, {
+  const { publicFacet, instance } = await E(zoe).startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
@@ -113,9 +113,9 @@ test('simpleExchange with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 5: Bob decides to join.
-  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
-  const bobIssuers = zoe.getIssuers(instance);
+  const bobIssuers = await E(zoe).getIssuers(instance);
 
   t.is(bobInstallation, installation);
 
@@ -139,7 +139,7 @@ test('simpleExchange with valid offers', async t => {
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,
@@ -203,7 +203,7 @@ test('simpleExchange with multiple sell offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -216,7 +216,7 @@ test('simpleExchange with multiple sell offers', async t => {
 
   // 1: Simon creates a simpleExchange instance and spreads the publicFacet
   // far and wide with instructions on how to use it.
-  const { publicFacet } = await zoe.startInstance(installation, {
+  const { publicFacet } = await E(zoe).startInstance(installation, {
     Asset: moolaIssuer,
     Price: simoleanIssuer,
   });
@@ -234,14 +234,14 @@ test('simpleExchange with multiple sell offers', async t => {
 
   const aliceInvitation1 = E(publicFacet).makeInvitation();
   // 4: Alice adds her sell order to the exchange
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation1,
     aliceSale1OrderProposal,
     alicePayments,
   );
 
   // 5: Alice adds another sell order to the exchange
-  const aliceInvitation2 = await invitationIssuer.claim(
+  const aliceInvitation2 = await E(invitationIssuer).claim(
     await E(publicFacet).makeInvitation(),
   );
   const aliceSale2OrderProposal = harden({
@@ -252,14 +252,14 @@ test('simpleExchange with multiple sell offers', async t => {
   const proposal2 = {
     Asset: aliceMoolaPurse.withdraw(moola(5)),
   };
-  const aliceSeat2 = await zoe.offer(
+  const aliceSeat2 = await E(zoe).offer(
     aliceInvitation2,
     aliceSale2OrderProposal,
     proposal2,
   );
 
   // 5: Alice adds a buy order to the exchange
-  const aliceInvitation3 = await invitationIssuer.claim(
+  const aliceInvitation3 = await E(invitationIssuer).claim(
     await E(publicFacet).makeInvitation(),
   );
   const aliceBuyOrderProposal = harden({
@@ -268,7 +268,7 @@ test('simpleExchange with multiple sell offers', async t => {
     exit: { onDemand: null },
   });
   const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18)) };
-  const aliceSeat3 = await zoe.offer(
+  const aliceSeat3 = await E(zoe).offer(
     aliceInvitation3,
     aliceBuyOrderProposal,
     proposal3,
@@ -306,7 +306,7 @@ test('simpleExchange with non-fungible assets', async t => {
     zoe,
     brands,
   } = setupNonFungible();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -318,7 +318,7 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 1: Simon creates a simpleExchange instance and spreads the invitation far and
   // wide with instructions on how to use it.
-  const { publicFacet } = await zoe.startInstance(installation, {
+  const { publicFacet } = await E(zoe).startInstance(installation, {
     Asset: rpgIssuer,
     Price: ccIssuer,
   });
@@ -333,7 +333,7 @@ test('simpleExchange with non-fungible assets', async t => {
   });
   const alicePayments = { Asset: aliceRpgPayment };
   // 4: Alice adds her sell order to the exchange
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceSellOrderProposal,
     alicePayments,
@@ -344,11 +344,11 @@ test('simpleExchange with non-fungible assets', async t => {
   // 5: Bob decides to join.
   const bobInstance = await E(zoe).getInstance(bobInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
-  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   t.is(bobInstallation, installation);
 
-  const bobIssuers = zoe.getIssuers(bobInstance);
+  const bobIssuers = await E(zoe).getIssuers(bobInstance);
   assert(
     bobIssuers.Asset === rpgIssuer,
     X`The Asset issuer should be the RPG issuer`,
@@ -369,7 +369,7 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobExclusiveInvitation,
     bobBuyOrderProposal,
     bobPayments,

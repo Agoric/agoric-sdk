@@ -31,7 +31,7 @@ test('autoSwap API interactions, no jig', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, autoswap);
 
   // Setup Alice
@@ -48,7 +48,7 @@ test('autoSwap API interactions, no jig', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -70,7 +70,7 @@ test('autoSwap API interactions, no jig', async t => {
     Secondary: aliceSimoleanPayment,
   };
   const aliceInvitation = await publicFacet.makeAddLiquidityInvitation();
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceProposal,
     alicePayments,
@@ -93,7 +93,7 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
   // Bob claims it
-  const bobExclInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
   const bobInstance = await E(zoe).getInstance(bobExclInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
   t.is(bobInstallation, installation, `installation`);
@@ -113,7 +113,7 @@ test('autoSwap API interactions, no jig', async t => {
   });
   const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobExclInvitation,
     bobMoolaForSimProposal,
     bobMoolaForSimPayments,
@@ -156,7 +156,7 @@ test('autoSwap API interactions, no jig', async t => {
   });
   const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
 
-  const bobSecondSeat = await zoe.offer(
+  const bobSecondSeat = await E(zoe).offer(
     bobSecondInvitation,
     bobSimsForMoolaProposal,
     simsForMoolaPayments,
@@ -191,7 +191,7 @@ test('autoSwap API interactions, no jig', async t => {
     want: { Central: moola(0n), Secondary: simoleans(0) },
   });
 
-  const aliceRmLiqSeat = await zoe.offer(
+  const aliceRmLiqSeat = await E(zoe).offer(
     aliceSecondInvitation,
     aliceRemoveLiquidityProposal,
     harden({ Liquidity: liquidityPayout }),
@@ -231,7 +231,7 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -349,7 +349,7 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -442,7 +442,7 @@ test('autoSwap - trade attempt before init, no jig', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -459,7 +459,7 @@ test('autoSwap - trade attempt before init, no jig', async t => {
   });
   const payment = harden({ In: moolaPurse.withdraw(inAmount) });
 
-  const seat = await zoe.offer(
+  const seat = await E(zoe).offer(
     E(publicFacet).makeSwapInInvitation(),
     proposal,
     payment,
@@ -497,7 +497,7 @@ test('autoSwap jig - swap varying amounts', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -645,7 +645,7 @@ test('autoSwap price quote for zero', async t => {
     Central: moolaIssuer,
     Secondary: simoleanIssuer,
   });
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -667,7 +667,7 @@ test('autoSwap price quote for zero', async t => {
     Secondary: aliceSimoleanPayment,
   };
   const aliceInvitation = await publicFacet.makeAddLiquidityInvitation();
-  await zoe.offer(aliceInvitation, aliceProposal, alicePayments);
+  await E(zoe).offer(aliceInvitation, aliceProposal, alicePayments);
 
   const simoleanAmounts = await E(publicFacet).getInputPrice(
     moola(0),

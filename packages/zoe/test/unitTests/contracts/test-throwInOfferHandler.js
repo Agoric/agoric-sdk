@@ -8,11 +8,13 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 const contractRoot = `${__dirname}/throwInOfferHandler`;
 
 test('throw in offerHandler', async t => {
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -67,12 +69,12 @@ test('throw in offerHandler', async t => {
   // › baseAssert (/Users/katesills/code/agoric-sdk/node_modules/ses/dist/ses.cjs:3600:13)
   // › assertKeyExists (/Users/katesills/code/agoric-sdk/packages/store/src/weak-store.js:19:5)
   // › Object.get [as getByBrand] (/Users/katesills/code/agoric-sdk/packages/store/src/weak-store.js:27:7)
-  // › getAmountMath (src/zoeService/zoe.js:44:46)
+  // › getAmountMath (src/zoeService/E(zoe).js:44:46)
   // › src/cleanProposal.js:65:5
   // › Array.map (<anonymous>)
   // › coerceAmountKeywordRecord (src/cleanProposal.js:64:34)
   // › cleanProposal (src/cleanProposal.js:116:10)
-  // › src/zoeService/zoe.js:408:28"
+  // › src/zoeService/E(zoe).js:408:28"
 
   await t.throwsAsync(() => throwsInDepositToSeatResult, {
     message:

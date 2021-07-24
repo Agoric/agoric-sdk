@@ -7,6 +7,7 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
@@ -15,7 +16,8 @@ const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
 
   const makeAlice = () => {
     return {
@@ -27,7 +29,7 @@ test('zoe - mint payments', async t => {
         return installationP;
       },
       startInstance: async installation => {
-        const adminP = zoe.startInstance(installation);
+        const adminP = E(zoe).startInstance(installation);
         return adminP;
       },
     };
@@ -83,7 +85,8 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

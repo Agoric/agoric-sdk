@@ -8,6 +8,7 @@ import { assert } from '@agoric/assert';
 // noinspection ES6PreferShortImport
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 const contractRoot = `${__dirname}/zcfTesterContract`;
 
@@ -19,10 +20,10 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const {
-    zoeService: /** @type {ERef<ZoeService>} */ zoe,
-    runIssuerKit,
-  } = makeZoe(fakeVatAdmin.admin);
+  const { /** @type {ERef<ZoeService>} */ zoeService, runIssuerKit } = makeZoe(
+    fakeVatAdmin.admin,
+  );
+  const zoe = useChargeAccount(zoeService);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(

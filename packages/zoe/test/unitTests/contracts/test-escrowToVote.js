@@ -10,18 +10,20 @@ import { E } from '@agoric/eventual-send';
 import { makeZoe } from '../../../src/zoeService/zoe';
 import { setup } from '../setupBasicMints';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../../src/useChargeAccount';
 
 const contractRoot = `${__dirname}/escrowToVote`;
 
 test('zoe - escrowToVote', async t => {
   t.plan(14);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Alice creates an instance and acts as the Secretary
   const issuerKeywordRecord = harden({

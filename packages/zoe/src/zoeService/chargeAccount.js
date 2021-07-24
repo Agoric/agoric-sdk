@@ -1,13 +1,14 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
+import { E } from '@agoric/eventual-send';
 
 /**
  *
  * @param {Issuer} runIssuer
  * @returns {{
  *   makeChargeAccount: MakeChargeAccount
- *   hasChargeAccount: (ca: ChargeAccount) => boolean
+ *   hasChargeAccount: HasChargeAccount
  * }}
  */
 const makeMakeChargeAccount = runIssuer => {
@@ -27,9 +28,10 @@ const makeMakeChargeAccount = runIssuer => {
   };
 
   /**
-   * @param {ChargeAccount} ca
+   * @param {ChargeAccount} chargeAccount
    */
-  const hasChargeAccount = ca => chargeAccounts.has(ca);
+  const hasChargeAccount = chargeAccount =>
+    E.when(chargeAccount, ca => chargeAccounts.has(ca));
 
   return {
     makeChargeAccount,

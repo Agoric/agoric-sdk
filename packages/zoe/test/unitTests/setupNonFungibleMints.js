@@ -3,6 +3,7 @@
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../src/useChargeAccount';
 
 const setupNonFungible = () => {
   const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
@@ -21,7 +22,8 @@ const setupNonFungible = () => {
   function createRpgItem(name, power, desc = undefined) {
     return harden([{ name, description: desc || name, power }]);
   }
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
 
   const ccIssuer = issuers.get('cc');
   const rpgIssuer = issuers.get('rpg');

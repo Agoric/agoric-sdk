@@ -129,7 +129,7 @@ const makeBob = (
   return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -156,7 +156,7 @@ const makeBob = (
       const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4));
       const payments = { Whatever1: simoleanPayment1 };
 
-      const seat = await zoe.offer(invitation, proposal, payments);
+      const seat = await E(zoe).offer(invitation, proposal, payments);
 
       t.is(
         await E(seat).getOfferResult(),
@@ -180,7 +180,7 @@ const makeBob = (
     },
     offerExpired: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -207,7 +207,11 @@ const makeBob = (
       const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4));
       const payments = { Whatever1: simoleanPayment1 };
 
-      const offerExpiredSeat = await zoe.offer(invitation, proposal, payments);
+      const offerExpiredSeat = await E(zoe).offer(
+        invitation,
+        proposal,
+        payments,
+      );
 
       await t.throwsAsync(() => E(offerExpiredSeat).getOfferResult(), {
         message: 'The covered call option is expired.',
@@ -230,7 +234,7 @@ const makeBob = (
     },
     offerWantTooMuch: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -261,7 +265,7 @@ const makeBob = (
         Whatever2: moola35Payment,
       };
 
-      const seat = await zoe.offer(invitation, proposal, payments);
+      const seat = await E(zoe).offer(invitation, proposal, payments);
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
         message:
@@ -292,7 +296,7 @@ const makeBob = (
     },
     offerNotCovered: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -327,7 +331,7 @@ const makeBob = (
         Whatever2: moola35Payment,
       };
 
-      const seat = await zoe.offer(invitation, proposal, payments);
+      const seat = await E(zoe).offer(invitation, proposal, payments);
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
         message:

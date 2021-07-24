@@ -4,6 +4,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import makeStore from '@agoric/store';
 import { makeZoe } from '../../src/zoeService/zoe';
 import fakeVatAdmin from '../../tools/fakeVatAdmin';
+import { useChargeAccount } from '../../src/useChargeAccount';
 
 const setup = () => {
   const moolaBundle = makeIssuerKit('moola');
@@ -21,7 +22,8 @@ const setup = () => {
     brands.init(k, allBundles[k].brand);
   }
 
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoe(fakeVatAdmin);
+  const zoe = useChargeAccount(zoeService);
 
   const makeSimpleMake = brand => value => AmountMath.make(value, brand);
 
@@ -43,7 +45,7 @@ const setup = () => {
    * @property {(value: any) => Amount} moola
    * @property {(value: any) => Amount} simoleans
    * @property {(value: any) => Amount} bucks
-   * @property {ZoeService} zoe
+   * @property {ZoeServiceWChargeAccount} zoe
    */
 
   /** @type {BasicMints} */
