@@ -402,12 +402,11 @@ harden(getInterfaceOf);
 export { getInterfaceOf };
 
 /**
- * objects can only be passed in one of two/three forms:
+ * objects can only be passed in one of two forms:
  * 1: pass-by-remote: all properties (own and inherited) are methods,
  *    the object itself is of type object, not function
  * 2: pass-by-copy: all string-named own properties are data, not methods
  *    the object must inherit from objectPrototype or null
- * 3: the empty object is pass-by-remote, for identity comparison
  *
  * all objects must be frozen
  *
