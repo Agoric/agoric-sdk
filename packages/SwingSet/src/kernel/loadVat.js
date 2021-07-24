@@ -138,7 +138,7 @@ export function makeVatLoader(stuff) {
    *        the amount of computation and allocation that can occur during any
    *        given crank. Stack frames are limited as well. The meter is refilled
    *        between cranks, but if the meter ever underflows, the vat is
-   *        terminated. If false, the vat is unmetered.  Defaults to true for
+   *        terminated. If false, the vat is unmetered.  Defaults to false for
    *        dynamic vats; static vats may not be metered.
    *
    * @param {Record<string, unknown>} [options.vatParameters] provides
@@ -199,7 +199,7 @@ export function makeVatLoader(stuff) {
       isDynamic ? allowedDynamicOptions : allowedStaticOptions,
     );
     const {
-      metered = isDynamic,
+      metered = false,
       vatParameters = {},
       managerType,
       enableSetup = false,

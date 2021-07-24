@@ -57,11 +57,9 @@ async function runOneTest(t, explosion, managerType) {
   await c.run();
 
   // 'createVat' will import the bundle
-  c.queueToVatRoot(
-    'bootstrap',
-    'createVat',
-    capargs([dynamicVatBundle, { managerType }]),
-  );
+  const cvopts = { managerType, metered: true };
+  const cvargs = capargs([dynamicVatBundle, cvopts]);
+  c.queueToVatRoot('bootstrap', 'createVat', cvargs);
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
 

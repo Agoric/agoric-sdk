@@ -43,7 +43,9 @@ test('metering dynamic vat which imports bundle', async t => {
   );
 
   // 'createVat' will import the bundle
-  c.queueToVatRoot('bootstrap', 'createVat', capargs([dynamicVatBundle]));
+  const cvopts = { metered: true };
+  const cvargs = capargs([dynamicVatBundle, cvopts]);
+  c.queueToVatRoot('bootstrap', 'createVat', cvargs);
   await c.run();
   t.deepEqual(nextLog(), ['created'], 'first create');
 
