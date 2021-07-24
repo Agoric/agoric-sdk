@@ -143,11 +143,17 @@ const start = zcf => {
       depositSeat.exit();
     };
 
-    return zcf.makeInvitation(optionPosition, `call spread ${position}`, {
-      position,
-      collateral: required.value,
-      option: spreadAmount.Option,
-    });
+    return zcf.makeInvitation(
+      harden({
+        handler: optionPosition,
+        description: `call spread ${position}`,
+        customProperties: {
+          position,
+          collateral: required.value,
+          option: spreadAmount.Option,
+        },
+      }),
+    );
   }
 
   // TODO(2282): change the API so the caller can provide share in basis points

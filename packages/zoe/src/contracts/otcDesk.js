@@ -124,7 +124,9 @@ const start = zcf => {
      */
     makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {
       await saveAllIssuers(zcf, issuerKeywordRecord);
-      return zcf.makeInvitation(addInventory, 'addInventory');
+      return zcf.makeInvitation(
+        harden({ handler: addInventory, description: 'addInventory' }),
+      );
     },
     /**
      * The inventory can be removed at any time, since the inventory
@@ -134,7 +136,9 @@ const start = zcf => {
      * @returns {Promise<Payment>}
      */
     makeRemoveInventoryInvitation: () => {
-      return zcf.makeInvitation(removeInventory, 'removeInventory');
+      return zcf.makeInvitation(
+        harden({ handler: removeInventory, description: 'removeInventory' }),
+      );
     },
     makeQuote,
   });

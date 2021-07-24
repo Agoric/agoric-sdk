@@ -20,7 +20,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const { /** @type {ERef<ZoeService>} */ zoeService, runIssuerKit } = makeZoe(
+  const { /** @type {ERef<ZoeService>} */ zoeService, feeIssuerKit } = makeZoe(
     fakeVatAdmin.admin,
   );
   const zoe = useChargeAccount(zoeService);
@@ -41,6 +41,6 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     installation,
     creatorFacet,
     vatAdminState,
-    runIssuerKit,
+    feeIssuerKit,
   };
 };

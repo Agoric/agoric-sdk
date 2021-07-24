@@ -9,7 +9,7 @@ import { Far } from '@agoric/marshal';
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import { makeHandle } from '../makeHandle';
 import { handlePKitWarning } from '../handleWarning';
-import { applyChargeAccount } from '../useChargeAccount';
+import { applyChargeAccount, applyCAToObj } from '../useChargeAccount';
 
 /**
  * @param {Promise<ZoeService>} zoeServicePromise
@@ -75,7 +75,10 @@ export const makeStartInstance = (
 
       /** @type {InstanceAdmin} */
       const instanceAdmin = Far('instanceAdmin', {
-        getPublicFacet: () => publicFacetPromiseKit.promise,
+        getPublicFacet: async ca => {
+          const { publicFacet, menu} = await publicFacetPromiseKit.promise;
+          return applyCAToObj(publicFacet, ca, menu);
+        },
         getTerms: zoeInstanceStorageManager.getTerms,
         getIssuers: zoeInstanceStorageManager.getIssuers,
         getBrands: zoeInstanceStorageManager.getBrands,
@@ -92,7 +95,7 @@ export const makeStartInstance = (
           zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
         },
         stopAcceptingOffers: () => (acceptingOffers = false),
-        makeUserSeat: (invitationHandle, initialAllocation, proposal) => {
+        makeUserSeat: (invitationHandle, initialAllocation, proposal, ca) => {
           const offerResultPromiseKit = makePromiseKit();
           handlePKitWarning(offerResultPromiseKit);
           const exitObjPromiseKit = makePromiseKit();
@@ -122,8 +125,14 @@ export const makeStartInstance = (
 
           E(handleOfferObjPromiseKit.promise)
             .handleOffer(invitationHandle, zoeSeatAdmin, seatData)
-            .then(({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
+            .then(({ offerResultP, exitObj, offerResultMenu }) => {
+              if (offerResultMenu !== undefined) {
+                offerResultPromiseKit.resolve(
+                  applyCAToObj(offerResultP, ca, offerResultMenu),
+                );
+              } else {
+                offerResultPromiseKit.resolve(offerResultP);
+              }
               exitObjPromiseKit.resolve(exitObj);
             });
 

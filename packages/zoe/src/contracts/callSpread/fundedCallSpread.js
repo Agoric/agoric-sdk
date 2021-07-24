@@ -128,7 +128,13 @@ const start = async zcf => {
       longAmount,
       shortAmount,
     });
-    return zcf.makeInvitation(createOptionsHandler, `call spread pair`, custom);
+    return zcf.makeInvitation(
+      harden({
+        handler: createOptionsHandler,
+        description: `call spread pair`,
+        customProperties: custom,
+      }),
+    );
   }
 
   return harden({ creatorInvitation: makeFundedPairInvitation() });

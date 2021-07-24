@@ -28,7 +28,8 @@ const start = zcf => {
     seat.exit();
     return `The offer was accepted`;
   };
-  const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
+  const makeRefundInvitation = () =>
+    zcf.makeInvitation(harden({ handler: refund, description: 'getRefund' }));
 
   /** @type {AutomaticRefundPublicFacet} */
   const publicFacet = Far('publicFacet', {

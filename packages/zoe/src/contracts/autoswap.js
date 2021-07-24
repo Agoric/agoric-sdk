@@ -16,6 +16,7 @@ import {
 } from '../contractSupport';
 
 import '../../exported';
+import { LOW_FEE, SHORT_EXP } from '../constants';
 
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
@@ -307,17 +308,42 @@ const start = async zcf => {
     return 'Liquidity successfully removed.';
   };
 
+  const addLiquidityConfig = harden({
+    handler: addLiquidityHandler,
+    description: 'autoswap add liquidity',
+    expiration: SHORT_EXP,
+    fee: LOW_FEE,
+  });
   const makeAddLiquidityInvitation = () =>
-    zcf.makeInvitation(addLiquidityHandler, 'autoswap add liquidity');
+    zcf.makeInvitation(addLiquidityConfig);
+
+  const removeLiquidityConfig = harden({
+    handler: removeLiquidityHandler,
+    description: 'autoswap remove liquidity',
+    expiration: SHORT_EXP,
+    fee: LOW_FEE,
+  });
 
   const makeRemoveLiquidityInvitation = () =>
-    zcf.makeInvitation(removeLiquidityHandler, 'autoswap remove liquidity');
+    zcf.makeInvitation(removeLiquidityConfig);
 
-  const makeSwapInInvitation = () =>
-    zcf.makeInvitation(swapInHandler, 'autoswap swap');
+  const swapInConfig = harden({
+    handler: swapInHandler,
+    description: 'autoswap swap in',
+    expiration: SHORT_EXP,
+    fee: LOW_FEE,
+  });
 
-  const makeSwapOutInvitation = () =>
-    zcf.makeInvitation(swapOutHandler, 'autoswap swap');
+  const makeSwapInInvitation = () => zcf.makeInvitation(swapInConfig);
+
+  const swapOutConfig = harden({
+    handler: removeLiquidityHandler,
+    description: 'autoswap swap out',
+    expiration: SHORT_EXP,
+    fee: LOW_FEE,
+  });
+
+  const makeSwapOutInvitation = () => zcf.makeInvitation(swapOutConfig);
 
   /**
    * `getOutputForGivenInput` calculates the result of a trade, given a certain

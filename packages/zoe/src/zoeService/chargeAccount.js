@@ -5,18 +5,18 @@ import { E } from '@agoric/eventual-send';
 
 /**
  *
- * @param {Issuer} runIssuer
+ * @param {Issuer} feeIssuer
  * @returns {{
  *   makeChargeAccount: MakeChargeAccount
  *   hasChargeAccount: HasChargeAccount
  * }}
  */
-const makeMakeChargeAccount = runIssuer => {
+const makeMakeChargeAccount = feeIssuer => {
   const chargeAccounts = new WeakSet();
 
   /** @type {MakeChargeAccount} */
   const makeChargeAccount = () => {
-    const purse = runIssuer.makeEmptyPurse();
+    const purse = feeIssuer.makeEmptyPurse();
     /** @type {ChargeAccount} */
     const chargeAccount = Far('chargeAccount', {
       ...purse,

@@ -61,9 +61,18 @@
  */
 
 /**
+ * @typedef {Record<string, Amount>} Menu
+ */
+
+/**
+ * @typedef {Record<string, string>} ZCFMenu
+ */
+
+/**
  * @typedef {Object} HandleOfferResult
  * @property {Promise<any>} offerResultP
  * @property {Object} exitObj
+ * @property {ZCFMenu} offerResultMenu
  */
 
 /**
@@ -75,7 +84,7 @@
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
- *     proposal: ProposalRecord) => UserSeat } makeUserSeat
+ *     proposal: ProposalRecord, chargeAccount: ERef<ChargeAccount>) => UserSeat } makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet
@@ -96,14 +105,13 @@
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
- *            ) => HandleOfferResult} handleOffer
+ *            ) => Promise<HandleOfferResult>} handleOffer
  */
 
 /**
  * @callback ZoeInstanceAdminMakeInvitation
  * @param {InvitationHandle} invitationHandle
- * @param {string} description
- * @param {Record<string, any>=} customProperties
+ * @param {InvitationConfig} config
  * @returns {Payment}
  */
 

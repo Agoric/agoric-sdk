@@ -27,7 +27,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
   const { /** @type {ERef<ZoeService>} */ zoeService } = makeZoe(
-    fakeVatAdminSvc
+    fakeVatAdminSvc,
   );
   const zoe = useChargeAccount(zoeService);
 

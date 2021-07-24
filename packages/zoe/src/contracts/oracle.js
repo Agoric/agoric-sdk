@@ -7,6 +7,8 @@ import { AmountMath } from '@agoric/ertp';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
+import { withdrawFromSeat } from '../contractSupport';
+import { LOW_FEE, SHORT_EXP } from '../constants';
 
 /**
  * This contract provides oracle queries for a fee or for free.
@@ -29,7 +31,8 @@ const start = async zcf => {
   /** @type {OracleCreatorFacet} */
   const realCreatorFacet = {
     makeWithdrawInvitation(total = false) {
-      return zcf.makeInvitation(seat => {
+      /** @type {OfferHandler} */
+      const withdrawHandler = seat => {
         const gains = total
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
@@ -38,7 +41,12 @@ const start = async zcf => {
         zcf.reallocate(seat, feeSeat);
         seat.exit();
         return 'Successfully withdrawn';
-      }, 'withdraw');
+      };
+      const config = harden({
+        handler: withdrawHandler,
+        description: 'withdraw',
+      });
+      return zcf.makeInvitation(config);
     },
     getCurrentFees() {
       return feeSeat.getCurrentAllocation();
@@ -50,7 +58,9 @@ const start = async zcf => {
         zcf.reallocate(seat, feeSeat);
         zcf.shutdown(revokedMsg);
       };
-      return zcf.makeInvitation(shutdown, 'shutdown');
+      return zcf.makeInvitation(
+        harden({ handler: shutdown, description: 'shutdown' }),
+      );
     },
   };
 
@@ -95,7 +105,14 @@ const start = async zcf => {
           throw e;
         }
       };
-      return zcf.makeInvitation(doQuery, 'oracle query', { query });
+      const queryInvitationConfig = harden({
+        handler: doQuery,
+        description: 'oracle query',
+        customProperties: { query },
+        fee: LOW_FEE,
+        expiration: SHORT_EXP,
+      });
+      return zcf.makeInvitation(queryInvitationConfig);
     },
   });
 

@@ -57,6 +57,7 @@ export const makeOffer = (
       invitationHandle,
       initialAllocation,
       proposal,
+      chargeAccount,
     );
     // AWAIT ///
     return userSeat;

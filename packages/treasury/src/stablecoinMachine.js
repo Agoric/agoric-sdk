@@ -329,7 +329,7 @@ export async function start(zcf) {
     getCollaterals,
     // TODO this is in the terms, so could be retrieved from there.
     // This API is here to consider for usability/discoverability
-    getRunIssuer() {
+    getFeeIssuer() {
       return runIssuer;
     },
   });

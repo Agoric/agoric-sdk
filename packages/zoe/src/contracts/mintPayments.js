@@ -4,6 +4,7 @@ import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import '../../exported';
+import { LOW_FEE, SHORT_EXP } from '../constants';
 
 /**
  * This is a very simple contract that creates a new issuer and mints payments
@@ -44,8 +45,16 @@ const start = async zcf => {
   const creatorFacet = Far('creatorFacet', {
     // The creator of the instance can send invitations to anyone
     // they wish to.
-    makeInvitation: (value = 1000) =>
-      zcf.makeInvitation(mintPayment(value), 'mint a payment'),
+    makeInvitation: (value = 1000) => {
+      /** @type {InvitationConfig} */
+      const invitationConfig = harden({
+        handler: mintPayment(value),
+        description: 'mint a payment',
+        expirations: SHORT_EXP,
+        fee: LOW_FEE,
+      });
+      return zcf.makeInvitation(invitationConfig);
+    },
     getTokenIssuer: () => issuer,
   });
 

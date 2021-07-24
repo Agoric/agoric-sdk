@@ -3,6 +3,7 @@
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
 import '../../exported';
+import { HIGH_FEE, SHORT_EXP } from '../constants';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { satisfies } from '../contractSupport';
@@ -113,8 +114,18 @@ const start = zcf => {
     return 'Trade completed.';
   };
 
+  // Expiration can be quite short, as you can always get a new one.
+  // Fee should cover storing the seat while no match exists, and the
+  // execution costs of the match.
+  const invitationConfig = harden({
+    handler: exchangeOfferHandler,
+    description: 'exchange',
+    expiration: SHORT_EXP,
+    fee: HIGH_FEE,
+  });
+
   const publicFacet = Far('publicFacet', {
-    makeInvitation: () => zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
+    makeInvitation: () => zcf.makeInvitation(invitationConfig),
   });
 
   return { publicFacet };

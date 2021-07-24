@@ -24,13 +24,14 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
 
   /** @type {MakeOptionInvitation} */
   function makeOptionInvitation(position) {
+    // All we do at the time of exercise is resolve the promise.
+    const handler = seat => seatPromiseKits[position].resolve(seat);
     return zcf.makeInvitation(
-      // All we do at the time of exercise is resolve the promise.
-      seat => seatPromiseKits[position].resolve(seat),
-      `collect ${position} payout`,
-      {
-        position,
-      },
+      harden({
+        handler,
+        description: `collect ${position} payout`,
+        customProperties: { position },
+      }),
     );
   }
 

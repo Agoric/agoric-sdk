@@ -17,7 +17,7 @@ import '../internal-types';
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeZoeStorageManager } from './zoeStorageManager';
 import { makeStartInstance } from './startInstance';
@@ -25,6 +25,9 @@ import { makeOffer } from './offer/offer';
 import { makeInvitationQueryFns } from './invitationQueries';
 import { setupCreateZCFVat } from './createZCFVat';
 import { makeMakeChargeAccount } from './chargeAccount';
+import { natSafeMath } from '../contractSupport';
+
+const { multiply } = natSafeMath;
 
 /**
  * Create an instance of Zoe.
@@ -32,9 +35,18 @@ import { makeMakeChargeAccount } from './chargeAccount';
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {{ zoeService: ZoeService, runIssuerKit: IssuerKit}}
+ * @param {Object} syncTimer
+ * @param {NatValue} feePerComputronValue
+ * @param {string} feeIssuerName
+ * @returns {{ zoeService: ZoeService, feeIssuerKit: IssuerKit}}
  */
-const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
+const makeZoe = (
+  vatAdminSvc,
+  zcfBundleName = undefined,
+  syncTimer,
+  feePerComputronValue,
+  feeIssuerName = 'RUN',
+) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
   // defined. See below where the promise is resolved.
   /** @type {PromiseRecord<ZoeService>} */
@@ -45,12 +57,17 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
 
-  const runIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
+  const feeIssuerKit = makeIssuerKit(feeIssuerName, AssetKind.NAT, {
     decimalPlaces: 6,
   });
 
+  const feePerComputron = AmountMath.make(
+    feeIssuerKit.brand,
+    feePerComputronValue,
+  );
+
   const { makeChargeAccount, hasChargeAccount } = makeMakeChargeAccount(
-    runIssuerKit.issuer,
+    feeIssuerKit.issuer,
   );
 
   // The ZoeStorageManager composes and consolidates capabilities
@@ -67,7 +84,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getTerms,
     getInstanceAdmin,
     invitationIssuer,
-  } = makeZoeStorageManager(createZCFVat, hasChargeAccount);
+  } = makeZoeStorageManager(createZCFVat, hasChargeAccount, syncTimer);
 
   // Pass the capabilities necessary to create zoe.startInstance
   const startInstance = makeStartInstance(
@@ -107,13 +124,19 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     // The functions below are getters only and have no impact on
     // state within Zoe
     getInvitationIssuer: () => invitationIssuer,
-    getFeeIssuer: () => runIssuerKit.issuer,
+    getFeeIssuer: () => feeIssuerKit.issuer,
     getBrands,
     getIssuers,
     getTerms,
     getInstance,
     getInstallation,
     getInvitationDetails,
+    getMenu: () =>
+      harden({
+        getPublicFacet: feePerComputron,
+        install: multiply(feePerComputron, 10),
+        startInstance: multiply(feePerComputron, 100),
+      }),
   });
 
   // startInstance must pass the ZoeService to the newly created ZCF
@@ -123,7 +146,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
 
   return {
     zoeService,
-    runIssuerKit,
+    feeIssuerKit,
   };
 };
 

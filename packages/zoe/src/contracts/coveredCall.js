@@ -91,17 +91,28 @@ const start = zcf => {
       return `The option was exercised. Please collect the assets in your payout.`;
     };
 
-    const customProps = harden({
-      expirationDate: sellSeatExitRule.afterDeadline.deadline,
-      timeAuthority: sellSeatExitRule.afterDeadline.timer,
-      underlyingAssets: sellSeat.getProposal().give,
-      strikePrice: sellSeat.getProposal().want,
+    const invitationConfig = harden({
+      handler: exerciseOption,
+      description: 'exerciseOption',
+      customProps: {
+        expirationDate: sellSeatExitRule.afterDeadline.deadline,
+        timeAuthority: sellSeatExitRule.afterDeadline.timer,
+        underlyingAssets: sellSeat.getProposal().give,
+        strikePrice: sellSeat.getProposal().want,
+      },
+      // No expiration date for the invitation itself.
+
+      //  No fee for making an offer. The seller puts enough in their
+      // chargeAccount to cover both.
     });
-    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
+
+    return zcf.makeInvitation(invitationConfig);
   };
 
-  const creatorInvitation = zcf.makeInvitation(makeOption, 'makeCallOption');
-
+  const creatorInvitation = zcf.makeInvitation({
+    handler: makeOption,
+    description: 'makeCallOption',
+  });
   return harden({ creatorInvitation });
 };
 

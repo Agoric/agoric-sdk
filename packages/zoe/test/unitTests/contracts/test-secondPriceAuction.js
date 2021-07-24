@@ -542,7 +542,9 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   // Dave decides to bid for the one moola
-  const daveExclusiveInvitation = await E(invitationIssuer).claim(daveInvitation);
+  const daveExclusiveInvitation = await E(invitationIssuer).claim(
+    daveInvitation,
+  );
   const daveInvitationValue = await E(zoe).getInvitationDetails(
     daveExclusiveInvitation,
   );

@@ -8,13 +8,13 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makeMakeChargeAccount } from '../../../src/zoeService/chargeAccount';
 
 const setup = () => {
-  const runIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
+  const feeIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
     decimalPlaces: 6,
   });
   const { makeChargeAccount, hasChargeAccount } = makeMakeChargeAccount(
-    runIssuerKit.issuer,
+    feeIssuerKit.issuer,
   );
-  return { makeChargeAccount, hasChargeAccount, runIssuerKit };
+  return { makeChargeAccount, hasChargeAccount, feeIssuerKit };
 };
 
 test('chargeAccount starts empty', async t => {
@@ -25,11 +25,11 @@ test('chargeAccount starts empty', async t => {
 });
 
 test('depositing into and withdrawing from chargeAccount', async t => {
-  const { makeChargeAccount, runIssuerKit } = setup();
+  const { makeChargeAccount, feeIssuerKit } = setup();
   const chargeAccount = makeChargeAccount();
 
-  const run1000 = AmountMath.make(runIssuerKit.brand, 1000n);
-  const payment = runIssuerKit.mint.mintPayment(run1000);
+  const run1000 = AmountMath.make(feeIssuerKit.brand, 1000n);
+  const payment = feeIssuerKit.mint.mintPayment(run1000);
   chargeAccount.deposit(payment);
 
   t.true(AmountMath.isEqual(chargeAccount.getCurrentAmount(), run1000));

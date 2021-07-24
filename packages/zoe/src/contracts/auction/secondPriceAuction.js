@@ -13,6 +13,7 @@ import { calcWinnerAndClose } from './secondPriceLogic';
 import { assertBidSeat } from './assertBidSeat';
 
 import '../../../exported';
+import { LOW_FEE, SHORT_EXP } from '../../constants';
 
 /**
  * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction
@@ -71,14 +72,18 @@ const start = zcf => {
       return defaultAcceptanceMsg;
     };
 
-    const customProperties = harden({
-      auctionedAssets: sellSeat.getProposal().give.Asset,
-      minimumBid: sellSeat.getProposal().want.Ask,
-      closesAfter,
-      timeAuthority,
+    const invitationConfig = harden({
+      handler: performBid,
+      description: 'bid',
+      customProps: {
+        auctionedAssets: sellSeat.getProposal().give.Asset,
+        minimumBid: sellSeat.getProposal().want.Ask,
+      },
+      expiration: SHORT_EXP,
+      fee: LOW_FEE,
     });
 
-    return zcf.makeInvitation(performBid, 'bid', customProperties);
+    return zcf.makeInvitation(invitationConfig);
   };
 
   const sell = seat => {
@@ -97,7 +102,9 @@ const start = zcf => {
     return Far('offerResult', { makeBidInvitation });
   };
 
-  const creatorInvitation = zcf.makeInvitation(sell, 'sellAssets');
+  const creatorInvitation = zcf.makeInvitation(
+    harden({ handler: sell, description: 'sellAssets' }),
+  );
 
   return harden({ creatorInvitation });
 };

@@ -349,21 +349,21 @@ test(`E(zoe).getInvitationDetails - no invitation`, async t => {
 });
 
 test(`E(zoe).makeChargeAccount`, async t => {
-  const { zoe, runIssuerKit } = await setupZCFTest();
+  const { zoe, feeIssuerKit } = await setupZCFTest();
 
   const chargeAccount = E(zoe).makeChargeAccount();
-  const runIssuer = E(zoe).getRunIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const feeIssuer = E(zoe).getFeeIssuer();
+  const feeBrand = await E(feeIssuer).getBrand();
 
-  const run1000 = AmountMath.make(runBrand, 1000n);
-  const payment = runIssuerKit.mint.mintPayment(run1000);
+  const fee1000 = AmountMath.make(feeBrand, 1000n);
+  const payment = feeIssuerKit.mint.mintPayment(fee1000);
   E(chargeAccount).deposit(payment);
 
   t.true(
-    AmountMath.isEqual(await E(chargeAccount).getCurrentAmount(), run1000),
+    AmountMath.isEqual(await E(chargeAccount).getCurrentAmount(), fee1000),
   );
 
-  E(chargeAccount).withdraw(run1000);
+  E(chargeAccount).withdraw(fee1000);
 
   t.true(AmountMath.isEmpty(await E(chargeAccount).getCurrentAmount()));
 });

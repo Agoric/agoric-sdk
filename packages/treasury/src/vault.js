@@ -15,6 +15,8 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
+import { LOW_FEE } from '@agoric/zoe/src/constants';
+
 import { makeTracer } from './makeTracer';
 import { makeInterestCalculator } from './interest';
 
@@ -453,8 +455,16 @@ export function makeVaultKit(
     getDebtAmount,
   });
 
+  const vaultMenu = harden({
+    makeAdjustBalancesInvitation: LOW_FEE,
+    makeCloseInvitation: LOW_FEE,
+    getCollateralAmount: LOW_FEE,
+    getDebtAmount: LOW_FEE,
+  });
+
   return harden({
     vault,
+    vaultMenu,
     openLoan,
     accrueInterestAndAddToPool,
     vaultSeat,

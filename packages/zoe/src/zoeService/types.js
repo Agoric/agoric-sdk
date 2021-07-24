@@ -280,6 +280,7 @@
  */
 
 /**
+ *
  * @callback GetFeeIssuer
  *
  * Get the Fee issuer from Zoe
@@ -288,7 +289,8 @@
  */
 
 /**
- * @typedef {Object} ZoeServiceWChargeAccount
+ * * @typedef {Object} ZoeServiceWChargeAccount
+ *
  * @property {() => ERef<Issuer>} getInvitationIssuer
  * @property {InstallWChargeAccount} install
  * @property {StartInstanceWChargeAccount} startInstance
@@ -301,7 +303,7 @@
  * @property {GetInstallation} getInstallation
  * @property {GetInvitationDetails} getInvitationDetails
  * @property {MakeChargeAccount} makeChargeAccount
- * @property {GetRunIssuer} getRunIssuer
+ * @property {GetFeeIssuer} getFeeIssuer
  */
 
 /**

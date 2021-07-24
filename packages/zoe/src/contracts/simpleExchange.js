@@ -10,6 +10,7 @@ import {
   assertProposalShape,
   assertIssuerKeywords,
 } from '../contractSupport/zoeHelpers';
+import { HIGH_FEE, SHORT_EXP } from '../constants';
 
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows
@@ -131,8 +132,14 @@ const start = zcf => {
     );
   };
 
-  const makeExchangeInvitation = () =>
-    zcf.makeInvitation(exchangeOfferHandler, 'exchange');
+  const invitationConfig = harden({
+    handler: exchangeOfferHandler,
+    description: 'exchange',
+    fee: HIGH_FEE,
+    expiration: SHORT_EXP,
+  });
+
+  const makeExchangeInvitation = () => zcf.makeInvitation(invitationConfig);
 
   /** @type {SimpleExchangePublicFacet} */
   const publicFacet = Far('SimpleExchangePublicFacet', {

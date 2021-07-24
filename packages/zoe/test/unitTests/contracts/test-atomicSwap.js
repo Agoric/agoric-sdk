@@ -381,7 +381,9 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitationP);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(
+    bobInvitationP,
+  );
   const bobInvitationValue = await E(zoe).getInvitationDetails(
     bobExclusiveInvitation,
   );
