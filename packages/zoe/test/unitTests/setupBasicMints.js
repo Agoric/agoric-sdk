@@ -21,7 +21,7 @@ const setup = () => {
     brands.init(k, allBundles[k].brand);
   }
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const makeSimpleMake = brand => value => AmountMath.make(value, brand);
 

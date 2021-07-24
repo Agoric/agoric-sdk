@@ -29,7 +29,7 @@ test('test bug scenario', async t => {
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
@@ -116,7 +116,7 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);

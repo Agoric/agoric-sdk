@@ -16,7 +16,7 @@ const contractRoot = `${__dirname}/useObjExample`;
 test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

@@ -33,7 +33,7 @@ const newSwapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAut
 
 test('newSwap with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const invitationIssuer = zoe.getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
 
@@ -386,7 +386,7 @@ test('newSwap with valid offers', async t => {
 
 test('newSwap doubleSwap', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -607,7 +607,7 @@ test('newSwap doubleSwap', async t => {
 
 test('newSwap with some invalid offers', async t => {
   const { moolaR, moola } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const invitationIssuer = zoe.getInvitationIssuer();
 
   // Set up central token
@@ -670,7 +670,7 @@ test('newSwap with some invalid offers', async t => {
 
 test('newSwap jig - swapOut uneven', async t => {
   const { moolaR, moola, simoleanR, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Pack the contract.
   const bundle = await bundleSource(newSwapRoot);
@@ -907,7 +907,7 @@ test('newSwap jig - swapOut uneven', async t => {
 
 test('newSwap jig - breaking scenario', async t => {
   const { moolaR, moola, simoleanR } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Pack the contract.
   const bundle = await bundleSource(newSwapRoot);
@@ -1024,7 +1024,7 @@ test('newSwap jig - breaking scenario', async t => {
 // This demonstrates that Zoe can reallocate empty amounts. i.e. that
 // https://github.com/Agoric/agoric-sdk/issues/3033 stays fixed
 test('zoe allow empty reallocations', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Set up central token
   const { issuer, brand } = makeIssuerKit('central');

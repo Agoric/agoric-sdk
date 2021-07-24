@@ -17,12 +17,14 @@ import '../internal-types';
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { makeZoeStorageManager } from './zoeStorageManager';
 import { makeStartInstance } from './startInstance';
 import { makeOffer } from './offer/offer';
 import { makeInvitationQueryFns } from './invitationQueries';
 import { setupCreateZCFVat } from './createZCFVat';
+import { makeMakeChargeAccount } from './chargeAccount';
 
 /**
  * Create an instance of Zoe.
@@ -30,7 +32,7 @@ import { setupCreateZCFVat } from './createZCFVat';
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {ZoeService} The created Zoe service.
+ * @returns {{ zoeService: ZoeService, runIssuerKit: IssuerKit}}
  */
 const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
@@ -42,6 +44,10 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
+
+  const runIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
+    decimalPlaces: 6,
+  });
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -82,8 +88,11 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getInvitationDetails,
   } = makeInvitationQueryFns(invitationIssuer);
 
+  const { makeChargeAccount } = makeMakeChargeAccount(runIssuerKit.issuer);
+
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
+    makeChargeAccount,
     install,
     startInstance,
     offer,
@@ -91,6 +100,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     // The functions below are getters only and have no impact on
     // state within Zoe
     getInvitationIssuer: () => invitationIssuer,
+    getRunIssuer: () => runIssuerKit.issuer,
     getPublicFacet,
     getBrands,
     getIssuers,
@@ -105,7 +115,10 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
   // defined. So, we pass a promise and then resolve the promise here.
   zoeServicePromiseKit.resolve(zoeService);
 
-  return zoeService;
+  return {
+    zoeService,
+    runIssuerKit,
+  };
 };
 
 export { makeZoe };

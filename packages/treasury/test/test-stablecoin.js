@@ -30,7 +30,7 @@ const trace = makeTracer('TestST');
 const BASIS_POINTS = 10000n;
 const PERCENT = 100n;
 
-function setUpZoeForTest(setJig) {
+async function setUpZoeForTest(setJig) {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
   let isFirst = true;
   function makeRemote(arg) {
@@ -50,8 +50,9 @@ function setUpZoeForTest(setJig) {
    * @property {ERef<MultipoolAutoswapPublicFacet>} autoswap
    */
 
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(makeZoe(makeFakeVatAdmin(setJig, makeRemote).admin));
+  const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = await makeFar(
+    makeZoe(makeFakeVatAdmin(setJig, makeRemote).admin),
+  );
   trace('makeZoe');
   return zoe;
 }

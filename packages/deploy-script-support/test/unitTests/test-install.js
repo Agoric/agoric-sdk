@@ -18,7 +18,7 @@ test('install', async t => {
     require.resolve,
   );
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   let addedInstallation;
 

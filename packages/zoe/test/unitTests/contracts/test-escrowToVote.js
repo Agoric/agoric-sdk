@@ -16,7 +16,7 @@ const contractRoot = `${__dirname}/escrowToVote`;
 test('zoe - escrowToVote', async t => {
   t.plan(14);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

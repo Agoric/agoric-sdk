@@ -10,6 +10,7 @@ import { Far } from '@agoric/marshal';
 import { makeStore } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
 import { assert, details as X } from '@agoric/assert';
@@ -69,6 +70,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     const bankBridgeManager = bridgeManager;
     const dibcBridgeManager = bridgeManager;
 
+    const runIssuerPromiseKit = makePromiseKit();
+
     // Create singleton instances.
     const [
       bankManager,
@@ -82,7 +85,10 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
-      /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
+      /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        runIssuerPromiseKit.promise,
+      )),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
@@ -177,6 +183,8 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(agoricNames).lookup('instance', 'autoswap'),
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
+
+    runIssuerPromiseKit.resolve(centralIssuer);
 
     // Start the reward distributor.
     const epochTimerService = chainTimerService;

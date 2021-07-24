@@ -25,7 +25,7 @@ const setupMixed = () => {
   const cryptoCats = value => AmountMath.make(value, allBundles.cc.brand);
   const moola = value => AmountMath.make(value, allBundles.moola.brand);
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   return {
     zoe,
     ccIssuer,

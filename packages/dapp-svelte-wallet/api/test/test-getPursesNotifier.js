@@ -23,7 +23,7 @@ function makeFakeMyAddressNameAdmin() {
 }
 
 const setup = async () => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

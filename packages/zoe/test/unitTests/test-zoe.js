@@ -6,6 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { passStyleOf } from '@agoric/marshal';
+import { AmountMath } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -345,4 +346,24 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
+});
+
+test(`zoe.makeChargeAccount`, async t => {
+  const { zoe, runIssuerKit } = await setupZCFTest();
+
+  const chargeAccount = E(zoe).makeChargeAccount();
+  const runIssuer = E(zoe).getRunIssuer();
+  const runBrand = await E(runIssuer).getBrand();
+
+  const run1000 = AmountMath.make(runBrand, 1000n);
+  const payment = runIssuerKit.mint.mintPayment(run1000);
+  E(chargeAccount).deposit(payment);
+
+  t.true(
+    AmountMath.isEqual(await E(chargeAccount).getCurrentAmount(), run1000),
+  );
+
+  E(chargeAccount).withdraw(run1000);
+
+  t.true(AmountMath.isEmpty(await E(chargeAccount).getCurrentAmount()));
 });

@@ -4,6 +4,9 @@ import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc, vatParameters.zcfBundleName),
+    buildZoe: vatAdminSvc => {
+      const { zoeService } = makeZoe(vatAdminSvc, vatParameters.zcfBundleName);
+      return zoeService;
+    },
   });
 }

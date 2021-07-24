@@ -19,7 +19,7 @@ test('startInstance', async t => {
   const moolaKit = makeIssuerKit('moola');
   const usdKit = makeIssuerKit('usd');
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const bundle = await bundleSource(
     require.resolve('@agoric/zoe/src/contracts/automaticRefund'),

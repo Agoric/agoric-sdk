@@ -40,7 +40,9 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const zoe = makeZoe(makeFakeVatAdmin().admin);
+    const { zoeService: /** @type {ERef<ZoeService>} */ zoe } = makeZoe(
+      makeFakeVatAdmin().admin,
+    );
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);

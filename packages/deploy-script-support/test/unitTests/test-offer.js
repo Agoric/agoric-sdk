@@ -37,7 +37,7 @@ test('offer', async t => {
     },
     saveOfferResult: () => {},
   };
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const bundle = await bundleSource(
     require.resolve('@agoric/zoe/src/contracts/automaticRefund'),
