@@ -43,6 +43,7 @@ export function makePromiseKit() {
   /** @type {(reason: any) => void} */
   let rej = NOOP_INITIALIZER;
 
+  /** @type {Promise<any> & {domain?: unknown}} */
   const p = new BestPipelinablePromise((resolve, reject) => {
     res = resolve;
     rej = reject;
@@ -55,15 +56,14 @@ export function makePromiseKit() {
     // functionality at the expense of safety, set unsafe to true.
     const unsafe = false;
     if (unsafe) {
-      const originalDomain = /** @type {*} */ (p).domain;
+      const originalDomain = p.domain;
       Object.defineProperty(p, 'domain', {
         get() {
           return originalDomain;
         },
       });
     } else {
-      // prettier-ignore
-      delete /** @type {*} */ (p).domain;
+      delete p.domain;
     }
   }
   return harden({ promise: p, resolve: res, reject: rej });
