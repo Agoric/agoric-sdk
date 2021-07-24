@@ -34,7 +34,7 @@ export function buildRootObject(vatPowers) {
 
         const index = D(timerNode).makeRepeater(delaySecs, interval);
 
-        const vatRepeater = harden({
+        const vatRepeater = Far('vatRepeater', {
           schedule(h) {
             return D(timerNode).schedule(index, h);
           },

@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 export default function makeScratchPad() {
   const map = new Map();
   async function get(idP) {
@@ -16,9 +18,9 @@ export default function makeScratchPad() {
     }
     return harden(ids.sort());
   }
-  return {
+  return Far('scratchPad', {
     get,
     set,
     list,
-  };
+  });
 }

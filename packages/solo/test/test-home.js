@@ -135,7 +135,7 @@ test.serial('home.localTimerService makeNotifier', async t => {
 function makeHandler() {
   let calls = 0;
   const args = [];
-  return {
+  return Far('wake handler', {
     getCalls() {
       return calls;
     },
@@ -146,7 +146,7 @@ function makeHandler() {
       args.push(arg);
       calls += 1;
     },
-  };
+  });
 }
 
 // TODO(2164): createRepeater was replaced by makeRepeater. Remove it pre-Beta

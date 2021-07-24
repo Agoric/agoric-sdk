@@ -460,7 +460,7 @@ test('records', t => {
   const NOACC = /Records must not contain accessors/;
   const RECENUM = /Record fields must be enumerable/;
   const NOMETH = /cannot serialize objects with non-methods/;
-  const EXPLICIT = /Remotables must now be explictly declared/;
+  // const EXPLICIT = /Remotables must now be explictly declared/;
 
   // empty objects
 
@@ -502,6 +502,7 @@ test('records', t => {
     slots: [],
   });
 
+  /*
   // { key: func }
   // old: pass-by-ref without warning
   // interim1: pass-by-ref with warning
@@ -511,6 +512,7 @@ test('records', t => {
   shouldThrow(['enumSymbolFunc'], EXPLICIT);
   shouldThrow(['nonenumStringFunc'], EXPLICIT);
   shouldThrow(['nonenumSymbolFunc'], EXPLICIT);
+  */
 
   // Far('iface', { key: data, key: func }) : rejected
   // (some day this might add auxilliary data, but not now

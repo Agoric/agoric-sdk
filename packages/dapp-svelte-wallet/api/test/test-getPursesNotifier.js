@@ -8,18 +8,19 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import { makeBoard } from '@agoric/vats/src/lib-board';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub';
+import { Far } from '@agoric/marshal';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-  return {
+  return Far('fakeMyAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress() {
       return 'agoric1test1';
     },
-  };
+  });
 }
 
 const setup = async () => {

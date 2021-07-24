@@ -16,7 +16,7 @@ import '@agoric/assert/exported.js';
 //
 // TODO: once the policy changes to force remotables to be explicit, remove this
 // flag entirely and fix code that uses it (as if it were always `false`).
-const ALLOW_IMPLICIT_REMOTABLES = false;
+const ALLOW_IMPLICIT_REMOTABLES = true;
 
 const {
   getPrototypeOf,
@@ -146,7 +146,7 @@ function isPassByCopyArray(val) {
  */
 function isPassByCopyRecord(val) {
   const proto = getPrototypeOf(val);
-  if (proto !== objectPrototype) {
+  if (proto !== objectPrototype && proto !== null) {
     return false;
   }
   const descs = getOwnPropertyDescriptors(val);
@@ -368,6 +368,12 @@ function checkRemotable(val, check = x => x) {
   const p = getPrototypeOf(val);
 
   if (ALLOW_IMPLICIT_REMOTABLES && (p === null || p === objectPrototype)) {
+    const err = assert.error(
+      X`Remotables should be explicitly declared: ${q(val)}`,
+    );
+    console.warn('Missing Far:', err);
+    // eslint-disable-next-line no-debugger
+    debugger;
     return true;
   }
   return checkRemotableProto(p, check, val);

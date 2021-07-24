@@ -3,6 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import buildManualTimer from '../../tools/manualTimer';
 
 test('manualTimer makeNotifier', async t => {
@@ -20,7 +21,7 @@ test('manualTimer makeNotifier', async t => {
 function makeHandler() {
   let calls = 0n;
   const args = [];
-  return {
+  return Far('wake handler', {
     getCalls() {
       return calls;
     },
@@ -31,7 +32,7 @@ function makeHandler() {
       args.push(arg);
       calls += 1n;
     },
-  };
+  });
 }
 
 test('manualTimer makeRepeater', async t => {
