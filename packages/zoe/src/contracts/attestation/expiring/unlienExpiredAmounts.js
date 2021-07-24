@@ -21,12 +21,9 @@ const unlienExpiredAmounts = (store, empty, address, currentTime) => {
   }
 
   const lienedAtStart = store.get(address);
-  const notExpired = lienedAtStart.filter(({ expiration }) => {
-    if (hasExpired(expiration, currentTime)) {
-      return false;
-    }
-    return true;
-  });
+  const notExpired = lienedAtStart.filter(
+    ({ expiration }) => !hasExpired(expiration, currentTime),
+  );
   const totalStillLiened = notExpired.reduce(
     (soFar, { amountLiened }) => AmountMath.add(soFar, amountLiened),
     empty,
