@@ -51,6 +51,7 @@ test.before(async t => {
     parameters: { contractBundles }, // argv will be added to this
   };
   const config = { bootstrap: 'bootstrap', vats };
+  config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;

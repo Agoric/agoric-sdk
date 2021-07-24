@@ -13,7 +13,8 @@ function makeSpawner(vatAdminSvc) {
       assert(!oldModuleFormat, 'oldModuleFormat not supported');
       return Far('installer', {
         async spawn(argsP) {
-          const { root } = await E(vatAdminSvc).createVat(spawnBundle);
+          const opts = { metered: true };
+          const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
           return E(E(root).loadBundle(bundle)).start(argsP);
         },
       });

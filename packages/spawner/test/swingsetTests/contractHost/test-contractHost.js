@@ -19,9 +19,9 @@ test.before(async t => {
   t.context.data = { kernelBundles, trivialBundle };
 });
 
-async function main(t, mode, defaultManagerType = 'local') {
+async function main(t, mode) {
   const config = await loadBasedir(__dirname);
-  config.defaultManagerType = defaultManagerType;
+  config.defaultManagerType = 'xs-worker';
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];
   const controller = await buildVatController(config, argv, { kernelBundles });
@@ -48,6 +48,6 @@ const contractExhaustedGolden = [
 ];
 
 test('exhaustion', async t => {
-  const dump = await main(t, 'exhaust', 'xs-worker');
+  const dump = await main(t, 'exhaust');
   t.deepEqual(dump.log, contractExhaustedGolden);
 });
