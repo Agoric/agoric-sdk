@@ -16,7 +16,7 @@ const { details: X } = assert;
  * @param {ZCFSeat} seat
  * @param {ZCFMint} zcfMint
  * @param {(address: Address) => boolean} canExtend
- * @param {(newAttestationElem: ExpiringAttElem) => void} updateLienedAmounts
+ * @param {(newAttestationElem: ExpiringAttElem) => void} updateLienedAmount
  * @param {Brand} attestationBrand
  * @param {Timestamp} newExpiration
  * @returns {void}
@@ -25,7 +25,7 @@ const extendExpiration = (
   seat,
   zcfMint,
   canExtend,
-  updateLienedAmounts,
+  updateLienedAmount,
   attestationBrand,
   newExpiration,
 ) => {
@@ -70,8 +70,8 @@ const extendExpiration = (
 
   const amountToMint = AmountMath.make(attestationBrand, valueToMint);
 
-  // commit point within updateLienedAmounts
-  valueToMint.forEach(updateLienedAmounts);
+  // commit point within updateLienedAmount
+  valueToMint.forEach(updateLienedAmount);
   zcfMint.burnLosses(seat.getCurrentAllocation(), seat);
   zcfMint.mintGains({ Attestation: amountToMint }, seat);
   seat.exit();

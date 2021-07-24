@@ -96,7 +96,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   };
 
   const canExtend = address => !cannotGetExtension.has(address);
-  const updateLienedAmounts = newAttestationElem =>
+  const updateLienedAmount = newAttestationElem =>
     updateLien(lienedAmounts, newAttestationElem);
 
   /** @type {ExtendExpiration} */
@@ -105,7 +105,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
       seat,
       zcfMint,
       canExtend,
-      updateLienedAmounts,
+      updateLienedAmount,
       attestationBrand,
       newExpiration,
     );

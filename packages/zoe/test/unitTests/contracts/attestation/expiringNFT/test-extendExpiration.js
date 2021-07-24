@@ -93,7 +93,7 @@ const doTest = (
       t.is(seat, zcfSeat);
     },
   };
-  const updateLienedAmounts = updated => {
+  const updateLienedAmount = updated => {
     t.deepEqual(updated, newElem);
   };
 
@@ -102,7 +102,7 @@ const doTest = (
     zcfSeat,
     zcfMint,
     canExtend,
-    updateLienedAmounts,
+    updateLienedAmount,
     attestationBrand,
     newExpiration,
   );
