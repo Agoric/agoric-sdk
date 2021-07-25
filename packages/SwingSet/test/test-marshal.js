@@ -10,7 +10,12 @@ import { makeMarshaller } from '../src/kernel/liveSlots.js';
 
 import { buildVatController } from '../src/index.js';
 
-const gcTools = harden({ WeakRef, FinalizationRegistry });
+const gcTools = harden({
+  WeakRef,
+  FinalizationRegistry,
+  runWithoutMetering: thunk => thunk(),
+  runWithoutMeteringAsync: async thunk => thunk(),
+});
 
 async function prep() {
   const config = {};

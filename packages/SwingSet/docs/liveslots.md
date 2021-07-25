@@ -69,7 +69,7 @@ Some useful things cannot be serialized: they will trigger an error.
 Uncertain:
 
 * Maps: This might actually serialize as pass-by-presence, since it has no non-function properties (in fact it has no own properties at all, they all live on `Map.prototype`, whose properties are all functions). The receiving side gets a Presence, not a Map, but invoking e.g. `E(p).get(123)` will return a promise that will be fulfilled with the results of `m.get(123)` on the sending side.
-* WeakMaps: same, except the values being passed into `get()` would be coming from the deserializer, and so they might not be that useful (especially since Liveslots does not implement distributed GC yet).
+* WeakMaps: same, except the values being passed into `get()` would be coming from the deserializer, and so they might not be that useful.
 
 ## How things get serialized
 
@@ -77,3 +77,13 @@ Uncertain:
 * local Promises: passed as a promise
 * promise returned by `E(p).foo()`: passes as a promise, with pipelining enabled
 * Function: rejected (todo: wrap)
+
+## Garbage Collection vs Metering
+
+When a swingset kernel is part of a consensus machine, the visible state must be a deterministic function of userspace activity. Every member kernel must perform the same set of operations.
+
+However we are not yet confident that the timing of garbage collection will remain identical between kernels that experience different patterns of snapshot+restart. In particular, up until recently, the amount of "headroom" in the XS memory allocator was reset upon snapshot reload: the new XS engine only allocates as much RAM as the snapshot needs, whereas before the snapshot was taken, the RAM footprint could have been larger (e.g. if a large number of objects we allocated and then released), leading to more "headroom". Automatic GC is triggered by an attempt to allocate space which cannot be satisfied by this headroom, so it will happen more frequently in the post-reload engine than before the snapshot. See issues #3428, #3458, and #3577 for details.
+
+To accommodate differences in GC timing between kernels that are otherwise operating in consensus, liveslots uses an "unmetered box": a span of execution that does not count against the meter. We take all of the liveslots operations that might be sensitive to the engine's GC behavior and put them "in" the box.
+
+This includes any code that calls `deref()` on the WeakRefs used in `slotToVal`, because the WeakRef can change state from "live" to "dead" when GC is provoked, which is sensitive to more than just userspace behavior.

@@ -906,6 +906,8 @@ function makeMockGC() {
     getAllFRs,
     waitUntilQuiescent,
     gcAndFinalize: mockGCAndFinalize,
+    runWithoutMetering: thunk => thunk(),
+    runWithoutMeteringAsync: async thunk => thunk(),
   });
 }
 

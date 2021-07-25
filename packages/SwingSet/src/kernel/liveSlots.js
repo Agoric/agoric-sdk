@@ -31,7 +31,8 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableVatstore
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
+ *                      runWithoutMetering, runWithoutMeteringAsync }
  * @param {Console} console
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
@@ -53,6 +54,7 @@ function build(
   console,
 ) {
   const { WeakRef, FinalizationRegistry } = gcTools;
+  const { runWithoutMetering, runWithoutMeteringAsync } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -461,6 +463,7 @@ function build(
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
       if (type === 'object') {
+        // Set.delete() metering seems unaffected by presence/absence
         deadSet.delete(slot);
         droppedRegistry.register(val, slot, val);
       }
@@ -489,6 +492,12 @@ function build(
     }
   }
 
+  // The meter usage of convertSlotToVal is strongly affected by GC, because
+  // it only creates a new Presence if one does not already exist. Userspace
+  // moves from REACHABLE to UNREACHABLE, but the JS engine then moves to
+  // COLLECTED (and maybe FINALIZED) on its own, and we must not allow the
+  // latter changes to affect metering. So every call to convertSlotToVal (or
+  // m.unserialize) must be wrapped by runWithoutMetering().
   function convertSlotToVal(slot, iface = undefined) {
     const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     const wr = slotToVal.get(slot);
@@ -692,7 +701,7 @@ function build(
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
     );
-    const t = convertSlotToVal(target);
+    const t = runWithoutMetering(() => convertSlotToVal(target));
     assert(t, X`no target ${target}`);
     // TODO: if we acquire new decision-making authority over a promise that
     // we already knew about ('result' is already in slotToVal), we should no
@@ -708,7 +717,7 @@ function build(
       method = Symbol.asyncIterator;
     }
 
-    const args = m.unserialize(argsdata);
+    const args = runWithoutMetering(() => m.unserialize(argsdata));
 
     // If the method is missing, or is not a Function, or the method throws a
     // synchronous exception, we notify the caller (by rejecting the result
@@ -747,12 +756,22 @@ function build(
   function retirePromiseID(promiseID) {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
-    const wr = slotToVal.get(promiseID);
-    const p = wr && wr.deref();
-    if (p) {
-      valToSlot.delete(p);
-      pendingPromises.delete(p);
-    }
+    // TODO: I *think* this could do without runWithoutMetering, but I have
+    // to think more about it. Usually any vpid handed to retirePromiseID()
+    // will already be in both slotToVal and pendingPromises. We added this
+    // check for some good reason, but I no longer remember why. If
+    // pendingPromises is guaranteed to hold onto the Promise, then slotToVal
+    // should always have a live weakRef for it, and there won't be any
+    // GC-based variance in the execution of wr.deref() or the other code
+    // that it enables.
+    runWithoutMetering(() => {
+      const wr = slotToVal.get(promiseID);
+      const p = wr && wr.deref();
+      if (p) {
+        valToSlot.delete(p);
+        pendingPromises.delete(p);
+      }
+    });
     slotToVal.delete(promiseID);
   }
 
@@ -802,7 +821,7 @@ function build(
       X`unknown promiseID '${promiseID}'`,
     );
     const pRec = importedPromisesByPromiseID.get(promiseID);
-    const val = m.unserialize(data);
+    const val = runWithoutMetering(() => m.unserialize(data));
     if (rejected) {
       pRec.reject(val);
     } else {
@@ -824,6 +843,7 @@ function build(
     const imports = finishCollectingPromiseImports();
     for (const slot of imports) {
       if (slotToVal.get(slot)) {
+        // we'll only subscribe to new promises, which is within consensus
         syscall.subscribe(slot);
       }
     }
@@ -835,15 +855,17 @@ function build(
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
     // console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
     for (const vref of vrefs) {
-      const wr = slotToVal.get(vref);
-      const o = wr && wr.deref();
-      if (o) {
-        exportedRemotables.delete(o);
-      }
-      const { virtual } = parseVatSlot(vref);
-      if (virtual) {
-        vom.setExported(vref, false);
-      }
+      runWithoutMetering(() => {
+        const wr = slotToVal.get(vref);
+        const o = wr && wr.deref();
+        if (o) {
+          exportedRemotables.delete(o);
+        }
+        const { virtual } = parseVatSlot(vref);
+        if (virtual) {
+          vom.setExported(vref, false);
+        }
+      });
     }
   }
 
@@ -890,7 +912,7 @@ function build(
 
   function retireExports(vrefs) {
     assert(Array.isArray(vrefs));
-    vrefs.forEach(retireOneExport);
+    runWithoutMetering(() => vrefs.forEach(retireOneExport));
   }
 
   function retireImports(vrefs) {
@@ -898,6 +920,7 @@ function build(
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
     // console.log(`-- liveslots ignoring retireImports ${vrefs.join(',')}`);
+    // use runWithoutMetering() here too
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -1032,6 +1055,15 @@ function build(
 
   const { waitUntilQuiescent, gcAndFinalize } = gcTools;
 
+  async function finish() {
+    await gcAndFinalize();
+    const doMore = processDeadSet();
+    if (doMore) {
+      return finish();
+    }
+    return undefined;
+  }
+
   /**
    * This low-level liveslots code is responsible for deciding when userspace
    * is done with a crank. Userspace code can use Promises, so it can add as
@@ -1060,15 +1092,7 @@ function build(
 
     // Now that userspace is idle, we can drive GC until we think we've
     // stopped.
-    async function finish() {
-      await gcAndFinalize();
-      const doMore = processDeadSet();
-      if (doMore) {
-        return finish();
-      }
-      return undefined;
-    }
-    return finish();
+    return runWithoutMeteringAsync(finish);
   }
   harden(dispatch);
 

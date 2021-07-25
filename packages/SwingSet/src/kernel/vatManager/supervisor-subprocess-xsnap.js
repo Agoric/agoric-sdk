@@ -30,6 +30,26 @@ function workerLog(first, ...args) {
 
 workerLog(`supervisor started`);
 
+function runWithoutMetering(thunk) {
+  const limit = globalThis.currentMeterLimit();
+  const before = globalThis.resetMeter(0, 0);
+  try {
+    return thunk();
+  } finally {
+    globalThis.resetMeter(limit, before);
+  }
+}
+
+async function runWithoutMeteringAsync(thunk) {
+  const limit = globalThis.currentMeterLimit();
+  const before = globalThis.resetMeter(0, 0);
+  try {
+    return await thunk();
+  } finally {
+    globalThis.resetMeter(limit, before);
+  }
+}
+
 /**
  * Wrap byte-level protocols with tagged array codec.
  *
@@ -180,6 +200,8 @@ function makeWorker(port) {
       // FIXME(mfig): Here is where GC-per-crank is silently disabled.
       // We need to do a better analysis of the tradeoffs.
       gcAndFinalize: makeGcAndFinalize(gcEveryCrank && globalThis.gc),
+      runWithoutMetering,
+      runWithoutMeteringAsync,
     });
 
     const ls = makeLiveSlots(

@@ -826,6 +826,8 @@ export default function buildKernel(
     FinalizationRegistry,
     waitUntilQuiescent,
     gcAndFinalize,
+    runWithoutMetering: thunk => thunk(),
+    runWithoutMeteringAsync: async thunk => thunk(),
   });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,

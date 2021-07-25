@@ -75,6 +75,8 @@ parentPort.on('message', ([type, ...margs]) => {
       FinalizationRegistry,
       waitUntilQuiescent,
       gcAndFinalize: makeGcAndFinalize(engineGC),
+      runWithoutMetering: thunk => thunk(),
+      runWithoutMeteringAsync: async thunk => thunk(),
     });
     const ls = makeLiveSlots(
       syscall,

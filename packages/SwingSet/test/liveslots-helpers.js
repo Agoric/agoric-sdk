@@ -46,6 +46,8 @@ export function makeDispatch(
     FinalizationRegistry,
     waitUntilQuiescent,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    runWithoutMetering: thunk => thunk(),
+    runWithoutMeteringAsync: async thunk => thunk(),
   });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,
