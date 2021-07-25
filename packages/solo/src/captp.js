@@ -1,4 +1,5 @@
 import { E, makeCapTP } from '@agoric/captp';
+import { Far } from '@agoric/marshal';
 
 export const getCapTPHandler = (
   send,
@@ -12,7 +13,7 @@ export const getCapTPHandler = (
     }
     return E(fallback)[method](...args);
   };
-  const handler = harden({
+  const handler = Far('capTpHandler', {
     onOpen(obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
       console.debug(`Starting CapTP`, meta);

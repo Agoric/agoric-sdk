@@ -298,7 +298,7 @@ export function buildRootObject(_vatPowers) {
       },
       getDepositFacetId: walletAdmin.getDepositFacetId,
       getAdminFacet() {
-        return harden({ ...walletAdmin, ...notifiers });
+        return Far('adminFacet', { ...walletAdmin, ...notifiers });
       },
       getIssuer: walletAdmin.getIssuer,
       getIssuers: walletAdmin.getIssuers,
@@ -402,7 +402,7 @@ export function buildRootObject(_vatPowers) {
        * methods directly.  Then we would like to deprecate this handler.
        */
       getCommandHandler() {
-        return harden({
+        return Far('commandHandler', {
           onOpen(_obj, meta) {
             bridgeHandles.add(meta.channelHandle);
           },
