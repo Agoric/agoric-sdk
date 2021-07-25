@@ -18,7 +18,7 @@ import '@agoric/assert/exported.js';
 // flag entirely and fix code that uses it (as if it were always `false`).
 //
 // Exported only for testing during the transition
-export const ALLOW_IMPLICIT_REMOTABLES = true;
+export const ALLOW_IMPLICIT_REMOTABLES = false;
 
 const {
   getPrototypeOf,
