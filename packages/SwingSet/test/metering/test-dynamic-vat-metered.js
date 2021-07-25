@@ -50,6 +50,7 @@ test('meter objects', async t => {
     hostStorage,
     kernelBundles,
   });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats
@@ -107,6 +108,7 @@ async function overflowCrank(t, explosion) {
     hostStorage,
     kernelBundles,
   });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats
@@ -206,6 +208,7 @@ test('meter decrements', async t => {
     hostStorage,
     kernelBundles,
   });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats
@@ -317,6 +320,7 @@ test('unlimited meter', async t => {
     hostStorage,
     kernelBundles,
   });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats
@@ -394,6 +398,7 @@ test('notify and underflow', async t => {
     hostStorage,
     kernelBundles,
   });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats
