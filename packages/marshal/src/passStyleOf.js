@@ -16,7 +16,9 @@ import '@agoric/assert/exported.js';
 //
 // TODO: once the policy changes to force remotables to be explicit, remove this
 // flag entirely and fix code that uses it (as if it were always `false`).
-const ALLOW_IMPLICIT_REMOTABLES = true;
+//
+// Exported only for testing during the transition
+export const ALLOW_IMPLICIT_REMOTABLES = true;
 
 const {
   getPrototypeOf,
@@ -249,9 +251,15 @@ const checkRemotableProto = (val, check = x => x, original = undefined) => {
       check(!Array.isArray(val), X`Arrays cannot be pass-by-remote`) &&
       check(val !== null, X`null cannot be pass-by-remote`) &&
       check(
-        // @ts-ignore
+        // Since we're working with TypeScript's unsound type system, mostly
+        // to catch accidents and to provide IDE support, we type arguments
+        // like `val` according to what they are supposed to be. The following
+        // tests for a particular violation. However, TypeScript complains
+        // because *if the declared type were accurate*, then the condition
+        // would always return true.
+        // @ts-ignore TypeScript assumes what we're trying to check
         val !== Object.prototype,
-        X`Remotables must now be explictly declared: ${q(original)}`,
+        X`Remotables must now be explicitly declared: ${q(original)}`,
       )
     )
   ) {
@@ -372,8 +380,6 @@ function checkRemotable(val, check = x => x) {
       X`Remotables should be explicitly declared: ${q(val)}`,
     );
     console.warn('Missing Far:', err);
-    // eslint-disable-next-line no-debugger
-    debugger;
     return true;
   }
   return checkRemotableProto(p, check, val);

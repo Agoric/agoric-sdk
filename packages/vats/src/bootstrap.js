@@ -582,12 +582,12 @@ export function buildRootObject(vatPowers, vatParameters) {
         namesByAddressAdmin.update(address, myAddressNameHub);
 
         /** @type {MyAddressNameAdmin} */
-        const myAddressNameAdmin = {
+        const myAddressNameAdmin = Far('myAddressNameAdmin', {
           ...rawMyAddressNameAdmin,
           getMyAddress() {
             return address;
           },
-        };
+        });
 
         const bundle = harden({
           ...additionalPowers,
