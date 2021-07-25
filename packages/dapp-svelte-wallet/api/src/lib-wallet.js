@@ -1130,7 +1130,7 @@ export function makeWallet({
       brand,
       issuer: undefined,
       status: undefined,
-      actions: {
+      actions: Far('payment actions', {
         async deposit(purseOrPetname = undefined) {
           /** @type {Purse} */
           let purse;
@@ -1226,7 +1226,7 @@ export function makeWallet({
           updatePaymentRecord(paymentRecord);
           return true;
         },
-      },
+      }),
     };
 
     payments.init(payment, harden(paymentRecord));

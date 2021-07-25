@@ -1,5 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
+// eslint-disable-next-line import/order
+import { Far } from '@agoric/marshal';
 import { makeTimerMap, curryPollFn } from '../src/devices/timer-src.js';
 
 test('multiMap multi store', t => {
@@ -39,17 +41,17 @@ test('multiMap remove key', t => {
 });
 
 function fakeSO(o) {
-  return {
+  return Far('fake SO', {
     wake(arg = null) {
       o.wake(arg);
     },
-  };
+  });
 }
 
 function makeHandler() {
   let calls = 0;
   const args = [];
-  return {
+  return Far('wake handler', {
     getCalls() {
       return calls;
     },
@@ -60,19 +62,19 @@ function makeHandler() {
       args.push(arg);
       calls += 1;
     },
-  };
+  });
 }
 
 function makeFakeTimer(initialVal) {
   let fakeTime = initialVal;
-  return {
+  return Far('fake timer', {
     getLastPolled() {
       return fakeTime;
     },
     setTime(t) {
       fakeTime = t;
     },
-  };
+  });
 }
 
 test('Timer schedule single event', t => {

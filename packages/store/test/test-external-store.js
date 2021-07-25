@@ -2,6 +2,7 @@
 /* eslint-disable no-use-before-define */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { Far } from '@agoric/marshal';
 
 import {
   makeStore,
@@ -67,7 +68,7 @@ test('rewritten code', t => {
         // We use JSON here just as a minimal test.  Real implementations will
         // want something like @agoric/marshal.
         /** @type {HydrateStore} */
-        const hstore = {
+        const hstore = Far('hstore', {
           init(id, data) {
             store.init(id, JSON.stringify(data));
           },
@@ -80,7 +81,7 @@ test('rewritten code', t => {
           makeWeakStore() {
             return makeWeakStore(instanceKind);
           },
-        };
+        });
         harden(hstore);
         idToStore.init(storeId, hstore);
         return hstore;

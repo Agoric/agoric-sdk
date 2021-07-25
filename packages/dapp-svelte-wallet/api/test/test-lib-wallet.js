@@ -15,6 +15,7 @@ import { E } from '@agoric/eventual-send';
 import { makeBoard } from '@agoric/vats/src/lib-board';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub';
+import { Far } from '@agoric/marshal';
 import { makeWallet } from '../src/lib-wallet';
 
 import '../src/types';
@@ -23,12 +24,12 @@ const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-  return {
+  return Far('fakeMyAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress() {
       return 'agoric1test1';
     },
-  };
+  });
 }
 
 async function setupTest() {

@@ -122,7 +122,7 @@ export function buildRootObject(_vatPowers) {
     }
 
     /** @type {WalletBridge} */
-    const bridge = {
+    const bridge = Far('bridge', {
       async getPursesNotifier() {
         await approve();
         const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
@@ -209,8 +209,8 @@ export function buildRootObject(_vatPowers) {
         await approve();
         return walletAdmin.getBrandPetnames(brands);
       },
-    };
-    return harden(bridge);
+    });
+    return bridge;
   };
 
   /**
@@ -220,7 +220,7 @@ export function buildRootObject(_vatPowers) {
    *
    * @type {WalletBridge}
    */
-  const preapprovedBridge = {
+  const preapprovedBridge = Far('preapprovedBridge', {
     addOffer(offer) {
       return walletAdmin.addOffer(offer);
     },
@@ -266,7 +266,7 @@ export function buildRootObject(_vatPowers) {
     async getBrandPetnames(brands) {
       return walletAdmin.getBrandPetnames(brands);
     },
-  };
+  });
   harden(preapprovedBridge);
 
   async function getWallet(bank) {
@@ -281,7 +281,7 @@ export function buildRootObject(_vatPowers) {
      *
      * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet }}
      */
-    const wallet = {
+    const wallet = Far('wallet', {
       addPayment: walletAdmin.addPayment,
       async getScopedBridge(suggestedDappPetname, dappOrigin) {
         const approve = async () => {
@@ -298,13 +298,13 @@ export function buildRootObject(_vatPowers) {
       },
       getDepositFacetId: walletAdmin.getDepositFacetId,
       getAdminFacet() {
-        return harden({ ...walletAdmin, ...notifiers });
+        return Far('adminFacet', { ...walletAdmin, ...notifiers });
       },
       getIssuer: walletAdmin.getIssuer,
       getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
-    };
+    });
     return harden(wallet);
   }
 
@@ -342,7 +342,7 @@ export function buildRootObject(_vatPowers) {
   }
 
   function getBridgeURLHandler() {
-    return harden({
+    return Far('bridgeURLHandler', {
       /**
        * @typedef {Object} WalletOtherSide the callbacks from a CapTP wallet
        * client.
@@ -402,7 +402,7 @@ export function buildRootObject(_vatPowers) {
        * methods directly.  Then we would like to deprecate this handler.
        */
       getCommandHandler() {
-        return harden({
+        return Far('commandHandler', {
           onOpen(_obj, meta) {
             bridgeHandles.add(meta.channelHandle);
           },

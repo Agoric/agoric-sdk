@@ -273,7 +273,7 @@ export function getReplHandler(replObjects, send) {
     },
   };
 
-  const commandHandler = harden({
+  const commandHandler = Far('commandHandler', {
     onOpen(_obj, meta) {
       replHandles.add(meta.channelHandle);
     },
@@ -289,7 +289,7 @@ export function getReplHandler(replObjects, send) {
     },
   });
 
-  return harden({
+  return Far('replHandler', {
     getCommandHandler() {
       return commandHandler;
     },

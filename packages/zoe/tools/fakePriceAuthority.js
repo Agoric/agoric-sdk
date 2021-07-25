@@ -179,7 +179,7 @@ export async function makeFakePriceAuthority(options) {
 
   async function startTicker() {
     let firstTime = true;
-    const handler = harden({
+    const handler = Far('wake handler', {
       wake: async t => {
         if (firstTime) {
           firstTime = false;
@@ -260,7 +260,7 @@ export async function makeFakePriceAuthority(options) {
       const { promise, resolve } = makePromiseKit();
       E(timer).setWakeup(
         timeStamp,
-        harden({
+        Far('wake handler', {
           wake: time => {
             return resolve(priceInQuote(amountIn, brandOut, time));
           },
