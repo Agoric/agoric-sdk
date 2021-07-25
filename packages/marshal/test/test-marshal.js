@@ -262,40 +262,19 @@ test('records', t => {
 
   const emptyData = { body: JSON.stringify({}), slots: [] };
 
-  // For objects with Symbol-named properties
-  const symEnumData = Symbol.for('symEnumData');
-  const symEnumFunc = Symbol.for('symEnumFunc');
-  const symNonenumData = Symbol.for('symNonenumData');
-  const symNonenumFunc = Symbol.for('symNonenumFunc');
-  const symNonenumGetFunc = Symbol.for('symNonenumGetFunc');
-
   function build(...opts) {
     const props = {};
     for (const opt of opts) {
       if (opt === 'enumStringData') {
         props.key1 = { enumerable: true, value: 'data' };
-      } else if (opt === 'enumStringFunc') {
-        props.enumStringFunc = { enumerable: true, value: () => 0 };
       } else if (opt === 'enumStringGetData') {
         props.enumStringGetData = { enumerable: true, get: () => 0 };
       } else if (opt === 'enumStringGetFunc') {
         props.enumStringGetFunc = { enumerable: true, get: () => () => 0 };
       } else if (opt === 'enumStringSet') {
         props.enumStringSet = { enumerable: true, set: () => undefined };
-      } else if (opt === 'enumSymbolData') {
-        props[symEnumData] = { enumerable: true, value: 2 };
-      } else if (opt === 'enumSymbolFunc') {
-        props[symEnumFunc] = { enumerable: true, value: () => 0 };
       } else if (opt === 'nonenumStringData') {
         props.nonEnumStringData = { enumerable: false, value: 3 };
-      } else if (opt === 'nonenumStringFunc') {
-        props.nonEnumStringFunc = { enumerable: false, value: () => 0 };
-      } else if (opt === 'nonenumSymbolData') {
-        props[symNonenumData] = { enumerable: false, value: 4 };
-      } else if (opt === 'nonenumSymbolFunc') {
-        props[symNonenumFunc] = { enumerable: false, value: () => 0 };
-      } else if (opt === 'nonenumSymbolGetFunc') {
-        props[symNonenumGetFunc] = { enumerable: false, get: () => () => 0 };
       } else {
         throw Error(`unknown option ${opt}`);
       }
