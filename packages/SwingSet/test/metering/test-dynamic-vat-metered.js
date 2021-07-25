@@ -1,4 +1,5 @@
 /* global __dirname */
+/* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
@@ -374,4 +375,98 @@ test('unlimited meter', async t => {
   kpidRejected(t, c, doneKPID, 'Compute meter exceeded');
 });
 
-// TODO notify and underflow in the same delivery, to exercise postAbortActions
+// Cause both a notify and an underflow in the same delivery. Without
+// postAbortActions, the notify would get unwound by the vat termination, and
+// would never be delivered.
+test('notify and underflow', async t => {
+  const managerType = 'xs-worker';
+  const { kernelBundles, dynamicVatBundle, bootstrapBundle } = t.context.data;
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: bootstrapBundle,
+      },
+    },
+  };
+  const hostStorage = provideHostStorage();
+  const c = await buildVatController(config, [], {
+    hostStorage,
+    kernelBundles,
+  });
+  c.pinVatRoot('bootstrap');
+
+  // let the vatAdminService get wired up before we create any new vats
+  await c.run();
+
+  // create a meter with 200k remaining and a notification threshold of 1
+  const cmargs = capargs([200000n, 1n]); // remaining, notifyThreshold
+  const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
+  await c.run();
+  const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
+  // and watch for its notifyThreshold to fire
+  const notifyKPID = c.queueToVatRoot(
+    'bootstrap',
+    'whenMeterNotifiesNext',
+    capargs([marg], [meterKref]),
+  );
+
+  // 'createVat' will import the bundle
+  const cvargs = capargs(
+    [dynamicVatBundle, { managerType, meter: marg }],
+    [meterKref],
+  );
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
+  await c.run();
+  const res2 = c.kpResolution(kp2);
+  t.is(JSON.parse(res2.body)[0], 'created', res2.body);
+  const doneKPID = res2.slots[0];
+
+  async function getMeter() {
+    const args = capargs([marg], [meterKref]);
+    const kp = c.queueToVatRoot('bootstrap', 'getMeter', args);
+    await c.run();
+    const res = c.kpResolution(kp);
+    const { remaining } = parse(res.body);
+    return remaining;
+  }
+
+  async function consume(shouldComplete) {
+    const kp = c.queueToVatRoot('bootstrap', 'run', capargs([]));
+    await c.run();
+    if (shouldComplete) {
+      t.is(c.kpStatus(kp), 'fulfilled');
+      t.deepEqual(c.kpResolution(kp), capargs(42));
+    } else {
+      t.is(c.kpStatus(kp), 'rejected');
+      kpidRejected(t, c, kp, 'vat terminated');
+    }
+  }
+
+  // run three consume() calls to measure the usage of the last
+  await consume(true);
+  await consume(true);
+  const remaining1 = await getMeter();
+  await consume(true);
+  let remaining = await getMeter();
+  const oneCycle = remaining1 - remaining;
+  // console.log(`one cycle appears to use ${oneCycle} computrons`);
+
+  // keep consuming until there is less than oneCycle remaining
+  while (remaining > oneCycle) {
+    await consume(true);
+    remaining = await getMeter();
+    // console.log(` now ${remaining}`);
+  }
+
+  // the next cycle should underflow *and* trip the absurdly low notification
+  // threshold
+  // console.log(`-- doing last consume()`);
+  await consume(false);
+  remaining = await getMeter();
+  t.is(remaining, 0n); // this checks postAbortActions.deductMeter
+  t.is(c.kpStatus(notifyKPID), 'fulfilled'); // and pAA.meterNotifications
+  const notification = c.kpResolution(notifyKPID);
+  t.is(parse(notification.body).value, 0n);
+  kpidRejected(t, c, doneKPID, 'meter underflow, vat terminated');
+});

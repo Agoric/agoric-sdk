@@ -381,7 +381,6 @@ export default function buildKernel(
     terminationTrigger = undefined;
     postAbortActions = {
       meterDeductions: [], // list of { meterID, compute }
-      meterNotifications: [], // list of meterID
     };
   }
   resetDeliveryTriggers();
@@ -397,17 +396,19 @@ export default function buildKernel(
   function deductMeter(meterID, compute, firstTime) {
     assert.typeof(compute, 'bigint');
     const res = kernelKeeper.deductMeter(meterID, compute);
-    // we also recode deduction and any notification in postAbortActions,
-    // which are executed if the delivery is being rewound for any reason
-    // (syscall error, res.underflow), so their side-effects survive
+
+    // We record the deductMeter() in postAbortActions.meterDeductions. If
+    // the delivery is rewound for any reason (syscall error, res.underflow),
+    // then deliverAndLogToVat will repeat the deductMeter (which will repeat
+    // the notifyMeterThreshold), so their side-effects will survive the
+    // abortCrank(). But we don't record it (again) during the repeat, to
+    // make sure exactly one copy of the changes will be committed.
+
     if (firstTime) {
       postAbortActions.meterDeductions.push({ meterID, compute });
     }
     if (res.notify) {
       notifyMeterThreshold(meterID);
-      if (firstTime) {
-        postAbortActions.meterNotifications.push(meterID);
-      }
     }
     return res.underflow;
   }
@@ -730,14 +731,11 @@ export default function buildKernel(
           // errors unwind any changes the vat made
           abortCrank();
           didAbort = true;
-          // but metering deductions or underflow notifications must survive
-          const { meterDeductions, meterNotifications } = postAbortActions;
+          // but metering deductions and underflow notifications must survive
+          const { meterDeductions } = postAbortActions;
           for (const { meterID, compute } of meterDeductions) {
             deductMeter(meterID, compute, false);
-          }
-          for (const meterID of meterNotifications) {
-            // reads meter.remaining, so must happen after deductMeter
-            notifyMeterThreshold(meterID);
+            // that will re-push any notifications
           }
         }
         // state changes reflecting the termination must also survive, so
