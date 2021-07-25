@@ -12,6 +12,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import { Far } from '@agoric/marshal';
 
 const contractPath = `${__dirname}/../src/pegasus`;
 
@@ -70,28 +71,30 @@ async function testRemotePeg(t) {
    * @type {import('@agoric/swingset-vat/src/vats/network').Connection?}
    */
   let gaiaConnection;
-  E(portP).addListener({
-    async onAccept(_p, _localAddr, _remoteAddr) {
-      return harden({
-        async onOpen(c) {
-          gaiaConnection = c;
-        },
-        async onReceive(_c, packetBytes) {
-          const packet = JSON.parse(packetBytes);
-          t.deepEqual(
-            packet,
-            {
-              amount: '100000000000000000001',
-              denom: 'uatom',
-              receiver: 'markaccount',
-            },
-            'expected transfer packet',
-          );
-          return JSON.stringify({ success: true });
-        },
-      });
-    },
-  });
+  E(portP).addListener(
+    Far('acceptor', {
+      async onAccept(_p, _localAddr, _remoteAddr) {
+        return harden({
+          async onOpen(c) {
+            gaiaConnection = c;
+          },
+          async onReceive(_c, packetBytes) {
+            const packet = JSON.parse(packetBytes);
+            t.deepEqual(
+              packet,
+              {
+                amount: '100000000000000000001',
+                denom: 'uatom',
+                receiver: 'markaccount',
+              },
+              'expected transfer packet',
+            );
+            return JSON.stringify({ success: true });
+          },
+        });
+      },
+    }),
+  );
 
   // Pretend we're Agoric.
   const chandler = E(pegasus).makePegConnectionHandler();

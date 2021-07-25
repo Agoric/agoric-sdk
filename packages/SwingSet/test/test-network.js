@@ -1,7 +1,8 @@
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
 
 import {
   parse,
@@ -26,7 +27,7 @@ const makeProtocolHandler = t => {
   let l;
   let lp;
   let nonce = 0;
-  return harden({
+  return Far('ProtocolHandler', {
     async onCreate(_protocol, _impl) {
       log('created', _protocol, _impl);
     },
@@ -80,7 +81,7 @@ test('handled protocol', async t => {
   const port = await protocol.bind('/ibc/*/ordered');
   await port.connect(
     '/ibc/*/ordered/echo',
-    harden({
+    Far('ProtocolHandler', {
       async onOpen(connection, localAddr, remoteAddr) {
         t.is(localAddr, '/ibc/*/ordered');
         t.is(remoteAddr, '/ibc/*/ordered/echo');
@@ -113,7 +114,7 @@ test('protocol connection listen', async t => {
   /**
    * @type {import('../src/vats/network').ListenHandler}
    */
-  const listener = harden({
+  const listener = Far('listener', {
     async onListen(p, listenHandler) {
       t.is(p, port, `port is tracked in onListen`);
       t.assert(listenHandler, `listenHandler is tracked in onListen`);
@@ -199,7 +200,7 @@ test('loopback protocol', async t => {
   /**
    * @type {import('../src/vats/network').ListenHandler}
    */
-  const listener = harden({
+  const listener = Far('listener', {
     async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
       return harden({
         async onReceive(c, packet, _connectionHandler) {
@@ -214,7 +215,7 @@ test('loopback protocol', async t => {
   const port2 = await protocol.bind('/loopback/bar');
   await port2.connect(
     port.getLocalAddress(),
-    harden({
+    Far('opener', {
       async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
         t.is(localAddr, '/loopback/bar/nonce/1');
         t.is(remoteAddr, '/loopback/foo/nonce/2');

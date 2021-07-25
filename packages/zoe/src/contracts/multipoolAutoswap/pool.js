@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp/';
 import { makeNotifierKit } from '@agoric/notifier';
+import { Far } from '@agoric/marshal';
 
 import {
   getInputPrice,
@@ -100,7 +101,7 @@ export const makeAddPool = (
     };
 
     /** @type {Pool} */
-    const pool = {
+    const pool = Far('pool', {
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
@@ -267,7 +268,7 @@ export const makeAddPool = (
       getToCentralPriceAuthority: () => toCentralPriceAuthority,
       // eslint-disable-next-line no-use-before-define
       getFromCentralPriceAuthority: () => fromCentralPriceAuthority,
-    };
+    });
 
     // TODO: if the pool exists, but its liquidity is zero,
     //  getPriceGivenAvailableInput() throws.

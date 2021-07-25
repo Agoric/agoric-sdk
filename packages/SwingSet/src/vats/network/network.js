@@ -494,7 +494,7 @@ export function makeNetworkProtocol(protocolHandler) {
   E(protocolHandler).onCreate(protocolImpl, protocolHandler);
 
   // Return the user-facing protocol.
-  return harden({ bind });
+  return Far('binder', { bind });
 }
 
 /**
