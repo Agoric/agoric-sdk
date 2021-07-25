@@ -74,8 +74,6 @@ FLAGS may be:
   --statsfile FILE - output performance stats to FILE as a JSON object
   --benchmark N    - perform an N round benchmark after the initial run
   --indirect       - launch swingset from a vat instead of launching directly
-  --globalmetering - install metering on global objects
-  --meter          - run metered vats (implies --globalmetering and --indirect)
   --config FILE    - read swingset config from FILE instead of inferring it
 
 CMD is one of:
@@ -175,8 +173,6 @@ export async function main() {
   let dumpTag = 't';
   let rawMode = false;
   let shouldPrintStats = false;
-  let globalMeteringActive = false;
-  let meterVats = false;
   let launchIndirectly = false;
   let benchmarkRounds = 0;
   let configPath = null;
@@ -267,14 +263,6 @@ export async function main() {
       case '--statsfile':
         statsFile = argv.shift();
         break;
-      case '--globalmetering':
-        globalMeteringActive = true;
-        break;
-      case '--meter':
-        meterVats = true;
-        globalMeteringActive = true;
-        launchIndirectly = true;
-        break;
       case '--indirect':
         launchIndirectly = true;
         break;
@@ -307,10 +295,6 @@ export async function main() {
   if (command === 'help') {
     usage();
     process.exit(0);
-  }
-
-  if (globalMeteringActive) {
-    log('global metering is active');
   }
 
   if (forceGC) {
@@ -381,9 +365,6 @@ export async function main() {
     }
     default:
       fail(`invalid database mode ${dbMode}`, true);
-  }
-  if (config.bootstrap) {
-    config.vats[config.bootstrap].parameters.metered = meterVats;
   }
   const runtimeOptions = {};
   if (verbose) {

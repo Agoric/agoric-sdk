@@ -12,6 +12,8 @@ test('setupCreateZCFVat', async t => {
   // creates a new vat
 
   const fakeVatAdminSvc = Far('fakeVatAdminSvc', {
+    createMeter: () => {},
+    createUnlimitedMeter: () => {},
     createVatByName: name => name,
     createVat: _bundle => 'zcfBundle',
   });

@@ -15,12 +15,12 @@ function capargs(args, slots = []) {
   return capdata(JSON.stringify(args), slots);
 }
 
-// Dynamic vats can be created without metering
+// Dynamic vats are created without metering by default
 
 test('unmetered dynamic vat', async t => {
   const config = {
     bootstrap: 'bootstrap',
-    defaultManagerType: 'local',
+    defaultManagerType: 'xs-worker',
     vats: {
       bootstrap: {
         sourceSpec: path.join(__dirname, 'vat-load-dynamic.js'),
@@ -43,7 +43,7 @@ test('unmetered dynamic vat', async t => {
   const kp1 = c.queueToVatRoot(
     'bootstrap',
     'createVat',
-    capargs([dynamicVatBundle, { metered: false }]),
+    capargs([dynamicVatBundle]),
     'panic',
   );
   await c.run();

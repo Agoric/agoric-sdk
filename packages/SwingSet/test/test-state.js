@@ -287,6 +287,7 @@ test('kernel state', async t => {
     ['kd.nextID', '30'],
     ['kp.nextID', '40'],
     ['kernel.defaultManagerType', 'local'],
+    ['meter.nextID', '1'],
   ]);
 });
 
@@ -321,6 +322,7 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.vatname5', 'v1'],
     ['vat.name.Frank', 'v2'],
     ['kernel.defaultManagerType', 'local'],
+    ['meter.nextID', '1'],
   ]);
   t.deepEqual(k.getStaticVats(), [
     ['Frank', 'v2'],
@@ -369,6 +371,7 @@ test('kernelKeeper device names', async t => {
     ['device.name.devicename5', 'd7'],
     ['device.name.Frank', 'd8'],
     ['kernel.defaultManagerType', 'local'],
+    ['meter.nextID', '1'],
   ]);
   t.deepEqual(k.getDevices(), [
     ['Frank', 'd8'],
@@ -550,6 +553,7 @@ test('kernelKeeper promises', async t => {
     [`${ko}.owner`, 'v1'],
     [`${ko}.refCount`, '1,1'],
     ['kernel.defaultManagerType', 'local'],
+    ['meter.nextID', '1'],
   ]);
 });
 
@@ -662,4 +666,44 @@ test('XS vatKeeper defaultManagerType', async t => {
   const k = makeKernelKeeper(kvStore, streamStore);
   k.createStartingKernelState('xs-worker');
   t.is(k.getDefaultManagerType(), 'xs-worker');
+});
+
+test('meters', async t => {
+  const { kvStore, streamStore } = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(kvStore, streamStore);
+  k.createStartingKernelState('local');
+  const m1 = k.allocateMeter(100n, 10n);
+  const m2 = k.allocateMeter(200n, 150n);
+  t.not(m1, m2);
+  k.deleteMeter(m2);
+  t.deepEqual(k.getMeter(m1), { remaining: 100n, threshold: 10n });
+  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
+  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
+  t.deepEqual(k.getMeter(m1), { remaining: 80n, threshold: 10n });
+  t.deepEqual(k.deductMeter(m1, 70n), { underflow: false, notify: false });
+  t.deepEqual(k.deductMeter(m1, 1n), { underflow: false, notify: true });
+  t.deepEqual(k.getMeter(m1), { remaining: 9n, threshold: 10n });
+  t.deepEqual(k.deductMeter(m1, 1n), { underflow: false, notify: false });
+  t.deepEqual(k.deductMeter(m1, 9n), { underflow: true, notify: false });
+  t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
+  t.deepEqual(k.deductMeter(m1, 2n), { underflow: true, notify: false });
+  t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
+  k.addMeterRemaining(m1, 50n);
+  t.deepEqual(k.getMeter(m1), { remaining: 50n, threshold: 10n });
+  t.deepEqual(k.deductMeter(m1, 30n), { underflow: false, notify: false });
+  t.deepEqual(k.deductMeter(m1, 25n), { underflow: true, notify: true });
+  t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
+
+  k.addMeterRemaining(m1, 50n);
+  k.setMeterThreshold(m1, 40n);
+  t.deepEqual(k.getMeter(m1), { remaining: 50n, threshold: 40n });
+  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
+  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: true });
+  t.deepEqual(k.getMeter(m1), { remaining: 30n, threshold: 40n });
+
+  const m3 = k.allocateMeter('unlimited', 10n);
+  k.setMeterThreshold(m3, 5n);
+  t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
+  t.deepEqual(k.deductMeter(m3, 1000n), { underflow: false, notify: false });
+  t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });

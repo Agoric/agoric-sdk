@@ -87,7 +87,7 @@ export function makeVatLoader(stuff) {
 
   const allowedDynamicOptions = [
     'description',
-    'metered',
+    'meterID',
     'managerType', // TODO: not sure we want vats to be able to control this
     'vatParameters',
     'enableSetup',
@@ -133,13 +133,14 @@ export function makeVatLoader(stuff) {
    *
    * @param {number} options.virtualObjectCacheSize
    *
-   * @param {boolean} [options.metered] if true,
-   *        subjects the new dynamic vat to a meter that limits
-   *        the amount of computation and allocation that can occur during any
-   *        given crank. Stack frames are limited as well. The meter is refilled
-   *        between cranks, but if the meter ever underflows, the vat is
-   *        terminated. If false, the vat is unmetered.  Defaults to false for
-   *        dynamic vats; static vats may not be metered.
+   * @param {string} [options.meterID] If a meterID is provided, the new
+   *        dynamic vat is limited to a fixed amount of computation and
+   *        allocation that can occur during any given crank. Peak stack
+   *        frames are limited as well. In addition, the given meter's
+   *        "remaining" value will be reduced by the amount of computation
+   *        used by each crank. The meter will eventually underflow unless it
+   *        is topped up, at which point the vat is terminated. If undefined,
+   *        the vat is unmetered. Static vats cannot be metered.
    *
    * @param {Record<string, unknown>} [options.vatParameters] provides
    *        the contents of the second argument to
@@ -199,7 +200,7 @@ export function makeVatLoader(stuff) {
       isDynamic ? allowedDynamicOptions : allowedStaticOptions,
     );
     const {
-      metered = false,
+      meterID,
       vatParameters = {},
       managerType,
       enableSetup = false,
@@ -231,7 +232,7 @@ export function makeVatLoader(stuff) {
     const managerOptions = {
       managerType,
       bundle: vatSourceBundle,
-      metered,
+      metered: !!meterID,
       enableDisavow,
       enableSetup,
       enablePipelining,

@@ -4,6 +4,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode';
 
 export default harden({
+  createMeter: () => {},
+  createUnlimitedMeter: () => {},
   createVat: bundle => {
     return harden({
       root: E(evalContractBundle(bundle)).buildRootObject(),

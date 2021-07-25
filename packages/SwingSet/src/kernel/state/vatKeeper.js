@@ -102,7 +102,7 @@ export function makeVatKeeper(
   }
 
   function getOptions() {
-    const options = JSON.parse(kvStore.get(`${vatID}.options`));
+    const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden(options);
   }
 
