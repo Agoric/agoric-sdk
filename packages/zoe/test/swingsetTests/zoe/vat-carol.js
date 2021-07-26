@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { sameKey } from '@agoric/same-structure';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
 const build = async (log, zoe, issuers, payments, installations) => {
@@ -30,14 +30,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
         X`wrong installation`,
       );
       assert(
-        sameStructure(
+        sameKey(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuerKeywordRecord were not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(sameKey(invitationValue[0].minimumBid, simoleans(3)));
+      assert(sameKey(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },

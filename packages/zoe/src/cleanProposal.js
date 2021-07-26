@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { mustBeComparable } from '@agoric/same-structure';
+import { assertComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import {
@@ -175,7 +175,7 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * @returns {ProposalRecord}
  */
 export const cleanProposal = (proposal, getAssetKindByBrand) => {
-  mustBeComparable(proposal);
+  assertComparable(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.

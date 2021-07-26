@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { sameKey } from '@agoric/same-structure';
 import { AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
 
@@ -235,14 +235,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong installation`,
       );
       assert(
-        sameStructure(
+        sameKey(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuerKeywordRecord was not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(sameKey(invitationValue[0].minimumBid, simoleans(3)));
+      assert(sameKey(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -278,7 +278,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
-        sameStructure(
+        sameKey(
           harden({ Asset: moolaIssuer, Price: simoleanIssuer }),
           issuerKeywordRecord,
         ),
@@ -286,11 +286,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
 
       assert(
-        sameStructure(invitationValue[0].asset, moola(3)),
+        sameKey(invitationValue[0].asset, moola(3)),
         X`Alice made a different offer than expected`,
       );
       assert(
-        sameStructure(invitationValue[0].price, simoleans(7)),
+        sameKey(invitationValue[0].price, simoleans(7)),
         X`Alice made a different offer than expected`,
       );
 
@@ -419,7 +419,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(installation === installations.autoswap, X`wrong installation`);
       const liquidityIssuer = await E(publicFacet).getLiquidityIssuer();
       assert(
-        sameStructure(
+        sameKey(
           harden({
             Central: moolaIssuer,
             Secondary: simoleanIssuer,

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { mustBeComparable } from '@agoric/same-structure';
+import { assertComparable } from '@agoric/same-structure';
 
 import './types';
 import natMathHelpers from './mathHelpers/natMathHelpers';
@@ -114,7 +114,7 @@ const getHelpers = (leftAmount, rightAmount) => {
 /** @type {(amount: Amount, brand?: Brand) => void} */
 const optionalBrandCheck = (amount, brand) => {
   if (brand !== undefined) {
-    mustBeComparable(brand);
+    assertComparable(brand);
     assert.equal(
       amount.brand,
       brand,
