@@ -289,10 +289,13 @@ test('meter decrements', async t => {
   await consume(true);
   remaining = await getMeter();
   console.log(remaining);
-  // It looks like #3499 reduces this to two
-  //  await consume(true);
-  //  remaining = await getMeter();
-  //  console.log(remaining);
+
+  // It looks like #3499 might reduce this to two, in which case comment out
+  // the following three lines.
+  await consume(true);
+  remaining = await getMeter();
+  console.log(remaining);
+
   console.log(`consume() about to underflow`);
   await consume(false);
   remaining = await getMeter();
