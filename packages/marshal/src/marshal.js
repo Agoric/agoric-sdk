@@ -74,7 +74,7 @@ export const pureCopy = val => {
     }
 
     case 'copyError': {
-      // passStyleOf is currently not fully validating of error objects,
+      // passStyleOf is currently not fully validating error objects,
       // in order to tolerate malformed error objects to preserve the initial
       // complaint, rather than complain about the form of the complaint.
       // However, pureCopy(error) must be safe. We should obtain nothing from

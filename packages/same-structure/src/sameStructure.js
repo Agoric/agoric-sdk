@@ -84,8 +84,7 @@ function allComparable(passable) {
     case 'boolean':
     case 'number':
     case 'bigint':
-    case 'remotable':
-    case 'copyError': {
+    case 'remotable': {
       return passable;
     }
     case 'promise': {
@@ -102,8 +101,21 @@ function allComparable(passable) {
         harden(objectFromEntries(vals.map((val, i) => [names[i], val]))),
       );
     }
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(passStyle)} is not fully implemented`);
+    }
+    case 'copyError': {
+      assert.fail(
+        X`Errors are passable but no longer comparable: ${passable}`,
+        TypeError,
+      );
+    }
+    case 'patternNode': {
+      assert.fail(X`PatternNodes are not comparable: ${passable}`);
+    }
     default: {
-      assert.fail(X`unrecognized passStyle ${passStyle}`, TypeError);
+      assert.fail(X`Unrecognized passStyle: ${passStyle}`, TypeError);
     }
   }
 }

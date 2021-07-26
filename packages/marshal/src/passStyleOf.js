@@ -25,7 +25,13 @@ const {
   getOwnPropertyDescriptors,
   isFrozen,
   prototype: objectPrototype,
+  hasOwnProperty: objectHasOwnProperty,
 } = Object;
+
+const { apply } = Reflect;
+
+const hasOwnPropertyOf = (obj, prop) =>
+  apply(objectHasOwnProperty, obj, [prop]);
 
 const { prototype: functionPrototype } = Function;
 
@@ -127,7 +133,7 @@ const isPassByCopyArray = (val, inProgress) => {
     const desc = descs[i];
     assert(desc, X`Arrays must not contain holes: ${q(i)}`, TypeError);
     assert(
-      'value' in desc,
+      hasOwnPropertyOf(desc, 'value'),
       X`Arrays must not contain accessors: ${q(i)}`,
       TypeError,
     );
@@ -189,7 +195,7 @@ const isPassByCopyRecord = (val, inProgress) => {
   for (const descKey of descKeys) {
     const desc = descs[/** @type {string} */ (descKey)];
     assert(
-      !('get' in desc),
+      hasOwnPropertyOf(desc, 'value'),
       X`Records must not contain accessors: ${q(descKey)}`,
       TypeError,
     );
@@ -250,6 +256,36 @@ export const assertIface = iface => checkIface(iface, assertChecker);
 harden(assertIface);
 
 /**
+ * @param {{ [PASS_STYLE]: string }} tagRecord
+ * @param {PassStyle} passStyle
+ * @param {Checker} [check]
+ * @returns {boolean}
+ */
+const checkTagRecord = (tagRecord, passStyle, check = x => x) => {
+  return (
+    check(
+      typeof tagRecord === 'object',
+      X`A non-object cannot be a tagRecord: ${tagRecord}`,
+    ) &&
+    check(
+      !Array.isArray(tagRecord),
+      X`An array cannot be a tagRecords: ${tagRecord}`,
+    ) &&
+    check(tagRecord !== null, X`null cannot be a tagRecord`) &&
+    check(
+      hasOwnPropertyOf(tagRecord, PASS_STYLE),
+      X`A tagRecord must have a [PASS_STYLE] property: ${tagRecord}`,
+    ) &&
+    check(
+      tagRecord[PASS_STYLE] === passStyle,
+      X`Expected ${q(passStyle)}, not ${q(
+        tagRecord[PASS_STYLE],
+      )}: ${tagRecord}`,
+    )
+  );
+};
+
+/**
  * @param {any} original
  * @param {Checker} [check]
  * @returns {boolean}
@@ -268,13 +304,6 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   if (
     !(
       check(
-        typeof proto === 'object',
-        X`cannot serialize non-objects like ${proto}`,
-      ) &&
-      check(isFrozen(proto), X`The Remotable proto must be frozen`) &&
-      check(!Array.isArray(proto), X`Arrays cannot be pass-by-remote`) &&
-      check(proto !== null, X`null cannot be pass-by-remote`) &&
-      check(
         // Since we're working with TypeScript's unsound type system, mostly
         // to catch accidents and to provide IDE support, we type arguments
         // like `val` according to what they are supposed to be. The following
@@ -284,7 +313,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
         // @ts-ignore TypeScript assumes what we're trying to check
         proto !== objectPrototype,
         X`Remotables must now be explicitly declared: ${q(original)}`,
-      )
+      ) && checkTagRecord(proto, 'remotable', check)
     )
   ) {
     return false;
@@ -316,24 +345,21 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   }
 
   const {
-    [PASS_STYLE]: passStyleDesc,
+    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
+    [PASS_STYLE]: _passStyleDesc,
     toString: toStringDesc,
     // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
     [Symbol.toStringTag]: ifaceDesc,
-    ...rest
+    ...restDescs
   } = getOwnPropertyDescriptors(proto);
 
   return (
     check(
-      ownKeys(rest).length === 0,
-      X`Unexpected properties on Remotable Proto ${ownKeys(rest)}`,
-    ) &&
-    check(!!passStyleDesc, X`Remotable must have a [PASS_STYLE]`) &&
-    check(
-      passStyleDesc.value === 'remotable',
-      X`Expected 'remotable', not ${q(passStyleDesc.value)}`,
+      ownKeys(restDescs).length === 0,
+      X`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`,
     ) &&
     check(
+      // @ts-ignore TypeScript thinks this is a toString method, not descriptor
       typeof toStringDesc.value === 'function',
       X`toString must be a function`,
     ) &&
@@ -370,7 +396,7 @@ const checkCanBeRemotable = (val, check = x => x) => {
       key =>
         // Typecast needed due to https://github.com/microsoft/TypeScript/issues/1863
         check(
-          !('get' in descs[/** @type {string} */ (key)]),
+          hasOwnPropertyOf(descs[/** @type {string} */ (key)], 'value'),
           X`cannot serialize Remotables with accessors like ${q(
             String(key),
           )} in ${val}`,
@@ -410,9 +436,6 @@ const checkCanBeRemotable = (val, check = x => x) => {
   }
 };
 
-export const canBeRemotable = val => checkCanBeRemotable(val);
-harden(canBeRemotable);
-
 export const assertCanBeRemotable = val => {
   checkCanBeRemotable(val, assertChecker);
 };
@@ -433,12 +456,14 @@ const checkRemotable = (val, check = x => x) => {
   }
   const p = getPrototypeOf(val);
 
-  if (ALLOW_IMPLICIT_REMOTABLES && (p === null || p === objectPrototype)) {
-    const err = assert.error(
-      X`Remotables should be explicitly declared: ${q(val)}`,
-    );
-    console.warn('Missing Far:', err);
-    return true;
+  if (p === null || p === objectPrototype) {
+    if (ALLOW_IMPLICIT_REMOTABLES) {
+      const err = assert.error(
+        X`Remotables should be explicitly declared: ${q(val)}`,
+      );
+      console.warn('Missing Far:', err);
+      return true;
+    }
   }
   return checkRemotableProtoOf(val, check);
 };
@@ -452,8 +477,9 @@ const assertRemotable = val => {
 
 /** @type {MarshalGetInterfaceOf} */
 export const getInterfaceOf = val => {
+  const typestr = typeof val;
   if (
-    (typeof val !== 'object' && typeof val !== 'function') ||
+    (typestr !== 'object' && typestr !== 'function') ||
     val === null ||
     val[PASS_STYLE] !== 'remotable' ||
     !checkRemotable(val)
@@ -465,6 +491,133 @@ export const getInterfaceOf = val => {
 harden(getInterfaceOf);
 
 /**
+ *  @param {CopySet} val
+ */
+const assertCopySet = val => {
+  checkTagRecord(val, 'copySet', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copySet must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    elements: elementsDesc,
+    ...restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(restDescs).length === 0,
+    X`Unexpected properties on copySet ${ownKeys(restDescs)}`,
+  );
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(elementsDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of elements`,
+  );
+  // TODO Must also assert that the elements array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
+};
+
+/**
+ * @param {CopyMap} val
+ */
+const assertCopyMap = val => {
+  checkTagRecord(val, 'copyMap', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copyMap must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    keys: keysDesc,
+    values: valuesDesc,
+    ...restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(restDescs).length === 0,
+    X`Unexpected properties on copyMap ${ownKeys(restDescs)}`,
+  );
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(keysDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of keys: ${val}`,
+  );
+  // TODO Must also assert that the keys array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
+
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(valuesDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of values: ${val}`,
+  );
+  assert.equal(
+    keysDesc.value.length,
+    valuesDesc.value.length,
+    X`The keys and values arrays must be the same length: ${val}`,
+  );
+};
+
+/**
+ * @param {PatternNode} val
+ */
+const assertPatternNode = val => {
+  checkTagRecord(val, 'patternNode', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A patternNode must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    patternKind: patternKindDesc,
+    ..._restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert(
+    typeof patternKindDesc.value === 'string',
+    X`toString must be a function`,
+  );
+  // TODO The test of patternNode validation.
+};
+
+/**
  * @param { Passable } val
  * @param { Set<Passable> } inProgress
  * @returns { PassStyle }
@@ -473,11 +626,33 @@ const passStyleOfInternal = (val, inProgress) => {
   const typestr = typeof val;
   switch (typestr) {
     case 'object': {
-      if (getInterfaceOf(val)) {
-        return 'remotable';
-      }
       if (val === null) {
         return 'null';
+      }
+      const passStyleTag = val[PASS_STYLE];
+      switch (passStyleTag) {
+        case undefined: {
+          break;
+        }
+        case 'remotable': {
+          assertRemotable(val);
+          return 'remotable';
+        }
+        case 'copySet': {
+          assertCopySet(val);
+          return 'copySet';
+        }
+        case 'copyMap': {
+          assertCopyMap(val);
+          return 'copyMap';
+        }
+        case 'patternNode': {
+          assertPatternNode(val);
+          return 'patternNode';
+        }
+        default: {
+          assert.fail(X`Unrecognized PassStyle ${passStyleTag}`);
+        }
       }
       assert(
         isFrozen(val),
@@ -566,35 +741,6 @@ const passStyleOfRecur = (val, inProgress) => {
 };
 
 /**
- * objects can only be passed in one of two/three forms:
- * 1: pass-by-remote: all properties (own and inherited) are methods,
- *    the object itself is of type object, not function
- * 2: pass-by-copy: all string-named own properties are data, not methods
- *    the object must inherit from objectPrototype or null
- * 3: the empty object is pass-by-remote, for identity comparison
- *
- * all objects must be frozen
- *
- * anything else will throw an error if you try to serialize it
- * with these restrictions, our remote call/copy protocols expose all useful
- * behavior of these objects: pass-by-remote objects have no other data (so
- * there's nothing else to copy), and pass-by-copy objects have no other
- * behavior (so there's nothing else to invoke)
- *
- * How would val be passed?  For primitive values, the answer is
- *   * 'null' for null
- *   * throwing an error for a symbol, whether registered or not.
- *   * that value's typeof string for all other primitive values
- * For frozen objects, the possible answers
- *   * 'copyRecord' for non-empty records with only data properties
- *   * 'copyArray' for arrays with only data properties
- *   * 'copyError' for instances of Error with only data properties
- *   * 'remotable' for non-array objects with only method properties
- *   * 'promise' for genuine promises only
- *   * throwing an error on anything else, including thenables.
- * We export passStyleOf so other algorithms can use this module's
- * classification.
- *
  * @param {Passable} val
  * @returns {PassStyle}
  */
