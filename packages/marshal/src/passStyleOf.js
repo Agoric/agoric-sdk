@@ -360,8 +360,8 @@ const checkCanBeRemotable = (val, check = x => x) => {
   }
 
   const descs = getOwnPropertyDescriptors(val);
-  const keys = ownKeys(descs); // enumerable-and-not, string-or-Symbol
   if (typeof val === 'object') {
+    const keys = ownKeys(descs); // enumerable-and-not, string-or-Symbol
     return keys.every(
       key =>
         // Typecast needed due to https://github.com/microsoft/TypeScript/issues/1863
@@ -384,21 +384,21 @@ const checkCanBeRemotable = (val, check = x => x) => {
     );
   } else if (typeof val === 'function') {
     // Far functions cannot be methods, and cannot have methods.
-    // They can and must have data `.name` and `.length` properties
+    // They must have exactly expected `.name` and `.length` properties
+    const { name: nameDesc, length: lengthDesc, ...restDescs } = descs;
+    const restKeys = ownKeys(restDescs);
     return (
-      check('name' in descs, X`Far function name expected in ${val}`) &&
       check(
-        typeof descs.name.value === 'string',
+        nameDesc && typeof nameDesc.value === 'string',
         X`Far function name must be a string, in ${val}`,
       ) &&
-      check('length' in descs, X`Far function length expected in ${val}`) &&
       check(
-        typeof descs.length.value === 'number',
+        lengthDesc && typeof lengthDesc.value === 'number',
         X`Far function length must be a number, in ${val}`,
       ) &&
       check(
-        keys.length === 2,
-        X`Far functions unexpected properties besides .name and .length ${keys}`,
+        restKeys.length === 0,
+        X`Far functions unexpected properties besides .name and .length ${restKeys}`,
       )
     );
   } else {
