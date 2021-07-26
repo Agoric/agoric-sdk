@@ -110,6 +110,18 @@
  * The leaves of a Passable's pass-by-copy superstructure.
  */
 
+/**
+ * @typedef {Passable} CopySet
+ */
+
+/**
+ * @typedef {Passable} CopyMap
+ */
+
+/**
+ * @typedef {Passable} PatternNode
+ */
+
 // /////////////////////////////////////////////////////////////////////////////
 
 /**

@@ -9,17 +9,6 @@ import { isPromise } from '@agoric/promise-kit';
 import './types.js';
 import '@agoric/assert/exported.js';
 
-// Setting this flag to true is what allows objects with `null` or
-// `Object.prototype` prototypes to be treated as remotable.  Setting to `false`
-// means that only objects declared with `Remotable(...)`, including `Far(...)`
-// can be used as remotables.
-//
-// TODO: once the policy changes to force remotables to be explicit, remove this
-// flag entirely and fix code that uses it (as if it were always `false`).
-//
-// Exported only for testing during the transition
-export const ALLOW_IMPLICIT_REMOTABLES = false;
-
 const {
   getPrototypeOf,
   getOwnPropertyDescriptors,
@@ -430,9 +419,6 @@ const checkCanBeRemotable = (val, check = x => x) => {
   }
 };
 
-export const canBeRemotable = val => checkCanBeRemotable(val);
-harden(canBeRemotable);
-
 export const assertCanBeRemotable = val => {
   checkCanBeRemotable(val, assertChecker);
 };
@@ -451,15 +437,6 @@ const checkRemotable = (val, check = x => x) => {
   if (!checkCanBeRemotable(val, check)) {
     return false;
   }
-  const p = getPrototypeOf(val);
-
-  if (ALLOW_IMPLICIT_REMOTABLES && (p === null || p === objectPrototype)) {
-    const err = assert.error(
-      X`Remotables should be explicitly declared: ${q(val)}`,
-    );
-    console.warn('Missing Far:', err);
-    return true;
-  }
   return checkRemotableProtoOf(val, check);
 };
 
@@ -472,8 +449,9 @@ const assertRemotable = val => {
 
 /** @type {MarshalGetInterfaceOf} */
 export const getInterfaceOf = val => {
+  const typestr = typeof val;
   if (
-    (typeof val !== 'object' && typeof val !== 'function') ||
+    (typestr !== 'object' && typestr !== 'function') ||
     val === null ||
     val[PASS_STYLE] !== 'remotable' ||
     !checkRemotable(val)
@@ -484,6 +462,101 @@ export const getInterfaceOf = val => {
 };
 harden(getInterfaceOf);
 
+/** @type {CopySet} */
+const assertCopySet = val => {
+  checkTagRecord(val, 'copySet', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copySet must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: passStyleDesc,
+    toString: toStringDesc,
+    elements: elementsDesc,
+    ...rest
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(rest).length === 0,
+    X`Unexpected properties on copySet ${ownKeys(rest)}`,
+  );
+  assert(!!passStyleDesc, X`copySet must have a [PASS_STYLE]`);
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(elementsDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of elements`,
+  );
+  // TODO Must also assert that the elements array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
+};
+
+/** @type {CopyMap} */
+const assertCopyMap = val => {
+  checkTagRecord(val, 'copyMap', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copyMap must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: passStyleDesc,
+    toString: toStringDesc,
+    keys: keysDesc,
+    values: valuesDesc,
+    ...rest
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(rest).length === 0,
+    X`Unexpected properties on copyMap ${ownKeys(rest)}`,
+  );
+  assert(!!passStyleDesc, X`copyMap must have a [PASS_STYLE]`);
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(keysDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of keys: ${val}`,
+  );
+  // TODO Must also assert that the keys array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
+
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    // eslint-disable-next-line no-use-before-define
+    passStyleOf(valuesDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of values: ${val}`,
+  );
+  assert.equal(
+    keysDesc.value.length,
+    valuesDesc.value.length,
+    X`The keys and values arrays must be the same length: ${val}`,
+  );
+};
+
 /**
  * @param { Passable } val
  * @param { Set<Passable> } inProgress
@@ -493,11 +566,33 @@ const passStyleOfInternal = (val, inProgress) => {
   const typestr = typeof val;
   switch (typestr) {
     case 'object': {
-      if (getInterfaceOf(val)) {
-        return 'remotable';
-      }
       if (val === null) {
         return 'null';
+      }
+      const passStyleTag = val[PASS_STYLE];
+      switch (passStyleTag) {
+        case undefined: {
+          break;
+        }
+        case 'remotable': {
+          assertRemotable(val);
+          return 'remotable';
+        }
+        case 'copySet': {
+          assertCopySet(val);
+          return 'copySet';
+        }
+        case 'copyMap': {
+          assertCopyMap(val);
+          return 'copyMap';
+        }
+        case 'patternNode': {
+          assertPatternNode(val);
+          return 'patternNode';
+        }
+        default: {
+          assert.fail(X`Unrecognized PassStyle ${passStyleTag}`);
+        }
       }
       assert(
         isFrozen(val),
@@ -519,8 +614,8 @@ const passStyleOfInternal = (val, inProgress) => {
       if (isPassByCopyRecord(val, inProgress)) {
         return 'copyRecord';
       }
-      assertRemotable(val);
-      return 'remotable';
+      assertCanBeRemotable(val);
+      assert.fail(X`Remotables must now be explicitly declared: ${val}`);
     }
     case 'function': {
       if (getInterfaceOf(val)) {
