@@ -132,11 +132,6 @@ const isPassByCopyArray = (val, inProgress) => {
       TypeError,
     );
     assert(
-      typeof desc.value !== 'function',
-      X`Arrays must not contain methods: ${q(i)}`,
-      TypeError,
-    );
-    assert(
       desc.enumerable,
       X`Array elements must be enumerable: ${q(i)}`,
       TypeError,
@@ -154,6 +149,21 @@ const isPassByCopyArray = (val, inProgress) => {
 };
 
 /**
+ * For a function to be a valid method, it must not be passable.
+ * Otherwise, we risk confusing pass-by-copy data carrying
+ * far functions with attempts at far objects with methods.
+ *
+ * TODO HAZARD Because we check this on the way to hardening a remotable,
+ * we cannot yet check that `func` is hardened. However, without
+ * doing so, it's inheritance might change after the `PASS_STYLE`
+ * check below.
+ *
+ * @param {*} func
+ * @returns {boolean}
+ */
+const canBeMethod = func => typeof func === 'function' && !(PASS_STYLE in func);
+
+/**
  * @param {Passable} val
  * @param { Set<Passable> } inProgress
  * @returns {boolean}
@@ -167,21 +177,17 @@ const isPassByCopyRecord = (val, inProgress) => {
   const descKeys = ownKeys(descs);
 
   for (const descKey of descKeys) {
-    if (typeof descKey === 'symbol') {
+    if (typeof descKey !== 'string') {
+      // Pass by copy records can only have string-named own properties
       return false;
     }
     const desc = descs[descKey];
-    if (typeof desc.value === 'function') {
+    if (canBeMethod(desc.value)) {
       return false;
     }
   }
   for (const descKey of descKeys) {
-    assert.typeof(
-      descKey,
-      'string',
-      X`Pass by copy records can only have string-named own properties`,
-    );
-    const desc = descs[descKey];
+    const desc = descs[/** @type {string} */ (descKey)];
     assert(
       !('get' in desc),
       X`Records must not contain accessors: ${q(descKey)}`,
@@ -265,6 +271,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
         typeof proto === 'object',
         X`cannot serialize non-objects like ${proto}`,
       ) &&
+      check(isFrozen(proto), X`The Remotable proto must be frozen`) &&
       check(!Array.isArray(proto), X`Arrays cannot be pass-by-remote`) &&
       check(proto !== null, X`null cannot be pass-by-remote`) &&
       check(
@@ -275,7 +282,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
         // because *if the declared type were accurate*, then the condition
         // would always return true.
         // @ts-ignore TypeScript assumes what we're trying to check
-        proto !== Object.prototype,
+        proto !== objectPrototype,
         X`Remotables must now be explicitly declared: ${q(original)}`,
       )
     )
@@ -287,22 +294,19 @@ const checkRemotableProtoOf = (original, check = x => x) => {
 
   if (typeof original === 'object') {
     if (
-      !(
-        check(
-          protoProto === objectPrototype || protoProto === null,
-          X`The Remotable Proto marker cannot inherit from anything unusual`,
-        ) && check(isFrozen(proto), X`The Remotable proto must be frozen`)
+      !check(
+        protoProto === objectPrototype || protoProto === null,
+        X`The Remotable Proto marker cannot inherit from anything unusual`,
       )
     ) {
       return false;
     }
   } else if (typeof original === 'function') {
     if (
-      !(
-        check(
-          protoProto === functionPrototype,
-          X`For far functions, the Remotable Proto marker must inherit from Function.prototype, in ${original}`,
-        ) && check(isFrozen(proto), X`The Remotable proto must be frozen`)
+      !check(
+        protoProto === functionPrototype ||
+          getPrototypeOf(protoProto) === functionPrototype,
+        X`For far functions, the Remotable Proto marker must inherit from Function.prototype, in ${original}`,
       )
     ) {
       return false;
@@ -372,7 +376,7 @@ const checkCanBeRemotable = (val, check = x => x) => {
           )} in ${val}`,
         ) &&
         check(
-          typeof val[key] === 'function',
+          canBeMethod(val[key]),
           X`cannot serialize Remotables with non-methods like ${q(
             String(key),
           )} in ${val}`,

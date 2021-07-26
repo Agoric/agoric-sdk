@@ -124,7 +124,7 @@ harden(pureCopy);
  * @param {InterfaceSpec} iface
  * @returns {Object}
  */
-const spliceRemotableProto = (remotable, iface) => {
+const makeRemotableProto = (remotable, iface) => {
   const oldProto = getPrototypeOf(remotable);
   if (typeof remotable === 'object') {
     assert(
@@ -133,7 +133,8 @@ const spliceRemotableProto = (remotable, iface) => {
     );
   } else if (typeof remotable === 'function') {
     assert(
-      oldProto === functionPrototype,
+      oldProto === functionPrototype ||
+        getPrototypeOf(oldProto) === functionPrototype,
       X`Far functions must originally inherit from Function.prototype, in ${remotable}`,
     );
   } else {
@@ -638,7 +639,7 @@ function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
   );
   // Ensure that the remotable isn't already frozen.
   assert(!isFrozen(remotable), X`Remotable ${remotable} is already frozen`);
-  const remotableProto = spliceRemotableProto(remotable, iface);
+  const remotableProto = makeRemotableProto(remotable, iface);
 
   // Take a static copy of the enumerable own properties as data properties.
   // const propDescs = getOwnPropertyDescriptors({ ...props });
