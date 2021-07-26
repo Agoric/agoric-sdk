@@ -129,11 +129,11 @@ const TO_STRING_NONFUNC = {
 const IFACE_ALLEGED = {
   message: /For now, iface "Bad remotable proto" must be "Remotable" or begin with "Alleged: "; unimplemented/,
 };
-const UNEXPECTED_PROPS = {
-  message: /Unexpected properties on Remotable Proto .*/,
+const EXPECTED_PASS_STYLE = {
+  message: /must have a \[PASS_STYLE\] property:/,
 };
 const EXPECTED_PRESENCE = {
-  message: /Expected 'remotable', not "string"/,
+  message: /Expected "remotable", not "string"/,
 };
 
 // Parallels the getInterfaceOf validation cases, explaining why
@@ -146,7 +146,7 @@ test('passStyleOf validation of remotables', t => {
   t.throws(() => passStyleOf(badRemotableProto4), NON_METHOD);
 
   t.is(passStyleOf(sub(goodRemotableProto)), 'remotable');
-  t.throws(() => passStyleOf(sub(badRemotableProto1)), UNEXPECTED_PROPS);
+  t.throws(() => passStyleOf(sub(badRemotableProto1)), EXPECTED_PASS_STYLE);
   t.throws(() => passStyleOf(sub(badRemotableProto2)), EXPECTED_PRESENCE);
   t.throws(() => passStyleOf(sub(badRemotableProto3)), TO_STRING_NONFUNC);
   t.throws(() => passStyleOf(sub(badRemotableProto4)), IFACE_ALLEGED);
