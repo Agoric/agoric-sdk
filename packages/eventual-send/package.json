@@ -2,13 +2,12 @@
   "name": "@agoric/eventual-send",
   "version": "0.13.22",
   "description": "Extend a Promise class to implement the eventual-send API",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/no-shim.js",
   "types": "src/index.d.ts",
   "scripts": {
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "build": "exit 0",
     "lint-check": "yarn lint",
@@ -27,10 +26,11 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
     "@agoric/assert": "^0.3.6",
-    "@agoric/install-ses": "^0.5.20",
-    "@agoric/swingset-vat": "^0.18.6",
+    "@agoric/babel-standalone": "^7.14.3",
+    "@endo/ses-ava": "0.2.4",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "c8": "^7.7.2",
+    "ses": "^0.13.4"
   },
   "keywords": [
     "eventual send",
@@ -56,9 +56,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   }
