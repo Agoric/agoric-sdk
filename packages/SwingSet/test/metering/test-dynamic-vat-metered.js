@@ -297,6 +297,7 @@ test.skip('meter decrements', async t => {
   // but not under CI. Leaving them uncommented passes on CI but
   // not locally.
   // TODO Marking this `test.skip` until this flakiness is cleared up.
+  // See https://github.com/Agoric/agoric-sdk/issues/3538
   await consume(true);
   remaining = await getMeter();
   console.log(remaining);
