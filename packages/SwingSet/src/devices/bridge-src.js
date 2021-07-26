@@ -3,6 +3,7 @@ import { Far } from '@agoric/marshal';
 
 function sanitize(data) {
   // TODO: Use @agoric/marshal:pureCopy when it exists.
+  // Note: It exists.
   if (data === undefined) {
     return undefined;
   }
