@@ -25,11 +25,15 @@ const {
   getOwnPropertyDescriptors,
   isFrozen,
   prototype: objectPrototype,
+  hasOwnProperty: objectHasOwnProperty,
 } = Object;
 
-const { prototype: functionPrototype } = Function;
+const { ownKeys, apply } = Reflect;
 
-const { ownKeys } = Reflect;
+const hasOwnPropertyOf = (obj, prop) =>
+  apply(objectHasOwnProperty, obj, [prop]);
+
+const { prototype: functionPrototype } = Function;
 
 export const PASS_STYLE = Symbol.for('passStyle');
 
@@ -63,7 +67,7 @@ harden(getErrorConstructor);
  * @param {Passable} val
  * @returns {boolean}
  */
-const isPassByCopyError = val => {
+const isCopyError = val => {
   // TODO: Need a better test than instanceof
   if (!(val instanceof Error)) {
     return false;
@@ -109,10 +113,10 @@ const isPassByCopyError = val => {
 
 /**
  * @param {Passable} val
- * @param { Set<Passable> } inProgress
+ * @param {PassStyleOf} passStyleOfRecur
  * @returns {boolean}
  */
-const isPassByCopyArray = (val, inProgress) => {
+const isCopyArray = (val, passStyleOfRecur) => {
   if (!Array.isArray(val)) {
     return false;
   }
@@ -127,7 +131,7 @@ const isPassByCopyArray = (val, inProgress) => {
     const desc = descs[i];
     assert(desc, X`Arrays must not contain holes: ${q(i)}`, TypeError);
     assert(
-      'value' in desc,
+      hasOwnPropertyOf(desc, 'value'),
       X`Arrays must not contain accessors: ${q(i)}`,
       TypeError,
     );
@@ -137,8 +141,7 @@ const isPassByCopyArray = (val, inProgress) => {
       TypeError,
     );
     // Recursively validate that each member is passable.
-    // eslint-disable-next-line no-use-before-define
-    passStyleOfRecur(desc.value, inProgress);
+    passStyleOfRecur(desc.value);
   }
   assert(
     ownKeys(descs).length === len + 1,
@@ -165,10 +168,10 @@ const canBeMethod = func => typeof func === 'function' && !(PASS_STYLE in func);
 
 /**
  * @param {Passable} val
- * @param { Set<Passable> } inProgress
+ * @param {PassStyleOf} passStyleOfRecur
  * @returns {boolean}
  */
-const isPassByCopyRecord = (val, inProgress) => {
+const isCopyRecord = (val, passStyleOfRecur) => {
   const proto = getPrototypeOf(val);
   if (proto !== objectPrototype && proto !== null) {
     return false;
@@ -189,7 +192,7 @@ const isPassByCopyRecord = (val, inProgress) => {
   for (const descKey of descKeys) {
     const desc = descs[/** @type {string} */ (descKey)];
     assert(
-      !('get' in desc),
+      hasOwnPropertyOf(desc, 'value'),
       X`Records must not contain accessors: ${q(descKey)}`,
       TypeError,
     );
@@ -199,8 +202,7 @@ const isPassByCopyRecord = (val, inProgress) => {
       TypeError,
     );
     // Recursively validate that each member is passable.
-    // eslint-disable-next-line no-use-before-define
-    passStyleOfRecur(desc.value, inProgress);
+    passStyleOfRecur(desc.value);
   }
   return true;
 };
@@ -250,6 +252,36 @@ export const assertIface = iface => checkIface(iface, assertChecker);
 harden(assertIface);
 
 /**
+ * @param {{ [PASS_STYLE]: string }} tagRecord
+ * @param {PassStyle} passStyle
+ * @param {Checker} [check]
+ * @returns {boolean}
+ */
+const checkTagRecord = (tagRecord, passStyle, check = x => x) => {
+  return (
+    check(
+      typeof tagRecord === 'object',
+      X`A non-object cannot be a tagRecord: ${tagRecord}`,
+    ) &&
+    check(
+      !Array.isArray(tagRecord),
+      X`An array cannot be a tagRecords: ${tagRecord}`,
+    ) &&
+    check(tagRecord !== null, X`null cannot be a tagRecord`) &&
+    check(
+      hasOwnPropertyOf(tagRecord, PASS_STYLE),
+      X`A tagRecord must have a [PASS_STYLE] property: ${tagRecord}`,
+    ) &&
+    check(
+      tagRecord[PASS_STYLE] === passStyle,
+      X`Expected ${q(passStyle)}, not ${q(
+        tagRecord[PASS_STYLE],
+      )}: ${tagRecord}`,
+    )
+  );
+};
+
+/**
  * @param {any} original
  * @param {Checker} [check]
  * @returns {boolean}
@@ -268,13 +300,6 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   if (
     !(
       check(
-        typeof proto === 'object',
-        X`cannot serialize non-objects like ${proto}`,
-      ) &&
-      check(isFrozen(proto), X`The Remotable proto must be frozen`) &&
-      check(!Array.isArray(proto), X`Arrays cannot be pass-by-remote`) &&
-      check(proto !== null, X`null cannot be pass-by-remote`) &&
-      check(
         // Since we're working with TypeScript's unsound type system, mostly
         // to catch accidents and to provide IDE support, we type arguments
         // like `val` according to what they are supposed to be. The following
@@ -284,7 +309,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
         // @ts-ignore TypeScript assumes what we're trying to check
         proto !== objectPrototype,
         X`Remotables must now be explicitly declared: ${q(original)}`,
-      )
+      ) && checkTagRecord(proto, 'remotable', check)
     )
   ) {
     return false;
@@ -316,27 +341,25 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   }
 
   const {
-    [PASS_STYLE]: passStyleDesc,
+    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
+    [PASS_STYLE]: _passStyleDesc,
     toString: toStringDesc,
     // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
     [Symbol.toStringTag]: ifaceDesc,
-    ...rest
+    ...restDescs
   } = getOwnPropertyDescriptors(proto);
 
   return (
     check(
-      ownKeys(rest).length === 0,
-      X`Unexpected properties on Remotable Proto ${ownKeys(rest)}`,
-    ) &&
-    check(!!passStyleDesc, X`Remotable must have a [PASS_STYLE]`) &&
-    check(
-      passStyleDesc.value === 'remotable',
-      X`Expected 'remotable', not ${q(passStyleDesc.value)}`,
+      ownKeys(restDescs).length === 0,
+      X`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`,
     ) &&
     check(
+      // @ts-ignore TypeScript thinks this is a toString method, not descriptor
       typeof toStringDesc.value === 'function',
       X`toString must be a function`,
     ) &&
+    // @ts-ignore red highlights in vscode but `yarn test` clean.
     checkIface(ifaceDesc && ifaceDesc.value, check)
   );
 };
@@ -370,7 +393,7 @@ const checkCanBeRemotable = (val, check = x => x) => {
       key =>
         // Typecast needed due to https://github.com/microsoft/TypeScript/issues/1863
         check(
-          !('get' in descs[/** @type {string} */ (key)]),
+          hasOwnPropertyOf(descs[/** @type {string} */ (key)], 'value'),
           X`cannot serialize Remotables with accessors like ${q(
             String(key),
           )} in ${val}`,
@@ -410,9 +433,6 @@ const checkCanBeRemotable = (val, check = x => x) => {
   }
 };
 
-export const canBeRemotable = val => checkCanBeRemotable(val);
-harden(canBeRemotable);
-
 export const assertCanBeRemotable = val => {
   checkCanBeRemotable(val, assertChecker);
 };
@@ -433,12 +453,14 @@ const checkRemotable = (val, check = x => x) => {
   }
   const p = getPrototypeOf(val);
 
-  if (ALLOW_IMPLICIT_REMOTABLES && (p === null || p === objectPrototype)) {
-    const err = assert.error(
-      X`Remotables should be explicitly declared: ${q(val)}`,
-    );
-    console.warn('Missing Far:', err);
-    return true;
+  if (p === null || p === objectPrototype) {
+    if (ALLOW_IMPLICIT_REMOTABLES) {
+      const err = assert.error(
+        X`Remotables should be explicitly declared: ${q(val)}`,
+      );
+      console.warn('Missing Far:', err);
+      return true;
+    }
   }
   return checkRemotableProtoOf(val, check);
 };
@@ -452,8 +474,9 @@ const assertRemotable = val => {
 
 /** @type {MarshalGetInterfaceOf} */
 export const getInterfaceOf = val => {
+  const typestr = typeof val;
   if (
-    (typeof val !== 'object' && typeof val !== 'function') ||
+    (typestr !== 'object' && typestr !== 'function') ||
     val === null ||
     val[PASS_STYLE] !== 'remotable' ||
     !checkRemotable(val)
@@ -465,67 +488,133 @@ export const getInterfaceOf = val => {
 harden(getInterfaceOf);
 
 /**
- * @param { Passable } val
- * @param { Set<Passable> } inProgress
- * @returns { PassStyle }
+ * @param {CopySet} val
+ * @param {PassStyleOf} passStyleOfRecur
  */
-const passStyleOfInternal = (val, inProgress) => {
-  const typestr = typeof val;
-  switch (typestr) {
-    case 'object': {
-      if (getInterfaceOf(val)) {
-        return 'remotable';
-      }
-      if (val === null) {
-        return 'null';
-      }
-      assert(
-        isFrozen(val),
-        X`Cannot pass non-frozen objects like ${val}. Use harden()`,
-      );
-      if (isPromise(val)) {
-        return 'promise';
-      }
-      assert(
-        typeof val.then !== 'function',
-        X`Cannot pass non-promise thenables`,
-      );
-      if (isPassByCopyError(val)) {
-        return 'copyError';
-      }
-      if (isPassByCopyArray(val, inProgress)) {
-        return 'copyArray';
-      }
-      if (isPassByCopyRecord(val, inProgress)) {
-        return 'copyRecord';
-      }
-      assertRemotable(val);
-      return 'remotable';
-    }
-    case 'function': {
-      if (getInterfaceOf(val)) {
-        return 'remotable';
-      }
-      assert(
-        isFrozen(val),
-        X`Cannot pass non-frozen objects like ${val}. Use harden()`,
-      );
-      assertRemotable(val);
-      return 'remotable';
-    }
-    case 'undefined':
-    case 'string':
-    case 'boolean':
-    case 'number':
-    case 'bigint':
-    case 'symbol': {
-      return typestr;
-    }
-    default: {
-      assert.fail(X`Unrecognized typeof ${q(typestr)}`, TypeError);
-    }
-  }
+const assertCopySet = (val, passStyleOfRecur) => {
+  checkTagRecord(val, 'copySet', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copySet must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    elements: elementsDesc,
+    ...restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(restDescs).length === 0,
+    X`Unexpected properties on copySet ${ownKeys(restDescs)}`,
+  );
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    passStyleOfRecur(elementsDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of elements`,
+  );
+  // TODO Must also assert that the elements array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
 };
+
+/**
+ * @param {CopyMap} val
+ * @param {PassStyleOf} passStyleOfRecur
+ */
+const assertCopyMap = (val, passStyleOfRecur) => {
+  checkTagRecord(val, 'copyMap', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A copyMap must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    keys: keysDesc,
+    values: valuesDesc,
+    ...restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    ownKeys(restDescs).length === 0,
+    X`Unexpected properties on copyMap ${ownKeys(restDescs)}`,
+  );
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    passStyleOfRecur(keysDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of keys: ${val}`,
+  );
+  // TODO Must also assert that the keys array contains only comparables,
+  // which, fortunately, is the same as asserting that the array is a
+  // comparable. However, that check is currently in the same-structure package,
+  // leading to a layering problem.
+
+  assert.equal(
+    // Note that passStyle already ensures that the array only contains
+    // passables.
+    passStyleOfRecur(valuesDesc.value),
+    'copyArray',
+    X`A copyArray must have an array of values: ${val}`,
+  );
+  assert.equal(
+    keysDesc.value.length,
+    valuesDesc.value.length,
+    X`The keys and values arrays must be the same length: ${val}`,
+  );
+};
+
+/**
+ * @param {PatternNode} val
+ * @param {PassStyleOf} _passStyleRecur
+ */
+const assertPatternNode = (val, _passStyleRecur) => {
+  checkTagRecord(val, 'patternNode', assertChecker);
+  const proto = getPrototypeOf(val);
+  assert(
+    proto === null || proto === objectPrototype,
+    X`A patternNode must inherit directly from null or Object.prototype: ${val}`,
+  );
+  const {
+    // @ts-ignore TypeStript cannot index by symbols
+    [PASS_STYLE]: _passStyleDesc,
+    toString: toStringDesc,
+    patternKind: patternKindDesc,
+    ..._restDescs
+  } = getOwnPropertyDescriptors(proto);
+
+  assert(
+    // @ts-ignore TypeScript thinks toString is a function, not a desciptor
+    typeof toStringDesc.value === 'function',
+    X`toString must be a function`,
+  );
+  assert(
+    typeof patternKindDesc.value === 'string',
+    X`toString must be a function`,
+  );
+  // TODO The test of patternNode validation.
+};
+
+const isPrimitive = val => Object(val) !== val;
 
 /**
  * Purely for performance. However it is mutable static state, and
@@ -543,64 +632,203 @@ const passStyleOfInternal = (val, inProgress) => {
 const passStyleOfCache = new WeakMap();
 
 /**
- * @param { Passable } val
- * @param { Set<Passable> } inProgress
- * @returns { PassStyle }
+ * @type {PassStyleOf}
  */
-const passStyleOfRecur = (val, inProgress) => {
-  const isObject = Object(val) === val;
-  if (isObject) {
-    if (passStyleOfCache.has(val)) {
-      // @ts-ignore
-      return passStyleOfCache.get(val);
-    }
-    assert(!inProgress.has(val), X`Pass-by-copy data cannot be cyclic ${val}`);
-    inProgress.add(val);
-  }
-  const passStyle = passStyleOfInternal(val, inProgress);
-  if (isObject) {
-    passStyleOfCache.set(val, passStyle);
-    inProgress.delete(val);
-  }
-  return passStyle;
-};
-
-/**
- * objects can only be passed in one of two/three forms:
- * 1: pass-by-remote: all properties (own and inherited) are methods,
- *    the object itself is of type object, not function
- * 2: pass-by-copy: all string-named own properties are data, not methods
- *    the object must inherit from objectPrototype or null
- * 3: the empty object is pass-by-remote, for identity comparison
- *
- * all objects must be frozen
- *
- * anything else will throw an error if you try to serialize it
- * with these restrictions, our remote call/copy protocols expose all useful
- * behavior of these objects: pass-by-remote objects have no other data (so
- * there's nothing else to copy), and pass-by-copy objects have no other
- * behavior (so there's nothing else to invoke)
- *
- * How would val be passed?  For primitive values, the answer is
- *   * 'null' for null
- *   * throwing an error for a symbol, whether registered or not.
- *   * that value's typeof string for all other primitive values
- * For frozen objects, the possible answers
- *   * 'copyRecord' for non-empty records with only data properties
- *   * 'copyArray' for arrays with only data properties
- *   * 'copyError' for instances of Error with only data properties
- *   * 'remotable' for non-array objects with only method properties
- *   * 'promise' for genuine promises only
- *   * throwing an error on anything else, including thenables.
- * We export passStyleOf so other algorithms can use this module's
- * classification.
- *
- * @param {Passable} val
- * @returns {PassStyle}
- */
-export const passStyleOf = val =>
+export const passStyleOf = passable => {
   // Even when a WeakSet is correct, when the set has a shorter lifetime
   // than its keys, we prefer a Set due to expected implementation
   // tradeoffs.
-  passStyleOfRecur(val, new Set());
+  const inProgress = new Set();
+
+  /**
+   * @type {PassStyleOf}
+   */
+  const passStyleOfRecur = inner => {
+    const isObject = !isPrimitive(inner);
+    if (isObject) {
+      if (passStyleOfCache.has(inner)) {
+        // @ts-ignore TypeScript doesn't know that `get` after `has` is safe
+        return passStyleOfCache.get(inner);
+      }
+      assert(
+        !inProgress.has(inner),
+        X`Pass-by-copy data cannot be cyclic ${inner}`,
+      );
+      inProgress.add(inner);
+    }
+    // eslint-disable-next-line no-use-before-define
+    const passStyle = passStyleOfInternal(inner);
+    if (isObject) {
+      passStyleOfCache.set(inner, passStyle);
+      inProgress.delete(inner);
+    }
+    return passStyle;
+  };
+
+  /**
+   * @type {PassStyleOf}
+   */
+  const passStyleOfInternal = inner => {
+    const typestr = typeof inner;
+    switch (typestr) {
+      case 'object': {
+        if (inner === null) {
+          return 'null';
+        }
+        const passStyleTag = inner[PASS_STYLE];
+        switch (passStyleTag) {
+          case undefined: {
+            break;
+          }
+          case 'remotable': {
+            assertRemotable(inner);
+            return 'remotable';
+          }
+          case 'copySet': {
+            assertCopySet(inner, passStyleOfRecur);
+            return 'copySet';
+          }
+          case 'copyMap': {
+            assertCopyMap(inner, passStyleOfRecur);
+            return 'copyMap';
+          }
+          case 'patternNode': {
+            assertPatternNode(inner, passStyleOfRecur);
+            return 'patternNode';
+          }
+          default: {
+            assert.fail(X`Unrecognized PassStyle ${passStyleTag}`);
+          }
+        }
+        assert(
+          isFrozen(inner),
+          X`Cannot pass non-frozen objects like ${inner}. Use harden()`,
+        );
+        if (isPromise(inner)) {
+          return 'promise';
+        }
+        assert(
+          typeof inner.then !== 'function',
+          X`Cannot pass non-promise thenables`,
+        );
+        if (isCopyError(inner)) {
+          return 'copyError';
+        }
+        if (isCopyArray(inner, passStyleOfRecur)) {
+          return 'copyArray';
+        }
+        if (isCopyRecord(inner, passStyleOfRecur)) {
+          return 'copyRecord';
+        }
+        assertRemotable(inner);
+        return 'remotable';
+      }
+      case 'function': {
+        assert(
+          isFrozen(inner),
+          X`Cannot pass non-frozen objects like ${inner}. Use harden()`,
+        );
+        assertRemotable(inner);
+        return 'remotable';
+      }
+      case 'undefined':
+      case 'string':
+      case 'boolean':
+      case 'number':
+      case 'bigint':
+      case 'symbol': {
+        return typestr;
+      }
+      default: {
+        assert.fail(X`Unrecognized typeof ${q(typestr)}`, TypeError);
+      }
+    }
+  };
+
+  return passStyleOfRecur(passable);
+};
 harden(passStyleOf);
+
+// ////////////////////////// Comparable ///////////////////////////
+
+// Like the passStyleCache. An optimization only. Works because comparability
+// is guaranteed stable.
+const comparableCache = new WeakMap();
+
+/**
+ * If `passable` is not a Passable, throw. Otherwise say whether it is
+ * comparable.
+ *
+ * @param {Passable} passable
+ * @returns {boolean}
+ */
+export const isComparable = passable => {
+  const isObject = !isPrimitive(passable);
+  if (isObject) {
+    if (comparableCache.has(passable)) {
+      return comparableCache.get(passable);
+    }
+  }
+  // eslint-disable-next-line no-use-before-define
+  const result = isComparableInternal(passable);
+  if (isObject) {
+    comparableCache.set(passable, result);
+  }
+  return result;
+};
+harden(isComparable);
+
+/**
+ * TODO If the path to the non-comparable becomes an important diagnostic,
+ * consider factoring this into a checkComparable that also takes
+ * a `path` and a `check` function.
+ *
+ * @param {Passable} passable
+ * @returns {boolean}
+ */
+const isComparableInternal = passable => {
+  const passStyle = passStyleOf(passable);
+  switch (passStyle) {
+    case 'null':
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'bigint':
+    case 'remotable': {
+      return true;
+    }
+    case 'copyArray': {
+      return passable.every(member => isComparable(member));
+    }
+    case 'copyRecord': {
+      return ownKeys(passable).every(name => isComparable(passable[name]));
+    }
+    case 'copySet': {
+      return isComparable(passable.members);
+    }
+    case 'copyMap': {
+      return isComparable(passable.keys) && isComparable(passable.values);
+    }
+    // Errors are no longer comparable
+    case 'copyError':
+    case 'promise':
+    case 'patternNode': {
+      return false;
+    }
+    default: {
+      assert.fail(X`Unrecognized passStyle: ${q(passStyle)}`, TypeError);
+    }
+  }
+};
+
+/**
+ * @param {Comparable} comparable
+ */
+export const assertComparable = comparable =>
+  assert(
+    isComparable(comparable),
+    X`Must be comparable: ${comparable}`,
+    TypeError,
+  );
+harden(assertComparable);

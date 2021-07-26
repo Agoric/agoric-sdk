@@ -2,7 +2,7 @@
 import '../../exported';
 
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { sameKey } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -20,7 +20,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
   expected = [...expected]; // in case hardened
   expected.sort();
   assert(
-    sameStructure(actual, harden(expected)),
+    sameKey(actual, harden(expected)),
     X`keywords: ${actual} were not as expected: ${expected}`,
   );
 };
@@ -136,7 +136,7 @@ export const assertProposalShape = (seat, expected) => {
   const assertKeys = (a, e) => {
     if (e !== undefined) {
       assert(
-        sameStructure(getKeysSorted(a), getKeysSorted(e)),
+        sameKey(getKeysSorted(a), getKeysSorted(e)),
         X`actual ${a} did not match expected ${e}`,
       );
     }

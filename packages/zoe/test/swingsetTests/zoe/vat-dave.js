@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { sameKey } from '@agoric/same-structure';
 import { AmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers';
 
@@ -31,14 +31,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong installation`,
       );
       assert(
-        sameStructure(
+        sameKey(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuerKeywordRecord were not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(sameKey(invitationValue[0].minimumBid, simoleans(3)));
+      assert(sameKey(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -91,7 +91,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
-        sameStructure(
+        sameKey(
           harden({ Asset: invitationIssuer, Price: bucksIssuer }),
           issuerKeywordRecord,
         ),
@@ -101,13 +101,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       assert(
-        sameStructure(invitationValue[0].asset, optionAmounts),
+        sameKey(invitationValue[0].asset, optionAmounts),
         X`asset is the option`,
       );
-      assert(
-        sameStructure(invitationValue[0].price, bucks(1)),
-        X`price is 1 buck`,
-      );
+      assert(sameKey(invitationValue[0].price, bucks(1)), X`price is 1 buck`);
       const optionValue = optionAmounts.value;
       assert(
         optionValue[0].description === 'exerciseOption',
