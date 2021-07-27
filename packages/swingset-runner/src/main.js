@@ -51,6 +51,7 @@ FLAGS may be:
   --initonly       - initialize the swingset but exit without running it
   --lmdb           - runs using LMDB as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
+  --usexs          - run vats using the the XS engine
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
   --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
@@ -180,6 +181,7 @@ export async function main() {
   let dbDir = null;
   let dbSize = 0;
   let initOnly = false;
+  let useXS = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
@@ -273,6 +275,10 @@ export async function main() {
       case '--lmdb':
         dbMode = flag;
         break;
+      case '--usexs':
+      case '--useXS':
+        useXS = true;
+        break;
       case '-v':
       case '--verbose':
         verbose = true;
@@ -331,6 +337,9 @@ export async function main() {
     };
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
+  }
+  if (useXS) {
+    config.defaultManagerType = 'xs-worker';
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);
@@ -530,6 +539,7 @@ export async function main() {
   if (statLogger) {
     statLogger.close();
   }
+  controller.shutdown();
 
   function getCrankNumber() {
     return Number(swingStore.kvStore.get('crankNumber'));

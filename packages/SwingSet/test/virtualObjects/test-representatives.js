@@ -279,29 +279,67 @@ test('exercise cache', async t => {
 
   // init cache - []
   await make('thing1', true, T1); // make t1 - [t1]
+  t.deepEqual(log.shift(), ['get', `${thingID(1)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['set', `${thingID(1)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await make('thing2', false, T2); // make t2 - [t2 t1]
+  t.deepEqual(log.shift(), ['get', `${thingID(2)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['set', `${thingID(2)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await read(T1, 'thing1'); // refresh t1 - [t1 t2]
   await read(T2, 'thing2'); // refresh t2 - [t2 t1]
   await readHeld('thing1'); // refresh t1 - [t1 t2]
 
   await make('thing3', false, T3); // make t3 - [t3 t1 t2]
-  await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
+  t.deepEqual(log.shift(), ['get', `${thingID(3)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['set', `${thingID(3)}.refCount`, '1 0']);
   t.deepEqual(log, []);
+
+  await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
+  t.deepEqual(log.shift(), ['get', `${thingID(4)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['set', `${thingID(4)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
+  t.deepEqual(log.shift(), ['get', `${thingID(5)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['get', `${thingID(2)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(2), thingVal('thing2')]);
+  t.deepEqual(log.shift(), ['set', `${thingID(5)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
+  t.deepEqual(log.shift(), ['get', `${thingID(6)}.refCount`, undefined]);
   t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1')]);
+  t.deepEqual(log.shift(), ['set', `${thingID(6)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
+  t.deepEqual(log.shift(), ['get', `${thingID(7)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['get', `${thingID(3)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(3), thingVal('thing3')]);
+  t.deepEqual(log.shift(), ['set', `${thingID(7)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
+  t.deepEqual(log.shift(), ['get', `${thingID(8)}.refCount`, undefined]);
+  t.deepEqual(log.shift(), ['get', `${thingID(4)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(4), thingVal('thing4')]);
+  t.deepEqual(log.shift(), ['set', `${thingID(8)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
 
   await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
   t.deepEqual(log.shift(), ['get', thingID(2), thingVal('thing2')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(5)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(5), thingVal('thing5')]);
+  t.deepEqual(log, []);
+
   await readHeld('thing1'); // reanimate t1, evict t6 - [t1 t2 t8 t7]
   t.deepEqual(log.shift(), ['get', thingID(1), thingVal('thing1')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(6)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(6), thingVal('thing6')]);
+  t.deepEqual(log, []);
 
   await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
   await writeHeld('thing1 updated'); // refresh t1 - [t1 t2 t8 t7]
@@ -309,30 +347,131 @@ test('exercise cache', async t => {
   await read(T8, 'thing8'); // refresh t8 - [t8 t1 t2 t7]
   await read(T7, 'thing7'); // refresh t7 - [t7 t8 t1 t2]
   t.deepEqual(log, []);
+
   await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
   t.deepEqual(log.shift(), ['get', thingID(6), thingVal('thing6')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(2)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(2), thingVal('thing2 updated')]);
+  t.deepEqual(log, []);
+
   await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
   t.deepEqual(log.shift(), ['get', thingID(5), thingVal('thing5')]);
   t.deepEqual(log.shift(), ['set', thingID(1), thingVal('thing1 updated')]);
+  t.deepEqual(log, []);
+
   await read(T4, 'thing4'); // reanimate t4, evict t8 - [t4 t5 t6 t7]
   t.deepEqual(log.shift(), ['get', thingID(4), thingVal('thing4')]);
   t.deepEqual(log.shift(), ['set', thingID(8), thingVal('thing8')]);
+  t.deepEqual(log, []);
+
   await read(T3, 'thing3'); // reanimate t3, evict t7 - [t3 t4 t5 t6]
   t.deepEqual(log.shift(), ['get', thingID(3), thingVal('thing3')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(7)}.refCount`, '1 0']);
   t.deepEqual(log.shift(), ['set', thingID(7), thingVal('thing7')]);
+  t.deepEqual(log, []);
 
   await read(T2, 'thing2 updated'); // reanimate t2, evict t6 - [t2 t3 t4 t5]
   t.deepEqual(log.shift(), ['get', thingID(2), thingVal('thing2 updated')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(6)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await readHeld('thing1 updated'); // reanimate t1, evict t5 - [t1 t2 t3 t4]
   t.deepEqual(log.shift(), ['get', thingID(1), thingVal('thing1 updated')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(5)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
 
   await forgetHeld(); // cache unchanged - [t1 t2 t3 t4]
-  await hold(T8); // cache unchanged - [t1 t2 t3 t4]
+  t.deepEqual(log.shift(), ['get', `${thingID(1)}.refCount`, '1 0']);
   t.deepEqual(log, []);
+
+  await hold(T8); // cache unchanged - [t1 t2 t3 t4]
+  t.deepEqual(log.shift(), ['get', `${thingID(4)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await read(T7, 'thing7'); // reanimate t7, evict t4 - [t7 t1 t2 t3]
   t.deepEqual(log.shift(), ['get', thingID(7), thingVal('thing7')]);
+  t.deepEqual(log.shift(), ['get', `${thingID(3)}.refCount`, '1 0']);
+  t.deepEqual(log, []);
+
   await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
   t.deepEqual(log.shift(), ['get', thingID(8), thingVal('thing8')]);
   t.deepEqual(log, []);
+});
+
+test('virtual object gc', async t => {
+  /*
+    With respect to any given case, we really only have two variables to fiddle
+    with: whether a reference to the VO is exported, and whether a reference to
+    the VO is retained in memory in the vat.
+
+    For the first variable, there are three possible states: not exported,
+    exported and then retained externally, exported and then dropped externally.
+
+    For the second variable, there are two possible states: retained internally,
+    and dropped internally.
+
+    That would seem like 6 cases, but that's not quite true, since a reference
+    that is dropped internally before being exported can't ever be
+    exported. (Also if a VO has both an exported reference and an internal
+    reference and both are dropped, we still have to worry about what order
+    they're dropped in, but there's another test that worries about the order of
+    droppage issue).
+
+    In this test, Bob generates 9 VOs of the same kind, with vrefs o+1/1 through
+    o+1/9.  Bob dispenses some of these to Bootstrap, drops some of them,
+    retires some, etc.  The breakdown is as follows:
+
+    #   Exported?  Export Dropped?  Local dropped? Delete?
+    1        yes              yes             yes     yes (dropped both locally and by export)
+    2        yes              yes              no      no (retained in local variable)
+    3        yes               no             yes      no (retained by export)
+    4         no              n/a             yes     yes (dropped before use)
+    5,6,7     no              n/a             yes     yes (dropped at end)
+    8,9       no              n/a              no      no (retained unused)
+
+    Things 5, 6, and 7 are essentially the same as 4, but they are dropped by a
+    loop at the end, to make sure that that works.
+
+    Things 8 and 9 are both the same. They are never used and so are retained
+    where they were originally stashed on creation
+  */
+
+  const config = {
+    bootstrap: 'bootstrap',
+    defaultManagerType: 'xs-worker',
+    vats: {
+      bob: {
+        sourceSpec: path.resolve(__dirname, 'vat-vom-gc-bob.js'),
+        creationOptions: {
+          virtualObjectCacheSize: 3,
+        },
+      },
+      bootstrap: {
+        sourceSpec: path.resolve(__dirname, 'vat-vom-gc-bootstrap.js'),
+      },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+
+  const c = await buildVatController(config, [], { hostStorage });
+  c.pinVatRoot('bootstrap');
+
+  await c.run();
+  t.deepEqual(
+    c.kpResolution(c.bootstrapResult),
+    capargs({ '@qclass': 'undefined' }),
+  );
+  const remainingVOs = {};
+  for (const key of hostStorage.kvStore.getKeys('v1.vs.', 'v1.vs/')) {
+    remainingVOs[key] = hostStorage.kvStore.get(key);
+  }
+  t.deepEqual(remainingVOs, {
+    'v1.vs.vom.o+1/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
+    'v1.vs.vom.o+1/2.refCount': '0 0',
+    'v1.vs.vom.o+1/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
+    'v1.vs.vom.o+1/3.refCount': '1 0',
+    'v1.vs.vom.o+1/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
+    'v1.vs.vom.o+1/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
+  });
 });

@@ -46,6 +46,23 @@ function thingVal(counter, label, resetCounter) {
   });
 }
 
+function minThing(label) {
+  return thingVal(0, label, 0);
+}
+
+function makeRefInstance(state) {
+  return {
+    init(value) {
+      state.value = value;
+    },
+    self: Far('ref', {
+      setVal(value) {
+        state.value = value;
+      },
+    }),
+  };
+}
+
 function makeZotInstance(state) {
   return {
     init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
@@ -294,6 +311,211 @@ test('virtual object operations', t => {
     ['vom.o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
     ['vom.o+2/3', zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
     ['vom.o+2/4', zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
+  ]);
+});
+
+test('virtual object gc', t => {
+  const log = [];
+  const {
+    makeKind,
+    dumpStore,
+    setExported,
+    deleteEntry,
+    possibleVirtualObjectDeath,
+  } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
+
+  const thingMaker = makeKind(makeThingInstance);
+  const refMaker = makeKind(makeRefInstance);
+
+  // make a bunch of things which we'll use
+  // all virtual objects are born locally ref'd
+  const things = [];
+  for (let i = 1; i <= 9; i += 1) {
+    things.push(thingMaker(`thing #${i}`));
+  }
+  t.is(log.shift(), `set vom.o+1/1 ${minThing('thing #1')}`);
+  t.is(log.shift(), `set vom.o+1/2 ${minThing('thing #2')}`);
+  t.is(log.shift(), `set vom.o+1/3 ${minThing('thing #3')}`);
+  t.is(log.shift(), `set vom.o+1/4 ${minThing('thing #4')}`);
+  t.is(log.shift(), `set vom.o+1/5 ${minThing('thing #5')}`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/1', minThing('thing #1')],
+    ['vom.o+1/2', minThing('thing #2')],
+    ['vom.o+1/3', minThing('thing #3')],
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+
+  // This is what the finalizer would do if the local reference was dropped and GC'd
+  function pretendGC(vref) {
+    deleteEntry(vref);
+    possibleVirtualObjectDeath(vref);
+  }
+
+  // case 1: export, drop local ref, drop export
+  // export
+  setExported('o+1/1', true);
+  t.is(log.shift(), `get vom.o+1/1.refCount => undefined`);
+  t.is(log.shift(), `set vom.o+1/1.refCount 1 0`);
+  t.deepEqual(log, []);
+  // drop local ref -- should not delete because exported
+  pretendGC('o+1/1');
+  t.is(log.shift(), `get vom.o+1/1.refCount => 1 0`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/1', minThing('thing #1')],
+    ['vom.o+1/1.refCount', '1 0'],
+    ['vom.o+1/2', minThing('thing #2')],
+    ['vom.o+1/3', minThing('thing #3')],
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+  // drop export -- should delete
+  setExported('o+1/1', false);
+  t.is(log.shift(), `get vom.o+1/1.refCount => 1 0`);
+  t.is(log.shift(), `set vom.o+1/1.refCount 0 0`);
+  t.is(log.shift(), `get vom.o+1/1.refCount => 0 0`);
+  t.is(log.shift(), `delete vom.o+1/1`);
+  t.is(log.shift(), `delete vom.o+1/1.refCount`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/2', minThing('thing #2')],
+    ['vom.o+1/3', minThing('thing #3')],
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+
+  // case 2: export, drop export, drop local ref
+  // export
+  setExported('o+1/2', true);
+  t.is(log.shift(), `get vom.o+1/2.refCount => undefined`);
+  t.is(log.shift(), `set vom.o+1/2.refCount 1 0`);
+  t.deepEqual(log, []);
+  // drop export -- should not delete because ref'd locally
+  setExported('o+1/2', false);
+  t.is(log.shift(), `get vom.o+1/2.refCount => 1 0`);
+  t.is(log.shift(), `set vom.o+1/2.refCount 0 0`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/2', minThing('thing #2')],
+    ['vom.o+1/2.refCount', '0 0'],
+    ['vom.o+1/3', minThing('thing #3')],
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+  // drop local ref -- should delete
+  pretendGC('o+1/2');
+  t.is(log.shift(), `get vom.o+1/2.refCount => 0 0`);
+  t.is(log.shift(), `delete vom.o+1/2`);
+  t.is(log.shift(), `delete vom.o+1/2.refCount`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/3', minThing('thing #3')],
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+
+  // case 3: drop local ref with no prior export
+  // drop local ref -- should delete
+  pretendGC('o+1/3');
+  t.is(log.shift(), `get vom.o+1/3.refCount => undefined`);
+  t.is(log.shift(), `delete vom.o+1/3`);
+  t.is(log.shift(), `delete vom.o+1/3.refCount`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/5', minThing('thing #5')],
+  ]);
+
+  // case 4: ref virtually, export, drop local ref, drop export
+  // ref virtually
+  // eslint-disable-next-line no-unused-vars
+  const ref1 = refMaker(things[3]);
+  t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
+  t.is(log.shift(), `get vom.o+1/4.refCount => undefined`);
+  t.is(log.shift(), `set vom.o+1/4.refCount 0 1`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/4.refCount', '0 1'],
+    ['vom.o+1/5', minThing('thing #5')],
+    ['vom.o+1/6', minThing('thing #6')],
+  ]);
+  // export
+  setExported('o+1/4', true);
+  t.is(log.shift(), `get vom.o+1/4.refCount => 0 1`);
+  t.is(log.shift(), `set vom.o+1/4.refCount 1 1`);
+  t.deepEqual(log, []);
+  // drop local ref -- should not delete because ref'd virtually AND exported
+  pretendGC('o+1/4');
+  t.deepEqual(log, []);
+  // drop export -- should not delete because ref'd virtually
+  setExported('o+1/4', false);
+  t.is(log.shift(), `get vom.o+1/4.refCount => 1 1`);
+  t.is(log.shift(), `set vom.o+1/4.refCount 0 1`);
+  t.deepEqual(log, []);
+
+  // case 5: export, ref virtually, drop local ref, drop export
+  // export
+  setExported('o+1/5', true);
+  t.is(log.shift(), `get vom.o+1/5.refCount => undefined`);
+  t.is(log.shift(), `set vom.o+1/5.refCount 1 0`);
+  t.deepEqual(log, []);
+  // ref virtually
+  // eslint-disable-next-line no-unused-vars
+  const ref2 = refMaker(things[4]);
+  t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
+  t.is(log.shift(), `get vom.o+1/5.refCount => 1 0`);
+  t.is(log.shift(), `set vom.o+1/5.refCount 1 1`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/4.refCount', '0 1'],
+    ['vom.o+1/5', minThing('thing #5')],
+    ['vom.o+1/5.refCount', '1 1'],
+    ['vom.o+1/6', minThing('thing #6')],
+    ['vom.o+1/7', minThing('thing #7')],
+  ]);
+  // drop local ref -- should not delete because ref'd virtually AND exported
+  pretendGC('o+1/5');
+  t.deepEqual(log, []);
+  // drop export -- should not delete because ref'd virtually
+  setExported('o+1/5', false);
+  t.is(log.shift(), `get vom.o+1/5.refCount => 1 1`);
+  t.is(log.shift(), `set vom.o+1/5.refCount 0 1`);
+  t.deepEqual(log, []);
+
+  // case 6: ref virtually, drop local ref
+  // ref virtually
+  // eslint-disable-next-line no-unused-vars
+  const ref3 = refMaker(things[5]);
+  t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
+  t.is(log.shift(), `get vom.o+1/6.refCount => undefined`);
+  t.is(log.shift(), `set vom.o+1/6.refCount 0 1`);
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/4.refCount', '0 1'],
+    ['vom.o+1/5', minThing('thing #5')],
+    ['vom.o+1/5.refCount', '0 1'],
+    ['vom.o+1/6', minThing('thing #6')],
+    ['vom.o+1/6.refCount', '0 1'],
+    ['vom.o+1/7', minThing('thing #7')],
+    ['vom.o+1/8', minThing('thing #8')],
+  ]);
+  // drop local ref -- should not delete because ref'd virtually
+  pretendGC('o+1/6');
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['vom.o+1/4', minThing('thing #4')],
+    ['vom.o+1/4.refCount', '0 1'],
+    ['vom.o+1/5', minThing('thing #5')],
+    ['vom.o+1/5.refCount', '0 1'],
+    ['vom.o+1/6', minThing('thing #6')],
+    ['vom.o+1/6.refCount', '0 1'],
+    ['vom.o+1/7', minThing('thing #7')],
+    ['vom.o+1/8', minThing('thing #8')],
   ]);
 });
 

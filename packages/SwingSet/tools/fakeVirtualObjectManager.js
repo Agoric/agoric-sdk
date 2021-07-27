@@ -96,6 +96,9 @@ export function makeFakeVirtualObjectManager(options = {}) {
   }
 
   function deleteEntry(slot, val) {
+    if (!val) {
+      val = getValForSlot(slot);
+    }
     slotToVal.delete(slot);
     valToSlot.delete(val);
   }
@@ -107,6 +110,8 @@ export function makeFakeVirtualObjectManager(options = {}) {
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,
+    setExported,
+    possibleVirtualObjectDeath,
     flushCache,
   } = makeVirtualObjectManager(
     fakeSyscall,
@@ -124,6 +129,8 @@ export function makeFakeVirtualObjectManager(options = {}) {
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,
+    setExported,
+    possibleVirtualObjectDeath,
   };
 
   const debugTools = {
