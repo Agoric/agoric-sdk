@@ -2,7 +2,7 @@
 
 import { test } from './prepare-test-env-ava.js';
 
-import { Far } from '../src/marshal.js';
+import { Far } from '../src/remotable.js';
 import { getInterfaceOf, passStyleOf } from '../src/passStyleOf.js';
 
 const { freeze } = Object;

@@ -8,7 +8,8 @@ import {
   ALLOW_IMPLICIT_REMOTABLES,
 } from '../src/passStyleOf.js';
 
-import { Remotable, Far, makeMarshal } from '../src/marshal.js';
+import { Remotable, Far } from '../src/remotable.js';
+import { makeMarshal } from '../src/marshal.js';
 
 const { create, prototype: objectPrototype } = Object;
 

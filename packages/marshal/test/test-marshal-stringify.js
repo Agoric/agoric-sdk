@@ -1,6 +1,6 @@
 import { test } from './prepare-test-env-ava.js';
 
-import { Far } from '../src/marshal.js';
+import { Far } from '../src/remotable.js';
 import { stringify, parse } from '../src/marshal-stringify.js';
 import { roundTripPairs } from './test-marshal.js';
 
