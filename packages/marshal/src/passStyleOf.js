@@ -28,14 +28,12 @@ const {
   hasOwnProperty: objectHasOwnProperty,
 } = Object;
 
-const { apply } = Reflect;
+const { ownKeys, apply } = Reflect;
 
 const hasOwnPropertyOf = (obj, prop) =>
   apply(objectHasOwnProperty, obj, [prop]);
 
 const { prototype: functionPrototype } = Function;
-
-const { ownKeys } = Reflect;
 
 export const PASS_STYLE = Symbol.for('passStyle');
 
@@ -702,6 +700,8 @@ const passStyleOfInternal = (val, inProgress) => {
   }
 };
 
+const isPrimitive = val => Object(val) !== val;
+
 /**
  * Purely for performance. However it is mutable static state, and
  * it does have some observability on proxies. TODO need to assess
@@ -723,10 +723,10 @@ const passStyleOfCache = new WeakMap();
  * @returns { PassStyle }
  */
 const passStyleOfRecur = (val, inProgress) => {
-  const isObject = Object(val) === val;
+  const isObject = !isPrimitive(val);
   if (isObject) {
     if (passStyleOfCache.has(val)) {
-      // @ts-ignore
+      // @ts-ignore TypeScript doesn't know that `get` after `has` is safe
       return passStyleOfCache.get(val);
     }
     assert(!inProgress.has(val), X`Pass-by-copy data cannot be cyclic ${val}`);
@@ -750,3 +750,90 @@ export const passStyleOf = val =>
   // tradeoffs.
   passStyleOfRecur(val, new Set());
 harden(passStyleOf);
+
+// ////////////////////////// Comparable ///////////////////////////
+
+/**
+ * TODO If the path to the non-comparable becomes an important diagnostic,
+ * consider factoring this into a checkComparable that also takes
+ * a `path` and a `check` function.
+ *
+ * @param {Passable} passable
+ * @returns {boolean}
+ */
+const isComparableInternal = passable => {
+  const passStyle = passStyleOf(passable);
+  switch (passStyle) {
+    case 'null':
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'bigint':
+    case 'remotable': {
+      return true;
+    }
+    case 'copyArray': {
+      // eslint-disable-next-line no-use-before-define
+      return passable.every(member => isComparable(member));
+    }
+    case 'copyRecord': {
+      // eslint-disable-next-line no-use-before-define
+      return ownKeys(passable).every(name => isComparable(passable[name]));
+    }
+    case 'copySet': {
+      // eslint-disable-next-line no-use-before-define
+      return isComparable(passable.members);
+    }
+    case 'copyMap': {
+      // eslint-disable-next-line no-use-before-define
+      return isComparable(passable.keys) && isComparable(passable.values);
+    }
+    // Errors are no longer comparable
+    case 'copyError':
+    case 'promise':
+    case 'patternNode': {
+      return false;
+    }
+    default: {
+      assert.fail(X`Unrecognized passStyle: ${passStyle}`, TypeError);
+    }
+  }
+};
+
+// Like the passStyleCache. An optimization only. Works because comparability
+// is guaranteed stable.
+const comparableCache = new WeakMap();
+
+/**
+ * If `passable` is not a Passable, throw. Otherwise say whether it is
+ * comparable.
+ *
+ * @param {Passable} passable
+ * @returns {boolean}
+ */
+export const isComparable = passable => {
+  const isObject = !isPrimitive(passable);
+  if (isObject) {
+    if (comparableCache.has(passable)) {
+      return comparableCache.get(passable);
+    }
+  }
+  const result = isComparableInternal(passable);
+  if (isObject) {
+    comparableCache.set(passable, result);
+  }
+  return result;
+};
+harden(isComparable);
+
+/**
+ * @param {Comparable} comparable
+ */
+export const assertComparable = comparable =>
+  assert(
+    isComparable(comparable),
+    X`Must be comparable: ${comparable}`,
+    TypeError,
+  );
+harden(assertComparable);

@@ -2,6 +2,8 @@ export {
   getInterfaceOf,
   getErrorConstructor,
   passStyleOf,
+  isComparable,
+  assertComparable,
 } from './src/passStyleOf.js';
 
 export {

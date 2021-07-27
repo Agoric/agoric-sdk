@@ -1,7 +1,12 @@
 export {
+  isComparable,
+  assertComparable,
+  assertComparable as mustBeComparable, // deprecated
+} from '@agoric/marshal';
+
+export {
   sameValueZero,
   allComparable,
-  sameStructure,
-  mustBeSameStructure,
-  mustBeComparable,
+  sameKey,
+  sameKey as sameStructure, // deprecated
 } from './src/sameStructure';

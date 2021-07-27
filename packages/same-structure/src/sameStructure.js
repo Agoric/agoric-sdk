@@ -1,42 +1,11 @@
 // @ts-check
 
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf, isComparable, assertComparable } from '@agoric/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 
-const {
-  is,
-  defineProperty,
-  getOwnPropertyNames,
-  getOwnPropertyDescriptor,
-} = Object;
+const { is, fromEntries, getOwnPropertyNames } = Object;
 
-// Shim of Object.fromEntries from
-// https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
-// TODO reconcile and dedup with the Object.fromEntries ponyfill in
-// SES-shim/packages/ses/src/commons.js
-function objectFromEntries(iter) {
-  const obj = {};
-
-  for (const pair of iter) {
-    if (Object(pair) !== pair) {
-      throw new TypeError('iterable for fromEntries should yield objects');
-    }
-
-    // Consistency with Map: contract is that entry has "0" and "1" keys, not
-    // that it is an array or iterable.
-
-    const { '0': key, '1': val } = pair;
-
-    defineProperty(obj, key, {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: val,
-    });
-  }
-
-  return obj;
-}
+const { ownKeys } = Reflect;
 
 /**
  * This is the equality comparison used by JavaScript's Map and Set
@@ -51,9 +20,7 @@ function objectFromEntries(iter) {
  * @param {any} y
  * @returns {boolean}
  */
-function sameValueZero(x, y) {
-  return x === y || is(x, y);
-}
+export const sameValueZero = (x, y) => x === y || is(x, y);
 harden(sameValueZero);
 
 /**
@@ -69,24 +36,19 @@ harden(sameValueZero);
  *
  * Given a passable, reveal a corresponding comparable, where each
  * leaf promise of the passable has been replaced with its
- * corresponding comparable.
+ * corresponding comparable, recursively.
  *
  * @param {Passable} passable
- * @returns {Promise<Comparable>}
+ * @returns {ERef<Comparable>}
  */
-function allComparable(passable) {
-  // passStyleOf now asserts that passable has no pass-by-copy cycles.
+export const allComparable = passable => {
+  if (isComparable(passable)) {
+    // Causes deep memoization, so is amortized fast.
+    return passable;
+  }
+  // Thus, we only need to deal with the non-comparable cases below.
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
-    case 'null':
-    case 'undefined':
-    case 'string':
-    case 'boolean':
-    case 'number':
-    case 'bigint':
-    case 'remotable': {
-      return passable;
-    }
     case 'promise': {
       return passable.then(nonp => allComparable(nonp));
     }
@@ -98,12 +60,12 @@ function allComparable(passable) {
       const names = getOwnPropertyNames(passable);
       const valPs = names.map(name => allComparable(passable[name]));
       return Promise.all(valPs).then(vals =>
-        harden(objectFromEntries(vals.map((val, i) => [names[i], val]))),
+        harden(fromEntries(vals.map((val, i) => [names[i], val]))),
       );
     }
     case 'copySet':
     case 'copyMap': {
-      assert.fail(X`${q(passStyle)} is not fully implemented`);
+      assert.fail(X`${q(passStyle)} is not yet fully implemented: ${passable}`);
     }
     case 'copyError': {
       assert.fail(
@@ -115,11 +77,58 @@ function allComparable(passable) {
       assert.fail(X`PatternNodes are not comparable: ${passable}`);
     }
     default: {
-      assert.fail(X`Unrecognized passStyle: ${passStyle}`, TypeError);
+      assert.fail(X`Unexpected passStyle: ${passStyle}`, TypeError);
     }
   }
-}
+};
 harden(allComparable);
+
+/**
+ * This internal recursion may assume that `left` and `right` and
+ * Comparables, since `sameKey` guards that, and the guarantee is
+ * deep.
+ *
+ * @param {Comparable} left
+ * @param {Comparable} right
+ * @returns {boolean}
+ */
+const sameKeyRecur = (left, right) => {
+  const leftStyle = passStyleOf(left);
+  if (leftStyle !== passStyleOf(right)) {
+    return false;
+  }
+  switch (leftStyle) {
+    case 'null':
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'bigint':
+    case 'remotable': {
+      return sameValueZero(left, right);
+    }
+    case 'copyArray': {
+      if (left.length !== right.length) {
+        return false;
+      }
+      return left.every((v, i) => sameKeyRecur(v, right[i]));
+    }
+    case 'copyRecord': {
+      const leftNames = ownKeys(left);
+      if (leftNames.length !== ownKeys(right).length) {
+        return false;
+      }
+      return leftNames.every(name => sameKeyRecur(left[name], right[name]));
+    }
+    case 'copySet':
+    case 'copyMap': {
+      assert.fail(X`${q(leftStyle)} is not fully implemented`);
+    }
+    default: {
+      assert.fail(X`Unexpected passStyle ${leftStyle}`, TypeError);
+    }
+  }
+};
 
 /**
  * Are left and right structurally equivalent comparables? This
@@ -134,174 +143,9 @@ harden(allComparable);
  * @param {Comparable} right
  * @returns {boolean}
  */
-function sameStructure(left, right) {
-  const leftStyle = passStyleOf(left);
-  const rightStyle = passStyleOf(right);
-  assert(
-    leftStyle !== 'promise',
-    X`Cannot structurally compare promises: ${left}`,
-  );
-  assert(
-    rightStyle !== 'promise',
-    X`Cannot structurally compare promises: ${right}`,
-  );
-
-  if (leftStyle !== rightStyle) {
-    return false;
-  }
-  switch (leftStyle) {
-    case 'null':
-    case 'undefined':
-    case 'string':
-    case 'boolean':
-    case 'number':
-    case 'bigint':
-    case 'remotable': {
-      return sameValueZero(left, right);
-    }
-    case 'copyRecord':
-    case 'copyArray': {
-      const leftNames = getOwnPropertyNames(left);
-      const rightNames = getOwnPropertyNames(right);
-      if (leftNames.length !== rightNames.length) {
-        return false;
-      }
-      for (const name of leftNames) {
-        // TODO: Better hasOwnProperty check
-        if (!getOwnPropertyDescriptor(right, name)) {
-          return false;
-        }
-        // TODO: Make cycle tolerant
-        if (!sameStructure(left[name], right[name])) {
-          return false;
-        }
-      }
-      return true;
-    }
-    case 'copyError': {
-      return left.name === right.name && left.message === right.message;
-    }
-    default: {
-      assert.fail(X`unrecognized passStyle ${leftStyle}`, TypeError);
-    }
-  }
-}
-harden(sameStructure);
-
-function pathStr(path) {
-  if (path === null) {
-    return 'top';
-  }
-  const [base, index] = path;
-  let i = index;
-  const baseStr = pathStr(base);
-  if (typeof i === 'string' && /^[a-zA-Z]\w*$/.test(i)) {
-    return `${baseStr}.${i}`;
-  }
-  if (typeof i === 'string' && `${+i}` === i) {
-    i = +i;
-  }
-  return `${baseStr}[${JSON.stringify(i)}]`;
-}
-
-// TODO: Reduce redundancy between sameStructure and
-// mustBeSameStructureInternal
-function mustBeSameStructureInternal(left, right, message, path) {
-  function complain(problem) {
-    assert.fail(
-      X`${q(message)}: ${q(problem)} at ${q(
-        pathStr(path),
-      )}: (${left}) vs (${right})`,
-    );
-  }
-
-  const leftStyle = passStyleOf(left);
-  const rightStyle = passStyleOf(right);
-  if (leftStyle === 'promise') {
-    complain('Promise on left');
-  }
-  if (rightStyle === 'promise') {
-    complain('Promise on right');
-  }
-
-  if (leftStyle !== rightStyle) {
-    complain('different passing style');
-  }
-  switch (leftStyle) {
-    case 'null':
-    case 'undefined':
-    case 'string':
-    case 'boolean':
-    case 'number':
-    case 'bigint':
-    case 'remotable': {
-      if (!sameValueZero(left, right)) {
-        complain('different');
-      }
-      break;
-    }
-    case 'copyRecord':
-    case 'copyArray': {
-      const leftNames = getOwnPropertyNames(left);
-      const rightNames = getOwnPropertyNames(right);
-      if (leftNames.length !== rightNames.length) {
-        complain(`${leftNames.length} vs ${rightNames.length} own properties`);
-      }
-      for (const name of leftNames) {
-        // TODO: Better hasOwnProperty check
-        if (!getOwnPropertyDescriptor(right, name)) {
-          complain(`${name} not found on right`);
-        }
-        // TODO: Make cycle tolerant
-        mustBeSameStructureInternal(left[name], right[name], message, [
-          path,
-          name,
-        ]);
-      }
-      break;
-    }
-    case 'copyError': {
-      if (left.name !== right.name) {
-        complain(`different error name: ${left.name} vs ${right.name}`);
-      }
-      if (left.message !== right.message) {
-        complain(
-          `different error message: ${left.message} vs ${right.message}`,
-        );
-      }
-      break;
-    }
-    default: {
-      complain(`unrecognized passStyle ${leftStyle}`);
-      break;
-    }
-  }
-}
-
-/**
- * @param {Comparable} left
- * @param {Comparable} right
- * @param {string} message
- */
-function mustBeSameStructure(left, right, message) {
-  mustBeSameStructureInternal(left, right, `${message}`, null);
-}
-harden(mustBeSameStructure);
-
-/**
- * If `val` would be a valid input to `sameStructure`, return
- * normally. Otherwise error.
- *
- * @param {Comparable} val
- */
-function mustBeComparable(val) {
-  mustBeSameStructure(val, val, 'not comparable');
-}
-
-export {
-  sameValueZero,
-  allComparable,
-  sameStructure,
-  mustBeSameStructure,
-  mustBeComparable,
+export const sameKey = (left, right) => {
+  assertComparable(left);
+  assertComparable(right);
+  return sameKeyRecur(left, right);
 };
+harden(sameKey);
