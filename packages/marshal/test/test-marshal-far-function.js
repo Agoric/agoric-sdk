@@ -56,8 +56,6 @@ test('Data can contain far functions', t => {
   t.is(passStyleOf(harden({ x: 8, foo: arrow })), 'copyRecord');
   const mightBeMethod = a => a + 1;
   t.throws(() => passStyleOf(freeze({ x: 8, foo: mightBeMethod })), {
-    // TODO This error may change after
-    // https://github.com/Agoric/agoric-sdk/pull/3525
     message: /Remotables with non-methods like "x" /,
   });
 });
