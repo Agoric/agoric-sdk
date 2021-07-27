@@ -252,7 +252,7 @@ const checkTagRecord = (tagRecord, passStyle, check = x => x) => {
     ) &&
     check(
       !Array.isArray(tagRecord),
-      X`An srray cannot be a tagRecords: ${tagRecord}`,
+      X`An array cannot be a tagRecords: ${tagRecord}`,
     ) &&
     check(tagRecord !== null, X`null cannot be a tagRecord`) &&
     check(
