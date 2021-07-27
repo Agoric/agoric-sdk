@@ -125,6 +125,8 @@ export function makeSnapStore(
    * @template T
    */
   async function load(hash, loadRaw) {
+    assert(!hash.includes('/'));
+
     return withTempName(async raw => {
       await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
       const actual = await fileHash(raw);
@@ -148,6 +150,7 @@ export function makeSnapStore(
    */
   function commitDeletes() {
     for (const hash of toDelete) {
+      assert(!hash.includes('/'));
       unlink(resolve(root, `${hash}.gz`));
     }
   }
