@@ -589,5 +589,6 @@ export function makeVatKeeper(
     dumpState,
     saveSnapshot,
     getLastSnapshot,
+    removeFromSnapshot,
   });
 }

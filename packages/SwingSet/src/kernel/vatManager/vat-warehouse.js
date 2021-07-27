@@ -345,6 +345,11 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     } catch (err) {
       console.debug('vat termination was already reported; ignoring:', err);
     }
+    const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
+    const old = vatKeeper.getLastSnapshot();
+    if (old) {
+      vatKeeper.removeFromSnapshot(old.snapshotID);
+    }
   }
 
   // mostly used by tests, only needed with thread/process-based workers
