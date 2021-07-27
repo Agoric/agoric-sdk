@@ -638,37 +638,6 @@ export default function makeKernelKeeper(
     return kernelPromisesToReject;
   }
 
-  function getUnusedSnapshots() {
-    /** @type { string[] } */
-    const found = [];
-    for (const k of kvStore.getKeys(`snapshot.`, `snapshot/`)) {
-      const consumers = JSON.parse(
-        kvStore.get(k) || assert.fail('getKeys ensures get'),
-      );
-      assert(Array.isArray(consumers));
-      if (consumers.length === 0) {
-        const snapshotID = k.slice(`snapshot.`.length);
-        found.push(snapshotID);
-      }
-    }
-    return found;
-  }
-
-  /**
-   * @param {string[]} allegedlyUnused
-   */
-  function forgetUnusedSnapshots(allegedlyUnused) {
-    for (const snapshotID of allegedlyUnused) {
-      const k = `snapshot.${snapshotID}`;
-      const consumersJSON = kvStore.get(k);
-      assert(consumersJSON);
-      const consumers = JSON.parse(consumersJSON);
-      assert(Array.isArray(consumers));
-      assert(consumers.length === 0);
-      kvStore.delete(k);
-    }
-  }
-
   function addMessageToPromiseQueue(kernelSlot, msg) {
     insistKernelType('promise', kernelSlot);
     insistMessage(msg);
@@ -1350,8 +1319,6 @@ export default function makeKernelKeeper(
     evictVatKeeper,
     closeVatTranscript,
     cleanupAfterTerminatedVat,
-    getUnusedSnapshots,
-    forgetUnusedSnapshots,
     addDynamicVatID,
     getDynamicVats,
     getStaticVats,
