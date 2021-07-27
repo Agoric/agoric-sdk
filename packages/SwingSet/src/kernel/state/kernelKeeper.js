@@ -537,6 +537,11 @@ export default function makeKernelKeeper(
     const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
 
+    const old = vatKeeper.getLastSnapshot();
+    if (old) {
+      vatKeeper.removeFromSnapshot(old.snapshotID);
+    }
+
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
     // more sophisticated database, we'd keep each section in a separate
