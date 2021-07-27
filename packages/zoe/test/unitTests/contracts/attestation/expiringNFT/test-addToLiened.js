@@ -10,7 +10,11 @@ import { makeHandle } from '../../../../../src/makeHandle';
 
 test('add for same address', async t => {
   /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  const store = makeStore(
+    'address',
+    { passableOnly: false }, // because stored array is pushed onto
+  );
+
   const address = 'address1';
   const handle1 = makeHandle('attestation');
   const handle2 = makeHandle('attestation');
