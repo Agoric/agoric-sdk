@@ -85,23 +85,35 @@ export function makeVatKeeper(
   insistVatID(vatID);
   const transcriptStream = `transcript-${vatID}`;
 
+  function getRequired(key) {
+    const value = kvStore.get(key);
+    assert(value !== undefined, `missing: ${key}`);
+    return value;
+  }
+
+  /**
+   * @param {SourceOfBundle} source
+   * @param {ManagerOptions} options
+   */
   function setSourceAndOptions(source, options) {
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
     assert(source);
-    assert(source.bundle || source.bundleName);
+    assert('bundle' in source || 'bundleName' in source);
     assert.typeof(options, 'object');
     kvStore.set(`${vatID}.source`, JSON.stringify(source));
     kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
   function getSourceAndOptions() {
-    const source = JSON.parse(kvStore.get(`${vatID}.source`));
-    const options = JSON.parse(kvStore.get(`${vatID}.options`));
+    const source = JSON.parse(getRequired(`${vatID}.source`));
+    /** @type { ManagerOptions } */
+    const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden({ source, options });
   }
 
   function getOptions() {
+    /** @type { ManagerOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden(options);
   }
@@ -241,7 +253,7 @@ export function makeVatKeeper(
         assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
       }
     }
-    const kernelSlot = kvStore.get(vatKey);
+    const kernelSlot = getRequired(vatKey);
 
     if (setReachable) {
       if (allocatedByVat) {
@@ -396,7 +408,7 @@ export function makeVatKeeper(
    * @yields { TranscriptEntry } a stream of transcript entries
    */
   function* getTranscript(startPos = streamStore.STREAM_START) {
-    const endPos = JSON.parse(kvStore.get(`${vatID}.t.endPosition`));
+    const endPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
     for (const entry of streamStore.readStream(
       transcriptStream,
       startPos,
@@ -412,7 +424,7 @@ export function makeVatKeeper(
    * @param {Object} entry  The transcript entry to append.
    */
   function addToTranscript(entry) {
-    const oldPos = JSON.parse(kvStore.get(`${vatID}.t.endPosition`));
+    const oldPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
     const newPos = streamStore.writeStreamItem(
       transcriptStream,
       JSON.stringify(entry),
@@ -532,7 +544,7 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const transcriptCount = JSON.parse(kvStore.get(`${vatID}.t.endPosition`))
+    const transcriptCount = JSON.parse(getRequired(`${vatID}.t.endPosition`))
       .itemCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
@@ -557,7 +569,8 @@ export function makeVatKeeper(
         const slot = k.slice(prefix.length);
         if (!slot.startsWith('k')) {
           const vatSlot = slot;
-          const kernelSlot = kvStore.get(k);
+          const kernelSlot =
+            kvStore.get(k) || assert.fail('getKeys ensures get');
           /** @type { [string, string, string] } */
           const item = [kernelSlot, vatID, vatSlot];
           res.push(item);

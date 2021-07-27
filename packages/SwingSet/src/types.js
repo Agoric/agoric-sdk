@@ -37,6 +37,7 @@
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  *   vatConsole: Console,
  *   liveSlotsConsole?: Console,
+ *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 

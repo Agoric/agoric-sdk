@@ -572,7 +572,7 @@ export default function makeKernelKeeper(
       assert(k.startsWith(importPrefix), k);
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
-      const kref = kvStore.get(k);
+      const kref = kvStore.get(k) || assert.fail('getKeys ensures get');
       const vref = k.slice(`${vatID}.c.`.length);
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
@@ -635,7 +635,9 @@ export default function makeKernelKeeper(
     /** @type { string[] } */
     const found = [];
     for (const k of kvStore.getKeys(`snapshot.`, `snapshot/`)) {
-      const consumers = JSON.parse(kvStore.get(k));
+      const consumers = JSON.parse(
+        kvStore.get(k) || assert.fail('getKeys ensures get'),
+      );
       assert(Array.isArray(consumers));
       if (consumers.length === 0) {
         const snapshotID = k.slice(`snapshot.`.length);
@@ -834,7 +836,7 @@ export default function makeKernelKeeper(
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
     assert(kvStore.has(k), X`vat name ${name} must exist, but doesn't`);
-    return kvStore.get(k);
+    return kvStore.get(k) || assert.fail('.has() ensures .get()');
   }
 
   function allocateUnusedVatID() {
@@ -853,7 +855,7 @@ export default function makeKernelKeeper(
       names.push(name);
       kvStore.set('vat.names', JSON.stringify(names));
     }
-    return kvStore.get(k);
+    return kvStore.get(k) || assert.fail('.has() ensures .get()');
   }
 
   function addDynamicVatID(vatID) {
@@ -868,7 +870,7 @@ export default function makeKernelKeeper(
     const result = [];
     for (const k of kvStore.getKeys('vat.name.', 'vat.name/')) {
       const name = k.slice(9);
-      const vatID = kvStore.get(k);
+      const vatID = kvStore.get(k) || assert.fail('getKeys ensures get');
       result.push([name, vatID]);
     }
     return result;
@@ -878,7 +880,7 @@ export default function makeKernelKeeper(
     const result = [];
     for (const k of kvStore.getKeys('device.name.', 'device.name/')) {
       const name = k.slice(12);
-      const deviceID = kvStore.get(k);
+      const deviceID = kvStore.get(k) || assert.fail('getKeys ensures get');
       result.push([name, deviceID]);
     }
     return result;
