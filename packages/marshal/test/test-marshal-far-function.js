@@ -4,7 +4,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '../src/marshal.js';
-import { passStyleOf } from '../src/passStyleOf.js';
+import { getInterfaceOf, passStyleOf } from '../src/passStyleOf.js';
 
 const { freeze } = Object;
 
@@ -12,6 +12,7 @@ test('Far functions', t => {
   t.notThrows(() => Far('arrow', a => a + 1), 'Far function');
   const arrow = Far('arrow', a => a + 1);
   t.is(passStyleOf(arrow), 'remotable');
+  t.is(getInterfaceOf(arrow), 'Alleged: arrow');
 });
 
 test('Acceptable far functions', t => {

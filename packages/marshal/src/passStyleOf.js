@@ -453,7 +453,7 @@ const assertRemotable = val => {
 /** @type {MarshalGetInterfaceOf} */
 export const getInterfaceOf = val => {
   if (
-    typeof val !== 'object' ||
+    (typeof val !== 'object' && typeof val !== 'function') ||
     val === null ||
     val[PASS_STYLE] !== 'remotable' ||
     !checkRemotable(val)
