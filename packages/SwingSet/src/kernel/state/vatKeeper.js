@@ -493,6 +493,7 @@ export function makeVatKeeper(
     consumers.splice(ix, 1);
     // console.log('removeFromSnapshot done:', { vatID, snapshotID, consumers });
     kvStore.set(key, JSON.stringify(consumers));
+    return consumers.length;
   }
 
   /**
@@ -509,7 +510,9 @@ export function makeVatKeeper(
     const snapshotID = await manager.makeSnapshot(snapStore);
     const old = getLastSnapshot();
     if (old) {
-      removeFromSnapshot(old.snapshotID);
+      if (removeFromSnapshot(old.snapshotID) === 0) {
+        snapStore.prepareToDelete(old.snapshotID);
+      }
     }
     const endPosition = getTranscriptEndPosition();
     kvStore.set(

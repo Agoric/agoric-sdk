@@ -5,9 +5,8 @@
 import { test } from '../../tools/prepare-test-env-ava';
 import fs from 'fs';
 import tmp from 'tmp';
-import { makeSnapStore } from '@agoric/swing-store-lmdb';
+import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import { loadBasedir, buildVatController } from '../../src/index.js';
-import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
@@ -124,10 +123,10 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
 }
 
 test('snapshot after deliveries', async t => {
-  const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
+  const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
-  const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
-  const hostStorage = { snapStore, ...provideHostStorage() };
+  const { kvStore, streamStore, commit } = initLMDBSwingStore(swingStorePath);
+  const hostStorage = { kvStore, streamStore };
   const c = await makeController('xs-worker', {
     hostStorage,
     warehousePolicy: {
@@ -139,11 +138,11 @@ test('snapshot after deliveries', async t => {
   t.teardown(c.shutdown);
 
   await runSteps(c, t);
+  commit();
 
-  const { kvStore } = hostStorage;
   const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
     kvStore,
-    snapstorePath,
+    `${swingStorePath}/xs-snapshots`,
   );
   t.log({ inUse, onDisk, extra });
   t.deepEqual(extra, [], `inUse: ${inUse}, onDisk: ${onDisk}`);

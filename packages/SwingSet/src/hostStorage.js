@@ -1,7 +1,4 @@
 // @ts-check
-import fs from 'fs';
-import path from 'path';
-import { tmpName } from 'tmp';
 import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
   initLMDBSwingStore,
@@ -168,17 +165,5 @@ export function provideHostStorage(
   return {
     kvStore: swingStore.kvStore,
     streamStore: swingStore.streamStore,
-  };
-}
-
-export function makeSnapStoreIO() {
-  return {
-    tmpName,
-    existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    rename: fs.promises.rename,
-    unlink: fs.promises.unlink,
-    resolve: path.resolve,
   };
 }

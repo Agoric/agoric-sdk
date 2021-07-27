@@ -4,8 +4,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import tmp from 'tmp';
-import { makeSnapStore } from '@agoric/xsnap';
-import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
+import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store-lmdb';
+import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
