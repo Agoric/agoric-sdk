@@ -1,5 +1,4 @@
 // @ts-check
-import '@agoric/install-ses';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';

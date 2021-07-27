@@ -1,9 +1,7 @@
 // @ts-check
-import '@agoric/install-ses';
 
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 import { makeNotifierKit } from '../src/index.js';
-
 import '../src/types.js';
 
 test('notifier - initial state', async t => {

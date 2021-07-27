@@ -1,7 +1,9 @@
 // @ts-check
-import '@agoric/install-ses';
+
+import { test } from './prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
 import { E } from '@agoric/eventual-send';
-import test from 'ava';
 import {
   observeIteration,
   makeNotifierKit,
