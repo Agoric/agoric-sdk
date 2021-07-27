@@ -399,6 +399,43 @@ test('exercise cache', async t => {
 });
 
 test('virtual object gc', async t => {
+  /*
+    With respect to any given case, we really only have two variables to fiddle
+    with: whether a reference to the VO is exported, and whether a reference to
+    the VO is retained in memory in the vat.
+
+    For the first variable, there are three possible states: not exported,
+    exported and then retained externally, exported and then dropped externally.
+
+    For the second variable, there are two possible states: retained internally,
+    and dropped internally.
+
+    That would seem like 6 cases, but that's not quite true, since a reference
+    that is dropped internally before being exported can't ever be
+    exported. (Also if a VO has both an exported reference and an internal
+    reference and both are dropped, we still have to worry about what order
+    they're dropped in, but there's another test that worries about the order of
+    droppage issue).
+
+    In this test, Bob generates 9 VOs of the same kind, with vrefs o+1/1 through
+    o+1/9.  Bob dispenses some of these to Bootstrap, drops some of them,
+    retires some, etc.  The breakdown is as follows:
+
+    #   Exported?  Export Dropped?  Local dropped? Delete?
+    1        yes              yes             yes     yes (dropped both locally and by export)
+    2        yes              yes              no      no (retained in local variable)
+    3        yes               no             yes      no (retained by export)
+    4         no              n/a             yes     yes (dropped before use)
+    5,6,7     no              n/a             yes     yes (dropped at end)
+    8,9       no              n/a              no      no (retained unused)
+
+    Things 5, 6, and 7 are essentially the same as 4, but they are dropped by a
+    loop at the end, to make sure that that works.
+
+    Things 8 and 9 are both the same. They are never used and so are retained
+    where they were originally stashed on creation
+  */
+
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',

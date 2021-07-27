@@ -102,14 +102,14 @@ function build(
   const importedDevices = new Set(); // device nodes
   const deadSet = new Set(); // vrefs that are finalized but not yet reported
 
-  function retainExportedRemotable(vref) {
+  function retainExportedVref(vref) {
     // if the vref corresponds to a Remotable, keep a strong reference to it
     // until the kernel tells us to release it
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
     if (type === 'object' && allocatedByVat) {
       if (virtual) {
         // eslint-disable-next-line no-use-before-define
-        setExported(vref, true);
+        vom.setExported(vref, true);
       } else {
         const remotable = slotToVal.get(vref).deref();
         assert(remotable, X`somehow lost Remotable for ${vref}`);
@@ -194,17 +194,17 @@ function build(
       if (virtual) {
         // Representative: send nothing, but perform refcount checking
         // eslint-disable-next-line no-use-before-define
-        doMore = doMore || possibleVirtualObjectDeath(vref);
+        doMore = doMore || vom.possibleVirtualObjectDeath(vref);
       } else if (allocatedByVat) {
         // Remotable: send retireExport
         exportsToRetire.push(vref);
       } else {
         // Presence: send dropImport unless reachable by VOM
         // eslint-disable-next-line no-lonely-if, no-use-before-define
-        if (!isVrefReachable(vref)) {
+        if (!vom.isVrefReachable(vref)) {
           importsToDrop.push(vref);
           // eslint-disable-next-line no-use-before-define
-          if (!isVrefRecognizable(vref)) {
+          if (!vom.isVrefRecognizable(vref)) {
             importsToRetire.push(vref);
           }
         }
@@ -413,17 +413,7 @@ function build(
     return wr && wr.deref();
   }
 
-  const {
-    makeVirtualObjectRepresentative,
-    makeWeakStore,
-    makeKind,
-    VirtualObjectAwareWeakMap,
-    VirtualObjectAwareWeakSet,
-    isVrefReachable,
-    isVrefRecognizable,
-    setExported,
-    possibleVirtualObjectDeath,
-  } = makeVirtualObjectManager(
+  const vom = makeVirtualObjectManager(
     syscall,
     allocateExportID,
     getSlotForVal,
@@ -509,13 +499,13 @@ function build(
         // detect reanimation by playing games inside their instanceKitMaker to
         // try to observe when new representatives are created (e.g., by
         // counting calls or squirreling things away in hidden WeakMaps).
-        makeVirtualObjectRepresentative(slot, true); // N.b.: throwing away the result
+        vom.makeVirtualObjectRepresentative(slot, true); // N.b.: throwing away the result
       }
       return val;
     }
     if (virtual) {
       assert.equal(type, 'object');
-      val = makeVirtualObjectRepresentative(slot, false);
+      val = vom.makeVirtualObjectRepresentative(slot, false);
     } else {
       assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -573,7 +563,7 @@ function build(
     function collect(promiseID, rejected, value) {
       doneResolutions.add(promiseID);
       const valueSer = m.serialize(value);
-      valueSer.slots.map(retainExportedRemotable);
+      valueSer.slots.map(retainExportedVref);
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
     }
@@ -605,7 +595,7 @@ function build(
     }
 
     const serArgs = m.serialize(harden(args));
-    serArgs.slots.map(retainExportedRemotable);
+    serArgs.slots.map(retainExportedVref);
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
@@ -665,7 +655,7 @@ function build(
         }
         return (...args) => {
           const serArgs = m.serialize(harden(args));
-          serArgs.slots.map(retainExportedRemotable);
+          serArgs.slots.map(retainExportedVref);
           forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
@@ -847,7 +837,7 @@ function build(
       }
       const { virtual } = parseVatSlot(vref);
       if (virtual) {
-        setExported(vref, false);
+        vom.setExported(vref, false);
       }
     }
   }
@@ -909,13 +899,13 @@ function build(
 
   function exitVat(completion) {
     const args = m.serialize(harden(completion));
-    args.slots.map(retainExportedRemotable);
+    args.slots.map(retainExportedVref);
     syscall.exit(false, args);
   }
 
   function exitVatWithFailure(reason) {
     const args = m.serialize(harden(reason));
-    args.slots.map(retainExportedRemotable);
+    args.slots.map(retainExportedVref);
     syscall.exit(true, args);
   }
 
@@ -937,13 +927,13 @@ function build(
   }
 
   const vatGlobals = harden({
-    makeWeakStore,
-    makeKind,
+    makeWeakStore: vom.makeWeakStore,
+    makeKind: vom.makeKind,
   });
 
   const inescapableGlobalProperties = harden({
-    WeakMap: VirtualObjectAwareWeakMap,
-    WeakSet: VirtualObjectAwareWeakSet,
+    WeakMap: vom.VirtualObjectAwareWeakMap,
+    WeakSet: vom.VirtualObjectAwareWeakSet,
   });
 
   function setBuildRootObject(buildRootObject) {
@@ -989,7 +979,7 @@ function build(
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
-    retainExportedRemotable(rootSlot);
+    retainExportedVref(rootSlot);
     // we do not use droppedRegistry for exports
   }
 

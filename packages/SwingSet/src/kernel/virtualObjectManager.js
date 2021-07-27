@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X, quote as q } from '@agoric/assert';
+import { Nat } from '@agoric/nat';
 import { parseVatSlot } from '../parseVatSlots.js';
 // import { kdebug } from './kdebug.js';
 
@@ -197,6 +198,7 @@ export function makeVirtualObjectManager(
     if (!isVrefReachable(vobjID) && !getValForSlot(vobjID)) {
       const [exported, refCount] = getRefCounts(vobjID);
       if (exported === 0 && refCount === 0) {
+        // TODO: decrement refcounts on vrefs in the virtualized data being deleted
         syscall.vatstoreDelete(`vom.${vobjID}`);
         syscall.vatstoreDelete(`vom.${vobjID}.refCount`);
       }
@@ -213,7 +215,10 @@ export function makeVirtualObjectManager(
   }
 
   function setRefCounts(vobjID, exported, count) {
-    syscall.vatstoreSet(`vom.${vobjID}.refCount`, `${exported} ${count}`);
+    syscall.vatstoreSet(
+      `vom.${vobjID}.refCount`,
+      `${Nat(exported)} ${Nat(count)}`,
+    );
     if (exported === 0 && count === 0) {
       possibleVirtualObjectDeath(vobjID);
     }
@@ -644,7 +649,7 @@ export function makeVirtualObjectManager(
    * but a wrapper with accessor methods that both ensure that a representation
    * of the state is in memory when needed and perform deserialization on read
    * and serialization on write; this wrapper is held by the representative, so
-   * that method invocations always sees the wrapper belonging to the invoking
+   * that method invocations always see the wrapper belonging to the invoking
    * representative.  The actual state object holds marshaled serializations of
    * each of the state properties.  When written to persistent storage, this is
    * representated as a JSON-stringified object each of whose properties is one

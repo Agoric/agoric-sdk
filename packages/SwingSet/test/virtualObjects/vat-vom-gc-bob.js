@@ -22,6 +22,7 @@ export function buildRootObject(_vatPowers) {
 
   return harden({
     prepare() {
+      things.push(null);
       for (let i = 1; i <= 9; i += 1) {
         things.push(thingMaker(`thing #${i}`));
       }
@@ -33,10 +34,10 @@ export function buildRootObject(_vatPowers) {
         nextThingNumber += 1;
       } while (!thing);
 
-      if (nextThingNumber === 2) {
+      if (nextThingNumber === 3) {
         thing.getLabel();
-        things[3].getLabel();
-        things[3] = null; // arbitrarily drop one before sending it, but don't drop the one we're sending
+        things[4].getLabel();
+        things[4] = null; // arbitrarily drop one before sending it, but don't drop the one we're sending
       } else {
         thing.getLabel();
         things[nextThingNumber - 1] = null; // drop the one we're sending
@@ -45,7 +46,7 @@ export function buildRootObject(_vatPowers) {
       thing = null;
     },
     finish() {
-      while (nextThingNumber < 7) {
+      while (nextThingNumber < 8) {
         const deadThing = things[nextThingNumber];
         if (deadThing) {
           deadThing.getLabel();
