@@ -2,6 +2,10 @@
 /// <reference types="ses"/>
 
 import { assert, details as X, q } from '@agoric/assert';
+
+// Since this module depends on passStyleOf.js and we want to avoid
+// cyclic imports, all remotable stuff that passStyleOf needs must be
+// in passStyleOf.js
 import {
   PASS_STYLE,
   passStyleOf,

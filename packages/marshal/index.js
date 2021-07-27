@@ -1,5 +1,3 @@
-export { pureCopy, Remotable, Far } from './src/remotable.js';
-
 export {
   getInterfaceOf,
   getErrorConstructor,
@@ -7,6 +5,8 @@ export {
   isComparable,
   assertComparable,
 } from './src/passStyleOf.js';
+
+export { pureCopy, Remotable, Far } from './src/remotable.js';
 
 export { QCLASS, makeMarshal } from './src/marshal.js';
 
