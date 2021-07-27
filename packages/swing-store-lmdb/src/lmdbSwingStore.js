@@ -10,6 +10,8 @@ import { assert } from '@agoric/assert';
 
 import { sqlStreamStore } from './sqlStreamStore.js';
 
+export { makeSnapStore } from './snapStore.js';
+
 /**
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
  * @typedef { import('./sqlStreamStore.js').StreamPosition } StreamPosition

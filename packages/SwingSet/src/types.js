@@ -131,7 +131,7 @@
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
- * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapStore> } SnapStore
+ * @typedef { ReturnType<typeof import('@agoric/swing-store-lmdb').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 

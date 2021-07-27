@@ -27,6 +27,7 @@
   "devDependencies": {
     "@agoric/install-ses": "^0.5.21",
     "@agoric/swing-store-simple": "^0.4.7",
+    "@agoric/xsnap": "^0.6.10",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built"
   },

@@ -1,4 +1,4 @@
-/* global __filename */
+/* global require */
 // @ts-check
 
 import '@agoric/install-ses';
@@ -12,12 +12,22 @@ import zlib from 'zlib';
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { xsnap } from '../src/xsnap.js';
+import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore } from '../src/snapStore.js';
-import { loader } from './message-tools.js';
 
-const importMeta = { url: `file://${__filename}` };
-const ld = loader(importMeta.url, fs.promises.readFile); // WARNING: ambient
+const { freeze } = Object;
+
+const ld = (() => {
+  /** @param { string } ref */
+  // WARNING: ambient
+  const resolve = ref => require.resolve(ref);
+  const readFile = fs.promises.readFile;
+  return freeze({
+    resolve,
+    /**  @param { string } ref */
+    asset: async ref => readFile(resolve(ref), 'utf-8'),
+  });
+})();
 
 /**
  * @param {string} name
@@ -44,7 +54,9 @@ async function bootWorker(name, handleCommand, script) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const bootScript = await ld.asset(
+    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
+  );
   return bootWorker(name, handleCommand, bootScript);
 }
 

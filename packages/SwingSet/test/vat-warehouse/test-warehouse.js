@@ -5,7 +5,7 @@
 import { test } from '../../tools/prepare-test-env-ava';
 import fs from 'fs';
 import tmp from 'tmp';
-import { makeSnapStore } from '@agoric/xsnap';
+import { makeSnapStore } from '@agoric/swing-store-lmdb';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { provideHostStorage, makeSnapStoreIO } from '../../src/hostStorage.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
