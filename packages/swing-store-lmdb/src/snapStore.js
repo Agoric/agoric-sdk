@@ -96,6 +96,9 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
+  /** @type { Set<string> } */
+  const toDelete = new Set();
+
   /**
    * @param {(fn: string) => Promise<void>} saveRaw
    * @returns { Promise<string> } sha256 hash of (uncompressed) snapshot
@@ -104,6 +107,9 @@ export function makeSnapStore(
     return withTempName(async snapFile => {
       await saveRaw(snapFile);
       const h = await fileHash(snapFile);
+      if (toDelete.has(h)) {
+        toDelete.delete(h);
+      }
       // console.log('save', { snapFile, h });
       if (existsSync(`${h}.gz`)) return h;
       await atomicWrite(`${h}.gz`, gztmp =>
@@ -132,11 +138,19 @@ export function makeSnapStore(
 
   /**
    * @param {string} hash
-   * @throws { Error } if there is no such snapshot
    */
-  function deleteSnapshot(hash) {
-    unlink(resolve(root, `${hash}.gz`));
+  function prepareToDelete(hash) {
+    toDelete.add(hash);
   }
 
-  return freeze({ load, save, delete: deleteSnapshot });
+  /**
+   * @throws { Error } if any call to unlink() fails
+   */
+  function commitDeletes() {
+    for (const hash of toDelete) {
+      unlink(resolve(root, `${hash}.gz`));
+    }
+  }
+
+  return freeze({ load, save, prepareToDelete, commitDeletes });
 }
