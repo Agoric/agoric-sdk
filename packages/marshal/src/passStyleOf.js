@@ -329,6 +329,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   }
 
   const {
+    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
     [PASS_STYLE]: passStyleDesc,
     toString: toStringDesc,
     // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
@@ -343,6 +344,7 @@ const checkRemotableProtoOf = (original, check = x => x) => {
     ) &&
     check(!!passStyleDesc, X`Remotable must have a [PASS_STYLE]`) &&
     check(
+      // @ts-ignore TypeScript thinks this is a toString method, not descriptor
       typeof toStringDesc.value === 'function',
       X`toString must be a function`,
     ) &&
