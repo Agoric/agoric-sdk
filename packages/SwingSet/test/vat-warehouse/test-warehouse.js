@@ -129,11 +129,7 @@ test('snapshot after deliveries', async t => {
   const hostStorage = { kvStore, streamStore };
   const c = await makeController('xs-worker', {
     hostStorage,
-    warehousePolicy: {
-      maxVatsOnline,
-      snapshotInterval: 1,
-      snapshotPruneInterval: 1,
-    },
+    warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
   });
   t.teardown(c.shutdown);
 
