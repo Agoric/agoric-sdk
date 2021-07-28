@@ -196,6 +196,12 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
       txn.commit();
       txn = null;
     }
+
+    // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
+    //   is being replaced with vatA -> snapshot2)
+    //   MUST be committed BEFORE we delete snapshot1.
+    //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
+    //   but we'll fail to load it because it's been deleted already.
     snapStore.commitDeletes();
   }
 
