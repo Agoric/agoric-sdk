@@ -9,4 +9,4 @@ export {
   allComparable,
   sameKey,
   sameKey as sameStructure, // deprecated
-} from './src/sameStructure';
+} from './src/sameKey';

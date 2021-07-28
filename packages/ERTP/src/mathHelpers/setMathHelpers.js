@@ -2,7 +2,7 @@
 
 import { passStyleOf } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { mustBeComparable, sameStructure } from '@agoric/same-structure';
+import { assertComparable, sameKey } from '@agoric/same-structure';
 
 import '../types';
 
@@ -26,7 +26,7 @@ const getKeyForRecord = record => {
 };
 
 /**
- * Cut down the number of sameStructure comparisons to only the ones
+ * Cut down the number of sameKey comparisons to only the ones
  * that don't fail basic equality tests
  * TODO: better name?
  *
@@ -81,7 +81,7 @@ const checkForDupes = buckets => {
     for (let i = 0; i < maybeMatches.length; i += 1) {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
         assert(
-          !sameStructure(maybeMatches[i], maybeMatches[j]),
+          !sameKey(maybeMatches[i], maybeMatches[j]),
           X`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
         );
       }
@@ -102,12 +102,12 @@ const hasElement = (buckets, elem) => {
   }
   const maybeMatches = buckets.get(badHash);
   assert(maybeMatches);
-  return maybeMatches.some(maybeMatch => sameStructure(maybeMatch, elem));
+  return maybeMatches.some(maybeMatch => sameKey(maybeMatch, elem));
 };
 
 // get a string of string keys and string values as a fuzzy hash for
 // bucketing.
-// only use sameStructure within that bucket.
+// only use sameKey within that bucket.
 
 /**
  * @type {SetMathHelpers}
@@ -115,7 +115,7 @@ const hasElement = (buckets, elem) => {
 const setMathHelpers = harden({
   doCoerce: list => {
     harden(list);
-    mustBeComparable(list);
+    assertComparable(list);
     assert(passStyleOf(list) === 'copyArray', 'list must be an array');
     checkForDupes(makeBuckets(list));
     return list;

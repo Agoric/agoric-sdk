@@ -1,4 +1,5 @@
 export {
+  PASS_STYLE,
   getInterfaceOf,
   getErrorConstructor,
   passStyleOf,

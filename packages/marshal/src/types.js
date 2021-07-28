@@ -42,7 +42,7 @@
  *    * remotables.
  *
  * Two Comparables may be compared by for equivalence according to
- * `sameStructure`, which is the strongest equivalence class supported by
+ * `sameKey`, which is the strongest equivalence class supported by
  * marshal's distributed object semantics.
  *
  * Two Comparables can also be compared for full ordering,

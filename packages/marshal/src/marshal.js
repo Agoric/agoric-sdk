@@ -101,7 +101,7 @@ export function makeMarshal(
 
     /**
      * Must encode `val` into plain JSON data *canonically*, such that
-     * `sameStructure(v1, v2)` implies
+     * `sameKey(v1, v2)` implies
      * `JSON.stringify(encode(v1)) === JSON.stringify(encode(v2))`
      * For each record, we only accept sortable property names
      * (no anonymous symbols). On the encoded form the sort
