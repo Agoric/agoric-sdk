@@ -31,7 +31,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 // At least until GetABCIEventHistory() is implemented and released.
 // And also `gentx --keyring-dir=...`
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.43.0-rc0.agoric
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.43.0-rc2.agoric
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
