@@ -3,6 +3,98 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.4.1...@agoric/sdk@6.0.0) (2021-07-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** remove support for non-XS metering
+* **swingset:** make dynamic vats unmetered by default
+
+### Features
+
+* add command line flag to use XS ([66b5a5e](https://github.com/Agoric/agoric-sdk/commit/66b5a5e43c1b70124de17d971a434a11c7ebc8a3))
+* first stage GC for virtual objects ([c1fb35c](https://github.com/Agoric/agoric-sdk/commit/c1fb35ce9bbc5299d9bef29e24b14c080c879d8d))
+* update slogulator for GC syscalls and deliveries ([207d8d9](https://github.com/Agoric/agoric-sdk/commit/207d8d9583549b755903c7329e61518d17c763d6))
+* **captp:** leverage makeSubscriptionKit to drive trapHost ([a350b9d](https://github.com/Agoric/agoric-sdk/commit/a350b9d4688bd156655e519dec9fe291b7353427))
+* **captp:** return Sync replies via arbitrary comm protocol ([c838e91](https://github.com/Agoric/agoric-sdk/commit/c838e918164fc136b0bcbd83029489c6893ea381))
+* **captp:** take suggestion in [#3289](https://github.com/Agoric/agoric-sdk/issues/3289) to prefix questionIDs ([a8e0e96](https://github.com/Agoric/agoric-sdk/commit/a8e0e965f7640dc1a1e75b15d4788916e9cd563e))
+* **cosmic-swingset:** pass consensusMode to SwingSet on chain ([33ff03c](https://github.com/Agoric/agoric-sdk/commit/33ff03cb655f80dcee10e816c23741da9bd250ea))
+* **cosmos:** use agoric-labs/cosmos-sdk v0.43.0-rc0.agoric ([6dfebdb](https://github.com/Agoric/agoric-sdk/commit/6dfebdb1493ae448f226cd5b1be399213068ca95))
+* **solo:** separate hot helper address from cold fees and egress ([20cdfa8](https://github.com/Agoric/agoric-sdk/commit/20cdfa8d89788d6903ea927bf9b3d59ece775251))
+* **swingset:** add Meters to kernel state ([03f148b](https://github.com/Agoric/agoric-sdk/commit/03f148b20de7f0f7d5b56da63c8358dde8d7de16)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** implement Meters for crank computation charges ([7a7d616](https://github.com/Agoric/agoric-sdk/commit/7a7d61670baedf1968fd8086cdb8824bd006bad4)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** make dynamic vats unmetered by default ([c73dd8d](https://github.com/Agoric/agoric-sdk/commit/c73dd8d8ea3b7859313f245537f04dd6f92ba0c6)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** remove support for non-XS metering ([5b95638](https://github.com/Agoric/agoric-sdk/commit/5b9563849fa7ca2f26b4ca7c55f10d1d37334f46)), closes [#3518](https://github.com/Agoric/agoric-sdk/issues/3518)
+* implement exportAsSyncable, and Sync powers ([714b214](https://github.com/Agoric/agoric-sdk/commit/714b214012e81faf2ac4955475a8504ef0c74a4a))
+* implement Sync for makeLoopback ([3d500a1](https://github.com/Agoric/agoric-sdk/commit/3d500a101d73995d434cbb48b9f5be206a076ed7))
+* **SwingSet:** new `overrideVatManagerOptions` kernel option ([1ec045b](https://github.com/Agoric/agoric-sdk/commit/1ec045bad58ee7b5e9fccf36782793a3dd780337))
+* **SwingSet:** plumb consensusMode for stricter determinism ([16ec7ca](https://github.com/Agoric/agoric-sdk/commit/16ec7ca688465aa0ee3fb9ed08be5be910c2554f))
+* **SwingSet:** support more managers with consensusMode ([ea3280e](https://github.com/Agoric/agoric-sdk/commit/ea3280e061818f99681f2d9600ba140a1606671d))
+* **xsnap:** FFI to enable/disable metering ([#3480](https://github.com/Agoric/agoric-sdk/issues/3480)) ([94d9417](https://github.com/Agoric/agoric-sdk/commit/94d941707583a4c145ace144cf82bedc330979a3)), closes [#3457](https://github.com/Agoric/agoric-sdk/issues/3457)
+* audit object refcounts ([d7c9792](https://github.com/Agoric/agoric-sdk/commit/d7c9792597d063fbc8970acb034674b15865de7d)), closes [#3445](https://github.com/Agoric/agoric-sdk/issues/3445)
+* improve ag-solo robustness and performance ([b101d3a](https://github.com/Agoric/agoric-sdk/commit/b101d3a4cd4fc97c4a6c794877efc47d43b12f02))
+* refactor object pinning ([9941a08](https://github.com/Agoric/agoric-sdk/commit/9941a086837ad4e6c314da5a6c4faa999430c3f4))
+* utility to replace kernel bundle in kernel DB ([07b300e](https://github.com/Agoric/agoric-sdk/commit/07b300e2b7656e12ac4b011d0ebae73c9d8fa50c))
+
+
+### Bug Fixes
+
+* **access-token:** avoid clobbering temporary json-store files ([d468531](https://github.com/Agoric/agoric-sdk/commit/d46853146d2f1b51bd752ef280ce51cf227cdab0))
+* **assert:** Use module extension for types.js ([7e79e5e](https://github.com/Agoric/agoric-sdk/commit/7e79e5e37f2ae0955e6a205c744bff44cd0bbe57))
+* **bundle-source:** Remove lingering package scaffold file ([e49edee](https://github.com/Agoric/agoric-sdk/commit/e49edee2d0e499e1710de2ac03ff59876e8252a9))
+* **captp:** clarify error handling ([21b72cd](https://github.com/Agoric/agoric-sdk/commit/21b72cd54ec95e9fcc86638086c7c0c09a3e71cf))
+* **captp:** ensure Sync(x) never returns a thenable ([d642c41](https://github.com/Agoric/agoric-sdk/commit/d642c414bd22036a72ab6db590d26393efd05568))
+* **captp:** relax it.throw signature ([6fc842c](https://github.com/Agoric/agoric-sdk/commit/6fc842cc3160f134455a250c8a13418e07301848))
+* **deployment:** improve the `provision` command to be idempotent ([622bbd8](https://github.com/Agoric/agoric-sdk/commit/622bbd8c07e79fa1de3b00a55224b9b462f4f75b))
+* **deployment:** only format and mount /dev/sda for digitalocean ([745f90e](https://github.com/Agoric/agoric-sdk/commit/745f90e8a40745dbb832af56789a3daa5fe787c2))
+* **governance:** use metered=true and xs-worker on all swingset tests ([5108c51](https://github.com/Agoric/agoric-sdk/commit/5108c51b73f28c86f06c90640c3f90265435b14a))
+* **promise-kit:** make strict typing compliant ([#3397](https://github.com/Agoric/agoric-sdk/issues/3397)) ([69e2692](https://github.com/Agoric/agoric-sdk/commit/69e2692188a386b49dbe1a662ac8cde286e7fe7e))
+* **solo:** don't give a hint that isn't useful ([ffc68bf](https://github.com/Agoric/agoric-sdk/commit/ffc68bf65d60c2a82bc0f6a5815d6a04495f4755))
+* **spawner:** set 'metered: true' for dynamic vats ([3a9cf0b](https://github.com/Agoric/agoric-sdk/commit/3a9cf0b0b1889f053c4fe12f3cc5ec81c20658e7))
+* **swingset:** addEgress should cause an import/reachable refcount ([230b494](https://github.com/Agoric/agoric-sdk/commit/230b4948d112cf57393c91bb1bc53714efa37e58)), closes [#3483](https://github.com/Agoric/agoric-sdk/issues/3483)
+* **swingset:** gcAndFinalize needs two post-GC setImmediates on V8 ([#3486](https://github.com/Agoric/agoric-sdk/issues/3486)) ([cc9428f](https://github.com/Agoric/agoric-sdk/commit/cc9428f3c5b7d8d991f55904a958d339d3ff88d7)), closes [#3482](https://github.com/Agoric/agoric-sdk/issues/3482) [#3240](https://github.com/Agoric/agoric-sdk/issues/3240)
+* **swingset:** make test less sensitive to changes in metering ([e741be3](https://github.com/Agoric/agoric-sdk/commit/e741be3fbef8c746be476b13f9eb0d6e3e326dae)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3538](https://github.com/Agoric/agoric-sdk/issues/3538)
+* various tweaks and cleanup in response to review comments ([fe777e4](https://github.com/Agoric/agoric-sdk/commit/fe777e4dde970fdfeb0189e2fbf12db68c160046))
+* **swingset:** test simultaneous underflow+notify, simplify kernel ([077dcec](https://github.com/Agoric/agoric-sdk/commit/077dcec47f2b999326846c561953b911f42c93f8)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* zoe/spawner/pegasus: use unlimited Meter, not metered: true ([04d4fd9](https://github.com/Agoric/agoric-sdk/commit/04d4fd96982ecd02de50f09fa38c6e2800cca527)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **captp:** don't rely on TextDecoder stream flag ([5a370a8](https://github.com/Agoric/agoric-sdk/commit/5a370a8404124409e5bbdf60c4ccf494fde8b103))
+* **captp:** ensure trapcap reply iteration is serial ([feda6c8](https://github.com/Agoric/agoric-sdk/commit/feda6c8510f56385c2becec40412223b4acf109d))
+* **captp:** more robust CTP_TRAP_ITERATE error handling ([003c3d1](https://github.com/Agoric/agoric-sdk/commit/003c3d16dc2301ae171d9cc60ab30509fa7ee9ea))
+* **captp:** properly export src/index.js ([592f0b7](https://github.com/Agoric/agoric-sdk/commit/592f0b78b6adcd2956c925b8294ed9452ff4c9bb))
+* **cosmic-swingset:** decrease Nagling to 500ms ([260ecc9](https://github.com/Agoric/agoric-sdk/commit/260ecc9f437d427b2494e9b7d1a8a3994431164c))
+* **cosmic-swingset:** messagePool ordering and authz indirection ([c49a2ea](https://github.com/Agoric/agoric-sdk/commit/c49a2ea92c6bd910316e939274a4ff80e41cdd18))
+* **cosmic-swingset:** properly detect when the chain is available ([83f3a5d](https://github.com/Agoric/agoric-sdk/commit/83f3a5d7ad035183c0e6ae71003ed73daaaafeee))
+* **cosmic-swingset:** use `cosmic-swingset-bootstrap-block-finish` ([a789b02](https://github.com/Agoric/agoric-sdk/commit/a789b020cb33d4b9b8941b970784d7db5b0f62ae))
+* **cosmic-swingset:** use BOOTSTRAP_BLOCK to avoid slog confusion ([9c8725b](https://github.com/Agoric/agoric-sdk/commit/9c8725bae6ff4038052f33947da77d3eddc0351d))
+* **cosmic-swingset:** use default batching parameters for sim-chain ([e16e7a7](https://github.com/Agoric/agoric-sdk/commit/e16e7a77910e5c0af647be30cdaa360ce7bff0f8))
+* **deployment:** properly quote JSON pubkey from Ansible ([44132fa](https://github.com/Agoric/agoric-sdk/commit/44132fad78e7a6b59a324f47d986cefe140e1c30))
+* **ERTP:** use metered=true and xs-worker on all swingset tests ([8c3da1f](https://github.com/Agoric/agoric-sdk/commit/8c3da1fa05c5734e1c839d480642f1716d003dd3))
+* **sharing-service:** use xs-worker/metered=true on swingset tests ([7c3f248](https://github.com/Agoric/agoric-sdk/commit/7c3f2489341c3191a53c0df58553b02522737f3e))
+* **solo:** at the very least, kill our deployment process on exit ([fbc512d](https://github.com/Agoric/agoric-sdk/commit/fbc512d8e2466b81f0b59662b499449a52231101))
+* **solo:** clean up unnecessary deep captp import ([8b20562](https://github.com/Agoric/agoric-sdk/commit/8b20562b9cc3917818455ab7d85aa74c9efb3f56))
+* **solo:** make delivery process more robust ([2a3ff01](https://github.com/Agoric/agoric-sdk/commit/2a3ff017e1d7e8a127154e052c45157c7605f3b9))
+* **swingset:** don't deduplicate inbound mailbox messages ([2018d76](https://github.com/Agoric/agoric-sdk/commit/2018d76bdbf8b16f72e9ec8a4af7786e8b4fb8cd)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442) [#3471](https://github.com/Agoric/agoric-sdk/issues/3471)
+* **swingset:** don't pin the interior queueMessage promise ([4379f41](https://github.com/Agoric/agoric-sdk/commit/4379f41acf6a750f2edabf0e1bfb388cb53156c6)), closes [#3482](https://github.com/Agoric/agoric-sdk/issues/3482)
+* **swingset:** processRefcounts() even if crank was aborted ([3320412](https://github.com/Agoric/agoric-sdk/commit/3320412be8db63df39a2ba60e1e30928d0741f16))
+* **swingset:** test/vat-controller-one: disregard non-message deliveries ([706be79](https://github.com/Agoric/agoric-sdk/commit/706be79bb611d82742c49ae0912045e891cbc773))
+* **SwingSet:** simplify makeVatConsole to always use a wrapper ([dc0839b](https://github.com/Agoric/agoric-sdk/commit/dc0839b44d489bccb3bdb9ab666c410863b15647))
+* **swingset-runner:** remove --meter controls ([cc1d3c5](https://github.com/Agoric/agoric-sdk/commit/cc1d3c5604cf848a69ef55e61662c6094d5ff341))
+* **treasury:** use xs-worker and metered=true on all swingset tests ([f76405e](https://github.com/Agoric/agoric-sdk/commit/f76405e09a29f4975cda00a33bbde4761dbe958e))
+* **wallet:** be more robust with claiming payments ([0a67988](https://github.com/Agoric/agoric-sdk/commit/0a679889103fae9c15c37adaaa4af72dcc73b752))
+* **wallet:** more robust addPayment method handles failed deposit ([7990569](https://github.com/Agoric/agoric-sdk/commit/79905692e15a1322c269c7f697bf78374dee4d95))
+* **zoe:** use metered=true and xs-worker on all swingset tests ([32967ca](https://github.com/Agoric/agoric-sdk/commit/32967cad79ec72d938de8a0308dd590fbc916d2a)), closes [#3518](https://github.com/Agoric/agoric-sdk/issues/3518) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* better db location logic ([a76d3b7](https://github.com/Agoric/agoric-sdk/commit/a76d3b73e47052bacfd6b5137812356cf6953424))
+* break up incoherent GetApply function into SyncImpl record ([1455298](https://github.com/Agoric/agoric-sdk/commit/14552986c6e47fde7eae720e449efce5aab23707))
+* don't create new promise IDs and stall the pipeline ([b90ae08](https://github.com/Agoric/agoric-sdk/commit/b90ae0835aec5484279eddcea4e9ccaa253d2db0))
+* make verbose flag work from the very beginning ([7edfa24](https://github.com/Agoric/agoric-sdk/commit/7edfa24ca7ca8f511775791cef690bf482a7bc81))
+* provide Makefile targets to use separate fee and client auth ([935f7b1](https://github.com/Agoric/agoric-sdk/commit/935f7b1e364ccc9e85d7ed2f745bec317073de05))
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+* **wallet:** be more defensive when escrow is supposed to happen ([4130f6a](https://github.com/Agoric/agoric-sdk/commit/4130f6a9041b24680ac5cd9d8a31d9587cf0c871))
+* tolerate endo pre and post [#822](https://github.com/Agoric/agoric-sdk/issues/822) ([#3472](https://github.com/Agoric/agoric-sdk/issues/3472)) ([e872c0c](https://github.com/Agoric/agoric-sdk/commit/e872c0c77a146a746066de583021d8c9f1721b93))
+
+
+
 ### [5.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.4.0...@agoric/sdk@5.4.1) (2021-07-01)
 
 

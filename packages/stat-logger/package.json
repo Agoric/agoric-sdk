@@ -1,6 +1,6 @@
 {
   "name": "@agoric/stat-logger",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "Simple library for logging and graphing performance statistics",
   "parsers": {
     "js": "mjs"
