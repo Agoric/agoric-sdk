@@ -471,9 +471,7 @@ export function makeVatKeeper(
    */
   function addToSnapshot(snapshotID) {
     const key = `snapshot.${snapshotID}`;
-    const consumersJSON = kvStore.get(key);
-    const consumers =
-      consumersJSON !== undefined ? JSON.parse(consumersJSON) : [];
+    const consumers = JSON.parse(kvStore.get(key) || '[]');
     assert(Array.isArray(consumers));
 
     // We can't completely rule out the possibility that
