@@ -2,9 +2,7 @@
   "name": "@agoric/swing-store-simple",
   "version": "0.4.7",
   "description": "Persistent storage for SwingSet, based on a Map, optionally backed by a simple JSON file",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/simpleSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
@@ -25,8 +23,7 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.21",
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "publishConfig": {
     "access": "public"
@@ -34,9 +31,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   },
