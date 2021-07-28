@@ -3,10 +3,15 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { assert, details as X, q } from '@agoric/assert';
 import { PASS_STYLE, isComparable, passStyleOf } from '@agoric/marshal';
 
 import { sameKey } from './sameKey.js';
+
+import { compareMagnitude, opCompare } from './magnitude.js';
+
+import { compareFullOrder } from './full-order.js';
+
+const { details: X, quote: q } = assert;
 
 const { ownKeys } = Reflect;
 
@@ -30,13 +35,13 @@ const nothing = () => TheNothing;
 
 const matchNothing = (_, _specimen) => false;
 
-const passStyle = style => {
-  assert.typeof(style, 'string');
+const style = passStyle => {
+  assert.typeof(passStyle, 'string');
   return harden({
     [PASS_STYLE]: 'patternNode',
     toString: () => 'matchPassStyle',
     patternKind: 'matchPassStyle',
-    style,
+    passStyle,
   });
 };
 
@@ -79,13 +84,45 @@ const matchAnd = (andPattern, specimen) =>
   // eslint-disable-next-line no-use-before-define
   andPattern.patterns.some(p => match(p, specimen));
 
+const magnitude = (comparisonOp, rightOperand) =>
+  harden({
+    [PASS_STYLE]: 'patternNode',
+    toString: () => 'matchMagnitude',
+    patternKind: 'matchMagnitude',
+    comparisonOp,
+    rightOperand,
+  });
+
+const matchMagnitude = (magPattern, specimen) =>
+  opCompare(
+    magPattern.comparisonOp,
+    compareMagnitude(specimen, magPattern.rightOperand),
+  );
+
+const order = (comparisonOp, rightOperand) =>
+  harden({
+    [PASS_STYLE]: 'patternNode',
+    toString: () => 'matchOrder',
+    patternKind: 'matchOrder',
+    comparisonOp,
+    rightOperand,
+  });
+
+const matchOrder = (orderPattern, specimen) =>
+  opCompare(
+    orderPattern.comparisonOp,
+    compareFullOrder(specimen, orderPattern.rightOperand),
+  );
+
 export const M = harden({
   anything,
   nothing,
-  passStyle,
+  style,
+  not,
   or,
   and,
-  not,
+  magnitude,
+  order,
 });
 
 const Matchers = harden({
@@ -96,6 +133,8 @@ const Matchers = harden({
   matchNot,
   matchOr,
   matchAnd,
+  matchMagnitude,
+  matchOrder,
 });
 
 /**
@@ -134,12 +173,15 @@ export const match = (pattern, specimen) => {
       }
       return patternNames.every(name => match(pattern[name], specimen[name]));
     }
-    case 'copySet':
+    case 'copySet': {
+      //
+      assert.fail(X`${q(patternStyle)} is not fully implemented`);
+    }
     case 'copyMap': {
       assert.fail(X`${q(patternStyle)} is not fully implemented`);
     }
     default: {
-      assert.fail(X`Unexpected passStyle ${patternStyle}`, TypeError);
+      assert.fail(X`Unexpected passStyle ${q(patternStyle)}`, TypeError);
     }
   }
 };

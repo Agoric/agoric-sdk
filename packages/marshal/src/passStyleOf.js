@@ -796,7 +796,7 @@ const isComparableInternal = passable => {
       return false;
     }
     default: {
-      assert.fail(X`Unrecognized passStyle: ${passStyle}`, TypeError);
+      assert.fail(X`Unrecognized passStyle: ${q(passStyle)}`, TypeError);
     }
   }
 };

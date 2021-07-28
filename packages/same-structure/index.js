@@ -10,3 +10,5 @@ export {
   sameKey,
   sameKey as sameStructure, // deprecated
 } from './src/sameKey';
+
+export { M, match } from './src/pattern';

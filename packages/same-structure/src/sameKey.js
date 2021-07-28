@@ -78,7 +78,7 @@ export const allComparable = passable => {
       assert.fail(X`PatternNodes are not comparable: ${passable}`);
     }
     default: {
-      assert.fail(X`Unexpected passStyle: ${passStyle}`, TypeError);
+      assert.fail(X`Unexpected passStyle: ${q(passStyle)}`, TypeError);
     }
   }
 };
