@@ -1,6 +1,7 @@
 // @ts-check
 import fs from 'fs';
 import path from 'path';
+import process from 'process';
 import Readlines from 'n-readlines';
 
 // TODO: Update this when we make a breaking change.
@@ -198,7 +199,7 @@ function makeJSONStore(dirPath, forceReset = false) {
    */
   function commit() {
     if (dirPath) {
-      const tempFile = `${storeFile}.tmp`;
+      const tempFile = `${storeFile}-${process.pid}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
 
       for (const [key, value] of state.entries()) {
