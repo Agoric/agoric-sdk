@@ -39,14 +39,15 @@ harden(sameValueZero);
  * corresponding comparable, recursively.
  *
  * @param {Passable} passable
- * @returns {ERef<Comparable>}
+ * @returns {import('@agoric/eventual-send').ERef<Comparable>}
  */
 export const allComparable = passable => {
   if (isComparable(passable)) {
     // Causes deep memoization, so is amortized fast.
     return passable;
   }
-  // Thus, we only need to deal with the non-comparable cases below.
+  // Below, we only need to deal with the cases where passable may not
+  // be comparable.
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
     case 'promise': {
