@@ -100,6 +100,10 @@ export function capargs(args, slots = []) {
   return capdata(JSON.stringify(args, marshalBigIntReplacer), slots);
 }
 
+export function capSlot(index) {
+  return { '@qclass': 'slot', iface: 'Alleged: export', index };
+}
+
 export function capdataOneSlot(slot) {
   return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
     slot,

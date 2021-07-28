@@ -306,8 +306,8 @@ export async function makeSwingsetController(
       kernel.kdebugEnable(flag);
     },
 
-    async run() {
-      return kernel.run();
+    async run(policy) {
+      return kernel.run(policy);
     },
 
     async step() {

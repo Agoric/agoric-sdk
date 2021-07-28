@@ -188,3 +188,16 @@
  *
  * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus
  */
+
+/**
+ * @typedef { [tag: 'none'] } PolicyInputNone
+ * @typedef { [tag: 'create-vat', details: {} ]} PolicyInputCreateVat
+ * @typedef { [tag: 'crank', details: { computrons?: bigint }] } PolicyInputCrankComplete
+ * @typedef { [tag: 'crank-failed', details: {}]} PolicyInputCrankFailed
+ * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
+ * @typedef { boolean } PolicyOutput
+ * @typedef { { vatCreated: (details: {}) => PolicyOutput,
+ *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
+ *              crankFailed: (details: {}) => PolicyOutput,
+ *             } } RunPolicy
+ */
