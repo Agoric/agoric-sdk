@@ -188,3 +188,43 @@ test.failing('XS + SES snapshots should be deterministic', t => {
   const h = 'abc';
   t.is('66244b4bfe92ae9138d24a9b50b492d231f6a346db0cf63543d200860b423724', h);
 });
+
+test('snapStore prepare / commit delete is robust', async t => {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+
+  const io = { ...tmp, ...path, ...fs, ...fs.promises };
+  const store = makeSnapStore(pool.name, io);
+
+  const hashes = [];
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const h = await store.save(async fn =>
+      fs.promises.writeFile(fn, `file ${i}`),
+    );
+    hashes.push(h);
+  }
+  t.is(fs.readdirSync(pool.name).length, 5);
+
+  t.notThrows(() => store.commitDeletes());
+
+  // @ts-ignore
+  t.throws(() => store.prepareToDelete(1));
+  t.throws(() => store.prepareToDelete('../../../etc/passwd'));
+
+  store.prepareToDelete(hashes[2]);
+  store.commitDeletes();
+  t.deepEqual(fs.readdirSync(pool.name).length, 4);
+
+  hashes.forEach(store.prepareToDelete);
+  store.prepareToDelete('does not exist');
+  t.throws(() => store.commitDeletes());
+  // but it deleted the rest of the files
+  t.deepEqual(fs.readdirSync(pool.name), []);
+
+  // ignore errors while clearing out pending deletes
+  store.commitDeletes(true);
+
+  // now we shouldn't see any errors
+  store.commitDeletes();
+});

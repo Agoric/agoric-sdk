@@ -19,6 +19,7 @@ const { freeze } = Object;
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
  *   unlink: typeof import('fs').promises.unlink,
+ *   unlinkSync: typeof import('fs').unlinkSync,
  * }} io
  */
 export function makeSnapStore(
@@ -31,6 +32,7 @@ export function makeSnapStore(
     resolve,
     rename,
     unlink,
+    unlinkSync,
   },
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
@@ -60,12 +62,13 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} dest
+   * @param {string} dest basename, relative to root
    * @param { (name: string) => Promise<T> } thunk
    * @returns { Promise<T> }
    * @template T
    */
   async function atomicWrite(dest, thunk) {
+    assert(!dest.includes('/'));
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
@@ -96,6 +99,13 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
+  /** @param { unknown } hash */
+  function hashPath(hash) {
+    assert.typeof(hash, 'string');
+    assert(!hash.includes('/'));
+    return resolve(root, `${hash}.gz`);
+  }
+
   /** @type { Set<string> } */
   const toDelete = new Set();
 
@@ -111,7 +121,9 @@ export function makeSnapStore(
         toDelete.delete(h);
       }
       // console.log('save', { snapFile, h });
-      if (existsSync(`${h}.gz`)) return h;
+      if (existsSync(hashPath(h))) {
+        return h;
+      }
       await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
       );
@@ -125,10 +137,8 @@ export function makeSnapStore(
    * @template T
    */
   async function load(hash, loadRaw) {
-    assert(!hash.includes('/'));
-
     return withTempName(async raw => {
-      await filter(resolve(root, `${hash}.gz`), createGunzip(), raw);
+      await filter(hashPath(hash), createGunzip(), raw);
       const actual = await fileHash(raw);
       // console.log('load', { raw, hash });
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
@@ -142,16 +152,27 @@ export function makeSnapStore(
    * @param {string} hash
    */
   function prepareToDelete(hash) {
+    hashPath(hash); // check constraints early
     toDelete.add(hash);
   }
 
-  /**
-   * @throws { Error } if any call to unlink() fails
-   */
-  function commitDeletes() {
+  function commitDeletes(ignoreErrors = false) {
+    const errors = [];
     for (const hash of toDelete) {
-      assert(!hash.includes('/'));
-      unlink(resolve(root, `${hash}.gz`));
+      const fullPath = hashPath(hash);
+      try {
+        unlinkSync(fullPath);
+        toDelete.delete(hash);
+      } catch (error) {
+        if (ignoreErrors) {
+          toDelete.delete(hash);
+        } else {
+          errors.push(error);
+        }
+      }
+    }
+    if (errors.length) {
+      throw Error(JSON.stringify(errors));
     }
   }
 
