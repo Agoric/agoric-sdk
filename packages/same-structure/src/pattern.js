@@ -84,33 +84,33 @@ const matchAnd = (andPattern, specimen) =>
   // eslint-disable-next-line no-use-before-define
   andPattern.patterns.some(p => match(p, specimen));
 
-const magnitude = (comparisonOp, rightOperand) =>
+const magnitude = (relationalOp, rightOperand) =>
   harden({
     [PASS_STYLE]: 'patternNode',
     toString: () => 'matchMagnitude',
     patternKind: 'matchMagnitude',
-    comparisonOp,
+    relationalOp,
     rightOperand,
   });
 
 const matchMagnitude = (magPattern, specimen) =>
   opCompare(
-    magPattern.comparisonOp,
+    magPattern.relationalOp,
     compareMagnitude(specimen, magPattern.rightOperand),
   );
 
-const order = (comparisonOp, rightOperand) =>
+const order = (relationalOp, rightOperand) =>
   harden({
     [PASS_STYLE]: 'patternNode',
     toString: () => 'matchOrder',
     patternKind: 'matchOrder',
-    comparisonOp,
+    relationalOp,
     rightOperand,
   });
 
 const matchOrder = (orderPattern, specimen) =>
   opCompare(
-    orderPattern.comparisonOp,
+    orderPattern.relationalOp,
     compareFullOrder(specimen, orderPattern.rightOperand),
   );
 

@@ -8,12 +8,17 @@ import { passStyleOf, assertComparable } from '@agoric/marshal';
 const { details: X, quote: q } = assert;
 
 /**
+ * @typedef { -1 | 0 | 1 } FullComparison
+ * A comparison for elements of a full order.
+ */
+
+/**
  * @typedef { -1 | 0 | 1 | undefined } PartialComparison
  * A comparison for elements of a partial order.
  */
 
 /**
- * @typedef { "lt" | "lte" | "eq" | "gte" | "gt" } ComparisonOp
+ * @typedef { "lt" | "lte" | "eq" | "gte" | "gt" } RelationalOp
  */
 
 /**
@@ -27,6 +32,10 @@ const { details: X, quote: q } = assert;
  *
  * Note that `compareMagnitude(NaN, NaN) === 0`. This is necessary for
  * the order to b reflexive.
+ *
+ * Because it might return `undefined`, `compareMagnitude` *cannot* be used as
+ * the comparison function for `Array.prototype.sort`.
+ * See `compareMagnitudeStrict` and `compareFullOrder`.
  *
  * @param {Comparable} left
  * @param {Comparable} right
@@ -100,12 +109,32 @@ export const compareMagnitude = (left, right) => {
 harden(compareMagnitude);
 
 /**
- * @param { ComparisonOp } comparisonOp
+ * Where magnitudes are ordered, the strict magnitude ordering agrees.
+ * Otherwise, this comparison throws.
+ *
+ * `compareMagnitudeStrict` can be used as the comparison function for
+ * `Array.prototype.sort`. If the array contains incommensurate elements,
+ * sorting the array with this comparison will throw.
+ * See `compareFullOrder`.
+ *
+ * @param {Comparable} left
+ * @param {Comparable} right
+ * @returns {FullComparison}
+ */
+export const compareMagnitudeStrict = (left, right) => {
+  const comparison = compareMagnitude(left, right);
+  assert(comparison !== undefined);
+  return comparison;
+};
+harden(compareMagnitudeStrict);
+
+/**
+ * @param { RelationalOp } relationalOp
  * @param {PartialComparison} comp
  * @returns {boolean}
  */
-export const opCompare = (comparisonOp, comp) => {
-  switch (comparisonOp) {
+export const opCompare = (relationalOp, comp) => {
+  switch (relationalOp) {
     case 'lt': {
       return comp === -1;
     }
@@ -122,7 +151,7 @@ export const opCompare = (comparisonOp, comp) => {
       return comp === 1;
     }
     default: {
-      assert.fail(X`unrecognized relational op ${q(comparisonOp)}`);
+      assert.fail(X`unrecognized relational op ${q(relationalOp)}`);
     }
   }
 };

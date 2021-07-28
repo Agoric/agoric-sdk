@@ -4,19 +4,23 @@
 /// <reference types="ses"/>
 
 import { passStyleOf } from '@agoric/marshal';
-import { compareMagnitude } from './magnitude.js';
+import { compareMagnitude, compareMagnitudeStrict } from './magnitude.js';
 
 const { details: X, quote: q } = assert;
 
 /**
- * @typedef { -1 | 0 | 1 } FullComparison
- * A comparison for elements of a full order.
+ * TODO: Why is this necessary?
+ *
+ * @typedef {import('./magnitude.js').FullComparison} FullComparison
  */
 
 /**
  * Where magnitudes are ordered, aside from sets, the full order agrees.
- * Otherwise, the full order make pick an order which is sometimes
+ * Otherwise, the full order picks an order which is sometimes
  * arbitrary but always deterministic.
+ *
+ * `compareFullOrder` can be used as the comparison function for
+ * `Array.prototype.sort`.
  *
  * @param {Comparable} left
  * @param {Comparable} right
@@ -27,9 +31,7 @@ export const compareFullOrder = (left, right) => {
   const rightStyle = passStyleOf(right);
   if (leftStyle !== rightStyle) {
     // TODO define a more intuitive order among the styles
-    const comparison = compareMagnitude(left, right);
-    assert(comparison !== undefined);
-    return comparison;
+    return compareMagnitudeStrict(left, right);
   }
   if (leftStyle !== 'copySet') {
     const comparison = compareMagnitude(left, right);
