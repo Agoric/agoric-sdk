@@ -122,6 +122,11 @@ export const M = harden({
   or,
   and,
   magnitude,
+  lt: right => magnitude('lt', right),
+  lte: right => magnitude('lte', right),
+  eq: right => magnitude('eq', right),
+  gte: right => magnitude('gte', right),
+  gt: right => magnitude('gt', right),
   order,
 });
 
