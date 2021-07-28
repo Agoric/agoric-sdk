@@ -124,7 +124,7 @@ harden(compareMagnitude);
 export const compareMagnitudeStrict = (left, right) => {
   const comparison = compareMagnitude(left, right);
   assert(comparison !== undefined);
-  return comparison;
+  return /** @type {FullComparison} */ (comparison);
 };
 harden(compareMagnitudeStrict);
 
