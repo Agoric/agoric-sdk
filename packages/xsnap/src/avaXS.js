@@ -2,10 +2,9 @@
 
 Usage:
 
-  node -r esm avaXS.js [--debug] test-*.js
+  node avaXS.js [--debug] test-*.js
 
 */
-/* global __filename */
 
 // @ts-check
 
@@ -22,10 +21,9 @@ const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.js`;
 
-const importMetaUrl = `file://${__filename}`;
 /** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
 const asset = (ref, readFile) =>
-  readFile(new URL(ref, importMetaUrl).pathname, 'utf8');
+  readFile(new URL(ref, import.meta.url).pathname, 'utf8');
 
 /**
  * When we bundle test scripts, we leave these externals

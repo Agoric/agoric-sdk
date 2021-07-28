@@ -1,4 +1,4 @@
-/* global globalThis __dirname __filename */
+/* global globalThis */
 /* set up globalThis.handleCommand for running test scripts
 
 See avaXS.js for the way this is run inside an xsnap process.
@@ -8,7 +8,7 @@ test global is defined in avaAssertXS.js .
 HandledPromise is defined by eventual send shim.
 
 */
-/* global HandledPromise, issueCommand, test */
+/* global __dirname, __filename, HandledPromise, issueCommand, test */
 // @ts-check
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses" />

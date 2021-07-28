@@ -1,4 +1,4 @@
-/* global __dirname process */
+/* global process */
 import * as childProcess from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import os from 'os';
@@ -44,7 +44,10 @@ function exec(command, cwd, args = []) {
     await exec('git', '.', ['submodule', 'update', '--init', '--checkout']);
   }
 
-  const pjson = readFileSync(`${__dirname}/../package.json`, 'utf-8');
+  const pjson = readFileSync(
+    new URL('../package.json', import.meta.url).pathname,
+    'utf-8',
+  );
   const pkg = JSON.parse(pjson);
   const XSNAP_VERSION = `XSNAP_VERSION=${pkg.version}`;
 

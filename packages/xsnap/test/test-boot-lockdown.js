@@ -1,5 +1,4 @@
 // @ts-check
-/* global __filename */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
@@ -11,10 +10,8 @@ import { xsnap } from '../src/xsnap.js';
 
 import { options, loader } from './message-tools.js';
 
-const importMeta = { url: `file://${__filename}` };
-
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
-const ld = loader(importMeta.url, fs.promises.readFile);
+const ld = loader(import.meta.url, fs.promises.readFile);
 
 test('bootstrap to SES lockdown', async t => {
   const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');

@@ -1,4 +1,4 @@
-/* global __filename process */
+/* global process */
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
@@ -24,8 +24,6 @@ const ERROR = '!'.charCodeAt(0);
 const QUERY = '?'.charCodeAt(0);
 
 const OK_SEPARATOR = 1;
-
-const importMetaUrl = `file://${__filename}`;
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -83,7 +81,7 @@ export function xsnap(options) {
 
   let bin = new URL(
     `../build/bin/${platform}/${debug ? 'debug' : 'release'}/xsnap`,
-    importMetaUrl,
+    import.meta.url,
   ).pathname;
 
   /** @type {Deferred<void>} */
