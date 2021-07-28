@@ -104,10 +104,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         sameKey(invitationValue[0].asset, optionAmounts),
         X`asset is the option`,
       );
-      assert(
-        sameKey(invitationValue[0].price, bucks(1)),
-        X`price is 1 buck`,
-      );
+      assert(sameKey(invitationValue[0].price, bucks(1)), X`price is 1 buck`);
       const optionValue = optionAmounts.value;
       assert(
         optionValue[0].description === 'exerciseOption',
