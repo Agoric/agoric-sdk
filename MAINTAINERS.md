@@ -14,6 +14,8 @@ To generate a new final release, and CHANGELOG.md files
 yarn lerna version --no-push --conventional-graduate --no-git-tag-version
 # Commit the results.
 git commit -am "chore: publish $(jq -r .version package.json)"
+# Tag the branch.
+git tag "@agoric/sdk@$(jq -r .version package.json)"
 # Push the branch.
 git push -u origin release-$now
 # Tell which packages have actual news.
