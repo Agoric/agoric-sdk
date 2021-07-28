@@ -27,7 +27,9 @@ export const compareFullOrder = (left, right) => {
   const rightStyle = passStyleOf(right);
   if (leftStyle !== rightStyle) {
     // TODO define a more intuitive order among the styles
-    return compareMagnitude(leftStyle, rightStyle);
+    const comparison = compareMagnitude(left, right);
+    assert(comparison !== undefined);
+    return comparison;
   }
   if (leftStyle !== 'copySet') {
     const comparison = compareMagnitude(left, right);
