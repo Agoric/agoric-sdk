@@ -110,6 +110,9 @@ export function buildCrankBuffer(kvStore) {
   return harden({ crankBuffer, commitCrank, abortCrank });
 }
 
+/**
+ * @param {KVStore} kvStore
+ */
 export function addHelpers(kvStore) {
   // these functions are built on top of the DB interface
   insistStorageAPI(kvStore);
@@ -135,7 +138,7 @@ export function addHelpers(kvStore) {
 
   function* getPrefixedValues(prefix, start = 0) {
     for (const key of enumeratePrefixedKeys(prefix, start)) {
-      yield kvStore.get(key);
+      yield kvStore.get(key) || assert.fail('enumerate ensures get');
     }
   }
 

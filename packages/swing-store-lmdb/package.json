@@ -22,7 +22,8 @@
   "dependencies": {
     "@agoric/assert": "^0.3.7",
     "better-sqlite3": "^7.4.1",
-    "node-lmdb": "^0.9.4"
+    "node-lmdb": "^0.9.4",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.21",
