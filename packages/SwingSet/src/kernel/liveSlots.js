@@ -1,6 +1,11 @@
 /* global HandledPromise */
 
-import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
+import {
+  Remotable,
+  passStyleOf,
+  getInterfaceOf,
+  makeMarshal,
+} from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
@@ -973,7 +978,11 @@ function build(
     assert.equal(
       passStyleOf(rootObject),
       'remotable',
-      `buildRootObject() (${buildRootObject}) returned ${rootObject}, which is not Far`,
+      X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
+    );
+    assert(
+      getInterfaceOf(rootObject) !== undefined,
+      X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
     );
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
