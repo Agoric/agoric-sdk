@@ -25,13 +25,12 @@ const {
   getOwnPropertyDescriptors,
   isFrozen,
   prototype: objectPrototype,
+  create,
 } = Object;
 
 const { prototype: functionPrototype } = Function;
 
 const { ownKeys } = Reflect;
-
-export const PASS_STYLE = Symbol.for('passStyle');
 
 // TODO: Maintenance hazard: Coordinate with the list of errors in the SES
 // whilelist. Currently, both omit AggregateError, which is now standard. Both
@@ -148,6 +147,46 @@ const isPassByCopyArray = (val, inProgress) => {
   return true;
 };
 
+const protoPassStyleMap = new WeakMap();
+
+export const getProtoPassStyle = val =>
+  protoPassStyleMap.get(getPrototypeOf(val));
+harden(getProtoPassStyle);
+
+/**
+ * @param {Object} remotable
+ * @param {InterfaceSpec} iface
+ * @returns {Object}
+ */
+export const makeRemotableProto = (remotable, iface) => {
+  const oldProto = getPrototypeOf(remotable);
+  if (typeof remotable === 'object') {
+    assert(
+      oldProto === objectPrototype || oldProto === null,
+      X`For now, remotables cannot inherit from anything unusual, in ${remotable}`,
+    );
+  } else if (typeof remotable === 'function') {
+    assert(
+      oldProto === functionPrototype ||
+        getPrototypeOf(oldProto) === functionPrototype,
+      X`Far functions must originally inherit from Function.prototype, in ${remotable}`,
+    );
+  } else {
+    assert.fail(X`unrecognized typeof ${remotable}`);
+  }
+  // Assign the arrow function to a variable to set its .name.
+  const toString = () => `[${iface}]`;
+  const proto = harden(
+    create(oldProto, {
+      toString: { value: toString },
+      [Symbol.toStringTag]: { value: iface },
+    }),
+  );
+  protoPassStyleMap.set(proto, 'remotable');
+  return proto;
+};
+harden(makeRemotableProto);
+
 /**
  * For a function to be a valid method, it must not be passable.
  * Otherwise, we risk confusing pass-by-copy data carrying
@@ -155,13 +194,14 @@ const isPassByCopyArray = (val, inProgress) => {
  *
  * TODO HAZARD Because we check this on the way to hardening a remotable,
  * we cannot yet check that `func` is hardened. However, without
- * doing so, it's inheritance might change after the `PASS_STYLE`
+ * doing so, it's inheritance might change after the `protoPassStyle`
  * check below.
  *
  * @param {*} func
  * @returns {boolean}
  */
-const canBeMethod = func => typeof func === 'function' && !(PASS_STYLE in func);
+const canBeMethod = func =>
+  typeof func === 'function' && getProtoPassStyle(func) === undefined;
 
 /**
  * @param {Passable} val
@@ -255,89 +295,9 @@ harden(assertIface);
  * @returns {boolean}
  */
 const checkRemotableProtoOf = (original, check = x => x) => {
-  /**
-   * TODO: It would be nice to typedef this shape, but we can't declare a type
-   * with PASS_STYLE from JSDoc.
-   *
-   * @type {{ [PASS_STYLE]: string,
-   *          [Symbol.toStringTag]: string,
-   *          toString: () => void
-   *        }}
-   */
-  const proto = getPrototypeOf(original);
-  if (
-    !(
-      check(
-        typeof proto === 'object',
-        X`cannot serialize non-objects like ${proto}`,
-      ) &&
-      check(isFrozen(proto), X`The Remotable proto must be frozen`) &&
-      check(!Array.isArray(proto), X`Arrays cannot be pass-by-remote`) &&
-      check(proto !== null, X`null cannot be pass-by-remote`) &&
-      check(
-        // Since we're working with TypeScript's unsound type system, mostly
-        // to catch accidents and to provide IDE support, we type arguments
-        // like `val` according to what they are supposed to be. The following
-        // tests for a particular violation. However, TypeScript complains
-        // because *if the declared type were accurate*, then the condition
-        // would always return true.
-        // @ts-ignore TypeScript assumes what we're trying to check
-        proto !== objectPrototype,
-        X`Remotables must now be explicitly declared: ${q(original)}`,
-      )
-    )
-  ) {
-    return false;
-  }
-
-  const protoProto = getPrototypeOf(proto);
-
-  if (typeof original === 'object') {
-    if (
-      !check(
-        protoProto === objectPrototype || protoProto === null,
-        X`The Remotable Proto marker cannot inherit from anything unusual`,
-      )
-    ) {
-      return false;
-    }
-  } else if (typeof original === 'function') {
-    if (
-      !check(
-        protoProto === functionPrototype ||
-          getPrototypeOf(protoProto) === functionPrototype,
-        X`For far functions, the Remotable Proto marker must inherit from Function.prototype, in ${original}`,
-      )
-    ) {
-      return false;
-    }
-  } else {
-    assert.fail(X`unrecognized typeof ${original}`);
-  }
-
-  const {
-    [PASS_STYLE]: passStyleDesc,
-    toString: toStringDesc,
-    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
-    [Symbol.toStringTag]: ifaceDesc,
-    ...rest
-  } = getOwnPropertyDescriptors(proto);
-
-  return (
-    check(
-      ownKeys(rest).length === 0,
-      X`Unexpected properties on Remotable Proto ${ownKeys(rest)}`,
-    ) &&
-    check(!!passStyleDesc, X`Remotable must have a [PASS_STYLE]`) &&
-    check(
-      passStyleDesc.value === 'remotable',
-      X`Expected 'remotable', not ${q(passStyleDesc.value)}`,
-    ) &&
-    check(
-      typeof toStringDesc.value === 'function',
-      X`toString must be a function`,
-    ) &&
-    checkIface(ifaceDesc && ifaceDesc.value, check)
+  return check(
+    getProtoPassStyle(original) === 'remotable',
+    X`Remotables must now be explicitly declared: ${original}`,
   );
 };
 
@@ -380,10 +340,6 @@ const checkCanBeRemotable = (val, check = x => x) => {
           X`cannot serialize Remotables with non-methods like ${q(
             String(key),
           )} in ${val}`,
-        ) &&
-        check(
-          key !== PASS_STYLE,
-          X`A pass-by-remote cannot shadow ${q(PASS_STYLE)}`,
         ),
     );
   } else if (typeof val === 'function') {
@@ -455,7 +411,7 @@ export const getInterfaceOf = val => {
   if (
     (typeof val !== 'object' && typeof val !== 'function') ||
     val === null ||
-    val[PASS_STYLE] !== 'remotable' ||
+    getProtoPassStyle(val) !== 'remotable' ||
     !checkRemotable(val)
   ) {
     return undefined;

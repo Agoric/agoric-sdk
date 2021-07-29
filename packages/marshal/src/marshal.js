@@ -6,29 +6,25 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import {
-  PASS_STYLE,
   passStyleOf,
   getInterfaceOf,
   getErrorConstructor,
   assertCanBeRemotable,
   assertIface,
+  makeRemotableProto,
+  getProtoPassStyle,
 } from './passStyleOf.js';
 
 import './types.js';
 
 const {
-  getPrototypeOf,
   setPrototypeOf,
-  create,
   getOwnPropertyDescriptors,
   defineProperties,
   is,
   isFrozen,
   fromEntries,
-  prototype: objectPrototype,
 } = Object;
-
-const { prototype: functionPrototype } = Function;
 
 const { ownKeys } = Reflect;
 
@@ -118,38 +114,6 @@ export const pureCopy = val => {
   }
 };
 harden(pureCopy);
-
-/**
- * @param {Object} remotable
- * @param {InterfaceSpec} iface
- * @returns {Object}
- */
-const makeRemotableProto = (remotable, iface) => {
-  const oldProto = getPrototypeOf(remotable);
-  if (typeof remotable === 'object') {
-    assert(
-      oldProto === objectPrototype || oldProto === null,
-      X`For now, remotables cannot inherit from anything unusual, in ${remotable}`,
-    );
-  } else if (typeof remotable === 'function') {
-    assert(
-      oldProto === functionPrototype ||
-        getPrototypeOf(oldProto) === functionPrototype,
-      X`Far functions must originally inherit from Function.prototype, in ${remotable}`,
-    );
-  } else {
-    assert.fail(X`unrecognized typeof ${remotable}`);
-  }
-  // Assign the arrow function to a variable to set its .name.
-  const toString = () => `[${iface}]`;
-  return harden(
-    create(oldProto, {
-      [PASS_STYLE]: { value: 'remotable' },
-      toString: { value: toString },
-      [Symbol.toStringTag]: { value: iface },
-    }),
-  );
-};
 
 /**
  * Special property name that indicates an encoding that needs special
@@ -631,11 +595,10 @@ function Remotable(iface = 'Remotable', props = undefined, remotable = {}) {
   assertCanBeRemotable(remotable);
 
   // Ensure that the remotable isn't already marked.
+  const protoStyle = getProtoPassStyle(remotable);
   assert(
-    !(PASS_STYLE in remotable),
-    X`Remotable ${remotable} is already marked as a ${q(
-      remotable[PASS_STYLE],
-    )}`,
+    protoStyle === undefined,
+    X`Remotable ${remotable} is already marked as a ${q(protoStyle)}`,
   );
   // Ensure that the remotable isn't already frozen.
   assert(!isFrozen(remotable), X`Remotable ${remotable} is already frozen`);
