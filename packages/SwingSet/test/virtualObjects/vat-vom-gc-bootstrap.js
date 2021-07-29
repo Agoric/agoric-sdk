@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers) {
   let other;
   let bob;
   let me;
   let goCount = 3;
-  return harden({
+  return Far('root', {
     async bootstrap(vats) {
       me = vats.bootstrap;
       bob = vats.bob;

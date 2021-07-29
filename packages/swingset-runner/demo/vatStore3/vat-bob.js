@@ -1,5 +1,6 @@
 /* global makeKind */
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const things = [];
 
@@ -20,7 +21,7 @@ export function buildRootObject(_vatPowers) {
   const thingMaker = makeKind(makeThingInstance);
   let nextThingNumber = 0;
 
-  return harden({
+  return Far('root', {
     prepare() {
       for (let i = 1; i <= 9; i += 1) {
         things.push(thingMaker(`thing #${i}`));
