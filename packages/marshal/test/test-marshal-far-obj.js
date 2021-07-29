@@ -4,7 +4,6 @@ import { test } from './prepare-test-env-ava.js';
 
 import {
   getInterfaceOf,
-  passStyleOf,
   ALLOW_IMPLICIT_REMOTABLES,
 } from '../src/passStyleOf.js';
 
