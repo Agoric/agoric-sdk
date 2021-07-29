@@ -11,7 +11,7 @@ import {
 import { Remotable, Far, makeMarshal } from '../src/marshal.js';
 
 const { quote: q } = assert;
-const { create, prototype: objectPrototype } = Object;
+const { create, getPrototypeOf, prototype: objectPrototype } = Object;
 
 // this only includes the tests that do not use liveSlots
 
@@ -276,4 +276,9 @@ test('transitional remotables', t => {
 
   // anything with non-enumerable properties is rejected
   shouldThrow(['nonenumStringData', 'enumStringFunc'], FAR_ONLYMETH);
+});
+
+test('object without prototype', t => {
+  const base = Far('base', { __proto__: null });
+  t.is(getPrototypeOf(getPrototypeOf(base)), Object.prototype);
 });
