@@ -1,8 +1,9 @@
-/* global require, process */
+/* global process */
 // @ts-check
 import fs from 'fs';
 import path from 'path';
 
+import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 
@@ -33,8 +34,9 @@ const allValues = async obj =>
 export async function buildKernelBundles() {
   // this takes 2.7s on my computer
 
-  const src = rel => bundleSource(require.resolve(rel));
-  const srcGE = rel => bundleSource(require.resolve(rel), 'getExport');
+  const src = rel => bundleSource(new URL(rel, import.meta.url).pathname);
+  const srcGE = rel =>
+    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
 
   const bundles = await allValues({
     kernel: src('./kernel/kernel.js'),
@@ -134,21 +136,21 @@ export function loadBasedir(basedir) {
  * a module path, and then if that doesn't work try to resolve it as an
  * ordinary path relative to the directory in which the config file was found.
  *
- * @param {string} dirname  Path to directory containing the config file
+ * @param {string} referrer  URL of file or directory containing the config file
  * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
  *
- * @returns {string} the absolute path corresponding to `specPath` if it can be
+ * @returns {Promise<string>} the absolute path corresponding to `specPath` if it can be
  *    determined.
  */
-function resolveSpecFromConfig(dirname, specPath) {
+async function resolveSpecFromConfig(referrer, specPath) {
   try {
-    return require.resolve(specPath, { paths: [dirname] });
+    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
   } catch (e) {
-    if (e.code !== 'MODULE_NOT_FOUND') {
+    if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;
     }
   }
-  return path.resolve(dirname, specPath);
+  return new URL(specPath, referrer).pathname;
 }
 
 /**
@@ -157,25 +159,34 @@ function resolveSpecFromConfig(dirname, specPath) {
  * path and make sure it has a `parameters` property if it's supposed to.
  *
  * @param {SwingSetConfigDescriptor | void} desc  The config descriptor to be normalized.
- * @param {string} dirname  The pathname of the directory in which the config file was found
+ * @param {string} referrer  The pathname of the file or directory in which the
+ * config file was found
  * @param {boolean} expectParameters `true` if the entries should have parameters (for
  *    example, `true` for `vats` but `false` for bundles).
  */
-function normalizeConfigDescriptor(desc, dirname, expectParameters) {
+async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
+  const normalizeSpec = async (entry, key) => {
+    return resolveSpecFromConfig(referrer, entry[key]).then(spec => {
+      entry[key] = spec;
+    });
+  };
+
+  const jobs = [];
   if (desc) {
     for (const name of Object.keys(desc)) {
       const entry = desc[name];
       if ('sourceSpec' in entry) {
-        entry.sourceSpec = resolveSpecFromConfig(dirname, entry.sourceSpec);
+        jobs.push(normalizeSpec(entry, 'sourceSpec'));
       }
       if ('bundleSpec' in entry) {
-        entry.bundleSpec = resolveSpecFromConfig(dirname, entry.bundleSpec);
+        jobs.push(normalizeSpec(entry, 'bundleSpec'));
       }
       if (expectParameters && !entry.parameters) {
         entry.parameters = {};
       }
     }
   }
+  return Promise.all(jobs);
 }
 
 /**
@@ -183,19 +194,22 @@ function normalizeConfigDescriptor(desc, dirname, expectParameters) {
  *
  * @param {string} configPath  Path to the config file to be processed
  *
- * @returns {SwingSetConfig | null} the contained config object, in normalized form, or null if the
+ * @returns {Promise<SwingSetConfig | null>} the contained config object, in normalized form, or null if the
  *    requested config file did not exist.
  *
  * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
  *    invalid.
  */
-export function loadSwingsetConfigFile(configPath) {
+export async function loadSwingsetConfigFile(configPath) {
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const dirname = path.dirname(configPath);
-    normalizeConfigDescriptor(config.vats, dirname, true);
-    normalizeConfigDescriptor(config.bundles, dirname, false);
-    // normalizeConfigDescriptor(config.devices, dirname, true); // TODO: represent devices
+    const referrer = new URL(
+      configPath,
+      `file:///${process.cwd()}/`,
+    ).toString();
+    await normalizeConfigDescriptor(config.vats, referrer, true);
+    await normalizeConfigDescriptor(config.bundles, referrer, false);
+    // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
     assert(
       config.vats && config.vats[config.bootstrap],

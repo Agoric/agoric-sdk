@@ -1,4 +1,3 @@
-/* global require */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -22,7 +21,7 @@ function capargs(args, slots = []) {
 }
 
 function dfile(name) {
-  return require.resolve(`./files-devices/${name}`);
+  return new URL(`./files-devices/${name}`, import.meta.url).pathname;
 }
 
 test.before(async t => {
@@ -53,7 +52,7 @@ test.serial('d0', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: require.resolve('./files-devices/device-0'),
+        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
       },
     },
   };
@@ -98,7 +97,7 @@ test.serial('d1', async t => {
     },
     devices: {
       d1: {
-        sourceSpec: require.resolve('./files-devices/device-1'),
+        sourceSpec: new URL('files-devices/device-1', import.meta.url).pathname,
       },
     },
   };
@@ -130,12 +129,13 @@ async function test2(t, mode) {
         bundle: t.context.data.bootstrap2,
       },
       left: {
-        sourceSpec: require.resolve('./files-devices/vat-left.js'),
+        sourceSpec: new URL('files-devices/vat-left.js', import.meta.url)
+          .pathname,
       },
     },
     devices: {
       d2: {
-        sourceSpec: require.resolve('./files-devices/device-2'),
+        sourceSpec: new URL('files-devices/device-2', import.meta.url).pathname,
         creationOptions: { unendowed: true },
       },
     },
@@ -224,7 +224,7 @@ test.serial('device state', async t => {
     },
     devices: {
       d3: {
-        sourceSpec: require.resolve('./files-devices/device-3'),
+        sourceSpec: new URL('files-devices/device-3', import.meta.url).pathname,
         creationOptions: { unendowed: true },
       },
     },
@@ -254,7 +254,7 @@ test.serial('command broadcast', async t => {
     },
     devices: {
       command: {
-        sourceSpec: require.resolve(cm.srcPath),
+        sourceSpec: new URL(cm.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -280,7 +280,7 @@ test.serial('command deliver', async t => {
     },
     devices: {
       command: {
-        sourceSpec: require.resolve(cm.srcPath),
+        sourceSpec: new URL(cm.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -322,7 +322,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: require.resolve('./files-devices/device-0'),
+        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
         creationOptions: { unendowed: true },
       },
     },
@@ -358,7 +358,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: require.resolve('./files-devices/device-0'),
+        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
         creationOptions: { unendowed: true },
       },
     },

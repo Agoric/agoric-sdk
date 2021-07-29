@@ -1,4 +1,3 @@
-/* global require */
 import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
@@ -14,7 +13,7 @@ import { assert, details as X } from '@agoric/assert';
  * controller.run() when it returns true.
  */
 export function buildTimer() {
-  const srcPath = require.resolve('./timer-src');
+  const srcPath = new URL('timer-src', import.meta.url).pathname;
   let devicePollFunction;
 
   function registerDevicePollFunction(pollFn) {

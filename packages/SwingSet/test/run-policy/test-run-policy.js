@@ -1,8 +1,6 @@
-/* global __dirname */
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import path from 'path';
 import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargsOneSlot, capSlot, capargs } from '../util.js';
@@ -16,10 +14,10 @@ async function testCranks(t, mode) {
   const config = {
     vats: {
       left: {
-        sourceSpec: path.join(__dirname, 'vat-policy-left.js'),
+        sourceSpec: new URL('vat-policy-left.js', import.meta.url).pathname,
       },
       right: {
-        sourceSpec: path.join(__dirname, 'vat-policy-right.js'),
+        sourceSpec: new URL('vat-policy-right.js', import.meta.url).pathname,
         creationOptions: {
           enableVatstore: true,
         },

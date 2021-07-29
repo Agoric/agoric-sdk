@@ -1,4 +1,3 @@
-/* global require */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -13,12 +12,15 @@ test('vattp', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
+        sourceSpec: new URL(
+          'files-vattp/bootstrap-test-vattp.js',
+          import.meta.url,
+        ).pathname,
       },
     },
     devices: {
       mailbox: {
-        sourceSpec: mb.srcPath,
+        sourceSpec: new URL(mb.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -55,7 +57,10 @@ test('vattp 2', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./files-vattp/bootstrap-test-vattp'),
+        sourceSpec: new URL(
+          'files-vattp/bootstrap-test-vattp.js',
+          import.meta.url,
+        ).pathname,
       },
     },
     devices: {

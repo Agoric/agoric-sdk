@@ -1,10 +1,9 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
-
-import path from 'path';
-// import fs from 'fs';
+// eslint-disable-next-line import/order
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
+
+// import fs from 'fs';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
@@ -22,7 +21,7 @@ async function buildTrace(c, storage) {
 
 test('transcript-one save', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
+    new URL('basedir-transcript', import.meta.url).pathname,
   );
   const hostStorage = provideHostStorage();
   const c1 = await buildVatController(config, ['one'], {
@@ -35,7 +34,7 @@ test('transcript-one save', async t => {
   ); */
 
   const config2 = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
+    new URL('basedir-transcript', import.meta.url).pathname,
   );
   const hostStorage2 = provideHostStorage();
   const c2 = await buildVatController(config2, ['one'], {
@@ -63,7 +62,7 @@ test('transcript-one save', async t => {
 
 test('transcript-one load', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-transcript'),
+    new URL('basedir-transcript', import.meta.url).pathname,
   );
   const s0 = provideHostStorage();
   const c0 = await buildVatController(config, ['one'], { hostStorage: s0 });
@@ -75,7 +74,7 @@ test('transcript-one load', async t => {
   for (let i = 0; i < states.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     const cfg = await loadBasedir(
-      path.resolve(__dirname, 'basedir-transcript'),
+      new URL('basedir-transcript', import.meta.url).pathname,
     );
     const s = provideHostStorage();
     setAllState(s, states[i]);

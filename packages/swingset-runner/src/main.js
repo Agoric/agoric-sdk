@@ -316,7 +316,7 @@ export async function main() {
 
   let config;
   if (configPath) {
-    config = loadSwingsetConfigFile(configPath);
+    config = await loadSwingsetConfigFile(configPath);
     if (config === null) {
       fail(`config file ${configPath} not found`);
     }

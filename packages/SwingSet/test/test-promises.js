@@ -1,8 +1,6 @@
-/* global __dirname */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import path from 'path';
 import {
   buildVatController,
   loadBasedir,
@@ -16,7 +14,9 @@ test.before(async t => {
 });
 
 test('flush', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['flush'], t.context.data);
   // all promises should settle before c.step() fires
   await c.step();
@@ -24,7 +24,9 @@ test('flush', async t => {
 });
 
 test('E() resolve', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['e-then'], t.context.data);
 
   await c.run();
@@ -37,7 +39,9 @@ test('E() resolve', async t => {
 });
 
 test('E(E(x).foo()).bar()', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['chain1'], t.context.data);
 
   /*
@@ -59,7 +63,9 @@ test('E(E(x).foo()).bar()', async t => {
 });
 
 test('E(Promise.resolve(presence)).foo()', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['chain2'], t.context.data);
 
   await c.run();
@@ -72,7 +78,9 @@ test('E(Promise.resolve(presence)).foo()', async t => {
 });
 
 test('E(local).foo()', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['local1'], t.context.data);
 
   await c.run();
@@ -80,7 +88,9 @@ test('E(local).foo()', async t => {
 });
 
 test('resolve-to-local', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['local2'], t.context.data);
 
   await c.run();
@@ -93,7 +103,9 @@ test('resolve-to-local', async t => {
 });
 
 test('send-promise-resolve-to-local', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const config = await loadBasedir(
+    new URL('basedir-promises', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, ['send-promise1'], t.context.data);
 
   await c.run();
@@ -108,7 +120,7 @@ test('send-promise-resolve-to-local', async t => {
 
 test('send-harden-promise-1', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-promises-2'),
+    new URL('basedir-promises-2', import.meta.url).pathname,
   );
   const c = await buildVatController(
     config,
@@ -132,7 +144,9 @@ test('send-harden-promise-1', async t => {
 });
 
 test('circular promise resolution data', async t => {
-  const config = await loadBasedir(path.resolve(__dirname, 'basedir-circular'));
+  const config = await loadBasedir(
+    new URL('basedir-circular', import.meta.url).pathname,
+  );
   const c = await buildVatController(config, [], t.context.data);
 
   await c.run();
@@ -170,7 +184,7 @@ test('circular promise resolution data', async t => {
 
 test('refcount while queued', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-promises-3'),
+    new URL('basedir-promises-3', import.meta.url).pathname,
   );
   const c = await buildVatController(config, [], t.context.data);
   c.pinVatRoot('bootstrap');

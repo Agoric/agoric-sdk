@@ -1,9 +1,8 @@
-/* global __dirname require */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
-
-import path from 'path';
+// eslint-disable-next-line import/order
 import bundleSource from '@agoric/bundle-source';
+
 import { provideHostStorage } from '../../src/hostStorage.js';
 import {
   initializeSwingset,
@@ -18,7 +17,7 @@ import { capargs } from '../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  const fn = path.join(__dirname, 'bootstrap-device-mailbox.js');
+  const fn = new URL('bootstrap-device-mailbox.js', import.meta.url).pathname;
   const bootstrap = await bundleSource(fn);
   t.context.data = { kernelBundles, bootstrap };
 });
@@ -35,7 +34,7 @@ test('mailbox outbound', async t => {
     },
     devices: {
       mailbox: {
-        sourceSpec: require.resolve(mb.srcPath),
+        sourceSpec: new URL(mb.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -83,7 +82,7 @@ test('mailbox inbound', async t => {
     },
     devices: {
       mailbox: {
-        sourceSpec: require.resolve(mb.srcPath),
+        sourceSpec: new URL(mb.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -138,7 +137,7 @@ async function initializeMailboxKernel(t) {
     },
     devices: {
       mailbox: {
-        sourceSpec: require.resolve(mb.srcPath),
+        sourceSpec: new URL(mb.srcPath, import.meta.url).pathname,
       },
     },
   };

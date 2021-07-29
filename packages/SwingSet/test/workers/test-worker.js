@@ -1,4 +1,3 @@
-/* global require __dirname */
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { loadBasedir, buildVatController } from '../../src/index.js';
@@ -6,13 +5,13 @@ import { loadBasedir, buildVatController } from '../../src/index.js';
 const expected = [['B good', 'C good', 'F good', 'three good'], 'rp3 good'];
 
 async function makeController(managerType) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   const canCallNow = ['local', 'xs-worker'].indexOf(managerType) !== -1;
   config.vats.target.parameters = { canCallNow };
   config.devices = {
     add: {
-      sourceSpec: require.resolve('./device-add.js'),
+      sourceSpec: new URL('device-add.js', import.meta.url).pathname,
       creationOptions: {
         unendowed: true,
       },

@@ -1,8 +1,6 @@
-/* global __dirname */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import path from 'path';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { buildLoopbox } from '../src/devices/loopbox.js';
 import {
@@ -53,7 +51,7 @@ const encouragementBotCommsGolden = [
 
 test('run encouragementBotComms Demo', async t => {
   const dump = await main(
-    path.resolve(__dirname, '../demo/encouragementBotComms'),
+    new URL('../demo/encouragementBotComms', import.meta.url).pathname,
     [],
   );
   t.deepEqual(dump.log, encouragementBotCommsGolden);

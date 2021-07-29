@@ -1,4 +1,3 @@
-/* global require */
 import { assert, details as X } from '@agoric/assert';
 
 /*
@@ -22,7 +21,7 @@ export function buildLoopbox(deliverMode) {
     deliverMode === 'immediate' || deliverMode === 'queued',
     X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`,
   );
-  const loopboxSrcPath = require.resolve('./loopbox-src');
+  const loopboxSrcPath = new URL('loopbox-src', import.meta.url).pathname;
 
   let loopboxPassOneMessage;
   function registerPassOneMessage(lpom) {

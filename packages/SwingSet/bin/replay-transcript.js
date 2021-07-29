@@ -1,4 +1,4 @@
-/* global WeakRef FinalizationRegistry require */
+/* global WeakRef FinalizationRegistry */
 // import '@agoric/install-ses';
 import '../tools/install-ses-debug.js';
 import fs from 'fs';
@@ -16,7 +16,8 @@ import { startSubprocessWorker } from '../src/spawnSubprocessWorker.js';
 import { requireIdentical } from '../src/kernel/vatManager/transcript.js';
 
 async function makeBundles() {
-  const srcGE = rel => bundleSource(require.resolve(rel), 'getExport');
+  const srcGE = rel =>
+    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
   const lockdown = await srcGE(
     '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
   );
@@ -86,9 +87,10 @@ async function replay(transcriptFile, worker = 'xs-worker') {
     // this worker type cannot do blocking syscalls like vatstoreGet, so it's
     // kind of useless for vats that use virtual objects
     function startSubprocessWorkerNode() {
-      const supercode = require.resolve(
+      const supercode = new URL(
         '../src/kernel/vatManager/supervisor-subprocess-node.js',
-      );
+        import.meta.url,
+      ).pathname;
       return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
     }
     factory = makeNodeSubprocessFactory({

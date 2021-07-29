@@ -2,13 +2,13 @@
 
 import { makeMarshal, Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { assertKnownOptions } from '../assertOptions';
-import { insistVatID } from './id';
-import { makeVatSlot } from '../parseVatSlots';
-import { insistStorageAPI } from '../storageAPI';
-import { wrapStorage } from './state/storageWrapper';
-import makeKernelKeeper from './state/kernelKeeper';
-import { exportRootObject, doQueueToKref } from './kernel';
+import { assertKnownOptions } from '../assertOptions.js';
+import { insistVatID } from './id.js';
+import { makeVatSlot } from '../parseVatSlots.js';
+import { insistStorageAPI } from '../storageAPI.js';
+import { wrapStorage } from './state/storageWrapper.js';
+import makeKernelKeeper from './state/kernelKeeper.js';
+import { exportRootObject, doQueueToKref } from './kernel.js';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);

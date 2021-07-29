@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
 import { makeStore, makeWeakStore } from '../src/index.js';

@@ -36,7 +36,7 @@ async function buildSwingset(
   { consensusMode, debugName = undefined, slogCallbacks, slogFile },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  let config = loadSwingsetConfigFile(vatconfig);
+  let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
     config = loadBasedir(vatconfig);
   }

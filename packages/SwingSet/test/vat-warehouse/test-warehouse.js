@@ -1,8 +1,7 @@
-/* global __dirname */
 // @ts-check
 
 // eslint-disable-next-line import/order
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import tmp from 'tmp';
 import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';
@@ -10,7 +9,7 @@ import { loadBasedir, buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
   config.vats.target3 = config.vats.target;

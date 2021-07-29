@@ -1,4 +1,3 @@
-/* global require */
 /*
   The 'mailbox' device helps manage bidirectional communication with a number
   of 'peers'. Each peer is identified with a string. We exchange ordered
@@ -157,7 +156,7 @@ export function buildMailboxStateMap(state = harden(new Map())) {
 }
 
 export function buildMailbox(state) {
-  const srcPath = require.resolve('./mailbox-src');
+  const srcPath = new URL('mailbox-src', import.meta.url).pathname;
 
   // endowments made available to the inner half
   let inboundCallback;

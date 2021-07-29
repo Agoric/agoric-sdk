@@ -4,14 +4,14 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
-import { parseKernelSlot } from '../parseKernelSlots';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots';
-import { insistVatID } from '../id';
-import { kdebug } from '../kdebug';
+import { parseKernelSlot } from '../parseKernelSlots.js';
+import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
+import { insistVatID } from '../id.js';
+import { kdebug } from '../kdebug.js';
 import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,
-} from './reachable';
+} from './reachable.js';
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
