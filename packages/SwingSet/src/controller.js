@@ -330,6 +330,7 @@ export async function makeSwingsetController(
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
+      return kref;
     },
 
     // these are for tests
