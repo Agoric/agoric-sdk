@@ -1,3 +1,4 @@
+/* global performance */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -44,7 +45,7 @@ test('meter details', async t => {
 
   t.like(
     meters,
-    { compute: 1_260_179, allocate: 42_074_144 },
+    { compute: 1_260_182, allocate: 42_074_144 },
     'compute, allocate meters should be stable; update METER_TYPE?',
   );
 
@@ -65,7 +66,7 @@ test('meter details', async t => {
   );
   // @ts-ignore extra meters not declared on RunResult (TODO: #3139)
   t.true(meters.mapSetAddCount > 20000);
-  t.is(meterType, 'xs-meter-8');
+  t.is(meterType, 'xs-meter-9');
 });
 
 test('isReady does not compute / allocate', async t => {
@@ -138,7 +139,9 @@ test('metering can be switched off / on at run-time', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
-  const { meterUsage: { compute: noUnMeteredCompute } } = await vat.evaluate(`
+  const {
+    meterUsage: { compute: noUnMeteredCompute },
+  } = await vat.evaluate(`
       for (let work=0; work < 1000; work++) {}
       const limit = currentMeterLimit();
       const before = resetMeter(0, 0);
@@ -149,7 +152,9 @@ test('metering can be switched off / on at run-time', async t => {
       }
       for (let work=0; work < 1000; work++) {}
     `);
-  const { meterUsage: { compute: someUnMeteredCompute } } = await vat.evaluate(`
+  const {
+    meterUsage: { compute: someUnMeteredCompute },
+  } = await vat.evaluate(`
     for (let work=0; work < 1000; work++) {}
     const limit = currentMeterLimit();
     const before = resetMeter(0, 0);
@@ -178,4 +183,63 @@ test('metering switch - start compartment only', async t => {
   `);
   await vat.close();
   t.deepEqual(['no meteringSwitch in Compartment'], opts.messages);
+});
+
+/** @param {number} logn */
+function dataStructurePerformance(logn) {
+  // eslint-disable-next-line no-bitwise
+  const n = 1 << logn;
+  // @ts-ignore
+  // eslint-disable-next-line no-undef
+  const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  const t0 = performance.now();
+  for (let i = 0; i < 256; i += 1) {
+    const a = [];
+    for (let j = 0; j < n; j += 1) {
+      a.push(j);
+    }
+    const m = new Map();
+    for (let j = 0; j < n; j += 1) {
+      m.set(j, j);
+    }
+    for (let j = 0; j < n; j += 1) {
+      m.get(j);
+    }
+    const s = new Set();
+    for (let j = 0; j < n; j += 1) {
+      s.add(j);
+    }
+    for (let j = 0; j < n; j += 1) {
+      s.has(j);
+    }
+  }
+  const t1 = performance.now();
+  const dur = t1 - t0;
+  // O(n log(n))
+  const rate = (n * logn) / dur;
+  send({ size: n, dur, rate });
+}
+
+test('Array, Map, Set growth is O(log(n))', async t => {
+  const opts = options(io);
+  const vat = xsnap({ ...opts, meteringLimit: 0 });
+  await vat.evaluate(
+    `globalThis.dataStructurePerformance = (${dataStructurePerformance})`,
+  );
+
+  const run = async size => {
+    const {
+      meterUsage: { compute },
+    } = await vat.evaluate(`dataStructurePerformance(${size})`);
+    const r = JSON.parse(opts.messages.pop());
+    t.log({ compute, r });
+    return { compute, r };
+  };
+
+  const { r: r1 } = await run(8);
+  const { r: r2 } = await run(10);
+  const { r: r3 } = await run(12);
+  t.log({ r2_1: r2.rate / r1.rate, r3_2: r3.rate / r2.rate });
+  t.true(r2.rate / r1.rate >= 1);
+  t.true(r3.rate / r2.rate >= 1);
 });
