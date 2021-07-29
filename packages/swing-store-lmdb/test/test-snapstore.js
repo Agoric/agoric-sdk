@@ -65,10 +65,17 @@ test('snapStore prepare / commit delete is robust', async t => {
   // @ts-ignore
   t.throws(() => store.prepareToDelete(1));
   t.throws(() => store.prepareToDelete('../../../etc/passwd'));
+  t.throws(() => store.prepareToDelete('/etc/passwd'));
 
   store.prepareToDelete(hashes[2]);
   store.commitDeletes();
   t.deepEqual(fs.readdirSync(pool.name).length, 4);
+
+  // Restore (re-save) between prepare and commit.
+  store.prepareToDelete(hashes[3]);
+  await store.save(async fn => fs.promises.writeFile(fn, `file 3`));
+  store.commitDeletes();
+  t.true(fs.readdirSync(pool.name).includes(`${hashes[3]}.gz`));
 
   hashes.forEach(store.prepareToDelete);
   store.prepareToDelete('does not exist');
