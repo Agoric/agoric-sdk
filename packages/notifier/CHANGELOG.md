@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.23](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.22...@agoric/notifier@0.3.23) (2021-07-28)
+
+**Note:** Version bump only for package @agoric/notifier
+
+
+
+
+
 ### [0.3.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.21...@agoric/notifier@0.3.22) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/notifier

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.13...@agoric/eslint-config@0.3.14) (2021-07-28)
+
+**Note:** Version bump only for package @agoric/eslint-config
+
+
+
+
+
 ### [0.3.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.12...@agoric/eslint-config@0.3.13) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/eslint-config

@@ -1,10 +1,8 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "Deep equals",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "index.js",
   "engines": {
     "node": ">=11.0"
@@ -32,12 +30,11 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.6",
-    "@agoric/marshal": "^0.4.19"
+    "@agoric/assert": "^0.3.7",
+    "@agoric/marshal": "^0.4.20"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "files": [
     "src/",
@@ -62,9 +59,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   }

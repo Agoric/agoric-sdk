@@ -22,9 +22,7 @@ const baseprog = path.basename(process.argv[1]);
 solo(baseprog, process.argv.slice(2)).then(
   res => process.exit(res || 0),
   reason => {
-    console.log(`error running ag-solo:`, reason);
-    console.error(`\
-Maybe the chain has bumped and you need to rerun ag-setup-solo?`);
+    console.error(`error running ag-solo:`, reason);
     process.exit(1);
   },
 );
