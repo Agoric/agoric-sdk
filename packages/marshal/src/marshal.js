@@ -140,12 +140,9 @@ const makeRemotableProto = (remotable, iface) => {
   } else {
     assert.fail(X`unrecognized typeof ${remotable}`);
   }
-  // Assign the arrow function to a variable to set its .name.
-  const toString = () => `[${iface}]`;
   return harden(
     create(oldProto, {
       [PASS_STYLE]: { value: 'remotable' },
-      toString: { value: toString },
       [Symbol.toStringTag]: { value: iface },
     }),
   );
