@@ -52,7 +52,7 @@ test('deserialize imports', async t => {
     slots: ['o-1'],
   });
   // a should be a proxy/presence. For now these are obvious.
-  t.is(a.toString(), '[Alleged: presence o-1]');
+  t.is(a.toString(), '[object Alleged: presence o-1]');
   t.truthy(Object.isFrozen(a));
 
   // m now remembers the proxy
