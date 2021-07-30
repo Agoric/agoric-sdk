@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.11](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.10...agoric@0.13.11) (2021-07-28)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** use BOOTSTRAP_BLOCK to avoid slog confusion ([9c8725b](https://github.com/Agoric/agoric-sdk/commit/9c8725bae6ff4038052f33947da77d3eddc0351d))
+
+
+
 ### [0.13.10](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.9...agoric@0.13.10) (2021-07-01)
 
 **Note:** Version bump only for package agoric

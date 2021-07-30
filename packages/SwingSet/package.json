@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-vat",
-  "version": "0.18.6",
+  "version": "0.19.0",
   "description": "Vat/Container Launcher",
   "parsers": {
     "js": "mjs"
@@ -27,33 +27,33 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@endo/ses-ava": "^0.2.4",
+    "@endo/ses-ava": "^0.2.5",
     "ava": "^3.12.1"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.6",
+    "@agoric/assert": "^0.3.7",
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/bundle-source": "^1.4.4",
-    "@agoric/captp": "^1.7.20",
-    "@agoric/eventual-send": "^0.13.22",
-    "@agoric/import-bundle": "^0.2.22",
-    "@agoric/install-ses": "^0.5.20",
-    "@agoric/marshal": "^0.4.19",
+    "@agoric/bundle-source": "^1.4.5",
+    "@agoric/captp": "^1.8.0",
+    "@agoric/eventual-send": "^0.13.23",
+    "@agoric/import-bundle": "^0.2.23",
+    "@agoric/install-ses": "^0.5.21",
+    "@agoric/marshal": "^0.4.20",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.22",
-    "@agoric/promise-kit": "^0.2.20",
-    "@agoric/store": "^0.4.22",
-    "@agoric/swing-store-lmdb": "^0.5.6",
-    "@agoric/swing-store-simple": "^0.4.6",
-    "@agoric/xsnap": "^0.6.9",
-    "@endo/base64": "^0.2.4",
+    "@agoric/notifier": "^0.3.23",
+    "@agoric/promise-kit": "^0.2.21",
+    "@agoric/store": "^0.4.23",
+    "@agoric/swing-store-lmdb": "^0.5.7",
+    "@agoric/swing-store-simple": "^0.4.7",
+    "@agoric/xsnap": "^0.6.10",
+    "@endo/base64": "^0.2.5",
     "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
     "esm": "agoric-labs/esm#Agoric-built",
     "node-lmdb": "^0.9.4",
     "re2": "^1.10.5",
     "semver": "^6.3.0",
-    "ses": "^0.13.4",
+    "ses": "^0.14.0",
     "tmp": "^0.2.1"
   },
   "files": [

@@ -10,8 +10,12 @@ To generate a new final release, and CHANGELOG.md files
 (use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release):
 
 ```sh
-# Create the final release CHANGELOGs and tags, and push.
-yarn lerna version --no-push --conventional-graduate
+# Create the final release CHANGELOGs.
+yarn lerna version --no-push --conventional-graduate --no-git-tag-version
+# Commit the results.
+git commit -am "chore: publish $(jq -r .version package.json)"
+# Tag the branch.
+git tag "@agoric/sdk@$(jq -r .version package.json)"
 # Push the branch.
 git push -u origin release-$now
 # Tell which packages have actual news.

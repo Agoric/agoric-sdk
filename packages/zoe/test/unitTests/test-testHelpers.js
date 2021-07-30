@@ -102,7 +102,7 @@ test('assertAmountsEqual - brand mismatch', t => {
   assertAmountsEqual(fakeT, moola(0), bucks(0));
   t.is(
     fakeT.getError(),
-    'brand ([Alleged: moola brand]) expected to equal [Alleged: bucks brand]',
+    'brand ([object Alleged: moola brand]) expected to equal [object Alleged: bucks brand]',
   );
 });
 

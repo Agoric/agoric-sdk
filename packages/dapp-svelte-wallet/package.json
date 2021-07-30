@@ -1,6 +1,6 @@
 {
   "name": "@agoric/dapp-svelte-wallet",
-  "version": "0.10.10",
+  "version": "0.10.11",
   "parsers": {
     "js": "mjs"
   },
@@ -14,7 +14,7 @@
     ]
   },
   "devDependencies": {
-    "@agoric/eslint-config": "^0.3.13"
+    "@agoric/eslint-config": "^0.3.14"
   },
   "scripts": {
     "lint-fix": "exit 0",
@@ -25,7 +25,7 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "agoric": "^0.13.10",
+    "agoric": "^0.13.11",
     "babel-eslint": "^10.0.3",
     "eslint-plugin-eslint-comments": "^3.1.2"
   },

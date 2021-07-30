@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.10...@agoric/ertp@0.11.11) (2021-07-28)
+
+
+### Bug Fixes
+
+* **ERTP:** use metered=true and xs-worker on all swingset tests ([8c3da1f](https://github.com/Agoric/agoric-sdk/commit/8c3da1fa05c5734e1c839d480642f1716d003dd3))
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+
+
+
 ### [0.11.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.9...@agoric/ertp@0.11.10) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/ertp

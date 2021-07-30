@@ -1,6 +1,6 @@
 {
   "name": "@agoric/treasury",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Core cryptoeconomy contracts",
   "parsers": {
     "js": "mjs"
@@ -31,26 +31,26 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.6",
-    "@agoric/bundle-source": "^1.4.4",
-    "@agoric/captp": "^1.7.20",
-    "@agoric/deploy-script-support": "^0.2.18",
-    "@agoric/ertp": "^0.11.10",
-    "@agoric/eventual-send": "^0.13.22",
-    "@agoric/marshal": "^0.4.19",
+    "@agoric/assert": "^0.3.7",
+    "@agoric/bundle-source": "^1.4.5",
+    "@agoric/captp": "^1.8.0",
+    "@agoric/deploy-script-support": "^0.2.19",
+    "@agoric/ertp": "^0.11.11",
+    "@agoric/eventual-send": "^0.13.23",
+    "@agoric/marshal": "^0.4.20",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.22",
-    "@agoric/promise-kit": "^0.2.20",
-    "@agoric/store": "^0.4.22",
-    "@agoric/swingset-vat": "^0.18.6",
-    "@agoric/zoe": "^0.17.5"
+    "@agoric/notifier": "^0.3.23",
+    "@agoric/promise-kit": "^0.2.21",
+    "@agoric/store": "^0.4.23",
+    "@agoric/swingset-vat": "^0.19.0",
+    "@agoric/zoe": "^0.17.6"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/install-ses": "^0.5.20",
+    "@agoric/install-ses": "^0.5.21",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
-    "ses": "^0.13.4"
+    "ses": "^0.14.0"
   },
   "files": [
     "bundles/",

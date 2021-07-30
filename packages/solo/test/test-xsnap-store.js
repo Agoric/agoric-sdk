@@ -1,23 +1,38 @@
-/* global __filename */
-// @ts-check
-
+/* global require */
 import '@agoric/install-ses';
-import { spawn } from 'child_process';
-import { type as osType } from 'os';
+
 import fs from 'fs';
 import path from 'path';
-import zlib from 'zlib';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { spawn } from 'child_process';
+import { type as osType } from 'os';
 import tmp from 'tmp';
-import { xsnap } from '../src/xsnap.js';
-import { makeSnapStore } from '../src/snapStore.js';
-import { loader } from './message-tools.js';
+import test from 'ava';
+import { xsnap } from '@agoric/xsnap';
+import { makeSnapStore } from '@agoric/swing-store-lmdb';
 
-const importMeta = { url: `file://${__filename}` };
-const ld = loader(importMeta.url, fs.promises.readFile); // WARNING: ambient
+const { freeze } = Object;
+
+const ld = (() => {
+  /** @param { string } ref */
+  // WARNING: ambient
+  const resolve = ref => require.resolve(ref);
+  const readFile = fs.promises.readFile;
+  return freeze({
+    resolve,
+    /**  @param { string } ref */
+    asset: async ref => readFile(resolve(ref), 'utf-8'),
+  });
+})();
+
+/** @type {(fn: string, fullSize: number) => number} */
+const relativeSize = (fn, fullSize) =>
+  Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
+
+const snapSize = {
+  raw: 417,
+  SESboot: 858,
+  compression: 0.1,
+};
 
 /**
  * @param {string} name
@@ -44,51 +59,11 @@ async function bootWorker(name, handleCommand, script) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const bootScript = await ld.asset(
+    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
+  );
   return bootWorker(name, handleCommand, bootScript);
 }
-
-/** @type {(fn: string, fullSize: number) => number} */
-const relativeSize = (fn, fullSize) =>
-  Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
-
-const snapSize = {
-  raw: 417,
-  SESboot: 858,
-  compression: 0.1,
-};
-
-test('build temp file; compress to cache file', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
-  let keepTmp = '';
-  const hash = await store.save(async fn => {
-    t.falsy(fs.existsSync(fn));
-    fs.writeFileSync(fn, 'abc');
-    keepTmp = fn;
-  });
-  t.is(
-    'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-    hash,
-  );
-  t.falsy(
-    fs.existsSync(keepTmp),
-    'temp file should have been deleted after withTempName',
-  );
-  const dest = path.resolve(pool.name, `${hash}.gz`);
-  t.truthy(fs.existsSync(dest), 'save() produces file named after hash');
-  const gz = fs.readFileSync(dest);
-  const contents = zlib.gunzipSync(gz);
-  t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
-});
 
 test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.compression}x`, async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');

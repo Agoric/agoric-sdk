@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.6...@agoric/assert@0.3.7) (2021-07-28)
+
+
+### Bug Fixes
+
+* **assert:** Use module extension for types.js ([7e79e5e](https://github.com/Agoric/agoric-sdk/commit/7e79e5e37f2ae0955e6a205c744bff44cd0bbe57))
+
+
+
 ### [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.5...@agoric/assert@0.3.6) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/assert

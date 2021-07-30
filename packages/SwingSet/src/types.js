@@ -37,6 +37,7 @@
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  *   vatConsole: Console,
  *   liveSlotsConsole?: Console,
+ *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
@@ -131,7 +132,7 @@
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
- * @typedef { ReturnType<typeof import('@agoric/xsnap').makeSnapStore> } SnapStore
+ * @typedef { ReturnType<typeof import('@agoric/swing-store-lmdb').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 

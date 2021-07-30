@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.4.6...@agoric/swing-store-simple@0.4.7) (2021-07-28)
+
+**Note:** Version bump only for package @agoric/swing-store-simple
+
+
+
+
+
 ### [0.4.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-simple@0.4.5...@agoric/swing-store-simple@0.4.6) (2021-07-01)
 
 

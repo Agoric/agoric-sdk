@@ -3,12 +3,10 @@
 
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava';
-import path from 'path';
 import fs from 'fs';
-import { tmpName } from 'tmp';
-import { makeSnapStore } from '@agoric/xsnap';
+import tmp from 'tmp';
+import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import { loadBasedir, buildVatController } from '../../src/index.js';
-import { provideHostStorage } from '../../src/hostStorage.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
@@ -74,8 +72,6 @@ const steps = [
 ];
 
 async function runSteps(c, t) {
-  t.teardown(c.shutdown);
-
   await c.run();
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
@@ -101,29 +97,51 @@ test('4 vats in warehouse with 2 online', async t => {
   const c = await makeController('xs-worker', {
     warehousePolicy: { maxVatsOnline },
   });
+  t.teardown(c.shutdown);
+
   await runSteps(c, t);
 });
 
-test('snapshot after deliveries', async t => {
-  const snapstorePath = path.resolve(__dirname, './fixture-test-warehouse/');
-  fs.mkdirSync(snapstorePath, { recursive: true });
-  t.teardown(() => fs.rmdirSync(snapstorePath, { recursive: true }));
+function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
+  const inUse = [];
+  for (const k of kvStore.getKeys(`snapshot.`, `snapshot/`)) {
+    const consumers = JSON.parse(kvStore.get(k));
+    if (consumers.length > 0) {
+      const id = k.slice(`snapshot.`.length);
+      inUse.push(id);
+    }
+  }
+  const onDisk = fs.readdirSync(snapstorePath);
+  const extra = [];
+  for (const snapshotPath of onDisk) {
+    const id = snapshotPath.slice(0, -'.gz'.length);
+    if (!inUse.includes(id)) {
+      extra.push(id);
+    }
+  }
+  return { inUse, onDisk, extra };
+}
 
-  const snapStore = makeSnapStore(snapstorePath, {
-    tmpName,
-    existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    rename: fs.promises.rename,
-    unlink: fs.promises.unlink,
-    resolve: path.resolve,
-  });
-  const hostStorage = { snapStore, ...provideHostStorage() };
+test('snapshot after deliveries', async t => {
+  const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
+
+  const { kvStore, streamStore, commit } = initLMDBSwingStore(swingStorePath);
+  const hostStorage = { kvStore, streamStore };
   const c = await makeController('xs-worker', {
     hostStorage,
     warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
   });
+  t.teardown(c.shutdown);
+
   await runSteps(c, t);
+  commit();
+
+  const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
+    kvStore,
+    `${swingStorePath}/xs-snapshots`,
+  );
+  t.log({ inUse, onDisk, extra });
+  t.deepEqual(extra, [], `inUse: ${inUse}, onDisk: ${onDisk}`);
 });
 
 test('LRU eviction', t => {

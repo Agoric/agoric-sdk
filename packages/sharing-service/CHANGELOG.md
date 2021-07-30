@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.23](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.22...@agoric/sharing-service@0.1.23) (2021-07-28)
+
+
+### Bug Fixes
+
+* **sharing-service:** use xs-worker/metered=true on swingset tests ([7c3f248](https://github.com/Agoric/agoric-sdk/commit/7c3f2489341c3191a53c0df58553b02522737f3e))
+
+
+
 ### [0.1.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.21...@agoric/sharing-service@0.1.22) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/sharing-service

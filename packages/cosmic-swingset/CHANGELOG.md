@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.31.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.9...@agoric/cosmic-swingset@0.31.10) (2021-07-28)
+
+
+### Features
+
+* **cosmic-swingset:** pass consensusMode to SwingSet on chain ([33ff03c](https://github.com/Agoric/agoric-sdk/commit/33ff03cb655f80dcee10e816c23741da9bd250ea))
+* **solo:** separate hot helper address from cold fees and egress ([20cdfa8](https://github.com/Agoric/agoric-sdk/commit/20cdfa8d89788d6903ea927bf9b3d59ece775251))
+* **SwingSet:** new `overrideVatManagerOptions` kernel option ([1ec045b](https://github.com/Agoric/agoric-sdk/commit/1ec045bad58ee7b5e9fccf36782793a3dd780337))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** messagePool ordering and authz indirection ([c49a2ea](https://github.com/Agoric/agoric-sdk/commit/c49a2ea92c6bd910316e939274a4ff80e41cdd18))
+* **cosmic-swingset:** properly detect when the chain is available ([83f3a5d](https://github.com/Agoric/agoric-sdk/commit/83f3a5d7ad035183c0e6ae71003ed73daaaafeee))
+* **cosmic-swingset:** use `cosmic-swingset-bootstrap-block-finish` ([a789b02](https://github.com/Agoric/agoric-sdk/commit/a789b020cb33d4b9b8941b970784d7db5b0f62ae))
+* **cosmic-swingset:** use BOOTSTRAP_BLOCK to avoid slog confusion ([9c8725b](https://github.com/Agoric/agoric-sdk/commit/9c8725bae6ff4038052f33947da77d3eddc0351d))
+* provide Makefile targets to use separate fee and client auth ([935f7b1](https://github.com/Agoric/agoric-sdk/commit/935f7b1e364ccc9e85d7ed2f745bec317073de05))
+* **cosmic-swingset:** use default batching parameters for sim-chain ([e16e7a7](https://github.com/Agoric/agoric-sdk/commit/e16e7a77910e5c0af647be30cdaa360ce7bff0f8))
+
+
+
 ### [0.31.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.8...@agoric/cosmic-swingset@0.31.9) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

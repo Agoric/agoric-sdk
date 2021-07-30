@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.4.20](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.19...@agoric/transform-metering@1.4.20) (2021-07-28)
+
+**Note:** Version bump only for package @agoric/transform-metering
+
+
+
+
+
 ### [1.4.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.18...@agoric/transform-metering@1.4.19) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/transform-metering
