@@ -213,7 +213,7 @@ typedef enum {
 	E_TOO_MUCH_COMPUTATION = 17,
 } ExitCode;
 
-ExitCode main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	int argi;
 	int argr = 0;
@@ -827,14 +827,10 @@ void fxFreezeBuiltIns(txMachine* the)
 	mxFreezeBuiltInCall; mxPush(mxGeneratorPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxHostPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxMapEntriesIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxMapKeysIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxMapValuesIteratorPrototype); mxFreezeBuiltInRun;
+	mxFreezeBuiltInCall; mxPush(mxMapIteratorPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxModulePrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxRegExpStringIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxSetEntriesIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxSetKeysIteratorPrototype); mxFreezeBuiltInRun;
-	mxFreezeBuiltInCall; mxPush(mxSetValuesIteratorPrototype); mxFreezeBuiltInRun;
+	mxFreezeBuiltInCall; mxPush(mxSetIteratorPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxStringIteratorPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxTransferPrototype); mxFreezeBuiltInRun;
 	mxFreezeBuiltInCall; mxPush(mxTypedArrayPrototype); mxFreezeBuiltInRun;
