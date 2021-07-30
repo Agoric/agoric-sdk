@@ -12,6 +12,7 @@ const DELIVER_INBOUND = 'DELIVER_INBOUND';
 const END_BLOCK = 'END_BLOCK';
 const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
+const LIEN_GET_LIENED_AMOUNT = 'LIEN_GET_LIENED_AMOUNT';
 const PLEASE_PROVISION = 'PLEASE_PROVISION';
 const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
 
@@ -126,6 +127,11 @@ export default function makeBlockManager({
         }
         await bootstrapBlock(action.blockTime);
         break;
+      }
+
+      case LIEN_GET_LIENED_AMOUNT: {
+        const lockedAmount = 0n;
+        return await Promise.resolve(JSON.stringify(String(lockedAmount)));
       }
 
       case COMMIT_BLOCK: {

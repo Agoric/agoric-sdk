@@ -96,6 +96,7 @@ import (
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
@@ -166,6 +167,7 @@ type GaiaApp struct { // nolint: golint
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
 
+	lienPort  int
 	vbankPort int
 	vibcPort  int
 
@@ -198,6 +200,7 @@ type GaiaApp struct { // nolint: golint
 	SwingSetKeeper swingset.Keeper
 	VibcKeeper     vibc.Keeper
 	VbankKeeper    vbank.Keeper
+	LienKeeper     lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -292,9 +295,11 @@ func NewAgoricApp(
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
-	app.AccountKeeper = authkeeper.NewAccountKeeper(
+	innerAk := authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
 	)
+	wrappedAccountKeeper := lien.NewWrappedAccountKeeper(innerAk)
+	app.AccountKeeper = wrappedAccountKeeper
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.ModuleAccountAddrs(),
 	)
@@ -402,6 +407,11 @@ func NewAgoricApp(
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
 	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
+
+	// Lien keeper, and circular reference back to wrappedAccountKeeper
+	app.LienKeeper = lien.NewKeeper(wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper, callToController)
+	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
+	app.lienPort = vm.RegisterPortHandler("lien", app.LienKeeper)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -548,6 +558,7 @@ type cosmosInitAction struct {
 	SupplyCoins sdk.Coins `json:"supplyCoins"`
 	VibcPort    int       `json:"vibcPort"`
 	VbankPort   int       `json:"vbankPort"`
+	LienPort    int       `json:"lienPort"`
 }
 
 // Name returns the name of the App
@@ -567,6 +578,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,
+		LienPort:    app.lienPort,
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {
