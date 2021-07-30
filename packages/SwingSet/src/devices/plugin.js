@@ -1,4 +1,4 @@
-export function buildPlugin(pluginDir, pluginRequire, queueThunkForKernel) {
+export function buildPlugin(pluginDir, importPlugin, queueThunkForKernel) {
   const srcPath = new URL('plugin-src', import.meta.url).pathname;
   let resetter;
 
@@ -23,7 +23,7 @@ export function buildPlugin(pluginDir, pluginRequire, queueThunkForKernel) {
   return {
     srcPath,
     endowments: {
-      require: pluginRequire,
+      import: importPlugin,
       queueThunkForKernel,
       registerResetter,
       getPluginDir,

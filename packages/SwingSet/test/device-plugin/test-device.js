@@ -21,14 +21,13 @@ async function setupVatController(t) {
     inputQueue.push(thunk);
   };
 
-  const pluginRequire = mod => {
+  const importPlugin = mod => {
     t.is(mod, 'pingpong');
-    // eslint-disable-next-line global-require
-    return require('./pingpong');
+    return import('./pingpong.js');
   };
   const plugin = buildPlugin(
     new URL('./', import.meta.url).pathname,
-    pluginRequire,
+    importPlugin,
     queueThunkForKernel,
   );
   const bridge = buildBridge();
@@ -74,8 +73,7 @@ async function setupVatController(t) {
   return { bridge, cycle, dump: c.dump, plugin, queueThunkForKernel };
 }
 
-// TODO was .serial
-test.skip('plugin first time', async t => {
+test.serial('plugin first time', async t => {
   const { bridge, cycle, dump, queueThunkForKernel } = await setupVatController(
     t,
   );
@@ -91,8 +89,7 @@ test.skip('plugin first time', async t => {
   ]);
 });
 
-// TODO was .serial
-test.skip('plugin after restart', async t => {
+test.serial('plugin after restart', async t => {
   const {
     bridge,
     cycle,
