@@ -5,7 +5,7 @@ import { test } from './prepare-test-env-ava.js';
 import { Far } from '../src/marshal.js';
 import { getInterfaceOf, passStyleOf } from '../src/passStyleOf.js';
 
-const { freeze, getPrototypeOf, setPrototypeOf } = Object;
+const { freeze, setPrototypeOf } = Object;
 
 test('Far functions', t => {
   t.notThrows(() => Far('arrow', a => a + 1), 'Far function');
