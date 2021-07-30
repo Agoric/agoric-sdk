@@ -50,7 +50,7 @@
     "@agoric/install-ses": "^0.5.21",
     "ava": "^3.12.1",
     "esm": "agoric-labs/esm#Agoric-built",
-    "ses": "^0.13.4"
+    "ses": "^0.14.0"
   },
   "files": [
     "bundles/",

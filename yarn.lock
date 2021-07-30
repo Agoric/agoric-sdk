@@ -1259,25 +1259,25 @@
   resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"
   integrity sha512-kBJtf7PH6aWwZ6fka3zQ0p6SBYzx4fl1LoZXE2RrnYST9Xljm7WfKJrU4g/Xr3Beg72MLrp1AWNUmuYJTL7Cow==
 
-"@endo/base64@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.4.tgz#5a00054c5a687d541edcb1c8841c90b51eb005cc"
-  integrity sha512-2cdvf29iftIuEZ4eGBZm064uaUHmp3ZIllLw2FA6wEfTLkgdT9cHczlIhUTD8t3ih620mj5I0VnUF11bA5nNmA==
+"@endo/base64@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.5.tgz#4c6980ac3db80d31b2263f96496d019ff3e29af2"
+  integrity sha512-P+SMOnuCnXFDQTMCv8PPf0CJ/GExIWON7+JUJXZxP4emdECUT2CoL4J3sCHlLDm5FIVhzPK5+OuXKx4WYgXKRg==
 
-"@endo/cjs-module-analyzer@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.4.tgz#78f2d698230e895e19ad25fd5bf69adadc77e0f1"
-  integrity sha512-XvSkS8FjIE3JRSeljlxwdvzl8QfRqRbSEHNbBvp2nVWgd1MiliXpLw3MdbgNjWTtndcD9EDn6KgPgPYg5NeHSQ==
+"@endo/cjs-module-analyzer@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.5.tgz#c55d3d5a1e251245af1ec713611c44afa1dc8969"
+  integrity sha512-7r6juw6OySbI1mfNgfU3EyaOOqPXiuo6911DX56mR/FLUBtCT3uucvdSJSsQc50+tOV6tUgx+Vv0c2mLtPS/9w==
 
-"@endo/compartment-mapper@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@endo/compartment-mapper/-/compartment-mapper-0.4.1.tgz#d4a76b09dbc1dd6d1c6f8accc0b84dea310a5ce1"
-  integrity sha512-9KAGBx15wzDOPFZ/E2k99gLfnwHk5bp7ZP6f9Torl3wl++9xWUqp4bDRLIIKoRRfucfKETI7RdxE8+oJ0AH+PA==
+"@endo/compartment-mapper@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@endo/compartment-mapper/-/compartment-mapper-0.5.0.tgz#0e3a87636e71c0e04c42a171f68887c1f4c083dc"
+  integrity sha512-hElbsnEkc6afwZIPhaiTp48hp7dIZa6A64G9iYrgFn1/3X5Ivls5Z7bfZnq07pRdbf2MAVMR0Egt6O/ELLgLzw==
   dependencies:
-    "@endo/cjs-module-analyzer" "^0.2.4"
-    "@endo/static-module-record" "^0.5.4"
-    "@endo/zip" "^0.2.4"
-    ses "^0.13.4"
+    "@endo/cjs-module-analyzer" "^0.2.5"
+    "@endo/static-module-record" "^0.6.0"
+    "@endo/zip" "^0.2.5"
+    ses "^0.14.0"
 
 "@endo/eslint-config@^0.3.9":
   version "0.3.9"
@@ -1293,24 +1293,24 @@
   dependencies:
     requireindex "~1.1.0"
 
-"@endo/ses-ava@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.4.tgz#957c0703becfbe786005fe8d4873e11bac6b8286"
-  integrity sha512-RZLfo4ceoz1/yM+WUCI+hIBGanmSplZwYOv2BqzwrtWeoOuCgLUjuzr1vqeTKAEybIj2zti8R/b+eyDGEH28lA==
+"@endo/ses-ava@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.5.tgz#0ecfe3394386245f03b231dec481865c11cb60b7"
+  integrity sha512-yyha0ahW2qtUgA13VFr6K/AcSaivyrPvSx3uP4ulL8T6Bu3pFoyepjFuh/rjdXPjYuDXfEiVBtsEDk4r14grpw==
   dependencies:
-    ses "^0.13.4"
+    ses "^0.14.0"
 
-"@endo/static-module-record@^0.5.4":
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/@endo/static-module-record/-/static-module-record-0.5.4.tgz#80718e067f027a912aeeabc73c60e1e2b2854cd1"
-  integrity sha512-fJx5Nk36H+j+JjG82YK+bPuJnJ8TQ4INBkb+ddqQTWlnho9ijFPMnrhO7Zw6T0rqWy0URhyx4uNP193U4Bp55w==
+"@endo/static-module-record@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@endo/static-module-record/-/static-module-record-0.6.0.tgz#4de8945ab729c7a81fd8677936a24b82b202965d"
+  integrity sha512-9XJp+KfrkQiyJ7SUTmE2nx/eRRk7Gc3nlTSw/7Y7kuPCkKbPevBKavKzN5T8FN6LMj+HQkJF8qcaL60/YWbsNQ==
   dependencies:
     "@agoric/babel-standalone" "^7.14.3"
 
-"@endo/zip@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-0.2.4.tgz#2d8cecf7a8adb5fff1b8474046750dfa382fedbd"
-  integrity sha512-g2DZL/SW0lWl6U0ISijyRitGDnhdbgV0uphEo/y9M7k6abs+O8QekEL39XJ4qOfQXSkgRZIrVlJjQzd8Fj4tKQ==
+"@endo/zip@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-0.2.5.tgz#1986900d8bebec6d6ae076aad23ddd69a13673e0"
+  integrity sha512-JW/f9uiCtwfAW0ZyxjC+C8p5MGhrVmxT2TZ4hQNX4hvg8Lignk/vxdarw7QMa5W2zmZt/5oY6hFBMIq6SAcGJQ==
 
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"
@@ -11338,10 +11338,10 @@ serve-static@1.14.1:
     parseurl "~1.3.3"
     send "0.17.1"
 
-ses@^0.13.4:
-  version "0.13.4"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.13.4.tgz#d547202ccb180c4a161e52007a9edff51d5fa9fd"
-  integrity sha512-7pgHZF4i6tuMAhD6GeNgA8fxfgzeQ5queyRFnKfKPM6nvCEKd8JP3ityQ04rVspTzkzu9R0b2I4nb05ukblQDA==
+ses@^0.14.0:
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.14.0.tgz#d71a5ccac8e9054155c7e63a52325e924edd3b41"
+  integrity sha512-LQPb6IS19K12Osvndmu7lHoJVuYyxPPBAUSZlcVeOmHF4LMzjT8vIVoMYLyk4LHvmt6wBbrJph9JkIiD1+femQ==
 
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"

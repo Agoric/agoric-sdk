@@ -24,7 +24,7 @@
     "rollup-plugin-livereload": "^1.0.0",
     "rollup-plugin-svelte": "^5.0.3",
     "rollup-plugin-terser": "^6.1.0",
-    "ses": "^0.13.4",
+    "ses": "^0.14.0",
     "sirv-cli": "^1.0.0",
     "smelte": "^1.0.15",
     "svelte": "^3.0.0",
