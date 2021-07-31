@@ -15,7 +15,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   let secondPriceAuctionSeatP;
 
-  return harden({
+  return Far('carolstuff', {
     doSecondPriceAuctionBid: async invitationP => {
       const invitation = await E(invitationIssuer).claim(invitationP);
       const instance = await E(zoe).getInstance(invitation);

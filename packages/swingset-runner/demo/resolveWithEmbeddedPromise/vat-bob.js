@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 const log = console.log;
 
 function makePR() {
@@ -11,7 +13,7 @@ function makePR() {
 export function buildRootObject(_vatPowers) {
   let r1;
   let r2;
-  return harden({
+  return Far('root', {
     first() {
       log('=> Bob: first begins');
       let p1;

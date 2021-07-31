@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
@@ -23,7 +24,7 @@ export function buildRootObject(_vatPowers, options) {
     );
   }
 
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       count = options.argv[0] ? Number(options.argv[0]) : 3;
       const bob = vats.bob;

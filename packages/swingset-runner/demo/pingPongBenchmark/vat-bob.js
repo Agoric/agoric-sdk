@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
@@ -6,7 +7,7 @@ export function buildRootObject(_vatPowers) {
   let myNickname;
 
   function makeContact(otherContact, otherNickname) {
-    return harden({
+    return Far('contact', {
       ping(tag) {
         log(`${myNickname}: pinged with "${tag}", ponging ${otherNickname}`);
         E(otherContact).pong(tag, myNickname);
@@ -14,7 +15,7 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
-  return harden({
+  return Far('root', {
     setNickname(nickname) {
       myNickname = nickname;
     },

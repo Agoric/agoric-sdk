@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
@@ -25,7 +26,7 @@ export function buildRootObject(_vatPowers) {
     let otherNickname = 'unknown';
     let total = 0;
 
-    return harden({
+    return Far('contact', {
       ping(tag, count) {
         total += 1;
         if (count > 0) {
@@ -51,7 +52,7 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
-  return harden({
+  return Far('root', {
     setNickname(nickname) {
       myNickname = nickname;
     },

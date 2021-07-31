@@ -2,6 +2,7 @@
 
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
+import { getInterfaceOf } from '@agoric/marshal';
 import { parseVatSlot } from '../parseVatSlots.js';
 // import { kdebug } from './kdebug.js';
 
@@ -755,6 +756,10 @@ export function makeVirtualObjectManager(
         init(...args);
       }
       innerSelf.representative = initialRepresentative;
+      assert(
+        getInterfaceOf(initialRepresentative),
+        `self must be declared Far`,
+      );
       registerEntry(vobjID, initialRepresentative);
       initializationsInProgress.delete(initialData);
       const rawData = {};

@@ -34,7 +34,7 @@ For example:
         state.counter = 0;
         state.name = name;
       },
-      self: {
+      self: Far('counter', {
         inc() {
           state.counter += 1;
         },
@@ -53,7 +53,7 @@ For example:
         getName() {
           return state.name;
         },
-      },
+      }),
     };
   }
 ```
@@ -98,12 +98,12 @@ Additional important details:
 
 ```javascript
   function thingKitMaker(state) {
-    const self = {
+    const self = Far('thing', {
       sendMeTo(somebodyElse) {
         somebodyElse.hereIAm(self);
       },
       ... // and so on
-    };
+    });
     function init(someParam) {
       otherObject.doSomethingWithMe(self, someParam);
       state.foo = 47;
@@ -111,6 +111,8 @@ Additional important details:
     return { init, self };
   }
 ```
+
+- As illustrated above, the `self` object must be made `Far`, since it will be subject to serialization.
 
 ## Persistent Weak Stores
 

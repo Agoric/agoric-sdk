@@ -1,5 +1,6 @@
 /* global makeKind makeWeakStore */
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const p = console.log;
 
@@ -13,7 +14,7 @@ function build(name) {
         state.companionName = companionName;
         state.count = 0;
       },
-      self: {
+      self: Far('thing', {
         echo(message) {
           state.count += 1;
           E(state.companion).say(message);
@@ -34,7 +35,7 @@ function build(name) {
         report() {
           p(`${name}'s thing ${state.label} invoked ${state.count} times`);
         },
-      },
+      }),
     };
   }
 
@@ -43,7 +44,7 @@ function build(name) {
 
   const myThings = makeWeakStore(); // thing -> inquiry count
 
-  return harden({
+  return Far('root', {
     async introduce(other) {
       const otherName = await E(other).getName();
       const thing = thingMaker(`thing-${nextThingNumber}`, other, otherName);

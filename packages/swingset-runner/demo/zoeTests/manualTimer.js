@@ -1,12 +1,13 @@
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 
 // A fake clock that also logs progress in tests.
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
   const schedule = new Map();
-  return harden({
+  return Far('timer', {
     setWakeup(deadline, handler) {
       assert.typeof(deadline, 'bigint');
       assert(

@@ -1,11 +1,12 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
 export function buildRootObject(_vatPowers) {
   let resolver;
   let carol;
-  return harden({
+  return Far('root', {
     first(carolVat) {
       log('=> Bob: in first');
       const answer = new Promise((theResolver, _theRejector) => {

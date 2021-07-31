@@ -34,7 +34,7 @@ export function buildRootObject(_vatPowers) {
       log(`target2 in four`);
     },
   });
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       const bob = vats.bob;
       const p1 = E(bob).result();

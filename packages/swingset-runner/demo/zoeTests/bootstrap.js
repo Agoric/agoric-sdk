@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from './manualTimer';
 
@@ -140,5 +141,5 @@ export function buildRootObject(_vatPowers, vatParameters) {
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },
   };
-  return harden(obj0);
+  return Far('root', obj0);
 }

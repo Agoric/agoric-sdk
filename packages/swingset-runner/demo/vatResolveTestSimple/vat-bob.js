@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
@@ -20,7 +21,7 @@ function hush(p) {
 export function buildRootObject(_vatPowers) {
   let p1;
   const [p0, r0] = makePR();
-  return harden({
+  return Far('root', {
     promise(p) {
       p1 = p;
       p1.then(

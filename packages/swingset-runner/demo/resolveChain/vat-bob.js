@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 function makePR() {
   let r;
   const p = new Promise((resolve, _reject) => {
@@ -9,7 +11,7 @@ function makePR() {
 export function buildRootObject(_vatPowers) {
   let r = null;
   let value = 0;
-  return harden({
+  return Far('root', {
     init() {
       let p;
       // eslint-disable-next-line prefer-const
