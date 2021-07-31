@@ -1,5 +1,6 @@
 {
   "bootstrap": "bootstrap",
+  "defaultManagerType": "xs-worker",
   "bundles": {
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet"

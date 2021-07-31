@@ -10,11 +10,11 @@ export function buildRootObject(_vatPowers) {
       init(label) {
         state.label = label;
       },
-      self: {
+      self: Far('thing', {
         getLabel() {
           return state.label;
         },
-      },
+      }),
     };
   }
 

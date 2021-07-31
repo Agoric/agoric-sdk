@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 const log = console.log;
 
@@ -8,7 +9,7 @@ export function buildRootObject(_vatPowers) {
   log(`=> setup called`);
   let alice;
   let bob;
-  return harden({
+  return Far('root', {
     bootstrap(vats) {
       alice = vats.alice;
       bob = vats.bob;
