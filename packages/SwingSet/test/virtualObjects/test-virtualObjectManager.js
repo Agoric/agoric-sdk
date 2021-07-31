@@ -519,6 +519,24 @@ test('virtual object gc', t => {
   ]);
 });
 
+function makeDefectivelyNonFarThingInstance(state) {
+  return {
+    init(label = 'thing') {
+      state.label = label;
+    },
+    self: {
+      noop() {},
+    },
+  };
+}
+
+test('demand farhood', t => {
+  const { makeKind } = makeFakeVirtualObjectManager({ cacheSize: 3 });
+
+  const thingMaker = makeKind(makeDefectivelyNonFarThingInstance);
+  t.throws(() => thingMaker('thing'), { message: 'self must be declared Far' });
+});
+
 test('weak store operations', t => {
   const { makeWeakStore, makeKind } = makeFakeVirtualObjectManager({
     cacheSize: 3,
