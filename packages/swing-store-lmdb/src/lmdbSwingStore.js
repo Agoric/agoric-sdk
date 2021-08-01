@@ -2,6 +2,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { tmpName } from 'tmp';
 
 import lmdb from 'node-lmdb';
 import sqlite3 from 'better-sqlite3';
@@ -9,6 +10,22 @@ import sqlite3 from 'better-sqlite3';
 import { assert } from '@agoric/assert';
 
 import { sqlStreamStore } from './sqlStreamStore.js';
+import { makeSnapStore } from './snapStore.js';
+
+export { makeSnapStore };
+
+export function makeSnapStoreIO() {
+  return {
+    tmpName,
+    existsSync: fs.existsSync,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    rename: fs.promises.rename,
+    unlink: fs.promises.unlink,
+    unlinkSync: fs.unlinkSync,
+    resolve: path.resolve,
+  };
+}
 
 /**
  * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
@@ -32,7 +49,7 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
   if (forceReset) {
     fs.rmdirSync(dirPath, { recursive: true });
   }
-  fs.mkdirSync(`${dirPath}/streams`, { recursive: true });
+  fs.mkdirSync(dirPath, { recursive: true });
 
   const { mapSize = 2 * 1024 * 1024 * 1024 } = options;
   let lmdbEnv = new lmdb.Env();
@@ -167,6 +184,9 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
   };
 
   const streamStore = sqlStreamStore(dirPath, { sqlite3 });
+  const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO());
 
   /**
    * Commit unsaved changes.
@@ -176,6 +196,13 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
       txn.commit();
       txn = null;
     }
+
+    // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
+    //   is being replaced with vatA -> snapshot2)
+    //   MUST be committed BEFORE we delete snapshot1.
+    //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
+    //   but we'll fail to load it because it's been deleted already.
+    snapStore.commitDeletes();
   }
 
   /**
@@ -193,7 +220,7 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
     lmdbEnv = null;
   }
 
-  return harden({ kvStore, streamStore, commit, close, diskUsage });
+  return harden({ kvStore, streamStore, snapStore, commit, close, diskUsage });
 }
 
 /**

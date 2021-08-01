@@ -1,4 +1,6 @@
 /* global makeKind */
+import { Far } from '@agoric/marshal';
+
 const p = console.log;
 
 function makeThingInstance(state) {
@@ -9,7 +11,7 @@ function makeThingInstance(state) {
       state.label = label;
       state.resetCounter = 0;
     },
-    self: {
+    self: Far('thing', {
       inc() {
         state.counter += 1;
         p(`#thing# ${state.label} inc() counter now ${state.counter}`);
@@ -31,7 +33,7 @@ function makeThingInstance(state) {
         p(`#thing# ${state.label} describe()`);
         return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
       },
-    },
+    }),
   };
 }
 
@@ -46,7 +48,7 @@ function makeZotInstance(state) {
       state.tag = tag;
       state.count = 0;
     },
-    self: {
+    self: Far('zot', {
       sayHello(msg) {
         p(`#zot# ${msg} ${state.name}`);
         state.count += 1;
@@ -61,7 +63,7 @@ function makeZotInstance(state) {
         p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
         state.count += 1;
       },
-    },
+    }),
   };
 }
 
@@ -78,7 +80,7 @@ export function buildRootObject(_vatPowers) {
   let zot3;
   let zot4;
 
-  return harden({
+  return Far('root', {
     doYourStuff(phase) {
       p('=> Bob: doYourStuff!');
       switch (phase) {

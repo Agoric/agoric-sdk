@@ -53,11 +53,15 @@ const enableKernelGC = true;
 // v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
-// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 // v$NN.meter = m$NN
+// exclude from consensus
+// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
+
+// exclude from consensus
+// snapshot.$id = [vatID, ...]
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -535,6 +539,11 @@ export default function makeKernelKeeper(
     const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
 
+    const old = vatKeeper.getLastSnapshot();
+    if (old) {
+      vatKeeper.removeFromSnapshot(old.snapshotID);
+    }
+
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
     // more sophisticated database, we'd keep each section in a separate
@@ -570,7 +579,7 @@ export default function makeKernelKeeper(
       assert(k.startsWith(importPrefix), k);
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
-      const kref = kvStore.get(k);
+      const kref = kvStore.get(k) || assert.fail('getKeys ensures get');
       const vref = k.slice(`${vatID}.c.`.length);
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
@@ -803,7 +812,7 @@ export default function makeKernelKeeper(
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
     assert(kvStore.has(k), X`vat name ${name} must exist, but doesn't`);
-    return kvStore.get(k);
+    return kvStore.get(k) || assert.fail('.has() ensures .get()');
   }
 
   function allocateUnusedVatID() {
@@ -822,7 +831,7 @@ export default function makeKernelKeeper(
       names.push(name);
       kvStore.set('vat.names', JSON.stringify(names));
     }
-    return kvStore.get(k);
+    return kvStore.get(k) || assert.fail('.has() ensures .get()');
   }
 
   function addDynamicVatID(vatID) {
@@ -837,7 +846,7 @@ export default function makeKernelKeeper(
     const result = [];
     for (const k of kvStore.getKeys('vat.name.', 'vat.name/')) {
       const name = k.slice(9);
-      const vatID = kvStore.get(k);
+      const vatID = kvStore.get(k) || assert.fail('getKeys ensures get');
       result.push([name, vatID]);
     }
     return result;
@@ -847,7 +856,7 @@ export default function makeKernelKeeper(
     const result = [];
     for (const k of kvStore.getKeys('device.name.', 'device.name/')) {
       const name = k.slice(12);
-      const deviceID = kvStore.get(k);
+      const deviceID = kvStore.get(k) || assert.fail('getKeys ensures get');
       result.push([name, deviceID]);
     }
     return result;

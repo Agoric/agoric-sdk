@@ -34,7 +34,7 @@
     "@agoric/install-ses": "^0.5.21",
     "esm": "agoric-labs/esm#Agoric-built",
     "glob": "^7.1.6",
-    "ses": "^0.13.4"
+    "ses": "^0.14.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.1.0",
@@ -44,6 +44,7 @@
   "files": [
     "LICENSE*",
     "lib",
+    "api.js",
     "makefiles",
     "src"
   ],

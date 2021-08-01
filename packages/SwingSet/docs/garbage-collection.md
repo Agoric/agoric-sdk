@@ -288,51 +288,6 @@ Liveslots then uses `processDeadSet()` to examine everything turned up by the fi
 
 When the vat delivery is a GC action (`dispatch.dropExports`, `dispatch.retireExports`, or `dispatch.retireImports`), liveslots gets control immediately, and never calls into userspace. Since userspace does not have access to `FinalizationRegistry`, it cannot sense objects going away, userspace never gets control during these deliveries (and because userspace does not get `WeakRef` either, it cannot even poll to see whether an object has been collected or not).
 
-# Comms Tracking
-
-(TODO): describe the code which tracks REACHABLE/RECOGNIZABLE for all objects the the comms object table, the "reachable" flag in each c-list entry, the code that computes the overall reachability state, and the creation and processing of remote-side `dropImports`/etc messages.
-
-Note that the comms tracking code is not yet implemented. Until then, the comms vat will retain a strong reference to all passing objects forever. See [#3306](https://github.com/Agoric/agoric-sdk/issues/3306) for current progress.
-
-The following are some quick protocol notes.
-
-
-* incoming drop/retire messages are either "informed" if the sender was fully aware of any cross-on-the-wire re-introductions, or "ignorant" if not
-  * comms-kernel messages are always informed
-  * comms-comms messages are informed if the inbound message's acknum is equal or greater than the outbound clist record of the last reintroduction, else they are ignorant
-* comms will add an `isReachable` flag to all clist entries
-  * on import entries, this describes the state of the importer
-  * on export entries, it merely records whether we've sent a drop or not, and might not actually be necessary
-* comms will add a (reachable, recognizable) refcount tuple to all comms object table entries
-  * just like the kernel does:
-    * `reachable` is the sum of the `isReachable` flags from all importers, plus one for each resolved promise or auxdata that references the object
-    * `recognizable` is the count of all importing clist entries, plus resolved promises and auxdata
-* when comms receives an informed `dropExport`, it clears the `isReachable` flag for that importer's clist, which decrements the `reachable` refcount
-  * if `reachable` hits zero, comms sends a `dropExport` to the exporter and clears the `isReachable` flag on the exporter's clist entry (again, maybe not really necessary)
-* when comms receives an informed `retireExport`, it deletes the importer's clist entry, which decrements the `recognizable` refcount
-  * if `recognizable` hits zero, comms sends a `retireExport` to the exporter and deletes the clist entry
-* when comms receives an informed(??) `dropImport` (which will always be from an exporter):
-  * comms translates the `dropImport` from sender-space to local (comms) space, then deletes the exporting c-list entry
-  *  the `reachable` count must already be zero, else the sender of `dropImport` did something wrong
-  * comms locates all importers, then deletes the object table entry
-  * comms translates a `dropImport` to each importer, then deletes their clist entry
-  * comms sends the translated `dropImport` to the importer
-
-If comms receives a `retireExport` or `retireImport` for a ref that is not in the c-list, it should just ignore it. There are two reasons/phases where this might happen. The "normal" one is during a race between the importer sending `retireExport` and the exporter sending `retireImport`. We could choose to track this race in the same way we handle the retirement of promises:
-* importer sends `retireExport`, and tracks the (sent seqnum, rref) pair in an ordered list
-  * if a message arrives that effectively acks that seqnum, delete the pair: the window for a race has closed
-  * if a re-introduction arrives before that point, delete the pair: the race has been superceded by a replacement object
-  * if a `retireImport` arrives before that point, ignore it: there was a race, no big deal
-  * if a `retireImport` arrives after that point (i.e. neither the clist nor the ordered `retireExport`-sent list knows the rref): this is the weird case, we might decide to kill the connection, or log-but-ignore, or just ignore
- * follow the same pattern when the exporter sends `retireImport`
-
-The algorithm for comms is mostly simpler than the kernel because:
-* there are no queued messages: no run-queue, and no per-promise message queues (because everything is immediately pipelined)
-* we aren't trying to spread GC actions out among multiple cranks, so we don't need to record the upcoming work in a durable fashion: the equivalents of `maybeFreeKrefs` and the durable `gcActions` set can both be ephemeral
-* drops and retires appear in separate messages, so we don't need the `processNextGCAction` code that prioritizes one over the other, and actions won't be negated by an earlier re-introduction
-
-However it's slightly more complex because of the need to distinguish between informed and ignorant inbound messages, and the possibility that we choose to log or kill-connection when a `retireImport`/`retireExport` arrives after we know the race window has closed.
-
 
 # Cross-Vat (kernel) Tracking
 
@@ -519,3 +474,121 @@ The delivery of each GC action is processed as follows:
   * deliver the message
     * the vat reacts to `dispatch.retireImport` by notifying any weak collections about the vref, which can delete the virtual entry indexed by it
     * this may provoke more drops or retirements
+
+# Comms Tracking
+
+Just as vats within a single SwingSet machine talk to each other through that machine's shared kernel, SwingSet machines talk to each other through the Internet.
+
+On each machine, the "comms vat" is responsible for managing all messages which leave that machine and travel to another. A single comms vat tracks multiple "remotes" (one per distant machine). From the comms point of view, the local kernel is one source of messages, which must be routed out to some number of remotes. A message which arrives from remote 1 might need to be forwarded to remote 2, or to the kernel, or to both (in the case of promise resolution). Comms has an object/promise table, with refcounts, very much like the kernel does. Comms has a c-list for each remote, plus an extra one facing the kernel, and translates object/promise identifiers between these remote- or kernel-facing- numberspaces and the comms internal ("local") numberspace.
+
+The comms vat does not use real JavaScript objects: there are no Remotables, Presences, Representatives, or Promises, which makes the code somewhat simpler than liveslots. However it must deal with asynchronous connections to the remotes, which makes the comms GC protocol more complex than that of the kernel. When it sends a `dropExport` over the wire, that message won't be delivered immediately, and it might receive an arbitrary number of messages that were sent before the `dropExport` arrives. This complicates the reachability tracking.
+
+## Comms Tables
+
+The comms vat has an object table (key-value entries prefixed with `lo$NN`) that tracks an `.owner` for each object: the remote which exported that object (or empty to mean it came from the kernel). It also maintains `.reachable` and a `.recognizable` refcount for each. As with the kernel, these counts are only maintained for the downstream importers, not for the exporter. (Promises also have a refcount, but this only tracks usage by resolved promise data, not remotes: promises are retired when they are resolved, not when importers drop them).
+
+The comms vat has a c-list for each remote, plus one for the kernel. This c-list table has a special "isReachable" flag for each object. On the importer, this describes the state of the importer: `true` means they can reach (and recognize) the object, `false` means they can merely recognize it. On the exporter, it tracks whether we've send a `drop` or not: the flag is set to `true` until we send a `drop`, at which point it is cleared to `false`.
+
+The object table's `reachable` count is the sum of the `isReachable` flags from all importers, plus one for each resolved promise or auxdata that references the object. The `recognizable` count is the count of all importing clist entries (whether `isReachable` or not), plus resolved promises and auxdata.
+
+## Comms GC Messages
+
+Comms vats send three kinds of messages to each other:
+
+* `remote.dropExport`
+* `remote.retireExport`
+* `remote.retireImport`
+
+The comms protocol is [obsequiously polite](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/comms.md#over-the-wire-slot-types), and always formats messages for the convenience of the recipient. The comms GC protocol is the same. When a `dropExport` message arrives, it means the recipient of the message was exporting something to the sender, and now the sending side no longer needs it. When kernel A tells comms A to `dispatch.dropExport`, comms A will tell comms B to `remote.dropExport`.
+
+For reference, the following diagram shows the set of object references involved in a downstream vat-3 (inside "machine 3") holding a Presence, which represents the import an object which is ultimately provided by a Remotable exported by vat-1 inside "machine 1".
+
+Remember that comms uses different (reversed-polarity) identifiers on the outbound and inbound directions for a single object, hence Comms-2 sends `ro+5` to talk about the object Comms-1 is exporting to it, but Comms-1 sends `ro-5` to Comms-2 for that same object. Also remember that comms does not yet do path-shortening ([#44](https://github.com/Agoric/agoric-sdk/issues/44), aka "three-party handoff"), so the importing client in machine 3 is using an export of machine 2, and machine 2 is importing from machine 1.
+
+![Comms Import Chaining diagram](./images/gc/comms-import-chaining.png "Comms Import Chaining")
+
+## Comms GC Drops (always upstream)
+
+When Vat-3 drops its Presence, the following messages propagate "upstream" towards the export on machine-1:
+
+![Comms Drop Sequence diagram](./images/gc/comms-drop-sequence.png "Comms Drop Sequence")
+
+When comms-3 receives a `dispatch.dropExport(o+9)`, it reacts by sending a `remote.dropExport(ro+7)` to its upstream neighbor (comms-2). Comms-2 reacts by sending `dropExport(ro+5)` to *its* upstream (comms-1). When comms-1 receives the remote `dropExport(ro+5)`, and assuming that was the last remaining refcount, it will perform a `syscall.dropImport(o-3)` into the kernel (comms is not nearly as polite to the kernel; on the comms/kernel boundary, just as on all vat/kernel boundaries, "import" means "the vat is importing"). At each step, the comms vats have their own local identifier (`lo8`, etc) for the object being dropped.
+
+Once an object ceases to be reachable and is dropped, the next step is to retire the identifier. This importer might do this right away, or (if they used the object as a key in a WeakMap), it might happen much later. If/when this happens, it causes a series of `retireExport` messages to flow upstream, to the exporter, deleting c-list table entries along the way.
+
+Alternatively, the exporter might retire the object itself (typically when the exporter does not have any internal references to the object, so an incoming `dropExport` causes the object to be deleted entirely). When this happens, a cascade of `retireImport` messages will flow *downstream* towards the importers.
+
+These two kinds of messages might cross in the middle, so we must accomodate a variety of exceptional conditions where they meet.
+
+## Comms GC Retirement (upstream)
+
+If Vat-3 is not using a given Presence as a WeakMap key, then when it drops the object, it will immediately retire it as well. The vat will perform `syscall.dropImport` and `syscall.retireImport` in the same crank. This results in two messages being sent to the local comms vat: `dispatch.dropExport` and `dispatch.retireExport`. If instead the object *was* in use as a WeakMap key, the `retire` will not happen unless/until that WeakMap is deleted. So it could occur much later, or not at all.
+
+The importer's retirement causes a sequence of upstream `retireExport` messages to be sent:
+
+![Comms Retire Sequence (upstream) diagram](./images/gc/comms-retire-sequence-upstream.png "Comms Retire Sequence (upstream)")
+
+## Comms GC Retirement (downstream)
+
+Once the exporting vat has received the drop, liveslots deletes the strong reference it held on the Remotable. If nothing else in the vat has an additional strong reference, the Remotable will be garbage-collected and its identity deleted, triggering a downstream retirement message. If the object is actually a "virtual object", then a refcount is adjusted, and the virtual object might be released if it reaches zero, triggering similar downstream retirement.
+
+The upstream comms vat will send `remote.retireImport` messages to its downstream importing systems. This will eventually cause the final importing comms vat to do a `syscall.retireExport` (since that comms vat was exporting the object into the kernel), which eventually makes that kernel do `dispatch.retireImport` into the vat. This will allow the downstream vat to delete the WeakMap/WeakSet entry, releasing any data used as a value.
+
+The sequence of downstream messages looks like this:
+
+![Comms Retire Sequence (downstream) diagram](./images/gc/comms-retire-sequence-downstream.png "Comms Retire Sequence (downstream)")
+
+## Informed vs Ignorant, Seqnum and Acknum
+
+Despite our best efforts, the speed of light is not infinite, and messages sent from one comms vat to another will not arrive immediately. Machine A might send a message to machine B about some object which B is trying to drop, and these two messages might "cross on the wire". We use sequence and acknowledgment numbers to keep track of who knew what, and when, so we can properly handle the race between these crossing messages.
+
+Each outbound message is assigned a sequence number (`seqnum`). The receiver tracks it by simply counting inbound messages, however the wire protocol currently also includes it explicitly in every message. This comms seqnum is independent of the one used by vattp to avoid duplicate deliveries of a single message (however in practice their values always happen to be the same).
+
+The comms receiving code keeps track of the highest seqnum of all processed inbound messages. It attaches this number as the `acknum` on every outbound message. When machine A sends a message to B with `acknum = 12`, it is telling B "I have seen every message you have sent up to (and including) `seqnum = 12`". (Note this comms acknum is again independent of the vattp acknum).
+
+The remote-facing c-lists keep an extra field named `.seqnum` for each exported object entry. Each time comms exports an object reference to a remote machine, it copies the `.seqnum` of the enclosing message into the c-list entry. This remembers the last time an object was introduced (or re-introduced) to the remote system.
+
+When comms receives a GC message (`dropExport`, `retireExport`, or `retireImport`) that references an object ID, it compares the `acknum` of the GC message against the `.seqnum` of the c-list for that ID. If `acknum >= clist[id].seqnum`, the GC message is said to be "informed" about the current state of that object. If not, the message is "ignorant", meaning the sender had not yet seen the re-introduction when it generated and transmitted the GC message.
+
+Comms-to-kernel and kernel-to-comms messages are always "informed", because the comms/kernel boundary is synchronous.
+
+## GC Message Processing
+
+When comms receives an informed `dropExport`, it clears the `isReachable` flag for that importer's clist, which decrements the `reachable` refcount. If `reachable` hits zero, comms sends a `dropExport` to the exporter and clears the `isReachable` flag on the exporter's clist entry (note that clearing this flag may not be necessary).
+
+Comms will ignore an ignorant `dropExport`: this means a re-introduction of the referenced object is in-flight, and the sender (importer) will see it shortly, making it reachable once more.
+
+When comms receives an informed `retireExport`, it deletes the importer's clist entry, which decrements the `recognizable` refcount. If `recognizable` hits zero, comms sends a `retireExport` to the exporter and deletes the clist entry.
+
+Comms will ignore an ignorant `retireExport`: this indicates the same situation as above, but the importer send both a `drop` and a `retire` in quick succession. When the importer sees the re-introduction, they'll add a new c-list entry (creating a new local object ID).
+
+When comms receives an informed(TODO??) `dropImport` (which will always be from an exporter), it does the following sequence:
+
+* comms translates the `dropImport` from sender-space to local (comms) space, then deletes the exporting c-list entry
+* the `reachable` count must already be zero, else the sender of `dropImport` did something wrong
+* comms locates all importers, then deletes the object table entry
+* comms translates a `dropImport` to each importer, then deletes their clist entry
+* comms sends the translated `dropImport` to the importer
+
+If comms receives a `retireExport` or `retireImport` for a ref that is not in the c-list, it should just ignore it. There are two reasons/phases where this might happen. The "normal" one is during a race between the importer sending `retireExport` and the exporter sending `retireImport`. We could choose to track this race in the same way we handle the retirement of promises:
+* importer sends `retireExport`, and tracks the (sent seqnum, rref) pair in an ordered list
+  * if a message arrives that effectively acks that seqnum, delete the pair: the window for a race has closed
+  * if a re-introduction arrives before that point, delete the pair: the race has been superceded by a replacement object
+  * if a `retireImport` arrives before that point, ignore it: there was a race, no big deal
+  * if a `retireImport` arrives after that point (i.e. neither the clist nor the ordered `retireExport`-sent list knows the rref): this is the weird case, we might decide to kill the connection, or log-but-ignore, or just ignore
+ * follow the same pattern when the exporter sends `retireImport`
+
+The algorithm for comms is mostly simpler than the kernel because:
+* there are no queued messages: no run-queue, and no per-promise message queues (because everything is immediately pipelined)
+* we aren't trying to spread GC actions out among multiple cranks, so we don't need to record the upcoming work in a durable fashion: the equivalents of `maybeFreeKrefs` and the durable `gcActions` set can both be ephemeral
+* drops and retires appear in separate messages, so we don't need the `processNextGCAction` code that prioritizes one over the other, and actions won't be negated by an earlier re-introduction
+
+However it's slightly more complex because of the need to distinguish between informed and ignorant inbound messages, and the possibility that we choose to log or kill-connection when a `retireImport`/`retireExport` arrives after we know the race window has closed.
+
+
+(TODO): describe the code which tracks REACHABLE/RECOGNIZABLE for all objects the the comms object table, the "reachable" flag in each c-list entry, the code that computes the overall reachability state, and the creation and processing of remote-side `dropImports`/etc messages.
+
+## Races over the wire
+
+TODO

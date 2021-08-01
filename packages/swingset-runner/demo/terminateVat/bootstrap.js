@@ -1,9 +1,10 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   const mode = vatParameters.argv[0] || 'kill';
   let counter = 46;
-  const self = harden({
+  const self = Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const dude = await E(vatMaker).createVatByName('dude');

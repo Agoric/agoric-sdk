@@ -54,11 +54,11 @@ test('weakMap in vat', async t => {
   t.deepEqual(nextLog(), [
     'probe of sample-object returns imported item #0',
     'probe of [object Promise] returns imported item #1',
-    'probe of [Alleged: remember-exp] returns mer',
-    'probe of [Alleged: holder-vo] returns mevo',
+    'probe of [object Alleged: remember-exp] returns mer',
+    'probe of [object Alleged: holder-vo] returns mevo',
     'probe of [object Promise] returns mep',
-    'probe of [Alleged: forget-exp] returns fer',
-    'probe of [Alleged: holder-vo] returns fevo',
+    'probe of [object Alleged: forget-exp] returns fer',
+    'probe of [object Alleged: holder-vo] returns fevo',
     'probe of [object Promise] returns fep',
   ]);
   await doSimple('betweenProbes');
@@ -68,11 +68,11 @@ test('weakMap in vat', async t => {
   t.deepEqual(nextLog(), [
     'probe of sample-object returns imported item #0',
     'probe of [object Promise] returns undefined',
-    'probe of [Alleged: remember-exp] returns mer',
-    'probe of [Alleged: holder-vo] returns mevo',
+    'probe of [object Alleged: remember-exp] returns mer',
+    'probe of [object Alleged: holder-vo] returns mevo',
     'probe of [object Promise] returns mep',
-    'probe of [Alleged: forget-exp] returns fer',
-    'probe of [Alleged: holder-vo] returns fevo',
+    'probe of [object Alleged: forget-exp] returns fer',
+    'probe of [object Alleged: holder-vo] returns fevo',
     'probe of [object Promise] returns fep',
   ]);
 });

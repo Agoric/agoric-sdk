@@ -2,9 +2,7 @@
   "name": "@agoric/swing-store-lmdb",
   "version": "0.5.7",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/lmdbSwingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
@@ -12,6 +10,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
@@ -22,13 +21,14 @@
   "dependencies": {
     "@agoric/assert": "^0.3.7",
     "better-sqlite3": "^7.4.1",
-    "node-lmdb": "^0.9.4"
+    "node-lmdb": "^0.9.4",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.21",
     "@agoric/swing-store-simple": "^0.4.7",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "c8": "^7.7.2"
   },
   "publishConfig": {
     "access": "public"
@@ -36,9 +36,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   },

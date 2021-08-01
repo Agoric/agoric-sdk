@@ -1,5 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { makePrintLog } from './printLog';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
@@ -61,7 +62,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
   let alice;
   let bob;
   let round = 0;
-  return harden({
+  return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,

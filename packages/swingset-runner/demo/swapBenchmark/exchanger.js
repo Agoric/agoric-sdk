@@ -101,7 +101,7 @@ async function build(name, zoe, issuers, payments, installations) {
     await postReport();
   }
 
-  return harden({
+  return Far('exchanger', {
     initiateSwap,
     respondToSwap,
   });

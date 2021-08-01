@@ -1,4 +1,5 @@
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { makeXorShift128 } from './xorshift128';
 
@@ -19,7 +20,7 @@ export function buildRootObject(_vatPowers) {
   function makeZot() {
     const name = `zot-${nextZotNumber}`;
     nextZotNumber += 1;
-    return harden({
+    return Far('zot', {
       say(message) {
         p(`${name} asked to say "${message}"`);
       },
@@ -29,7 +30,7 @@ export function buildRootObject(_vatPowers) {
     });
   }
 
-  return harden({
+  return Far('root', {
     async bootstrap(vats) {
       otherVats.push({ vat: vats.alice, name: 'Alice' });
       otherVats.push({ vat: vats.bob, name: 'Bob' });

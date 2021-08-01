@@ -1,3 +1,5 @@
+import { Far } from '@agoric/marshal';
+
 function makePR() {
   let r;
   const p = new Promise((resolve, _reject) => {
@@ -11,7 +13,7 @@ export function buildRootObject(_vatPowers) {
   let rX;
   let pY;
   let rY;
-  return harden({
+  return Far('root', {
     genPromiseX() {
       [pX, rX] = makePR();
       return pX;

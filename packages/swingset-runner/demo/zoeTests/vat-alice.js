@@ -492,7 +492,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     log(await E(simoleanIssuer).getAmountOf(simoleanPayout));
   };
 
-  return harden({
+  return Far('tester', {
     startTest: async (testName, bobP, carolP, daveP) => {
       switch (testName) {
         case 'automaticRefundOk': {
