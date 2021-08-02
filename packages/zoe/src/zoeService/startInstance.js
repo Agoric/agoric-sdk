@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
@@ -35,9 +35,12 @@ export const makeStartInstance = (
     // AWAIT ///
 
     if (privateArgs !== undefined) {
+      const passStyle = passStyleOf(privateArgs);
       assert(
-        passStyleOf(privateArgs) === 'copyRecord',
-        X`privateArgs must be a pass-by-copy record, but instead was ${privateArgs}`,
+        passStyle === 'copyRecord',
+        X`privateArgs must be a pass-by-copy record, but instead was a ${q(
+          passStyle,
+        )}: ${privateArgs}`,
       );
     }
 
