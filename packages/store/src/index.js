@@ -1,3 +1,9 @@
+export { isKey, assertKey } from './keys/keyKind.js';
+export { sameKey } from './keys/compareKeys.js';
+export { fulfillToKey } from './keys/fulfillToKey.js';
+
+// export { M } from './matchers/M.js';
+
 export { makeScalarMap, makeScalarMap as makeStore } from './scalarMap.js';
 export {
   makeScalarWeakMap,

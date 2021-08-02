@@ -14,7 +14,7 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} Store
  *
@@ -37,7 +37,7 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} WeakStore
  *
@@ -81,4 +81,39 @@
  *
  * @param {string} [keyName='key'] - the column name for the key
  * @returns {LegacyWeakMap}
+ */
+
+// ////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef { PrimitiveStyle | "copyRecord" | "copyArray" |
+ *           "copySet" | "copyMap" | "remotable"
+ * } KeyKind
+ */
+
+/**
+ * @typedef { KeyKind | "match:any" | "match:kind" |
+ *           "match:and" | "match:or" | "match:not" |
+ *           "match:lt" | "match:lte" | "match:eq" | "match:gte" | "match:ge"
+ * } PatternKind
+ */
+
+/**
+ * @typedef {Passable} Key
+ */
+
+/**
+ * @typedef {Key} Pattern
+ */
+
+/**
+ * @typedef {CopyTagged} CopySet
+ */
+
+/**
+ * @typedef {CopyTagged} CopyMap
+ */
+
+/**
+ * @typedef {CopyTagged} PatternNode
  */

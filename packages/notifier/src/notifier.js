@@ -22,6 +22,15 @@ export const makeNotifier = baseNotifierP => {
 
   return Far('notifier', {
     ...asyncIterable,
+
+    /**
+     * Use this to distribute a Notifier efficiently over the network,
+     * by obtaining this from the Notifier to me replicated, and applying
+     * `makeNotifier` to it at the new site to get an equivalent local
+     * Notifier at that site.
+     *
+     * @returns {NotifierInternals}
+     */
     getSharableNotifierInternals: () => baseNotifierP,
   });
 };
@@ -33,7 +42,7 @@ export const makeNotifier = baseNotifierP => {
  * The initial state argument has to be truly optional even though it can
  * be any first class value including `undefined`. We need to distinguish the
  * presence vs the absence of it, which we cannot do with the optional argument
- * syntax. Rather we use the arity of the arguments array.
+ * syntax. Rather we use the arity of the `args` array.
  *
  * If no initial state is provided to `makeNotifierKit`, then it starts without
  * an initial state. Its initial state will instead be the state of the first

@@ -1,21 +1,20 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { Far, passStyleOf } from '@agoric/marshal';
+import { assertPassable, Far, passStyleOf } from '@agoric/marshal';
 import './types.js';
 
-const assertKey = key => {
-  harden(key); // TODO: Just a transition kludge. Remove when possible.
-  assert.equal(
-    passStyleOf(key),
-    'remotable',
-    X`WeakStores accept only identity-based keys: ${key}`,
+const assertScalarWeakKey = key => {
+  harden(key); // TODO: Just a transition kludge #3606
+  assert(
+    passStyleOf(key) === 'remotable',
+    X`Only remotables can be keys of scalarWeakMaps: ${key}`,
   );
 };
 
 const assertValue = value => {
-  harden(value); // TODO: Just a transition kludge. Remove when possible.
-  passStyleOf(value); // asserts that value is passable
+  harden(value); // TODO: Just a transition kludge #3606
+  assertPassable(value);
 };
 
 /**
@@ -52,7 +51,7 @@ export const makeScalarWeakMap = (
       return wm.has(key);
     },
     init: (key, value) => {
-      assertKey(key);
+      assertScalarWeakKey(key);
       assertValue(value);
       assertKeyDoesNotExist(key);
       wm.set(key, value);

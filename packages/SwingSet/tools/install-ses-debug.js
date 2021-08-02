@@ -42,7 +42,7 @@ lockdown({
   // NOTE TO REVIEWERS: If you see the following line commented out,
   // this may be a development accident that should be fixed before merging.
   //
-  stackFiltering: 'verbose',
+  // stackFiltering: 'verbose',
 
   // The default `{overrideTaming: 'moderate'}` setting does not hurt the
   // debugging experience much. But it will introduce noise into, for example,

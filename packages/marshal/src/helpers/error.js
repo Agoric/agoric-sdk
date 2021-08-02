@@ -11,7 +11,7 @@ import './internal-types.js';
  * @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper
  */
 import '@agoric/assert/exported.js';
-import { assertChecker } from './passStyleHelpers.js';
+import { assertChecker } from './passStyle-helpers.js';
 
 const { details: X } = assert;
 const { getPrototypeOf, getOwnPropertyDescriptors } = Object;

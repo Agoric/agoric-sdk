@@ -6,13 +6,6 @@
 import '../types.js';
 
 /**
- * @callback Checker
- * @param {boolean} cond
- * @param {Details=} details
- * @returns {boolean}
- */
-
-/**
  * The PassStyleHelper are only used to make a `passStyleOf` function.
  * Thus, it should not depend on an ambient one. Rather, each helper should be
  * pure, and get its `passStyleOf` or similar function from its caller.

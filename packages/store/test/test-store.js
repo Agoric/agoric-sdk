@@ -100,18 +100,21 @@ test('store', t => {
 test('reject promise keys', t => {
   const k = harden(Promise.resolve());
   const s = makeScalarMap('store1');
-  t.throws(() => s.init(k, 1), { message: /Must be structure:/ });
+  t.throws(() => s.init(k, 1), { message: /A "promise" cannot be a key/ });
   t.is(s.has(k), false);
   t.throws(() => s.get(k), { message: /not found:/ });
   t.throws(() => s.set(k, 1), { message: /not found/ });
   t.throws(() => s.delete(k), { message: /not found/ });
 
   const w = makeScalarWeakMap('store1');
-  t.throws(() => w.init(k, 1), { message: /only identity-based/ });
-  t.is(s.has(k), false);
-  t.throws(() => w.get(k), { message: /not found/ });
-  t.throws(() => w.set(k, 1), { message: /not found/ });
-  t.throws(() => w.delete(k), { message: /not found/ });
+  const i = 8;
+  t.throws(() => w.init(i, 1), {
+    message: /Only remotables can be keys of scalarWeakMaps:/,
+  });
+  t.is(s.has(i), false);
+  t.throws(() => w.get(i), { message: /not found/ });
+  t.throws(() => w.set(i, 1), { message: /not found/ });
+  t.throws(() => w.delete(i), { message: /not found/ });
 });
 
 test('passability of stores', t => {

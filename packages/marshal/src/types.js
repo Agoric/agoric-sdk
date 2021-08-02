@@ -6,10 +6,23 @@
 
 /**
  * @typedef { "undefined" | "null" |
- *   "boolean" | "number" | "bigint" | "string" | "symbol" |
- *   "copyArray" | "copyRecord" | "remotable" |
+ *   "boolean" | "number" | "bigint" | "string" | "symbol"
+ * } PrimitiveStyle
+ */
+
+/**
+ * @typedef { PrimitiveStyle |
+ *   "copyRecord" | "copyArray" | "tagged" |
+ *   "remotable" |
  *   "error" | "promise"
  * } PassStyle
+ *
+ * Aside from "undefined", this declaration lists the PassStyles in the same
+ * order as the rank ordering used in `rankOrder.js`. It should be
+ * co-maintained with the `PassStyleRankOrder` defined there.
+ *
+ * See the note there explaining why it places `undefined` at the end of the
+ * ordering.
  */
 
 // TODO declare more precise types throughout this file, so the type system
@@ -24,10 +37,10 @@
  * A Passable has a pass-by-copy superstructure. This includes
  *    * the atomic pass-by-copy primitives ("undefined" | "null" |
  *      "boolean" | "number" | "bigint" | "string" | "symbol"),
- *    * the pass-by-copy containers ("copyArray" | "copyRecord") that
+ *    * the pass-by-copy containers
+ *      ("copyRecord" | "copyArray" | "tagged") that
  *      contain other Passables,
- *    * and the special cases ("error" | "promise"), which
- *      also contain other Passables.
+ *    * and the special cases ("error" | "promise").
  *
  * A Passable's pass-by-copy superstructure ends in
  * PassableCap leafs ("remotable" | "promise"). Since a
@@ -43,18 +56,7 @@
  */
 
 /**
- * @typedef {Passable} Structure
- *
- * A Passable is a Structure when it contains only
- *    * pass-by-copy primitives,
- *    * pass-by-copy containers,
- *    * remotables.
- *
- * Two Structures may be compared by for equivalence according to
- * `sameStructure`, which is the strongest equivalence class supported by
- * marshal's distributed object semantics.
- *
- * Two Structures can also be compared for full ordering,
+ * Two Passables can also be compared for total rank ordering,
  *    * where their passStyles are ordered according to the
  *      PassStyle typedef above.
  *    * Two primitives of the same PassStyle are compared by the
@@ -73,14 +75,9 @@
  */
 
 /**
- * @deprecated Renamed to `Structure`
- * @typedef {Structure} Comparable
- */
-
-/**
- * @typedef {Structure} OnlyData
+ * @typedef {Passable} OnlyData
  *
- * A Structure is OnlyData when its pass-by-copy superstructure has no
+ * A Passable is OnlyData when its pass-by-copy superstructure has no
  * remotables, i.e., when all the leaves of the data structure tree are
  * primitive data types or empty composites.
  */
@@ -108,15 +105,13 @@
  */
 
 /**
- * @typedef {Passable} CopySet
- */
-
-/**
- * @typedef {Passable} CopyMap
- */
-
-/**
- * @typedef {Passable} PatternNode
+ * @typedef {{
+ *   [PASS_STYLE]: 'tagged',
+ *   [Symbol.toStringTag]: string,
+ *   payload: Passable
+ * }} CopyTagged
+ *
+ * The tag is the value of the `[String.toStringTag]` property.
  */
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -143,17 +138,33 @@
 
 /**
  * @typedef {EncodingClass<'NaN'> |
- * EncodingClass<'undefined'> |
- * EncodingClass<'Infinity'> |
- * EncodingClass<'-Infinity'> |
- * EncodingClass<'bigint'> & { digits: string } |
- * EncodingClass<'@@asyncIterator'> |
- * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
- * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
- * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
- * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
+ *           EncodingClass<'undefined'> |
+ *           EncodingClass<'Infinity'> |
+ *           EncodingClass<'-Infinity'> |
+ *           EncodingClass<'bigint'> & { digits: string } |
+ *           EncodingClass<'@@asyncIterator'> |
+ *           EncodingClass<'symbol'> & { name: string } |
+ *           EncodingClass<'error'> & { name: string,
+ *                                      message: string,
+ *                                      errorId?: string
+ *           } |
+ *           EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
+ *           EncodingClass<'hilbert'> & { original: Encoding,
+ *                                        rest?: Encoding
+ *           } |
+ *           EncodingClass<'tagged'> & { tag: string,
+ *                                           payload: Encoding
+ *           }
+ * } EncodingUnion
+ *
+ * @typedef {{ [index: string]: Encoding,
+ *             '@qclass'?: undefined
+ * }} EncodingRecord
  * We exclude '@qclass' as a property in encoding records.
- * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
+ *
+ * @typedef {EncodingUnion | null | string |
+ *           boolean | number | EncodingRecord
+ * } EncodingElement
  */
 
 /**
@@ -239,4 +250,107 @@
  * @param {*} maybeRemotable the value to check
  * @returns {InterfaceSpec|undefined} the interface specification, or undefined
  * if not a deemed to be a Remotable
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @callback CompareRank
+ * Returns `-1`, `0`, or `1` depending on whether the rank of `left`
+ * is before, tied-with, or after the rank of `right`.
+ *
+ * This comparison function is valid as argument to
+ * `Array.prototype.sort`. This is often described as a "total order"
+ * but, depending on your definitions, this is technically incorrect
+ * because it may return `0` to indicate that two distinguishable elements,
+ * like `-0` and `0`, are tied, i.e., are in the same equivalence class
+ * as far as this ordering is concerned. If each such equivalence class is
+ * a *rank* and ranks are disjoint, then this "rank order" is a
+ * total order among these ranks. In mathematics this goes by several
+ * other names such as "total preorder".
+ *
+ * This function establishes a total rank order over all passables.
+ * To do so it makes arbitrary choices, such as that all strings
+ * are after all numbers. Thus, this order is not intended to be
+ * used directly as a comparison with useful semantics. However, it must be
+ * closely enough related to such comparisons to aid in implementing
+ * lookups based on those comparisons. For example, in order to get a total
+ * order among ranks, we put `NaN` after all other JavaScript "number" values.
+ * But otherwise, we order JavaScript numbers by magnitude,
+ * with `-0` tied with `0`. A semantically useful ordering of JavaScript number
+ * values, i.e., IEEE floating point values, would compare magnitudes, and
+ * so agree with the rank ordering everywhere except `NaN`. An array sorted by
+ * rank would enable range queries by magnitude.
+ *
+ * @param {Passable} left
+ * @param {Passable} right
+ * @returns {-1 | 0 | 1}
+ */
+
+/**
+ * @typedef {[Passable, Passable]} RankCover
+ */
+
+/**
+ * @typedef {[number, number]} IndexCover
+ */
+
+/**
+ * @callback GetPassStyleCover
+ * Assciate with each passStyle a KeyRange that may be an overestimate,
+ * and whose results therefore need to be filtered down. For example, because
+ * there is not a smallest or biggest bigint, bound it by `NaN` (the last place
+ * number) and `''` (the empty string, which is the first place string). Thus,
+ * a range query using this range may include these values, which would then
+ * need to be filtered out.
+ *
+ * @param {PassStyle} passStyle
+ * @returns {RankCover}
+ */
+
+/**
+ * @callback GetIndexCover
+ * @param {Passable[]} sorted
+ * @param {RankCover} rankCover
+ * @returns {IndexCover}
+ */
+
+/**
+ * @callback CoveredEntries
+ * @param {Passable[]} sorted
+ * @param {IndexCover} indexCover
+ * @returns {Iterable<[number, Passable]>}
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef {Object} ReadOnlyRankStore
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
+
+/**
+ * @typedef {Object} RankStore
+ * @property {(passable: Passable) => void} add
+ * TODO need some kind of deletion
+ *
+ * TODO I should be able to share supertype rather than repeat
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @callback Checker
+ * @param {boolean} cond
+ * @param {Details=} details
+ * @returns {boolean}
  */
