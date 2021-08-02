@@ -26,6 +26,7 @@ export const makeStartInstance = (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
+    privateArgs,
   ) => {
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
@@ -190,6 +191,7 @@ export const makeStartInstance = (
       zoeInstanceAdminForZcf,
       zoeInstanceStorageManager.getInstanceRecord(),
       zoeInstanceStorageManager.getIssuerRecords(),
+      privateArgs,
     );
 
     handleOfferObjPromiseKit.resolve(handleOfferObj);

@@ -111,6 +111,9 @@
  * @param {ERef<Installation>} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
+ * @param {Object=} privateArgs - an optional configuration object
+ * that can be used to pass in arguments that should not be in the
+ * public terms
  * @returns {Promise<StartInstanceResult>}
  */
 
