@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far, passStyleOf } from '@agoric/marshal';
 
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import { makeHandle } from '../makeHandle';
@@ -33,6 +33,13 @@ export const makeStartInstance = (
 
     const { installation, bundle } = await unwrapInstallation(installationP);
     // AWAIT ///
+
+    if (privateArgs !== undefined) {
+      assert(
+        passStyleOf(privateArgs) === 'copyRecord',
+        X`privateArgs must be a pass-by-copy record, but instead was ${privateArgs}`,
+      );
+    }
 
     const instance = makeHandle('Instance');
 
