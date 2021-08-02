@@ -7,3 +7,4 @@ export {
 // during the transition.
 export { makeLegacyMap, makeLegacyMap as default } from './legacyMap.js';
 export { makeLegacyWeakMap } from './legacyWeakMap.js';
+export { M } from './matchers/M.js';

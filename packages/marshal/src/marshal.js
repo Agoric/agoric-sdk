@@ -10,6 +10,13 @@ import { passStyleOf } from './passStyleOf.js';
 import './types.js';
 import { getInterfaceOf } from './helpers/remotable.js';
 import { ErrorHelper, getErrorConstructor } from './helpers/error.js';
+import { makeCopyTagged, makeMetaTagged } from './makeTagged.js';
+import { getTag } from './helpers/passStyle-helpers.js';
+import {
+  assertPassableSymbol,
+  nameForPassableSymbol,
+  passableSymbolForName,
+} from './helpers/symbol.js';
 
 const { ownKeys } = Reflect;
 const { isArray } = Array;
@@ -184,16 +191,21 @@ export function makeMarshal(
           });
         }
         case 'symbol': {
-          switch (val) {
-            case Symbol.asyncIterator: {
-              return harden({
-                [QCLASS]: '@@asyncIterator',
-              });
-            }
-            default: {
-              assert.fail(X`Unsupported symbol ${q(String(val))}`);
-            }
+          assertPassableSymbol(val);
+          const name = /** @type {string} */ (nameForPassableSymbol(val));
+          if (name === '@@asyncIterator') {
+            // Deprectated qclass. TODO make conditional
+            // on environment variable. Eventually remove, but only after
+            // confident that all supported receivers understand
+            // `[QCLASS]: 'symbol'`.
+            return harden({
+              [QCLASS]: '@@asyncIterator',
+            });
           }
+          return harden({
+            [QCLASS]: 'symbol',
+            name,
+          });
         }
         case 'copyRecord': {
           if (QCLASS in val) {
@@ -225,17 +237,35 @@ export function makeMarshal(
         case 'copyArray': {
           return val.map(encode);
         }
-        case 'error': {
-          return encodeError(val);
+        case 'copyTagged': {
+          /** @type {Encoding} */
+          const result = harden({
+            [QCLASS]: 'copyTagged',
+            tag: getTag(val),
+            payload: encode(val.payload),
+          });
+          return result;
         }
         case 'remotable': {
           const iface = getInterfaceOf(val);
           // console.log(`serializeSlot: ${val}`);
           return serializeSlot(val, iface);
         }
+        case 'error': {
+          return encodeError(val);
+        }
         case 'promise': {
           // console.log(`serializeSlot: ${val}`);
           return serializeSlot(val);
+        }
+        case 'metaTagged': {
+          /** @type {Encoding} */
+          const result = harden({
+            [QCLASS]: 'metaTagged',
+            tag: getTag(val),
+            payload: encode(val.payload),
+          });
+          return result;
         }
         default: {
           assert.fail(X`unrecognized passStyle ${q(passStyle)}`, TypeError);
@@ -343,7 +373,24 @@ export function makeMarshal(
             return BigInt(digits);
           }
           case '@@asyncIterator': {
+            // Deprectated qclass. TODO make conditional
+            // on environment variable. Eventually remove, but after confident
+            // that there are no more supported senders.
             return Symbol.asyncIterator;
+          }
+          case 'symbol': {
+            const { name } = rawTree;
+            return passableSymbolForName(name);
+          }
+
+          case 'copyTagged': {
+            const { tag, payload } = rawTree;
+            return makeCopyTagged(tag, fullRevive(payload));
+          }
+
+          case 'metaTagged': {
+            const { tag, payload } = rawTree;
+            return makeMetaTagged(tag, fullRevive(payload));
           }
 
           case 'error': {

@@ -106,6 +106,9 @@ export const checkNormalProperty = (
 };
 harden(checkNormalProperty);
 
+export const getTag = tagRecord => tagRecord[Symbol.toStringTag];
+harden(getTag);
+
 /**
  * @param {{ [PASS_STYLE]: string }} tagRecord
  * @param {PassStyle} passStyle
@@ -138,7 +141,7 @@ export const checkTagRecord = (tagRecord, passStyle, check = x => x) => {
       check,
     ) &&
     check(
-      typeof tagRecord[Symbol.toStringTag] === 'string',
+      typeof getTag(tagRecord) === 'string',
       X`A [Symbol.toString]-named property must be a string: ${tagRecord}`,
     )
   );

@@ -4,15 +4,17 @@
 /// <reference types="ses"/>
 
 import { isPromise } from '@agoric/promise-kit';
-import { isPrimitive, PASS_STYLE } from './helpers/passStyleHelpers.js';
+import { isPrimitive, PASS_STYLE } from './helpers/passStyle-helpers.js';
 
 import { CopyArrayHelper } from './helpers/copyArray.js';
 import { CopyRecordHelper } from './helpers/copyRecord.js';
-import { ErrorHelper } from './helpers/error.js';
+import { CopyTaggedHelper, MetaTaggedHelper } from './helpers/tagged.js';
 import { RemotableHelper } from './helpers/remotable.js';
+import { ErrorHelper } from './helpers/error.js';
 
 import './types.js';
 import './helpers/internal-types.js';
+import { assertPassableSymbol } from './helpers/symbol.js';
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
@@ -24,7 +26,7 @@ const { isFrozen } = Object;
  */
 
 /**
- * @param {PassStyleHelper[]} passStyleHelper The passStyleHelper to register,
+ * @param {PassStyleHelper[]} passStyleHelpers The passStyleHelpers to register,
  * in priority order.
  * NOTE These must all be "trusted",
  * complete, and non-colliding. `makePassStyleOf` may *assume* that each helper
@@ -33,24 +35,30 @@ const { isFrozen } = Object;
  * accidents.
  * @returns {{passStyleOf: PassStyleOf, HelperTable: any}}
  */
-const makePassStyleOfKit = passStyleHelper => {
+const makePassStyleOfKit = passStyleHelpers => {
   const HelperTable = {
     __proto__: null,
     copyArray: undefined,
     copyRecord: undefined,
-    error: undefined,
+    copyTagged: undefined,
     remotable: undefined,
+    error: undefined,
+    metaTagged: undefined,
   };
-  for (const helper of passStyleHelper) {
+  for (const helper of passStyleHelpers) {
     const { styleName } = helper;
-    assert(styleName in HelperTable);
-    assert.equal(HelperTable[styleName], undefined);
+    assert(styleName in HelperTable, X`Unrecognized helper: ${q(styleName)}`);
+    assert.equal(
+      HelperTable[styleName],
+      undefined,
+      X`conflicting helpers for ${q(styleName)}`,
+    );
     HelperTable[styleName] = helper;
   }
   for (const styleName of ownKeys(HelperTable)) {
     assert(
       HelperTable[styleName] !== undefined,
-      X`missing helper for ${styleName}`,
+      X`missing helper for ${q(styleName)}`,
     );
   }
   harden(HelperTable);
@@ -115,9 +123,12 @@ const makePassStyleOfKit = passStyleHelper => {
         case 'string':
         case 'boolean':
         case 'number':
-        case 'bigint':
-        case 'symbol': {
+        case 'bigint': {
           return typestr;
+        }
+        case 'symbol': {
+          assertPassableSymbol(inner);
+          return 'symbol';
         }
         case 'object': {
           if (inner === null) {
@@ -145,7 +156,7 @@ const makePassStyleOfKit = passStyleHelper => {
             helper.assertValid(inner, passStyleOfRecur);
             return /** @type {PassStyle} */ (passStyleTag);
           }
-          for (const helper of passStyleHelper) {
+          for (const helper of passStyleHelpers) {
             if (helper.canBeValid(inner)) {
               helper.assertValid(inner, passStyleOfRecur);
               return helper.styleName;
@@ -180,8 +191,10 @@ const makePassStyleOfKit = passStyleHelper => {
 const { passStyleOf, HelperTable } = makePassStyleOfKit([
   CopyArrayHelper,
   CopyRecordHelper,
-  ErrorHelper,
+  CopyTaggedHelper,
   RemotableHelper,
+  ErrorHelper,
+  MetaTaggedHelper,
 ]);
 
 export { passStyleOf };
@@ -197,3 +210,7 @@ export const everyPassableChild = (passable, fn) => {
   return true;
 };
 harden(everyPassableChild);
+
+export const somePassableChild = (passable, fn) =>
+  !everyPassableChild(passable, (v, i) => !fn(v, i));
+harden(somePassableChild);

@@ -18,7 +18,8 @@ import {
   hasOwnPropertyOf,
   PASS_STYLE,
   checkTagRecord,
-} from './passStyleHelpers.js';
+  getTag,
+} from './passStyle-helpers.js';
 import { getEnvironmentOption } from './environment-options.js';
 
 const { details: X, quote: q } = assert;
@@ -131,20 +132,16 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   }
 
   const {
-    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
-    [PASS_STYLE]: _passStyleDesc,
-    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
-    [Symbol.toStringTag]: ifaceDesc,
-    ...restDescs
-  } = getOwnPropertyDescriptors(proto);
+    [PASS_STYLE]: _passStyle,
+    [Symbol.toStringTag]: iface,
+    ...rest
+  } = proto;
 
   return (
     check(
-      ownKeys(restDescs).length === 0,
-      X`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`,
-    ) &&
-    // @ts-ignore red highlights in vscode but `yarn test` clean.
-    checkIface(ifaceDesc && ifaceDesc.value, check)
+      ownKeys(rest).length === 0,
+      X`Unexpected properties on Remotable Proto ${ownKeys(rest)}`,
+    ) && checkIface(iface, check)
   );
 };
 
@@ -187,7 +184,7 @@ export const getInterfaceOf = val => {
   ) {
     return undefined;
   }
-  return val[Symbol.toStringTag];
+  return getTag(val);
 };
 harden(getInterfaceOf);
 

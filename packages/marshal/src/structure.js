@@ -1,7 +1,9 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { isPrimitive } from './helpers/passStyleHelpers.js';
+import { E } from '@agoric/eventual-send';
+import { getTag, isPrimitive } from './helpers/passStyle-helpers.js';
+import { makeCopyTagged } from './makeTagged.js';
 import { passStyleOf, everyPassableChild } from './passStyleOf.js';
 
 const { is, fromEntries, getOwnPropertyNames } = Object;
@@ -25,6 +27,68 @@ export const sameValueZero = (x, y) => x === y || is(x, y);
 harden(sameValueZero);
 
 /**
+ * Do a deep copy of the object, handling Proxies and recursion.
+ * The resulting copy is guaranteed to be pure data, as well as hardened.
+ * Such a hardened, pure copy cannot be used as a communications path.
+ *
+ * @template {OnlyData} T
+ * @param {T} val input value.  NOTE: Must be hardened!
+ * @returns {T} pure, hardened copy
+ */
+export const pureCopy = val => {
+  // passStyleOf now asserts that val has no pass-by-copy cycles.
+  const passStyle = passStyleOf(val);
+  switch (passStyle) {
+    case 'bigint':
+    case 'boolean':
+    case 'null':
+    case 'number':
+    case 'string':
+    case 'undefined':
+    case 'symbol':
+      return val;
+
+    case 'copyRecord':
+    case 'copyArray': {
+      const obj = /** @type {Object} */ (val);
+
+      // Create a new identity.
+      const copy = /** @type {T} */ (passStyle === 'copyArray' ? [] : {});
+
+      // Make a deep copy on the new identity.
+      // Object.entries(obj) takes a snapshot (even if a Proxy).
+      // Since we already know it is a copyRecord or copyArray, we
+      // know that Object.entries is safe enough. On a copyRecord it
+      // will represent all the own properties. On a copyArray it
+      // will represent all the own properties except for the length.
+      Object.entries(obj).forEach(([prop, value]) => {
+        copy[prop] = pureCopy(value);
+      });
+      return harden(copy);
+    }
+
+    case 'copyTagged': {
+      const tagged = /** @type {CopyTagged} */ (val);
+      return makeCopyTagged(getTag(tagged), pureCopy(tagged.payload));
+    }
+
+    case 'remotable':
+    case 'error':
+    case 'promise':
+    case 'metaTagged': {
+      assert.fail(X`${q(passStyle)} in not OnlyData: ${val}`, TypeError);
+    }
+
+    default:
+      assert.fail(
+        X`Input value ${q(passStyle)} is not recognized as data`,
+        TypeError,
+      );
+  }
+};
+harden(pureCopy);
+
+/**
  * TODO If the path to the non-structure becomes an important diagnostic,
  * consider factoring this into a checkStructure that also takes
  * a `path` and a `check` function.
@@ -35,25 +99,28 @@ harden(sameValueZero);
 const isStructureInternal = passable => {
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
-    case 'null':
     case 'undefined':
-    case 'string':
+    case 'null':
     case 'boolean':
     case 'number':
-    case 'bigint': {
+    case 'bigint':
+    case 'string':
+    case 'symbol': {
       return true;
     }
 
     case 'remotable':
+    case 'copyRecord':
     case 'copyArray':
-    case 'copyRecord': {
+    case 'copyTagged': {
       // eslint-disable-next-line no-use-before-define
       return everyPassableChild(passable, isStructure);
     }
 
     // Errors are no longer structure
     case 'error':
-    case 'promise': {
+    case 'promise':
+    case 'metaTagged': {
       return false;
     }
     default: {
@@ -120,17 +187,22 @@ export const fulfillToStructure = passable => {
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
     case 'promise': {
-      return passable.then(nonp => fulfillToStructure(nonp));
-    }
-    case 'copyArray': {
-      const valPs = passable.map(p => fulfillToStructure(p));
-      return Promise.all(valPs).then(vals => harden(vals));
+      return E.when(passable, nonp => fulfillToStructure(nonp));
     }
     case 'copyRecord': {
       const names = getOwnPropertyNames(passable);
       const valPs = names.map(name => fulfillToStructure(passable[name]));
-      return Promise.all(valPs).then(vals =>
+      return E.when(Promise.all(valPs), vals =>
         harden(fromEntries(vals.map((val, i) => [names[i], val]))),
+      );
+    }
+    case 'copyArray': {
+      const valPs = passable.map(p => fulfillToStructure(p));
+      return E.when(Promise.all(valPs), vals => harden(vals));
+    }
+    case 'copyTagged': {
+      return E.when(fulfillToStructure(passable.payload), payload =>
+        makeCopyTagged(getTag(passable), payload),
       );
     }
     case 'error': {
@@ -140,7 +212,7 @@ export const fulfillToStructure = passable => {
       );
     }
     default: {
-      assert.fail(X`Unexpected passStyle: ${q(passStyle)}`, TypeError);
+      assert.fail(X`PassStyle ${q(passStyle)} cannot be structure`, TypeError);
     }
   }
 };
@@ -161,20 +233,15 @@ const sameStructureRecur = (left, right) => {
     return false;
   }
   switch (leftStyle) {
-    case 'null':
     case 'undefined':
-    case 'string':
+    case 'null':
     case 'boolean':
     case 'number':
     case 'bigint':
+    case 'string':
+    case 'symbol':
     case 'remotable': {
       return sameValueZero(left, right);
-    }
-    case 'copyArray': {
-      if (left.length !== right.length) {
-        return false;
-      }
-      return left.every((v, i) => sameStructureRecur(v, right[i]));
     }
     case 'copyRecord': {
       const leftNames = ownKeys(left);
@@ -183,6 +250,18 @@ const sameStructureRecur = (left, right) => {
       }
       return leftNames.every(name =>
         sameStructureRecur(left[name], right[name]),
+      );
+    }
+    case 'copyArray': {
+      if (left.length !== right.length) {
+        return false;
+      }
+      return left.every((v, i) => sameStructureRecur(v, right[i]));
+    }
+    case 'copyTagged': {
+      return (
+        getTag(left) === getTag(right) &&
+        sameStructureRecur(left.payload, right.payload)
       );
     }
     default: {

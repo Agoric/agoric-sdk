@@ -1,6 +1,7 @@
 import { test } from './prepare-test-env-ava.js';
 
 import { Remotable } from '../src/make-far.js';
+import { makeCopyTagged, makeMetaTagged } from '../src/makeTagged.js';
 import { makeMarshal } from '../src/marshal.js';
 import { decodeToJustin } from '../src/marshal-justin.js';
 
@@ -32,6 +33,10 @@ export const jsonPairs = harden([
   ['{"@qclass":"bigint","digits":"4"}', '4n'],
   ['{"@qclass":"bigint","digits":"9007199254740993"}', '9007199254740993n'],
   ['{"@qclass":"@@asyncIterator"}', 'Symbol.asyncIterator'],
+  // ['{"@qclass":"symbol","name":"@@asyncIterator"}', 'Symbol.asyncIterator'],
+  ['{"@qclass":"symbol","name":"@@match"}', 'Symbol["match"]'],
+  ['{"@qclass":"symbol","name":"foo"}', 'Symbol.for("foo")'],
+  ['{"@qclass":"symbol","name":"@@@@foo"}', 'Symbol.for("@@foo")'],
 
   // Arrays and objects
   ['[{"@qclass":"undefined"}]', '[undefined]'],
@@ -56,6 +61,19 @@ export const jsonPairs = harden([
     '{"@qclass":"hilbert","original":{"@qclass":"hilbert","original":8,"rest":{"foo":"foo1"}},"rest":{"bar":{"@qclass":"hilbert","original":{"@qclass":"undefined"}}}}',
     '{"@qclass":{"@qclass":8,foo:"foo1"},bar:{"@qclass":undefined}}',
   ],
+
+  // copyTagged, metaTagged
+  ['{"@qclass":"copyTagged","tag":"x","payload":8}', 'makeCopyTagged("x",8)'],
+  [
+    '{"@qclass":"copyTagged","tag":"x","payload":{"@qclass":"undefined"}}',
+    'makeCopyTagged("x",undefined)',
+  ],
+  ['{"@qclass":"metaTagged","tag":"x","payload":8}', 'makeMetaTagged("x",8)'],
+  [
+    '{"@qclass":"metaTagged","tag":"x","payload":{"@qclass":"undefined"}}',
+    'makeMetaTagged("x",undefined)',
+  ],
+
   // Slots
   [
     '[{"@qclass":"slot","iface":"Alleged: for testing Justin","index":0}]',
@@ -66,7 +84,7 @@ export const jsonPairs = harden([
 const fakeJustinCompartment = () => {
   const getSlotVal = (index, iface) =>
     Remotable(iface, undefined, { getIndex: () => index });
-  return new Compartment({ getSlotVal });
+  return new Compartment({ getSlotVal, makeCopyTagged, makeMetaTagged });
 };
 
 test('serialize decodeToJustin eval round trip pairs', t => {

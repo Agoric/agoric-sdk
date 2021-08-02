@@ -82,3 +82,26 @@
  * @param {string} [keyName='key'] - the column name for the key
  * @returns {LegacyWeakMap}
  */
+
+// ////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef { PrimitiveStyle | "copyRecord" | "copyArray" |
+ *           "copySet" | "copyMap" | "remotable"
+ * } KeyStyle
+ */
+
+/**
+ * @typedef { KeyStyle | "match:any" | "match:keyStyle" |
+ *           "match:and" | "match:or" | "match:not" |
+ *           "match:lt" | "match:lte" | "match:eq" | "match:gte" | "match:ge"
+ * } PatternStyle
+ */
+
+/**
+ * @typedef {Passable} Key
+ */
+
+/**
+ * @typedef {Key} Pattern
+ */

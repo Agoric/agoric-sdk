@@ -9,6 +9,11 @@ const assertKey = key => {
   harden(key);
   assertStructure(key);
   const passStyle = passStyleOf(key);
+
+  // TODO There should be no full switches on passStyle outside the
+  // marshal module. It should export the predicates we need so we
+  // can just use those predicates here.
+  // TODO Resolve before merging.
   switch (passStyle) {
     case 'bigint':
     case 'boolean':
@@ -20,12 +25,13 @@ const assertKey = key => {
     case 'remotable': {
       return;
     }
-    case 'copyArray':
     case 'copyRecord':
-    case 'error': {
+    case 'copyArray':
+    case 'copyTagged': {
       assert.fail(X`composite keys not yet allowed: ${key}`);
     }
-    // case 'promise': is precluded by `assertStructure` above
+    // Cases 'error', 'promise', 'metaTagged' are precluded
+    // by`assertStructure` above
     default: {
       assert.fail(X`unexpected passStyle ${passStyle}`);
     }
