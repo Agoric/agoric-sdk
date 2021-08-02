@@ -10,24 +10,20 @@
  *
  * For those methods that have a last `passStyleOf` or `passStyleOfRecur`,
  * they must defend against the other arguments being malicious, but may
- * *assume* that `passStyleOfRecur` does what it is supposed to do.
+ * assume* that `passStyleOfRecur` does what it is supposed to do.
  * Each such method is not trying to defend itself against a malicious
  * `passStyleOfRecur`, though it may defend against some accidents.
  *
  * @typedef {Object} PassStyleHelper
- *
  * @property {PassStyle} styleName
- *
  * @property {(candidate: any, check?: Checker) => boolean} canBeValid
  * If `canBeValid` returns true, then the candidate would
  * definitely not be valid for any of the other helpers.
  * `assertValid` still needs to be called to determine if it
  * actually is valid.
- *
  * @property {(candidate: any,
  *             passStyleOfRecur: PassStyleOf
  *            ) => void} assertValid
- *
  * @property {(passable: Passable,
  *             fn: (passable: Passable, index: any) => boolean
  *           ) => boolean} every

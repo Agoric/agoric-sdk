@@ -177,69 +177,94 @@ export const compareRank = (left, right) => {
 };
 harden(compareRank);
 
-const sortedPassablesCache = new WeakSet();
+/** @type {CompareRank} */
+export const compareAntiRank = (x, y) => compareRank(y, x);
+
+/**
+ * @type {Map<CompareRank,WeakSet<Passable[]>>}
+ */
+const memoOfSorted = new Map([
+  [compareRank, new WeakSet()],
+  [compareAntiRank, new WeakSet()],
+]);
 
 /**
  * @param {Passable[]} passables
+ * @param {CompareRank} compare
  * @returns {boolean}
  */
-export const isRankSorted = passables => {
-  if (sortedPassablesCache.has(passables)) {
+export const isRankSorted = (passables, compare) => {
+  const subMemoOfSorted = memoOfSorted.get(compare);
+  assert(subMemoOfSorted !== undefined);
+  if (subMemoOfSorted.has(passables)) {
     return true;
   }
   assert(passStyleOf(passables) === 'copyArray');
   for (let i = 1; i < passables.length; i += 1) {
-    if (compareRank(passables[i - 1], passables[i]) >= 1) {
+    if (compare(passables[i - 1], passables[i]) >= 1) {
       return false;
     }
   }
-  sortedPassablesCache.add(passables);
+  subMemoOfSorted.add(passables);
   return true;
 };
 harden(isRankSorted);
 
 /**
  * @param {Passable[]} sorted
+ * @param {CompareRank} compare
  */
-export const assertRankSorted = sorted =>
+export const assertRankSorted = (sorted, compare) =>
   assert(
-    isRankSorted(sorted),
+    isRankSorted(sorted, compare),
     // TODO assert on bug could lead to infinite recursion. Fix.
     // eslint-disable-next-line no-use-before-define
-    X`Must be rank sorted: ${sorted} vs ${makeRankSorted(sorted)}`,
+    X`Must be rank sorted: ${sorted} vs ${sortByRank(sorted, compare)}`,
   );
 harden(assertRankSorted);
 
 /**
- * @param {Passable[]} passables
+ * @param {Iterable<Passable>} passables
+ * @param {CompareRank} compare
  * @returns {Passable[]}
  */
-export const makeRankSorted = passables => {
-  if (isRankSorted(passables)) {
-    return passables;
+export const sortByRank = (passables, compare) => {
+  if (Array.isArray(passables)) {
+    harden(passables);
+    // Calling isRankSorted gives it a chance to get memoized for
+    // this `compare` function even if it was already memoized for a different
+    // `compare` function.
+    if (isRankSorted(passables, compare)) {
+      return passables;
+    }
   }
-  const sorted = harden([...passables].sort(compareRank));
-  assertRankSorted(sorted);
+  const unsorted = [...passables];
+  unsorted.forEach(harden);
+  const sorted = harden(unsorted.sort(compare));
+  const subMemoOfSorted = memoOfSorted.get(compare);
+  assert(subMemoOfSorted !== undefined);
+  subMemoOfSorted.add(sorted);
   return sorted;
 };
-harden(makeRankSorted);
+harden(sortByRank);
 
 /**
  * See
  * https://en.wikipedia.org/wiki/Binary_search_algorithm#Procedure_for_finding_the_leftmost_element
  *
  * @param {Passable[]} sorted
+ * @param {CompareRank} compare
  * @param {Passable} key
  * @param {("leftMost" | "rightMost")=} bias
  * @returns {number}
  */
-const rankSearch = (sorted, key, bias = 'leftMost') => {
-  assertRankSorted(sorted);
+const rankSearch = (sorted, compare, key, bias = 'leftMost') => {
+  assertRankSorted(sorted, compare);
   let left = 0;
   let right = sorted.length;
   while (left < right) {
     const m = Math.floor((left + right) / 2);
-    const comp = compareRank(sorted[m], key);
+    const comp = compare(sorted[m], key);
     if (comp <= -1 || (comp === 0 && bias === 'rightMost')) {
       left = m + 1;
     } else {
@@ -251,11 +276,10 @@ const rankSearch = (sorted, key, bias = 'leftMost') => {
 };
 
 /** @type {GetIndexCover} */
-export const getIndexCover = (sorted, [leftKey, rightKey]) => {
-  assertRankSorted(sorted);
-  assert(compareRank(leftKey, rightKey) <= 0);
-  const leftIndex = rankSearch(sorted, leftKey, 'leftMost');
-  const rightIndex = rankSearch(sorted, rightKey, 'rightMost');
+export const getIndexCover = (sorted, compare, [leftKey, rightKey]) => {
+  assertRankSorted(sorted, compare);
+  const leftIndex = rankSearch(sorted, compare, leftKey, 'leftMost');
+  const rightIndex = rankSearch(sorted, compare, rightKey, 'rightMost');
   return [leftIndex, rightIndex];
 };
 harden(getIndexCover);
@@ -286,10 +310,55 @@ export const coveredEntries = (sorted, [leftIndex, rightIndex]) => {
 };
 harden(coveredEntries);
 
-const maxRank = (left, right) => (compareRank(left, right) <= 0 ? left : right);
-const minRank = (left, right) => (compareRank(left, right) >= 0 ? left : right);
+/**
+ * @param {CompareRank} compare
+ * @param {Passable} a
+ * @param {Passable} b
+ * @returns {Passable}
+ */
+const maxRank = (compare, a, b) => (compare(a, b) <= 0 ? a : b);
 
-export const leftmostRank = passables => passables.reduce(minRank, undefined);
-harden(leftmostRank);
-export const rightmostRank = passables => passables.reduce(maxRank, null);
-harden(rightmostRank);
+/**
+ * @param {CompareRank} compare
+ * @param {Passable} a
+ * @param {Passable} b
+ * @returns {Passable}
+ */
+const minRank = (compare, a, b) => (compare(a, b) >= 0 ? a : b);
+
+/**
+ * @param {CompareRank} compare
+ * @param {RankCover[]} covers
+ * @returns {RankCover}
+ */
+export const unionRankCovers = (compare, covers) => {
+  /**
+   * @param {RankCover} a
+   * @param {RankCover} b
+   * @returns {RankCover}
+   */
+  const unionRankCoverPair = ([leftA, rightA], [leftB, rightB]) => [
+    minRank(compare, leftA, leftB),
+    maxRank(compare, rightA, rightB),
+  ];
+  return covers.reduce(unionRankCoverPair, [undefined, null]);
+};
+harden(unionRankCovers);
+
+/**
+ * @param {CompareRank} compare
+ * @param {RankCover[]} covers
+ * @returns {RankCover}
+ */
+export const intersectRankCovers = (compare, covers) => {
+  /**
+   * @param {RankCover} a
+   * @param {RankCover} b
+   * @returns {RankCover}
+   */
+  const intersectRankCoverPair = ([leftA, rightA], [leftB, rightB]) => [
+    maxRank(compare, leftA, leftB),
+    minRank(compare, rightA, rightB),
+  ];
+  return covers.reduce(intersectRankCoverPair, [null, undefined]);
+};

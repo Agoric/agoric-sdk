@@ -86,14 +86,14 @@ harden(AtAtPrefixPattern);
  * `nameForPassableSymbol`, return the symbol argument it was produced to
  * represent.
  *
- *    * If `name` does not begin with `"@@"`, then just the corresponding
+ *    If `name` does not begin with `"@@"`, then just the corresponding
  *      registered symbol, `Symbol.for(name)`.
- *    * If `name` is `"@@"` followed by a well known symbol's property name on
+ *    If `name` is `"@@"` followed by a well known symbol's property name on
  *      `Symbol` such `"@@iterator", return that well known symbol such as
  *      `Symbol.iterator`
- *    * If `name` begins with `"@@@@"` it encodes the registered symbol whose
+ *    If `name` begins with `"@@@@"` it encodes the registered symbol whose
  *      name begins with `"@@"` instead.
- *    * Otherwise, if name begins with `"@@"` it may encode a registered symbol
+ *    Otherwise, if name begins with `"@@"` it may encode a registered symbol
  *      from a future version of JavaScript, but it is not one we can decode
  *      yet, so throw.
  *

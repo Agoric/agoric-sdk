@@ -37,12 +37,12 @@
  * PassStyle. A Passable must be hardened.
  *
  * A Passable has a pass-by-copy superstructure. This includes
- *    * the atomic pass-by-copy primitives ("undefined" | "null" |
+ *    the atomic pass-by-copy primitives ("undefined" | "null" |
  *      "boolean" | "number" | "bigint" | "string" | "symbol"),
- *    * the pass-by-copy containers
+ *    the pass-by-copy containers
  *      ("copyRecord" | "copyArray" | "tagged") that
  *      contain other Passables,
- *    * and the special cases ("error" | "promise").
+ *    and the special cases ("error" | "promise").
  *
  * A Passable's pass-by-copy superstructure ends in
  * PassableCap leafs ("remotable" | "promise"). Since a
@@ -59,17 +59,17 @@
 
 /**
  * Two Passables can also be compared for total rank ordering,
- *    * where their passStyles are ordered according to the
+ *    where their passStyles are ordered according to the
  *      PassStyle typedef above.
- *    * Two primitives of the same PassStyle are compared by the
+ *    Two primitives of the same PassStyle are compared by the
  *      natural ordering of that primitive, with NaN greater than
  *      all other numbers and equivalent to itself.
- *    * All remotables are considered equivalent for purposes of
+ *    All remotables are considered equivalent for purposes of
  *      ordering.
- *    * copyArrays are lexicographically ordered
- *    * copyRecords are lexicographically order according to the
+ *    copyArrays are lexicographically ordered
+ *    copyRecords are lexicographically order according to the
  *      sorted order of their property names
- *    * copySets and copyMaps may have keys (such as remotables)
+ *    copySets and copyMaps may have keys (such as remotables)
  *      which are equivalent for purposes of ordering. Thus, for
  *      purposes of ordering we consider them to be multisets (bags)
  *      and multimaps, so we recursively order according to the
@@ -158,12 +158,10 @@
  *                                       payload: Encoding
  *           }
  * } EncodingUnion
- *
  * @typedef {{ [index: string]: Encoding,
  *             '@qclass'?: undefined
  * }} EncodingRecord
  * We exclude '@qclass' as a property in encoding records.
- *
  * @typedef {EncodingUnion | null | string |
  *           boolean | number | EncodingRecord
  * } EncodingElement
@@ -248,7 +246,6 @@
 /**
  * @callback MarshalGetInterfaceOf
  * Simple semantics, just tell what interface (or undefined) a remotable has.
- *
  * @param {*} maybeRemotable the value to check
  * @returns {InterfaceSpec|undefined} the interface specification, or undefined
  * if not a deemed to be a Remotable
@@ -260,23 +257,44 @@
  * (a "checkFoo" function) that can be used to implement a predicate
  * (an "isFoo" function) or a validator (an "assertFoo" function).
  *
- *    * A predicate ideally only returns `true` or `false` and rarely throws.
- *    * A validator throws an informative diagnostic when the predicate
+ *    A predicate ideally only returns `true` or `false` and rarely throws.
+ *    A validator throws an informative diagnostic when the predicate
  *      would have returned `false`, and simply returns `undefined` normally
  *      when the predicate would have returned `true`.
- *    * The internal checking function that they share is parameterized by a
+ *    The internal checking function that they share is parameterized by a
  *      `Checker` that determines how to proceed with a failure condition.
  *      Predicates pass in an identity function as checker. Validators
  *      pass in `assertChecker` which is a trivial wrapper around `assert`.
  *
  * See the various uses for good examples.
- *
  * @param {boolean} cond
  * @param {Details=} details
  * @returns {boolean}
  */
 
 // /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef {Object} ReadOnlyRankStore
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
+
+/**
+ * @typedef {Object} RankStore
+ * @property {(passable: Passable) => void} add
+ * TODO need some kind of deletion
+ *
+ * TODO I should be able to share supertype rather than repeat
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
 
 /**
  * @callback CompareRank
@@ -305,7 +323,6 @@
  * values, i.e., IEEE floating point values, would compare magnitudes, and
  * so agree with the rank ordering everywhere except `NaN`. An array sorted by
  * rank would enable range queries by magnitude.
- *
  * @param {Passable} left
  * @param {Passable} right
  * @returns {-1 | 0 | 1}
@@ -321,13 +338,12 @@
 
 /**
  * @callback GetPassStyleCover
- * Associate with each passStyle a KeyRange that may be an overestimate,
+ * Associate with each passStyle a RankCover that may be an overestimate,
  * and whose results therefore need to be filtered down. For example, because
  * there is not a smallest or biggest bigint, bound it by `NaN` (the last place
  * number) and `''` (the empty string, which is the first place string). Thus,
  * a range query using this range may include these values, which would then
  * need to be filtered out.
- *
  * @param {PassStyle} passStyle
  * @returns {RankCover}
  */
@@ -335,6 +351,7 @@
 /**
  * @callback GetIndexCover
  * @param {Passable[]} sorted
+ * @param {CompareRank} compare
  * @param {RankCover} rankCover
  * @returns {IndexCover}
  */

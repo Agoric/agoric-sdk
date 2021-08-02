@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '../make-far.js';
+
 /**
  * The result iterator has as many elements as the `baseIterator` and
  * have the same termination -- the same completion value or failure
@@ -13,10 +15,10 @@
  */
 export const mapIterable = (baseIterable, func) =>
   /** @type {Iterable<U>} */
-  harden({
+  Far('mapped iterable', {
     [Symbol.iterator]: () => {
       const baseIterator = baseIterable[Symbol.iterator]();
-      return harden({
+      return Far('mapped iterator', {
         next: () => {
           const { value: baseValue, done } = baseIterator.next();
           const value = done ? baseValue : func(baseValue);
@@ -40,10 +42,10 @@ harden(mapIterable);
  */
 export const filterIterable = (baseIterable, pred) =>
   /** @type {Iterable<U>} */
-  harden({
+  Far('filtered iterable', {
     [Symbol.iterator]: () => {
       const baseIterator = baseIterable[Symbol.iterator]();
-      return harden({
+      return Far('filtered iterator', {
         next: () => {
           for (;;) {
             const result = baseIterator.next();

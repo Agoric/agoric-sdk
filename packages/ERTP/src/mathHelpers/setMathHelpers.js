@@ -34,6 +34,7 @@ const getKeyForRecord = record => {
  * @returns {SetValueElem}
  */
 const hashBadly = thing => {
+  // TODO Revisit before merging
   const type = typeof thing;
   const allowableNonObjectValues = ['string', 'number', 'bigint', 'boolean'];
   if (allowableNonObjectValues.includes(type)) {

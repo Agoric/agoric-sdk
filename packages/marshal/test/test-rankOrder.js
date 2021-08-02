@@ -7,7 +7,7 @@ import {
   FullRankCover,
   compareRank,
   isRankSorted,
-  makeRankSorted,
+  sortByRank,
   getIndexCover,
   getPassStyleCover,
   assertRankSorted,
@@ -164,9 +164,9 @@ const sortedSample = harden([
 ]);
 
 test('compare and sort by rank', t => {
-  assertRankSorted(sortedSample);
-  t.false(isRankSorted(sample));
-  const sorted = makeRankSorted(sample);
+  assertRankSorted(sortedSample, compareRank);
+  t.false(isRankSorted(sample, compareRank));
+  const sorted = sortByRank(sample, compareRank);
   t.is(
     compareRank(sorted, sortedSample),
     0,
@@ -219,9 +219,9 @@ const queries = harden([
 ]);
 
 test('range queries', t => {
-  t.assert(isRankSorted(rangeSample));
+  t.assert(isRankSorted(rangeSample, compareRank));
   for (const [rankCover, indexRange] of queries) {
-    const range = getIndexCover(rangeSample, rankCover);
+    const range = getIndexCover(rangeSample, compareRank, rankCover);
     t.is(range[0], indexRange[0]);
     t.is(range[1], indexRange[1]);
   }

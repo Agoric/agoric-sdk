@@ -32,13 +32,15 @@ export { stringify, parse } from './src/marshal-stringify.js';
 
 export {
   compareRank,
+  compareAntiRank,
   isRankSorted,
   assertRankSorted,
-  makeRankSorted,
+  sortByRank,
   FullRankCover,
   getPassStyleCover,
   getIndexCover,
   coveredEntries,
-  leftmostRank,
-  rightmostRank,
+  unionRankCovers,
+  intersectRankCovers,
 } from './src/rankOrder.js';
+export { makeRankStore, makeRankStoreFactoryKit } from './src/rankStore.js';
