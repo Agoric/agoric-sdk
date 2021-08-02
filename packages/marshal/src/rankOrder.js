@@ -211,15 +211,17 @@ export const assertRankSorted = sorted =>
 harden(assertRankSorted);
 
 /**
- * @param {Passable[]} passables
+ * @param {Iterable<Passable>} passables
  * @returns {Passable[]}
  */
 export const makeRankSorted = passables => {
-  if (isRankSorted(passables)) {
+  if (sortedPassablesCache.has(passables)) {
+    assert(Array.isArray(passables));
     return passables;
   }
-  const sorted = harden([...passables].sort(compareRank));
-  assertRankSorted(sorted);
+  const compare = (x, y) => compareRank(harden(x), harden(y));
+  const sorted = harden([...passables].sort(compare));
+  sortedPassablesCache.add(sorted);
   return sorted;
 };
 harden(makeRankSorted);
@@ -286,10 +288,50 @@ export const coveredEntries = (sorted, [leftIndex, rightIndex]) => {
 };
 harden(coveredEntries);
 
-const maxRank = (left, right) => (compareRank(left, right) <= 0 ? left : right);
-const minRank = (left, right) => (compareRank(left, right) >= 0 ? left : right);
+/**
+ * @param {Passable} a
+ * @param {Passable} b
+ * @returns {Passable}
+ */
+const maxRank = (a, b) => (compareRank(a, b) <= 0 ? a : b);
 
-export const leftmostRank = passables => passables.reduce(minRank, undefined);
-harden(leftmostRank);
-export const rightmostRank = passables => passables.reduce(maxRank, null);
-harden(rightmostRank);
+/**
+ * @param {Passable} a
+ * @param {Passable} b
+ * @returns {Passable}
+ */
+const minRank = (a, b) => (compareRank(a, b) >= 0 ? a : b);
+
+/**
+ * @param {RankCover} a
+ * @param {RankCover} b
+ * @returns {RankCover}
+ */
+const unionRankCoverPair = ([leftA, rightA], [leftB, rightB]) => [
+  minRank(leftA, leftB),
+  maxRank(rightA, rightB),
+];
+
+/**
+ * @param {RankCover} a
+ * @param {RankCover} b
+ * @returns {RankCover}
+ */
+const intersectRankCoverPair = ([leftA, rightA], [leftB, rightB]) => [
+  maxRank(leftA, leftB),
+  minRank(rightA, rightB),
+];
+
+/**
+ * @param {RankCover[]} covers
+ * @returns {RankCover}
+ */
+export const unionRankCovers = covers =>
+  covers.reduce(unionRankCoverPair, [undefined, null]);
+
+/**
+ * @param {RankCover[]} covers
+ * @returns {RankCover}
+ */
+export const intersectRankCovers = covers =>
+  covers.reduce(intersectRankCoverPair, [null, undefined]);

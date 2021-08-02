@@ -82,7 +82,7 @@ test('exampleVotingUsage', async t => {
   const result = await E(creatorFacet).closeVote(3n);
 
   t.deepEqual(result, [
-    ['Yes', 40n],
     ['Maybe', 3n],
+    ['Yes', 40n],
   ]);
 });

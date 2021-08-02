@@ -4,12 +4,11 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@agoric/marshal';
-import {
-  makeLegacyMap,
-  makeLegacyWeakMap,
-  makeScalarMap,
-  makeScalarWeakMap,
-} from '../src/index.js';
+import { makeLegacyMap } from '../src/legacy/legacyMap.js';
+import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
+import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
+import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
+
 import '../src/types.js';
 
 function check(t, mode, objMaker) {
@@ -17,9 +16,9 @@ function check(t, mode, objMaker) {
   // creating two potentially-similar things for use as keys.
   let s;
   if (mode === 'strong') {
-    s = makeScalarMap('store1');
+    s = makeScalarMapStore('store1');
   } else if (mode === 'weak') {
-    s = makeScalarWeakMap('store1');
+    s = makeScalarWeakMapStore('store1');
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -99,17 +98,19 @@ test('store', t => {
 
 test('reject promise keys', t => {
   const k = harden(Promise.resolve());
-  const s = makeScalarMap('store1');
-  t.throws(() => s.init(k, 1), { message: /A "promise" cannot be a key/ });
+  const s = makeScalarMapStore('store1');
+  t.throws(() => s.init(k, 1), {
+    message: /A "promise" cannot be a scalar key: "\[Promise\]"/,
+  });
   t.is(s.has(k), false);
   t.throws(() => s.get(k), { message: /not found:/ });
   t.throws(() => s.set(k, 1), { message: /not found/ });
   t.throws(() => s.delete(k), { message: /not found/ });
 
-  const w = makeScalarWeakMap('store1');
+  const w = makeScalarWeakMapStore('store1');
   const i = 8;
   t.throws(() => w.init(i, 1), {
-    message: /Only remotables can be keys of scalarWeakMaps:/,
+    message: /Only remotables can be keys of scalar WeakMapStores: 8/,
   });
   t.is(s.has(i), false);
   t.throws(() => w.get(i), { message: /not found/ });
@@ -118,8 +119,8 @@ test('reject promise keys', t => {
 });
 
 test('passability of stores', t => {
-  t.is(passStyleOf(makeScalarMap('foo')), 'remotable');
-  t.is(passStyleOf(makeScalarWeakMap('foo')), 'remotable');
+  t.is(passStyleOf(makeScalarMapStore('foo')), 'remotable');
+  t.is(passStyleOf(makeScalarWeakMapStore('foo')), 'remotable');
   if (ALLOW_IMPLICIT_REMOTABLES) {
     t.is(passStyleOf(makeLegacyMap('foo')), 'remotable');
     t.is(passStyleOf(makeLegacyWeakMap('foo')), 'remotable');

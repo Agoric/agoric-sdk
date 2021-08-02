@@ -4,6 +4,8 @@ import {
   assertChecker,
   getTag,
   isRankSorted,
+  makeRankSorted,
+  makeTagged,
   passStyleOf,
 } from '@agoric/marshal';
 
@@ -24,7 +26,7 @@ export const checkCopySetKeys = (keys, check = x => x) => {
       X`The keys of a copySet or copyMap must be a copyArray: ${keys}`,
     );
   }
-  const reverseKeys = harden(keys.reverse());
+  const reverseKeys = harden([...keys].reverse());
   if (!isRankSorted(reverseKeys)) {
     return check(
       false,
@@ -49,7 +51,7 @@ export const checkCopySet = (s, check = x => x) => {
   }
   const result =
     check(
-      passStyleOf(s) === 'tagged' && getTag(s) !== 'copySet',
+      passStyleOf(s) === 'tagged' && getTag(s) === 'copySet',
       X`Not a copySet: ${s}`,
     ) && checkCopySetKeys(s.payload, check);
   if (result) {
@@ -75,3 +77,11 @@ export const everyCopySetKey = (s, fn) => {
   return s.payload.every((v, i) => fn(v, i));
 };
 harden(everyCopySetKey);
+
+/**
+ * @param {Iterable<Passable>} elements
+ * @returns {CopySet}
+ */
+export const makeCopySet = elements =>
+  makeTagged('copySet', [...makeRankSorted(elements)].reverse());
+harden(makeCopySet);

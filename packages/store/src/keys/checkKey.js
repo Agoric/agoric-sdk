@@ -16,35 +16,72 @@ import { checkCopyMap, everyCopyMapKey, everyCopyMapValue } from './copyMap.js';
 
 const { details: X, quote: q } = assert;
 
-/** @type {WeakSet<Key>} */
-const keyMemo = new WeakSet();
+// ////////////////// Primitive and Scalar keys ////////////////////////////////
 
 /**
  * @param {Passable} val
  * @param {Checker=} check
  * @returns {boolean}
  */
-const checkKey = (val, check = x => x) => {
-  if (!isObject(val)) {
-    // TODO There is not yet a checkPassable, but perhaps there should be.
-    // If that happens, we should call it here instead.
-    assertPassable(val);
-    return true;
+const checkPrimitiveKey = (val, check = x => x) => {
+  if (isObject(val)) {
+    return check(false, X`A ${q(typeof val)} cannot be a primitive: ${val}`);
   }
-  if (keyMemo.has(val)) {
-    return true;
-  }
-  // eslint-disable-next-line no-use-before-define
-  const result = checkKeyInternal(val, check);
-  if (result) {
-    // Don't cache the undefined cases, so that if it is tried again
-    // with `assertChecker` it'll throw a diagnostic again
-    keyMemo.add(val);
-  }
-  // Note that we do not memoize a negative judgement, so that if it is tried
-  // again with a checker, it will still produce a useful diagnostic.
-  return result;
+  // TODO There is not yet a checkPassable, but perhaps there should be.
+  // If that happens, we should call it here instead.
+  assertPassable(val);
+  return true;
 };
+
+/**
+ * @param {Passable} val
+ * @returns {boolean}
+ */
+export const isPrimitiveKey = val => checkPrimitiveKey(val);
+harden(isPrimitiveKey);
+
+/**
+ * @param {Passable} val
+ * @returns {void}
+ */
+export const assertPrimitiveKey = val => {
+  checkPrimitiveKey(val, assertChecker);
+};
+harden(assertPrimitiveKey);
+
+/**
+ * @param {Passable} val
+ * @param {Checker=} check
+ * @returns {boolean}
+ */
+const checkScalarKey = (val, check = x => x) => {
+  if (isPrimitiveKey(val)) {
+    return true;
+  }
+  const passStyle = passStyleOf(val);
+  return check(
+    passStyle === 'remotable',
+    X`A ${q(passStyle)} cannot be a scalar key: ${val}`,
+  );
+};
+
+/**
+ * @param {Passable} val
+ * @returns {boolean}
+ */
+export const isScalarKey = val => checkScalarKey(val);
+harden(isScalarKey);
+
+/**
+ * @param {Passable} val
+ * @returns {void}
+ */
+export const assertScalarKey = val => {
+  checkScalarKey(val, assertChecker);
+};
+harden(assertScalarKey);
+
+// ///////////////////////////// Keys //////////////////////////////////////////
 
 /**
  * @param {Passable} val
@@ -52,7 +89,8 @@ const checkKey = (val, check = x => x) => {
  * @returns {boolean}
  */
 const checkKeyInternal = (val, check = x => x) => {
-  const checkIt = child => checkKey(child, check) !== undefined;
+  // eslint-disable-next-line no-use-before-define
+  const checkIt = child => checkKey(child, check);
 
   const passStyle = passStyleOf(val);
   switch (passStyle) {
@@ -103,6 +141,39 @@ const checkKeyInternal = (val, check = x => x) => {
     }
   }
 };
+
+/** @type {WeakSet<Key>} */
+const keyMemo = new WeakSet();
+
+/**
+ * @param {Passable} val
+ * @param {Checker=} check
+ * @returns {boolean}
+ */
+export const checkKey = (val, check = x => x) => {
+  if (isPrimitiveKey(val)) {
+    return true;
+  }
+  if (!isObject(val)) {
+    // TODO There is not yet a checkPassable, but perhaps there should be.
+    // If that happens, we should call it here instead.
+    assertPassable(val);
+    return true;
+  }
+  if (keyMemo.has(val)) {
+    return true;
+  }
+  const result = checkKeyInternal(val, check);
+  if (result) {
+    // Don't cache the undefined cases, so that if it is tried again
+    // with `assertChecker` it'll throw a diagnostic again
+    keyMemo.add(val);
+  }
+  // Note that we do not memoize a negative judgement, so that if it is tried
+  // again with a checker, it will still produce a useful diagnostic.
+  return result;
+};
+harden(checkKey);
 
 /**
  * @param {Passable} val

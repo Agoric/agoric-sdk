@@ -39,6 +39,7 @@ export {
   getPassStyleCover,
   getIndexCover,
   coveredEntries,
-  leftmostRank,
-  rightmostRank,
+  unionRankCovers,
+  intersectRankCovers,
 } from './src/rankOrder.js';
+export { makeRankStore, makeRankStoreFactoryKit } from './src/rankStore.js';

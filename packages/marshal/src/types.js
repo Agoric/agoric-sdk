@@ -279,6 +279,28 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @typedef {Object} ReadOnlyRankStore
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
+
+/**
+ * @typedef {Object} RankStore
+ * @property {(passable: Passable) => void} add
+ * TODO need some kind of deletion
+ *
+ * TODO I should be able to share supertype rather than repeat
+ * @property {() => Passable[]} snapshot
+ * @property {() => ReadOnlyRankStore} readOnlyView
+ * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
+ * @property {(rankCover?: RankCover) => Iterable<number>} keys
+ * @property {(rankCover?: RankCover) => Iterable<Passable>} values
+ */
+
+/**
  * @callback CompareRank
  * Returns `-1`, `0`, or `1` depending on whether the rank of `left`
  * is before, tied-with, or after the rank of `right`.
@@ -321,7 +343,7 @@
 
 /**
  * @callback GetPassStyleCover
- * Associate with each passStyle a KeyRange that may be an overestimate,
+ * Associate with each passStyle a RankCover that may be an overestimate,
  * and whose results therefore need to be filtered down. For example, because
  * there is not a smallest or biggest bigint, bound it by `NaN` (the last place
  * number) and `''` (the empty string, which is the first place string). Thus,

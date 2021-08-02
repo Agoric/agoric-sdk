@@ -40,7 +40,8 @@ const {
 // will be to change the default, the second argument to `getEnvironmentOption`
 // below, from `'true'` to `'false'`.
 export const ALLOW_IMPLICIT_REMOTABLES =
-  getEnvironmentOption('ALLOW_IMPLICIT_REMOTABLES', 'true') === 'true';
+  // TODO submit the changing to `'false'` as a separate PR
+  getEnvironmentOption('ALLOW_IMPLICIT_REMOTABLES', 'false') === 'true';
 
 /**
  * @param {InterfaceSpec} iface
