@@ -58,6 +58,7 @@ test.before(async t => {
   vats.bootstrap.parameters = { contractBundles };
 
   const config = { bootstrap: 'bootstrap', vats };
+  config.defaultManagerType = 'xs-worker';
 
   t.context.data = { kernelBundles, config };
 });

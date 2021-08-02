@@ -29,6 +29,8 @@ const build = async (log, zoe) => {
           // way to get it from an Instance. I'd verify the Registrar,
           // ballotCounter, and contractGovernor.
 
+          console.log(`VV  validateB ${registrarInstance}`);
+
           await validateBallotFromCounter(
             zoe,
             registrarInstance,
@@ -40,6 +42,7 @@ const build = async (log, zoe) => {
           const counterPublicP = E(zoe).getPublicFacet(counterInstance);
           const ballotDetailsP = E(counterPublicP).getDetails();
 
+          console.log(`VV  `);
           const [governedParam, ballotDetails] = await Promise.all([
             governedParamP,
             ballotDetailsP,

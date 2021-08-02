@@ -102,7 +102,9 @@ test('bootstrap payment', async t => {
 
   const issuers = await E(zoe).getIssuers(instance);
 
-  const bootstrapPayment = E(stablecoinMachine).getBootstrapPayment();
+  const bootstrapPayment = E(
+    E(stablecoinMachine).getLimitedCreatorFacet(),
+  ).getBootstrapPayment();
 
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
 
@@ -163,7 +165,9 @@ test('bootstrap payment - only minted once', async t => {
 
   const issuers = await E(zoe).getIssuers(instance);
 
-  const bootstrapPayment = E(stablecoinMachine).getBootstrapPayment();
+  const bootstrapPayment = E(
+    E(stablecoinMachine).getLimitedCreatorFacet(),
+  ).getBootstrapPayment();
 
   const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
@@ -179,7 +183,9 @@ test('bootstrap payment - only minted once', async t => {
 
   // Try getting another payment
 
-  const bootstrapPayment2 = E(stablecoinMachine).getBootstrapPayment();
+  const bootstrapPayment2 = E(
+    E(stablecoinMachine).getLimitedCreatorFacet(),
+  ).getBootstrapPayment();
 
   await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
     message: 'payment not found for "RUN"',
@@ -228,7 +234,9 @@ test('bootstrap payment - default value is 0n', async t => {
 
   const issuers = await E(zoe).getIssuers(instance);
 
-  const bootstrapPayment = E(stablecoinMachine).getBootstrapPayment();
+  const bootstrapPayment = E(
+    E(stablecoinMachine).getLimitedCreatorFacet(),
+  ).getBootstrapPayment();
 
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
 

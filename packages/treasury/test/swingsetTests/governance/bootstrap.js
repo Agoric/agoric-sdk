@@ -74,11 +74,12 @@ const createCommittee = async (committeeCreator, voterCreator) => {
 };
 
 const votersVote = async (detailsP, votersP, selections) => {
-  const [voters, details] = await Promise.all([votersP, detailsP]);
-  const {
-    ballotSpec: { positions },
-    handle,
-  } = details;
+  const [voters, { positions, handle }] = await Promise.all([
+    votersP,
+    detailsP,
+  ]);
+
+  console.log(`BOOT vv   ${q(positions)}    ${handle}`);
 
   await Promise.all(
     voters.map((v, i) => {
@@ -99,36 +100,52 @@ const oneVoterValidate = async (
     governedInstanceP,
     governorInstanceP,
   ]);
-  const { instance } = details;
+
+  console.log(`BOOT Validate ${q(details)}`);
+
+  const bar = await details;
+
+  console.log(`BOOT   bar  ${q(bar)}`);
+
+  const { counterInstance, question } = bar;
+
+  console.log(`BOOT Validate ${counterInstance},   ${q(question)}`);
 
   E(voters[0]).validate(
-    instance,
+    counterInstance,
     governedInstance,
     registrarInstance,
     governorInstance,
-    details.ballotSpec.question,
+    question,
   );
 };
 
 const setUpVote = async (
   newValue,
-  rule,
+  deadline,
   votersP,
   votes,
   paramDesc,
   contracts,
 ) => {
   const { treasury, installations, registrarInstance, governor } = contracts;
-  const { details: feeDetails } = await E(
-    treasury.voteCreator,
-  ).voteOnParamChange(
-    paramDesc.parameterName,
+
+  console.log(`BOOT setupVote  ${q(paramDesc)}`);
+
+  const foo = await E(treasury.voteCreator).voteOnParamChange(
+    paramDesc,
     newValue,
     installations.counter,
-    rule,
-    paramDesc,
+    deadline,
   );
+
+  console.log(`BOOT  sV ${q(foo)}`);
+
+  const { details: feeDetails } = foo;
   await votersVote(feeDetails, votersP, votes);
+
+  console.log(`BOOT  setup  ${q(feeDetails)}`);
+
   await oneVoterValidate(
     votersP,
     feeDetails,
@@ -190,10 +207,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   });
   log(`param values before ${q(feeParamsStateAnte)}`);
 
-  const rule = {
-    timer,
-    deadline: 3n * ONE_DAY,
-  };
   const contracts = { treasury, installations, registrarInstance, governor };
   const votes = [0, 1, 1, 0, 0];
 
@@ -201,7 +214,15 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     key: ParamKey.FEE,
     parameterName: POOL_FEE_KEY,
   };
-  const counter = await setUpVote(37n, rule, votersP, votes, fees, contracts);
+
+  const counter = await setUpVote(
+    37n,
+    3n * ONE_DAY,
+    votersP,
+    votes,
+    fees,
+    contracts,
+  );
 
   const poolParams = {
     key: ParamKey.POOL,
@@ -209,7 +230,8 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     collateralBrand: brands[0],
   };
   const newRate = makeRatio(500, runBrand, BASIS_POINTS);
-  await setUpVote(newRate, rule, votersP, votes, poolParams, contracts);
+
+  await setUpVote(newRate, 3n * ONE_DAY, votersP, votes, poolParams, contracts);
 
   E(E(zoe).getPublicFacet(counter))
     .getOutcome()

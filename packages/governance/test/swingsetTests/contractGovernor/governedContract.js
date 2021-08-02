@@ -53,9 +53,13 @@ const start = async zcf => {
     getContractGovernor: () => electionManager,
   });
 
-  const creatorFacet = Far('creator facet of governed contract', {
-    getContractGovernor: () => electionManager,
+  const limitedCreatorFacet = Far('governedContract creator facet', {
     getParamMgrAccessor,
+  });
+
+  const creatorFacet = Far('governedContract powerful creator facet', {
+    getContractGovernor: () => electionManager,
+    getLimitedCreatorFacet: () => limitedCreatorFacet,
   });
   return { publicFacet, creatorFacet };
 };

@@ -16,6 +16,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers';
 
+import { q } from '@agoric/assert';
 import { governedParameterTerms } from '../src/params';
 import { makeTracer } from '../src/makeTracer';
 import { SECONDS_PER_YEAR } from '../src/interest';

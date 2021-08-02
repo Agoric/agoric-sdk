@@ -1,6 +1,6 @@
 // @ts-check
 
-import { details as X } from '@agoric/assert';
+import { details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -105,10 +105,7 @@ const start = async zcf => {
     governedInstancePK.resolve(instance);
 
     // don't give the ability to update params to anyone but governedContract.
-    const {
-      getParamMgrAccessor: _ignore,
-      ...limitedCreatorFacet
-    } = creatorFacet;
+    const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
 
     const { voteOnParamChange, createdBallot } = await setupGovernance(
       E(creatorFacet).getParamMgrAccessor(),

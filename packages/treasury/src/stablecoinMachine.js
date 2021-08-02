@@ -1,23 +1,8 @@
 // @ts-check
-import { Far } from '@agoric/marshal';
 
 import '@agoric/zoe/exported';
 import '@agoric/zoe/src/contracts/exported';
 import '@agoric/governance/src/exported';
-
-// The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
-// individual per-type vaultManagers.
-//
-// makeAddTypeInvitation is a closely held method that adds a brand new
-// collateral type. It specifies the initial exchange rate for that type.
-//
-// a second closely held method (not implemented yet) would add collateral of a
-// type for which there is an existing pool. It gets the current price from the
-// pool.
-//
-// ownershipTokens for vaultManagers entitle holders to distributions, but you
-// can't redeem them outright, that would drain the utility from the economy.
 
 import { E } from '@agoric/eventual-send';
 import { assert, q, details as X } from '@agoric/assert';
@@ -51,6 +36,20 @@ import {
 } from './params';
 
 const trace = makeTracer('ST');
+
+// The StableCoinMachine owns a number of VaultManagers, and a mint for the
+// "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
+// individual per-type vaultManagers.
+//
+// makeAddTypeInvitation is a closely held method that adds a brand new
+// collateral type. It specifies the initial exchange rate for that type.
+//
+// a second closely held method (not implemented yet) would add collateral of a
+// type for which there is an existing pool. It gets the current price from the
+// pool.
+//
+// ownershipTokens for vaultManagers entitle holders to distributions, but you
+// can't redeem them outright, that would drain the utility from the economy.
 
 /** @type {ContractStartFn} */
 export async function start(zcf) {
@@ -396,6 +395,8 @@ export async function start(zcf) {
   const getParamMgrAccessor = () =>
     Far('paramManagerAccessor', {
       get: paramDesc => {
+        console.log(`STABLE  ${q(paramDesc)}`);
+
         switch (paramDesc.key) {
           case ParamKey.FEE:
             return feeParams;
@@ -419,9 +420,17 @@ export async function start(zcf) {
     getRewardAllocation,
     getBootstrapPayment: mintBootstrapPayment(),
     makeCollectFeesInvitation,
-    getParamMgrAccessor,
     getContractGovernor: () => electionManager,
   });
 
-  return harden({ creatorFacet: stablecoinMachine, publicFacet, ParamKey });
+  const stablecoinMachineWrapper = Far('powerful stablecoinMachine wrapper', {
+    getParamMgrAccessor,
+    getLimitedCreatorFacet: () => stablecoinMachine,
+  });
+
+  return harden({
+    creatorFacet: stablecoinMachineWrapper,
+    publicFacet,
+    ParamKey,
+  });
 }
