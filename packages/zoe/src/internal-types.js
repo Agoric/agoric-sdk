@@ -14,6 +14,7 @@
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
+ * @property {Object=} offerArgs
  */
 
 /**
@@ -75,7 +76,9 @@
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
- *     proposal: ProposalRecord) => UserSeat } makeUserSeat
+ *     proposal: ProposalRecord,
+ *     offerArgs: Object=,
+ * ) => UserSeat } makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
  * @property {() => Object} getPublicFacet

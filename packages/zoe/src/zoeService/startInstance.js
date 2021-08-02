@@ -92,7 +92,12 @@ export const makeStartInstance = (
           zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
         },
         stopAcceptingOffers: () => (acceptingOffers = false),
-        makeUserSeat: (invitationHandle, initialAllocation, proposal) => {
+        makeUserSeat: (
+          invitationHandle,
+          initialAllocation,
+          proposal,
+          offerArgs,
+        ) => {
           const offerResultPromiseKit = makePromiseKit();
           handlePKitWarning(offerResultPromiseKit);
           const exitObjPromiseKit = makePromiseKit();
@@ -116,6 +121,7 @@ export const makeStartInstance = (
             initialAllocation,
             notifier,
             seatHandle,
+            offerArgs,
           });
 
           zoeSeatAdmins.add(zoeSeatAdmin);
