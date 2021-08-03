@@ -13,10 +13,8 @@ import { ExitCode, ErrorCode } from '../api.js';
 
 import { options, decode, encode, loader } from './message-tools.js';
 
-const importMeta = { url: `file://${__filename}` };
-
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
-const ld = loader(importMeta.url);
+const ld = loader(import.meta.url);
 
 test('evaluate and issueCommand', async t => {
   const opts = options(io);
