@@ -1,10 +1,10 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far, passStyleOf } from '@agoric/marshal';
 
 import { makeZoeSeatAdminKit } from './zoeSeat';
 import { makeHandle } from '../makeHandle';
@@ -26,12 +26,23 @@ export const makeStartInstance = (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
+    privateArgs = undefined,
   ) => {
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
 
     const { installation, bundle } = await unwrapInstallation(installationP);
     // AWAIT ///
+
+    if (privateArgs !== undefined) {
+      const passStyle = passStyleOf(privateArgs);
+      assert(
+        passStyle === 'copyRecord',
+        X`privateArgs must be a pass-by-copy record, but instead was a ${q(
+          passStyle,
+        )}: ${privateArgs}`,
+      );
+    }
 
     const instance = makeHandle('Instance');
 
@@ -190,6 +201,7 @@ export const makeStartInstance = (
       zoeInstanceAdminForZcf,
       zoeInstanceStorageManager.getInstanceRecord(),
       zoeInstanceStorageManager.getIssuerRecords(),
+      privateArgs,
     );
 
     handleOfferObjPromiseKit.resolve(handleOfferObj);

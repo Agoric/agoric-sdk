@@ -208,6 +208,7 @@
 /**
  * @callback ContractStartFn
  * @param {ContractFacet} zcf
+ * @param {Object=} privateArgs
  * @returns {ContractStartFnResult}
  */
 

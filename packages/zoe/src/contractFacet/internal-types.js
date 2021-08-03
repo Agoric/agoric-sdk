@@ -27,6 +27,8 @@
  * @typedef ZCFZygote
  * @property {(bundle: SourceBundle) => void} evaluateContract
  * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
-      instanceRecordFromZoe: InstanceRecord,
-      issuerStorageFromZoe: IssuerRecords) => Promise<ExecuteContractResult>} startContract
+ *     instanceRecordFromZoe: InstanceRecord,
+ *     issuerStorageFromZoe: IssuerRecords,
+ *     privateArgs: Object=,
+ * ) => Promise<ExecuteContractResult>} startContract
  */

@@ -178,6 +178,7 @@
  * @param {ZoeInstanceAdmin} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecord
  * @param {IssuerRecords} issuerStorageFromZoe
+ * @param {Object=} privateArgs
  * @returns {Promise<ExecuteContractResult>}
  *
  */

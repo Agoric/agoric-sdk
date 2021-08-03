@@ -291,6 +291,7 @@ export const makeZCFZygote = (
       instanceAdminFromZoe,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
+      privateArgs = undefined,
     ) => {
       zoeInstanceAdminPromiseKit.resolve(instanceAdminFromZoe);
       instantiateInstanceRecordStorage(instanceRecordFromZoe);
@@ -299,7 +300,7 @@ export const makeZCFZygote = (
       // Next, execute the contract code, passing in zcf
       /** @type {Promise<ExecuteContractResult>} */
       const result = E(contractCode)
-        .start(zcf)
+        .start(zcf, privateArgs)
         .then(
           ({
             creatorFacet = Far('emptyCreatorFacet', {}),
