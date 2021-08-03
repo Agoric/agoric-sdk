@@ -121,13 +121,12 @@ export const makeStartInstance = (
             initialAllocation,
             notifier,
             seatHandle,
-            offerArgs,
           });
 
           zoeSeatAdmins.add(zoeSeatAdmin);
 
           E(handleOfferObjPromiseKit.promise)
-            .handleOffer(invitationHandle, zoeSeatAdmin, seatData)
+            .handleOffer(invitationHandle, zoeSeatAdmin, seatData, offerArgs)
             .then(({ offerResultP, exitObj }) => {
               offerResultPromiseKit.resolve(offerResultP);
               exitObjPromiseKit.resolve(exitObj);

@@ -261,10 +261,10 @@ export const makeZCFZygote = (
   // added in offer(). ZCF responds with the exitObj and offerResult.
   /** @type {HandleOfferObj} */
   const handleOfferObj = Far('handleOfferObj', {
-    handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
+    handleOffer: (invitationHandle, zoeSeatAdmin, seatData, offerArgs) => {
       const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
       const offerHandler = takeOfferHandler(invitationHandle);
-      const offerResultP = E(offerHandler)(zcfSeat, seatData.offerArgs).catch(
+      const offerResultP = E(offerHandler)(zcfSeat, offerArgs).catch(
         reason => {
           if (reason === undefined) {
             const newErr = new Error(

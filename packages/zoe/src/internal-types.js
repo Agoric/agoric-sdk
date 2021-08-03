@@ -14,7 +14,6 @@
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
- * @property {Object=} offerArgs
  */
 
 /**
@@ -99,6 +98,7 @@
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
+ *             offerArgs: Object=
  *            ) => HandleOfferResult} handleOffer
  */
 
