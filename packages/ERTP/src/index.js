@@ -1,5 +1,5 @@
 // @ts-check
 
-export * from './amountMath';
-export * from './issuerKit';
-export * from './typeGuards';
+export * from './amountMath.js';
+export * from './issuerKit.js';
+export * from './typeGuards.js';

@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { AssetKind } from '../../../src';
+import { AssetKind } from '../../../src/index.js';
 
 /** @type {Brand} */
 export const mockBrand = Far('brand', {

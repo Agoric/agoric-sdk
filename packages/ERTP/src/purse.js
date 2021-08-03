@@ -1,6 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
-import { AmountMath } from './amountMath';
+import { AmountMath } from './amountMath.js';
 
 export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
   let currentBalance = AmountMath.makeEmpty(brand, assetKind);

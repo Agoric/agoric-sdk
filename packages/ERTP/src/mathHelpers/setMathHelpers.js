@@ -4,7 +4,7 @@ import { passStyleOf } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { mustBeComparable, sameStructure } from '@agoric/same-structure';
 
-import '../types';
+import '../types.js';
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.

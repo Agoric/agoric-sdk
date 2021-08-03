@@ -1,9 +1,9 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { getInterfaceOf } from '@agoric/marshal';
-import { makeIssuerKit, AmountMath } from '../../src';
+import { makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('interfaces - particular implementation', t => {
   const allegedName = 'bucks';
