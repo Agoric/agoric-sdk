@@ -27,10 +27,10 @@ import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 
-import { deliver, addDeliveryTarget } from './outbound';
-import { makeHTTPListener } from './web';
+import { deliver, addDeliveryTarget } from './outbound.js';
+import { makeHTTPListener } from './web.js';
 
-import { connectToChain } from './chain-cosmos-sdk';
+import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
 

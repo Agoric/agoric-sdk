@@ -9,7 +9,7 @@ import {
   satisfies,
   assertProposalShape,
   assertIssuerKeywords,
-} from '../contractSupport/zoeHelpers';
+} from '../contractSupport/zoeHelpers.js';
 
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows

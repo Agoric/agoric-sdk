@@ -13,7 +13,7 @@ const { defineProperties } = Object;
  *
  * Modules should do:
  *
- *  import { WeakRef, FinalizationRegistry } from '.../weakref';
+ *  import { WeakRef, FinalizationRegistry } from '.../weakref.js';
  *
  */
 

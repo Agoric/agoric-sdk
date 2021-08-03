@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
 
-import { makeDehydrator } from '../src/lib-dehydrate';
+import { makeDehydrator } from '../src/lib-dehydrate.js';
 
 test('makeDehydrator', async t => {
   const { hydrate, dehydrate, makeMapping } = makeDehydrator();

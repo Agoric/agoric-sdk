@@ -6,9 +6,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
 const barter = `${__dirname}/../../../src/contracts/barterExchange`;
 

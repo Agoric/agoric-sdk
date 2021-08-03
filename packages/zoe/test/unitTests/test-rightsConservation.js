@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { assertRightsConserved } from '../../src/contractFacet/rightsConservation';
+import { assertRightsConserved } from '../../src/contractFacet/rightsConservation.js';
 
 const setupBrands = () => {
   const moolaIssuerResults = makeIssuerKit('moola');

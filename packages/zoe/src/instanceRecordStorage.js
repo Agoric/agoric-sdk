@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { assertKeywordName, getKeywords } from './cleanProposal';
+import { assertKeywordName, getKeywords } from './cleanProposal.js';
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,

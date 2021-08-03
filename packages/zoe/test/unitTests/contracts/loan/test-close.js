@@ -14,9 +14,9 @@ import {
   makeSeatKit,
   checkPayouts,
   checkNoNewOffers,
-} from './helpers';
+} from './helpers.js';
 
-import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
+import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
 
 test.todo('makeCloseLoanInvitation repay partial fails');
 test.todo(`makeCloseLoanInvitation repay but don't repay interest`);

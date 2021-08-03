@@ -3,9 +3,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { AssetKind } from '@agoric/ertp';
-import { cleanProposal } from '../../src/cleanProposal';
-import { setup } from './setupBasicMints';
-import buildManualTimer from '../../tools/manualTimer';
+import { cleanProposal } from '../../src/cleanProposal.js';
+import { setup } from './setupBasicMints.js';
+import buildManualTimer from '../../tools/manualTimer.js';
 
 test('cleanProposal test', t => {
   const { moola, simoleans } = setup();

@@ -18,11 +18,11 @@ import '../internal-types';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { makeZoeStorageManager } from './zoeStorageManager';
-import { makeStartInstance } from './startInstance';
-import { makeOffer } from './offer/offer';
-import { makeInvitationQueryFns } from './invitationQueries';
-import { setupCreateZCFVat } from './createZCFVat';
+import { makeZoeStorageManager } from './zoeStorageManager.js';
+import { makeStartInstance } from './startInstance.js';
+import { makeOffer } from './offer/offer.js';
+import { makeInvitationQueryFns } from './invitationQueries.js';
+import { setupCreateZCFVat } from './createZCFVat.js';
 
 /**
  * Create an instance of Zoe.

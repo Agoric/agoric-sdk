@@ -10,7 +10,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { makeOfferAndFindInvitationAmount } from '../../src/offer';
+import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {
   const MOOLA_PURSE_PETNAME = 'moola purse';

@@ -1,7 +1,7 @@
 /* global __dirname process */
 import path from 'path';
 import chalk from 'chalk';
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;

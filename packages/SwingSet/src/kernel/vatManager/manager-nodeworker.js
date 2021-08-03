@@ -8,7 +8,7 @@ import { makeManagerKit } from './manager-helper.js';
 // into it
 
 /*
-import { waitUntilQuiescent } from '../../waitUntilQuiescent';
+import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
 function wait10ms() {
   const { promise: queueEmptyP, resolve } = makePromiseKit();
   setTimeout(() => resolve(), 10);

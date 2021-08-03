@@ -5,7 +5,7 @@ import '../../../exported';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import { offerTo } from '../../contractSupport/zoeHelpers';
+import { offerTo } from '../../contractSupport/zoeHelpers.js';
 
 export const doLiquidation = async (
   zcf,

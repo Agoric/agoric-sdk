@@ -6,7 +6,7 @@ import { Far } from '@agoric/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation';
+import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation.js';
 
 test('burnInvitation', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);

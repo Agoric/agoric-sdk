@@ -21,15 +21,15 @@ import {
   openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
-import { dumpStore } from './dumpstore';
-import { auditRefCounts } from './auditstore';
+import { dumpStore } from './dumpstore.js';
+import { auditRefCounts } from './auditstore.js';
 import {
   organizeBenchmarkStats,
   printBenchmarkStats,
   organizeMainStats,
   printMainStats,
   outputStats,
-} from './printStats';
+} from './printStats.js';
 
 const log = console.log;
 

@@ -2,9 +2,9 @@
 
 import '../../../exported';
 
-import { assertProposalShape } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport.js';
 
-import { scheduleLiquidation } from './scheduleLiquidation';
+import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 // Create an invitation to add collateral to the loan. Part of the
 // facet given to the borrower.

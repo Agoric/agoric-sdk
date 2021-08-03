@@ -13,9 +13,9 @@ import anylogger from 'anylogger';
 import { assert, details as X } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
-import { launch } from './launch-chain';
-import makeBlockManager from './block-manager';
-import { getMeterProvider } from './kernel-stats';
+import { launch } from './launch-chain.js';
+import makeBlockManager from './block-manager.js';
+import { getMeterProvider } from './kernel-stats.js';
 
 const console = anylogger('fake-chain');
 

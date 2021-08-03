@@ -18,16 +18,16 @@ import {
   checkNoNewOffers,
   checkPayouts,
   makeAutoswapInstance,
-} from './helpers';
+} from './helpers.js';
 
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
-import buildManualTimer from '../../../../tools/manualTimer';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 
-import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow';
-import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
-import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
-import { makeRatio } from '../../../../src/contractSupport';
-import { assertAmountsEqual } from '../../../zoeTestHelpers';
+import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
+import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
+import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
+import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 
 const BASIS_POINTS = 10000n;
 

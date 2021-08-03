@@ -4,8 +4,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-import { makeIssuerStorage } from '../../src/issuerStorage';
-import { makeIssuerRecord } from '../../src/issuerRecord';
+import { makeIssuerStorage } from '../../src/issuerStorage.js';
+import { makeIssuerRecord } from '../../src/issuerRecord.js';
 
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(

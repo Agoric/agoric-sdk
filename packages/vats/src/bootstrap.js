@@ -16,14 +16,14 @@ import { assert, details as X } from '@agoric/assert';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
-import { makeBridgeManager } from './bridge';
-import { makeNameHubKit } from './nameHub';
+import { makeBridgeManager } from './bridge.js';
+import { makeNameHubKit } from './nameHub.js';
 import {
   CENTRAL_ISSUER_NAME,
   fakeIssuerEntries,
   fromCosmosIssuerEntries,
   fromPegasusIssuerEntries,
-} from './issuers';
+} from './issuers.js';
 
 const NUM_IBC_PORTS = 3;
 const QUOTE_INTERVAL = 5 * 60;

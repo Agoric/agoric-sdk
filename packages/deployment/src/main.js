@@ -6,10 +6,10 @@ import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { assert, details as X } from '@agoric/assert';
 import { dirname, basename } from 'path';
-import { doInit } from './init';
-import { shellMetaRegexp, shellEscape } from './run';
-import { streamFromString } from './files';
-import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup';
+import { doInit } from './init.js';
+import { shellMetaRegexp, shellEscape } from './run.js';
+import { streamFromString } from './files.js';
+import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup.js';
 
 const PROVISION_DIR = 'provision';
 const COSMOS_DIR = 'ag-chain-cosmos';

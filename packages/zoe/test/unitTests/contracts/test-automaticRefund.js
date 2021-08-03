@@ -6,8 +6,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
 
 const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
 

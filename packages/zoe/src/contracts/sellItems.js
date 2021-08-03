@@ -10,7 +10,7 @@ import {
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
-} from '../contractSupport';
+} from '../contractSupport.js';
 
 import '../../exported';
 

@@ -9,10 +9,10 @@ import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 
-import { setup } from '../../setupBasicMints';
-import { setupZCFTest } from '../../zcf/setupZcfTest';
-import { makeRatio } from '../../../../src/contractSupport';
-import { assertAmountsEqual } from '../../../zoeTestHelpers';
+import { setup } from '../../setupBasicMints.js';
+import { setupZCFTest } from '../../zcf/setupZcfTest.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
+import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t

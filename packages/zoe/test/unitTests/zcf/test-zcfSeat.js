@@ -7,9 +7,9 @@ import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { setup } from '../setupBasicMints';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { setup } from '../setupBasicMints.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 import '../../../exported';
 

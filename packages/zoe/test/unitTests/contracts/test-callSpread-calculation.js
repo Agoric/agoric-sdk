@@ -4,13 +4,13 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import '../../../exported';
 
-import { setup } from '../setupBasicMints';
-import { calculateShares } from '../../../src/contracts/callSpread/calculateShares';
-import { multiplyBy } from '../../../src/contractSupport';
+import { setup } from '../setupBasicMints.js';
+import { calculateShares } from '../../../src/contracts/callSpread/calculateShares.js';
+import { multiplyBy } from '../../../src/contractSupport.js';
 import {
   make0Percent,
   make100Percent,
-} from '../../../src/contracts/callSpread/percent';
+} from '../../../src/contracts/callSpread/percent.js';
 
 function compareShareRatios(t, expected, actual, amount) {
   t.deepEqual(

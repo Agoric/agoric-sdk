@@ -4,9 +4,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { makePriceAuthority } from '../../../../src/contracts/multipoolAutoswap/priceAuthority';
-import { setup } from '../../setupBasicMints';
-import buildManualTimer from '../../../../tools/manualTimer';
+import { makePriceAuthority } from '../../../../src/contracts/multipoolAutoswap/priceAuthority.js';
+import { setup } from '../../setupBasicMints.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 
 test('multipoolAutoSwap PriceAuthority exception path', async t => {
   const { moolaR, simoleanR } = setup();

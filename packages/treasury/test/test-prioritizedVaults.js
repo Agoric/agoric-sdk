@@ -11,7 +11,7 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport';
-import { makePrioritizedVaults } from '../src/prioritizedVaults';
+import { makePrioritizedVaults } from '../src/prioritizedVaults.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to

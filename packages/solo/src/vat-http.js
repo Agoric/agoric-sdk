@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl';
-import { getCapTPHandler } from './captp';
+import { getCapTPHandler } from './captp.js';
 
 // This vat contains the HTTP request handler.
 export function buildRootObject(vatPowers) {

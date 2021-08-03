@@ -12,7 +12,7 @@ import bundleSource from '@agoric/bundle-source';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
-import { makeTracer } from '../src/makeTracer';
+import { makeTracer } from '../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault');

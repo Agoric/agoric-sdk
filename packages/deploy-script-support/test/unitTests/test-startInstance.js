@@ -10,7 +10,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import '../../exported';
 
 import { E } from '@agoric/eventual-send';
-import { makeStartInstance } from '../../src/startInstance';
+import { makeStartInstance } from '../../src/startInstance.js';
 
 test('startInstance', async t => {
   const MOOLA_BRAND_PETNAME = 'moola';

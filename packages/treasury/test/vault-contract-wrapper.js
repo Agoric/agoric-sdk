@@ -11,9 +11,9 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { Far } from '@agoric/marshal';
 
-import { makeVaultKit } from '../src/vault';
-import { paymentFromZCFMint } from '../src/burn';
-import { SECONDS_PER_YEAR } from '../src/interest';
+import { makeVaultKit } from '../src/vault.js';
+import { paymentFromZCFMint } from '../src/burn.js';
+import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const BASIS_POINTS = 10000n;
 

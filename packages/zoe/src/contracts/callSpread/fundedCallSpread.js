@@ -11,9 +11,9 @@ import {
   assertProposalShape,
   depositToSeat,
   assertNatAssetKind,
-} from '../../contractSupport';
-import { makePayoffHandler } from './payoffHandler';
-import { Position } from './position';
+} from '../../contractSupport.js';
+import { makePayoffHandler } from './payoffHandler.js';
+import { Position } from './position.js';
 
 /**
  * This contract implements a fully collateralized call spread. This is a

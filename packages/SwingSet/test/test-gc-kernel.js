@@ -1,21 +1,21 @@
 /* global __dirname */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import anylogger from 'anylogger';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 
-import buildKernel from '../src/kernel/index';
-import { initializeKernel } from '../src/kernel/initializeKernel';
+import buildKernel from '../src/kernel/index.js';
+import { initializeKernel } from '../src/kernel/initializeKernel.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
-} from '../src';
-import { provideHostStorage } from '../src/hostStorage';
+} from '../src.js';
+import { provideHostStorage } from '../src/hostStorage.js';
 import {
   makeMessage,
   makeResolutions,
@@ -24,7 +24,7 @@ import {
   makeRetireImports,
   capargs,
   capdataOneSlot,
-} from './util';
+} from './util.js';
 
 function makeConsole(tag) {
   const log = anylogger(tag);

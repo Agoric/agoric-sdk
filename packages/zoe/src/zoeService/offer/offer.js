@@ -1,7 +1,7 @@
 // @ts-check
 
-import { cleanProposal } from '../../cleanProposal';
-import { burnInvitation } from './burnInvitation';
+import { cleanProposal } from '../../cleanProposal.js';
+import { burnInvitation } from './burnInvitation.js';
 
 import '@agoric/ertp/exported';
 import '@agoric/store/exported';

@@ -7,9 +7,9 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
-import { assertAmountsEqual } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
 

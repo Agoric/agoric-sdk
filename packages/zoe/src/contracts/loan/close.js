@@ -5,7 +5,7 @@ import './types';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport.js';
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid

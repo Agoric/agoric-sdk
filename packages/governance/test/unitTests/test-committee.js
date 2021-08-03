@@ -11,7 +11,7 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 
-import { ChoiceMethod } from '../../src/ballotBuilder';
+import { ChoiceMethod } from '../../src/ballotBuilder.js';
 
 const registrarRoot = `${__dirname}/../../src/committeeRegistrar`;
 const counterRoot = `${__dirname}/../../src/binaryBallotCounter`;

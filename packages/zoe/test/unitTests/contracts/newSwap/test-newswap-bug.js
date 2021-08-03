@@ -6,11 +6,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
 
-import { makeZoe } from '../../../../src/zoeService/zoe';
-import buildManualTimer from '../../../../tools/manualTimer';
-import { makeRatio, multiplyBy } from '../../../../src/contractSupport';
+import { makeZoe } from '../../../../src/zoeService/zoe.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
+import { makeRatio, multiplyBy } from '../../../../src/contractSupport.js';
 
 const multipoolAutoswapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAutoswap.js`;
 

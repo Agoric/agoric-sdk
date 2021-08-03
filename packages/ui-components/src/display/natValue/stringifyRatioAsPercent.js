@@ -3,8 +3,8 @@
 import { assert, details } from '@agoric/assert';
 import '@agoric/zoe/exported';
 
-import { captureNum } from './helpers/captureNum';
-import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
+import { captureNum } from './helpers/captureNum.js';
+import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
 
 const PERCENT_BASE = 100n;
 const PLACES_TO_SHOW = 0;

@@ -5,13 +5,13 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
-import { makeOffer } from '../makeOffer';
+import { makeOffer } from '../makeOffer.js';
 
-import { setup } from '../setupBasicMints';
-import buildManualTimer from '../../../tools/manualTimer';
+import { setup } from '../setupBasicMints.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
-import { setupZCFTest } from './setupZcfTest';
-import { assertAmountsEqual } from '../../zoeTestHelpers';
+import { setupZCFTest } from './setupZcfTest.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();

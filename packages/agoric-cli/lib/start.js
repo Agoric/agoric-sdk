@@ -9,9 +9,9 @@ import {
   finishTendermintConfig,
   finishCosmosGenesis,
   finishCosmosApp,
-} from './chain-config';
+} from './chain-config.js';
 
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},50000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;

@@ -2,13 +2,13 @@
 import { Command } from 'commander';
 
 import { assert, details as X } from '@agoric/assert';
-import cosmosMain from './cosmos';
-import deployMain from './deploy';
-import initMain from './init';
-import installMain from './install';
-import setDefaultsMain from './set-defaults';
-import startMain from './start';
-import walletMain from './open';
+import cosmosMain from './cosmos.js';
+import deployMain from './deploy.js';
+import initMain from './init.js';
+import installMain from './install.js';
+import setDefaultsMain from './set-defaults.js';
+import startMain from './start.js';
+import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';

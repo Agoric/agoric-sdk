@@ -6,12 +6,12 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import '../../../exported';
-import { setupAttestation as setupExpiringAttestation } from './expiring/expiringNFT';
-import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT';
-import { makeStoredTime } from './storedTime';
-import { max } from './helpers';
-import { assertPrerequisites } from './prerequisites';
-import { makeGetAttMaker } from './attMaker';
+import { setupAttestation as setupExpiringAttestation } from './expiring/expiringNFT.js';
+import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';
+import { makeStoredTime } from './storedTime.js';
+import { max } from './helpers.js';
+import { assertPrerequisites } from './prerequisites.js';
+import { makeGetAttMaker } from './attMaker.js';
 
 const { details: X } = assert;
 

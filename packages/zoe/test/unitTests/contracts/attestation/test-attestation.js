@@ -10,8 +10,8 @@ import { Far } from '@agoric/marshal';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoe } from '../../../../src/zoeService/zoe';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
 
 const attestationRoot = `${__dirname}/../../../../src/contracts/attestation/attestation`;
 

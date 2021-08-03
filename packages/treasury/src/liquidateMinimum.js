@@ -6,8 +6,8 @@ import { assert, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { makeDefaultLiquidationStrategy } from './liquidation';
-import { makeTracer } from './makeTracer';
+import { makeDefaultLiquidationStrategy } from './liquidation.js';
+import { makeTracer } from './makeTracer.js';
 
 // TODO(hibbert): export from autoswap
 const AutoswapInsufficientMsg = / is insufficient to buy amountOut /;

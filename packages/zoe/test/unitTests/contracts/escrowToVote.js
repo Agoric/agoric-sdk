@@ -9,7 +9,7 @@ import {
   assertIssuerKeywords,
   assertProposalShape,
   assertNatAssetKind,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport.js';
 
 import '../../../exported';
 

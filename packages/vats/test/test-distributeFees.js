@@ -9,7 +9,7 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers';
 import { E } from '@agoric/eventual-send';
-import { buildDistributor } from '../src/distributeFees';
+import { buildDistributor } from '../src/distributeFees.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to

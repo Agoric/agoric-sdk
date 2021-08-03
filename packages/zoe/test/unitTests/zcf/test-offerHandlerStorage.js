@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeOfferHandlerStorage } from '../../../src/contractFacet/offerHandlerStorage';
+import { makeOfferHandlerStorage } from '../../../src/contractFacet/offerHandlerStorage.js';
 
 test('offerHandlerStorage', async t => {
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();

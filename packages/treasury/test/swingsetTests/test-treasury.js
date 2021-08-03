@@ -13,9 +13,9 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import liquidateBundle from '../../bundles/bundle-liquidateMinimum';
-import autoswapBundle from '../../bundles/bundle-multipoolAutoswap';
-import stablecoinBundle from '../../bundles/bundle-stablecoinMachine';
+import liquidateBundle from '../../bundles/bundle-liquidateMinimum.js';
+import autoswapBundle from '../../bundles/bundle-multipoolAutoswap.js';
+import stablecoinBundle from '../../bundles/bundle-stablecoinMachine.js';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;

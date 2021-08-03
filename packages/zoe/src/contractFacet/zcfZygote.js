@@ -7,16 +7,16 @@ import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { cleanProposal } from '../cleanProposal';
-import { evalContractBundle } from './evalContractCode';
-import { makeExitObj } from './exit';
-import { makeHandle } from '../makeHandle';
-import { makeIssuerStorage } from '../issuerStorage';
-import { makeIssuerRecord } from '../issuerRecord';
-import { createSeatManager } from './zcfSeat';
-import { makeInstanceRecordStorage } from '../instanceRecordStorage';
-import { handlePWarning, handlePKitWarning } from '../handleWarning';
-import { makeOfferHandlerStorage } from './offerHandlerStorage';
+import { cleanProposal } from '../cleanProposal.js';
+import { evalContractBundle } from './evalContractCode.js';
+import { makeExitObj } from './exit.js';
+import { makeHandle } from '../makeHandle.js';
+import { makeIssuerStorage } from '../issuerStorage.js';
+import { makeIssuerRecord } from '../issuerRecord.js';
+import { createSeatManager } from './zcfSeat.js';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
+import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
+import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
 
 import '../../exported';
 import '../internal-types';

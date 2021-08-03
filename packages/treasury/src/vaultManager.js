@@ -15,10 +15,10 @@ import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { makeVaultKit } from './vault';
-import { makePrioritizedVaults } from './prioritizedVaults';
-import { liquidate } from './liquidation';
-import { makeTracer } from './makeTracer';
+import { makeVaultKit } from './vault.js';
+import { makePrioritizedVaults } from './prioritizedVaults.js';
+import { liquidate } from './liquidation.js';
+import { makeTracer } from './makeTracer.js';
 
 const { details: X } = assert;
 

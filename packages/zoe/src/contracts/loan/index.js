@@ -5,8 +5,8 @@ import '../../../exported';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 
-import { assertIssuerKeywords, makeRatio } from '../../contractSupport';
-import { makeLendInvitation } from './lend';
+import { assertIssuerKeywords, makeRatio } from '../../contractSupport.js';
+import { makeLendInvitation } from './lend.js';
 
 /**
  * Add collateral of a particular brand and get a loan of another

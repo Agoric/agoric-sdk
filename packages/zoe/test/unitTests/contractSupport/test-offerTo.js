@@ -6,15 +6,15 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints.js';
 import { makeZoe } from '../../..';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import {
   offerTo,
   assertProposalShape,
   swapExact,
-} from '../../../src/contractSupport/zoeHelpers';
-import { makeOffer } from '../makeOffer';
+} from '../../../src/contractSupport/zoeHelpers.js';
+import { makeOffer } from '../makeOffer.js';
 
 const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
 

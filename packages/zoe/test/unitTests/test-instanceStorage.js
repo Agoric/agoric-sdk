@@ -9,8 +9,8 @@ import bundleSource from '@agoric/bundle-source';
 import {
   makeAndStoreInstanceRecord,
   makeInstanceRecordStorage,
-} from '../../src/instanceRecordStorage';
-import { makeIssuerRecord } from '../../src/issuerRecord';
+} from '../../src/instanceRecordStorage.js';
+import { makeIssuerRecord } from '../../src/issuerRecord.js';
 
 const root = `${__dirname}/bounty`;
 

@@ -2,9 +2,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { assertAmountsEqual } from '../zoeTestHelpers';
-import { setup } from './setupBasicMints';
-import { setupNonFungible } from './setupNonFungibleMints';
+import { assertAmountsEqual } from '../zoeTestHelpers.js';
+import { setup } from './setupBasicMints.js';
+import { setupNonFungible } from './setupNonFungibleMints.js';
 
 function makeFakeT() {
   let error;

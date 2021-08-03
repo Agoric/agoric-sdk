@@ -7,16 +7,16 @@ import '../../../../exported';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral';
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
-import buildManualTimer from '../../../../tools/manualTimer';
+import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 
 import {
   setupLoanUnitTest,
   makeSeatKit,
   performAddCollateral,
-} from './helpers';
-import { makeRatio } from '../../../../src/contractSupport';
+} from './helpers.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
 
 test.todo('makeAddCollateralInvitation - test bad proposal');
 

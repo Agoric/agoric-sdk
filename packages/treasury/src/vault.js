@@ -15,8 +15,8 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { makeTracer } from './makeTracer';
-import { makeInterestCalculator } from './interest';
+import { makeTracer } from './makeTracer.js';
+import { makeInterestCalculator } from './interest.js';
 
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower

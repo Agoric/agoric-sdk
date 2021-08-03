@@ -11,12 +11,12 @@ import {
   priceFromTargetOutput,
   scaleForAddLiquidity,
   updatePoolState,
-} from '../../autoswapJig';
+} from '../../autoswapJig.js';
 import '../../../exported';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
 const autoswap = `${__dirname}/../../../src/contracts/autoswap`;
 

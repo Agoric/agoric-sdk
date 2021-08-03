@@ -10,7 +10,7 @@ import {
   buildVatController,
   loadSwingsetConfigFile,
   buildKernelBundles,
-} from '../../../src/index';
+} from '../../../src/index.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

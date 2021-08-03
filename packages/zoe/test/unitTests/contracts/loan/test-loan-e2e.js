@@ -11,11 +11,11 @@ import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 import { makeNotifierKit } from '@agoric/notifier';
 
-import { checkDetails, checkPayout } from './helpers';
-import { setup } from '../../setupBasicMints';
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
-import buildManualTimer from '../../../../tools/manualTimer';
-import { makeRatio } from '../../../../src/contractSupport';
+import { checkDetails, checkPayout } from './helpers.js';
+import { setup } from '../../setupBasicMints.js';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
 
 const loanRoot = `${__dirname}/../../../../src/contracts/loan/`;
 const autoswapRoot = `${__dirname}/../../../../src/contracts/autoswap`;

@@ -7,27 +7,27 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { assert, q } from '@agoric/assert';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../../src/zoeService/zoe';
-import { setup } from '../../setupBasicMints';
+import { makeZoe } from '../../../../src/zoeService/zoe.js';
+import { setup } from '../../setupBasicMints.js';
 import {
   makeTrader,
   updatePoolState,
   priceFromTargetOutput,
   outputFromInputPrice,
-} from '../../../autoswapJig';
-import buildManualTimer from '../../../../tools/manualTimer';
+} from '../../../autoswapJig.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 import {
   getAmountOut,
   multiplyBy,
   makeRatio,
-} from '../../../../src/contractSupport';
+} from '../../../../src/contractSupport.js';
 import {
   assertAmountsEqual,
   assertPayoutAmount,
-} from '../../../zoeTestHelpers';
+} from '../../../zoeTestHelpers.js';
 
 const newSwapRoot = `${__dirname}/../../../../src/contracts/newSwap/multipoolAutoswap`;
 

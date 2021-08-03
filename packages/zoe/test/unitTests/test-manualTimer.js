@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import buildManualTimer from '../../tools/manualTimer';
+import buildManualTimer from '../../tools/manualTimer.js';
 
 test('manualTimer makeNotifier', async t => {
   const manualTimer = buildManualTimer(console.log, 0n);

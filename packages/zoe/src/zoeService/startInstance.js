@@ -6,9 +6,9 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { Far, passStyleOf } from '@agoric/marshal';
 
-import { makeZoeSeatAdminKit } from './zoeSeat';
-import { makeHandle } from '../makeHandle';
-import { handlePKitWarning } from '../handleWarning';
+import { makeZoeSeatAdminKit } from './zoeSeat.js';
+import { makeHandle } from '../makeHandle.js';
+import { handlePKitWarning } from '../handleWarning.js';
 
 /**
  * @param {Promise<ZoeService>} zoeServicePromise

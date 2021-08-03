@@ -9,10 +9,10 @@ import { Far } from '@agoric/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 
-import buildManualTimer from '../../../tools/manualTimer';
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
-import { assertAmountsEqual } from '../../zoeTestHelpers';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
 const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;

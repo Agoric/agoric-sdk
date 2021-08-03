@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { arrayToObj } from '../../src/objArrayConversion';
+import { arrayToObj } from '../../src/objArrayConversion.js';
 
 test('arrayToObj', t => {
   t.plan(3);

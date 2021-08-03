@@ -4,8 +4,8 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import { natSafeMath } from '../src/contractSupport';
-import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers';
+import { natSafeMath } from '../src/contractSupport.js';
+import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers.js';
 
 const { add, subtract, multiply, floorDivide } = natSafeMath;
 

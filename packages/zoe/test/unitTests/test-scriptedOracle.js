@@ -8,15 +8,15 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoe } from '../..';
 
 import '../../exported';
 import '../../src/contracts/exported';
-import buildManualTimer from '../../tools/manualTimer';
-import { setup } from './setupBasicMints';
-import { assertPayoutAmount } from '../zoeTestHelpers';
-import { makeScriptedOracle } from '../../tools/scriptedOracle';
+import buildManualTimer from '../../tools/manualTimer.js';
+import { setup } from './setupBasicMints.js';
+import { assertPayoutAmount } from '../zoeTestHelpers.js';
+import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
 
 // This test shows how to set up a fake oracle and use it in a contract.
 

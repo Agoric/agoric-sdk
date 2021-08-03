@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { AssetKind } from '@agoric/ertp';
-import { satisfiesWant } from '../contractFacet/offerSafety';
+import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 

@@ -4,7 +4,7 @@ import '../../../exported';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { depositToSeat } from '../../../src/contractSupport';
+import { depositToSeat } from '../../../src/contractSupport.js';
 
 /**
  * This is a a broken contact to test that

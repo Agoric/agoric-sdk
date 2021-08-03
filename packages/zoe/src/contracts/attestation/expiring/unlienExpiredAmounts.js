@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { hasExpired } from './expiringHelpers';
+import { hasExpired } from './expiringHelpers.js';
 
 /**
  * Look at the amounts liened and their expiration and unlien anything

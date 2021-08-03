@@ -5,8 +5,8 @@ import '../../../exported';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import { liquidate } from './liquidate';
-import { getAmountIn, multiplyBy } from '../../contractSupport';
+import { liquidate } from './liquidate.js';
+import { getAmountIn, multiplyBy } from '../../contractSupport.js';
 
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {

@@ -9,12 +9,12 @@ import { assert } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 // Start a network service
-import addChain from './add-chain';
-import initBasedir from './init-basedir';
-import resetState from './reset-state';
-import setGCIIngress from './set-gci-ingress';
-import setFakeChain from './set-fake-chain';
-import start from './start';
+import addChain from './add-chain.js';
+import initBasedir from './init-basedir.js';
+import resetState from './reset-state.js';
+import setGCIIngress from './set-gci-ingress.js';
+import setFakeChain from './set-fake-chain.js';
+import start from './start.js';
 
 const log = anylogger('ag-solo');
 

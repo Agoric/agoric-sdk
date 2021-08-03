@@ -3,9 +3,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { extendExpiration } from '../../../../../src/contracts/attestation/expiring/extendExpiration';
-import { makeAttestationElem } from '../../../../../src/contracts/attestation/expiring/expiringHelpers';
-import { makeHandle } from '../../../../../src/makeHandle';
+import { extendExpiration } from '../../../../../src/contracts/attestation/expiring/extendExpiration.js';
+import { makeAttestationElem } from '../../../../../src/contracts/attestation/expiring/expiringHelpers.js';
+import { makeHandle } from '../../../../../src/makeHandle.js';
 
 const doTest = (
   t,

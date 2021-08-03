@@ -8,7 +8,7 @@ import { AmountMath } from '@agoric/ertp';
 import {
   assertIssuerKeywords,
   assertProposalShape,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport.js';
 
 /**
  * Give a use object when a payment is escrowed

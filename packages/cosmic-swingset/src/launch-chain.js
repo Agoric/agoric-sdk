@@ -17,7 +17,7 @@ import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
   makeSlogCallbacks,
-} from './kernel-stats';
+} from './kernel-stats.js';
 
 const console = anylogger('launch-chain');
 

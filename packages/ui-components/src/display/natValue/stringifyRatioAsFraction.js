@@ -6,7 +6,7 @@ import { isNatValue } from '@agoric/ertp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/exported';
 
-import { stringifyNat } from './stringifyNat';
+import { stringifyNat } from './stringifyNat.js';
 
 const PLACES_TO_SHOW = 2;
 

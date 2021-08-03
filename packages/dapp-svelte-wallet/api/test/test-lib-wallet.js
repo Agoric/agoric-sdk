@@ -16,7 +16,7 @@ import { makeBoard } from '@agoric/vats/src/lib-board';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub';
 import { Far } from '@agoric/marshal';
-import { makeWallet } from '../src/lib-wallet';
+import { makeWallet } from '../src/lib-wallet.js';
 
 import '../src/types';
 

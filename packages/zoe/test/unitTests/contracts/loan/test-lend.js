@@ -6,10 +6,10 @@ import '../../../../exported';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import { setupLoanUnitTest, checkDescription } from './helpers';
+import { setupLoanUnitTest, checkDescription } from './helpers.js';
 
-import { makeLendInvitation } from '../../../../src/contracts/loan/lend';
-import { makeRatio } from '../../../../src/contractSupport';
+import { makeLendInvitation } from '../../../../src/contracts/loan/lend.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
 
 test('makeLendInvitation', async t => {
   const { zcf, zoe, loanKit } = await setupLoanUnitTest();

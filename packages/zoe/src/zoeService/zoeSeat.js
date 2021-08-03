@@ -6,7 +6,7 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { handlePKitWarning } from '../handleWarning';
+import { handlePKitWarning } from '../handleWarning.js';
 
 import '../types';
 import '../internal-types';

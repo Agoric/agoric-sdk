@@ -7,7 +7,7 @@ import {
   offerTo,
   saveAllIssuers,
   assertProposalShape,
-} from '../contractSupport';
+} from '../contractSupport.js';
 
 import '../../exported';
 

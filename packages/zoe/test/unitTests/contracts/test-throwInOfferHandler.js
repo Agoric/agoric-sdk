@@ -6,8 +6,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '../../../src/zoeService/zoe';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 const contractRoot = `${__dirname}/throwInOfferHandler`;
 

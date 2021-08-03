@@ -14,7 +14,7 @@ import os from 'os';
 import './anylogger-agoric';
 import anylogger from 'anylogger';
 
-import main from './main';
+import main from './main.js';
 
 const fs = rawFs.promises;
 const log = anylogger('agoric');

@@ -5,7 +5,7 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import '../../exported';
 
-import { makeOfferAndFindInvitationAmount } from '../../src/offer';
+import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('findInvitationAmount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('invitations', AssetKind.SET);

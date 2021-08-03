@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
-import { AssetKind, makeIssuerKit, AmountMath } from '../../src';
+import { AssetKind, makeIssuerKit, AmountMath } from '../../src.js';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {
   const { issuer, brand } = makeIssuerKit('fungible');

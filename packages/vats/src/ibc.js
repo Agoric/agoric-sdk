@@ -13,7 +13,7 @@ import { Far } from '@agoric/marshal';
 import '@agoric/store/exported';
 import '@agoric/swingset-vat/src/vats/network/types';
 
-import { makeWithQueue } from './queue';
+import { makeWithQueue } from './queue.js';
 
 const DEFAULT_PACKET_TIMEOUT = 1000;
 

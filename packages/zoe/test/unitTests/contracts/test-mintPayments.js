@@ -6,10 +6,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
 
 const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
 

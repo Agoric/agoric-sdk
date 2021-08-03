@@ -19,8 +19,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers';
-import { makeTracer } from '../src/makeTracer';
-import { SECONDS_PER_YEAR } from '../src/interest';
+import { makeTracer } from '../src/makeTracer.js';
+import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';

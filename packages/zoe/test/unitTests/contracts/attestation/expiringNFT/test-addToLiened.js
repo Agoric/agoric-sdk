@@ -5,8 +5,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { makeStore } from '@agoric/store';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
-import { addToLiened } from '../../../../../src/contracts/attestation/expiring/expiringHelpers';
-import { makeHandle } from '../../../../../src/makeHandle';
+import { addToLiened } from '../../../../../src/contracts/attestation/expiring/expiringHelpers.js';
+import { makeHandle } from '../../../../../src/makeHandle.js';
 
 test('add for same address', async t => {
   /** @type {Store<Address,Array<ExpiringAttElem>>} */

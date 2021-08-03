@@ -9,8 +9,8 @@ import bundleSource from '@agoric/bundle-source';
 
 import '../../exported';
 
-import { makeInstall } from '../../src/install';
-import { makeResolvePaths } from '../../src/resolvePath';
+import { makeInstall } from '../../src/install.js';
+import { makeResolvePaths } from '../../src/resolvePath.js';
 
 test('install', async t => {
   const { resolvePathForPackagedContract } = makeResolvePaths(

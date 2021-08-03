@@ -5,13 +5,13 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { assertIssuerKeywords, checkZCF } from '../../contractSupport';
-import { makeAddPool } from './pool';
-import { makeGetCurrentPrice } from './getCurrentPrice';
-import { makeMakeSwapInvitation } from './swap';
-import { makeMakeAddLiquidityInvitation } from './addLiquidity';
-import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity';
-import { assertConstantProduct } from './constantProduct';
+import { assertIssuerKeywords, checkZCF } from '../../contractSupport.js';
+import { makeAddPool } from './pool.js';
+import { makeGetCurrentPrice } from './getCurrentPrice.js';
+import { makeMakeSwapInvitation } from './swap.js';
+import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
+import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
+import { assertConstantProduct } from './constantProduct.js';
 
 import '../../../exported';
 

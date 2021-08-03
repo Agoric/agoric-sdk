@@ -3,8 +3,8 @@ import { assert, details } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import '@agoric/ertp/exported';
 
-import { captureNum } from './helpers/captureNum';
-import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
+import { captureNum } from './helpers/captureNum.js';
+import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
 
 /**
  * Parse a string as a Nat, using `decimalPlaces`, the number of

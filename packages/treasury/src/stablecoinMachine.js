@@ -33,10 +33,10 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio';
 import { AmountMath } from '@agoric/ertp';
-import { makeTracer } from './makeTracer';
-import { makeVaultManager } from './vaultManager';
-import { makeLiquidationStrategy } from './liquidateMinimum';
-import { makeMakeCollectFeesInvitation } from './collectRewardFees';
+import { makeTracer } from './makeTracer.js';
+import { makeVaultManager } from './vaultManager.js';
+import { makeLiquidationStrategy } from './liquidateMinimum.js';
+import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 
 const trace = makeTracer('ST');
 

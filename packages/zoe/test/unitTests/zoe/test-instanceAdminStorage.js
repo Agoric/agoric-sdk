@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
 
-import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage';
+import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';
 
 test('makeInstanceAdminStorage', async t => {
   const {

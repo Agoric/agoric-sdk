@@ -5,7 +5,7 @@ import {
   assertIssuerKeywords,
   swap,
   assertProposalShape,
-} from '../contractSupport';
+} from '../contractSupport.js';
 
 import '../../exported';
 

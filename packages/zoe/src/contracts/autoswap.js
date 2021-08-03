@@ -13,7 +13,7 @@ import {
   assertProposalShape,
   assertNatAssetKind,
   calcSecondaryRequired,
-} from '../contractSupport';
+} from '../contractSupport.js';
 
 import '../../exported';
 

@@ -8,11 +8,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import buildManualTimer from '../../../tools/manualTimer';
-import { setup } from '../setupBasicMints';
-import { setupMixed } from '../setupMixedMints';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { setup } from '../setupBasicMints.js';
+import { setupMixed } from '../setupMixedMints.js';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 const secondPriceAuctionRoot = `${__dirname}/../../../src/contracts/auction/secondPriceAuction`;
 

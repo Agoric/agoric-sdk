@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
-import crashingAutoRefund from './bundle-crashingAutoRefund';
+import crashingAutoRefund from './bundle-crashingAutoRefund.js';
 /* eslint-enable import/extensions, import/no-unresolved */
 
 const setupBasicMints = () => {

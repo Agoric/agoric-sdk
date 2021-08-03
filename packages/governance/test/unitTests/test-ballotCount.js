@@ -5,7 +5,7 @@ import '@agoric/zoe/exported';
 import { E } from '@agoric/eventual-send';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter';
+import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter.js';
 
 const QUESTION = 'Fish or cut bait?';
 const FISH = 'Fish';

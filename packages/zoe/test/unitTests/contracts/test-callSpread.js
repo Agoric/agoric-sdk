@@ -5,12 +5,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
 import { E } from '@agoric/eventual-send';
 import '../../../exported';
-import buildManualTimer from '../../../tools/manualTimer';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
-import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
 const fundedCallSpread = `${__dirname}/../../../src/contracts/callSpread/fundedCallSpread`;
 const pricedCallSpread = `${__dirname}/../../../src/contracts/callSpread/pricedCallSpread`;

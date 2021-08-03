@@ -7,7 +7,7 @@ import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../src/contractSupport';
+} from '../src/contractSupport.js';
 
 export function makeScriptedPriceAuthority(options) {
   const {

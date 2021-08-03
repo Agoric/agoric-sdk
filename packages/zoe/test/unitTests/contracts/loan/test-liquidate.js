@@ -5,14 +5,14 @@ import '../../../../exported';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { doLiquidation } from '../../../../src/contracts/loan/liquidate';
+import { doLiquidation } from '../../../../src/contracts/loan/liquidate.js';
 
 import {
   setupLoanUnitTest,
   makeSeatKit,
   checkNoNewOffers,
   checkPayouts,
-} from './helpers';
+} from './helpers.js';
 
 test('test doLiquidation with mocked autoswap', async t => {
   const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();

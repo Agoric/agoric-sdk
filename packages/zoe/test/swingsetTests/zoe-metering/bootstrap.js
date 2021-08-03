@@ -1,10 +1,10 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 /* eslint-disable import/extensions, import/no-unresolved */
-import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop';
-import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop';
-import infiniteTestLoopBundle from './bundle-infiniteTestLoop';
-import testBuiltinsBundle from './bundle-testBuiltins';
+import infiniteInstallLoopBundle from './bundle-infiniteInstallLoop.js';
+import infiniteInstanceLoopBundle from './bundle-infiniteInstanceLoop.js';
+import infiniteTestLoopBundle from './bundle-infiniteTestLoop.js';
+import testBuiltinsBundle from './bundle-testBuiltins.js';
 /* eslint-enable import/extensions, import/no-unresolved */
 
 export function buildRootObject(vatPowers, vatParameters) {

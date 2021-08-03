@@ -2,7 +2,7 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 
-import { makeResolvePaths } from '../../src/resolvePath';
+import { makeResolvePaths } from '../../src/resolvePath.js';
 
 test('resolvePathForLocalContract', async t => {
   const { resolvePathForLocalContract } = makeResolvePaths(

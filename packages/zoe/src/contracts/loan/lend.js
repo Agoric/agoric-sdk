@@ -2,8 +2,8 @@
 
 import '../../../exported';
 
-import { assertProposalShape } from '../../contractSupport';
-import { makeBorrowInvitation } from './borrow';
+import { assertProposalShape } from '../../contractSupport.js';
+import { makeBorrowInvitation } from './borrow.js';
 
 // The lender puts up the amount to be loaned to the borrower, but has
 // no further actions. The loan is ongoing until it is paid back

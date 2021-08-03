@@ -10,8 +10,8 @@ import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
-import { makeZoe } from '../../../src/zoeService/zoe';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
 
 import '../../../exported';
 import '../../../src/contracts/exported';

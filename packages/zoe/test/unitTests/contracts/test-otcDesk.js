@@ -8,9 +8,9 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setup } from '../setupBasicMints';
-import buildManualTimer from '../../../tools/manualTimer';
-import { assertPayoutAmount } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 
 const root = `${__dirname}/../../../src/contracts/otcDesk`;
 

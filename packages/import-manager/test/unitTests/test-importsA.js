@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
-import { makeGoodImportManager } from './goodImports';
+import { makeGoodImportManager } from './goodImports.js';
 
 test('import num is not empty', t => {
   const importer = makeGoodImportManager();

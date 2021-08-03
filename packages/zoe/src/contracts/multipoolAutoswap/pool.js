@@ -12,10 +12,10 @@ import {
   calcLiqValueToMint,
   calcValueToRemove,
   calcSecondaryRequired,
-} from '../../contractSupport';
+} from '../../contractSupport.js';
 
 import '../../../exported';
-import { makePriceAuthority } from './priceAuthority';
+import { makePriceAuthority } from './priceAuthority.js';
 
 const POOL_FEE = 30n;
 /**

@@ -5,8 +5,8 @@ import './types';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
-import { makeRatio, oneMinus } from '../../contractSupport';
-import { make100Percent, make0Percent } from './percent';
+import { makeRatio, oneMinus } from '../../contractSupport.js';
+import { make100Percent, make0Percent } from './percent.js';
 
 /**
  * Calculate the portion (as a Ratio) of the collateral that should be

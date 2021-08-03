@@ -2,7 +2,7 @@
 
 // some tools to make treating ratios as percents easier
 
-import { makeRatio } from '../../contractSupport';
+import { makeRatio } from '../../contractSupport.js';
 
 const BASIS_POINTS = 10000n;
 

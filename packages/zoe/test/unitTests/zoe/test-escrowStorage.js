@@ -5,8 +5,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
-import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage';
-import { assertAmountsEqual, assertPayoutAmount } from '../../zoeTestHelpers';
+import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
+import { assertAmountsEqual, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
 test('makeEscrowStorage', async t => {
   const {

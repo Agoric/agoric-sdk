@@ -6,8 +6,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 
 import { E } from '@agoric/eventual-send';
-import { ChoiceMethod, buildBallot } from './ballotBuilder';
-import { scheduleClose } from './closingRule';
+import { ChoiceMethod, buildBallot } from './ballotBuilder.js';
+import { scheduleClose } from './closingRule.js';
 
 const makeWeightedBallot = (ballot, shares) => ({ ballot, shares });
 

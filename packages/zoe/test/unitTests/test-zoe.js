@@ -10,8 +10,8 @@ import { passStyleOf } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-import { setupZCFTest } from './zcf/setupZcfTest';
-import { setup } from './setupBasicMints';
+import { setupZCFTest } from './zcf/setupZcfTest.js';
+import { setup } from './setupBasicMints.js';
 
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();

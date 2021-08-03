@@ -5,7 +5,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 import { E } from '@agoric/eventual-send';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeVirtualPurse } from '../src/virtual-purse';
+import { makeVirtualPurse } from '../src/virtual-purse.js';
 
 const setup = (t, escrowValue = 0n) => {
   const kit = makeIssuerKit('fungible');

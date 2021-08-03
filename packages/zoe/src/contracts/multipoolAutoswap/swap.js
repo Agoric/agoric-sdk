@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport.js';
 
 import '../../../exported';
 

@@ -3,13 +3,13 @@
 import '@agoric/zoe/exported';
 import { E } from '@agoric/eventual-send';
 
-import { makeInstall } from './install';
-import { makeResolvePaths } from './resolvePath';
-import { makeOfferAndFindInvitationAmount } from './offer';
-import { makeStartInstance } from './startInstance';
-import { makeDepositInvitation } from './depositInvitation';
-import { makeSaveIssuer } from './saveIssuer';
-import { assertOfferResult } from './assertOfferResult';
+import { makeInstall } from './install.js';
+import { makeResolvePaths } from './resolvePath.js';
+import { makeOfferAndFindInvitationAmount } from './offer.js';
+import { makeStartInstance } from './startInstance.js';
+import { makeDepositInvitation } from './depositInvitation.js';
+import { makeSaveIssuer } from './saveIssuer.js';
+import { assertOfferResult } from './assertOfferResult.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding

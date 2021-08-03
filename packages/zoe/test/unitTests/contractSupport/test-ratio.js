@@ -14,7 +14,7 @@ import {
   oneMinus,
   multiplyRatios,
   addRatios,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport.js';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;

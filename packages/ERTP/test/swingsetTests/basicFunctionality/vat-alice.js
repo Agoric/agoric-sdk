@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { AmountMath } from '../../../src';
+import { AmountMath } from '../../../src.js';
 
 function makeAliceMaker(log) {
   return Far('aliceMaker', {

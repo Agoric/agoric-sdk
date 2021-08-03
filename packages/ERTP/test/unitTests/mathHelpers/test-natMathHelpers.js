@@ -3,8 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
 
 import { Far } from '@agoric/marshal';
-import { AmountMath as m, AssetKind } from '../../../src';
-import { mockBrand } from './mockBrand';
+import { AmountMath as m, AssetKind } from '../../../src.js';
+import { mockBrand } from './mockBrand.js';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled

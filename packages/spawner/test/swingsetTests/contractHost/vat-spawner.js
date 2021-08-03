@@ -1,6 +1,6 @@
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 import { Far } from '@agoric/marshal';
-import { makeSpawner } from '../../../src/contractHost';
+import { makeSpawner } from '../../../src/contractHost.js';
 
 function buildRootObject() {
   return Far('root', {

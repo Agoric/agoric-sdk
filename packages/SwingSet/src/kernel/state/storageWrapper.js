@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { insistStorageAPI } from '../../storageAPI';
+import { insistStorageAPI } from '../../storageAPI.js';
 
 // We manage a host-realm Storage object with a has/getKeys/get/set/del API.
 // We must protect against cross-realm contamination, and add some

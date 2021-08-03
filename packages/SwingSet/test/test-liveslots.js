@@ -1,6 +1,6 @@
 /* global WeakRef */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
@@ -21,7 +21,7 @@ import {
   makeDropExports,
   makeRetireExports,
   makeRetireImports,
-} from './util';
+} from './util.js';
 
 test('calls', async t => {
   const { log, syscall } = buildSyscall();

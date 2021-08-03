@@ -8,12 +8,12 @@ import {
   isOnDemandExitRule,
   isWaivedExitRule,
   isAfterDeadlineExitRule,
-} from './typeGuards';
+} from './typeGuards.js';
 
 import '../exported';
 import './internal-types';
 
-import { arrayToObj, assertSubset } from './objArrayConversion';
+import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 

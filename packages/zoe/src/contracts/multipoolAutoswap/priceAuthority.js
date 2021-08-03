@@ -5,7 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
 
-import { makeOnewayPriceAuthorityKit } from '../../contractSupport';
+import { makeOnewayPriceAuthorityKit } from '../../contractSupport.js';
 
 export const makePriceAuthority = (
   getOutputForGivenInput,

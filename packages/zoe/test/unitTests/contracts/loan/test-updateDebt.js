@@ -3,9 +3,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '../../../../exported';
 
-import { calculateInterest } from '../../../../src/contracts/loan/updateDebt';
-import { makeRatio } from '../../../../src/contractSupport';
-import { setup } from '../../setupBasicMints';
+import { calculateInterest } from '../../../../src/contracts/loan/updateDebt.js';
+import { makeRatio } from '../../../../src/contractSupport.js';
+import { setup } from '../../setupBasicMints.js';
 
 test('test calculateInterest', async t => {
   const { brands } = setup();

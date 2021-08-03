@@ -4,9 +4,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import { Far } from '@agoric/marshal';
 
 import makeStore from '@agoric/store';
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints.js';
 
-import { defaultAcceptanceMsg, satisfies } from '../../../src/contractSupport';
+import { defaultAcceptanceMsg, satisfies } from '../../../src/contractSupport.js';
 
 test('ZoeHelpers messages', t => {
   t.is(

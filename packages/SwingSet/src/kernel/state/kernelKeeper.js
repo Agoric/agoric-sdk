@@ -1,23 +1,23 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { initializeVatState, makeVatKeeper } from './vatKeeper';
-import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper';
-import { parseReachableAndVatSlot } from './reachable';
-import { insistEnhancedStorageAPI } from '../../storageAPI';
+import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
+import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
+import { parseReachableAndVatSlot } from './reachable.js';
+import { insistEnhancedStorageAPI } from '../../storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
   parseKernelSlot,
-} from '../parseKernelSlots';
-import { insistCapData } from '../../capdata';
-import { insistMessage } from '../../message';
+} from '../parseKernelSlots.js';
+import { insistCapData } from '../../capdata.js';
+import { insistMessage } from '../../message.js';
 import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id';
-import { kdebug } from '../kdebug';
+import { kdebug } from '../kdebug.js';
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
-} from '../metrics';
+} from '../metrics.js';
 
 const enableKernelGC = true;
 

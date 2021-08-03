@@ -2,7 +2,7 @@
 // @ts-check
 
 // eslint-disable-next-line import/order
-import { test } from '../../tools/prepare-test-env-ava';
+import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import tmp from 'tmp';
 import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';

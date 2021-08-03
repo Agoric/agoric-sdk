@@ -7,9 +7,9 @@ import {
 
 import { assert, details as X } from '@agoric/assert';
 
-import { launch } from './launch-chain';
-import makeBlockManager from './block-manager';
-import { getMeterProvider } from './kernel-stats';
+import { launch } from './launch-chain.js';
+import makeBlockManager from './block-manager.js';
+import { getMeterProvider } from './kernel-stats.js';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 

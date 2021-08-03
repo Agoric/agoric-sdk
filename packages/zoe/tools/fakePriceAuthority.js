@@ -9,7 +9,7 @@ import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 
-import { natSafeMath } from '../src/contractSupport';
+import { natSafeMath } from '../src/contractSupport.js';
 
 import './types';
 import '../exported';

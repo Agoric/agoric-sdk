@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { hasExpired } from '../../../../../src/contracts/attestation/expiring/expiringHelpers';
+import { hasExpired } from '../../../../../src/contracts/attestation/expiring/expiringHelpers.js';
 
 test('expiration before current time', async t => {
   const expiration = 1n;

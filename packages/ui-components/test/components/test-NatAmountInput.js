@@ -10,7 +10,7 @@ import test from 'ava';
 import { shallow, render } from 'enzyme';
 
 // @ts-ignore path is correct for compiled output
-import { makeNatAmountInput } from '../../../dist'; // eslint-disable-line import/no-unresolved
+import { makeNatAmountInput } from '../../../dist.js'; // eslint-disable-line import/no-unresolved
 
 const NatAmountInput = makeNatAmountInput({ React, TextField });
 

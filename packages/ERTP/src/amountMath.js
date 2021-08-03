@@ -4,14 +4,14 @@ import { assert, details as X } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 
 import './types';
-import natMathHelpers from './mathHelpers/natMathHelpers';
-import setMathHelpers from './mathHelpers/setMathHelpers';
+import natMathHelpers from './mathHelpers/natMathHelpers.js';
+import setMathHelpers from './mathHelpers/setMathHelpers.js';
 import {
   looksLikeSetValue,
   looksLikeNatValue,
   looksLikeValue,
   looksLikeBrand,
-} from './typeGuards';
+} from './typeGuards.js';
 
 // We want an enum, but narrowed to the AssetKind type.
 /**

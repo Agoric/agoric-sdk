@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 
-import zcfContractBundle from '../../bundles/bundle-contractFacet';
+import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
 
 /**
  * Attenuate the power of vatAdminSvc by restricting it such that only

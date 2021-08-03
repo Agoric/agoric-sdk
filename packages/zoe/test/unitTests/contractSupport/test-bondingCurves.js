@@ -6,7 +6,7 @@ import {
   getInputPrice,
   getOutputPrice,
   calcLiqValueToMint,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport.js';
 
 const testGetPrice = (
   t,

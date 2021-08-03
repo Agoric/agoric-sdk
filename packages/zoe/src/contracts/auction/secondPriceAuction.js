@@ -8,9 +8,9 @@ import {
   defaultAcceptanceMsg,
   assertIssuerKeywords,
   assertProposalShape,
-} from '../../contractSupport';
-import { calcWinnerAndClose } from './secondPriceLogic';
-import { assertBidSeat } from './assertBidSeat';
+} from '../../contractSupport.js';
+import { calcWinnerAndClose } from './secondPriceLogic.js';
+import { assertBidSeat } from './assertBidSeat.js';
 
 import '../../../exported';
 

@@ -4,8 +4,8 @@ import { assert } from '@agoric/assert';
 import '../../exported';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { assertProposalShape, swapExact } from '../contractSupport';
-import { isAfterDeadlineExitRule } from '../typeGuards';
+import { assertProposalShape, swapExact } from '../contractSupport.js';
+import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
 /**
  * A call option is the right (but not the obligation) to buy digital

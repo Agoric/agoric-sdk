@@ -3,8 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { makeSharedMap } from '../../../src/sharedMap';
-import { makeSharingService } from '../../../src/sharing';
+import { makeSharedMap } from '../../../src/sharedMap.js';
+import { makeSharingService } from '../../../src/sharing.js';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;

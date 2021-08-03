@@ -3,8 +3,8 @@ import { writable } from 'svelte/store';
 import { E } from '@agoric/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
 
-import { makeWebSocket } from './websocket';
-import { makeCapTPConnection } from './captp';
+import { makeWebSocket } from './websocket.js';
+import { makeCapTPConnection } from './captp.js';
 
 import '../../api/src/internal-types';
 import '../../api/src/types';

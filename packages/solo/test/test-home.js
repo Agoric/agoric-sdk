@@ -15,7 +15,7 @@ import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers';
 
-import { makeFixture, E } from './captp-fixture';
+import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 

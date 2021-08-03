@@ -9,10 +9,10 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoe } from '../../../../src/zoeService/zoe';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
-import { makeAttestationElem } from '../../../../src/contracts/attestation/expiring/expiringHelpers';
-import { makeHandle } from '../../../../src/makeHandle';
+import { makeZoe } from '../../../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
+import { makeAttestationElem } from '../../../../src/contracts/attestation/expiring/expiringHelpers.js';
+import { makeHandle } from '../../../../src/makeHandle.js';
 
 const exampleVotingUsageRoot = `${__dirname}/exampleVotingUsage`;
 

@@ -7,9 +7,9 @@ import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { setup } from '../setupBasicMints';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { setup } from '../setupBasicMints.js';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 const contractRoot = `${__dirname}/useObjExample`;
 

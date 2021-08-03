@@ -11,7 +11,7 @@ import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport';
+} from '../contractSupport.js';
 
 import '../../tools/types';
 

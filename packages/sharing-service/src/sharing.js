@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { makeSharedMap } from './sharedMap';
+import { makeSharedMap } from './sharedMap.js';
 
 function makeSharingService() {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
