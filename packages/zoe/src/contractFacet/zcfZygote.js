@@ -291,7 +291,7 @@ export const makeZCFZygote = (
       instanceAdminFromZoe,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
-      privateArgs,
+      privateArgs = undefined,
     ) => {
       zoeInstanceAdminPromiseKit.resolve(instanceAdminFromZoe);
       instantiateInstanceRecordStorage(instanceRecordFromZoe);

@@ -35,7 +35,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     zoeInstanceAdmin,
     instanceRecordFromZoe,
     issuerStorageFromZoe,
-    privateArgs,
+    privateArgs = undefined,
   ) => {
     /** @type {ZCFZygote} */
     const zcfZygote = makeZCFZygote(

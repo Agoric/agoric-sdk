@@ -26,7 +26,7 @@ export const makeStartInstance = (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
-    privateArgs,
+    privateArgs = undefined,
   ) => {
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeNonVOWeakStore('seatHandle');
