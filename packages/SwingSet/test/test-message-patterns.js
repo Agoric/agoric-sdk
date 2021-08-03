@@ -1,4 +1,3 @@
-/* global __dirname */
 /* eslint no-await-in-loop: "off" */
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
@@ -56,7 +55,7 @@ async function runWithTrace(c) {
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  const bdir = path.resolve(__dirname, 'basedir-message-patterns');
+  const bdir = new URL('basedir-message-patterns', import.meta.url).pathname;
   const bundleA = await bundleSource(path.resolve(bdir, 'vat-a.js'));
   const bundleB = await bundleSource(path.resolve(bdir, 'vat-b.js'));
   const bundleC = await bundleSource(path.resolve(bdir, 'vat-c.js'));

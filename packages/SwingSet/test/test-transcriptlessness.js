@@ -1,4 +1,3 @@
-/* global require */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -11,7 +10,8 @@ async function testTranscriptlessness(t, useTranscript) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./vat-transcript-maybe.js'),
+        sourceSpec: new URL('vat-transcript-maybe.js', import.meta.url)
+          .pathname,
         creationOptions: {
           enableSetup: true,
           useTranscript,

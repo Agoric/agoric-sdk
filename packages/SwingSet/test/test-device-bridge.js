@@ -1,4 +1,3 @@
-/* global require */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -24,12 +23,13 @@ test('bridge device', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
+        sourceSpec: new URL('device-bridge-bootstrap.js', import.meta.url)
+          .pathname,
       },
     },
     devices: {
       bridge: {
-        sourceSpec: bd.srcPath,
+        sourceSpec: new URL(bd.srcPath, import.meta.url).pathname,
       },
     },
   };
@@ -128,12 +128,13 @@ test('bridge device can return undefined', async t => {
     defaultManagerType: 'local',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./device-bridge-bootstrap.js'),
+        sourceSpec: new URL('./device-bridge-bootstrap.js', import.meta.url)
+          .pathname,
       },
     },
     devices: {
       bridge: {
-        sourceSpec: bd.srcPath,
+        sourceSpec: new URL(bd.srcPath, import.meta.url).pathname,
       },
     },
   };

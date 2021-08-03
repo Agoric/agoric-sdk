@@ -1,4 +1,3 @@
-/* global require */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../src/index.js';
@@ -8,7 +7,7 @@ async function beginning(t, mode) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve(`./vat-exomessages.js`),
+        sourceSpec: new URL(`vat-exomessages.js`, import.meta.url).pathname,
       },
     },
   };

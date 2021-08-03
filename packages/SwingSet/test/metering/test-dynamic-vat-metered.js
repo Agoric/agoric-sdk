@@ -1,10 +1,8 @@
-/* global __dirname */
 /* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { parse } from '@agoric/marshal';
 import { provideHostStorage } from '../../src/hostStorage.js';
@@ -16,10 +14,10 @@ async function prepare() {
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (metered) dynamic vat
   const dynamicVatBundle = await bundleSource(
-    path.join(__dirname, 'metered-dynamic-vat.js'),
+    new URL('metered-dynamic-vat.js', import.meta.url).pathname,
   );
   const bootstrapBundle = await bundleSource(
-    path.join(__dirname, 'vat-load-dynamic.js'),
+    new URL('vat-load-dynamic.js', import.meta.url).pathname,
   );
   return { kernelBundles, dynamicVatBundle, bootstrapBundle };
 }

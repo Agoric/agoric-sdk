@@ -1,21 +1,18 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava';
-
-import path from 'path';
 import anylogger from 'anylogger';
+import { test } from '../tools/prepare-test-env-ava.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent';
+import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 
-import buildKernel from '../src/kernel/index';
-import { initializeKernel } from '../src/kernel/initializeKernel';
+import buildKernel from '../src/kernel/index.js';
+import { initializeKernel } from '../src/kernel/initializeKernel.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
-} from '../src';
-import { provideHostStorage } from '../src/hostStorage';
+} from '../src/index.js';
+import { provideHostStorage } from '../src/hostStorage.js';
 import {
   makeMessage,
   makeResolutions,
@@ -24,7 +21,7 @@ import {
   makeRetireImports,
   capargs,
   capdataOneSlot,
-} from './util';
+} from './util.js';
 
 function makeConsole(tag) {
   const log = anylogger(tag);
@@ -1003,14 +1000,16 @@ test('terminated vat', async t => {
   const config = {
     vats: {
       bootstrap: {
-        sourceSpec: path.join(__dirname, 'gc-dead-vat', 'bootstrap.js'),
+        sourceSpec: new URL('gc-dead-vat/bootstrap.js', import.meta.url)
+          .pathname,
         creationOptions: { managerType: 'local' },
       },
     },
     bootstrap: 'bootstrap',
     bundles: {
       doomed: {
-        sourceSpec: path.join(__dirname, 'gc-dead-vat', 'vat-doomed.js'),
+        sourceSpec: new URL('gc-dead-vat/vat-doomed.js', import.meta.url)
+          .pathname,
         creationOptions: { managerType: 'xs-worker' },
       },
     },
@@ -1141,7 +1140,9 @@ test('terminated vat', async t => {
 
 test('device transfer', async t => {
   function vatpath(fn) {
-    return { sourceSpec: path.join(__dirname, 'gc-device-transfer', fn) };
+    return {
+      sourceSpec: new URL(`gc-device-transfer/${fn}`, import.meta.url).pathname,
+    };
   }
   const config = {
     vats: {

@@ -1,8 +1,6 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import {
   buildKernelBundles,
@@ -16,9 +14,11 @@ function nonBundleFunction(_E) {
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  const newVatBundle = await bundleSource(path.join(__dirname, 'new-vat.js'));
+  const newVatBundle = await bundleSource(
+    new URL('new-vat.js', import.meta.url).pathname,
+  );
   const brokenVatBundle = await bundleSource(
-    path.join(__dirname, 'broken-vat.js'),
+    new URL('broken-vat.js', import.meta.url).pathname,
   );
   const nonBundle = `${nonBundleFunction}`;
   const bundles = { newVatBundle, brokenVatBundle, nonBundle };
@@ -26,7 +26,7 @@ test.before(async t => {
 });
 
 async function doTestSetup(t, mode) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   const { bundles, kernelBundles } = t.context.data;
   const c = await buildVatController(config, [mode, bundles], {
     kernelBundles,

@@ -11,7 +11,7 @@
 import '@agoric/babel-standalone';
 
 import './install-ses-debug.js';
-import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager';
+import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 
 const { makeKind, makeWeakStore } = makeFakeVirtualObjectManager({
   cacheSize: 3,

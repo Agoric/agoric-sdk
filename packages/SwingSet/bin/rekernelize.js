@@ -1,6 +1,4 @@
-#!/usr/bin/env -S node -r esm
-
-/* global require */
+#!/usr/bin/env -S node
 
 import 'node-lmdb';
 import '@agoric/babel-standalone';
@@ -63,7 +61,7 @@ async function main() {
   assert(kvStore.get('initialized'), 'kernel store not initialized');
 
   const kernelBundle = await bundleSource(
-    require.resolve('../src/kernel/kernel.js'),
+    new URL('../src/kernel/kernel.js', import.meta.url).pathname,
   );
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundle));

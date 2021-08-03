@@ -2,9 +2,7 @@
   "name": "@agoric/swingset-vat",
   "version": "0.19.0",
   "description": "Vat/Container Launcher",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/main.js",
   "module": "src/index.js",
   "engines": {
@@ -49,7 +47,7 @@
     "@endo/base64": "^0.2.5",
     "@types/tmp": "^0.2.0",
     "anylogger": "^0.21.0",
-    "esm": "agoric-labs/esm#Agoric-built",
+    "import-meta-resolve": "^1.1.1",
     "node-lmdb": "^0.9.4",
     "re2": "^1.10.5",
     "semver": "^6.3.0",
@@ -83,9 +81,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   },

@@ -1,4 +1,4 @@
-/* global HandledPromise */
+// @ts-check
 
 import { makeCapTP } from '@agoric/captp';
 import { Far } from '@agoric/marshal';
@@ -10,7 +10,7 @@ export function buildRootDeviceNode(tools) {
 
   let registeredReceiver = restart && restart.registeredReceiver;
 
-  const senders = {};
+  const senderPs = {};
   // Take a shallow copy so that these are not frozen.
   const connectedMods = restart ? [...restart.connectedMods] : [];
   const nextEpochs = restart ? [...restart.nextEpochs] : [];
@@ -30,29 +30,32 @@ export function buildRootDeviceNode(tools) {
   // Register our first state.
   saveState();
 
+  function register(mod, index) {
+    if (connectedMods[index] === undefined) {
+      connectedMods[index] = mod;
+    }
+    if (connectedMods[index] !== mod) {
+      throw TypeError(
+        `Index ${index} is already allocated to ${connectedMods[index]}, not ${mod}`,
+      );
+    }
+    const epoch = nextEpochs[index] || 0;
+    nextEpochs[index] = epoch + 1;
+    saveState();
+    return epoch;
+  }
+
   /**
    * Load a module and connect to it.
    *
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
-   * @param {number} [index=connectedMods.length] the module instance index
-   * @returns {(obj: Record<string, any>) => void} send a message to the module
+   * @param {number} index the module instance index
+   * @param {number} epoch which generation of CapTP instances this is
+   * @returns {Promise<(obj: Record<string, any>) => void>} send a message to the module
    */
-  function connect(mod, index = connectedMods.length) {
+  async function createConnection(mod, index, epoch) {
     try {
-      // Allocate this module first.
-      if (connectedMods[index] === undefined) {
-        connectedMods[index] = mod;
-      }
-      if (connectedMods[index] !== mod) {
-        throw TypeError(
-          `Index ${index} is already allocated to ${connectedMods[index]}, not ${mod}`,
-        );
-      }
-      const epoch = nextEpochs[index] || 0;
-      nextEpochs[index] = epoch + 1;
-      saveState();
-
-      const modNS = endowments.require(mod);
+      const modNS = await endowments.import(mod);
       const receiver = obj => {
         // console.info('receiver', index, obj);
 
@@ -68,14 +71,14 @@ export function buildRootDeviceNode(tools) {
             return connectedState[index];
           },
           setState(state) {
-            return new HandledPromise(resolve => {
+            return new Promise(resolve => {
               connectedState[index] = state;
               endowments.queueThunkForKernel(() => {
                 // TODO: This is not a synchronous call.
                 // We need something akin to read-write separation
                 // to get the benefits of both sync and async.
                 saveState();
-                resolve();
+                resolve(undefined);
               });
             });
           },
@@ -85,27 +88,50 @@ export function buildRootDeviceNode(tools) {
       // Establish a CapTP connection.
       const { dispatch } = makeCapTP(mod, receiver, bootstrap, { epoch });
 
-      // Save the dispatch function for later.
-      senders[index] = dispatch;
-      return index;
+      return dispatch;
     } catch (e) {
       console.error(`Cannot connect to ${mod}:`, e);
-      return `${(e && e.stack) || e}`;
+      throw e;
     }
+  }
+
+  /**
+   * Load a module and connect to it.
+   *
+   * @param {string} mod module with an exported `bootPlugin(state = undefined)`
+   * @param {number} [index=connectedMods.length] the module instance index
+   * @returns {number} the allocated index
+   */
+  function connect(mod, index = connectedMods.length) {
+    const epoch = register(mod, index);
+    if (senderPs[index] === undefined) {
+      // Lazily create a fresh sender.
+      const senderP = createConnection(mod, index, epoch);
+      senderP.catch(e => {
+        console.error(e);
+      });
+      senderPs[index] = senderP;
+    }
+    return index;
   }
 
   function send(index, obj) {
     const mod = connectedMods[index];
     // console.info('send', index, obj, mod);
     assert(mod, X`No module associated with ${index}`, TypeError);
-    let sender = senders[index];
-    if (!sender) {
+    if (!senderPs[index]) {
       // Lazily create a fresh sender.
       connect(mod, index);
-      sender = senders[index];
+      // senderPs populated as a side-effect of connect.
     }
     // Now actually send.
-    sender(obj);
+    senderPs[index]
+      .then(sender => {
+        return sender(obj);
+      })
+      .catch(e => {
+        console.error(e);
+      });
   }
 
   endowments.registerResetter(() => {

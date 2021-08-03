@@ -1,8 +1,7 @@
-/* global require __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import path from 'path';
+// eslint-disable-next-line import/order
 import { spawn } from 'child_process';
 import { provideHostStorage } from '../src/hostStorage.js';
 import {
@@ -38,7 +37,7 @@ async function simpleCall(t) {
   const config = {
     vats: {
       vat1: {
-        sourceSpec: require.resolve('./vat-controller-1.js'),
+        sourceSpec: new URL('vat-controller-1.js', import.meta.url).pathname,
         creationOptions: { enableSetup: true },
       },
     },
@@ -95,7 +94,7 @@ test('simple call', async t => {
 
 test('bootstrap', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-controller-2'),
+    new URL('basedir-controller-2', import.meta.url).pathname,
   );
   // the controller automatically runs the bootstrap function.
   // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
@@ -106,7 +105,7 @@ test('bootstrap', async t => {
 
 test('XS bootstrap', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-controller-2'),
+    new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
@@ -129,7 +128,7 @@ test('XS bootstrap', async t => {
 test('static vats are unmetered on XS', async t => {
   const hostStorage = provideHostStorage();
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-controller-2'),
+    new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
   await initializeSwingset(config, [], hostStorage);
@@ -150,7 +149,7 @@ test('static vats are unmetered on XS', async t => {
 
 test('validate config.defaultManagerType', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-controller-2'),
+    new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'XYZ';
   await t.throwsAsync(buildVatController(config), { message: /XYZ/ });
@@ -158,7 +157,7 @@ test('validate config.defaultManagerType', async t => {
 
 test('bootstrap export', async t => {
   const config = await loadBasedir(
-    path.resolve(__dirname, 'basedir-controller-3'),
+    new URL('basedir-controller-3', import.meta.url).pathname,
   );
   const c = await buildVatController(config);
   c.pinVatRoot('bootstrap');

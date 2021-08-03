@@ -98,7 +98,7 @@ async function buildSwingset(
   const pluginDir = path.resolve('./plugins');
   fs.mkdirSync(pluginDir, { recursive: true });
   const pluginsPrefix = `${pluginDir}${path.sep}`;
-  const pluginRequire = mod => {
+  const importPlugin = async mod => {
     // Ensure they can't traverse out of the plugins prefix.
     const pluginFile = path.resolve(pluginsPrefix, mod);
     assert(
@@ -106,13 +106,14 @@ async function buildSwingset(
       X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
     );
 
-    // eslint-disable-next-line import/no-dynamic-require,global-require
-    return require(pluginFile);
+    return import(pluginFile);
   };
 
-  const plugin = buildPlugin(pluginDir, pluginRequire, queueThunkForKernel);
+  const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
 
-  const config = loadSwingsetConfigFile(`${__dirname}/../solo-config.json`);
+  const config = await loadSwingsetConfigFile(
+    `${__dirname}/../solo-config.json`,
+  );
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,

@@ -1,8 +1,6 @@
-/* global __dirname */
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import path from 'path';
 import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs } from '../util.js';
@@ -35,10 +33,10 @@ async function dropPresence(t, dropExport) {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: path.join(__dirname, 'bootstrap.js'),
+        sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
       },
       target: {
-        sourceSpec: path.join(__dirname, 'vat-target.js'),
+        sourceSpec: new URL('vat-target.js', import.meta.url).pathname,
         creationOptions: { managerType: 'xs-worker' },
       },
     },
@@ -99,15 +97,15 @@ test('forward to fake zoe', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: path.join(__dirname, 'bootstrap.js'),
+        sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
       },
       target: {
-        sourceSpec: path.join(__dirname, 'vat-target.js'),
+        sourceSpec: new URL('vat-target.js', import.meta.url).pathname,
         // creationOptions: { managerType: 'xs-worker' },
         creationOptions: { managerType: 'local' },
       },
       zoe: {
-        sourceSpec: path.join(__dirname, 'vat-fake-zoe.js'),
+        sourceSpec: new URL('vat-fake-zoe.js', import.meta.url).pathname,
       },
     },
   };

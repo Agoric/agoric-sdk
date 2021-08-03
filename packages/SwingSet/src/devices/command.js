@@ -1,4 +1,3 @@
-/* global require */
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Nat } from '@agoric/nat';
 
@@ -7,7 +6,7 @@ import { assert, details as X } from '@agoric/assert';
 export default function buildCommand(broadcastCallback) {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);
   let inboundCallback;
-  const srcPath = require.resolve('./command-src');
+  const srcPath = new URL('command-src.js', import.meta.url).pathname;
   let nextCount = 0n;
   const responses = new Map();
 

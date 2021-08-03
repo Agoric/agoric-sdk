@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../message';
-import { insistKernelType } from './parseKernelSlots';
-import { insistVatType, parseVatSlot } from '../parseVatSlots';
-import { insistCapData } from '../capdata';
-import { kdebug } from './kdebug';
+import { insistMessage } from '../message.js';
+import { insistKernelType } from './parseKernelSlots.js';
+import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
+import { insistCapData } from '../capdata.js';
+import { kdebug } from './kdebug.js';
 
 /*
  * Return a function that converts KernelInvocation objects into

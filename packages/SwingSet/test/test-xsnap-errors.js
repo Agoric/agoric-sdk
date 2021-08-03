@@ -1,8 +1,7 @@
-/* global require, __dirname, setTimeout */
+/* global setTimeout */
 // @ts-check
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
-import path from 'path';
 import { spawn } from 'child_process';
 import bundleSource from '@agoric/bundle-source';
 
@@ -11,7 +10,8 @@ import { makeStartXSnap } from '../src/controller.js';
 import { capargs } from './util.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
-  const makeb = rel => bundleSource(require.resolve(rel), 'getExport');
+  const makeb = rel =>
+    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
   const lockdown = await makeb(
     '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
   );
@@ -51,7 +51,7 @@ test('child termination distinguished from meter exhaustion', async t => {
     testLog: undefined,
   });
 
-  const fn = path.join(__dirname, 'vat-xsnap-hang.js');
+  const fn = new URL('vat-xsnap-hang.js', import.meta.url).pathname;
   const bundle = await bundleSource(fn);
 
   /** @type { ManagerOptions } */

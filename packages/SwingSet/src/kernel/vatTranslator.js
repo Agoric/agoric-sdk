@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../message';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots';
-import { insistVatType, parseVatSlot } from '../parseVatSlots';
-import { insistCapData } from '../capdata';
-import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug';
+import { insistMessage } from '../message.js';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
+import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
+import { insistCapData } from '../capdata.js';
+import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
 
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery

@@ -1,8 +1,6 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
 import { provideHostStorage } from '../../src/hostStorage.js';
@@ -23,7 +21,7 @@ function copy(data) {
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   const dynamicBundle = await bundleSource(
-    path.join(__dirname, 'replay-dynamic.js'),
+    new URL('replay-dynamic.js', import.meta.url).pathname,
   );
   t.context.data = { kernelBundles, dynamicBundle };
 });
@@ -32,7 +30,7 @@ test('replay bundleSource-based dynamic vat', async t => {
   const config = {
     vats: {
       bootstrap: {
-        sourceSpec: path.join(__dirname, 'replay-bootstrap.js'),
+        sourceSpec: new URL('replay-bootstrap.js', import.meta.url).pathname,
         parameters: { dynamicBundle: t.context.data.dynamicBundle },
       },
     },
@@ -77,10 +75,14 @@ test('replay bundleSource-based dynamic vat', async t => {
 test('replay bundleName-based dynamic vat', async t => {
   const config = {
     vats: {
-      bootstrap: { sourceSpec: path.join(__dirname, 'replay-bootstrap.js') },
+      bootstrap: {
+        sourceSpec: new URL('replay-bootstrap.js', import.meta.url).pathname,
+      },
     },
     bundles: {
-      dynamic: { sourceSpec: path.join(__dirname, 'replay-dynamic.js') },
+      dynamic: {
+        sourceSpec: new URL('replay-dynamic.js', import.meta.url).pathname,
+      },
     },
     bootstrap: 'bootstrap',
   };

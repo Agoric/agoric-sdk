@@ -1,8 +1,6 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import path from 'path';
 import { getAllState, setAllState } from '@agoric/swing-store-simple';
 import { provideHostStorage } from '../../../src/hostStorage.js';
 
@@ -10,7 +8,7 @@ import {
   buildVatController,
   loadSwingsetConfigFile,
   buildKernelBundles,
-} from '../../../src/index';
+} from '../../../src/index.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -26,8 +24,9 @@ test.before(async t => {
 });
 
 async function doTerminate(t, mode, reference, extraMessage = []) {
-  const configPath = path.resolve(__dirname, 'swingset-terminate.json');
-  const config = loadSwingsetConfigFile(configPath);
+  const configPath = new URL('swingset-terminate.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [mode], t.context.data);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   await controller.run();
@@ -102,8 +101,9 @@ test('exit sad path with ante-mortem message', async t => {
 });
 
 test('exit with presence', async t => {
-  const configPath = path.resolve(__dirname, 'swingset-die-with-presence.json');
-  const config = loadSwingsetConfigFile(configPath);
+  const configPath = new URL('swingset-die-with-presence.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
   await controller.run();
   t.deepEqual(controller.dump().log, [
@@ -115,8 +115,9 @@ test('exit with presence', async t => {
 });
 
 test('dispatches to the dead do not harm kernel', async t => {
-  const configPath = path.resolve(__dirname, 'swingset-speak-to-dead.json');
-  const config = loadSwingsetConfigFile(configPath);
+  const configPath = new URL('swingset-speak-to-dead.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
 
   const hostStorage1 = provideHostStorage();
   {
@@ -162,8 +163,9 @@ test('dispatches to the dead do not harm kernel', async t => {
 });
 
 test('replay does not resurrect dead vat', async t => {
-  const configPath = path.resolve(__dirname, 'swingset-no-zombies.json');
-  const config = loadSwingsetConfigFile(configPath);
+  const configPath = new URL('swingset-no-zombies.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
 
   const hostStorage1 = provideHostStorage();
   {
@@ -193,8 +195,9 @@ test('replay does not resurrect dead vat', async t => {
 });
 
 test('dead vat state removed', async t => {
-  const configPath = path.resolve(__dirname, 'swingset-die-cleanly.json');
-  const config = loadSwingsetConfigFile(configPath);
+  const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
   const hostStorage = provideHostStorage();
 
   const controller = await buildVatController(config, [], {

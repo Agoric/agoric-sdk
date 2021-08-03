@@ -3,7 +3,7 @@
   "defaultManagerType": "xs-worker",
   "bundles": {
     "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet"
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
     }
   },
   "vats": {

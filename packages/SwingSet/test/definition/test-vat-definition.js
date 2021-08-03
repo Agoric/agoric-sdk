@@ -1,4 +1,3 @@
-/* global require */
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../../src/index.js';
@@ -17,10 +16,10 @@ test('create with setup and buildRootObject', async t => {
   const config = {
     vats: {
       setup: {
-        sourceSpec: require.resolve('./vat-setup.js'),
+        sourceSpec: new URL('vat-setup.js', import.meta.url).pathname,
       },
       liveslots: {
-        sourceSpec: require.resolve('./vat-liveslots.js'),
+        sourceSpec: new URL('vat-liveslots.js', import.meta.url).pathname,
       },
     },
   };

@@ -1,4 +1,3 @@
-/* global require */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -10,12 +9,13 @@ async function vatSyscallFailure(t, beDynamic) {
     bootstrap: 'bootstrap',
     bundles: {
       badvat: {
-        sourceSpec: require.resolve('./vat-syscall-failure.js'),
+        sourceSpec: new URL('vat-syscall-failure.js', import.meta.url).pathname,
       },
     },
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./bootstrap-syscall-failure.js'),
+        sourceSpec: new URL('bootstrap-syscall-failure.js', import.meta.url)
+          .pathname,
         parameters: {
           beDynamic,
         },

@@ -1,4 +1,3 @@
-/* global require */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -11,7 +10,7 @@ test('vatstore', async t => {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: require.resolve('./vat-vatstore.js'),
+        sourceSpec: new URL('vat-vatstore.js', import.meta.url).pathname,
         creationOptions: {
           enableVatstore: true,
         },

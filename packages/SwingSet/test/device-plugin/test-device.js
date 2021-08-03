@@ -1,4 +1,3 @@
-/* global require __dirname */
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -22,12 +21,15 @@ async function setupVatController(t) {
     inputQueue.push(thunk);
   };
 
-  const pluginRequire = mod => {
+  const importPlugin = mod => {
     t.is(mod, 'pingpong');
-    // eslint-disable-next-line global-require
-    return require('./pingpong');
+    return import('./pingpong.js');
   };
-  const plugin = buildPlugin(__dirname, pluginRequire, queueThunkForKernel);
+  const plugin = buildPlugin(
+    new URL('./', import.meta.url).pathname,
+    importPlugin,
+    queueThunkForKernel,
+  );
   const bridge = buildBridge();
   const deviceEndowments = {
     plugin: { ...plugin.endowments },
@@ -39,10 +41,10 @@ async function setupVatController(t) {
       bootstrap: 'bootstrap',
       vats: {
         bootstrap: {
-          sourceSpec: require.resolve('./bootstrap'),
+          sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
         },
         bridge: {
-          sourceSpec: require.resolve('./vat-bridge'),
+          sourceSpec: new URL('vat-bridge.js', import.meta.url).pathname,
         },
       },
       devices: {

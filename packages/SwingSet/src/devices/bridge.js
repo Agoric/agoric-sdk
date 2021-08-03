@@ -1,4 +1,3 @@
-/* global require */
 /*
   The 'bridge' devices provides bidirectional function calls between objects
   on the host and code within a swingset.
@@ -93,7 +92,7 @@ function sanitize(data) {
 }
 
 export function buildBridge(outboundCallback) {
-  const srcPath = require.resolve('./bridge-src');
+  const srcPath = new URL('bridge-src.js', import.meta.url).pathname;
   let inboundCallback;
 
   function registerInboundCallback(inbound) {

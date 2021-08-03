@@ -1,8 +1,6 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import path from 'path';
 import tmp from 'tmp';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store-lmdb';
 import { provideHostStorage } from '../../src/hostStorage.js';
@@ -13,7 +11,8 @@ test('vat reload from snapshot', async t => {
   const config = {
     vats: {
       target: {
-        sourceSpec: path.join(__dirname, 'vat-warehouse-reload.js'),
+        sourceSpec: new URL('vat-warehouse-reload.js', import.meta.url)
+          .pathname,
         creationOptions: { managerType: 'xs-worker' },
       },
     },
