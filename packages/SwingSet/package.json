@@ -3,8 +3,7 @@
   "version": "0.19.0",
   "description": "Vat/Container Launcher",
   "type": "module",
-  "main": "src/main.js",
-  "module": "src/index.js",
+  "main": "src/index.js",
   "engines": {
     "node": ">=11.0"
   },
