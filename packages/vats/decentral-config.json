@@ -2,7 +2,7 @@
   "bootstrap": "bootstrap",
   "bundles": {
     "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet"
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
     }
   },
   "defaultManagerType": "xs-worker",
