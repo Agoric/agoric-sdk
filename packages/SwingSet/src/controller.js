@@ -306,8 +306,8 @@ export async function makeSwingsetController(
       kernel.kdebugEnable(flag);
     },
 
-    async run() {
-      return kernel.run();
+    async run(policy) {
+      return kernel.run(policy);
     },
 
     async step() {
@@ -330,6 +330,7 @@ export async function makeSwingsetController(
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
+      return kref;
     },
 
     // these are for tests

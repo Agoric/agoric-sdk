@@ -70,6 +70,7 @@ const enableKernelGC = true;
 // d$NN.source = JSON({ bundle }) or JSON({ bundleName })
 // d$NN.options = JSON
 
+// crankNumber = $NN
 // runQueue = JSON(runQueue) // usually empty on disk
 // gcActions = JSON(gcActions) // usually empty on disk
 // pinnedObjects = ko$NN[,ko$NN..]
