@@ -4,20 +4,20 @@ import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
-} from '@agoric/swingset-vat/src/vats/network';
+} from '@agoric/swingset-vat/src/vats/network/index.js';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeStore } from '@agoric/store';
-import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain';
-import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain';
+import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain.js';
+import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
 
-import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager';
+import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { assert, details as X } from '@agoric/assert';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
-import { makeBridgeManager } from './bridge';
-import { makeNameHubKit } from './nameHub';
+import { makeBridgeManager } from './bridge.js';
+import { makeNameHubKit } from './nameHub.js';
 import {
   CENTRAL_ISSUER_NAME,
   fakeIssuerEntries,

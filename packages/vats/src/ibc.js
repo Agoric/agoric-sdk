@@ -4,16 +4,16 @@ import {
   rethrowUnlessMissing,
   dataToBase64,
   base64ToBytes,
-} from '@agoric/swingset-vat/src/vats/network';
+} from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 
-import '@agoric/store/exported';
-import '@agoric/swingset-vat/src/vats/network/types';
+import '@agoric/store/exported.js';
+import '@agoric/swingset-vat/src/vats/network/types.js';
 
-import { makeWithQueue } from './queue';
+import { makeWithQueue } from './queue.js';
 
 const DEFAULT_PACKET_TIMEOUT = 1000;
 

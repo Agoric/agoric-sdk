@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeStore } from '@agoric/store';
-import '@agoric/store/exported';
+import '@agoric/store/exported.js';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 

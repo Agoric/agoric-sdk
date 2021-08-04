@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import { getInterfaceOf, Remotable, Far } from '@agoric/marshal';
 
 import { Nat } from '@agoric/nat';
-import makeUIAgentMakers from './ui-agent';
+import makeUIAgentMakers from './ui-agent.js';
 
 const UNJSONABLES = new Map([
   [NaN, 'NaN'],

@@ -2,10 +2,8 @@
   "name": "@agoric/vats",
   "version": "0.2.12",
   "description": "Agoric's Vat library",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/bootstrap.js",
+  "type": "module",
+  "main": "./src/bootstrap.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
@@ -41,7 +39,6 @@
     "@agoric/swingset-vat": "^0.19.0",
     "@agoric/treasury": "^0.5.9",
     "@agoric/zoe": "^0.17.6",
-    "esm": "agoric-labs/esm#Agoric-built",
     "polycrc": "https://github.com/agoric-labs/node-polycrc"
   },
   "devDependencies": {
@@ -66,9 +63,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   }

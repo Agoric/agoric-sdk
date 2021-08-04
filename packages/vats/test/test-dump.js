@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
 
-import { dump } from '../src/repl';
+import { dump } from '../src/repl.js';
 
 // Taken from https://github.com/endojs/endo/tree/main/packages/ses/test/error/test-assert-log.js#L414
 test('dump: the @erights challenge', async t => {

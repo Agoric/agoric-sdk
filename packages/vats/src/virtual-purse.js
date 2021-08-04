@@ -4,8 +4,8 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
-import '@agoric/ertp/exported';
-import '@agoric/notifier/exported';
+import '@agoric/ertp/exported.js';
+import '@agoric/notifier/exported.js';
 
 /**
  * @template T
