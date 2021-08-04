@@ -96,7 +96,7 @@ export const makeStartInstance = (
           invitationHandle,
           initialAllocation,
           proposal,
-          offerArgs,
+          offerArgs = undefined,
         ) => {
           const offerResultPromiseKit = makePromiseKit();
           handlePKitWarning(offerResultPromiseKit);
