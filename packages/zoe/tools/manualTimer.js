@@ -6,8 +6,8 @@ import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
 
-import './types';
-import './internal-types';
+import './types.js';
+import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
 /**

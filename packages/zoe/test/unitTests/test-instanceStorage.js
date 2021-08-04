@@ -1,18 +1,23 @@
 // @ts-check
-/* global __dirname */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
+
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 
 import {
   makeAndStoreInstanceRecord,
   makeInstanceRecordStorage,
-} from '../../src/instanceRecordStorage';
-import { makeIssuerRecord } from '../../src/issuerRecord';
+} from '../../src/instanceRecordStorage.js';
+import { makeIssuerRecord } from '../../src/issuerRecord.js';
 
-const root = `${__dirname}/bounty`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const root = `${dirname}/bounty.js`;
 
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(

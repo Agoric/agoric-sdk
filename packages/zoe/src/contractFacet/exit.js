@@ -8,7 +8,7 @@ import {
   isOnDemandExitRule,
   isAfterDeadlineExitRule,
   isWaivedExitRule,
-} from '../typeGuards';
+} from '../typeGuards.js';
 
 /**
  * Makes the appropriate exitObj, which runs in ZCF and allows the seat's owner

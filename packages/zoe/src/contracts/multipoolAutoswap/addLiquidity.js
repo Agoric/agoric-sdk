@@ -1,8 +1,8 @@
 // @ts-check
 
-import { assertProposalShape } from '../../contractSupport';
+import { assertProposalShape } from '../../contractSupport/index.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
 /**
  * @param {ContractFacet} zcf

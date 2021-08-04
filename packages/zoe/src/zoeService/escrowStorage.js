@@ -5,11 +5,11 @@ import { E } from '@agoric/eventual-send';
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
-import './types';
-import './internal-types';
+import './types.js';
+import './internal-types.js';
 
-import { cleanKeywords } from '../cleanProposal';
-import { arrayToObj, objectMap } from '../objArrayConversion';
+import { cleanKeywords } from '../cleanProposal.js';
+import { arrayToObj, objectMap } from '../objArrayConversion.js';
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one

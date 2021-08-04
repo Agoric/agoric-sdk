@@ -4,16 +4,16 @@ import { makeStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { validateInputs, mintZCFMintPayment } from '../helpers';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { validateInputs, mintZCFMintPayment } from '../helpers.js';
 import {
   makeAttestationElem,
   addToLiened,
   hasExpired,
-} from './expiringHelpers';
-import { updateLien } from './updateLien';
-import { unlienExpiredAmounts } from './unlienExpiredAmounts';
-import { extendExpiration as extendExpirationInternal } from './extendExpiration';
+} from './expiringHelpers.js';
+import { updateLien } from './updateLien.js';
+import { unlienExpiredAmounts } from './unlienExpiredAmounts.js';
+import { extendExpiration as extendExpirationInternal } from './extendExpiration.js';
 
 const { details: X } = assert;
 

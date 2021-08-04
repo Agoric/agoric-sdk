@@ -1,16 +1,20 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
-const barter = `${__dirname}/../../../src/contracts/barterExchange`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const barter = `${dirname}/../../../src/contracts/barterExchange.js`;
 
 test('barter with valid offers', async t => {
   t.plan(10);

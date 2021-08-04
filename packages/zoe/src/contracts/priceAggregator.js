@@ -11,9 +11,9 @@ import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../tools/types';
+import '../../tools/types.js';
 
 const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 

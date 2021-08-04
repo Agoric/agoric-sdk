@@ -2,7 +2,7 @@
 
 import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 
-import { makeHandle } from '../makeHandle';
+import { makeHandle } from '../makeHandle.js';
 
 export const makeOfferHandlerStorage = () => {
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */

@@ -7,8 +7,8 @@ import {
   mintZCFMintPayment,
   validateInputs,
   checkOfferShape,
-} from '../helpers';
-import { addToLiened } from './returnableHelpers';
+} from '../helpers.js';
+import { addToLiened } from './returnableHelpers.js';
 
 const { details: X } = assert;
 

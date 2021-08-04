@@ -1,18 +1,18 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '../../../../exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '../../../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { doLiquidation } from '../../../../src/contracts/loan/liquidate';
+import { doLiquidation } from '../../../../src/contracts/loan/liquidate.js';
 
 import {
   setupLoanUnitTest,
   makeSeatKit,
   checkNoNewOffers,
   checkPayouts,
-} from './helpers';
+} from './helpers.js';
 
 test('test doLiquidation with mocked autoswap', async t => {
   const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();

@@ -3,16 +3,16 @@
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import './types';
-import './internal-types';
+import './types.js';
+import './internal-types.js';
 
-import { makeIssuerStorage } from '../issuerStorage';
-import { makeAndStoreInstanceRecord } from '../instanceRecordStorage';
-import { makeIssuerRecord } from '../issuerRecord';
-import { makeEscrowStorage } from './escrowStorage';
-import { createInvitationKit } from './makeInvitation';
-import { makeInstanceAdminStorage } from './instanceAdminStorage';
-import { makeInstallationStorage } from './installationStorage';
+import { makeIssuerStorage } from '../issuerStorage.js';
+import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
+import { makeIssuerRecord } from '../issuerRecord.js';
+import { makeEscrowStorage } from './escrowStorage.js';
+import { createInvitationKit } from './makeInvitation.js';
+import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
+import { makeInstallationStorage } from './installationStorage.js';
 
 /**
  * The Zoe Storage Manager encapsulates and composes important

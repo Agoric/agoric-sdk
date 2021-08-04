@@ -1,13 +1,13 @@
 // @ts-check
 
-import '../../../exported';
+import '../../../exported.js';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { scheduleLiquidation } from './scheduleLiquidation';
-import { multiplyBy } from '../../contractSupport';
+import { scheduleLiquidation } from './scheduleLiquidation.js';
+import { multiplyBy } from '../../contractSupport/index.js';
 
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier

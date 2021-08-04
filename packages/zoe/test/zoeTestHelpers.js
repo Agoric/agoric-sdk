@@ -2,8 +2,8 @@
 
 import { E } from '@agoric/eventual-send';
 
-import '../exported';
-import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers';
+import '../exported.js';
+import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers.js';
 import { AmountMath, looksLikeSetValue, isNatValue } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';

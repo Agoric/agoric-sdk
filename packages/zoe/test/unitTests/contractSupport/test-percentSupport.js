@@ -1,14 +1,14 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { multiplyBy } from '../../../src/contractSupport';
+import { multiplyBy } from '../../../src/contractSupport/index.js';
 import {
   make100Percent,
   make0Percent,
-} from '../../../src/contracts/callSpread/percent';
+} from '../../../src/contracts/callSpread/percent.js';
 
 // duplicated from test-ratio, but should go away with the amount refactoring
 function amountsEqual(t, a1, a2, brand) {

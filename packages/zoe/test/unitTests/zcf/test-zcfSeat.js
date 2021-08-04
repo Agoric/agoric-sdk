@@ -1,19 +1,23 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { setup } from '../setupBasicMints';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { setup } from '../setupBasicMints.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
-const contractRoot = `${__dirname}/zcfTesterContract`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractRoot = `${dirname}/zcfTesterContract.js`;
 
 test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();

@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -11,14 +12,17 @@ import {
   priceFromTargetOutput,
   scaleForAddLiquidity,
   updatePoolState,
-} from '../../autoswapJig';
-import '../../../exported';
+} from '../../autoswapJig.js';
+import '../../../exported.js';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
-const autoswap = `${__dirname}/../../../src/contracts/autoswap`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const autoswap = `${dirname}/../../../src/contracts/autoswap.js`;
 
 test('autoSwap API interactions, no jig', async t => {
   t.plan(20);

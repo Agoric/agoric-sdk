@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import '../../../exported';
+import '../../../exported.js';
 
 /**
  * Tests ZCF

@@ -1,12 +1,12 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
   getInputPrice,
   getOutputPrice,
   calcLiqValueToMint,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport/index.js';
 
 const testGetPrice = (
   t,

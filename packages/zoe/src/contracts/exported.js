@@ -1,5 +1,5 @@
-import './types';
-import './loan/types';
-import './multipoolAutoswap/types';
-import './priceAggregatorTypes';
-import './callSpread/types';
+import './types.js';
+import './loan/types.js';
+import './multipoolAutoswap/types.js';
+import './priceAggregatorTypes.js';
+import './callSpread/types.js';

@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp/';
+import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 
@@ -12,10 +12,10 @@ import {
   calcLiqValueToMint,
   calcValueToRemove,
   calcSecondaryRequired,
-} from '../../contractSupport';
+} from '../../contractSupport/index.js';
 
-import '../../../exported';
-import { makePriceAuthority } from './priceAuthority';
+import '../../../exported.js';
+import { makePriceAuthority } from './priceAuthority.js';
 
 const POOL_FEE = 30n;
 /**

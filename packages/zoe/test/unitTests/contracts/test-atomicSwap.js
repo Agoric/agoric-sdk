@@ -1,17 +1,21 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
-import { assertAmountsEqual } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
-const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 
 test('zoe - atomicSwap', async t => {
   t.plan(8);

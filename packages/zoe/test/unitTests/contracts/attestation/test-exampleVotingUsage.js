@@ -1,20 +1,24 @@
 // @ts-check
 
-/* global __dirname */
-
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
+
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoe } from '../../../../src/zoeService/zoe';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin';
-import { makeAttestationElem } from '../../../../src/contracts/attestation/expiring/expiringHelpers';
-import { makeHandle } from '../../../../src/makeHandle';
+import { makeZoe } from '../../../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
+import { makeAttestationElem } from '../../../../src/contracts/attestation/expiring/expiringHelpers.js';
+import { makeHandle } from '../../../../src/makeHandle.js';
 
-const exampleVotingUsageRoot = `${__dirname}/exampleVotingUsage`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const exampleVotingUsageRoot = `${dirname}/exampleVotingUsage.js`;
 
 test('exampleVotingUsage', async t => {
   const bundle = await bundleSource(exampleVotingUsageRoot);

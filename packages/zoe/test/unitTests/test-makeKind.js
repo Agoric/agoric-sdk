@@ -1,15 +1,20 @@
 // @ts-check
-/* global __dirname makeKind makeWeakStore */
+/* global makeKind makeWeakStore */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '../../src/zoeService/zoe';
-import fakeVatAdmin from '../../tools/fakeVatAdmin';
+import { makeZoe } from '../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
 
-const root = `${__dirname}/../minimalMakeKindContract`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const root = `${dirname}/../minimalMakeKindContract.js`;
 
 test('makeKind non-swingset', async t => {
   const bundle = await bundleSource(root);

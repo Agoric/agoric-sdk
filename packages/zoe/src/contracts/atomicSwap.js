@@ -5,9 +5,9 @@ import {
   assertIssuerKeywords,
   swap,
   assertProposalShape,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * Trade one item for another.

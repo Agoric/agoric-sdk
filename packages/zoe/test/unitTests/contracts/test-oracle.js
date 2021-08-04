@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -10,11 +11,11 @@ import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
-import { makeZoe } from '../../../src/zoeService/zoe';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
 
-import '../../../exported';
-import '../../../src/contracts/exported';
+import '../../../exported.js';
+import '../../../src/contracts/exported.js';
 
 /**
  * @typedef {Object} TestContext
@@ -26,7 +27,10 @@ import '../../../src/contracts/exported';
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
-const contractPath = `${__dirname}/../../../src/contracts/oracle`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractPath = `${dirname}/../../../src/contracts/oracle.js`;
 
 test.before(
   'setup oracle',

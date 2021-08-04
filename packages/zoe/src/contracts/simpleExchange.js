@@ -3,13 +3,13 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 
-import '../../exported';
+import '../../exported.js';
 import {
   swap,
   satisfies,
   assertProposalShape,
   assertIssuerKeywords,
-} from '../contractSupport/zoeHelpers';
+} from '../contractSupport/zoeHelpers.js';
 
 /**
  * SimpleExchange is an exchange with a simple matching algorithm, which allows

@@ -1,17 +1,21 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { setup } from '../setupBasicMints';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { setup } from '../setupBasicMints.js';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
-const contractRoot = `${__dirname}/useObjExample`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractRoot = `${dirname}/useObjExample.js`;
 
 test('zoe - useObj', async t => {
   t.plan(3);

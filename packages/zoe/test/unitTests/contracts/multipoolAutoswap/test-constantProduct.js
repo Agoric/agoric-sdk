@@ -1,13 +1,13 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { checkZCF } from '../../../../src/contractSupport';
-import { assertConstantProduct } from '../../../../src/contracts/multipoolAutoswap/constantProduct';
-import { setupZCFTest } from '../../zcf/setupZcfTest';
+import { checkZCF } from '../../../../src/contractSupport/index.js';
+import { assertConstantProduct } from '../../../../src/contracts/multipoolAutoswap/constantProduct.js';
+import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 
 test('constantProduct invariant', async t => {
   const { zcf } = await setupZCFTest();

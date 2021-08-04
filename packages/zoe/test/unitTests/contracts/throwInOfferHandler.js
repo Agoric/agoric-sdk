@@ -1,10 +1,10 @@
 // @ts-check
-import '../../../exported';
+import '../../../exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { depositToSeat } from '../../../src/contractSupport';
+import { depositToSeat } from '../../../src/contractSupport/index.js';
 
 /**
  * This is a a broken contact to test that

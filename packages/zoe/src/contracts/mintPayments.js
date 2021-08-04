@@ -3,7 +3,7 @@
 import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * This is a very simple contract that creates a new issuer and mints payments

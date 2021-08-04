@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
@@ -11,12 +12,12 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
-import { makeZoe } from '../../../src/zoeService/zoe';
-import buildManualTimer from '../../../tools/manualTimer';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
-import '../../../exported';
-import '../../../src/contracts/exported';
+import '../../../exported.js';
+import '../../../src/contracts/exported.js';
 
 /**
  * @callback MakeFakePriceOracle
@@ -36,8 +37,11 @@ import '../../../src/contracts/exported';
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
-const oraclePath = `${__dirname}/../../../src/contracts/oracle`;
-const aggregatorPath = `${__dirname}/../../../src/contracts/priceAggregator`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
+const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
 
 test.before(
   'setup aggregator and oracles',

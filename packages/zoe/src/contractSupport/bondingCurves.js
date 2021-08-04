@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { natSafeMath } from './safeMath';
+import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
 

@@ -3,17 +3,20 @@
 // isolated unit test of price calculations in pool in multipoolAutoswap
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
 import { AssetKind } from '@agoric/ertp';
-import { setupZCFTest } from '../zcf/setupZcfTest';
+import { setupZCFTest } from '../zcf/setupZcfTest.js';
 
-import { setup } from '../setupBasicMints';
-import { makeAddPool } from '../../../src/contracts/multipoolAutoswap/pool';
-import { outputFromInputPrice, priceFromTargetOutput } from '../../autoswapJig';
-import { depositToSeat } from '../../../src/contractSupport';
-import buildManualTimer from '../../../tools/manualTimer';
+import { setup } from '../setupBasicMints.js';
+import { makeAddPool } from '../../../src/contracts/multipoolAutoswap/pool.js';
+import {
+  outputFromInputPrice,
+  priceFromTargetOutput,
+} from '../../autoswapJig.js';
+import { depositToSeat } from '../../../src/contractSupport/index.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
 async function setupPool(poolBalances) {
   const {

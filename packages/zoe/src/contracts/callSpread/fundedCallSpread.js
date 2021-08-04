@@ -1,7 +1,7 @@
 // @ts-check
 
-import '../../../exported';
-import './types';
+import '../../../exported.js';
+import './types.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -11,9 +11,9 @@ import {
   assertProposalShape,
   depositToSeat,
   assertNatAssetKind,
-} from '../../contractSupport';
-import { makePayoffHandler } from './payoffHandler';
-import { Position } from './position';
+} from '../../contractSupport/index.js';
+import { makePayoffHandler } from './payoffHandler.js';
+import { Position } from './position.js';
 
 /**
  * This contract implements a fully collateralized call spread. This is a

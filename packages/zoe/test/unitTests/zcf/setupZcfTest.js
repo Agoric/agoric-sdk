@@ -1,15 +1,19 @@
-/* global __dirname */
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { assert } from '@agoric/assert';
 
-// noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import path from 'path';
 
-const contractRoot = `${__dirname}/zcfTesterContract`;
+// noinspection ES6PreferShortImport
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractRoot = `${dirname}/zcfTesterContract.js`;
 
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   /** @type {ContractFacet} */

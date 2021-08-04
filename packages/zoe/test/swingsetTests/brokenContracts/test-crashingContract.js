@@ -1,4 +1,3 @@
-/* global __dirname */
 // @ts-check
 
 // TODO Remove babel-standalone preinitialization
@@ -8,26 +7,30 @@ import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 
 import fs from 'fs';
 
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
 const CONTRACT_FILES = ['crashingAutoRefund'];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const bundle = await bundleSource(`${__dirname}/${contract}`);
+    const bundle = await bundleSource(`${dirname}/${contract}`);
     const obj = { bundle, contract };
     fs.writeFileSync(
-      `${__dirname}/bundle-${contract}.js`,
+      `${dirname}/bundle-${contract}.js`,
       `export default ${JSON.stringify(obj)};`,
     );
   }),
 );
 
 async function main(argv) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   const controller = await buildVatController(config, argv);

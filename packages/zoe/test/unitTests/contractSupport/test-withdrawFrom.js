@@ -1,19 +1,26 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
-import { setup } from '../setupBasicMints';
-import { makeZoe } from '../../..';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
-import { depositToSeat, withdrawFromSeat } from '../../../src/contractSupport';
-import { assertPayoutAmount } from '../../zoeTestHelpers';
-import { makeOffer } from '../makeOffer';
+import { setup } from '../setupBasicMints.js';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import {
+  depositToSeat,
+  withdrawFromSeat,
+} from '../../../src/contractSupport/index.js';
+import { assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { makeOffer } from '../makeOffer.js';
 
-const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractRoot = `${dirname}/../zcf/zcfTesterContract.js`;
 
 async function setupContract(moolaIssuer, bucksIssuer) {
   let testJig;

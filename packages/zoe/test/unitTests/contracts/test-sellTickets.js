@@ -1,21 +1,25 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { assert } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards';
+import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards.js';
 import { E } from '@agoric/eventual-send';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
-import { defaultAcceptanceMsg } from '../../../src/contractSupport';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
-const mintAndSellNFTRoot = `${__dirname}/../../../src/contracts/mintAndSellNFT`;
-const sellItemsRoot = `${__dirname}/../../../src/contracts/sellItems`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const mintAndSellNFTRoot = `${dirname}/../../../src/contracts/mintAndSellNFT.js`;
+const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions

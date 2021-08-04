@@ -7,9 +7,9 @@ import {
   offerTo,
   saveAllIssuers,
   assertProposalShape,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * This contract is inspired by the description of an OTC Desk smart

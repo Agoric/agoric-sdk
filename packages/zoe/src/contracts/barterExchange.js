@@ -2,10 +2,10 @@
 
 import { Far } from '@agoric/marshal';
 import makeStore from '@agoric/store';
-import '../../exported';
+import '../../exported.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { satisfies } from '../contractSupport';
+import { satisfies } from '../contractSupport/index.js';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other

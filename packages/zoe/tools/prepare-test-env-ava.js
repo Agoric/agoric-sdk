@@ -7,4 +7,4 @@
  * the same as the SwingSet vat environment.
  */
 
-export { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+export { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';

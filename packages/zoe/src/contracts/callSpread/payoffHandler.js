@@ -1,13 +1,13 @@
 // @ts-check
 
-import '../../../exported';
-import './types';
+import '../../../exported.js';
+import './types.js';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { getAmountOut, multiplyBy } from '../../contractSupport';
-import { Position } from './position';
-import { calculateShares } from './calculateShares';
+import { getAmountOut, multiplyBy } from '../../contractSupport/index.js';
+import { Position } from './position.js';
+import { calculateShares } from './calculateShares.js';
 
 /**
  * makePayoffHandler returns an object with methods that are useful for
