@@ -32,6 +32,7 @@
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
  * @property {GetTerms} getTerms
+ * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
  * @property {GetInvitationDetails} getInvitationDetails - return an
@@ -61,6 +62,12 @@
  * @callback GetTerms
  * @param {Instance} instance
  * @returns {Terms}
+ */
+
+/**
+ * @callback GetInstallationForInstance
+ * @param {Instance} instance
+ * @returns {Installation}
  */
 
 /**

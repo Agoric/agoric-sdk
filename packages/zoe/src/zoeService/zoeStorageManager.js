@@ -54,6 +54,7 @@ export const makeZoeStorageManager = createZCFVat => {
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
@@ -180,6 +181,8 @@ export const makeZoeStorageManager = createZCFVat => {
       getTerms: instanceRecordManager.getTerms,
       getIssuers: instanceRecordManager.getIssuers,
       getBrands: instanceRecordManager.getBrands,
+      getInstallationForInstance:
+        instanceRecordManager.getInstallationForInstance,
       saveIssuer,
       makeZoeMint,
       getInstanceRecord: instanceRecordManager.getInstanceRecord,
@@ -204,6 +207,7 @@ export const makeZoeStorageManager = createZCFVat => {
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstanceAdmin,
     unwrapInstallation,
   };

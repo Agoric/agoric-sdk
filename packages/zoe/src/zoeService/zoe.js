@@ -55,6 +55,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstanceAdmin,
     invitationIssuer,
   } = makeZoeStorageManager(createZCFVat);
@@ -95,6 +96,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstance,
     getInstallation,
     getInvitationDetails,

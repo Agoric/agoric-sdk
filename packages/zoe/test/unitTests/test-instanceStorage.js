@@ -44,6 +44,7 @@ test('makeAndStoreInstanceRecord', async t => {
     addIssuerToInstanceRecord,
     getInstanceRecord,
     getTerms,
+    getInstallationForInstance,
     getIssuers,
     getBrands,
     assertUniqueKeyword,
@@ -64,6 +65,7 @@ test('makeAndStoreInstanceRecord', async t => {
   t.deepEqual(getTerms(), { time: 2n, issuers, brands });
   t.deepEqual(getIssuers(), issuers);
   t.deepEqual(getBrands(), brands);
+  t.is(getInstallationForInstance(), fakeInstallation);
 
   t.throws(() => assertUniqueKeyword('Currency'), {
     message: 'keyword "Currency" must be unique',

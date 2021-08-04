@@ -85,6 +85,7 @@
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => Object} getTerms
+ * @property {() => Installation} getInstallationForInstance
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
@@ -279,6 +280,11 @@
  */
 
 /**
+ * @callback InstanceRecordManagerGetInstallationForInstance
+ * @returns {Installation}
+ */
+
+/**
  * @callback InstanceRecordGetIssuers
  * @returns {IssuerKeywordRecord}
  */
@@ -293,6 +299,7 @@
  * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {InstanceRecordManagerGetTerms} getTerms
+ * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {(keyword: Keyword) => void} assertUniqueKeyword

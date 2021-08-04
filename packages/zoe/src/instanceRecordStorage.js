@@ -76,6 +76,11 @@ export const makeInstanceRecordStorage = () => {
     assertInstantiated();
     return instanceRecord.terms.brands;
   };
+  /** @type {InstanceRecordManagerGetInstallationForInstance} */
+  const getInstallationForInstance = () => {
+    assertInstantiated();
+    return instanceRecord.installation;
+  };
 
   const assertUniqueKeyword = keyword => {
     assertInstantiated();
@@ -98,6 +103,7 @@ export const makeInstanceRecordStorage = () => {
     addIssuerToInstanceRecord,
     getInstanceRecord,
     getTerms,
+    getInstallationForInstance,
     getIssuers,
     getBrands,
     assertUniqueKeyword,
