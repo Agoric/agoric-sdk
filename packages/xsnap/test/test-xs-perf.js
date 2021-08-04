@@ -220,7 +220,12 @@ function dataStructurePerformance(logn) {
   send({ size: n, dur, rate });
 }
 
-test('Array, Map, Set growth is O(log(n))', async t => {
+// This test fails intermittently due to some amount of noise that we cannot
+// completely elliminate.
+// Rather than have a very low-probability failing test, we skip this, but
+// retain the benchmark for future verification in the unlikely event that the
+// performance character of XS collections regresses.
+test.skip('Array, Map, Set growth is O(log(n))', async t => {
   const opts = options(io);
   const vat = xsnap({ ...opts, meteringLimit: 0 });
   await vat.evaluate(
