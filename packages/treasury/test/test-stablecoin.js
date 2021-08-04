@@ -1,5 +1,6 @@
 // @ts-check
 /* global require, setImmediate */
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
 import '@agoric/zoe/exported';
 import '../src/types';
@@ -273,12 +274,8 @@ test('first', async t => {
     'withdrew 100 collateral',
   );
 
-  console.log('preDEBT ', vault.getDebtAmount());
-
   await E(aethVaultManager).liquidateAll();
-  console.log('DEBT ', vault.getDebtAmount());
   t.truthy(AmountMath.isEmpty(vault.getDebtAmount()), 'debt is paid off');
-  console.log('COLLATERAL ', vault.getCollateralAmount());
   t.truthy(AmountMath.isEmpty(vault.getCollateralAmount()), 'vault is cleared');
 
   t.deepEqual(stablecoinMachine.getRewardAllocation(), {
@@ -1618,7 +1615,6 @@ test('mutable liquidity triggers and interest', async t => {
 test('bad chargingPeriod', async t => {
   /* @type {TestContext} */
   const setJig = () => {};
-  /* @type {TestContext} */
   const zoe = setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
@@ -1787,4 +1783,184 @@ test('coll fees from loan and AMM', async t => {
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
     .RUN;
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
+});
+
+test('close loan', async t => {
+  /* @type {TestContext} */
+  let testJig;
+  const setJig = jig => {
+    testJig = jig;
+  };
+  const zoe = setUpZoeForTest(setJig);
+
+  const autoswapInstall = await makeInstall(autoswapRoot, zoe);
+  const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
+  const liquidationInstall = await makeInstall(liquidationRoot, zoe);
+
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+
+  const priceAuthorityPromiseKit = makePromiseKit();
+  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
+  const loanParams = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
+  };
+  const manualTimer = buildManualTimer(console.log);
+  const { creatorFacet: stablecoinMachine, publicFacet: lender } = await E(
+    zoe,
+  ).startInstance(
+    stablecoinInstall,
+    {},
+    {
+      autoswapInstall,
+      priceAuthority: priceAuthorityPromise,
+      loanParams,
+      timerService: manualTimer,
+      liquidationInstall,
+    },
+  );
+  const { runIssuerRecord, govIssuerRecord } = testJig;
+  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
+  const { brand: govBrand } = govIssuerRecord;
+  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
+
+  const priceAuthority = makePriceAuthority(
+    aethBrand,
+    runBrand,
+    [15n],
+    null,
+    manualTimer,
+    quoteMint,
+    AmountMath.make(1n, aethBrand),
+  );
+  priceAuthorityPromiseKit.resolve(priceAuthority);
+
+  // Add a vaultManager with 900 aeth collateral at a 201 aeth/RUN rate
+  const capitalAmount = AmountMath.make(900n, aethBrand);
+  const rates = makeRates(runBrand, aethBrand);
+  const aethVaultManagerSeat = await E(zoe).offer(
+    E(stablecoinMachine).makeAddTypeInvitation(aethIssuer, 'AEth', rates),
+    harden({
+      give: { Collateral: capitalAmount },
+      want: { Governance: AmountMath.makeEmpty(govBrand) },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(capitalAmount),
+    }),
+  );
+
+  await E(aethVaultManagerSeat).getOfferResult();
+
+  // initial loan /////////////////////////////////////
+
+  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  const collateralAmount = AmountMath.make(1000n, aethBrand);
+  const aliceLoanAmount = AmountMath.make(5000n, runBrand);
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  const {
+    vault: aliceVault,
+    uiNotifier: aliceNotifier,
+    liquidationPayout,
+  } = await E(aliceLoanSeat).getOfferResult();
+
+  const debtAmount = await E(aliceVault).getDebtAmount();
+  const fee = multiplyBy(aliceLoanAmount, rates.loanFee);
+  const runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
+
+  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const loanProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+
+  const runLent = await loanProceeds.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(runIssuer).getAmountOf(runLent),
+      AmountMath.make(5000n, runBrand),
+    ),
+  );
+
+  const aliceUpdate = await aliceNotifier.getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
+  const aliceCollateralization1 = aliceUpdate.value.collateralizationRatio;
+  t.deepEqual(aliceCollateralization1.numerator.value, 15000n);
+  t.deepEqual(aliceCollateralization1.denominator.value, runDebtLevel.value);
+
+  // Create a loan for Bob for 1000 RUN with 200 aeth collateral
+  const bobCollateralAmount = AmountMath.make(200n, aethBrand);
+  const bobLoanAmount = AmountMath.make(1000n, runBrand);
+  const bobLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: bobCollateralAmount },
+      want: { RUN: bobLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(bobCollateralAmount),
+    }),
+  );
+  const bobProceeds = await E(bobLoanSeat).getPayouts();
+  await E(bobLoanSeat).getOfferResult();
+  const bobRun = await bobProceeds.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(runIssuer).getAmountOf(bobRun),
+      AmountMath.make(1000n, runBrand),
+    ),
+  );
+
+  // close loan, using Bob's RUN /////////////////////////////////////
+
+  const runRepayment = await E(runIssuer).combine([bobRun, runLent]);
+
+  const aliceCloseSeat = await E(zoe).offer(
+    E(aliceVault).makeCloseInvitation(),
+    harden({
+      give: { RUN: AmountMath.make(6000n, runBrand) },
+      want: { Collateral: AmountMath.makeEmpty(aethBrand) },
+    }),
+    harden({ RUN: runRepayment }),
+  );
+
+  const closeOfferResult = await E(aliceCloseSeat).getOfferResult();
+  t.is(closeOfferResult, 'your loan is closed, thank you for your business');
+
+  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocation();
+  t.deepEqual(closeAlloc, {
+    RUN: AmountMath.make(750n, runBrand),
+    Collateral: AmountMath.make(1000n, aethBrand),
+  });
+  const closeProceeds = await E(aliceCloseSeat).getPayouts();
+  const collProceeds = await aethIssuer.getAmountOf(closeProceeds.Collateral);
+  const runProceeds = await E(runIssuer).getAmountOf(closeProceeds.RUN);
+
+  t.deepEqual(runProceeds, AmountMath.make(750n, runBrand));
+  t.deepEqual(collProceeds, AmountMath.make(1000n, aethBrand));
+  t.deepEqual(
+    await E(aliceVault).getCollateralAmount(),
+    AmountMath.makeEmpty(aethBrand),
+  );
+
+  const liquidation = await liquidationPayout;
+  t.deepEqual(
+    await E(runIssuer).getAmountOf(liquidation.RUN),
+    AmountMath.makeEmpty(runBrand),
+  );
+  t.deepEqual(
+    await aethIssuer.getAmountOf(liquidation.Collateral),
+    AmountMath.makeEmpty(aethBrand),
+  );
 });

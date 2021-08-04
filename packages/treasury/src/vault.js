@@ -40,7 +40,7 @@ export function makeVaultKit(
     assert(active, 'vault must still be active');
   }
 
-  const collateralBrand = manager.collateralBrand;
+  const collateralBrand = manager.getCollateralBrand();
   // timestamp of most recent update to interest
   let latestInterestUpdate = startTimeStamp;
 
@@ -102,15 +102,16 @@ export function makeVaultKit(
 
   async function getCollateralizationRatio() {
     const collateralAmount = getCollateralAmount();
-    // TODO: allow Ratios to represent X/0.
-    if (AmountMath.isEmpty(runDebt)) {
-      return makeRatio(collateralAmount.value, runBrand, 1n);
-    }
 
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
       runBrand,
     );
+
+    // TODO: allow Ratios to represent X/0.
+    if (AmountMath.isEmpty(runDebt)) {
+      return makeRatio(collateralAmount.value, runBrand, 1n);
+    }
     const collateralValueInRun = getAmountOut(quoteAmount);
     return makeRatioFromAmounts(collateralValueInRun, runDebt);
   }
@@ -173,11 +174,12 @@ export function makeVaultKit(
     zcf.reallocate(seat, vaultSeat);
 
     seat.exit();
-    runDebt = AmountMath.makeEmpty(runBrand);
     active = false;
     updateUiState();
 
     runMint.burnLosses({ RUN: runDebt }, vaultSeat);
+    runDebt = AmountMath.makeEmpty(runBrand);
+    assertVaultHoldsNoRun();
     vaultSeat.exit();
 
     return 'your loan is closed, thank you for your business';
