@@ -6,7 +6,7 @@ import {
   openJSONStore,
   getAllState,
   isJSONStore,
-} from '../src/json-store';
+} from '../src/json-store.js';
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));
