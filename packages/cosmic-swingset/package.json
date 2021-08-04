@@ -2,11 +2,9 @@
   "name": "@agoric/cosmic-swingset",
   "version": "0.31.10",
   "description": "Agoric's Cosmos blockchain integration",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "bin": {
-    "ag-chain-cosmos": "./src/entrypoint.cjs"
+    "ag-chain-cosmos": "./src/entrypoint.js"
   },
   "main": "src/chain-main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -43,7 +41,7 @@
     "agoric": "^0.13.11",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "esm": "agoric-labs/esm#Agoric-built",
+    "import-meta-resolve": "^1.1.1",
     "node-lmdb": "^0.9.4",
     "tmp": "^0.2.1"
   },
@@ -68,9 +66,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   }

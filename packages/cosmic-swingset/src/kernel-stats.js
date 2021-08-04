@@ -6,7 +6,7 @@ import { makeLegacyMap } from '@agoric/store';
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
-} from '@agoric/swingset-vat/src/kernel/metrics';
+} from '@agoric/swingset-vat/src/kernel/metrics.js';
 
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
