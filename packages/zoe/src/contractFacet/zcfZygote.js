@@ -264,15 +264,17 @@ export const makeZCFZygote = (
     handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
       const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
       const offerHandler = takeOfferHandler(invitationHandle);
-      const offerResultP = E(offerHandler)(zcfSeat).catch(reason => {
-        if (reason === undefined) {
-          const newErr = new Error(
-            `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
-          );
-          throw zcfSeat.fail(newErr);
-        }
-        throw zcfSeat.fail(reason);
-      });
+      const offerResultP = E(offerHandler)(zcfSeat, seatData.offerArgs).catch(
+        reason => {
+          if (reason === undefined) {
+            const newErr = new Error(
+              `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
+            );
+            throw zcfSeat.fail(newErr);
+          }
+          throw zcfSeat.fail(reason);
+        },
+      );
       const exitObj = makeExitObj(seatData.proposal, zcfSeat);
       /** @type {HandleOfferResult} */
       return harden({ offerResultP, exitObj });
