@@ -1293,6 +1293,11 @@
   dependencies:
     requireindex "~1.1.0"
 
+"@endo/netstring@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@endo/netstring/-/netstring-0.2.5.tgz#4823fc515511fe527f635a9a71b49dce6aedc1db"
+  integrity sha512-Qtq/l5x/NneV03VPKDmuVBBApwyhT6CUrWQIruHnsMgDWqOa1wv3HCHSrQ/7HVa19biKuMEe669GiAd9kLaW9g==
+
 "@endo/ses-ava@^0.2.5":
   version "0.2.5"
   resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.5.tgz#0ecfe3394386245f03b231dec481865c11cb60b7"
