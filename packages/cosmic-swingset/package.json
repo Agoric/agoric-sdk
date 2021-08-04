@@ -11,6 +11,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -46,7 +47,8 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "c8": "^7.7.2"
   },
   "eslintConfig": {
     "extends": [
