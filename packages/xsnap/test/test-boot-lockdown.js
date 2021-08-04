@@ -96,3 +96,36 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
     t.assert(pass);
   }
 });
+
+function freezeBadArg() {
+  'use strict';
+
+  const x = { y: { size: 2 } };
+  // @ts-ignore
+  Object.freeze(x, true);
+  try {
+    x.y.color = 'blue';
+    return x.y.color;
+  } catch (e) {
+    return e.message;
+  }
+}
+
+test('extra Object.freeze arg on node', async t => {
+  t.is(freezeBadArg(), 'blue');
+});
+
+test('extra Object.freeze arg on XS with SES', async t => {
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(bootScript);
+
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+    send((${freezeBadArg})());
+  `);
+  t.deepEqual(opts.messages, ['"blue"']);
+});
