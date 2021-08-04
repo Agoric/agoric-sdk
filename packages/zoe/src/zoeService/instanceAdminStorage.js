@@ -21,11 +21,16 @@ export const makeInstanceAdminStorage = () => {
   /** @type {GetTerms} */
   const getTerms = instance => instanceToInstanceAdmin.get(instance).getTerms();
 
+  /** @type {GetInstallationForInstance} */
+  const getInstallationForInstance = instance =>
+    instanceToInstanceAdmin.get(instance).getInstallationForInstance();
+
   return harden({
     getPublicFacet,
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstanceAdmin: instanceToInstanceAdmin.get,
     initInstanceAdmin: instanceToInstanceAdmin.init,
     deleteInstanceAdmin: instanceToInstanceAdmin.delete,

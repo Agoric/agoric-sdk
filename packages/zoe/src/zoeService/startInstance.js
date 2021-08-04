@@ -79,6 +79,8 @@ export const makeStartInstance = (
         getTerms: zoeInstanceStorageManager.getTerms,
         getIssuers: zoeInstanceStorageManager.getIssuers,
         getBrands: zoeInstanceStorageManager.getBrands,
+        getInstallationForInstance:
+          zoeInstanceStorageManager.getInstallationForInstance,
         getInstance: () => instance,
         assertAcceptingOffers: () => {
           assert(acceptingOffers, `No further offers are accepted`);

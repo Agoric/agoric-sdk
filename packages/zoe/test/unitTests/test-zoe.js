@@ -297,6 +297,27 @@ test(`zoe.getTerms - no instance`, async t => {
   });
 });
 
+test(`zoe.getInstallationForInstance`, async t => {
+  const { zoe, moolaKit } = setup();
+  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+  const { instance } = await E(zoe).startInstance(
+    installation,
+    {
+      Moola: moolaKit.issuer,
+    },
+    {
+      someTerm: 2,
+    },
+  );
+
+  const installationReturned = await E(zoe).getInstallationForInstance(
+    instance,
+  );
+  t.is(installation, installationReturned);
+});
+
 test(`zoe.getInstance`, async t => {
   const { zoe, zcf, instance } = await setupZCFTest();
   const invitation = await E(zcf).makeInvitation(undefined, 'invitation');

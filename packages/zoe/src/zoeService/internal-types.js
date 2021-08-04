@@ -70,6 +70,7 @@
 /**
  * @typedef {Object} ZoeInstanceStorageManager
  * @property {InstanceRecordManagerGetTerms} getTerms
+ * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
@@ -110,6 +111,7 @@
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms
+ * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  */

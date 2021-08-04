@@ -13,6 +13,7 @@ test('makeInstanceAdminStorage', async t => {
     getBrands,
     getIssuers,
     getTerms,
+    getInstallationForInstance,
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
@@ -25,12 +26,14 @@ test('makeInstanceAdminStorage', async t => {
     getBrands: () => 'brands1',
     getIssuers: () => 'issuers1',
     getTerms: () => 'terms1',
+    getInstallationForInstance: () => 'installation1',
   });
   const mockInstanceAdmin2 = Far('mockInstanceAdmin2', {
     getPublicFacet: () => 'publicFacet2',
     getBrands: () => 'brands2',
     getIssuers: () => 'issuers2',
     getTerms: () => 'terms2',
+    getInstallationForInstance: () => 'installation2',
   });
 
   // @ts-ignore instance is mocked
@@ -53,6 +56,9 @@ test('makeInstanceAdminStorage', async t => {
 
   // @ts-ignore instance is mocked
   t.is(getTerms(mockInstance1), 'terms1');
+
+  // @ts-ignore instance is mocked
+  t.is(getInstallationForInstance(mockInstance1), 'installation1');
 
   // @ts-ignore instance is mocked
   deleteInstanceAdmin(mockInstance2);
