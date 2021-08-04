@@ -13,7 +13,7 @@
 
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
-import { netstringReader, netstringWriter } from '@endo/netstring';
+import * as netstring from './netstring.js';
 import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
@@ -131,13 +131,13 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const messagesToXsnap = netstringWriter(
+  const messagesToXsnap = netstring.writer(
     node.writer(
       /** @type {NodeJS.WritableStream} */ (xsnapProcess.stdio[3]),
       `messages to ${name}`,
     ),
   );
-  const messagesFromXsnap = netstringReader(
+  const messagesFromXsnap = netstring.reader(
     /** @type {AsyncIterable<Uint8Array>} */ (xsnapProcess.stdio[4]),
   );
 
