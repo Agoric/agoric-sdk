@@ -9,7 +9,6 @@
 
 export {
   sameStructure,
-  mustBeSameStructure,
   isStructure as isComparable, // deprecated
   assertStructure as mustBeComparable, // deprecated
   fulfillToStructure as allComparable, // deprecated
