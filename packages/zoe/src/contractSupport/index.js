@@ -6,22 +6,22 @@ export {
   calcLiqValueToMint,
   calcValueToRemove,
   calcSecondaryRequired,
-} from './bondingCurves';
+} from './bondingCurves.js';
 
-export * from './priceAuthority';
+export * from './priceAuthority.js';
 
 export {
   getAmountIn,
   getAmountOut,
   getTimestamp,
   getQuoteValues,
-} from './priceQuote';
+} from './priceQuote.js';
 
-export { natSafeMath } from './safeMath';
+export { natSafeMath } from './safeMath.js';
 
-export { makeStateMachine } from './stateMachine';
+export { makeStateMachine } from './stateMachine.js';
 
-export * from './statistics';
+export * from './statistics.js';
 
 export {
   defaultAcceptanceMsg,
@@ -36,7 +36,7 @@ export {
   saveAllIssuers,
   offerTo,
   checkZCF,
-} from './zoeHelpers';
+} from './zoeHelpers.js';
 
 export {
   makeRatio,
@@ -48,4 +48,4 @@ export {
   oneMinus,
   addRatios,
   multiplyRatios,
-} from './ratio';
+} from './ratio.js';

@@ -1,9 +1,9 @@
 // @ts-check
 
-import './types';
+import './types.js';
 import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { natSafeMath } from './safeMath';
+import { natSafeMath } from './safeMath.js';
 
 const { multiply, floorDivide, add, subtract } = natSafeMath;
 

@@ -3,7 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { subtractOrMakeEmpty } from './helpers';
+import { subtractOrMakeEmpty } from './helpers.js';
 
 const { details: X } = assert;
 

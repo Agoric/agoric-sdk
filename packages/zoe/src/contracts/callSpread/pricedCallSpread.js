@@ -1,7 +1,7 @@
 // @ts-check
 
-import '../../../exported';
-import './types';
+import '../../../exported.js';
+import './types.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -15,9 +15,9 @@ import {
   makeRatio,
   multiplyBy,
   oneMinus,
-} from '../../contractSupport';
-import { makePayoffHandler } from './payoffHandler';
-import { Position } from './position';
+} from '../../contractSupport/index.js';
+import { makePayoffHandler } from './payoffHandler.js';
+import { Position } from './position.js';
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;

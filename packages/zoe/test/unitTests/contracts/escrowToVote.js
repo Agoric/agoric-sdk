@@ -9,9 +9,9 @@ import {
   assertIssuerKeywords,
   assertProposalShape,
   assertNatAssetKind,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport/index.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
 /**
  * This contract implements coin voting. There are two roles: the

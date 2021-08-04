@@ -2,8 +2,8 @@
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import makeStore from '@agoric/store';
-import { makeZoe } from '../../src/zoeService/zoe';
-import fakeVatAdmin from '../../tools/fakeVatAdmin';
+import { makeZoe } from '../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
 
 const setup = () => {
   const moolaBundle = makeIssuerKit('moola');

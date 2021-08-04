@@ -1,9 +1,9 @@
 // @ts-check
 
-import '../../../exported';
+import '../../../exported.js';
 
-import { assertProposalShape } from '../../contractSupport';
-import { makeBorrowInvitation } from './borrow';
+import { assertProposalShape } from '../../contractSupport/index.js';
+import { makeBorrowInvitation } from './borrow.js';
 
 // The lender puts up the amount to be loaned to the borrower, but has
 // no further actions. The loan is ongoing until it is paid back

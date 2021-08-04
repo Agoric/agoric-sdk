@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -10,8 +11,11 @@ import { passStyleOf } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-import { setupZCFTest } from './zcf/setupZcfTest';
-import { setup } from './setupBasicMints';
+import { setupZCFTest } from './zcf/setupZcfTest.js';
+import { setup } from './setupBasicMints.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -38,7 +42,7 @@ test(`zoe.install bad bundle`, async t => {
 
 test(`zoe.install`, async t => {
   const { zoe } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/atomicSwap`;
+  const contractPath = `${dirname}/../../src/contracts/atomicSwap`;
   const bundle = await bundleSource(contractPath);
   t.truthy(bundle.source.includes('start'));
   const installation = await E(zoe).install(bundle);
@@ -150,7 +154,7 @@ test(`zoe.offer - no invitation`, async t => {
 
 test(`zoe.getPublicFacet`, async t => {
   const { zoe } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
@@ -175,7 +179,7 @@ test(`zoe.getPublicFacet - no instance`, async t => {
 
 test(`zoe.getIssuers`, async t => {
   const { zoe, moolaKit } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(installation, {
@@ -186,7 +190,7 @@ test(`zoe.getIssuers`, async t => {
 
 test(`zoe.getIssuers - none`, async t => {
   const { zoe } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(installation);
@@ -209,7 +213,7 @@ test(`zoe.getIssuers - no instance`, async t => {
 
 test(`zoe.getBrands`, async t => {
   const { zoe, moolaKit } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(installation, {
@@ -220,7 +224,7 @@ test(`zoe.getBrands`, async t => {
 
 test(`zoe.getBrands - none`, async t => {
   const { zoe } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(installation);
@@ -243,7 +247,7 @@ test(`zoe.getBrands - no instance`, async t => {
 
 test(`zoe.getTerms - none`, async t => {
   const { zoe } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(installation);
@@ -255,7 +259,7 @@ test(`zoe.getTerms - none`, async t => {
 
 test(`zoe.getTerms`, async t => {
   const { zoe, moolaKit } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(
@@ -299,7 +303,7 @@ test(`zoe.getTerms - no instance`, async t => {
 
 test(`zoe.getInstallationForInstance`, async t => {
   const { zoe, moolaKit } = setup();
-  const contractPath = `${__dirname}/../../src/contracts/automaticRefund`;
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
   const { instance } = await E(zoe).startInstance(

@@ -1,12 +1,12 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@agoric/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation';
+import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation.js';
 
 test('burnInvitation', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);

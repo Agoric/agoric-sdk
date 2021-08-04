@@ -1,20 +1,27 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
-import '../../../exported';
-import buildManualTimer from '../../../tools/manualTimer';
+import '../../../exported.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
-import { setup } from '../setupBasicMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertPayoutDeposit, assertPayoutAmount } from '../../zoeTestHelpers';
-import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority';
+import { setup } from '../setupBasicMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import {
+  assertPayoutDeposit,
+  assertPayoutAmount,
+} from '../../zoeTestHelpers.js';
+import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
-const fundedCallSpread = `${__dirname}/../../../src/contracts/callSpread/fundedCallSpread`;
-const pricedCallSpread = `${__dirname}/../../../src/contracts/callSpread/pricedCallSpread`;
-const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const fundedCallSpread = `${dirname}/../../../src/contracts/callSpread/fundedCallSpread.js`;
+const pricedCallSpread = `${dirname}/../../../src/contracts/callSpread/pricedCallSpread.js`;
+const simpleExchange = `${dirname}/../../../src/contracts/simpleExchange.js`;
 
 const makeTestPriceAuthority = (brands, priceList, timer) =>
   makeFakePriceAuthority({

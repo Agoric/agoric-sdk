@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
@@ -9,13 +10,16 @@ import { Far } from '@agoric/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 
-import buildManualTimer from '../../../tools/manualTimer';
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
-import { assertAmountsEqual } from '../../zoeTestHelpers';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
-const coveredCallRoot = `${__dirname}/../../../src/contracts/coveredCall`;
-const atomicSwapRoot = `${__dirname}/../../../src/contracts/atomicSwap`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const coveredCallRoot = `${dirname}/../../../src/contracts/coveredCall.js`;
+const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 
 test('zoe - coveredCall', async t => {
   t.plan(13);

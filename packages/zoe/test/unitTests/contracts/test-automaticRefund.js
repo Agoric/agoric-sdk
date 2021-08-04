@@ -1,15 +1,19 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
 
-const automaticRefundRoot = `${__dirname}/../../../src/contracts/automaticRefund`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const automaticRefundRoot = `${dirname}/../../../src/contracts/automaticRefund.js`;
 
 test('zoe - simplest automaticRefund', async t => {
   // Setup zoe and mints

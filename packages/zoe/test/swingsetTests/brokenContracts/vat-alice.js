@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { showPurseBalance, setupIssuers } from '../helpers';
+import { showPurseBalance, setupIssuers } from '../helpers.js';
 
 async function logCounter(log, publicAPI) {
   log(`counter: ${await E(publicAPI).getOffersCount()}`);

@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported';
+import '../../exported.js';
 
 import { E } from '@agoric/eventual-send';
 

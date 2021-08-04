@@ -8,11 +8,11 @@ import {
   defaultAcceptanceMsg,
   assertIssuerKeywords,
   assertProposalShape,
-} from '../../contractSupport';
-import { calcWinnerAndClose } from './secondPriceLogic';
-import { assertBidSeat } from './assertBidSeat';
+} from '../../contractSupport/index.js';
+import { calcWinnerAndClose } from './secondPriceLogic.js';
+import { assertBidSeat } from './assertBidSeat.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
 /**
  * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction

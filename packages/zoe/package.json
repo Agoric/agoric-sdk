@@ -2,22 +2,21 @@
   "name": "@agoric/zoe",
   "version": "0.17.6",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/zoeService/zoe.js",
+  "type": "module",
+  "main": "./src/zoeService/zoe.js",
   "engines": {
     "node": ">=11.0"
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
     "test": "ava --verbose",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m --verbose",
     "test:swingset": "ava 'test/swingsetTests/**/test-*.js' -T 10m --verbose",
     "test:xs": "yarn test:xs-unit",
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
-    "build-zcfBundle": "node -r esm scripts/build-zcfBundle.js",
+    "build-zcfBundle": "node scripts/build-zcfBundle.js",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
@@ -53,14 +52,13 @@
     "@agoric/promise-kit": "^0.2.21",
     "@agoric/same-structure": "^0.1.21",
     "@agoric/store": "^0.4.23",
-    "@agoric/swingset-vat": "^0.19.0",
-    "@agoric/transform-metering": "^1.4.20"
+    "@agoric/swingset-vat": "^0.19.0"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
     "@agoric/install-ses": "^0.5.21",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built",
+    "c8": "^7.7.2",
     "ses": "^0.14.0"
   },
   "files": [
@@ -80,9 +78,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   },

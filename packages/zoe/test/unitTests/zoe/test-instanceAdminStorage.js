@@ -1,11 +1,11 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
 
-import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage';
+import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';
 
 test('makeInstanceAdminStorage', async t => {
   const {

@@ -1,11 +1,11 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
 import { E } from '@agoric/eventual-send';
-import { createInvitationKit } from '../../../src/zoeService/makeInvitation';
+import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
 test('createInvitationKit', async t => {
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit();

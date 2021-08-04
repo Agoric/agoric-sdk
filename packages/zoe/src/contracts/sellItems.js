@@ -10,9 +10,9 @@ import {
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * Sell items in exchange for money. Items may be fungible or

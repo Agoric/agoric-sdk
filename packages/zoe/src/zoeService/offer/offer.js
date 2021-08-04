@@ -1,13 +1,13 @@
 // @ts-check
 import { passStyleOf } from '@agoric/marshal';
 
-import { cleanProposal } from '../../cleanProposal';
-import { burnInvitation } from './burnInvitation';
+import { cleanProposal } from '../../cleanProposal.js';
+import { burnInvitation } from './burnInvitation.js';
 
-import '@agoric/ertp/exported';
-import '@agoric/store/exported';
-import '../../../exported';
-import '../internal-types';
+import '@agoric/ertp/exported.js';
+import '@agoric/store/exported.js';
+import '../../../exported.js';
+import '../internal-types.js';
 
 const { details: X, quote: q } = assert;
 

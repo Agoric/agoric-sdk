@@ -1,27 +1,31 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin';
-import { makeZoe } from '../..';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { makeZoe } from '../../src/zoeService/zoe.js';
 
-import '../../exported';
-import '../../src/contracts/exported';
-import buildManualTimer from '../../tools/manualTimer';
-import { setup } from './setupBasicMints';
-import { assertPayoutAmount } from '../zoeTestHelpers';
-import { makeScriptedOracle } from '../../tools/scriptedOracle';
+import '../../exported.js';
+import '../../src/contracts/exported.js';
+import buildManualTimer from '../../tools/manualTimer.js';
+import { setup } from './setupBasicMints.js';
+import { assertPayoutAmount } from '../zoeTestHelpers.js';
+import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
 
 // This test shows how to set up a fake oracle and use it in a contract.
 
-const oracleContractPath = `${__dirname}/../../src/contracts/oracle`;
-const bountyContractPath = `${__dirname}/bounty`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const oracleContractPath = `${dirname}/../../src/contracts/oracle.js`;
+const bountyContractPath = `${dirname}/bounty.js`;
 
 /**
  * @typedef {Object} TestContext

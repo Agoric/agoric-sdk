@@ -1,9 +1,9 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeInstallationStorage } from '../../../src/zoeService/installationStorage';
+import { makeInstallationStorage } from '../../../src/zoeService/installationStorage.js';
 
 test('install, unwrap installations', async t => {
   const { install, unwrapInstallation } = makeInstallationStorage();

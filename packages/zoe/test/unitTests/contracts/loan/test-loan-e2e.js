@@ -1,24 +1,28 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
+import '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
-import '../../../../exported';
+import path from 'path';
+
+import '../../../../exported.js';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@agoric/bundle-source';
 import { makeNotifierKit } from '@agoric/notifier';
 
-import { checkDetails, checkPayout } from './helpers';
-import { setup } from '../../setupBasicMints';
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority';
-import buildManualTimer from '../../../../tools/manualTimer';
-import { makeRatio } from '../../../../src/contractSupport';
+import { checkDetails, checkPayout } from './helpers.js';
+import { setup } from '../../setupBasicMints.js';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
+import { makeRatio } from '../../../../src/contractSupport/index.js';
 
-const loanRoot = `${__dirname}/../../../../src/contracts/loan/`;
-const autoswapRoot = `${__dirname}/../../../../src/contracts/autoswap`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const loanRoot = `${dirname}/../../../../src/contracts/loan/`;
+const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;
 
 test.todo('loan - no mmr');
 test.todo('loan - bad mmr');

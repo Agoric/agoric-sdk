@@ -4,9 +4,9 @@ import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import { arrayToObj } from './objArrayConversion';
-import { cleanKeywords } from './cleanProposal';
-import { makeIssuerRecord } from './issuerRecord';
+import { arrayToObj } from './objArrayConversion.js';
+import { cleanKeywords } from './cleanProposal.js';
+import { makeIssuerRecord } from './issuerRecord.js';
 
 /**
  *  Make the Issuer Storage.

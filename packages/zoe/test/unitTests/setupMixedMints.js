@@ -1,8 +1,8 @@
 // @ts-check
 
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { makeZoe } from '../../src/zoeService/zoe';
-import fakeVatAdmin from '../../tools/fakeVatAdmin';
+import { makeZoe } from '../../src/zoeService/zoe.js';
+import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
 
 const setupMixed = () => {
   const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);

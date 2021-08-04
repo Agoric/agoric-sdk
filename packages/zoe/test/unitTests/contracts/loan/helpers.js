@@ -1,18 +1,22 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env';
+import '@agoric/zoe/tools/prepare-test-env.js';
 
-import '../../../../exported';
+import path from 'path';
+
+import '../../../../exported.js';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 
-import { setup } from '../../setupBasicMints';
-import { setupZCFTest } from '../../zcf/setupZcfTest';
-import { makeRatio } from '../../../../src/contractSupport';
-import { assertAmountsEqual } from '../../../zoeTestHelpers';
+import { setup } from '../../setupBasicMints.js';
+import { setupZCFTest } from '../../zcf/setupZcfTest.js';
+import { makeRatio } from '../../../../src/contractSupport/index.js';
+import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
@@ -192,7 +196,7 @@ export const makeAutoswapInstance = async (
   loanKit,
   initialLiquidityKeywordRecord,
 ) => {
-  const autoswapRoot = `${__dirname}/../../../../src/contracts/autoswap`;
+  const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);

@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '../../../tools/manualTimer';
+import buildManualTimer from '../../../tools/manualTimer.js';
 
 const setupBasicMints = () => {
   const all = [

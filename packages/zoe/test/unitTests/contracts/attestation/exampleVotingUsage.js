@@ -3,7 +3,7 @@ import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 
-import '../../../../src/contracts/attestation/types';
+import '../../../../src/contracts/attestation/types.js';
 
 const { details: X } = assert;
 

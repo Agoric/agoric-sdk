@@ -1,13 +1,13 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { setupZCFTest } from '../../../zcf/setupZcfTest';
+import { setupZCFTest } from '../../../zcf/setupZcfTest.js';
 
-import { setupAttestation } from '../../../../../src/contracts/attestation/returnable/returnableNFT';
+import { setupAttestation } from '../../../../../src/contracts/attestation/returnable/returnableNFT.js';
 
 const makeDoReturnAttestation = (
   zoe,
