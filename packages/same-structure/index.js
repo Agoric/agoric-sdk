@@ -4,4 +4,4 @@ export {
   sameStructure,
   mustBeSameStructure,
   mustBeComparable,
-} from './src/sameStructure';
+} from './src/sameStructure.js';

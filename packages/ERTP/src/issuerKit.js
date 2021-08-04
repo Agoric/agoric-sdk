@@ -3,12 +3,12 @@
 
 import { assert, details as X } from '@agoric/assert';
 
-import { AssetKind } from './amountMath';
-import { coerceDisplayInfo } from './displayInfo';
-import { makeBrand } from './brand';
-import { makePaymentLedger } from './paymentLedger';
+import { AssetKind } from './amountMath.js';
+import { coerceDisplayInfo } from './displayInfo.js';
+import { makeBrand } from './brand.js';
+import { makePaymentLedger } from './paymentLedger.js';
 
-import './types';
+import './types.js';
 
 /**
  * @type {MakeIssuerKit}

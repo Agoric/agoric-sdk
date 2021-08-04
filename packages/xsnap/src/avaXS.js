@@ -270,7 +270,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   if (unsupported.length > 0) {
     console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
   }
-  const { files: filePatterns, require } = pkgMeta.ava;
+  const { files: filePatterns, require = [] } = pkgMeta.ava;
   let { exclude } = pkgMeta['ava-xs'] || {};
   if (typeof exclude === 'string') {
     exclude = [exclude];

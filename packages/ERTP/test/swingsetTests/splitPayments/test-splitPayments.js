@@ -1,14 +1,12 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
-import path from 'path';
 
 async function main(basedir, argv) {
-  const dir = path.resolve(`${__dirname}/..`, basedir);
+  const dir = new URL(`../${basedir}/`, import.meta.url).pathname;
   const config = await loadBasedir(dir);
   config.defaultManagerType = 'xs-worker';
   const controller = await buildVatController(config, argv);

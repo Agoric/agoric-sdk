@@ -6,11 +6,11 @@ import { isPromise } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
 import { makeWeakStore } from '@agoric/store';
 
-import { AmountMath } from './amountMath';
-import { makePayment } from './payment';
-import { makePurse } from './purse';
+import { AmountMath } from './amountMath.js';
+import { makePayment } from './payment.js';
+import { makePurse } from './purse.js';
 
-import '@agoric/store/exported';
+import '@agoric/store/exported.js';
 
 /**
  * Make the paymentLedger, the source of truth for the balances of

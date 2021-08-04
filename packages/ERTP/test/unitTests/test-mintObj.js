@@ -1,12 +1,12 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '../../src';
+import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');

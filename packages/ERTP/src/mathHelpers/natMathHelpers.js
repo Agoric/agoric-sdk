@@ -2,7 +2,7 @@
 
 import { Nat } from '@agoric/nat';
 
-import '../types';
+import '../types.js';
 
 const identity = 0n;
 
