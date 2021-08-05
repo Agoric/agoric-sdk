@@ -1,4 +1,4 @@
-/* global globalThis */
+/* global globalThis makeKind makeVirtualScalarWeakMap */
 /* set up globalThis.handleCommand for running test scripts
 
 See avaXS.js for the way this is run inside an xsnap process.
@@ -79,11 +79,7 @@ function handler(rawMessage) {
         // eslint-disable-next-line no-undef
         typeof makeKind !== 'undefined'
           ? {
-              // @ts-ignore TODO Figure out why these are newly needed
-              // eslint-disable-next-line no-undef
               makeKind,
-              // @ts-ignore TODO Figure out why these are newly needed
-              // eslint-disable-next-line no-undef
               makeVirtualScalarWeakMap,
             }
           : {};
