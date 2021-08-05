@@ -46,6 +46,10 @@ const assertValue = value => {
  * `init` is only allowed if the key does not already exist. `Get`,
  * `set` and `delete` are only allowed if the key does already exist.
  *
+ * This is a *scalar* map in that the keys can only be atomic values, primitives
+ * or remotables. Other storeMaps will accept, for example, copyArrays and
+ * copyRecords, as keys and look them up based on equality of their contents.
+ *
  * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
  * @param {Partial<StoreOptions>=} _options

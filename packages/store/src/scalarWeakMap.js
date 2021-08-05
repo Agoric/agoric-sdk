@@ -19,6 +19,17 @@ const assertValue = value => {
 };
 
 /**
+ * This is a *scalar* map in that the keys can only be atomic values, primitives
+ * or remotables. Other storeMaps will accept, for example, copyArrays and
+ * copyRecords, as keys and look them up based on equality of their contents.
+ *
+ * TODO For now, this scalarWeakMap accepts only remotables, reflecting the
+ * constraints of the underlying JavaScript WeakMap it uses internally. But
+ * it should accept the primitives as well, storing them in a separate internal
+ * map. What makes it "weak" is that it provides no API for enumerating what's
+ * there. Though note that this only enables collection of the remotables, since
+ * the other primitives may always appear.
+ *
  * @template K,V
  * @param {string} [keyName='key']
  * @param {Partial<StoreOptions>=} options
