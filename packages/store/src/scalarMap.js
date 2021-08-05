@@ -35,7 +35,7 @@ const assertKey = key => {
 const assertValue = value => {
   // TODO: Just a transition kludge. Remove when possible.
   // See https://github.com/Agoric/agoric-sdk/issues/3606
-  harden(key);
+  harden(value);
   passStyleOf(value); // asserts that value is passable
 };
 
