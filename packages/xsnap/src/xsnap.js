@@ -80,7 +80,9 @@ export function xsnap(options) {
   }
 
   let bin = new URL(
-    `../build/bin/${platform}/${debug ? 'debug' : 'release'}/xsnap`,
+    `../xsnap-native/xsnap/build/bin/${platform}/${
+      debug ? 'debug' : 'release'
+    }/xsnap-worker`,
     import.meta.url,
   ).pathname;
 

@@ -4,9 +4,6 @@ SS := ../cosmic-swingset/
 VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
 
 TAG := $(if $(VERSION),$(VERSION),latest)
-MODDABLE_COMMIT_HASH := $(shell git submodule status ../xsnap/moddable | \
-	sed -ne 's/^.\([^ ]*\).*/\1/p')
-MODDABLE_URL := $(shell sed -ne 's!^.* = \(https://.*moddable\.git\).*!\1!p' ../../.gitmodules)
 GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
 	dirty=`git diff --quiet || echo -dirty`; \
 	echo "$$hash$$dirty")
@@ -18,6 +15,9 @@ else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
 endif
 
+submodule.env: ../xsnap/moddable/src/build.js
+	node ../xsnap/moddable/src/build.js --show-env >$@
+
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
 	docker build --file=Dockerfile.show-fat ../..
@@ -28,6 +28,8 @@ docker-build: docker-build-sdk docker-build-solo \
 docker-build-sdk:
 	docker build --build-arg=MODDABLE_COMMIT_HASH=$(MODDABLE_COMMIT_HASH) \
 		--build-arg=MODDABLE_URL=$(MODDABLE_URL) \
+		--build-arg=XSNAP_NATIVE_COMMIT_HASH=$(XSNAP_NATIVE_COMMIT_HASH) \
+		--build-arg=XSNAP_NATIVE_URL=$(XSNAP_NATIVE_URL) \
 		--build-arg=GIT_REVISION=$(GIT_REVISION) \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
@@ -73,3 +75,5 @@ docker-push-solo:
 docker-push-deployment:
 	$(DONT_PUSH_LATEST) docker push agoric/deployment:latest
 	docker push agoric/deployment:$(TAG)
+
+-include submodule.env

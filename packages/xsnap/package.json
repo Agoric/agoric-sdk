@@ -15,7 +15,7 @@
     "build:bundle": "rollup --config rollup.config.js",
     "build:bin": "node src/build.js",
     "build": "yarn build:bin && yarn build:bundle",
-    "clean": "rm -rf build",
+    "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
     "lint:types": "tsc -p jsconfig.json",
