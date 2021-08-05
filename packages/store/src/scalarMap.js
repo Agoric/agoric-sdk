@@ -4,7 +4,9 @@ import { assert, details as X, q } from '@agoric/assert';
 import { passStyleOf, assertStructure } from '@agoric/marshal';
 
 const assertKey = key => {
-  harden(key); // TODO: Just a transition kludge. Remove when possible.
+  // TODO: Just a transition kludge. Remove when possible.
+  // See https://github.com/Agoric/agoric-sdk/issues/3606
+  harden(key);
   assertStructure(key);
   const passStyle = passStyleOf(key);
   switch (passStyle) {
@@ -31,7 +33,9 @@ const assertKey = key => {
 };
 
 const assertValue = value => {
-  harden(value); // TODO: Just a transition kludge. Remove when possible.
+  // TODO: Just a transition kludge. Remove when possible.
+  // See https://github.com/Agoric/agoric-sdk/issues/3606
+  harden(key);
   passStyleOf(value); // asserts that value is passable
 };
 
