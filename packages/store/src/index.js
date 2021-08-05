@@ -1,8 +1,9 @@
-export { makeStore } from './store.js';
-export { makeWeakStore } from './weak-store.js';
-export { makeExternalStore } from './external/default.js';
-export { makeMemoryExternalStore } from './external/memory.js';
-export { makeHydrateExternalStoreMaker } from './external/hydrate.js';
-
-// Backward compatibility.
-export { makeStore as default } from './store.js';
+export { makeScalarMap, makeScalarMap as makeStore } from './scalarMap.js';
+export {
+  makeScalarWeakMap,
+  makeScalarWeakMap as makeWeakStore,
+} from './scalarWeakMap.js';
+// export default as well as makeLegacy* only for compatibility
+// during the transition.
+export { makeLegacyMap, makeLegacyMap as default } from './legacyMap.js';
+export { makeLegacyWeakMap } from './legacyWeakMap.js';

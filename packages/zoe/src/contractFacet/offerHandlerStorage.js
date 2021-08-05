@@ -1,17 +1,19 @@
 // @ts-check
 
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeWeakStore } from '@agoric/store';
+import { ToFarFunction } from '@agoric/marshal';
 
 import { makeHandle } from '../makeHandle.js';
 
 export const makeOfferHandlerStorage = () => {
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
-  const invitationHandleToHandler = makeNonVOWeakStore('invitationHandle');
+  const invitationHandleToHandler = makeWeakStore('invitationHandle');
 
   /** @type {(offerHandler: OfferHandler) => InvitationHandle} */
   const storeOfferHandler = offerHandler => {
+    const farOfferHandler = ToFarFunction('offerHandler', offerHandler);
     const invitationHandle = makeHandle('Invitation');
-    invitationHandleToHandler.init(invitationHandle, offerHandler);
+    invitationHandleToHandler.init(invitationHandle, farOfferHandler);
     return invitationHandle;
   };
 

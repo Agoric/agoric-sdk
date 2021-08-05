@@ -2,7 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 import './types.js';
@@ -17,7 +17,7 @@ import { arrayToObj, objectMap } from '../objArrayConversion.js';
  */
 export const makeEscrowStorage = () => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeNonVOWeakStore('brand');
+  const brandToPurse = makeWeakStore('brand');
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {

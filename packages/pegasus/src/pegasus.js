@@ -2,7 +2,7 @@
 
 import { assert, details, q } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeStore, makeWeakStore } from '@agoric/store';
+import { makeLegacyWeakMap, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr';
@@ -258,7 +258,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @type {WeakStore<Connection, LocalDenomState>}
    */
-  const connectionToLocalDenomState = makeWeakStore('Connection');
+  // Legacy because the value contains a JS Set
+  const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
 
   let lastLocalIssuerNonce = 0;
   /**

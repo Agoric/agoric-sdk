@@ -2,7 +2,7 @@
 
 import { E as defaultE } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 

@@ -4,24 +4,17 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
-import { makeStore, makeWeakStore } from '../src/index.js';
-import { isEmptyNonRemotableObject } from '../src/helpers.js';
+import { makeScalarMap, makeScalarWeakMap } from '../src/index.js';
 import '../src/types.js';
-
-test('empty object check', t => {
-  const f = isEmptyNonRemotableObject;
-  t.truthy(f(harden({})));
-  t.falsy(f(Far()));
-});
 
 function check(t, mode, objMaker) {
   // Check the full API, and make sure object identity isn't a problem by
   // creating two potentially-similar things for use as keys.
   let s;
   if (mode === 'strong') {
-    s = makeStore('store1');
+    s = makeScalarMap('store1');
   } else if (mode === 'weak') {
-    s = makeWeakStore('store1');
+    s = makeScalarWeakMap('store1');
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -90,37 +83,28 @@ function check(t, mode, objMaker) {
 }
 
 test('store', t => {
-  // makeStore
+  // makeScalarMap
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
   check(t, 'strong', () => Far('handle', {}));
 
-  // makeWeakStore
+  // makeScalarWeakMap
   check(t, 'weak', () => Far('handle', {}));
 });
 
-test('reject unmarked empty objects', t => {
-  // Older client code used harden({}) to create a "handle" that served as an
-  // otherwise-empty key for a store/weakstore, but ticket #2018 changes
-  // marshal to treat unmarked empty objects as pass-by-copy, so they won't
-  // retain identity across messages, breaking old-style handles in
-  // surprising ways (key collisions). New client code should use Far()
-  // instead, which arrives here as an object with a non-empty
-  // getInterfaceOf(). To catch older clients that need to be updated, we
-  // reject the use of plain empty objects as keys.
+test('reject promise keys', t => {
+  const k = harden(Promise.resolve());
+  const s = makeScalarMap('store1');
+  t.throws(() => s.init(k, 1), { message: /Must be structure:/ });
+  t.is(s.has(k), false);
+  t.throws(() => s.get(k), { message: /not found:/ });
+  t.throws(() => s.set(k, 1), { message: /not found/ });
+  t.throws(() => s.delete(k), { message: /not found/ });
 
-  const k = harden({});
-  const s = makeStore('store1');
-  t.throws(() => s.init(k, 1), { message: /"store1" bad key:/ });
-  t.throws(() => s.has(k), { message: /"store1" bad key:/ });
-  t.throws(() => s.get(k), { message: /"store1" bad key:/ });
-  t.throws(() => s.set(k, 1), { message: /"store1" bad key:/ });
-  t.throws(() => s.delete(k), { message: /"store1" bad key:/ });
-
-  const w = makeWeakStore('store1');
-  t.throws(() => w.init(k, 1), { message: /"store1" bad key:/ });
-  t.throws(() => w.has(k), { message: /"store1" bad key:/ });
-  t.throws(() => w.get(k), { message: /"store1" bad key:/ });
-  t.throws(() => w.set(k, 1), { message: /"store1" bad key:/ });
-  t.throws(() => w.delete(k), { message: /"store1" bad key:/ });
+  const w = makeScalarWeakMap('store1');
+  t.throws(() => w.init(k, 1), { message: /only identity-based/ });
+  t.is(s.has(k), false);
+  t.throws(() => w.get(k), { message: /not found/ });
+  t.throws(() => w.set(k, 1), { message: /not found/ });
+  t.throws(() => w.delete(k), { message: /not found/ });
 });

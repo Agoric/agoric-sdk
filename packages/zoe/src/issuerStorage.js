@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeWeakStore as makeNonVOWeakStore } from '@agoric/store';
+import { makeWeakStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
@@ -13,9 +13,9 @@ import { makeIssuerRecord } from './issuerRecord.js';
  */
 export const makeIssuerStorage = () => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeNonVOWeakStore('brand');
+  const brandToIssuerRecord = makeWeakStore('brand');
   /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeNonVOWeakStore('issuer');
+  const issuerToIssuerRecord = makeWeakStore('issuer');
 
   let instantiated = false;
   const assertInstantiated = () =>

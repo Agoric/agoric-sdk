@@ -1,101 +1,84 @@
+// @ts-check
+
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
- * @typedef {Record<string, Function>} ExternalInstance
+ * @typedef {Object} StoreOptions
+ *
+ * @property {boolean=} longLived Which way to optimize. True means that we
+ * expect this store to outlive most of its keys, in which
+ * case we internally may use a `WeakMap`. Otherwise we internally may
+ * use a `Map`.
+ * Defaults to true, so please mark short lived stores explicitly
  */
 
 /**
- * @template K,V
- * @typedef {Object} Store - A safety wrapper around a Map
- * @property {(key: K) => boolean} has - Check if a key exists
- * @property {(key: K, value: V) => void} init - Initialize the key only if it
- * doesn't already exist
- * @property {(key: K) => V} get - Return a value for the key. Throws if not
- * found.
- * @property {(key: K, value: V) => void} set - Set the key. Throws if not
- * found.
- * @property {(key: K) => void} delete - Remove the key. Throws if not found.
+ * @template {Structure} K
+ * @template {Passable} V
+ * @typedef {Object} Store
+ *
+ * @property {(key: any) => boolean} has
+ * Check if a key exists. The key can be any JavaScript value, though the
+ * answer will always be false for keys that cannot be found in this map
+ * @property {(key: K, value: V) => void} init
+ * Initialize the key only if it doesn't already exist. The key must
+ * be one allowed by this map. For example a scalarMap only allows
+ * primitives and remotables.
+ * @property {(key: K) => V} get
+ * Return a value for the key. Throws if not found.
+ * @property {(key: K, value: V) => void} set
+ * Set the key. Throws if not found.
+ * @property {(key: K) => void} delete
+ * Remove the key. Throws if not found.
  * @property {() => K[]} keys - Return an array of keys
  * @property {() => V[]} values - Return an array of values
  * @property {() => [K, V][]} entries - Return an array of entries
  */
 
 /**
+ * @template {Structure} K
+ * @template {Passable} V
+ * @typedef {Object} WeakStore
+ *
+ * @property {(key: K) => boolean} has
+ * Check if a key exists. The key can be any JavaScript value, though the
+ * answer will always be false for keys that cannot be found in this map
+ * @property {(key: K, value: V) => void} init
+ * Initialize the key only if it doesn't already exist. The key must
+ * be one allowed by this map. For example a scalarMap only allows
+ * primitives and remotables. For now, a scalarWeakMap allows remotables.
+ * @property {(key: K) => V} get
+ * Return a value for the key. Throws if not found.
+ * @property {(key: K, value: V) => void} set
+ * Set the key. Throws if not found.
+ * @property {(key: K) => void} delete
+ * Remove the key. Throws if not found.
+ */
+
+// ////////////////////////////////////////////////////////////////////
+
+/**
  * @template K,V
- * @typedef {Object} WeakStore - A safety wrapper around a WeakMap
- * @property {(key: any) => boolean} has - Check if a key exists
- * @property {(key: K, value: V) => void} init - Initialize the key only if it
+ * @typedef {Object} LegacyWeakMap
+ *
+ * @property {(key: K) => boolean} has
+ * Check if a key exists
+ * @property {(key: K, value: V) => void} init
+ * Initialize the key only if it
  * doesn't already exist
- * @property {(key: any) => V} get - Return a value for the key. Throws if not
- * found.
- * @property {(key: K, value: V) => void} set - Set the key. Throws if not
- * found.
- * @property {(key: K) => void} delete - Remove the key. Throws if not found.
+ * @property {(key: K) => V} get
+ * Return a value for the key. Throws if not found.
+ * @property {(key: K, value: V) => void} set
+ * Set the key. Throws if not found.
+ * @property {(key: K) => void} delete
+ * Remove the key. Throws if not found.
  */
 
 /**
- * Distinguishes between adding a new key (init) and updating or
- * referencing a key (get, set, delete).
- *
- * `init` is only allowed if the key does not already exist. `Get`,
- * `set` and `delete` are only allowed if the key does already exist.
- *
  * @template K,V
- * @callback MakeWeakStore
+ * @callback MakeLegacyWeakMap
+ *
  * @param {string} [keyName='key'] - the column name for the key
- * @returns {WeakStore<K,V>}
- */
-
-/**
- * An external store for a given maker function.
- * TODO: We should provide makers for other kinds of data structures.
- * Weak sorted lists, weak priority queues, and many others.
- *
- * @template {(...args: Array<any>) => ExternalInstance} M
- * @typedef {Object} ExternalStore
- * @property {M} makeInstance Create a fresh instance
- * @property {MakeWeakStore<ReturnType<M>, any>} makeWeakStore Create an
- * external weak store indexed by an instance
- */
-
-/**
- * @typedef {Record<string, any>} HydrateData
- */
-
-/**
- * @typedef {[number, number]} HydrateKey
- * @typedef {true} HydrateInit
- * @typedef {Object} HydrateHook
- * @property {(value: any) => HydrateKey} getKey
- * @property {(key: HydrateKey) => any} load
- * @property {(storeId: number) => void} drop
- */
-
-/**
- * An external store that decouples the closure data from the returned
- * "representative" instance.
- *
- * @template {Array<any>} A
- * @template {ExternalInstance} T
- * @callback MakeHydrateExternalStore
- * @param {string} instanceKind
- * @param {(...args: A) => HydrateData} adaptArguments
- * @param {(init?: HydrateInit) => (data: HydrateData) => T} makeHydrate
- * @returns {ExternalStore<(...args: A) => T>}
- */
-
-/**
- * @typedef {Object} HydrateStore The store needed to save closed-over
- * per-instance data
- * @property {(id: number, data: HydrateData) => void} init
- * @property {(id: number) => HydrateData} get
- * @property {(id: number, data: HydrateData) => void} set
- * @property {() => WeakStore<ExternalInstance, any>} makeWeakStore
- */
-
-/**
- * @typedef {Object} BackingStore This is the master store that reifies storeIds
- * @property {(storeId: number, instanceKind: string) => HydrateStore} makeHydrateStore
- * @property {(storeId: number) => HydrateStore} getHydrateStore
+ * @returns {LegacyWeakMap}
  */

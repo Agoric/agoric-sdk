@@ -103,7 +103,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
       /** @type {Store<NameHub, NameAdmin>} */
-      const nameAdmins = makeStore();
+      const nameAdmins = makeStore('nameHub');
       await Promise.all(
         ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
           async nm => {
@@ -229,7 +229,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     ];
 
     /** @type {Store<string, import('./issuers').IssuerInitializationRecord>} */
-    const issuerNameToRecord = makeStore();
+    const issuerNameToRecord = makeStore('issuerName');
     /** @type {Array<[string, import('./issuers').IssuerInitializationRecord]>} */
     const issuerEntries = [
       CENTRAL_ISSUER_ENTRY,

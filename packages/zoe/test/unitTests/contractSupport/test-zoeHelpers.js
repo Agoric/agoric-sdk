@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@agoric/marshal';
 
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { setup } from '../setupBasicMints.js';
 
 import {

@@ -1,4 +1,4 @@
-/* global makeKind makeWeakStore */
+/* global makeKind makeVirtualScalarWeakMap */
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
@@ -42,7 +42,7 @@ function build(name) {
   const thingMaker = makeKind(makeThingInstance);
   let nextThingNumber = 0;
 
-  const myThings = makeWeakStore(); // thing -> inquiry count
+  const myThings = makeVirtualScalarWeakMap('thing'); // thing -> inquiry count
 
   return Far('root', {
     async introduce(other) {

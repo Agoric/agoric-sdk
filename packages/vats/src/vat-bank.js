@@ -214,18 +214,21 @@ export function buildRootObject(_vatPowers) {
             /** @type {bigint} */
             let lastBalanceUpdate = -1n;
             /** @type {BalanceUpdater} */
-            const balanceUpdater = (value, nonce = undefined) => {
-              if (nonce !== undefined) {
-                const thisBalanceUpdate = BigInt(nonce);
-                if (thisBalanceUpdate <= lastBalanceUpdate) {
-                  return;
+            const balanceUpdater = Far(
+              'balanceUpdater',
+              (value, nonce = undefined) => {
+                if (nonce !== undefined) {
+                  const thisBalanceUpdate = BigInt(nonce);
+                  if (thisBalanceUpdate <= lastBalanceUpdate) {
+                    return;
+                  }
+                  lastBalanceUpdate = thisBalanceUpdate;
                 }
-                lastBalanceUpdate = thisBalanceUpdate;
-              }
-              // Convert the string value to a bigint.
-              const amt = AmountMath.make(brand, BigInt(value));
-              updater.updateState(amt);
-            };
+                // Convert the string value to a bigint.
+                const amt = AmountMath.make(brand, BigInt(value));
+                updater.updateState(amt);
+              },
+            );
 
             // Get the initial balance.
             addressToUpdater.init(address, balanceUpdater);
