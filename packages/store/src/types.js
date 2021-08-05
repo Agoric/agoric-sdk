@@ -14,15 +14,17 @@
  */
 
 /**
- * @template {Comparable} K
+ * @template {Structure} K
  * @template {Passable} V
  * @typedef {Object} Store
  *
- * @property {(key: K) => boolean} has
- * Check if a key exists
+ * @property {(key: any) => boolean} has
+ * Check if a key exists. The key can be any JavaScript value, though the
+ * answer will always be false for keys that cannot be found in this map
  * @property {(key: K, value: V) => void} init
- * Initialize the key only if it
- * doesn't already exist
+ * Initialize the key only if it doesn't already exist. The key must
+ * be one allowed by this map. For example a scalarMap only allows
+ * primitives and remotables.
  * @property {(key: K) => V} get
  * Return a value for the key. Throws if not found.
  * @property {(key: K, value: V) => void} set
@@ -35,15 +37,17 @@
  */
 
 /**
- * @template {Comparable} K
+ * @template {Structure} K
  * @template {Passable} V
  * @typedef {Object} WeakStore
  *
  * @property {(key: K) => boolean} has
- * Check if a key exists
+ * Check if a key exists. The key can be any JavaScript value, though the
+ * answer will always be false for keys that cannot be found in this map
  * @property {(key: K, value: V) => void} init
- * Initialize the key only if it
- * doesn't already exist
+ * Initialize the key only if it doesn't already exist. The key must
+ * be one allowed by this map. For example a scalarMap only allows
+ * primitives and remotables. For now, a scalarWeakMap allows remotables.
  * @property {(key: K) => V} get
  * Return a value for the key. Throws if not found.
  * @property {(key: K, value: V) => void} set

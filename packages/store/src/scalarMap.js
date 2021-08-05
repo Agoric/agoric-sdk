@@ -55,7 +55,9 @@ export const makeScalarMap = (keyName = 'key', _options = {}) => {
     assert(m.has(key), X`${q(keyName)} not found: ${key}`);
   const scalarMap = {
     has: key => {
-      // .has is very accepting
+      // Check if a key exists. The key can be any JavaScript value,
+      // though the answer will always be false for keys that cannot be found
+      // in this map.
       return m.has(key);
     },
     init: (key, value) => {

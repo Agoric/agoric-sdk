@@ -35,7 +35,9 @@ export const makeScalarWeakMap = (
     assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
   const scalarWeakMap = {
     has: key => {
-      // .has is very accepting
+      // Check if a key exists. The key can be any JavaScript value,
+      // though the answer will always be false for keys that cannot be found
+      // in this map.
       return wm.has(key);
     },
     init: (key, value) => {
