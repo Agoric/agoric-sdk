@@ -37,7 +37,7 @@ export const makeLegacyMap = (keyName = 'key') => {
     assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(m.has(key), X`${q(keyName)} not found: ${key}`);
-  const legacyMap = {
+  const legacyMap = harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
@@ -63,7 +63,7 @@ export const makeLegacyMap = (keyName = 'key') => {
     keys: () => Array.from(m.keys()),
     values: () => Array.from(m.values()),
     entries: () => Array.from(m.entries()),
-  };
-  return harden(legacyMap);
+  });
+  return legacyMap;
 };
 harden(makeLegacyMap);

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { passStyleOf, assertStructure } from '@agoric/marshal';
+import { passStyleOf, assertStructure, Far } from '@agoric/marshal';
 
 const assertKey = key => {
   // TODO: Just a transition kludge. Remove when possible.
@@ -61,7 +61,7 @@ export const makeScalarMap = (keyName = 'key', _options = {}) => {
     assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(m.has(key), X`${q(keyName)} not found: ${key}`);
-  const scalarMap = {
+  const scalarMap = Far(`scalarMap of ${q(keyName)}`, {
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
@@ -90,7 +90,7 @@ export const makeScalarMap = (keyName = 'key', _options = {}) => {
     keys: () => Array.from(m.keys()),
     values: () => Array.from(m.values()),
     entries: () => Array.from(m.entries()),
-  };
-  return harden(scalarMap);
+  });
+  return scalarMap;
 };
 harden(makeScalarMap);

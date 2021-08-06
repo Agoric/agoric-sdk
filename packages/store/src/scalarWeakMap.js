@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@agoric/marshal';
 import './types.js';
 
 const assertKey = key => {
@@ -44,7 +44,7 @@ export const makeScalarWeakMap = (
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
-  const scalarWeakMap = {
+  const scalarWeakMap = Far(`scalarWeakMap of ${q(keyName)}`, {
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
@@ -70,7 +70,7 @@ export const makeScalarWeakMap = (
       assertKeyExists(key);
       wm.delete(key);
     },
-  };
+  });
   return harden(scalarWeakMap);
 };
 harden(makeScalarWeakMap);
