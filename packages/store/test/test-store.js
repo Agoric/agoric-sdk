@@ -3,8 +3,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
-import { makeScalarMap, makeScalarWeakMap } from '../src/index.js';
+import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@agoric/marshal';
+import {
+  makeLegacyMap,
+  makeLegacyWeakMap,
+  makeScalarMap,
+  makeScalarWeakMap,
+} from '../src/index.js';
 import '../src/types.js';
 
 function check(t, mode, objMaker) {
@@ -107,4 +112,16 @@ test('reject promise keys', t => {
   t.throws(() => w.get(k), { message: /not found/ });
   t.throws(() => w.set(k, 1), { message: /not found/ });
   t.throws(() => w.delete(k), { message: /not found/ });
+});
+
+test('passability of stores', t => {
+  t.is(passStyleOf(makeScalarMap('foo')), 'remotable');
+  t.is(passStyleOf(makeScalarWeakMap('foo')), 'remotable');
+  if (ALLOW_IMPLICIT_REMOTABLES) {
+    t.is(passStyleOf(makeLegacyMap('foo')), 'remotable');
+    t.is(passStyleOf(makeLegacyWeakMap('foo')), 'remotable');
+  } else {
+    t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
+    t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
+  }
 });

@@ -15,7 +15,7 @@ export const makeLegacyWeakMap = (keyName = 'key') => {
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
-  const legacyWeakMap = {
+  const legacyWeakMap = harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
@@ -38,7 +38,7 @@ export const makeLegacyWeakMap = (keyName = 'key') => {
       assertKeyExists(key);
       wm.delete(key);
     },
-  };
-  return harden(legacyWeakMap);
+  });
+  return legacyWeakMap;
 };
 harden(makeLegacyWeakMap);
