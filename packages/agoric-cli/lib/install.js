@@ -1,4 +1,4 @@
-/* global __dirname process */
+/* global __dirname process Buffer */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers';
@@ -13,15 +13,43 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const pspawn = makePspawn({ log, spawn, chalk });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
-  const existingSubdirs = await Promise.all(
-    ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
-      .sort()
-      .map(async subd => {
-        const exists = await fs.stat(`${subd}/package.json`).catch(_ => false);
-        return exists && subd;
-      }),
-  );
-  const subdirs = existingSubdirs.filter(subd => subd);
+
+  async function workspaceDirectories(cwd = '.') {
+    // run `yarn workspaces info` to get the list of directories to
+    // use, instead of a hard-coded list
+    const p = pspawn('yarn', ['workspaces', '--silent', 'info'], {
+      cwd,
+      stdio: ['inherit', 'pipe', 'inherit'],
+    });
+    const stdout = [];
+    p.childProcess.stdout.on('data', out => stdout.push(out));
+    await p;
+    const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
+    const subdirs = Object.values(d).map(v => v.location);
+    return subdirs;
+  }
+
+  let subdirs;
+  const dappPackageJSON = await fs
+    .readFile(`package.json`, 'utf-8')
+    .then(data => JSON.parse(data))
+    .catch(err => log('error reading', `package.json`, err));
+  if (dappPackageJSON.useWorkspaces) {
+    subdirs = await workspaceDirectories();
+    subdirs.unshift('.');
+  } else {
+    const existingSubdirs = await Promise.all(
+      ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
+        .sort()
+        .map(async subd => {
+          const exists = await fs
+            .stat(`${subd}/package.json`)
+            .catch(_ => false);
+          return exists && subd;
+        }),
+    );
+    subdirs = existingSubdirs.filter(subd => subd);
+  }
 
   const linkFolder = path.resolve(`_agstate/yarn-links`);
   const linkFlags = [`--link-folder=${linkFolder}`];
@@ -35,32 +63,28 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     log('removing', linkFolder);
     await rimraf(linkFolder);
 
+    const sdkRoot = path.resolve(__dirname, `../../..`);
+    const sdkDirs = await workspaceDirectories(sdkRoot);
     await Promise.all(
-      ['packages', 'golang'].map(async pkgSubdir => {
-        const pkgRoot = path.resolve(__dirname, `../../../${pkgSubdir}`);
-        const allPackages = await fs.readdir(pkgRoot);
-        await Promise.all(
-          allPackages.map(async pkg => {
-            const dir = `${pkgRoot}/${pkg}`;
-            const packageJSON = await fs
-              .readFile(`${dir}/package.json`, 'utf-8')
-              .catch(err => log('error reading', `${dir}/package.json`, err));
-            if (!packageJSON) {
-              return;
-            }
+      sdkDirs.map(async location => {
+        const dir = `${sdkRoot}/${location}`;
+        const packageJSON = await fs
+          .readFile(`${dir}/package.json`, 'utf-8')
+          .catch(err => log('error reading', `${dir}/package.json`, err));
+        if (!packageJSON) {
+          return;
+        }
 
-            const pj = JSON.parse(packageJSON);
-            if (pj.private) {
-              log('not linking private package', pj.name);
-              return;
-            }
+        const pj = JSON.parse(packageJSON);
+        if (pj.private) {
+          log('not linking private package', pj.name);
+          return;
+        }
 
-            // Save our metadata.
-            dirPackages.push([dir, pj.name]);
-            packages.set(pkg, pj.name);
-            versions.set(pj.name, pj.version);
-          }),
-        );
+        // Save our metadata.
+        dirPackages.push([dir, pj.name]);
+        packages.set(dir, pj.name);
+        versions.set(pj.name, pj.version);
       }),
     );
 
@@ -160,7 +184,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const sdkPackages = [...packages.values()].sort();
   for (const subdir of subdirs) {
     // eslint-disable-next-line no-await-in-loop
-    const exists = await fs.stat(`${subdir}/yarn.lock`).catch(_ => false);
+    const exists = await fs.stat(`${subdir}/package.json`).catch(_ => false);
     if (
       exists &&
       // eslint-disable-next-line no-await-in-loop
