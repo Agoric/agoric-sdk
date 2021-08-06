@@ -61,7 +61,7 @@ export const makeScalarMap = (keyName = 'key', _options = {}) => {
     assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(m.has(key), X`${q(keyName)} not found: ${key}`);
-  const scalarMap = Far('scalarMap', {
+  const scalarMap = Far(`scalarMap of ${q(keyName)}`, {
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found

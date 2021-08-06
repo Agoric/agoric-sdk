@@ -44,7 +44,7 @@ export const makeScalarWeakMap = (
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
-  const scalarWeakMap = Far('scalarWeakMap', {
+  const scalarWeakMap = Far(`scalarWeakMap of ${q(keyName)}`, {
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
