@@ -124,7 +124,7 @@ export const createSeatManager = (
     seats.forEach(assertStagedAllocation);
 
     // Keep track of seats used so far in this call, to prevent aliasing.
-    const zcfSeatsSoFar = new WeakSet();
+    const zcfSeatsSoFar = new Set();
 
     seats.forEach(seat => {
       assert(
@@ -137,15 +137,6 @@ export const createSeatManager = (
       );
       zcfSeatsSoFar.add(seat);
     });
-
-    // Ensure that all stagings are present in this reallocate call.
-    const allStagedSeatsUsed = zcfSeatToStagedAllocations
-      .keys()
-      .every(stagedSeat => zcfSeatsSoFar.has(stagedSeat));
-    assert(
-      allStagedSeatsUsed,
-      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
-    );
 
     try {
       // No side effects above. All conditions checked which could have
@@ -205,6 +196,17 @@ export const createSeatManager = (
         X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
       );
     });
+
+    const zcfSeatsReallocatedOver = new Set(seats);
+
+    // Ensure that all stagings are present in this reallocate call.
+    const allStagedSeatsUsed = zcfSeatToStagedAllocations
+      .keys()
+      .every(stagedSeat => zcfSeatsReallocatedOver.has(stagedSeat));
+    assert(
+      allStagedSeatsUsed,
+      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
+    );
 
     // Note COMMIT POINT within reallocateInternal
     reallocateInternal(seats);
