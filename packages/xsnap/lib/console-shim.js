@@ -2,10 +2,14 @@
 function tryPrint(...args) {
   try {
     // eslint-disable-next-line
-    print(...args);
+    print(...args.map(arg => typeof arg === 'symbol' ? arg.toString() : arg));
   } catch (err) {
     // eslint-disable-next-line
     print('cannot print:', err.message);
+    args.forEach((a, i) => {
+      // eslint-disable-next-line
+      print(` ${i}:`, a.toString ? a.toString() : '<no .toString>', typeof a);
+    });
   }
 }
 
