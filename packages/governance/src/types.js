@@ -244,9 +244,24 @@
  * @typedef {Object} ElectoratePublic
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions,
- * @property {() => string} getName
  * @property {() => Instance} getInstance
  * @property {(h: Handle<'Question'>) => Promise<Question>} getQuestion
+ */
+
+/**
+ * @typedef {Object} CommitteeElectoratePublicMixin
+ * @property {() => string} getName
+ */
+
+/**
+ * @typedef {Object} ClaimsElectorateMixin
+ * @property {() => ERef<Invitation>} makeVoterInvitation
+ */
+
+/**
+ * @typedef { ElectoratePublic & ClaimsElectorateMixin } ClaimsElectoratePublic
+ * @typedef { ElectoratePublic & CommitteeElectoratePublicMixin } CommitteeElectoratePublic
+ * @typedef { ClaimsElectoratePublic | CommitteeElectoratePublic } AnyElectoratePublic
  */
 
 /**
@@ -261,9 +276,29 @@
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
  * @property {AddQuestion} addQuestion
- * @property {() => Promise<Invitation>[]} getVoterInvitations
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {() => ElectoratePublic} getPublicFacet
+ */
+
+/**
+ * @typedef {Object} CommitteeElectorateMixin
+ * @property {() => Promise<Invitation>[]} getVoterInvitations
+ */
+
+/**
+ * @typedef { ElectorateCreatorFacet | CommitteeElectorateMixin } CommitteeElectorateCreatorFacet
+ */
+
+/**
+ * @typedef {Object} GetVoterInvitations
+ * @property {() => Invitation[]} getVoterInvitations
+ */
+
+/**
+ * @typedef {Object} VoterFacet - a facet that the Electorate should hold
+ *   tightly. It allows specification of the vote's weight, so the Electorate
+ *   should distribute an attenuated wrapper that doesn't make that available!
+ * @property {SubmitVote} submitVote
  */
 
 /**
