@@ -1,9 +1,10 @@
-/* global __dirname require process setTimeout */
+/* global process setTimeout */
 import fs from 'fs';
 import path from 'path';
 import temp from 'temp';
 import { fork } from 'child_process';
 import { promisify } from 'util';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
 import anylogger from 'anylogger';
@@ -24,13 +25,13 @@ import {
   buildTimer,
 } from '@agoric/swingset-vat';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
-import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain';
-import { makeWithQueue } from '@agoric/vats/src/queue';
+import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
+import { makeWithQueue } from '@agoric/vats/src/queue.js';
 
-import { deliver, addDeliveryTarget } from './outbound';
-import { makeHTTPListener } from './web';
+import { deliver, addDeliveryTarget } from './outbound.js';
+import { makeHTTPListener } from './web.js';
 
-import { connectToChain } from './chain-cosmos-sdk';
+import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
 
@@ -112,7 +113,7 @@ async function buildSwingset(
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
 
   const config = await loadSwingsetConfigFile(
-    `${__dirname}/../solo-config.json`,
+    new URL('../solo-config.json', import.meta.url).pathname,
   );
   config.devices = {
     mailbox: {
@@ -326,7 +327,9 @@ export default async function start(basedir, argv) {
   await unlink('html/wallet').catch(_ => {});
 
   // Symlink the wallet.
-  const pjs = require.resolve(`${wallet}/package.json`);
+  const pjs = new URL(
+    await importMetaResolve(`${wallet}/package.json`, import.meta.url),
+  ).pathname;
   const {
     'agoric-wallet': {
       htmlBasedir = 'ui/build',
@@ -407,7 +410,9 @@ export default async function start(basedir, argv) {
     .map(dep => path.resolve(agWallet, dep))
     .join(' ');
 
-  const agoricCli = require.resolve('agoric/bin/agoric');
+  const agoricCli = new URL(
+    await importMetaResolve('agoric/bin/agoric', import.meta.url),
+  ).pathname;
 
   // Use the same verbosity as our caller did for us.
   let verbosity;

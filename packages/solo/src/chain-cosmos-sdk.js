@@ -14,7 +14,7 @@ import { assert, details as X } from '@agoric/assert';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
-} from '@agoric/vats/src/batched-deliver';
+} from '@agoric/vats/src/batched-deliver.js';
 
 const console = anylogger('chain-cosmos-sdk');
 

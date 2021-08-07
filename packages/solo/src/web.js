@@ -1,4 +1,4 @@
-/* global __dirname require setTimeout clearTimeout setInterval clearInterval */
+/* global setTimeout clearTimeout setInterval clearInterval */
 // Start a network service
 import path from 'path';
 import http from 'http';
@@ -6,13 +6,9 @@ import { createConnection } from 'net';
 import express from 'express';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
+import morgan from 'morgan';
 
 import { getAccessToken } from '@agoric/access-token';
-
-// We need to CommonJS require morgan or else it warns, until:
-// https://github.com/expressjs/morgan/issues/190
-// is fixed.
-const morgan = require('morgan');
 
 const log = anylogger('web');
 
@@ -89,7 +85,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
-  app.use(express.static(`${__dirname}/../public`));
+  app.use(express.static(new URL('../public', import.meta.url).pathname));
 
   // The rules for validation:
   //

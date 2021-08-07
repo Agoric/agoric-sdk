@@ -6,7 +6,7 @@ import path from 'path';
 import fs from 'fs';
 
 import { assert, details as X } from '@agoric/assert';
-import setGCIIngress from './set-gci-ingress';
+import setGCIIngress from './set-gci-ingress.js';
 
 const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
 

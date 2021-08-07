@@ -1,2 +1,1 @@
-#! /usr/bin/env node
-require('../src/entrypoint.cjs');
+../src/entrypoint.js
