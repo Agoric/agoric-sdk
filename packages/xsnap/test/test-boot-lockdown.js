@@ -96,3 +96,22 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
     t.assert(pass);
   }
 });
+
+test('console - symbols', async t => {
+  // our console-shim.js handles Symbol specially
+  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const opts = options(io);
+  const vat = xsnap(opts);
+  await vat.evaluate(bootScript);
+  t.deepEqual([], opts.messages);
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    globalThis.send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
+    console.log('console:', 123);
+    console.log('console:', Symbol('anonymous'));
+    console.log('console:', Symbol.for('registered'));
+    send('ok');
+  `);
+  await vat.close();
+  t.deepEqual(['"ok"'], opts.messages);
+});
