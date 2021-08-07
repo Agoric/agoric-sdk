@@ -1,4 +1,4 @@
-/* global require process */
+/* global process */
 
 // `test.after.always` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
@@ -7,15 +7,16 @@
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
-import '@agoric/swingset-vat/tools/prepare-test-env';
+import '@agoric/swingset-vat/tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
 import { Far } from '@agoric/marshal';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
 
-import { makeFixture, E } from './captp-fixture';
+import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 
@@ -60,9 +61,13 @@ test.serial('home.wallet - receive zoe invite', async t => {
   const { wallet, zoe, board } = E.get(home);
 
   // Setup contract in order to get an invite to use in tests
-  const contractRoot = require.resolve(
-    '@agoric/zoe/src/contracts/automaticRefund',
-  );
+  const contractRoot = new URL(
+    await importMetaResolve(
+      '@agoric/zoe/src/contracts/automaticRefund.js',
+      import.meta.url,
+    ),
+  ).pathname;
+  t.log({ contractRoot });
   const bundle = await bundleSource(contractRoot);
   const installationHandle = await E(zoe).install(bundle);
   const { creatorInvitation: invite } = await E(zoe).startInstance(

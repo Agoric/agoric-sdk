@@ -1,4 +1,3 @@
-/* global __dirname */
 import fs from 'fs';
 import path from 'path';
 import parseArgs from 'minimist';
@@ -9,12 +8,12 @@ import { assert } from '@agoric/assert';
 import anylogger from 'anylogger';
 
 // Start a network service
-import addChain from './add-chain';
-import initBasedir from './init-basedir';
-import resetState from './reset-state';
-import setGCIIngress from './set-gci-ingress';
-import setFakeChain from './set-fake-chain';
-import start from './start';
+import addChain from './add-chain.js';
+import initBasedir from './init-basedir.js';
+import resetState from './reset-state.js';
+import setGCIIngress from './set-gci-ingress.js';
+import setFakeChain from './set-fake-chain.js';
+import start from './start.js';
 
 const log = anylogger('ag-solo');
 
@@ -142,7 +141,9 @@ start
     }
     case 'calc-gci':
     case 'calc-rpcport': {
-      const cp = spawnSync(`${__dirname}/../../${argv[0]}.js`, argv.slice(1), {
+      const filename = new URL(import.meta.url).pathname;
+      const dirname = path.dirname(filename);
+      const cp = spawnSync(`${dirname}/../../${argv[0]}.js`, argv.slice(1), {
         stdio: 'inherit',
       });
       return cp.status;
