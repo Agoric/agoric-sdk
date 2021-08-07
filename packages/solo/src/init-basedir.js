@@ -1,4 +1,4 @@
-/* global __dirname Buffer process */
+/* global Buffer process */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
@@ -9,6 +9,9 @@ import anylogger from 'anylogger';
 const log = anylogger('ag-solo:init');
 
 const DEFAULT_WALLET = '@agoric/dapp-svelte-wallet';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 export default function initBasedir(
   basedir,
@@ -27,7 +30,6 @@ export default function initBasedir(
   options.wallet = wallet;
   options.defaultManagerType = defaultManagerType;
 
-  const here = __dirname;
   // We either need a basedir with an initialised key, or no basedir.
   assert(
     fs.existsSync(path.join(basedir, 'ag-cosmos-helper-address')) ||
@@ -50,11 +52,11 @@ export default function initBasedir(
 
   // Save our version codes.
   const pj = 'package.json';
-  fs.copyFileSync(path.join(here, '..', pj), path.join(dstHtmldir, pj));
+  fs.copyFileSync(path.join(dirname, '..', pj), path.join(dstHtmldir, pj));
   const gr = 'git-revision.txt';
   try {
     fs.copyFileSync(
-      path.join(here, '../public', gr),
+      path.join(dirname, '../public', gr),
       path.join(dstHtmldir, gr),
     );
   } catch (e) {
@@ -118,7 +120,7 @@ export default function initBasedir(
 
   // this marker file is how we recognize ag-solo basedirs
   fs.copyFileSync(
-    path.join(here, '..', 'solo-README-to-install.md'),
+    path.join(dirname, '..', 'solo-README-to-install.md'),
     path.join(basedir, 'solo-README.md'),
   );
 
