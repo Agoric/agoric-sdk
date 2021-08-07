@@ -5,7 +5,7 @@ import {
   dataToBase64,
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network';
-import { makeStore } from '@agoric/store';
+import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
@@ -240,7 +240,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   /**
    * @type {Store<Port, Set<PromiseRecord<ConnectionHandler>>>}
    */
-  const portToPendingConns = makeStore('Port');
+  const portToPendingConns = makeLegacyMap('Port');
 
   /** @type {Store<Endpoint, Endpoint>} */
   const remoteAddrToLocalSuffix = makeStore('endpoint');
