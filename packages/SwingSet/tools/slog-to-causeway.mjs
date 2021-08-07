@@ -1,8 +1,18 @@
+/**
+ * TODO: hoist some top level docs
+ */
+
 // @ts-check
 
 import { pipeline } from 'stream';
 
 /**
+ * TODO: share types with other swingset sources.
+ *
+ * TODO: move delivery-related types and code close together; likewise syscall.
+ *
+ * TODO: make ignored stuff less noisy.
+ *
  * @typedef {{
  *   time: number
  * }} SlogTimedEntry
@@ -273,6 +283,8 @@ async function* slogToCauseway(entries) {
 }
 
 /**
+ * TODO: refactor as readLines, map JSON.parse
+ *
  * @param {AsyncIterable<Buffer>} data
  */
 async function* readJSONLines(data) {
@@ -287,6 +299,7 @@ async function* readJSONLines(data) {
   }
 }
 
+/** @param { AsyncIterable<unknown> } items */
 async function* writeJSONArray(items) {
   yield '[';
   let sep = false;
@@ -308,8 +321,8 @@ async function* writeJSONArray(items) {
  *   stdout: typeof process.stdout,
  * }} io
  */
-const main = async ({ stdin, stdout }) => {
-  await pipeline(
+const main = async ({ stdin, stdout }) =>
+  pipeline(
     stdin,
     readJSONLines,
     slogToCauseway,
@@ -319,7 +332,6 @@ const main = async ({ stdin, stdout }) => {
       if (err) throw err;
     },
   );
-};
 
 /* TODO: only call main() if this is from CLI */
 /* global process */
