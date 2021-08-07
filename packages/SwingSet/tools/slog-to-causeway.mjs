@@ -73,18 +73,18 @@ const { freeze } = Object;
  * @typedef { |
  *  'Event' | 'Got' | 'Sent' | 'Resolved' | 'Fulfilled' | 'Rejected' | 'Returned'
  * } LogClassName
- * @typedef { `log.ref_send.${LogClassName}` } LogClassT
+ * @typedef { `org.ref_send.log.${LogClassName}` } LogClassT
  */
 /** @type { Record<string, LogClassT> } */
 const LogClass = freeze({
-  Event: 'log.ref_send.Event',
-  Got: 'log.ref_send.Got',
-  Sent: 'log.ref_send.Sent',
+  Event: 'org.ref_send.log.Event',
+  Got: 'org.ref_send.log.Got',
+  Sent: 'org.ref_send.log.Sent',
   // Progressed: 'log.ref_send.Progressed',
-  Resolved: 'log.ref_send.Resolved',
-  Fulfilled: 'log.ref_send.Fulfilled',
-  Rejected: 'log.ref_send.Rejected',
-  Returned: 'log.ref_send.Returned',
+  Resolved: 'org.ref_send.log.Resolved',
+  Fulfilled: 'org.ref_send.log.Fulfilled',
+  Rejected: 'org.ref_send.log.Rejected',
+  Returned: 'org.ref_send.log.Returned',
 });
 
 /**
@@ -104,41 +104,55 @@ const LogClass = freeze({
 const makeCausewayFormatter = () => {
   const self = freeze({
     /**
-     * @param {string} message
      * @param {Anchor} anchor
+     * @param {string} message
      */
-    makeGot: (message, anchor) =>
+    makeGot: (anchor, message) =>
       freeze({
         class: [LogClass.Got, LogClass.Event],
         anchor,
         message,
       }),
     /**
+     * @param {Anchor} anchor
      * @param { string } message
      * @param {LogClassT[]} refinement
      */
-    makeSent: (message, refinement = []) =>
+    makeSent: (anchor, message, refinement = []) =>
       freeze({
         class: [...refinement, LogClass.Sent, LogClass.Event],
+        anchor,
         message,
       }),
-    /** @param { string } message */
-    makeReturned: message => self.makeSent(message, [LogClass.Returned]),
     /**
+     * @param {Anchor} anchor
+     * @param { string } message
+     */
+    makeReturned: (anchor, message) =>
+      self.makeSent(anchor, message, [LogClass.Returned]),
+    /**
+     * @param {Anchor} anchor
      * @param { string } condition
      * @param {LogClassT[]} status
      */
-    makeResolved: (condition, status = []) =>
+    makeResolved: (anchor, condition, status = []) =>
       freeze({
         class: [...status, LogClass.Resolved, LogClass.Event],
+        anchor,
         condition,
       }),
-    /** @param { string } condition */
-    makeFulfilled: condition =>
-      self.makeResolved(condition, [LogClass.Fulfilled]),
-    /** @param { string } condition */
-    makeRejected: condition =>
-      self.makeResolved(condition, [LogClass.Rejected]),
+    /**
+     * @param {Anchor} anchor
+     * @param { string } condition
+     */
+    makeFulfilled: (anchor, condition) =>
+      self.makeResolved(anchor, condition, [LogClass.Fulfilled]),
+    /**
+     * @param {Anchor} anchor
+     * @param { string } condition
+     */
+    makeRejected: (anchor, condition) =>
+      self.makeResolved(anchor, condition, [LogClass.Rejected]),
   });
   return self;
 };
@@ -157,6 +171,17 @@ async function* slogToCauseway(entries) {
     Error(`not implemented: ${tag}: ${JSON.stringify(Object.keys(obj))}`);
   /** @type { (result: string, target: string, method: string) => string } */
   const msgId = (result, target, method) => `${result}<-${target}.${method}`;
+
+  /** @param { SlogVatEntry } entry */
+  const anchor = entry => {
+    const { crankNum, vatID, deliveryNum } = entry;
+    const { name } = vatInfo.get(vatID);
+    const loop = `${vatID}:${name || '???'}`;
+    return freeze({
+      number: crankNum,
+      turn: { loop, number: deliveryNum },
+    });
+  };
 
   for await (const entry of entries) {
     switch (entry.type) {
@@ -178,22 +203,17 @@ async function* slogToCauseway(entries) {
         vatInfo.set(entry.vatID, entry);
         break;
       case 'deliver': {
-        const { crankNum, vatID, deliveryNum, kd } = entry;
-        const { name } = vatInfo.get(vatID);
-        const loop = `${vatID}:${name || '???'}`;
+        const { kd } = entry;
         switch (kd[0]) {
           case 'message': {
             const [_tag, target, { method, result }] = kd;
-            yield dest.makeGot(msgId(result, target, method), {
-              number: crankNum,
-              turn: { loop, number: deliveryNum },
-            });
+            yield dest.makeGot(anchor(entry), msgId(result, target, method));
             break;
           }
           case 'notify': {
             const [_tag, resolutions] = kd;
             for (const [kp] of resolutions) {
-              yield dest.makeReturned(kp);
+              yield dest.makeReturned(anchor(entry), kp);
             }
             break;
           }
@@ -223,7 +243,7 @@ async function* slogToCauseway(entries) {
             const {
               ksc: [_, target, { method, result }],
             } = entry;
-            yield dest.makeSent(msgId(result, target, method));
+            yield dest.makeSent(anchor(entry), msgId(result, target, method));
             break;
           }
           case 'resolve': {
@@ -231,7 +251,9 @@ async function* slogToCauseway(entries) {
               ksc: [_, _thatVat, parts],
             } = entry;
             for (const [kp, rejected, _args] of parts) {
-              yield rejected ? dest.makeRejected(kp) : dest.makeFulfilled(kp);
+              yield rejected
+                ? dest.makeRejected(anchor(entry), kp)
+                : dest.makeFulfilled(anchor(entry), kp);
             }
             break;
           }
@@ -265,10 +287,19 @@ async function* readJSONLines(data) {
   }
 }
 
-async function* writeJSONLines(items) {
+async function* writeJSONArray(items) {
+  yield '[';
+  let sep = false;
   for await (const item of items) {
-    yield `${JSON.stringify(item)}\n`;
+    if (sep) {
+      yield ',';
+    } else {
+      sep = true;
+    }
+    yield '\n';
+    yield `${JSON.stringify(item)}`;
   }
+  yield '\n]\n';
 }
 
 /**
@@ -282,7 +313,7 @@ const main = async ({ stdin, stdout }) => {
     stdin,
     readJSONLines,
     slogToCauseway,
-    writeJSONLines,
+    writeJSONArray,
     stdout,
     err => {
       if (err) throw err;
