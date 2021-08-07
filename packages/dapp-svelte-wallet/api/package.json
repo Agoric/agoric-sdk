@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.9.12",
   "description": "Wallet web server handler",
+  "type": "module",
   "scripts": {
     "build": "exit 0",
     "test": "ava",
@@ -29,7 +30,7 @@
     "@agoric/promise-kit": "^0.2.21",
     "@agoric/store": "^0.4.23",
     "@agoric/zoe": "^0.17.6",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
     "extends": [
@@ -54,9 +55,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   }
