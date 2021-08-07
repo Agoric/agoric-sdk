@@ -1,10 +1,13 @@
-/* global __dirname */
 // @ts-nocheck
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
+import path from 'path';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 export default async function deployWallet(
   homePromise,
@@ -26,7 +29,7 @@ export default async function deployWallet(
   } = home;
 
   // Bundle the wallet sources.
-  const bundle = await bundleSource(pathResolve(__dirname, './src/wallet.js'));
+  const bundle = await bundleSource(pathResolve(dirname, './src/wallet.js'));
 
   // Install it on the local spawner.
   const walletInstall = E(spawner).install(bundle);

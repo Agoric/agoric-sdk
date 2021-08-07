@@ -5,8 +5,8 @@ import { E } from '@agoric/eventual-send';
 
 import { makeWeakStore } from '@agoric/store';
 
-import '../exported';
-import './internal-types';
+import '../exported.js';
+import './internal-types.js';
 
 /**
  * IssuerTable

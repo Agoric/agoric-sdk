@@ -3,7 +3,7 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 
 export const start = zcf => {
   const { notifier, updater } = makeNotifierKit();

@@ -24,16 +24,16 @@ import {
 } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { makeIssuerTable } from './issuerTable';
-import { makeDehydrator } from './lib-dehydrate';
-import { makeId, findOrMakeInvitation } from './findOrMakeInvitation';
-import { bigintStringify } from './bigintStringify';
+import { makeIssuerTable } from './issuerTable.js';
+import { makeDehydrator } from './lib-dehydrate.js';
+import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
+import { bigintStringify } from './bigintStringify.js';
 
-import '@agoric/store/exported';
-import '@agoric/zoe/exported';
+import '@agoric/store/exported.js';
+import '@agoric/zoe/exported.js';
 
-import './internal-types';
-import './types';
+import './internal-types.js';
+import './types.js';
 
 /**
  * @template T
