@@ -1,6 +1,7 @@
 {
   "name": "@agoric/eslint-plugin",
   "version": "0.3.10",
+  "type": "commonjs",
   "description": "Agoric-specific ESLint plugin",
   "keywords": [
     "eslint",
