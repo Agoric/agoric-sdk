@@ -184,10 +184,9 @@ contract makes no attempt to make the voters legible to others. This might be
 useful for a private group making a decision, or a case where a dictator has the
 ability to appoint a committee that will make decisions.
 
-The AttestedElectorate (coming soon!) is an Electorate that gives the ability to
-vote to anyone who has an Attestation payment from the Attestation contract.
-Observers can't tell who the voters are, but they can validate the
-qualifications to vote.
+ShareHolders is an Electorate that gives the ability to vote to anyone who has
+an Attestation payment from the Attestation contract. Observers can't tell who
+the voters are, but they can validate the qualifications to vote.
 
 Another plausible electorate would use the result of a public vote to give
 voting facets to the election winners. There would have to be some kind of

@@ -187,19 +187,20 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
   });
 };
 
+harden(buildUnrankedQuestion);
 harden(ChoiceMethod);
-harden(QuorumRule);
 harden(ElectionType);
 harden(looksLikeIssueForType);
+harden(looksLikeQuestionSpec);
 harden(positionIncluded);
-harden(buildUnrankedQuestion);
+harden(QuorumRule);
 
 export {
+  buildUnrankedQuestion,
   ChoiceMethod,
   ElectionType,
-  QuorumRule,
+  looksLikeIssueForType,
   looksLikeQuestionSpec,
   positionIncluded,
-  looksLikeIssueForType,
-  buildUnrankedQuestion,
+  QuorumRule,
 };

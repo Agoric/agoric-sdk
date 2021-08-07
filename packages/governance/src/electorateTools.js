@@ -12,7 +12,7 @@ const startCounter = async (
   questionStore,
   publication,
 ) => {
-  const ballotCounterTerms = {
+  const voteCounterTerms = {
     questionSpec,
     electorate: zcf.getInstance(),
     quorumThreshold,
@@ -21,7 +21,7 @@ const startCounter = async (
   // facets of the voteCounter. creatorInvitation and adminFacet not used
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, ballotCounterTerms);
+  ).startInstance(voteCounter, {}, voteCounterTerms);
   const details = await E(publicFacet).getDetails();
   const { deadline } = questionSpec.closingRule;
   publication.updateState(details);
