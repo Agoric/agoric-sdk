@@ -18,19 +18,29 @@ import { insistStorageAPI } from '../../storageAPI.js';
  * that buffers any mutations until told to commit them.
  *
  * @param {*} kvStore  The storage object that this crank buffer will be based on.
- *
+ * @param {CreateSHA256}  createSHA256
+ * @param { (key: string) => bool } isConsensusKey
  * @returns {*} an object {
- *   crankBuffer,  // crank buffer as described, wrapping `kvStore`
- *   commitCrank,  // function to save buffered mutations to `kvStore`
- *   abortCrank,   // function to discard buffered mutations
+ * crankBuffer,  // crank buffer as described, wrapping `kvStore`
+ * commitCrank,  // function to save buffered mutations to `kvStore`
+ * abortCrank,   // function to discard buffered mutations
  * }
  */
-export function buildCrankBuffer(kvStore) {
+export function buildCrankBuffer(
+  kvStore,
+  createSHA256,
+  isConsensusKey = () => true,
+) {
   insistStorageAPI(kvStore);
+  let crankhasher;
+  function resetCrankhash() {
+    crankhasher = createSHA256();
+  }
 
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();
   const deletions = new Set();
+  resetCrankhash();
 
   const crankBuffer = {
     has(key) {
@@ -76,17 +86,34 @@ export function buildCrankBuffer(kvStore) {
       assert.typeof(value, 'string');
       additions.set(key, value);
       deletions.delete(key);
+      if (isConsensusKey(key)) {
+        crankhasher.add('add');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+        crankhasher.add(value);
+        crankhasher.add('\n');
+      }
     },
 
     delete(key) {
       assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
+      if (isConsensusKey(key)) {
+        crankhasher.add('delete');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+      }
     },
   };
 
   /**
-   * Flush any buffered mutations to the underlying storage.
+   * Flush any buffered mutations to the underlying storage, and update the
+   * activityhash.
+   *
+   * @returns { { crankhash: string, activityhash: string } }
    */
   function commitCrank() {
     for (const [key, value] of additions) {
@@ -97,6 +124,22 @@ export function buildCrankBuffer(kvStore) {
     }
     additions.clear();
     deletions.clear();
+    const crankhash = crankhasher.finish();
+    resetCrankhash();
+
+    let oldActivityhash = kvStore.get('activityhash');
+    if (oldActivityhash === undefined) {
+      oldActivityhash = '';
+    }
+    const hasher = createSHA256('activityhash\n');
+    hasher.add(oldActivityhash);
+    hasher.add('\n');
+    hasher.add(crankhash);
+    hasher.add('\n');
+    const activityhash = hasher.finish();
+    kvStore.set('activityhash', activityhash);
+
+    return { crankhash, activityhash };
   }
 
   /**
@@ -105,6 +148,7 @@ export function buildCrankBuffer(kvStore) {
   function abortCrank() {
     additions.clear();
     deletions.clear();
+    resetCrankhash();
   }
 
   return harden({ crankBuffer, commitCrank, abortCrank });
@@ -166,9 +210,13 @@ export function addHelpers(kvStore) {
 // write-back buffer wrapper (the CrankBuffer), but the keeper is unaware of
 // that.
 
-export function wrapStorage(kvStore) {
+export function wrapStorage(kvStore, createSHA256, isConsensusKey) {
   insistStorageAPI(kvStore);
-  const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(kvStore);
+  const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
+    kvStore,
+    createSHA256,
+    isConsensusKey,
+  );
   const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };
 }

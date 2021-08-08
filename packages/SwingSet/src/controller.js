@@ -12,6 +12,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
+import { createSHA256 } from './hasher.js';
 import engineGC from './engine-gc.js';
 import { WeakRef, FinalizationRegistry } from './weakref.js';
 import { startSubprocessWorker } from './spawnSubprocessWorker.js';
@@ -271,6 +272,7 @@ export async function makeSwingsetController(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    createSHA256,
   };
 
   const kernelOptions = { verbose, warehousePolicy, overrideVatManagerOptions };
@@ -325,6 +327,10 @@ export async function makeSwingsetController(
 
     getStatus() {
       return defensiveCopy(kernel.getStatus());
+    },
+
+    getActivityhash() {
+      return kernel.getActivityhash();
     },
 
     pinVatRoot(vatName) {

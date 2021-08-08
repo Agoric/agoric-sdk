@@ -5,6 +5,7 @@ import anylogger from 'anylogger';
 import { assert, details as X } from '@agoric/assert';
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { createSHA256 } from '../src/hasher.js';
 import { provideHostStorage } from '../src/hostStorage.js';
 
 import buildKernel from '../src/kernel/index.js';
@@ -41,6 +42,7 @@ function makeEndowments() {
     makeConsole,
     WeakRef,
     FinalizationRegistry,
+    createSHA256,
   };
 }
 

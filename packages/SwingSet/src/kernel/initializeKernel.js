@@ -2,6 +2,7 @@
 
 import { makeMarshal, Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
+import { createSHA256 } from '../hasher.js';
 import { assertKnownOptions } from '../assertOptions.js';
 import { insistVatID } from './id.js';
 import { makeVatSlot } from '../parseVatSlots.js';
@@ -17,7 +18,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(hostStorage.kvStore);
 
-  const kernelKeeper = makeKernelKeeper(hostStorage);
+  const kernelSlog = null;
+  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);

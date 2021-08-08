@@ -136,17 +136,39 @@ const FIRST_METER_ID = 1n;
 /**
  * @param {HostStore} hostStorage
  * @param {KernelSlog} kernelSlog
+ * @param {import('../../hasher.js').CreateSHA256} createSHA256
  */
-export default function makeKernelKeeper(hostStorage, kernelSlog) {
+export default function makeKernelKeeper(
+  hostStorage,
+  kernelSlog,
+  createSHA256,
+) {
   // the kernelKeeper wraps the host's raw key-value store in a crank buffer
   const rawKVStore = hostStorage.kvStore;
   insistStorageAPI(rawKVStore);
 
+  /**
+   * @param { string } key
+   * @returns { boolean }
+   */
+  function isConsensusKey(key) {
+    if (key.startsWith('local.')) {
+      return false;
+    }
+    return true;
+  }
+
   const { abortCrank, commitCrank, enhancedCrankBuffer: kvStore } = wrapStorage(
     rawKVStore,
+    createSHA256,
+    isConsensusKey,
   );
   insistEnhancedStorageAPI(kvStore);
   const { streamStore, snapStore } = hostStorage;
+
+  function getActivityhash() {
+    return rawKVStore.get('activityhash');
+  }
 
   /**
    * @param {string} key
@@ -1345,6 +1367,7 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
     kvStore,
     abortCrank,
     commitCrank,
+    getActivityhash,
 
     dump,
   });

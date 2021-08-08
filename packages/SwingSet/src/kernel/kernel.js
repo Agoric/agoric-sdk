@@ -126,6 +126,7 @@ export default function buildKernel(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
+    createSHA256,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const {
@@ -142,7 +143,7 @@ export default function buildKernel(
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole);
 
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
   let started = false;
 
@@ -1204,6 +1205,10 @@ export default function buildKernel(
       return harden({
         activeVats: vatWarehouse.activeVatsInfo(),
       });
+    },
+
+    getActivityhash() {
+      return kernelKeeper.getActivityhash();
     },
 
     dump() {
