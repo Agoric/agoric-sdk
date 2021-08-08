@@ -6,7 +6,6 @@ import { assertKnownOptions } from '../assertOptions.js';
 import { insistVatID } from './id.js';
 import { makeVatSlot } from '../parseVatSlots.js';
 import { insistStorageAPI } from '../storageAPI.js';
-import { wrapStorage } from './state/storageWrapper.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
 import { exportRootObject, doQueueToKref } from './kernel.js';
 
@@ -16,12 +15,9 @@ function makeVatRootObjectSlot() {
 
 export function initializeKernel(config, hostStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
+  insistStorageAPI(hostStorage.kvStore);
 
-  const { kvStore, streamStore } = hostStorage;
-  insistStorageAPI(kvStore);
-  const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
-
-  const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer, streamStore);
+  const kernelKeeper = makeKernelKeeper(hostStorage);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);
@@ -86,7 +82,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         const kref = exportRootObject(kernelKeeper, vatID);
         // Pin, to prevent it being GC'd when only the kvStore points to it
         kernelKeeper.pinObject(kref);
-        kvStore.set('vatAdminRootKref', kref);
+        kernelKeeper.kvStore.set('vatAdminRootKref', kref);
         gotVatAdminRootKref = true;
       }
     }
@@ -135,7 +131,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   }
   kernelKeeper.setInitialized();
   kernelKeeper.saveStats();
-  commitCrank(); // commit initialized kernel state as crank #0
+  kernelKeeper.commitCrank(); // commit initialized kernel state as crank #0
   return bootstrapResultKpid;
 
   // ----------------------------------------------------------------------

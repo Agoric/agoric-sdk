@@ -12,7 +12,6 @@ import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import {
   buildCrankBuffer,
   addHelpers,
-  wrapStorage,
 } from '../src/kernel/state/storageWrapper.js';
 
 function checkState(t, getState, expected) {
@@ -230,22 +229,13 @@ test('storage helpers', t => {
 
 function buildKeeperStorageInMemory() {
   const store = initSimpleSwingStore();
-  const { kvStore, streamStore } = store;
-  const { enhancedCrankBuffer, commitCrank } = wrapStorage(kvStore);
-  return {
-    kvStore: enhancedCrankBuffer,
-    streamStore,
-    getState: () => getAllState(store).kvStuff,
-    commitCrank,
-  };
+  return { getState: () => getAllState(store).kvStuff, ...store };
 }
 
 function duplicateKeeper(getState) {
   const store = initSimpleSwingStore();
-  const { kvStore, streamStore } = store;
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
-  const { enhancedCrankBuffer } = wrapStorage(kvStore);
-  return makeKernelKeeper(enhancedCrankBuffer, streamStore);
+  return makeKernelKeeper(store);
 }
 
 test('hostStorage param guards', async t => {
@@ -261,18 +251,14 @@ test('hostStorage param guards', async t => {
 });
 
 test('kernel state', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   t.truthy(!k.getInitialized());
   k.createStartingKernelState('local');
   k.setInitialized();
 
-  commitCrank();
+  k.commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
@@ -292,13 +278,9 @@ test('kernel state', async t => {
 });
 
 test('kernelKeeper vat names', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
@@ -306,7 +288,7 @@ test('kernelKeeper vat names', async t => {
   t.is(v1, 'v1');
   t.is(v2, 'v2');
 
-  commitCrank();
+  k.commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
@@ -341,13 +323,9 @@ test('kernelKeeper vat names', async t => {
 });
 
 test('kernelKeeper device names', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
@@ -355,7 +333,7 @@ test('kernelKeeper device names', async t => {
   t.is(d7, 'd7');
   t.is(d8, 'd8');
 
-  commitCrank();
+  k.commitCrank();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
@@ -390,13 +368,9 @@ test('kernelKeeper device names', async t => {
 });
 
 test('kernelKeeper runQueue', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   t.truthy(k.isRunQueueEmpty());
@@ -410,7 +384,7 @@ test('kernelKeeper runQueue', async t => {
   t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 2);
 
-  commitCrank();
+  k.commitCrank();
   const k2 = duplicateKeeper(getState);
 
   t.deepEqual(k.getNextMsg(), { type: 'send', stuff: 'awesome' });
@@ -431,13 +405,9 @@ test('kernelKeeper runQueue', async t => {
 });
 
 test('kernelKeeper promises', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -452,7 +422,7 @@ test('kernelKeeper promises', async t => {
   t.truthy(k.hasKernelPromise(p1));
   t.falsy(k.hasKernelPromise('kp99'));
 
-  commitCrank();
+  k.commitCrank();
   let k2 = duplicateKeeper(getState);
 
   t.deepEqual(k2.getKernelPromise(p1), {
@@ -475,7 +445,7 @@ test('kernelKeeper promises', async t => {
     decider: undefined,
   });
 
-  commitCrank();
+  k.commitCrank();
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
@@ -513,7 +483,7 @@ test('kernelKeeper promises', async t => {
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
   expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
-  commitCrank();
+  k.commitCrank();
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
@@ -532,7 +502,7 @@ test('kernelKeeper promises', async t => {
   });
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
-  commitCrank();
+  k.commitCrank();
 
   checkState(t, getState, [
     ['crankNumber', '0'],
@@ -558,8 +528,8 @@ test('kernelKeeper promises', async t => {
 });
 
 test('kernelKeeper promise resolveToData', async t => {
-  const { kvStore, streamStore } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -580,8 +550,8 @@ test('kernelKeeper promise resolveToData', async t => {
 });
 
 test('kernelKeeper promise reject', async t => {
-  const { kvStore, streamStore } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -602,13 +572,9 @@ test('kernelKeeper promise reject', async t => {
 });
 
 test('vatKeeper', async t => {
-  const {
-    kvStore,
-    streamStore,
-    getState,
-    commitCrank,
-  } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const { getState } = store;
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
@@ -624,7 +590,7 @@ test('vatKeeper', async t => {
   t.is(vk.nextDeliveryNum(), 0n);
   t.is(vk.nextDeliveryNum(), 1n);
 
-  commitCrank();
+  k.commitCrank();
   let vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
@@ -637,15 +603,15 @@ test('vatKeeper', async t => {
   t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
-  commitCrank();
+  k.commitCrank();
   vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 });
 
 test('vatKeeper.getOptions', async t => {
-  const { kvStore, streamStore } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
@@ -662,15 +628,15 @@ test('vatKeeper.getOptions', async t => {
 });
 
 test('XS vatKeeper defaultManagerType', async t => {
-  const { kvStore, streamStore } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('xs-worker');
   t.is(k.getDefaultManagerType(), 'xs-worker');
 });
 
 test('meters', async t => {
-  const { kvStore, streamStore } = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(kvStore, streamStore);
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store);
   k.createStartingKernelState('local');
   const m1 = k.allocateMeter(100n, 10n);
   const m2 = k.allocateMeter(200n, 150n);

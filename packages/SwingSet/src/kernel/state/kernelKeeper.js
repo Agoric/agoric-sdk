@@ -1,10 +1,14 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
+import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
-import { insistEnhancedStorageAPI } from '../../storageAPI.js';
+import {
+  insistStorageAPI,
+  insistEnhancedStorageAPI,
+} from '../../storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
@@ -125,18 +129,19 @@ const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
 /**
- * @param {KVStorePlus} kvStore
- * @param {StreamStore} streamStore
+ * @param {HostStore} hostStorage
  * @param {KernelSlog} kernelSlog
- * @param {SnapStore=} snapStore
  */
-export default function makeKernelKeeper(
-  kvStore,
-  streamStore,
-  kernelSlog,
-  snapStore = undefined,
-) {
+export default function makeKernelKeeper(hostStorage, kernelSlog) {
+  // the kernelKeeper wraps the host's raw key-value store in a crank buffer
+  const rawKVStore = hostStorage.kvStore;
+  insistStorageAPI(rawKVStore);
+
+  const { abortCrank, commitCrank, enhancedCrankBuffer: kvStore } = wrapStorage(
+    rawKVStore,
+  );
   insistEnhancedStorageAPI(kvStore);
+  const { streamStore, snapStore } = hostStorage;
 
   /**
    * @param {string} key
@@ -1328,6 +1333,10 @@ export default function makeKernelKeeper(
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,
     allocateDeviceKeeperIfNeeded,
+
+    kvStore,
+    abortCrank,
+    commitCrank,
 
     dump,
   });

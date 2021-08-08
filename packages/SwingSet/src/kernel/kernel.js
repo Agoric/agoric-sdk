@@ -7,12 +7,10 @@ import { foreverPolicy } from '../runPolicies.js';
 import { makeVatManagerFactory } from './vatManager/factory.js';
 import { makeVatWarehouse } from './vatManager/vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
-import { wrapStorage } from './state/storageWrapper.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
 import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { parseVatSlot } from '../parseVatSlots.js';
-import { insistStorageAPI } from '../storageAPI.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../message.js';
 import { insistDeviceID, insistVatID } from './id.js';
@@ -138,25 +136,13 @@ export default function buildKernel(
   } = kernelOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  const {
-    kvStore,
-    streamStore,
-    snapStore,
-  } = /** @type { HostStore } */ (hostStorage);
-  insistStorageAPI(kvStore);
-  const { enhancedCrankBuffer, abortCrank, commitCrank } = wrapStorage(kvStore);
-  const vatAdminRootKref = kvStore.get('vatAdminRootKref');
+  const vatAdminRootKref = hostStorage.kvStore.get('vatAdminRootKref');
 
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole);
 
-  const kernelKeeper = makeKernelKeeper(
-    enhancedCrankBuffer,
-    streamStore,
-    kernelSlog,
-    snapStore,
-  );
+  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
 
   let started = false;
 
@@ -261,7 +247,6 @@ export default function buildKernel(
 
   const kernelSyscallHandler = makeKernelSyscallHandler({
     kernelKeeper,
-    kvStore: enhancedCrankBuffer,
     ephemeral,
     // eslint-disable-next-line no-use-before-define
     notify,
@@ -792,7 +777,7 @@ export default function buildKernel(
         const { vatID, shouldReject, info } = terminationTrigger;
         if (terminationTrigger.shouldAbortCrank) {
           // errors unwind any changes the vat made
-          abortCrank();
+          kernelKeeper.abortCrank();
           didAbort = true;
           // but metering deductions and underflow notifications must survive
           const { meterDeductions } = postAbortActions;
@@ -813,7 +798,7 @@ export default function buildKernel(
       }
       kernelKeeper.processRefcounts();
       kernelKeeper.saveStats();
-      commitCrank();
+      kernelKeeper.commitCrank();
       kernelKeeper.incrementCrankNumber();
     } finally {
       processQueueRunning = undefined;

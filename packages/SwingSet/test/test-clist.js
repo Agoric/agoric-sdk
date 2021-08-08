@@ -4,14 +4,12 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
-import { wrapStorage } from '../src/kernel/state/storageWrapper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
   const hostStorage = initSimpleSwingStore();
-  const { enhancedCrankBuffer: s } = wrapStorage(hostStorage.kvStore);
-
-  const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
+  const kk = makeKernelKeeper(hostStorage, slog);
+  const s = kk.kvStore;
   kk.createStartingKernelState('local');
   const vatID = kk.allocateUnusedVatID();
   const vk = kk.provideVatKeeper(vatID);
@@ -95,9 +93,8 @@ test(`clist reachability`, async t => {
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
   const hostStorage = initSimpleSwingStore();
-  const { enhancedCrankBuffer: s } = wrapStorage(hostStorage.kvStore);
+  const kk = makeKernelKeeper(hostStorage, slog);
 
-  const kk = makeKernelKeeper(s, hostStorage.streamStore, slog);
   kk.createStartingKernelState('local');
   const vatID1 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID1);
