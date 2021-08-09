@@ -1,16 +1,16 @@
-/* global require */
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import '../../exported';
+import '../../exported.js';
 
 import { E } from '@agoric/eventual-send';
-import { makeOfferAndFindInvitationAmount } from '../../src/offer';
+import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {
   const MOOLA_PURSE_PETNAME = 'moola purse';
@@ -39,9 +39,12 @@ test('offer', async t => {
   };
   const zoe = makeZoe(fakeVatAdmin);
 
-  const bundle = await bundleSource(
-    require.resolve('@agoric/zoe/src/contracts/automaticRefund'),
+  const bundleUrl = await importMetaResolve(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+    import.meta.url,
   );
+  const bundlePath = new URL(bundleUrl).pathname;
+  const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 
   const issuerKeywordRecord = harden({
