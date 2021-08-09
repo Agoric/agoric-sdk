@@ -55,18 +55,10 @@ test('meter details', async t => {
     {
       compute: 'number',
       allocate: 'number',
-      allocateChunksCalls: 'number',
-      allocateSlotsCalls: 'number',
-      garbageCollectionCount: 'number',
-      mapSetAddCount: 'number',
-      mapSetRemoveCount: 'number',
-      maxBucketSize: 'number',
     },
-    'auxiliary (non-consensus) meters are available',
+    'evaluate returns meter details',
   );
-  // @ts-ignore extra meters not declared on RunResult (TODO: #3139)
-  t.true(meters.mapSetAddCount > 20000);
-  t.is(meterType, 'xs-meter-9');
+  t.is(meterType, 'xs-meter-10');
 });
 
 test('isReady does not compute / allocate', async t => {
@@ -221,7 +213,7 @@ function dataStructurePerformance(logn) {
 }
 
 // This test fails intermittently due to some amount of noise that we cannot
-// completely elliminate.
+// completely eliminate.
 // Rather than have a very low-probability failing test, we skip this, but
 // retain the benchmark for future verification in the unlikely event that the
 // performance character of XS collections regresses.
