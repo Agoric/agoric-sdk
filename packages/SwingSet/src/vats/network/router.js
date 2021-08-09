@@ -65,8 +65,9 @@ export default function makeRouter() {
   });
 }
 /**
- * @typedef {Protocol} RouterProtocol
- * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} registerProtocolHandler
+ * @typedef {Object} RouterProtocol
+ * @property {(prefix: string) => Promise<Port>} bind
+ * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
 
