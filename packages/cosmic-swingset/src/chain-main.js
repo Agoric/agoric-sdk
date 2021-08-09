@@ -209,6 +209,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       },
       exportMailbox,
     );
+    function setActivityhash(activityhash) {
+      const msg = stringify({
+        method: 'set',
+        key: 'activityhash',
+        value: activityhash,
+      });
+      chainSend(portNums.storage, msg);
+    }
     function doOutboundBridge(dstID, obj) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
@@ -245,6 +253,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const s = await launch(
       stateDBDir,
       mailboxStorage,
+      setActivityhash,
       doOutboundBridge,
       vatconfig,
       argv,
