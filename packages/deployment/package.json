@@ -2,13 +2,11 @@
   "name": "@agoric/deployment",
   "version": "1.28.7",
   "description": "Set up Agoric public chain nodes",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "private": true,
   "main": "src/main.js",
   "bin": {
-    "ag-setup-cosmos": "src/entrypoint.cjs"
+    "ag-setup-cosmos": "src/entrypoint.js"
   },
   "scripts": {
     "test": "exit 0",
@@ -26,7 +24,6 @@
     "@agoric/install-ses": "^0.5.21",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
-    "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^6.3.1",
     "minimist": "^1.2.0",
     "node-fetch": "^2.6.0",

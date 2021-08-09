@@ -1,8 +1,8 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup';
-import { shellEscape } from './run';
+import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
+import { shellEscape } from './run.js';
 
 export const AVAILABLE_ROLES = ['validator', 'peer', 'seed'];
 

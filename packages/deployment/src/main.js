@@ -1,15 +1,13 @@
-/* global __dirname */
 /* eslint-disable no-await-in-loop */
 import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { assert, details as X } from '@agoric/assert';
-import { dirname, basename } from 'path';
-import { doInit } from './init';
-import { shellMetaRegexp, shellEscape } from './run';
-import { streamFromString } from './files';
-import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup';
+import { doInit } from './init.js';
+import { shellMetaRegexp, shellEscape } from './run.js';
+import { streamFromString } from './files.js';
+import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup.js';
 
 const PROVISION_DIR = 'provision';
 const COSMOS_DIR = 'ag-chain-cosmos';
@@ -29,6 +27,8 @@ const isPublicRpc = (roles, cluster) => {
   return roles[cluster] === 'validator';
 };
 const isPersistentPeer = isPublicRpc;
+
+const dirname = new URL('./', import.meta.url).pathname;
 
 const makeGuardFile = ({ rd, wr }) => async (file, maker) => {
   if (await rd.exists(file)) {
@@ -402,7 +402,7 @@ show-config      display the client connection parameters
       await guardFile(`${COSMOS_DIR}/set-defaults.stamp`, async () => {
         await needReMain(['play', 'cosmos-clone-config']);
 
-        const agoricCli = rd.resolve(__dirname, `../../agoric-cli/bin/agoric`);
+        const agoricCli = rd.resolve(dirname, `../../agoric-cli/bin/agoric`);
 
         // Apply the Agoric set-defaults to all the .dst dirs.
         const files = await rd.readdir(`${COSMOS_DIR}/data`);
@@ -911,8 +911,8 @@ ${name}:
           addRole[role] = makeGroup(role, 4);
         }
         const keyFile = rd.resolve(
-          dirname(SSH_PRIVATE_KEY_FILE),
-          `${provider}-${basename(SSH_PRIVATE_KEY_FILE)}`,
+          rd.dirname(SSH_PRIVATE_KEY_FILE),
+          `${provider}-${rd.basename(SSH_PRIVATE_KEY_FILE)}`,
         );
         for (let instance = 0; instance < ips.length; instance += 1) {
           const ip = ips[instance];
