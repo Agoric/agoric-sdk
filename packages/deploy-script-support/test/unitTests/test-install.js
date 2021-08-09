@@ -1,23 +1,17 @@
-/* global require */
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
-import { makeBoard } from '@agoric/vats/src/lib-board';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import bundleSource from '@agoric/bundle-source';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import '../../exported';
+import '../../exported.js';
 
-import { makeInstall } from '../../src/install';
-import { makeResolvePaths } from '../../src/resolvePath';
+import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
-  const { resolvePathForPackagedContract } = makeResolvePaths(
-    () => '',
-    require.resolve,
-  );
-
   const zoe = makeZoe(fakeVatAdmin);
 
   let addedInstallation;
@@ -29,9 +23,11 @@ test('install', async t => {
   const board = makeBoard();
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
-  const resolvedPath = resolvePathForPackagedContract(
-    '@agoric/zoe/src/contracts/automaticRefund',
+  const resolvedUrl = await importMetaResolve(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+    import.meta.url,
   );
+  const resolvedPath = new URL(resolvedUrl).pathname;
 
   const { installation, id } = await install(resolvedPath, 'automaticRefund');
   t.deepEqual(installation, addedInstallation);

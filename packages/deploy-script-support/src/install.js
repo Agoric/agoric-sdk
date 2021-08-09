@@ -1,7 +1,7 @@
 // @ts-check
 
-import './externalTypes';
-import './internalTypes';
+import './externalTypes.js';
+import './internalTypes.js';
 
 import { E } from '@agoric/eventual-send';
 

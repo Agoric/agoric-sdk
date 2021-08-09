@@ -2,9 +2,7 @@
   "name": "@agoric/deploy-script-support",
   "version": "0.2.19",
   "description": "Helpers and other support for writing deploy scripts",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/helpers.js",
   "engines": {
     "node": ">=11.0"
@@ -57,7 +55,7 @@
     "@agoric/install-ses": "^0.5.21",
     "@agoric/swingset-vat": "^0.19.0",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "import-meta-resolve": "^1.1.1"
   },
   "files": [
     "src",
@@ -67,9 +65,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ]
   },
   "eslintConfig": {
