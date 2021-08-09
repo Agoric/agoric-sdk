@@ -240,6 +240,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   /**
    * @type {Store<Port, Set<PromiseRecord<ConnectionHandler>>>}
    */
+  // Legacy because it holds a raw JavaScript Set
   const portToPendingConns = makeLegacyMap('Port');
 
   /** @type {Store<Endpoint, Endpoint>} */
