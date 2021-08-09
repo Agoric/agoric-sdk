@@ -79,14 +79,17 @@ export const getEnvironmentOption = (
 
   let setting = defaultSetting;
   const globalProcess = globalThis.process;
-  if (typeof process === 'object' && typeof globalProcess.env === 'object') {
-    if (optionName in globalProcess.env) {
-      console.log(
-        `Environment options sniffed and found an apparent ${q(
-          optionName,
-        )} environment variable.'\n`,
-      );
-      setting = globalProcess.env[optionName];
+  if (globalProcess && typeof globalProcess === 'object') {
+    const globalEnv = globalProcess.env;
+    if (globalEnv && typeof globalEnv === 'object') {
+      if (optionName in globalEnv) {
+        console.log(
+          `Environment options sniffed and found an apparent ${q(
+            optionName,
+          )} environment variable.'\n`,
+        );
+        setting = globalEnv[optionName];
+      }
     }
   }
   assert(
