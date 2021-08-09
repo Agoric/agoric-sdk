@@ -1,11 +1,11 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import '../../exported';
+import '../../exported.js';
 
-import { makeOfferAndFindInvitationAmount } from '../../src/offer';
+import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('findInvitationAmount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('invitations', AssetKind.SET);

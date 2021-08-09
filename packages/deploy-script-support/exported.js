@@ -1,4 +1,4 @@
-import '@agoric/bundle-source/exported';
-import '@agoric/vats/exported';
+import '@agoric/bundle-source/exported.js';
+import '@agoric/vats/exported.js';
 
-import './src/externalTypes';
+import './src/externalTypes.js';

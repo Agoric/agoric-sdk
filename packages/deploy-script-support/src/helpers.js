@@ -1,15 +1,13 @@
-/* global require */
 // @ts-check
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 
-import { makeInstall } from './install';
-import { makeResolvePaths } from './resolvePath';
-import { makeOfferAndFindInvitationAmount } from './offer';
-import { makeStartInstance } from './startInstance';
-import { makeDepositInvitation } from './depositInvitation';
-import { makeSaveIssuer } from './saveIssuer';
-import { assertOfferResult } from './assertOfferResult';
+import { makeInstall } from './install.js';
+import { makeOfferAndFindInvitationAmount } from './offer.js';
+import { makeStartInstance } from './startInstance.js';
+import { makeDepositInvitation } from './depositInvitation.js';
+import { makeSaveIssuer } from './saveIssuer.js';
+import { assertOfferResult } from './assertOfferResult.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
@@ -29,11 +27,6 @@ export const makeHelpers = async (homePromise, endowments) => {
   const zoeInvitationPurse = E(walletAdmin).getPurse(ZOE_INVITE_PURSE_PETNAME);
 
   // Create the methods
-
-  const {
-    resolvePathForLocalContract,
-    resolvePathForPackagedContract,
-  } = makeResolvePaths(endowments.pathResolve, require.resolve);
 
   const install = makeInstall(
     endowments.bundleSource,
@@ -60,8 +53,6 @@ export const makeHelpers = async (homePromise, endowments) => {
   const depositInvitation = makeDepositInvitation(zoeInvitationPurse);
 
   return {
-    resolvePathForLocalContract,
-    resolvePathForPackagedContract,
     install,
     startInstance,
     offer,

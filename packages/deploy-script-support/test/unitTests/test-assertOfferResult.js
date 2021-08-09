@@ -1,7 +1,7 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { assertOfferResult } from '../../src/assertOfferResult';
+import { assertOfferResult } from '../../src/assertOfferResult.js';
 
 test('assertOfferResult', async t => {
   const mockSeat = {
