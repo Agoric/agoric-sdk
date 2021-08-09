@@ -1,4 +1,3 @@
-/* global __dirname */
 import chalk from 'chalk';
 
 export const ACCOUNT_JSON = `account.json`;
@@ -6,10 +5,12 @@ export const DEFAULT_BOOT_TOKENS = `1000000000000000ubld,100000000000urun`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SSH_TYPE = 'ecdsa';
 
+const dirname = new URL('./', import.meta.url).pathname;
+
 export const setup = ({ resolve, env, setInterval }) => {
   const it = harden({
-    AGORIC_SDK: resolve(__dirname, '../../..'),
-    SETUP_DIR: resolve(__dirname, '..'),
+    AGORIC_SDK: resolve(dirname, '../../..'),
+    SETUP_DIR: resolve(dirname, '..'),
     SETUP_HOME: env.AG_SETUP_COSMOS_HOME
       ? resolve(env.AG_SETUP_COSMOS_HOME)
       : resolve('.'),

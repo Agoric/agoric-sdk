@@ -11,9 +11,9 @@ import { exec, spawn } from 'child_process';
 import inquirer from 'inquirer';
 import fetch from 'node-fetch';
 
-import { running } from './run';
-import { setup } from './setup';
-import * as files from './files';
+import { running } from './run.js';
+import { setup } from './setup.js';
+import * as files from './files.js';
 import deploy from './main.js';
 
 process.on('SIGINT', () => process.exit(-1));
