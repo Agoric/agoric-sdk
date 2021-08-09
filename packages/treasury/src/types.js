@@ -59,7 +59,7 @@
 
 /**
  * @typedef {Object} InnerVaultManager
- * @property {Brand} collateralBrand
+ * @property {() => Brand} getCollateralBrand
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
