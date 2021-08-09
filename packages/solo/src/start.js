@@ -150,9 +150,11 @@ async function buildSwingset(
     }
     await initializeSwingset(config, argv, hostStorage);
   }
+  const slogFile = process.env.SOLO_SLOGFILE;
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
+    { slogFile },
   );
 
   async function saveState() {
