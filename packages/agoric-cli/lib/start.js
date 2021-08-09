@@ -113,7 +113,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   let agSolo;
   if (opts.sdk) {
-    agSolo = path.resolve(__dirname, '../../solo/src/entrypoint.cjs');
+    agSolo = path.resolve(__dirname, '../../solo/src/entrypoint.js');
   } else {
     agSolo = `ag-solo`;
   }
