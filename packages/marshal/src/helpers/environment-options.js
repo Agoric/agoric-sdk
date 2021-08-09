@@ -21,7 +21,7 @@ const { details: X, quote: q } = assert;
  * calling the static module with parameters in order to derive from it a
  * module instance. Compartments instead lets us parameterize the meaning
  * of a module instance derived from a static module according to the
- * three namespaces provided by the JavaScript semantics, effecting the
+ * three namespaces provided by the JavaScript semantics, affecting the
  * meaning of a module instance.
  *    * The global variable namespaces.
  *       * The global scope, aliased to properties of the global object.
@@ -86,7 +86,7 @@ export const getEnvironmentOption = (
         console.log(
           `Environment options sniffed and found an apparent ${q(
             optionName,
-          )} environment variable.'\n`,
+          )} environment variable.\n`,
         );
         setting = globalEnv[optionName];
       }
