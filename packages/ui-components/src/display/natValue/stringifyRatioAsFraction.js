@@ -4,9 +4,9 @@ import { assert } from '@agoric/assert';
 import { isNatValue } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 
-import { stringifyNat } from './stringifyNat';
+import { stringifyNat } from './stringifyNat.js';
 
 const PLACES_TO_SHOW = 2;
 

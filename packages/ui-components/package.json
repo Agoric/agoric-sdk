@@ -2,6 +2,7 @@
   "name": "@agoric/ui-components",
   "version": "0.2.18",
   "description": "Reusable UI Components for Agoric Dapps, built with React and MaterialUI",
+  "type": "module",
   "main": "dist/index.js",
   "dependencies": {
     "@agoric/assert": "^0.3.7",
@@ -65,7 +66,6 @@
     "eslint-plugin-flowtype": "^5.2.0",
     "eslint-plugin-react": "^7.22.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "esm": "agoric-labs/esm#Agoric-built",
     "prettier": "^1.19.0",
     "react": "^16.14.0",
     "react-dom": "^16.8.0",
@@ -78,7 +78,6 @@
       "!test/components"
     ],
     "require": [
-      "esm",
       "./test/_setup-enzyme-adapter.js"
     ]
   },

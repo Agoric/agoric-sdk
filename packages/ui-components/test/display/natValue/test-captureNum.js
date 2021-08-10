@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { captureNum } from '../../../src/display/natValue/helpers/captureNum';
+import { captureNum } from '../../../src/display/natValue/helpers/captureNum.js';
 
 test('captureNum', t => {
   t.deepEqual(captureNum('200'), { left: '200', right: '' });

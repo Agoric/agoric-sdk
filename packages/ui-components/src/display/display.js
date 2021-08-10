@@ -1,12 +1,12 @@
 // @ts-check
 import { assert, details } from '@agoric/assert';
 import { AssetKind } from '@agoric/ertp';
-import '@agoric/ertp/exported';
+import '@agoric/ertp/exported.js';
 
-import { parseAsNat } from './natValue/parseAsNat';
-import { stringifyNat } from './natValue/stringifyNat';
-import { parseAsSet } from './setValue/parseAsSet';
-import { stringifySet } from './setValue/stringifySet';
+import { parseAsNat } from './natValue/parseAsNat.js';
+import { stringifyNat } from './natValue/stringifyNat.js';
+import { parseAsSet } from './setValue/parseAsSet.js';
+import { stringifySet } from './setValue/stringifySet.js';
 
 /**
  *

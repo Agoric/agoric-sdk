@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { roundToDecimalPlaces as round } from '../../../src/display/natValue/helpers/roundToDecimalPlaces';
+import { roundToDecimalPlaces as round } from '../../../src/display/natValue/helpers/roundToDecimalPlaces.js';
 
 test('roundToDecimalPlaces', t => {
   t.deepEqual(round('00', 0), '');

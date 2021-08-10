@@ -1,6 +1,6 @@
 import { AssetKind } from '@agoric/ertp';
 import clsx from 'clsx';
-import { stringifyValue } from '../display';
+import { stringifyValue } from '../display/index.js';
 
 /**
  * Return `purses` filtered to just the fungible ones, and optionally just the ones for a
