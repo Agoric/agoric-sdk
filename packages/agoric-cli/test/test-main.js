@@ -7,7 +7,7 @@ import test from 'ava';
 import fs from 'fs';
 import anylogger from 'anylogger';
 
-import main from '../lib/main';
+import main from '../lib/main.js';
 
 test('sanity', async t => {
   const stubAnylogger = () => {

@@ -11,10 +11,10 @@ import rawFs from 'fs';
 import os from 'os';
 
 // Configure logs.
-import './anylogger-agoric';
+import './anylogger-agoric.js';
 import anylogger from 'anylogger';
 
-import main from './main';
+import main from './main.js';
 
 const fs = rawFs.promises;
 const log = anylogger('agoric');

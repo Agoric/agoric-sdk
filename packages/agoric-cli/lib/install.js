@@ -1,7 +1,10 @@
-/* global __dirname process Buffer */
+/* global process Buffer */
 import path from 'path';
 import chalk from 'chalk';
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
@@ -63,7 +66,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     log('removing', linkFolder);
     await rimraf(linkFolder);
 
-    const sdkRoot = path.resolve(__dirname, `../../..`);
+    const sdkRoot = path.resolve(dirname, `../../..`);
     const sdkDirs = await workspaceDirectories(sdkRoot);
     await Promise.all(
       sdkDirs.map(async location => {

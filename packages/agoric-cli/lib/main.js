@@ -1,19 +1,22 @@
-/* global __dirname process */
+/* global process */
 import { Command } from 'commander';
-
+import path from 'path';
 import { assert, details as X } from '@agoric/assert';
-import cosmosMain from './cosmos';
-import deployMain from './deploy';
-import initMain from './init';
-import installMain from './install';
-import setDefaultsMain from './set-defaults';
-import startMain from './start';
-import walletMain from './open';
+import cosmosMain from './cosmos.js';
+import deployMain from './deploy.js';
+import initMain from './init.js';
+import installMain from './install.js';
+import setDefaultsMain from './set-defaults.js';
+import startMain from './start.js';
+import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
 
 const STAMP = '_agstate';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 const main = async (progname, rawArgs, powers) => {
   const { anylogger, fs } = powers;
@@ -41,7 +44,7 @@ const main = async (progname, rawArgs, powers) => {
 
   program.storeOptionsAsProperties(false);
 
-  const pj = await fs.readFile(`${__dirname}/../package.json`);
+  const pj = await fs.readFile(`${dirname}/../package.json`);
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
 

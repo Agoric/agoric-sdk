@@ -1,4 +1,4 @@
-/* global __dirname process setTimeout */
+/* global process setTimeout */
 import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
@@ -9,9 +9,12 @@ import {
   finishTendermintConfig,
   finishCosmosGenesis,
   finishCosmosApp,
-} from './chain-config';
+} from './chain-config.js';
 
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},50000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -113,7 +116,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   let agSolo;
   if (opts.sdk) {
-    agSolo = path.resolve(__dirname, '../../solo/src/entrypoint.js');
+    agSolo = path.resolve(dirname, '../../solo/src/entrypoint.js');
   } else {
     agSolo = `ag-solo`;
   }

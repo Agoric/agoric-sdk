@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
 
 export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const IMAGE = `agoric/agoric-sdk`;

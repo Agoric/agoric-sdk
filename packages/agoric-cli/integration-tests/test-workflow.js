@@ -1,6 +1,6 @@
-/* global __dirname process setTimeout clearTimeout setInterval clearInterval */
+/* global process setTimeout clearTimeout setInterval clearInterval */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -11,9 +11,11 @@ import { request } from 'http';
 
 import { spawn } from 'child_process';
 
-import { makePspawn } from '../lib/helpers';
+import { makePspawn } from '../lib/helpers.js';
 
 const TIMEOUT_SECONDS = 20 * 60;
+
+const dirname = new URL('./', import.meta.url).pathname;
 
 // To keep in sync with https://agoric.com/documentation/getting-started/
 
@@ -45,10 +47,10 @@ test('workflow', async t => {
   }
 
   // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
-  const extraArgs = fs.existsSync(`${__dirname}/../../cosmic-swingset`)
+  const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
     ? ['--sdk']
     : [];
-  const agoricCli = path.join(__dirname, '..', 'bin', 'agoric');
+  const agoricCli = path.join(dirname, '..', 'bin', 'agoric');
   function myMain(args) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(agoricCli, [...extraArgs, ...args], {
