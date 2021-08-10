@@ -3,5 +3,5 @@ export {
   addDataToGraphSpec,
   addGraphToGraphSpec,
   renderGraph,
-} from './statGraph';
-export { makeStatLogger } from './statLogger';
+} from './statGraph.js';
+export { makeStatLogger } from './statLogger.js';

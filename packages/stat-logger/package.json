@@ -2,9 +2,7 @@
   "name": "@agoric/stat-logger",
   "version": "0.4.17",
   "description": "Simple library for logging and graphing performance statistics",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
@@ -23,8 +21,7 @@
     "vega-canvas": "^1.2.1"
   },
   "devDependencies": {
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "publishConfig": {
     "access": "public"
@@ -32,9 +29,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   },
