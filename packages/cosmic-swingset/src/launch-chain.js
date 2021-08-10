@@ -10,6 +10,7 @@ import {
   makeSwingsetController,
   loadBasedir,
   loadSwingsetConfigFile,
+  computronCounter,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
@@ -23,9 +24,10 @@ const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
-// This is how many cranks we run per block, as per #2299.
-// TODO Make it dependent upon metering instead.
-const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
+// This is how many computrons we allow before starting a new block.
+// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
+// based on 5 sec voting time and up to 10 sec of computation.
+const FIXME_MAX_COMPUTRONS_PER_BLOCK = 8_000_000n;
 
 async function buildSwingset(
   mailboxStorage,
@@ -141,24 +143,24 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
-  // ////////////////////////////
-  // TODO: This is where we would add the scheduler.
-  //
-  // Note that the "bootstrap until no more progress" state will call this
-  // function without any arguments.
-  async function crankScheduler(maximumCranks) {
-    let now = Date.now();
+  async function crankScheduler(clock = () => Date.now()) {
+    let now = clock();
+    let crankStart = now;
     const blockStart = now;
-    let stepped = true;
-    let numCranks = 0;
-    while (stepped && numCranks < maximumCranks) {
-      const crankStart = now;
-      // eslint-disable-next-line no-await-in-loop
-      stepped = await controller.step();
-      now = Date.now();
-      schedulerCrankTimeHistogram.record(now - crankStart);
-      numCranks += 1;
-    }
+
+    const policy = computronCounter(FIXME_MAX_COMPUTRONS_PER_BLOCK);
+    const instrumentedPolicy = harden({
+      ...policy,
+      crankComplete(details) {
+        policy.crankComplete(details);
+        schedulerCrankTimeHistogram.record(now - crankStart);
+        crankStart = now;
+        now = clock();
+      },
+    });
+    await controller.run(instrumentedPolicy);
+
+    now = Date.now();
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
@@ -182,7 +184,7 @@ export async function launch(
       blockHeight,
       blockTime,
     });
-    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
+    await crankScheduler();
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
       blockHeight,
