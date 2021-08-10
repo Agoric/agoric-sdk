@@ -1,19 +1,19 @@
 // @ts-nocheck
 
-import '@agoric/zoe/src/types';
+import '@agoric/zoe/src/types.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@agoric/marshal';
 
-import { makeVaultKit } from '../src/vault';
-import { paymentFromZCFMint } from '../src/burn';
-import { SECONDS_PER_YEAR } from '../src/interest';
+import { makeVaultKit } from '../src/vault.js';
+import { paymentFromZCFMint } from '../src/burn.js';
+import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const BASIS_POINTS = 10000n;
 

@@ -1,8 +1,8 @@
 // @ts-check
 import { Far } from '@agoric/marshal';
 
-import '@agoric/zoe/exported';
-import '@agoric/zoe/src/contracts/exported';
+import '@agoric/zoe/exported.js';
+import '@agoric/zoe/src/contracts/exported.js';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
 // "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
@@ -26,17 +26,17 @@ import {
   offerTo,
   getAmountOut,
   getAmountIn,
-} from '@agoric/zoe/src/contractSupport';
+} from '@agoric/zoe/src/contractSupport/index.js';
 
 import {
   multiplyBy,
   makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/ratio';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
-import { makeTracer } from './makeTracer';
-import { makeVaultManager } from './vaultManager';
-import { makeLiquidationStrategy } from './liquidateMinimum';
-import { makeMakeCollectFeesInvitation } from './collectRewardFees';
+import { makeTracer } from './makeTracer.js';
+import { makeVaultManager } from './vaultManager.js';
+import { makeLiquidationStrategy } from './liquidateMinimum.js';
+import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 
 const trace = makeTracer('ST');
 

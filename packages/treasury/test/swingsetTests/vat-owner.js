@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 
 const SECONDS_PER_HOUR = 60n * 60n;

@@ -1,5 +1,3 @@
-/* global __dirname */
-
 // @ts-check
 
 // TODO Remove babel-standalone preinitialization
@@ -9,13 +7,17 @@ import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
+import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import liquidateBundle from '../../bundles/bundle-liquidateMinimum';
-import autoswapBundle from '../../bundles/bundle-multipoolAutoswap';
-import stablecoinBundle from '../../bundles/bundle-stablecoinMachine';
+import liquidateBundle from '../../bundles/bundle-liquidateMinimum.js';
+import autoswapBundle from '../../bundles/bundle-multipoolAutoswap.js';
+import stablecoinBundle from '../../bundles/bundle-stablecoinMachine.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;
@@ -35,10 +37,10 @@ test.before(async t => {
 
   const vatNames = ['alice', 'zoe', 'priceAuthority', 'owner'];
   const vatNameToSource = vatNames.map(name => {
-    const source = `${__dirname}/vat-${name}.js`;
+    const source = `${dirname}/vat-${name}.js`;
     return [name, source];
   });
-  const bootstrapSource = `${__dirname}/bootstrap.js`;
+  const bootstrapSource = `${dirname}/bootstrap.js`;
   vatNameToSource.push(['bootstrap', bootstrapSource]);
 
   const bundles = await Promise.all(

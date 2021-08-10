@@ -1,6 +1,6 @@
 // @ts-check
 
-import { offerTo } from '@agoric/zoe/src/contractSupport';
+import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@agoric/eventual-send';
 
 export const makeMakeCollectFeesInvitation = (

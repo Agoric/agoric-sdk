@@ -4,7 +4,7 @@ import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
   makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 

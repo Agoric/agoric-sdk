@@ -1,11 +1,11 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
-import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest';
+import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
 const ONE_DAY = 60n * 60n * 24n;
 const ONE_MONTH = ONE_DAY * 30n;

@@ -1,23 +1,29 @@
 // @ts-check
 
-/* global require __dirname */
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
-import '../src/types';
+import '@agoric/zoe/exported.js';
+import '../src/types.js';
 
+import path from 'path';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoe } from '@agoric/zoe';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-const stablecoinRoot = `${__dirname}/../src/stablecoinMachine.js`;
-const liquidationRoot = `${__dirname}/../src/liquidateMinimum.js`;
-const autoswapRoot = require.resolve(
-  '@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap',
-);
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const stablecoinRoot = `${dirname}/../src/stablecoinMachine.js`;
+const liquidationRoot = `${dirname}/../src/liquidateMinimum.js`;
+
+const autoswapRootP = importMetaResolve(
+  '@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js',
+  import.meta.url,
+).then(url => new URL(url).pathname);
 
 const makeInstall = async (root, zoe) => {
   const bundle = await bundleSource(root);
@@ -28,6 +34,7 @@ const makeInstall = async (root, zoe) => {
 
 test('bootstrap payment', async t => {
   const zoe = makeZoe(fakeVatAdmin);
+  const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
   const liquidationInstall = await makeInstall(liquidationRoot, zoe);
@@ -74,6 +81,7 @@ test('bootstrap payment', async t => {
 
 test('bootstrap payment - only minted once', async t => {
   const zoe = makeZoe(fakeVatAdmin);
+  const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
   const liquidationInstall = await makeInstall(liquidationRoot, zoe);
@@ -129,6 +137,7 @@ test('bootstrap payment - only minted once', async t => {
 
 test('bootstrap payment - default value is 0n', async t => {
   const zoe = makeZoe(fakeVatAdmin);
+  const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
   const liquidationInstall = await makeInstall(liquidationRoot, zoe);
