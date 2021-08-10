@@ -70,6 +70,7 @@ const enableKernelGC = true;
 
 // exclude from consensus
 // local.snapshot.$id = [vatID, ...]
+// local.kernelStats // JSON(various kernel stats)
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -208,11 +209,14 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
   }
 
   function saveStats() {
-    kvStore.set('kernelStats', JSON.stringify(kernelStats));
+    kvStore.set('local.kernelStats', JSON.stringify(kernelStats));
   }
 
   function loadStats() {
-    kernelStats = { ...kernelStats, ...JSON.parse(getRequired('kernelStats')) };
+    kernelStats = {
+      ...kernelStats,
+      ...JSON.parse(getRequired('local.kernelStats')),
+    };
   }
 
   function getStats() {
