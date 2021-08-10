@@ -319,7 +319,7 @@ test('virtual object gc', t => {
   const {
     makeKind,
     dumpStore,
-    setExported,
+    setExportStatus,
     deleteEntry,
     possibleVirtualObjectDeath,
   } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
@@ -355,29 +355,33 @@ test('virtual object gc', t => {
 
   // case 1: export, drop local ref, drop export
   // export
-  setExported('o+1/1', true);
-  t.is(log.shift(), `get vom.o+1/1.refCount => undefined`);
-  t.is(log.shift(), `set vom.o+1/1.refCount 1 0`);
+  setExportStatus('o+1/1', 'reachable');
+  t.is(log.shift(), `set vom.es.o+1/1 1`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because exported
   pretendGC('o+1/1');
-  t.is(log.shift(), `get vom.o+1/1.refCount => 1 0`);
+  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
+  t.is(log.shift(), `get vom.es.o+1/1 => 1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['vom.es.o+1/1', '1'],
     ['vom.o+1/1', minThing('thing #1')],
-    ['vom.o+1/1.refCount', '1 0'],
     ['vom.o+1/2', minThing('thing #2')],
     ['vom.o+1/3', minThing('thing #3')],
     ['vom.o+1/4', minThing('thing #4')],
     ['vom.o+1/5', minThing('thing #5')],
   ]);
   // drop export -- should delete
-  setExported('o+1/1', false);
-  t.is(log.shift(), `get vom.o+1/1.refCount => 1 0`);
-  t.is(log.shift(), `set vom.o+1/1.refCount 0 0`);
-  t.is(log.shift(), `get vom.o+1/1.refCount => 0 0`);
+  setExportStatus('o+1/1', 'recognizable');
+  t.is(log.shift(), `set vom.es.o+1/1 0`);
+  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
+  t.deepEqual(log, []);
+  pretendGC('o+1/1');
+  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
+  t.is(log.shift(), `get vom.es.o+1/1 => 0`);
   t.is(log.shift(), `delete vom.o+1/1`);
-  t.is(log.shift(), `delete vom.o+1/1.refCount`);
+  t.is(log.shift(), `delete vom.rc.o+1/1`);
+  t.is(log.shift(), `delete vom.es.o+1/1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.o+1/2', minThing('thing #2')],
@@ -388,27 +392,28 @@ test('virtual object gc', t => {
 
   // case 2: export, drop export, drop local ref
   // export
-  setExported('o+1/2', true);
-  t.is(log.shift(), `get vom.o+1/2.refCount => undefined`);
-  t.is(log.shift(), `set vom.o+1/2.refCount 1 0`);
+  setExportStatus('o+1/2', 'reachable');
+  t.is(log.shift(), `set vom.es.o+1/2 1`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd locally
-  setExported('o+1/2', false);
-  t.is(log.shift(), `get vom.o+1/2.refCount => 1 0`);
-  t.is(log.shift(), `set vom.o+1/2.refCount 0 0`);
+  setExportStatus('o+1/2', 'recognizable');
+  t.is(log.shift(), `set vom.es.o+1/2 0`);
+  t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['vom.es.o+1/2', '0'],
     ['vom.o+1/2', minThing('thing #2')],
-    ['vom.o+1/2.refCount', '0 0'],
     ['vom.o+1/3', minThing('thing #3')],
     ['vom.o+1/4', minThing('thing #4')],
     ['vom.o+1/5', minThing('thing #5')],
   ]);
   // drop local ref -- should delete
   pretendGC('o+1/2');
-  t.is(log.shift(), `get vom.o+1/2.refCount => 0 0`);
+  t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
+  t.is(log.shift(), `get vom.es.o+1/2 => 0`);
   t.is(log.shift(), `delete vom.o+1/2`);
-  t.is(log.shift(), `delete vom.o+1/2.refCount`);
+  t.is(log.shift(), `delete vom.rc.o+1/2`);
+  t.is(log.shift(), `delete vom.es.o+1/2`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.o+1/3', minThing('thing #3')],
@@ -419,9 +424,11 @@ test('virtual object gc', t => {
   // case 3: drop local ref with no prior export
   // drop local ref -- should delete
   pretendGC('o+1/3');
-  t.is(log.shift(), `get vom.o+1/3.refCount => undefined`);
+  t.is(log.shift(), `get vom.rc.o+1/3 => undefined`);
+  t.is(log.shift(), `get vom.es.o+1/3 => undefined`);
   t.is(log.shift(), `delete vom.o+1/3`);
-  t.is(log.shift(), `delete vom.o+1/3.refCount`);
+  t.is(log.shift(), `delete vom.rc.o+1/3`);
+  t.is(log.shift(), `delete vom.es.o+1/3`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.o+1/4', minThing('thing #4')],
@@ -433,57 +440,61 @@ test('virtual object gc', t => {
   // eslint-disable-next-line no-unused-vars
   const ref1 = refMaker(things[3]);
   t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
-  t.is(log.shift(), `get vom.o+1/4.refCount => undefined`);
-  t.is(log.shift(), `set vom.o+1/4.refCount 0 1`);
+  t.is(log.shift(), `get vom.rc.o+1/4 => undefined`);
+  t.is(log.shift(), `set vom.rc.o+1/4 1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/4.refCount', '0 1'],
     ['vom.o+1/5', minThing('thing #5')],
     ['vom.o+1/6', minThing('thing #6')],
+    ['vom.rc.o+1/4', '1'],
   ]);
   // export
-  setExported('o+1/4', true);
-  t.is(log.shift(), `get vom.o+1/4.refCount => 0 1`);
-  t.is(log.shift(), `set vom.o+1/4.refCount 1 1`);
+  setExportStatus('o+1/4', 'reachable');
+  t.is(log.shift(), `set vom.es.o+1/4 1`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC('o+1/4');
+  t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/4 => 1`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
-  setExported('o+1/4', false);
-  t.is(log.shift(), `get vom.o+1/4.refCount => 1 1`);
-  t.is(log.shift(), `set vom.o+1/4.refCount 0 1`);
+  setExportStatus('o+1/4', 'recognizable');
+  t.is(log.shift(), `set vom.es.o+1/4 0`);
+  t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
   t.deepEqual(log, []);
 
   // case 5: export, ref virtually, drop local ref, drop export
   // export
-  setExported('o+1/5', true);
-  t.is(log.shift(), `get vom.o+1/5.refCount => undefined`);
-  t.is(log.shift(), `set vom.o+1/5.refCount 1 0`);
+  setExportStatus('o+1/5', 'reachable');
+  t.is(log.shift(), `set vom.es.o+1/5 1`);
   t.deepEqual(log, []);
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref2 = refMaker(things[4]);
   t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
-  t.is(log.shift(), `get vom.o+1/5.refCount => 1 0`);
-  t.is(log.shift(), `set vom.o+1/5.refCount 1 1`);
+  t.is(log.shift(), `get vom.rc.o+1/5 => undefined`);
+  t.is(log.shift(), `set vom.rc.o+1/5 1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['vom.es.o+1/4', '0'],
+    ['vom.es.o+1/5', '1'],
     ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/4.refCount', '0 1'],
     ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/5.refCount', '1 1'],
     ['vom.o+1/6', minThing('thing #6')],
     ['vom.o+1/7', minThing('thing #7')],
+    ['vom.rc.o+1/4', '1'],
+    ['vom.rc.o+1/5', '1'],
   ]);
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC('o+1/5');
+  t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/5 => 1`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
-  setExported('o+1/5', false);
-  t.is(log.shift(), `get vom.o+1/5.refCount => 1 1`);
-  t.is(log.shift(), `set vom.o+1/5.refCount 0 1`);
+  setExportStatus('o+1/5', 'recognizable');
+  t.is(log.shift(), `set vom.es.o+1/5 0`);
+  t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
   t.deepEqual(log, []);
 
   // case 6: ref virtually, drop local ref
@@ -491,31 +502,37 @@ test('virtual object gc', t => {
   // eslint-disable-next-line no-unused-vars
   const ref3 = refMaker(things[5]);
   t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
-  t.is(log.shift(), `get vom.o+1/6.refCount => undefined`);
-  t.is(log.shift(), `set vom.o+1/6.refCount 0 1`);
+  t.is(log.shift(), `get vom.rc.o+1/6 => undefined`);
+  t.is(log.shift(), `set vom.rc.o+1/6 1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['vom.es.o+1/4', '0'],
+    ['vom.es.o+1/5', '0'],
     ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/4.refCount', '0 1'],
     ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/5.refCount', '0 1'],
     ['vom.o+1/6', minThing('thing #6')],
-    ['vom.o+1/6.refCount', '0 1'],
     ['vom.o+1/7', minThing('thing #7')],
     ['vom.o+1/8', minThing('thing #8')],
+    ['vom.rc.o+1/4', '1'],
+    ['vom.rc.o+1/5', '1'],
+    ['vom.rc.o+1/6', '1'],
   ]);
   // drop local ref -- should not delete because ref'd virtually
   pretendGC('o+1/6');
+  t.is(log.shift(), `get vom.rc.o+1/6 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/6 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['vom.es.o+1/4', '0'],
+    ['vom.es.o+1/5', '0'],
     ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/4.refCount', '0 1'],
     ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/5.refCount', '0 1'],
     ['vom.o+1/6', minThing('thing #6')],
-    ['vom.o+1/6.refCount', '0 1'],
     ['vom.o+1/7', minThing('thing #7')],
     ['vom.o+1/8', minThing('thing #8')],
+    ['vom.rc.o+1/4', '1'],
+    ['vom.rc.o+1/5', '1'],
+    ['vom.rc.o+1/6', '1'],
   ]);
 });
 
