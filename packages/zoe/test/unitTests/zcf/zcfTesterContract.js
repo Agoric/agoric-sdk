@@ -1,6 +1,5 @@
 // @ts-check
 
-import { E } from '@agoric/eventual-send';
 import '../../../exported.js';
 
 /**
@@ -10,10 +9,9 @@ import '../../../exported.js';
  */
 const start = async zcf => {
   // make the `zcf` and `instance` available to the tests
-  const invitation = zcf.makeInvitation(() => {}, 'test');
-  const zoe = zcf.getZoeService();
-  const { instance } = await E(zoe).getInvitationDetails(invitation);
+  const instance = zcf.getInstance();
   zcf.setTestJig(() => harden({ instance }));
+
   return {};
 };
 

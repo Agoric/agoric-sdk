@@ -17,6 +17,7 @@ import '../internal-types.js';
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { AssetKind } from '@agoric/ertp';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -24,7 +25,6 @@ import { makeOffer } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
-import { AssetKind } from '../../../ERTP/src/amountMath.js';
 
 /**
  * Create an instance of Zoe.
@@ -33,7 +33,7 @@ import { AssetKind } from '../../../ERTP/src/amountMath.js';
  * to create a new vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {{ zoeService: ZoeService, feeMintAccess: Handle<'feeMintAccess'> }} The created Zoe service.
+ * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }}
  */
 const makeZoe = (
   vatAdminSvc,

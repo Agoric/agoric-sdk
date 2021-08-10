@@ -48,7 +48,7 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const zoe = makeZoe(makeFakeVatAdmin().admin);
+    const { zoeService: zoe } = makeZoe(makeFakeVatAdmin().admin);
 
     // Pack the contracts.
     const oracleBundle = await bundleSource(oraclePath);

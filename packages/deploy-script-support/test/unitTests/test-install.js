@@ -12,7 +12,7 @@ import '../../exported.js';
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   let addedInstallation;
 

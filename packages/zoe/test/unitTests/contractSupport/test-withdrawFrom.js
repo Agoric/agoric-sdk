@@ -27,7 +27,7 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = makeZoe(makeFakeVatAdmin(setJig).admin);
+  const { zoeService: zoe } = makeZoe(makeFakeVatAdmin(setJig).admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

@@ -45,7 +45,7 @@ async function setupTest() {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const board = makeBoard();
 
   // Create AutomaticRefund instance
@@ -1193,7 +1193,7 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1275,7 +1275,7 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

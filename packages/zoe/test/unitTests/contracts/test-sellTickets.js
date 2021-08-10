@@ -23,7 +23,7 @@ const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
@@ -147,7 +147,7 @@ test(`mint and sell opera tickets`, async t => {
 
   const moola = value => AmountMath.make(value, moolaBrand);
 
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
@@ -541,7 +541,7 @@ test(`mint and sell opera tickets`, async t => {
 //
 test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);

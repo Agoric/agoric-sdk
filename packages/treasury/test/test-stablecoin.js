@@ -35,7 +35,7 @@ const trace = makeTracer('TestST');
 const BASIS_POINTS = 10000n;
 const PERCENT = 100n;
 
-function setUpZoeForTest(setJig) {
+const setUpZoeForTest = async setJig => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
   let isFirst = true;
   function makeRemote(arg) {
@@ -46,7 +46,7 @@ function setUpZoeForTest(setJig) {
   }
 
   /**
-   * These properties will be asssigned by `setJig` in the contract.
+   * These properties will be assigned by `setJig` in the contract.
    *
    * @typedef {Object} TestContext
    * @property {ContractFacet} zcf
@@ -55,11 +55,18 @@ function setUpZoeForTest(setJig) {
    * @property {ERef<MultipoolAutoswapPublicFacet>} autoswap
    */
 
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoe(
+    makeFakeVatAdmin(setJig, makeRemote).admin,
+  );
   /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(makeZoe(makeFakeVatAdmin(setJig, makeRemote).admin));
+  const zoe = makeFar(zoeService);
   trace('makeZoe');
-  return zoe;
-}
+  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
+  return {
+    zoe,
+    feeMintAccess,
+  };
+};
 
 async function makeInstall(sourceRoot, zoe) {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
@@ -133,7 +140,7 @@ test('first', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -164,6 +171,7 @@ test('first', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
@@ -294,7 +302,7 @@ test('price drop', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -329,6 +337,7 @@ test('price drop', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
@@ -447,7 +456,7 @@ test('price falls precipitously', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -487,6 +496,7 @@ test('price falls precipitously', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord, autoswap: autoswapAPI } = testJig;
@@ -603,7 +613,7 @@ test('stablecoin display collateral', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -632,6 +642,7 @@ test('stablecoin display collateral', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
@@ -691,7 +702,7 @@ test('interest on multiple vaults', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -724,6 +735,7 @@ test('interest on multiple vaults', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
@@ -898,7 +910,7 @@ test('adjust balances', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -929,6 +941,7 @@ test('adjust balances', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
@@ -1200,7 +1213,7 @@ test('overdeposit', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -1231,6 +1244,7 @@ test('overdeposit', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
@@ -1393,7 +1407,7 @@ test('mutable liquidity triggers and interest', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -1427,6 +1441,7 @@ test('mutable liquidity triggers and interest', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
@@ -1620,7 +1635,7 @@ test('mutable liquidity triggers and interest', async t => {
 test('bad chargingPeriod', async t => {
   /* @type {TestContext} */
   const setJig = () => {};
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -1648,6 +1663,7 @@ test('bad chargingPeriod', async t => {
           timerService: manualTimer,
           liquidationInstall,
         },
+        harden({ feeMintAccess }),
       ),
     { message: 'chargingPeriod (2) must be a BigInt' },
   );
@@ -1659,7 +1675,7 @@ test('coll fees from loan and AMM', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -1690,6 +1706,7 @@ test('coll fees from loan and AMM', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
 
   const { runIssuerRecord, govIssuerRecord, autoswap: _autoswapAPI } = testJig;
@@ -1796,7 +1813,7 @@ test('close loan', async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const zoe = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
 
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -1827,6 +1844,7 @@ test('close loan', async t => {
       timerService: manualTimer,
       liquidationInstall,
     },
+    harden({ feeMintAccess }),
   );
   const { runIssuerRecord, govIssuerRecord } = testJig;
   const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;

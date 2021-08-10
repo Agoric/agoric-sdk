@@ -39,9 +39,13 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
+const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoe(
+  makeFakeVatAdmin(setJig, makeRemote).admin,
+);
 /** @type {ERef<ZoeService>} */
-const zoe = makeFar(makeZoe(makeFakeVatAdmin(setJig, makeRemote).admin));
+const zoe = makeFar(zoeService);
 trace('makeZoe');
+const feeMintAccessP = makeFar(nonFarFeeMintAccess);
 
 /**
  * @param {ERef<ZoeService>} zoeP
@@ -52,9 +56,15 @@ async function launch(zoeP, sourceRoot) {
   const contractPath = new URL(contractUrl).pathname;
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
+  const feeMintAccess = await feeMintAccessP;
   const { creatorInvitation, creatorFacet, instance } = await E(
     zoeP,
-  ).startInstance(installation);
+  ).startInstance(
+    installation,
+    undefined,
+    undefined,
+    harden({ feeMintAccess }),
+  );
   const {
     runMint,
     collateralKit: { mint: collateralMint, brand: collaterlBrand },

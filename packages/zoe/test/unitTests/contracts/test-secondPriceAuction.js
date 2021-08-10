@@ -245,7 +245,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.plan(12);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));

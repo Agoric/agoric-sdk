@@ -37,7 +37,7 @@ test('offer', async t => {
     },
     saveOfferResult: () => {},
   };
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
 
   const bundleUrl = await importMetaResolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',

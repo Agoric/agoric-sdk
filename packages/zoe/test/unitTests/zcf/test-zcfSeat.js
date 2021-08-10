@@ -26,7 +26,7 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const zoe = makeZoe(fakeVatAdminSvc);
+  const { zoeService: zoe } = makeZoe(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
