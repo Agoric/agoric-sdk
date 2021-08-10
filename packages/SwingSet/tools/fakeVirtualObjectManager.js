@@ -119,7 +119,8 @@ export function makeFakeVirtualObjectManager(options = {}) {
     getSlotForVal,
     getValForSlot,
     registerEntry,
-    fakeMarshal,
+    fakeMarshal.serialize,
+    fakeMarshal.unserialize,
     cacheSize,
   );
 
