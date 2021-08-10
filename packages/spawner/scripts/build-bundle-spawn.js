@@ -1,21 +1,23 @@
-/* global __dirname */
-
 // eslint-disable-next-line import/no-extraneous-dependencies
 import 'ses';
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import bundleSource from '@agoric/bundle-source';
 
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
 async function writeSourceBundle(contractFilename, outputPath) {
   await bundleSource(contractFilename).then(bundle => {
-    fs.mkdirSync(`${__dirname}/../bundles`, { recursive: true });
+    fs.mkdirSync(`${dirname}/../bundles`, { recursive: true });
     fs.writeFileSync(outputPath, `export default ${JSON.stringify(bundle)};`);
   });
 }
 
 async function main() {
-  const contractFilename = `${__dirname}/../src/vat-spawned.js`;
-  const outputPath = `${__dirname}/../bundles/bundle-spawn.js`;
+  const contractFilename = `${dirname}/../src/vat-spawned.js`;
+  const outputPath = `${dirname}/../bundles/bundle-spawn.js`;
   await writeSourceBundle(contractFilename, outputPath);
 }
 

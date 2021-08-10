@@ -12,7 +12,8 @@ source retrieval, issuers, invitations, or seats). These callers now do
 something like:
 
 ```js
-  const bundle = await bundleSource(pathResolve(__dirname, './src/wallet.js'));
+  const bundlePath = new URL('src/wallet.js', import.meta.url).pathname;
+  const bundle = await bundleSource(bundlePath);
   const walletInstall = E(spawner).install(bundle);
   const walletVat = await E(walletInstall).spawn(args);
 ```

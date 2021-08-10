@@ -1,4 +1,3 @@
-/* global __dirname */
 // eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
@@ -10,15 +9,18 @@ import {
   loadBasedir,
 } from '@agoric/swingset-vat';
 
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  const trivialFn = path.resolve(__dirname, 'trivial.js');
+  const trivialFn = path.resolve(dirname, 'trivial.js');
   const trivialBundle = await bundleSource(trivialFn);
   t.context.data = { kernelBundles, trivialBundle };
 });
 
 async function main(t, mode) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];
