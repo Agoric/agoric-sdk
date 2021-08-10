@@ -1,12 +1,12 @@
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { buildParamManager, ParamType } from '../src/paramManager';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { buildParamManager, ParamType } from '../src/paramManager.js';
 
 const BASIS_POINTS = 10_000;
 

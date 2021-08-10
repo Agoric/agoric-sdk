@@ -1,20 +1,23 @@
-/* global __dirname */
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 
+import path from 'path';
 import { E } from '@agoric/eventual-send';
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
-import { ChoiceMethod } from '../../src/ballotBuilder';
+import { ChoiceMethod } from '../../src/ballotBuilder.js';
 
-const registrarRoot = `${__dirname}/../../src/committeeRegistrar`;
-const counterRoot = `${__dirname}/../../src/binaryBallotCounter`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const registrarRoot = `${dirname}/../../src/committeeRegistrar.js`;
+const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
 async function setupContract() {
   const zoe = makeZoe(fakeVatAdmin);
