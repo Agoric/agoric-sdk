@@ -1,7 +1,7 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
-import { makeBoard } from '../src/lib-board';
+import { makeBoard } from '../src/lib-board.js';
 
 test('makeBoard', async t => {
   const board = makeBoard();

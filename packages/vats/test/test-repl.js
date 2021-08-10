@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 import test from 'ava';
-import { getReplHandler } from '../src/repl';
+import { getReplHandler } from '../src/repl.js';
 
 function make() {
   const homeObjects = { base: 1, fries: 2, cooking: 3 };

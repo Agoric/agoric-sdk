@@ -2,14 +2,13 @@
   "name": "@agoric/vats",
   "version": "0.2.12",
   "description": "Agoric's Vat library",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/bootstrap.js",
+  "type": "module",
+  "main": "./src/bootstrap.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -41,12 +40,12 @@
     "@agoric/swingset-vat": "^0.19.0",
     "@agoric/treasury": "^0.5.9",
     "@agoric/zoe": "^0.17.6",
-    "esm": "agoric-labs/esm#Agoric-built",
     "polycrc": "https://github.com/agoric-labs/node-polycrc"
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "c8": "^7.7.2"
   },
   "eslintConfig": {
     "extends": [
@@ -66,9 +65,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   }

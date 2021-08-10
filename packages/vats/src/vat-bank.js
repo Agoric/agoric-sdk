@@ -6,9 +6,9 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
-import { makeVirtualPurse } from './virtual-purse';
+import { makeVirtualPurse } from './virtual-purse.js';
 
-import '@agoric/notifier/exported';
+import '@agoric/notifier/exported.js';
 
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
