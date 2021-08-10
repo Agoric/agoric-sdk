@@ -118,11 +118,27 @@
  *             keyword: Keyword
  *            ) => Promise<IssuerRecord>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
+ * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
+ */
+
+/**
+ * @callback RegisterFeeMint
+ * @param {Keyword} keyword - the keyword to use for the issuer
+ * @param {FeeMintAccess} allegedFeeMintAccess - an object that
+ * purports to be the object that allows access to the feeMint
+ * @returns {ZoeMint}
+ */
+
+/**
+ * @callback MakeZoeMintPremadeKit
+ * @param {Keyword} keyword - the keyword to use for the issuer
+ * @param {IssuerKit} localIssuerKit - an issuer kit that originates
+ * within Zoe
  */
 
 /**
