@@ -1,21 +1,22 @@
-/* global require process setTimeout clearTimeout */
+/* global process setTimeout clearTimeout */
 /* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify';
+import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox';
+} from '@agoric/swingset-vat/src/devices/mailbox.js';
 
 import anylogger from 'anylogger';
 
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
-import { makeWithQueue } from '@agoric/vats/src/queue';
-import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver';
-import { launch } from './launch-chain';
-import makeBlockManager from './block-manager';
-import { getMeterProvider } from './kernel-stats';
+import { makeWithQueue } from '@agoric/vats/src/queue.js';
+import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
+import { launch } from './launch-chain.js';
+import makeBlockManager from './block-manager.js';
+import { getMeterProvider } from './kernel-stats.js';
 
 const console = anylogger('fake-chain');
 
@@ -51,7 +52,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
-  const vatconfig = require.resolve('@agoric/vats/decentral-config.json');
+  const vatconfig = new URL(
+    await importMetaResolve(
+      '@agoric/vats/decentral-config.json',
+      import.meta.url,
+    ),
+  ).pathname;
   const argv = {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,

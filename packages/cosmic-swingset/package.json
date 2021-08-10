@@ -2,17 +2,16 @@
   "name": "@agoric/cosmic-swingset",
   "version": "0.31.10",
   "description": "Agoric's Cosmos blockchain integration",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "bin": {
-    "ag-chain-cosmos": "./src/entrypoint.cjs"
+    "ag-chain-cosmos": "./src/entrypoint.js"
   },
   "main": "src/chain-main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "pretty-fix": "prettier --write '**/*.js'",
     "pretty-check": "prettier --check '**/*.js'",
@@ -43,12 +42,13 @@
     "agoric": "^0.13.11",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
-    "esm": "agoric-labs/esm#Agoric-built",
+    "import-meta-resolve": "^1.1.1",
     "node-lmdb": "^0.9.4",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "c8": "^7.7.2"
   },
   "eslintConfig": {
     "extends": [
@@ -68,9 +68,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "20m"
   }
