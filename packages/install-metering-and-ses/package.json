@@ -2,9 +2,7 @@
   "name": "@agoric/install-metering-and-ses",
   "version": "0.2.21",
   "description": "tame metering and install SES at import time",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "install-metering-and-ses.js",
   "scripts": {
     "build": "exit 0",
@@ -16,8 +14,7 @@
   },
   "devDependencies": {
     "@agoric/transform-metering": "^1.4.20",
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.13.23",
@@ -55,9 +52,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   }

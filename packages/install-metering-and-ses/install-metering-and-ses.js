@@ -1,3 +1,3 @@
-import '@agoric/eventual-send/shim';
-import './install-global-metering';
+import '@agoric/eventual-send/shim.js';
+import './install-global-metering.js';
 import '@agoric/install-ses';

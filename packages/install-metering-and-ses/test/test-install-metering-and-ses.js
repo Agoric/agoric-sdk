@@ -1,4 +1,4 @@
-import '../install-metering-and-ses';
+import '../install-metering-and-ses.js';
 import test from 'ava';
 import { makeMeter } from '@agoric/transform-metering';
 
