@@ -7,6 +7,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
@@ -14,7 +15,8 @@
   },
   "devDependencies": {
     "@agoric/transform-metering": "^1.4.20",
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "c8": "^7.7.2"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.13.23",
