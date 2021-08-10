@@ -31,6 +31,10 @@ const enableKernelGC = true;
 // "prefix." and "prefix/", which avoids including anything using an
 // extension of the prefix (e.g. [vat1.foo, vat1.bar, vat15.baz]).
 //
+// The 'local.' namespace is excluded from the kernel activity hash, and is
+// allowed to vary between instances in a consensus machine. Everything else
+// is required to be deterministic.
+//
 // The schema is:
 //
 // vat.names = JSON([names..])
@@ -59,13 +63,13 @@ const enableKernelGC = true;
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN
 // exclude from consensus
-// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+// local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
 
 // exclude from consensus
-// snapshot.$id = [vatID, ...]
+// local.snapshot.$id = [vatID, ...]
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
