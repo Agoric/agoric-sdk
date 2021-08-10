@@ -1,10 +1,10 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport';
+import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 
 /**

@@ -2,9 +2,7 @@
   "name": "@agoric/governance",
   "version": "0.1.7",
   "description": "Core governance support",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/paramManager.js",
   "engines": {
     "node": ">=14.15.0"
@@ -48,7 +46,6 @@
     "@agoric/install-ses": "^0.5.21",
     "@agoric/swingset-vat": "^0.19.0",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built",
     "ses": "^0.14.0"
   },
   "files": [
@@ -58,9 +55,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "10m"
   },

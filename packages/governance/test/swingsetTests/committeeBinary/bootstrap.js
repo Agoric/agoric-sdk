@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);

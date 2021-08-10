@@ -1,11 +1,11 @@
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter.js';
 
 const QUESTION = 'Fish or cut bait?';
 const FISH = 'Fish';

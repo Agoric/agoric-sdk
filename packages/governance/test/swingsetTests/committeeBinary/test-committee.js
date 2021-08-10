@@ -1,5 +1,3 @@
-/* global __dirname */
-
 // @ts-check
 
 // TODO Remove babel-standalone preinitialization
@@ -12,8 +10,12 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
+import path from 'path';
 
 const CONTRACT_FILES = ['committeeRegistrar', 'binaryBallotCounter'];
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 test.before(async t => {
   const start = Date.now();
@@ -30,7 +32,7 @@ test.before(async t => {
       } else {
         ({ bundleName, contractPath } = settings);
       }
-      const source = `${__dirname}/../../../src/${contractPath}`;
+      const source = `${dirname}/../../../src/${contractPath}`;
       const bundle = await bundleSource(source);
       contractBundles[bundleName] = bundle;
     }),
@@ -40,12 +42,12 @@ test.before(async t => {
   const vats = {};
   await Promise.all(
     ['voter', 'zoe'].map(async name => {
-      const source = `${__dirname}/vat-${name}.js`;
+      const source = `${dirname}/vat-${name}.js`;
       const bundle = await bundleSource(source);
       vats[name] = { bundle };
     }),
   );
-  const bootstrapSource = `${__dirname}/bootstrap.js`;
+  const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),
     parameters: { contractBundles }, // argv will be added to this
