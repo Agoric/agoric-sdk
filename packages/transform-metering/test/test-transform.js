@@ -1,10 +1,13 @@
-/* global __dirname */
 /* eslint-disable no-await-in-loop */
 import test from 'ava';
 import fs from 'fs';
+import path from 'path';
 
 import { makeMeteringTransformer } from '../src/index.js';
 import * as c from '../src/constants.js';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 test('meter transform', async t => {
   let getMeter;
@@ -34,7 +37,7 @@ test('meter transform', async t => {
     'meterId cannot appear in source',
   );
 
-  const base = `${__dirname}/../testdata`;
+  const base = `${dirname}/../testdata`;
   const tests = await fs.promises.readdir(base);
   for (const testDir of tests) {
     const src = await fs.promises.readFile(
