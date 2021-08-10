@@ -1140,7 +1140,7 @@ test('terminated vat', async t => {
 
 // device receives object from vat a, returns to vat b
 
-test('device transfer', async t => {
+test.serial('device transfer', async t => {
   function vatpath(fn) {
     return {
       sourceSpec: new URL(`gc-device-transfer/${fn}`, import.meta.url).pathname,
