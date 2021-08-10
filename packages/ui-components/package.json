@@ -21,6 +21,7 @@
   "scripts": {
     "test": "BABEL_ENV='test' ava",
     "test:xs": "exit 0",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "build:tests": "rm -rf compiled && BABEL_ENV='test' ./node_modules/.bin/babel test/components --out-dir compiled/test/components",
     "build:src": "rm -rf dist && BABEL_ENV='test' ./node_modules/.bin/babel src --out-dir dist",
     "build": "yarn build:src && yarn build:tests",
@@ -60,6 +61,7 @@
     "babel-eslint": "^10.1.0",
     "babel-plugin-named-asset-import": "^0.3.7",
     "babel-preset-react-app": "^10.0.0",
+    "c8": "^7.7.2",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
     "eslint-config-react-app": "^6.0.0",
