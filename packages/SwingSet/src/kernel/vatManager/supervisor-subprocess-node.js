@@ -10,6 +10,7 @@ import { makeMarshal } from '@agoric/marshal';
 import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';
 import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import { makeDummyMeterControl } from '../dummyMeterControl.js';
 import {
   arrayEncoderStream,
   arrayDecoderStream,
@@ -86,11 +87,13 @@ fromParent.on('data', ([type, ...margs]) => {
       makeMarshal,
       testLog,
     };
+
     const gcTools = harden({
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
       gcAndFinalize: makeGcAndFinalize(engineGC),
+      meterControl: makeDummyMeterControl(),
     });
     const ls = makeLiveSlots(
       syscall,

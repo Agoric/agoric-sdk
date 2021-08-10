@@ -6,11 +6,16 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeMarshaller } from '../src/kernel/liveSlots.js';
 
 import { buildVatController } from '../src/index.js';
 
-const gcTools = harden({ WeakRef, FinalizationRegistry });
+const gcTools = harden({
+  WeakRef,
+  FinalizationRegistry,
+  meterControl: makeDummyMeterControl(),
+});
 
 async function prep() {
   const config = {};

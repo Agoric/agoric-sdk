@@ -13,6 +13,7 @@ import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';
 import { makeGcAndFinalize } from '../../gc-and-finalize.js';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
+import { makeDummyMeterControl } from '../dummyMeterControl.js';
 import { makeLiveSlots } from '../liveSlots.js';
 import {
   makeSupervisorDispatch,
@@ -70,11 +71,13 @@ parentPort.on('message', ([type, ...margs]) => {
       makeMarshal,
       testLog,
     };
+
     const gcTools = harden({
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
       gcAndFinalize: makeGcAndFinalize(engineGC),
+      meterControl: makeDummyMeterControl(),
     });
     const ls = makeLiveSlots(
       syscall,

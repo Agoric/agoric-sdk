@@ -30,6 +30,66 @@ function workerLog(first, ...args) {
 
 workerLog(`supervisor started`);
 
+function makeMeterControl() {
+  let meteringDisabled = 0;
+
+  function isMeteringDisabled() {
+    return !!meteringDisabled;
+  }
+
+  function assertIsMetered(msg) {
+    assert(!meteringDisabled, msg);
+  }
+  function assertNotMetered(msg) {
+    assert(!!meteringDisabled, msg);
+  }
+
+  function runWithoutMetering(thunk) {
+    const limit = globalThis.currentMeterLimit();
+    const before = globalThis.resetMeter(0, 0);
+    meteringDisabled += 1;
+    try {
+      return thunk();
+    } finally {
+      globalThis.resetMeter(limit, before);
+      meteringDisabled -= 1;
+    }
+  }
+
+  async function runWithoutMeteringAsync(thunk) {
+    const limit = globalThis.currentMeterLimit();
+    const before = globalThis.resetMeter(0, 0);
+    meteringDisabled += 1;
+    try {
+      return await thunk();
+    } finally {
+      globalThis.resetMeter(limit, before);
+      meteringDisabled -= 1;
+    }
+  }
+
+  // return a version of f that runs outside metering
+  function unmetered(f) {
+    function wrapped(...args) {
+      return runWithoutMetering(() => f(...args));
+    }
+    return harden(wrapped);
+  }
+
+  /** @type { MeterControl } */
+  const meterControl = {
+    isMeteringDisabled,
+    assertIsMetered,
+    assertNotMetered,
+    runWithoutMetering,
+    runWithoutMeteringAsync,
+    unmetered,
+  };
+  return harden(meterControl);
+}
+
+const meterControl = makeMeterControl();
+
 /**
  * Wrap byte-level protocols with tagged array codec.
  *
@@ -180,6 +240,7 @@ function makeWorker(port) {
       // FIXME(mfig): Here is where GC-per-crank is silently disabled.
       // We need to do a better analysis of the tradeoffs.
       gcAndFinalize: makeGcAndFinalize(gcEveryCrank && globalThis.gc),
+      meterControl,
     });
 
     const ls = makeLiveSlots(
