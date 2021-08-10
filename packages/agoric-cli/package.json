@@ -12,6 +12,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-check": "yarn lint",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@agoric/swingset-vat": "^0.19.0",
     "ava": "^3.12.1",
+    "c8": "^7.7.2",
     "tmp": "^0.1.0"
   },
   "dependencies": {
