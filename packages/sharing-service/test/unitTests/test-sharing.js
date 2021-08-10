@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeSharingService } from '../../src/sharing';
+import { makeSharingService } from '../../src/sharing.js';
 
 test('Sharing creation', t => {
   const sharingService = makeSharingService();
