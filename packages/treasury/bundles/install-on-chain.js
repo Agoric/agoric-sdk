@@ -20,11 +20,12 @@ const DEFAULT_PROTOCOL_FEE = 6n;
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
  * @param {ERef<ZoeService>} param0.zoe
+ * @param {Handle<'feeMintAccess'>} param0.feeMintAccess
  * @param {NatValue} param0.bootstrapPaymentValue
  * @param {NatValue} [param0.poolFee]
  * @param {NatValue} [param0.protocolFee]
  */
-export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe, bootstrapPaymentValue, poolFee = DEFAULT_POOL_FEE, protocolFee = DEFAULT_PROTOCOL_FEE }) {
+export async function installOnChain({ agoricNames, board, centralName, chainTimerService, nameAdmins, priceAuthority, zoe, feeMintAccess, bootstrapPaymentValue, poolFee = DEFAULT_POOL_FEE, protocolFee = DEFAULT_PROTOCOL_FEE }) {
   // Fetch the nameAdmins we need.
   const [brandAdmin, installAdmin, instanceAdmin, issuerAdmin, uiConfigAdmin] = await Promise.all(
     ['brand', 'installation', 'instance', 'issuer', 'uiConfig'].map(async edge => {
@@ -62,7 +63,9 @@ export async function installOnChain({ agoricNames, board, centralName, chainTim
     bootstrapPaymentValue,
   });
 
-  const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms);
+  const privateArgs = harden({ feeMintAccess });
+
+  const { instance, creatorFacet } = await E(zoe).startInstance(stablecoinMachineInstall, undefined, terms, privateArgs);
  
   const [
     ammInstance,
