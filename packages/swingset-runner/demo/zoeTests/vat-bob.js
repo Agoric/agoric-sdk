@@ -3,9 +3,9 @@ import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { showPurseBalance, setupIssuers } from './helpers';
+import { showPurseBalance, setupIssuers } from './helpers.js';
 
-import { makePrintLog } from './printLog';
+import { makePrintLog } from './printLog.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

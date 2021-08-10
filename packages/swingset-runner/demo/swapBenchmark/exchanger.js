@@ -2,10 +2,10 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { showPurseBalance, setupPurses } from './helpers';
-import { makePrintLog } from './printLog';
+import { showPurseBalance, setupPurses } from './helpers.js';
+import { makePrintLog } from './printLog.js';
 
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 
 const log = makePrintLog();
 

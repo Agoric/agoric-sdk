@@ -3,10 +3,8 @@
   "version": "0.13.11",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/main.js",
+  "type": "module",
+  "main": "./src/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -41,7 +39,7 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
     "extends": [
@@ -61,9 +59,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   }

@@ -1,6 +1,6 @@
-#!/usr/bin/env -S node -r esm
+#!/usr/bin/env -S node
 
-import { dataGraphApp } from './dataGraphApp';
+import { dataGraphApp } from './dataGraphApp.js';
 
 export async function main() {
   // prettier-ignore

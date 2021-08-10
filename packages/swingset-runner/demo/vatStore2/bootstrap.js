@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { makeXorShift128 } from './xorshift128';
+import { makeXorShift128 } from './xorshift128.js';
 
 const p = console.log;
 
