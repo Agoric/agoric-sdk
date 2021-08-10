@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode';
+import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode.js';
 
 export default harden({
   createMeter: () => {},

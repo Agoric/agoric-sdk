@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
 
-import pegasusBundle from './bundle-pegasus';
+import pegasusBundle from './bundle-pegasus.js';
 
 /**
  * @param {Object} param0
