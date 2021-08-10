@@ -1,2 +1,1 @@
-#!/usr/bin/env node
-require('esm')(module)('../lib/entrypoint');
+../lib/entrypoint.js

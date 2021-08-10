@@ -2,9 +2,7 @@
   "name": "agoric",
   "version": "0.13.11",
   "description": "Manage the Agoric Javascript smart contract platform",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "lib/main.js",
   "bin": "bin/agoric",
   "files": [
@@ -63,9 +61,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "2m"
   },
