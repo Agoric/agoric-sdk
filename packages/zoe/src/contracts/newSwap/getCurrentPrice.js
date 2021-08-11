@@ -1,12 +1,16 @@
 // @ts-check
 
-import '../../../exported';
+import '../../../exported.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 
-import { multiplyBy, makeRatio, natSafeMath } from '../../contractSupport';
+import {
+  multiplyBy,
+  makeRatio,
+  natSafeMath,
+} from '../../contractSupport/index.js';
 
 const { ceilDivide, add, subtract } = natSafeMath;
 const BASIS_POINTS = 10000n;

@@ -7,7 +7,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * @callback CompareAmount

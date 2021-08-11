@@ -1,6 +1,6 @@
 // @ts-check
 
-import '../../../exported';
+import '../../../exported.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
@@ -13,12 +13,12 @@ import {
   getAmountOut,
   multiplyBy,
   getTimestamp,
-} from '../../contractSupport';
+} from '../../contractSupport/index.js';
 
-import { scheduleLiquidation } from './scheduleLiquidation';
-import { calculateInterest, makeDebtCalculator } from './updateDebt';
-import { makeCloseLoanInvitation } from './close';
-import { makeAddCollateralInvitation } from './addCollateral';
+import { scheduleLiquidation } from './scheduleLiquidation.js';
+import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
+import { makeCloseLoanInvitation } from './close.js';
+import { makeAddCollateralInvitation } from './addCollateral.js';
 
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {

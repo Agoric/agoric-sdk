@@ -5,15 +5,15 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { assertIssuerKeywords } from '../../contractSupport';
-import { makeAddPool } from '../multipoolAutoswap/pool';
-import { makeGetCurrentPrice } from './getCurrentPrice';
-import { makeMakeSwapInvitation } from './swap';
-import { makeMakeAddLiquidityInvitation } from '../multipoolAutoswap/addLiquidity';
-import { makeMakeRemoveLiquidityInvitation } from '../multipoolAutoswap/removeLiquidity';
+import { assertIssuerKeywords } from '../../contractSupport/index.js';
+import { makeAddPool } from '../multipoolAutoswap/pool.js';
+import { makeGetCurrentPrice } from './getCurrentPrice.js';
+import { makeMakeSwapInvitation } from './swap.js';
+import { makeMakeAddLiquidityInvitation } from '../multipoolAutoswap/addLiquidity.js';
+import { makeMakeRemoveLiquidityInvitation } from '../multipoolAutoswap/removeLiquidity.js';
 
-import '../../../exported';
-import { makeMakeCollectFeesInvitation } from './collectFees';
+import '../../../exported.js';
+import { makeMakeCollectFeesInvitation } from './collectFees.js';
 
 /**
  * Multipool Autoswap is a rewrite of Uniswap that supports multiple liquidity
@@ -70,7 +70,7 @@ const start = zcf => {
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
   /** @type {WeakStore<Brand,Pool>} */
-  const secondaryBrandToPool = makeWeakStore();
+  const secondaryBrandToPool = makeWeakStore('secondaryBrand');
   const getPool = secondaryBrandToPool.get;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;

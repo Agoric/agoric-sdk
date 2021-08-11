@@ -3,10 +3,10 @@
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { models as crcmodels } from 'polycrc';
 
-import './types';
+import './types.js';
 
 const CRC_NUM_DIGITS = 2;
 const ID_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);

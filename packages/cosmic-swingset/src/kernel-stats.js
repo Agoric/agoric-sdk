@@ -1,12 +1,12 @@
 import { MeterProvider } from '@opentelemetry/metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
-import makeStore from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
-} from '@agoric/swingset-vat/src/kernel/metrics';
+} from '@agoric/swingset-vat/src/kernel/metrics.js';
 
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
@@ -53,7 +53,8 @@ const recordToKey = record =>
   );
 
 export function makeSlogCallbacks({ metricMeter, labels }) {
-  const nameToBaseMetric = makeStore('baseMetricName');
+  // Legacy because ValueRecorder thing Does not seem to be a passable
+  const nameToBaseMetric = makeLegacyMap('baseMetricName');
   nameToBaseMetric.init(
     'swingset_vat_startup',
     metricMeter.createValueRecorder('swingset_vat_startup', {
@@ -75,13 +76,15 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
       boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
     }),
   );
-  const groupToMetrics = makeStore('metricGroup');
+  // Legacy because legacyMaps are not passable
+  const groupToMetrics = makeLegacyMap('metricGroup');
 
   /**
    * This function reuses or creates per-group named metrics.
    *
    * @param {string} name name of the base metric
-   * @param {Record<string, string>} [group] the labels to associate with a group
+   * @param {Record<string, string>} [group] the labels to associate with a
+   * group
    * @param {Record<string, string>} [instance] the specific metric labels
    * @returns {any} the labelled metric
    */
@@ -99,12 +102,14 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
             metric;
           }
           // Refresh the metric group.
-          nameToMetric = makeStore('metricName');
+          // Legacy because Metric thing does not seem to be a passable
+          nameToMetric = makeLegacyMap('metricName');
           groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
         }
       }
     } else {
-      nameToMetric = makeStore('metricName');
+      // Legacy because Metric thing does not seem to be a passable
+      nameToMetric = makeLegacyMap('metricName');
       groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
     }
 

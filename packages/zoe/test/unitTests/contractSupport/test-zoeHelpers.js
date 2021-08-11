@@ -1,12 +1,15 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@agoric/marshal';
 
-import makeStore from '@agoric/store';
-import { setup } from '../setupBasicMints';
+import { makeStore } from '@agoric/store';
+import { setup } from '../setupBasicMints.js';
 
-import { defaultAcceptanceMsg, satisfies } from '../../../src/contractSupport';
+import {
+  defaultAcceptanceMsg,
+  satisfies,
+} from '../../../src/contractSupport/index.js';
 
 test('ZoeHelpers messages', t => {
   t.is(

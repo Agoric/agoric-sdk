@@ -4,7 +4,7 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import '../../exported';
+import '../../exported.js';
 import { assert } from '@agoric/assert';
 
 /**

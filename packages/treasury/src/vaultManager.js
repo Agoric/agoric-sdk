@@ -202,7 +202,7 @@ export function makeVaultManager(
   /** @type {InnerVaultManager} */
   const innerFacet = harden({
     ...shared,
-    collateralBrand,
+    getCollateralBrand: () => collateralBrand,
   });
 
   /** @param {ZCFSeat} seat */

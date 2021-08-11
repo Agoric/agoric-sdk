@@ -1,5 +1,3 @@
-/* global process __dirname */
-
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
@@ -9,10 +7,11 @@ import '@agoric/install-ses';
 import test from 'ava';
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import fs from 'fs';
+import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 
-// Don't let unhandled promises crash our process.
-process.on('unhandledRejection', e => console.log('unhandled rejection', e));
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 const CONTRACT_FILES = [
   'infiniteInstallLoop',
@@ -22,17 +21,17 @@ const CONTRACT_FILES = [
 ];
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const bundle = await bundleSource(`${__dirname}/${contract}`);
+    const bundle = await bundleSource(`${dirname}/${contract}`);
     const obj = { bundle, contract };
     fs.writeFileSync(
-      `${__dirname}/bundle-${contract}.js`,
+      `${dirname}/bundle-${contract}.js`,
       `export default ${JSON.stringify(obj)};`,
     );
   }),
 );
 
 async function main(argv) {
-  const config = await loadBasedir(__dirname);
+  const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   const controller = await buildVatController(config, argv);

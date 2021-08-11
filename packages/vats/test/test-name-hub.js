@@ -1,6 +1,6 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeNameHubKit } from '../src/nameHub';
+import { makeNameHubKit } from '../src/nameHub.js';
 
 test('makeNameHubKit - lookup paths', async t => {
   const { nameAdmin: na1, nameHub: nh1 } = makeNameHubKit();

@@ -1,16 +1,16 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
-import { setup } from '../setupBasicMints';
-import { calculateShares } from '../../../src/contracts/callSpread/calculateShares';
-import { multiplyBy } from '../../../src/contractSupport';
+import { setup } from '../setupBasicMints.js';
+import { calculateShares } from '../../../src/contracts/callSpread/calculateShares.js';
+import { multiplyBy } from '../../../src/contractSupport/index.js';
 import {
   make0Percent,
   make100Percent,
-} from '../../../src/contracts/callSpread/percent';
+} from '../../../src/contracts/callSpread/percent.js';
 
 function compareShareRatios(t, expected, actual, amount) {
   t.deepEqual(

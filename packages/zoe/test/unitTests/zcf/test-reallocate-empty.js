@@ -1,10 +1,10 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
-import { setupZCFTest } from './setupZcfTest';
+import { setupZCFTest } from './setupZcfTest.js';
 
 test(`zcf.reallocate introducing new empty amount`, async t => {
   const { zcf } = await setupZCFTest();

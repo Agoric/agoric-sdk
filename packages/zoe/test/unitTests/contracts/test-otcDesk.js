@@ -1,18 +1,22 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setup } from '../setupBasicMints';
-import buildManualTimer from '../../../tools/manualTimer';
-import { assertPayoutAmount } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 
-const root = `${__dirname}/../../../src/contracts/otcDesk`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const root = `${dirname}/../../../src/contracts/otcDesk.js`;
 
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
@@ -22,7 +26,7 @@ const installCode = async zoe => {
 
 const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
-    `${__dirname}/../../../src/contracts/coveredCall`,
+    `${dirname}/../../../src/contracts/coveredCall`,
   );
   const installation = await E(zoe).install(bundle);
   return installation;

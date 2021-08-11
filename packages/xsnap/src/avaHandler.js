@@ -1,4 +1,4 @@
-/* global globalThis */
+/* global globalThis makeKind makeVirtualScalarWeakMap */
 /* set up globalThis.handleCommand for running test scripts
 
 See avaXS.js for the way this is run inside an xsnap process.
@@ -77,7 +77,12 @@ function handler(rawMessage) {
       const virtualObjectGlobals =
         // @ts-ignore
         // eslint-disable-next-line no-undef
-        typeof makeKind !== 'undefined' ? { makeKind, makeWeakStore } : {};
+        typeof makeKind !== 'undefined'
+          ? {
+              makeKind,
+              makeVirtualScalarWeakMap,
+            }
+          : {};
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,

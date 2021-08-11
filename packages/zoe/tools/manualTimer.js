@@ -1,13 +1,13 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { makeStore } from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
 
-import './types';
-import './internal-types';
+import './types.js';
+import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
 /**
@@ -22,7 +22,8 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
   /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
-  const schedule = makeStore('Timestamp');
+  // Legacy because the value is mutated after it is stored.
+  const schedule = makeLegacyMap('Timestamp');
 
   const makeRepeater = (delaySecs, interval, timer) => {
     assert.typeof(delaySecs, 'bigint');

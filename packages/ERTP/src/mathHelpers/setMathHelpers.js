@@ -9,7 +9,7 @@ import '../types.js';
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
 /** @type {SetValue} */
-const identity = harden([]);
+const empty = harden([]);
 
 /**
  * @param {Object} record
@@ -120,7 +120,7 @@ const setMathHelpers = harden({
     checkForDupes(makeBuckets(list));
     return list;
   },
-  doMakeEmpty: () => identity,
+  doMakeEmpty: () => empty,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
     const leftBuckets = makeBuckets(left);

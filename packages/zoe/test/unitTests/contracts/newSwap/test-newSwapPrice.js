@@ -1,7 +1,7 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import {
   getInputPrice,
@@ -9,13 +9,13 @@ import {
   natSafeMath,
   makeRatio,
   multiplyBy,
-} from '../../../../src/contractSupport';
-import { setup } from '../../setupBasicMints';
-import { makeGetCurrentPrice } from '../../../../src/contracts/newSwap/getCurrentPrice';
+} from '../../../../src/contractSupport/index.js';
+import { setup } from '../../setupBasicMints.js';
+import { makeGetCurrentPrice } from '../../../../src/contracts/newSwap/getCurrentPrice.js';
 import {
   outputFromInputPrice,
   priceFromTargetOutput,
-} from '../../../autoswapJig';
+} from '../../../autoswapJig.js';
 
 const { add, subtract, floorDivide, multiply } = natSafeMath;
 const BASIS_POINTS = 10000n;

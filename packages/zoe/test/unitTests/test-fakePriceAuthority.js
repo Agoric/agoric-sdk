@@ -1,20 +1,20 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import buildManualTimer from '../../tools/manualTimer';
+import buildManualTimer from '../../tools/manualTimer.js';
 
-import { setup } from './setupBasicMints';
-import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority';
+import { setup } from './setupBasicMints.js';
+import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority.js';
 import {
   getAmountOut,
   getTimestamp,
   getAmountIn,
   getQuoteValues,
-} from '../../src/contractSupport';
-import { assertAmountsEqual } from '../zoeTestHelpers';
+} from '../../src/contractSupport/index.js';
+import { assertAmountsEqual } from '../zoeTestHelpers.js';
 
 const makeTestPriceAuthority = (brands, priceList, timer) =>
   makeFakePriceAuthority({

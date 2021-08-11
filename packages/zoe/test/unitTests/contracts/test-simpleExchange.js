@@ -1,7 +1,8 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E } from '@agoric/eventual-send';
@@ -9,12 +10,15 @@ import { E } from '@agoric/eventual-send';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 // noinspection ES6PreferShortImport
-import { setup } from '../setupBasicMints';
-import { setupNonFungible } from '../setupNonFungibleMints';
-import { installationPFromSource } from '../installFromSource';
-import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers';
+import { setup } from '../setupBasicMints.js';
+import { setupNonFungible } from '../setupNonFungibleMints.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
-const simpleExchange = `${__dirname}/../../../src/contracts/simpleExchange`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const simpleExchange = `${dirname}/../../../src/contracts/simpleExchange.js`;
 
 test('simpleExchange with valid offers', async t => {
   t.plan(17);

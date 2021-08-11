@@ -1,8 +1,8 @@
-/* global makeKind makeWeakStore */
+/* global makeKind makeVirtualScalarWeakMap */
 
 const start = _zcf => {
   makeKind();
-  makeWeakStore();
+  makeVirtualScalarWeakMap();
 
   return harden({});
 };

@@ -13,9 +13,9 @@ import {
   assertProposalShape,
   assertNatAssetKind,
   calcSecondaryRequired,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../exported';
+import '../../exported.js';
 
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for

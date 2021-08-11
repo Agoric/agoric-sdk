@@ -1,22 +1,26 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
-import { setup } from '../setupBasicMints';
-import { makeZoe } from '../../..';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin';
+import { setup } from '../setupBasicMints.js';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import {
   offerTo,
   assertProposalShape,
   swapExact,
-} from '../../../src/contractSupport/zoeHelpers';
-import { makeOffer } from '../makeOffer';
+} from '../../../src/contractSupport/zoeHelpers.js';
+import { makeOffer } from '../makeOffer.js';
 
-const contractRoot = `${__dirname}/../zcf/zcfTesterContract`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractRoot = `${dirname}/../zcf/zcfTesterContract.js`;
 
 const setupContract = async (moolaIssuer, bucksIssuer) => {
   const instanceToZCF = new Map();

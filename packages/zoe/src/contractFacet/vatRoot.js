@@ -9,10 +9,10 @@
 
 import { Far } from '@agoric/marshal';
 
-import '../../exported';
-import '../internal-types';
+import '../../exported.js';
+import '../internal-types.js';
 
-import { makeZCFZygote } from './zcfZygote';
+import { makeZCFZygote } from './zcfZygote.js';
 
 /**
  * @param {VatPowers} powers

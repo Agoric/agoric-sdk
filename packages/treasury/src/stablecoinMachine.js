@@ -20,7 +20,7 @@ import '@agoric/zoe/src/contracts/exported';
 
 import { E } from '@agoric/eventual-send';
 import { assert, details, q } from '@agoric/assert';
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import {
   assertProposalShape,
   offerTo,
@@ -97,7 +97,7 @@ export async function start(zcf) {
   }
 
   /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeStore(); // Brand -> vaultManager
+  const collateralTypes = makeStore('brand'); // Brand -> vaultManager
 
   const zoe = zcf.getZoeService();
 

@@ -1,9 +1,9 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { checkOfferShape } from '../helpers';
+import { checkOfferShape } from '../helpers.js';
 
-import { makeAttestationElem } from './expiringHelpers';
+import { makeAttestationElem } from './expiringHelpers.js';
 
 const { details: X } = assert;
 

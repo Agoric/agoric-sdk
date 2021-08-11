@@ -1,15 +1,15 @@
 // @ts-check
 
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { makePromiseKit } from '@agoric/promise-kit';
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers';
+import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E } from '@agoric/eventual-send';
-import { buildDistributor } from '../src/distributeFees';
+import { buildDistributor } from '../src/distributeFees.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to

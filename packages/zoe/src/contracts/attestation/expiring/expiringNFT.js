@@ -1,19 +1,19 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { validateInputs, mintZCFMintPayment } from '../helpers';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { validateInputs, mintZCFMintPayment } from '../helpers.js';
 import {
   makeAttestationElem,
   addToLiened,
   hasExpired,
-} from './expiringHelpers';
-import { updateLien } from './updateLien';
-import { unlienExpiredAmounts } from './unlienExpiredAmounts';
-import { extendExpiration as extendExpirationInternal } from './extendExpiration';
+} from './expiringHelpers.js';
+import { updateLien } from './updateLien.js';
+import { unlienExpiredAmounts } from './unlienExpiredAmounts.js';
+import { extendExpiration as extendExpirationInternal } from './extendExpiration.js';
 
 const { details: X } = assert;
 
@@ -44,7 +44,8 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   // Note: `amountLiened` in ExpiringAttElem is of the brand `externalBrand`
 
   /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const lienedAmounts = makeStore('address');
+  // Legacy because stored array is pushed onto
+  const lienedAmounts = makeLegacyMap('address');
 
   const cannotGetExtension = new Set();
 

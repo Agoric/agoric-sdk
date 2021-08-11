@@ -105,7 +105,7 @@ export function makeFakeVirtualObjectManager(options = {}) {
 
   const {
     makeVirtualObjectRepresentative,
-    makeWeakStore,
+    makeVirtualScalarWeakMap,
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
@@ -125,7 +125,7 @@ export function makeFakeVirtualObjectManager(options = {}) {
 
   const normalVOM = {
     makeKind,
-    makeWeakStore,
+    makeVirtualScalarWeakMap,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     isVrefReachable,

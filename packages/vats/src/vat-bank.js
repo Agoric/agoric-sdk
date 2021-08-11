@@ -6,9 +6,9 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
-import { makeVirtualPurse } from './virtual-purse';
+import { makeVirtualPurse } from './virtual-purse.js';
 
-import '@agoric/notifier/exported';
+import '@agoric/notifier/exported.js';
 
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
@@ -214,18 +214,21 @@ export function buildRootObject(_vatPowers) {
             /** @type {bigint} */
             let lastBalanceUpdate = -1n;
             /** @type {BalanceUpdater} */
-            const balanceUpdater = (value, nonce = undefined) => {
-              if (nonce !== undefined) {
-                const thisBalanceUpdate = BigInt(nonce);
-                if (thisBalanceUpdate <= lastBalanceUpdate) {
-                  return;
+            const balanceUpdater = Far(
+              'balanceUpdater',
+              (value, nonce = undefined) => {
+                if (nonce !== undefined) {
+                  const thisBalanceUpdate = BigInt(nonce);
+                  if (thisBalanceUpdate <= lastBalanceUpdate) {
+                    return;
+                  }
+                  lastBalanceUpdate = thisBalanceUpdate;
                 }
-                lastBalanceUpdate = thisBalanceUpdate;
-              }
-              // Convert the string value to a bigint.
-              const amt = AmountMath.make(brand, BigInt(value));
-              updater.updateState(amt);
-            };
+                // Convert the string value to a bigint.
+                const amt = AmountMath.make(brand, BigInt(value));
+                updater.updateState(amt);
+              },
+            );
 
             // Get the initial balance.
             addressToUpdater.init(address, balanceUpdater);

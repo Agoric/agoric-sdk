@@ -1,8 +1,8 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '../../../src/contractSupport/types';
+import '../../../src/contractSupport/types.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import {
@@ -14,7 +14,7 @@ import {
   oneMinus,
   multiplyRatios,
   addRatios,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport/index.js';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;

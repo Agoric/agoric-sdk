@@ -17,15 +17,19 @@ import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
   makeSlogCallbacks,
-} from './kernel-stats';
+} from './kernel-stats.js';
 
 const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
-// This is how many cranks we run per block, as per #2299.
-// TODO Make it dependent upon metering instead.
-const FIXME_MAX_CRANKS_PER_BLOCK = 1000;
+// This is how many computrons we allow before starting a new block.
+// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
+// based on 5 sec voting time and up to 10 sec of computation.
+// FIXME: should be subject to governance?
+const FIXME_MAX_COMPUTRONS_PER_BLOCK = 8_000_000n;
+// observed: 0.385 sec
+const ESTIMATED_COMPUTRONS_PER_VAT_CREATION = 300_000n;
 
 async function buildSwingset(
   mailboxStorage,
@@ -85,6 +89,40 @@ async function buildSwingset(
   return { controller, mb, bridgeInbound, timer };
 }
 
+function computronCounter(limit, vatCost) {
+  assert.typeof(limit, 'bigint');
+  assert.typeof(vatCost, 'bigint');
+  let total = 0n;
+  /** @type { RunPolicy } */
+  const policy = harden({
+    vatCreated() {
+      total += vatCost;
+      return total < limit;
+    },
+    crankComplete(details = {}) {
+      assert.typeof(details, 'object');
+      if (details.computrons) {
+        assert.typeof(details.computrons, 'bigint');
+        total += details.computrons;
+      }
+      return total < limit;
+    },
+    crankFailed() {
+      total += 1000000n; // who knows, 1M is as good as anything
+      return total < limit;
+    },
+  });
+  return policy;
+}
+
+function neverStop() {
+  return harden({
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+  });
+}
+
 export async function launch(
   kernelStateDBDir,
   mailboxStorage,
@@ -141,24 +179,30 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
-  // ////////////////////////////
-  // TODO: This is where we would add the scheduler.
-  //
-  // Note that the "bootstrap until no more progress" state will call this
-  // function without any arguments.
-  async function crankScheduler(maximumCranks) {
-    let now = Date.now();
+  async function crankScheduler(runBootstrap, clock = () => Date.now()) {
+    let now = clock();
+    let crankStart = now;
     const blockStart = now;
-    let stepped = true;
-    let numCranks = 0;
-    while (stepped && numCranks < maximumCranks) {
-      const crankStart = now;
-      // eslint-disable-next-line no-await-in-loop
-      stepped = await controller.step();
-      now = Date.now();
-      schedulerCrankTimeHistogram.record(now - crankStart);
-      numCranks += 1;
-    }
+
+    const policy = runBootstrap
+      ? neverStop()
+      : computronCounter(
+          FIXME_MAX_COMPUTRONS_PER_BLOCK,
+          ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
+        );
+    const instrumentedPolicy = harden({
+      ...policy,
+      crankComplete(details) {
+        const go = policy.crankComplete(details);
+        schedulerCrankTimeHistogram.record(now - crankStart);
+        crankStart = now;
+        now = clock();
+        return go;
+      },
+    });
+    await controller.run(instrumentedPolicy);
+
+    now = Date.now();
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
   }
 
@@ -169,7 +213,7 @@ export async function launch(
     });
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    await crankScheduler(Infinity);
+    await crankScheduler(true);
     controller.writeSlogObject({
       type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
@@ -182,7 +226,7 @@ export async function launch(
       blockHeight,
       blockTime,
     });
-    await crankScheduler(FIXME_MAX_CRANKS_PER_BLOCK);
+    await crankScheduler(false);
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
       blockHeight,

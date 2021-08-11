@@ -33,7 +33,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ],
     "env": {
       "browser": true

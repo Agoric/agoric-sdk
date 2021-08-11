@@ -1,17 +1,21 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin';
+import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe';
+import { makeZoe } from '../../../src/zoeService/zoe.js';
 
-const mintPaymentsRoot = `${__dirname}/../../../src/contracts/mintPayments`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);

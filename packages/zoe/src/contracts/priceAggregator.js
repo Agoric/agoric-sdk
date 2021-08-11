@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import makeStore from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
@@ -11,9 +11,9 @@ import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../tools/types';
+import '../../tools/types.js';
 
 const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
@@ -71,7 +71,8 @@ const start = async zcf => {
   const oracleRecords = new Set();
 
   /** @type {Store<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeStore('oracleInstance');
+  // Legacy because we're storing a raw JS Set
+  const instanceToRecords = makeLegacyMap('oracleInstance');
 
   let publishedTimestamp = await E(timer).getCurrentTimestamp();
 

@@ -1,9 +1,9 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { setup } from '../setupBasicMints';
+import { setup } from '../setupBasicMints.js';
 import {
   swap,
   assertIssuerKeywords,
@@ -11,10 +11,10 @@ import {
   swapExact,
   assertNatAssetKind,
   saveAllIssuers,
-} from '../../../src/contractSupport';
-import { assertPayoutAmount } from '../../zoeTestHelpers';
-import { setupZCFTest } from './setupZcfTest';
-import { makeOffer } from '../makeOffer';
+} from '../../../src/contractSupport/index.js';
+import { assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { setupZCFTest } from './setupZcfTest.js';
+import { makeOffer } from '../makeOffer.js';
 
 test(`zoeHelper with zcf - swap`, async t => {
   const {

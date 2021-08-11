@@ -1,9 +1,9 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/tools/prepare-test-env-ava';
+import '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
-import '../../../../exported';
+import '../../../../exported.js';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -14,9 +14,9 @@ import {
   makeSeatKit,
   checkPayouts,
   checkNoNewOffers,
-} from './helpers';
+} from './helpers.js';
 
-import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close';
+import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
 
 test.todo('makeCloseLoanInvitation repay partial fails');
 test.todo(`makeCloseLoanInvitation repay but don't repay interest`);

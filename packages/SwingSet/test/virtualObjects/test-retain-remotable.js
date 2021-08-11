@@ -8,7 +8,7 @@ import engineGC from '../../src/engine-gc.js';
 import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
 
-// empty object, used as makeWeakStore() key
+// empty object, used as makeVirtualScalarWeakMap() key
 function makeKeyInstance(_state) {
   return {
     init() {},
@@ -80,8 +80,8 @@ test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
   const vomOptions = { cacheSize: 3, weak: true };
   const vom = makeFakeVirtualObjectManager(vomOptions);
-  const { makeWeakStore, makeKind } = vom;
-  const weakStore = makeWeakStore();
+  const { makeVirtualScalarWeakMap, makeKind } = vom;
+  const weakStore = makeVirtualScalarWeakMap();
   const keyMaker = makeKind(makeKeyInstance);
   const holderMaker = makeKind(makeHolderInstance);
 

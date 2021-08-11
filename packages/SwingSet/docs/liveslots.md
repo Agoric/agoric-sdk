@@ -15,12 +15,12 @@ Most SwingSet vats use liveslots (with the notable exception of the comms vat). 
 ```js
 
 export buildRootObject(_vatPowers) {
-  const obj0 = {
+  const obj0 = Far('root', {
     foo(arg1, arg2) {
       // implement foo
       return 'value';
     },
-  };
+  });
   return harden(obj0);
 }
 ```
@@ -33,7 +33,7 @@ This function returns the "root object". A remote reference to it will be made a
 
 ```js
     foo(arg1) {
-      const obj2 = harden({
+      const obj2 = Far('obj2', {
         bar(arg2) { return 'barbar'; }
       });
       return obj2;
@@ -53,17 +53,17 @@ The method name being invoked can be any string, or the special `Symbol.asyncIte
 
 ## What can be serialized
 
-All objects must be frozen or hardened before serialization.
+For safety, all objects should hardened before they are allowed to escape the scope of their construction (so that an adversarial counterparty cannot change their contents in surprising ways). However both method arguments and return values are currently automatically hardened for you.
 
-* Data Objects: when an object's enumerable properties are all non-functions, and the object inherits from either `Object`, `Array`, or `null`, and the object is not empty (there is at least one enumerable property), the object is passed by copy: the receiving end gets an object with all the same enumerable properties and their values. The new object inherits from `Object`. These objects are "selfless": they do not retain object identity, so sending the same pass-by-copy object multiple times will result in values that are not `===` to each other.
-* Pass-by-Presence objects: when all of an object's enumerable properties *are* functions, and it inherits from either `Object`, `null`, or another pass-by-presence object, the object is passed by presence. The receiving end gets a special Presence object, which can be wrapped by `E(presence)` to make method calls on the original object.
-* plain data: anything that JSON can handle will be serialized as plain data, including Arrays, numbers (including -0, `NaN`, `Infinity`, `-Infinity`, and BigInts), some Symbols, and `undefined`.
+* Data Objects: when an object's enumerable properties are all non-functions, and the object inherits from either `Object`, `Array`, or `null`, the object is passed by copy: the receiving end gets an object with all the same enumerable properties and their values. The new object inherits from `Object`. These objects are "selfless": they do not retain object identity, so sending the same pass-by-copy object multiple times will result in values that are not `===` to each other.
+* Pass-by-Presence objects: when an object is marked with the special `Far` function (which requires that all its enumerable properties *are* functions), the object is passed by presence. The receiving end gets a special Presence object, which can be wrapped by `E(presence)` to make asynchronous remote method calls on the original object.
+* plain data: anything that JSON can handle will be serialized as plain data, plus numbers (including -0, `NaN`, `Infinity`, `-Infinity`, and BigInts), some Symbols, and `undefined`.
+* Promises: these are recognized as special, and delivered as pass-by-reference. The recipient gets their own Promise whose behavior is linked to the original. When the original Promise is resolved, the downstream version will eventually be resolved too.
 
 Some useful things cannot be serialized: they will trigger an error.
 
 * Functions: this may be fixed, but for now only entire objects are pass-by-presence, and bare functions cause an error. This includes resolvers for Promises.
-* Promises: this needs to be fixed soon
-* Mixed objects: objects with both function properties and non-function properties. We aren't really sure how to combine pass-by-presence and pass-by-copy.
+* Mixed objects: objects with both function properties and non-function properties. We aren't really sure how to combine pass-by-presence and pass-by-copy, however look at issue #2069 ("auxilliary data") for some plans.
 * Non-frozen objects: since the receiving end would not automatically get updated with changes to a non-frozen object's properties, it seems safer to require that all values be frozen before transmission
 
 Uncertain:

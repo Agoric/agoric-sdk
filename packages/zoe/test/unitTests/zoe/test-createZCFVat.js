@@ -1,11 +1,11 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Far } from '@agoric/marshal';
 
-import { setupCreateZCFVat } from '../../../src/zoeService/createZCFVat';
+import { setupCreateZCFVat } from '../../../src/zoeService/createZCFVat.js';
 
 test('setupCreateZCFVat', async t => {
   // This is difficult to unit test, since the real functionality

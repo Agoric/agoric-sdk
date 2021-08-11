@@ -2,16 +2,16 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
   assertProposalShape,
   assertNatAssetKind,
-} from '../../../src/contractSupport';
+} from '../../../src/contractSupport/index.js';
 
-import '../../../exported';
+import '../../../exported.js';
 
 /**
  * This contract implements coin voting. There are two roles: the

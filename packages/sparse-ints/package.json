@@ -2,9 +2,7 @@
   "name": "@agoric/sparse-ints",
   "version": "0.1.17",
   "description": "Share code across vat boundaries",
-  "parsers": {
-    "js": "mjs"
-  },
+  "type": "module",
   "main": "src/sparseInts.js",
   "engines": {
     "node": ">=11.0"
@@ -29,8 +27,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "ava": "^3.12.1"
   },
   "files": [
     "src/",
@@ -39,14 +36,11 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ]
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "eslintIgnore": [

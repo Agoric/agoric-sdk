@@ -1,17 +1,14 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import {
-  makeWeakStore as makeNonVOWeakStore,
-  makeStore as makeNonVOStore,
-} from '@agoric/store';
+import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { isOfferSafe } from './offerSafety';
-import { assertRightsConserved } from './rightsConservation';
-import { addToAllocation, subtractFromAllocation } from './allocationMath';
+import { isOfferSafe } from './offerSafety.js';
+import { assertRightsConserved } from './rightsConservation.js';
+import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -20,12 +17,12 @@ export const createSeatManager = (
   shutdownWithFailure,
 ) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
-  let activeZCFSeats = makeNonVOWeakStore('zcfSeat');
+  let activeZCFSeats = makeWeakStore('zcfSeat');
   /** @type {Store<ZCFSeat, Allocation>} */
-  const zcfSeatToStagedAllocations = makeNonVOStore('zcfSeat');
+  const zcfSeatToStagedAllocations = makeStore('zcfSeat');
 
   /** @type {WeakStore<ZCFSeat, SeatHandle>} */
-  let zcfSeatToSeatHandle = makeNonVOWeakStore('zcfSeat');
+  let zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
 
   /** @type {(zcfSeat: ZCFSeat) => boolean} */
   const hasExited = zcfSeat => !activeZCFSeats.has(zcfSeat);
@@ -127,7 +124,7 @@ export const createSeatManager = (
     seats.forEach(assertStagedAllocation);
 
     // Keep track of seats used so far in this call, to prevent aliasing.
-    const zcfSeatsSoFar = new WeakSet();
+    const zcfSeatsSoFar = new Set();
 
     seats.forEach(seat => {
       assert(
@@ -140,15 +137,6 @@ export const createSeatManager = (
       );
       zcfSeatsSoFar.add(seat);
     });
-
-    // Ensure that all stagings are present in this reallocate call.
-    const allStagedSeatsUsed = zcfSeatToStagedAllocations
-      .keys()
-      .every(stagedSeat => zcfSeatsSoFar.has(stagedSeat));
-    assert(
-      allStagedSeatsUsed,
-      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
-    );
 
     try {
       // No side effects above. All conditions checked which could have
@@ -208,6 +196,17 @@ export const createSeatManager = (
         X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
       );
     });
+
+    const zcfSeatsReallocatedOver = new Set(seats);
+
+    // Ensure that all stagings are present in this reallocate call.
+    const allStagedSeatsUsed = zcfSeatToStagedAllocations
+      .keys()
+      .every(stagedSeat => zcfSeatsReallocatedOver.has(stagedSeat));
+    assert(
+      allStagedSeatsUsed,
+      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
+    );
 
     // Note COMMIT POINT within reallocateInternal
     reallocateInternal(seats);
@@ -317,8 +316,8 @@ export const createSeatManager = (
 
   /** @type {DropAllReferences} */
   const dropAllReferences = () => {
-    activeZCFSeats = makeNonVOWeakStore('zcfSeat');
-    zcfSeatToSeatHandle = makeNonVOWeakStore('zcfSeat');
+    activeZCFSeats = makeWeakStore('zcfSeat');
+    zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
   };
 
   return harden({

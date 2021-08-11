@@ -1,11 +1,11 @@
 // @ts-check
 
-import makeStore from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported';
-import '../internal-types';
+import '../../exported.js';
+import '../internal-types.js';
 
 /**
  * Iterate over the amounts and sum, storing the sums in a

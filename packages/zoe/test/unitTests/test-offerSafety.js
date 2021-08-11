@@ -1,9 +1,9 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { isOfferSafe } from '../../src/contractFacet/offerSafety';
-import { setup } from './setupBasicMints';
+import { isOfferSafe } from '../../src/contractFacet/offerSafety.js';
+import { setup } from './setupBasicMints.js';
 
 // Potential outcomes:
 // 1. Users can get what they wanted, get back what they gave, both, or

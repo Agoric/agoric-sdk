@@ -4,7 +4,7 @@ import { Nat } from '@agoric/nat';
 
 import '../types.js';
 
-const identity = 0n;
+const empty = 0n;
 
 /**
  * Fungible digital assets use the natMathHelpers to manage balances -
@@ -20,8 +20,8 @@ const identity = 0n;
  */
 const natMathHelpers = {
   doCoerce: Nat,
-  doMakeEmpty: () => identity,
-  doIsEmpty: nat => nat === identity,
+  doMakeEmpty: () => empty,
+  doIsEmpty: nat => nat === empty,
   doIsGTE: (left, right) => left >= right,
   doIsEqual: (left, right) => left === right,
   // BigInts don't observably overflow

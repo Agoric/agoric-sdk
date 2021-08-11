@@ -14,7 +14,7 @@ import { AmountMath } from '@agoric/ertp';
  *
  * @type {ContractStartFn}
  */
-import { assertProposalShape } from '../../src/contractSupport';
+import { assertProposalShape } from '../../src/contractSupport/index.js';
 
 const start = async zcf => {
   const { oracle, deadline, condition, timer, fee } = zcf.getTerms();

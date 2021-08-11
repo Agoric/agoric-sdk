@@ -66,7 +66,9 @@ export async function start(zcf) {
     getInterestRate() {
       return makeRatio(5n, runBrand);
     },
-    // collateralBrand, // TODO not a method. How did this ever work?
+    getCollateralBrand() {
+      return collateralBrand;
+    },
     reallocateReward,
   });
 
