@@ -179,18 +179,17 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
-  async function crankScheduler(maximumCranks, clock = () => Date.now()) {
+  async function crankScheduler(runBootstrap, clock = () => Date.now()) {
     let now = clock();
     let crankStart = now;
     const blockStart = now;
 
-    const policy =
-      maximumCranks === Infinity
-        ? neverStop()
-        : computronCounter(
-            FIXME_MAX_COMPUTRONS_PER_BLOCK,
-            ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
-          );
+    const policy = runBootstrap
+      ? neverStop()
+      : computronCounter(
+          FIXME_MAX_COMPUTRONS_PER_BLOCK,
+          ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
+        );
     const instrumentedPolicy = harden({
       ...policy,
       crankComplete(details) {
@@ -214,7 +213,7 @@ export async function launch(
     });
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    await crankScheduler(Infinity);
+    await crankScheduler(true);
     controller.writeSlogObject({
       type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
@@ -227,7 +226,7 @@ export async function launch(
       blockHeight,
       blockTime,
     });
-    await crankScheduler();
+    await crankScheduler(false);
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
       blockHeight,
