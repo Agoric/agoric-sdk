@@ -44,7 +44,8 @@
     "packages/notifier",
     "packages/xsnap",
     "packages/deploy-script-support",
-    "packages/ui-components"
+    "packages/ui-components",
+    "packages/eslint-config"
   ],
   "devDependencies": {
     "@endo/eslint-config": "^0.3.9",
