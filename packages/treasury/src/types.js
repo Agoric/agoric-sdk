@@ -91,12 +91,13 @@
  * @property {() => Promise<Invitation>} makeCloseInvitation
  * @property {() => Amount} getCollateralAmount
  * @property {() => Amount} getDebtAmount
+ * @property {() => ERef<UserSeat>} getLiquidationSeat
+ * @property {() => Promise<string>} getLiquidationPromise
  */
 
 /**
  * @typedef {Object} LoanKit
  * @property {Vault} vault
- * @property {Promise<PaymentPKeywordRecord>} liquidationPayout
  * @property {Notifier<UIState>} uiNotifier
  */
 
@@ -105,6 +106,9 @@
  * @property {Vault} vault
  * @property {(ZCFSeat) => Promise<OpenLoanKit>} openLoan
  * @property {(Timestamp) => Amount} accrueInterestAndAddToPool
+ * @property {ZCFSeat} vaultSeat
+ * @property {PromiseRecord<string>} liquidationPromiseKit
+ * @property {ZCFSeat} liquidationZcfSeat
  */
 
 /**

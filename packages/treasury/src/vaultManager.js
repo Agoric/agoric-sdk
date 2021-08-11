@@ -224,13 +224,11 @@ export function makeVaultManager(
     );
 
     const { vault, openLoan } = vaultKit;
-    const { notifier, collateralPayoutP } = await openLoan(seat);
+    const { notifier } = await openLoan(seat);
     sortedVaultKits.addVaultKit(vaultKit, notifier);
 
     seat.exit();
 
-    // TODO: nicer to return single objects, find a better way to give them
-    // the payout object
     return harden({
       uiNotifier: notifier,
       invitationMakers: Far('invitation makers', {
@@ -238,7 +236,6 @@ export function makeVaultManager(
         CloseVault: vault.makeCloseInvitation,
       }),
       vault,
-      liquidationPayout: collateralPayoutP,
     });
   }
 

@@ -229,7 +229,7 @@ test('first', async t => {
     }),
   );
 
-  const { vault, _liquidationPayout } = await E(loanSeat).getOfferResult();
+  const { vault } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = multiplyBy(AmountMath.make(470n, runBrand), rates.loanFee);
   t.deepEqual(
@@ -294,6 +294,13 @@ test('first', async t => {
   t.truthy(AmountMath.isEmpty(vault.getDebtAmount()), 'debt is paid off');
   t.truthy(AmountMath.isEmpty(vault.getCollateralAmount()), 'vault is cleared');
 
+  t.is(await vault.getLiquidationPromise(), 'Liquidated');
+  const liquidations = await E(
+    vault.getLiquidationSeat(),
+  ).getCurrentAllocation();
+  t.deepEqual(liquidations.Collateral, AmountMath.make(aethBrand, 825n));
+  t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
+
   t.deepEqual(stablecoinMachine.getRewardAllocation(), {
     RUN: AmountMath.make(23n, runBrand),
   });
@@ -344,7 +351,7 @@ test('price drop', async t => {
   );
 
   const { runIssuerRecord, govIssuerRecord } = testJig;
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
+  const { brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
 
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
@@ -392,9 +399,7 @@ test('price drop', async t => {
     }),
   );
 
-  const { vault, liquidationPayout, uiNotifier } = await E(
-    loanSeat,
-  ).getOfferResult();
+  const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = multiplyBy(AmountMath.make(270n, runBrand), rates.loanFee);
   t.deepEqual(
@@ -433,24 +438,25 @@ test('price drop', async t => {
   t.falsy(notification4.updateCount);
   t.truthy(notification4.value.liquidated);
 
-  const runPayout = await E.G(liquidationPayout).RUN;
-  const runAmount = await E(runIssuer).getAmountOf(runPayout);
-  t.deepEqual(runAmount, AmountMath.makeEmpty(runBrand));
-  const aethPayout = await E.G(liquidationPayout).Collateral;
-  const aethPayoutAmount = await E(aethIssuer).getAmountOf(aethPayout);
-  t.deepEqual(aethPayoutAmount, AmountMath.make(232n, aethBrand));
   const debtAmountAfter = await E(vault).getDebtAmount();
   const finalNotification = await uiNotifier.getUpdateSince();
   t.truthy(finalNotification.value.liquidated);
   t.deepEqual(
     await finalNotification.value.collateralizationRatio,
-    makeRatio(232n, runBrand, 1n),
+    makeRatio(0n, runBrand, 1n),
   );
   t.truthy(AmountMath.isEmpty(debtAmountAfter));
 
   t.deepEqual(stablecoinMachine.getRewardAllocation(), {
     RUN: AmountMath.make(13n, runBrand),
   });
+
+  t.is(await vault.getLiquidationPromise(), 'Liquidated');
+  const liquidations = await E(
+    vault.getLiquidationSeat(),
+  ).getCurrentAllocation();
+  t.deepEqual(liquidations.Collateral, AmountMath.make(aethBrand, 232n));
+  t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
 });
 
 test('price falls precipitously', async t => {
@@ -504,7 +510,7 @@ test('price falls precipitously', async t => {
 
   const { runIssuerRecord, govIssuerRecord, autoswap: autoswapAPI } = testJig;
 
-  const { issuer: runIssuer, brand: runBrand } = runIssuerRecord;
+  const { brand: runBrand } = runIssuerRecord;
   const { brand: govBrand } = govIssuerRecord;
   // Our wrapper gives us a Vault which holds 5 Collateral, has lent out 10
   // RUN, which uses an autoswap that presents a fixed price of 4 RUN
@@ -556,7 +562,7 @@ test('price falls precipitously', async t => {
     }),
   );
 
-  const { vault, liquidationPayout } = await E(loanSeat).getOfferResult();
+  const { vault } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = multiplyBy(AmountMath.make(370n, runBrand), rates.loanFee);
   t.deepEqual(
@@ -596,18 +602,19 @@ test('price falls precipitously', async t => {
   t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
   await manualTimer.tick();
 
-  const runPayout = await E.G(liquidationPayout).RUN;
-  const runAmount = await E(runIssuer).getAmountOf(runPayout);
+  t.is(await vault.getLiquidationPromise(), 'Liquidated');
 
-  t.deepEqual(runAmount, AmountMath.makeEmpty(runBrand));
-  const aethPayout = await E.G(liquidationPayout).Collateral;
-  const aethPayoutAmount = await E(aethIssuer).getAmountOf(aethPayout);
-  t.deepEqual(aethPayoutAmount, AmountMath.make(8n, aethBrand));
   t.truthy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
 
   t.deepEqual(stablecoinMachine.getRewardAllocation(), {
-    RUN: AmountMath.make(18n, runBrand),
+    RUN: AmountMath.make(runBrand, 18n),
   });
+
+  const liquidations = await E(
+    vault.getLiquidationSeat(),
+  ).getCurrentAllocation();
+  t.deepEqual(liquidations.Collateral, AmountMath.make(aethBrand, 8n));
+  t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
 });
 
 test('stablecoin display collateral', async t => {
@@ -1760,7 +1767,7 @@ test('coll fees from loan and AMM', async t => {
     }),
   );
 
-  const { vault, _liquidationPayout } = await E(loanSeat).getOfferResult();
+  const { vault } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = multiplyBy(AmountMath.make(470n, runBrand), rates.loanFee);
   t.deepEqual(
@@ -1896,11 +1903,9 @@ test('close loan', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const {
-    vault: aliceVault,
-    uiNotifier: aliceNotifier,
-    liquidationPayout,
-  } = await E(aliceLoanSeat).getOfferResult();
+  const { vault: aliceVault, uiNotifier: aliceNotifier } = await E(
+    aliceLoanSeat,
+  ).getOfferResult();
 
   const debtAmount = await E(aliceVault).getDebtAmount();
   const fee = multiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1980,13 +1985,9 @@ test('close loan', async t => {
     AmountMath.makeEmpty(aethBrand),
   );
 
-  const liquidation = await liquidationPayout;
+  t.is(await aliceVault.getLiquidationPromise(), 'Closed');
   t.deepEqual(
-    await E(runIssuer).getAmountOf(liquidation.RUN),
-    AmountMath.makeEmpty(runBrand),
-  );
-  t.deepEqual(
-    await aethIssuer.getAmountOf(liquidation.Collateral),
-    AmountMath.makeEmpty(aethBrand),
+    await E(aliceVault.getLiquidationSeat()).getCurrentAllocation(),
+    {},
   );
 });
