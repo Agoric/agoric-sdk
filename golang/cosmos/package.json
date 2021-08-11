@@ -35,7 +35,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk/packages/connector-cosmos",
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "files": [
