@@ -10,7 +10,6 @@ import {
   makeSwingsetController,
   loadBasedir,
   loadSwingsetConfigFile,
-  computronCounter,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
@@ -27,7 +26,10 @@ const SWING_STORE_META_KEY = 'cosmos/meta';
 // This is how many computrons we allow before starting a new block.
 // Some analysis (#3459) suggests this leads to about 2/3rds utilization,
 // based on 5 sec voting time and up to 10 sec of computation.
+// FIXME: should be subject to governance?
 const FIXME_MAX_COMPUTRONS_PER_BLOCK = 8_000_000n;
+// observed: 0.385 sec
+const ESTIMATED_COMPUTRONS_PER_VAT_CREATION = 300_000n;
 
 async function buildSwingset(
   mailboxStorage,
@@ -85,6 +87,32 @@ async function buildSwingset(
   // (either on bootstrap block (0) or in endBlock).
 
   return { controller, mb, bridgeInbound, timer };
+}
+
+function computronCounter(limit, vatCost) {
+  assert.typeof(limit, 'bigint');
+  assert.typeof(vatCost, 'bigint');
+  let total = 0n;
+  /** @type { RunPolicy } */
+  const policy = harden({
+    vatCreated() {
+      total += vatCost;
+      return total < limit;
+    },
+    crankComplete(details = {}) {
+      assert.typeof(details, 'object');
+      if (details.computrons) {
+        assert.typeof(details.computrons, 'bigint');
+        total += details.computrons;
+      }
+      return total < limit;
+    },
+    crankFailed() {
+      total += 1000000n; // who knows, 1M is as good as anything
+      return total < limit;
+    },
+  });
+  return policy;
 }
 
 export async function launch(
@@ -148,14 +176,18 @@ export async function launch(
     let crankStart = now;
     const blockStart = now;
 
-    const policy = computronCounter(FIXME_MAX_COMPUTRONS_PER_BLOCK);
+    const policy = computronCounter(
+      FIXME_MAX_COMPUTRONS_PER_BLOCK,
+      ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
+    );
     const instrumentedPolicy = harden({
       ...policy,
       crankComplete(details) {
-        policy.crankComplete(details);
+        const go = policy.crankComplete(details);
         schedulerCrankTimeHistogram.record(now - crankStart);
         crankStart = now;
         now = clock();
+        return go;
       },
     });
     await controller.run(instrumentedPolicy);
