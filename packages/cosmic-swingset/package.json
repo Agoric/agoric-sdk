@@ -52,7 +52,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "prettier": {

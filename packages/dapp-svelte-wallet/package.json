@@ -14,7 +14,6 @@
     ]
   },
   "devDependencies": {
-    "@agoric/eslint-config": "^0.3.14"
   },
   "scripts": {
     "lint-fix": "exit 0",
@@ -34,7 +33,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "prettier": {

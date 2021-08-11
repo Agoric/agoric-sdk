@@ -83,7 +83,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "@endo"
+      "@agoric"
     ]
   },
   "eslintIgnore": [
