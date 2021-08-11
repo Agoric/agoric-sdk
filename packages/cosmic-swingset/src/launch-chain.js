@@ -115,6 +115,14 @@ function computronCounter(limit, vatCost) {
   return policy;
 }
 
+function neverStop() {
+  return harden({
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+  });
+}
+
 export async function launch(
   kernelStateDBDir,
   mailboxStorage,
@@ -171,15 +179,18 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
-  async function crankScheduler(clock = () => Date.now()) {
+  async function crankScheduler(maximumCranks, clock = () => Date.now()) {
     let now = clock();
     let crankStart = now;
     const blockStart = now;
 
-    const policy = computronCounter(
-      FIXME_MAX_COMPUTRONS_PER_BLOCK,
-      ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
-    );
+    const policy =
+      maximumCranks === Infinity
+        ? neverStop()
+        : computronCounter(
+            FIXME_MAX_COMPUTRONS_PER_BLOCK,
+            ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
+          );
     const instrumentedPolicy = harden({
       ...policy,
       crankComplete(details) {
