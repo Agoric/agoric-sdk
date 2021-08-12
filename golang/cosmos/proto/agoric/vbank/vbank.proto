@@ -8,11 +8,14 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
 
 message Params {
     option (gogoproto.equal) = true;
+    option (gogoproto.goproto_stringer) = false;
 
-    // feeEpochDurationBlocks is the length of a fee epoch, in blocks.
+    // fee_epoch_duration_blocks is the length of a fee epoch, in blocks.
     // A value of zero has the same meaning as a value of one:
     // the full fee buffer should be distributed immediately.
-    int64 feeEpochDurationBlocks = 1;
+    int64 fee_epoch_duration_blocks = 1 [
+      (gogoproto.moretags) = "yaml:\"fee_epoch_duration_blocks\""
+    ];
 }
 
 message State {
@@ -21,15 +24,22 @@ message State {
     // rewardPool is the current balance of rewards in the module account.
     // NOTE: Tracking manually since there is no bank call for getting a
     // module account balance by name.
-    repeated cosmos.base.v1beta1.Coin rewardPool = 1
-        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
-        ];
+    repeated cosmos.base.v1beta1.Coin reward_pool = 1 [
+        (gogoproto.nullable) = false,
+        (gogoproto.moretags) = "yaml:\"reward_pool\"",
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+    ];
 
-    // rewardRate is the amount of reward, if available, to send to the
+    // reward_rate is the amount of reward, if available, to send to the
     // fee collector module on every block.
-    repeated cosmos.base.v1beta1.Coin rewardRate = 2
-        [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+    repeated cosmos.base.v1beta1.Coin reward_rate = 2 [
+        (gogoproto.nullable) = false,
+        (gogoproto.moretags) = "yaml:\"reward_rate\"",
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+    ];
         
-    // lastNonce is a sequence number for communicating with the VM.
-    uint64 lastNonce = 3;
+    // last_sequence is a sequence number for communicating with the VM.
+    uint64 last_sequence = 3 [
+        (gogoproto.moretags) = "yaml:\"last_sequence\""
+    ];
 }
