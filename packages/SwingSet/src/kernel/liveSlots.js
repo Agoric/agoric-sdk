@@ -31,7 +31,8 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableVatstore
  * @param {*} vatPowers
  * @param {*} vatParameters
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize }
+ * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
+ *                      meterControl }
  * @param {Console} console
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
@@ -52,7 +53,7 @@ function build(
   gcTools,
   console,
 ) {
-  const { WeakRef, FinalizationRegistry } = gcTools;
+  const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -408,6 +409,7 @@ function build(
       // controlled by the `console` option given to makeLiveSlots.
       console.info('Logging sent error stack', err),
   });
+  const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
 
   function getSlotForVal(val) {
     return valToSlot.get(val);
@@ -461,6 +463,9 @@ function build(
       valToSlot.set(val, slot);
       slotToVal.set(slot, new WeakRef(val));
       if (type === 'object') {
+        // Set.delete() metering seems unaffected by presence/absence, but it
+        // doesn't matter anyway because deadSet.add only happens when
+        // finializers run, which happens deterministically
         deadSet.delete(slot);
         droppedRegistry.register(val, slot, val);
       }
@@ -489,7 +494,14 @@ function build(
     }
   }
 
+  // The meter usage of convertSlotToVal is strongly affected by GC, because
+  // it only creates a new Presence if one does not already exist. Userspace
+  // moves from REACHABLE to UNREACHABLE, but the JS engine then moves to
+  // COLLECTED (and maybe FINALIZED) on its own, and we must not allow the
+  // latter changes to affect metering. So every call to convertSlotToVal (or
+  // m.unserialize) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
+    meterControl.assertNotMetered();
     const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     const wr = slotToVal.get(slot);
     let val = wr && wr.deref();
@@ -552,6 +564,7 @@ function build(
       for (const slot of slots) {
         const { type } = parseVatSlot(slot);
         if (type === 'promise') {
+          // this can run metered because it's supposed to always be present
           const wr = slotToVal.get(slot);
           const p = wr && wr.deref();
           assert(p, X`should have a value for ${slot} but didn't`);
@@ -567,6 +580,7 @@ function build(
 
     function collect(promiseID, rejected, value) {
       doneResolutions.add(promiseID);
+      meterControl.assertIsMetered(); // else userspace getters could escape
       const valueSer = m.serialize(value);
       valueSer.slots.map(retainExportedVref);
       resolutions.push([promiseID, rejected, valueSer]);
@@ -599,6 +613,7 @@ function build(
       }
     }
 
+    meterControl.assertIsMetered(); // else userspace getters could escape
     const serArgs = m.serialize(harden(args));
     serArgs.slots.map(retainExportedVref);
     const resultVPID = allocatePromiseID();
@@ -659,12 +674,14 @@ function build(
           return undefined;
         }
         return (...args) => {
+          meterControl.assertIsMetered(); // userspace getters shouldn't escape
           const serArgs = m.serialize(harden(args));
           serArgs.slots.map(retainExportedVref);
           forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
-          const retval = m.unserialize(ret);
+          // but the unserialize must be unmetered, to prevent divergence
+          const retval = unmeteredUnserialize(ret);
           return retval;
         };
       },
@@ -708,6 +725,7 @@ function build(
       method = Symbol.asyncIterator;
     }
 
+    meterControl.assertNotMetered();
     const args = m.unserialize(argsdata);
 
     // If the method is missing, or is not a Function, or the method throws a
@@ -747,6 +765,7 @@ function build(
   function retirePromiseID(promiseID) {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
+    meterControl.assertNotMetered();
     const wr = slotToVal.get(promiseID);
     const p = wr && wr.deref();
     if (p) {
@@ -757,6 +776,7 @@ function build(
   }
 
   function thenHandler(p, promiseID, rejected) {
+    // this runs metered
     insistVatType('promise', promiseID);
     return value => {
       knownResolutions.set(p, harden([rejected, value]));
@@ -778,7 +798,7 @@ function build(
           pRec.resolve(value);
         }
       }
-      retirePromiseID(promiseID);
+      meterControl.runWithoutMetering(() => retirePromiseID(promiseID));
     };
   }
 
@@ -802,6 +822,7 @@ function build(
       X`unknown promiseID '${promiseID}'`,
     );
     const pRec = importedPromisesByPromiseID.get(promiseID);
+    meterControl.assertNotMetered();
     const val = m.unserialize(data);
     if (rejected) {
       pRec.reject(val);
@@ -824,6 +845,7 @@ function build(
     const imports = finishCollectingPromiseImports();
     for (const slot of imports) {
       if (slotToVal.get(slot)) {
+        // we'll only subscribe to new promises, which is within consensus
         syscall.subscribe(slot);
       }
     }
@@ -860,6 +882,7 @@ function build(
     } else {
       // Remotable
       // console.log(`-- liveslots acting on retireExports ${vref}`);
+      meterControl.assertNotMetered();
       const wr = slotToVal.get(vref);
       if (wr) {
         const val = wr.deref();
@@ -903,12 +926,14 @@ function build(
   // TODO: when we add notifyForward, guard against cycles
 
   function exitVat(completion) {
+    meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(completion));
     args.slots.map(retainExportedVref);
     syscall.exit(false, args);
   }
 
   function exitVatWithFailure(reason) {
+    meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
     args.slots.map(retainExportedVref);
     syscall.exit(true, args);
@@ -1030,7 +1055,20 @@ function build(
     }
   }
 
+  // the first turn of each dispatch is spent in liveslots, and is not
+  // metered
+  const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
+
   const { waitUntilQuiescent, gcAndFinalize } = gcTools;
+
+  async function finish() {
+    await gcAndFinalize();
+    const doMore = processDeadSet();
+    if (doMore) {
+      return finish();
+    }
+    return undefined;
+  }
 
   /**
    * This low-level liveslots code is responsible for deciding when userspace
@@ -1048,7 +1086,7 @@ function build(
     // *not* directly wait for the userspace function to complete, nor for
     // any promise it returns to fire.
     Promise.resolve(delivery)
-      .then(dispatchToUserspace)
+      .then(unmeteredDispatch)
       .catch(err =>
         console.log(`liveslots error ${err} during delivery ${delivery}`),
       );
@@ -1060,15 +1098,7 @@ function build(
 
     // Now that userspace is idle, we can drive GC until we think we've
     // stopped.
-    async function finish() {
-      await gcAndFinalize();
-      const doMore = processDeadSet();
-      if (doMore) {
-        return finish();
-      }
-      return undefined;
-    }
-    return finish();
+    return meterControl.runWithoutMeteringAsync(finish);
   }
   harden(dispatch);
 
