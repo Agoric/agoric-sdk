@@ -11,6 +11,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "yarn lint",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "ava": "^3.12.1",
+    "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
