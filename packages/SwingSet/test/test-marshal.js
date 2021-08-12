@@ -9,8 +9,6 @@ import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeMarshaller } from '../src/kernel/liveSlots.js';
 
-import { buildVatController } from '../src/index.js';
-
 const gcTools = harden({
   WeakRef,
   FinalizationRegistry,
@@ -21,12 +19,6 @@ function makeUnmeteredMarshaller(syscall) {
   const { m } = makeMarshaller(syscall, gcTools);
   const unmeteredUnserialize = gcTools.meterControl.unmetered(m.unserialize);
   return { m, unmeteredUnserialize };
-}
-
-async function prep() {
-  const config = {};
-  const controller = await buildVatController(config);
-  await controller.run();
 }
 
 test('serialize exports', t => {
@@ -56,7 +48,6 @@ test('serialize exports', t => {
 });
 
 test('deserialize imports', async t => {
-  await prep();
   const { unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
   const a = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
@@ -93,7 +84,6 @@ test('deserialize exports', t => {
 });
 
 test('serialize imports', async t => {
-  await prep();
   const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
   const a = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
@@ -144,7 +134,6 @@ test('serialize promise', async t => {
 });
 
 test('unserialize promise', async t => {
-  await prep();
   const log = [];
   const syscall = {
     subscribe(promiseID) {
