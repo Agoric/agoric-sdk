@@ -68,9 +68,6 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			// FIXME: Need this for compatibility with Agoric's use of the client
-			initClientCtx.OutputFormat = "json"
-
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
 			}
