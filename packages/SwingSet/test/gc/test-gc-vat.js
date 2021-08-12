@@ -43,23 +43,32 @@ async function dropPresence(t, dropExport) {
   };
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const c = await makeSwingsetController(hostStorage, undefined, {
+    slogFile: 't.slog',
+  });
   c.pinVatRoot('bootstrap');
   t.teardown(c.shutdown);
   await c.run();
 
+  let rq0;
   const bootstrapID = c.vatNameToID('bootstrap');
-  c.queueToVatRoot('bootstrap', 'one', capargs([]));
+  c.queueToVatRoot('bootstrap', 'one', capargs([])); // rq: one
   if (dropExport) {
-    c.queueToVatRoot('bootstrap', 'drop', capargs([]));
-    await c.step();
+    c.queueToVatRoot('bootstrap', 'drop', capargs([])); // rq: one,drop
+    rq0 = c.dump().runQueue; // capture data to debug #3666
+    await c.step(); // exec one(), rq: drop, two
   }
-  await c.step();
+  await c.step(); // exec drop(), rq: two
 
   // examine the run-queue to learn the krefs for objects A and B
   const rq = c.dump().runQueue;
   t.is(rq[0].type, 'send');
-  t.is(rq[0].msg.method, 'two');
+  if (rq[0].msg.method !== 'two') {
+    console.log(`uh oh`);
+    console.log(rq0);
+    console.log(rq);
+  }
+  t.is(rq[0].msg.method, 'two'); // gets 'drop' sometimes: #3666
   const [krefA, krefB] = rq[0].msg.args.slots;
   t.is(krefA, 'ko26'); // arbitrary but this is what we currently expect
   t.is(krefB, 'ko27'); // same
