@@ -1,4 +1,3 @@
-/* global require */
 import '@agoric/install-ses';
 
 import fs from 'fs';
@@ -9,18 +8,22 @@ import tmp from 'tmp';
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore } from '@agoric/swing-store-lmdb';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;
 
 const ld = (() => {
   /** @param { string } ref */
   // WARNING: ambient
-  const resolve = ref => require.resolve(ref);
+  const resolve = async ref => {
+    const url = await importMetaResolve(ref, import.meta.url);
+    return new URL(url).pathname;
+  };
   const readFile = fs.promises.readFile;
   return freeze({
     resolve,
     /**  @param { string } ref */
-    asset: async ref => readFile(resolve(ref), 'utf-8'),
+    asset: async ref => readFile(await resolve(ref), 'utf-8'),
   });
 })();
 

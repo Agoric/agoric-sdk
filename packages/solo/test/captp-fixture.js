@@ -1,4 +1,4 @@
-/* global __dirname process setTimeout */
+/* global process setTimeout */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@agoric/captp';
@@ -18,7 +18,7 @@ export async function makeFixture(PORT, noisy = false) {
     : ['ignore', 'pipe', 'pipe'];
   const cp = spawn('./startsolo.sh', {
     env: { ...process.env, PORT },
-    cwd: __dirname,
+    cwd: new URL('./', import.meta.url).pathname,
     stdio,
     detached: true,
   });
