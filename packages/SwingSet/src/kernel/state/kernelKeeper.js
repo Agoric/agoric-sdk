@@ -1,10 +1,14 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
+import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
-import { insistEnhancedStorageAPI } from '../../storageAPI.js';
+import {
+  insistStorageAPI,
+  insistEnhancedStorageAPI,
+} from '../../storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
@@ -26,6 +30,10 @@ const enableKernelGC = true;
 // want to delete a subtree, we tell the DB to delete everything between
 // "prefix." and "prefix/", which avoids including anything using an
 // extension of the prefix (e.g. [vat1.foo, vat1.bar, vat15.baz]).
+//
+// The 'local.' namespace is excluded from the kernel activity hash, and is
+// allowed to vary between instances in a consensus machine. Everything else
+// is required to be deterministic.
 //
 // The schema is:
 //
@@ -55,13 +63,14 @@ const enableKernelGC = true;
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN
 // exclude from consensus
-// v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+// local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
 
 // exclude from consensus
-// snapshot.$id = [vatID, ...]
+// local.snapshot.$id = [vatID, ...]
+// local.kernelStats // JSON(various kernel stats)
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -125,18 +134,41 @@ const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
 /**
- * @param {KVStorePlus} kvStore
- * @param {StreamStore} streamStore
+ * @param {HostStore} hostStorage
  * @param {KernelSlog} kernelSlog
- * @param {SnapStore=} snapStore
+ * @param {import('../../hasher.js').CreateSHA256} createSHA256
  */
 export default function makeKernelKeeper(
-  kvStore,
-  streamStore,
+  hostStorage,
   kernelSlog,
-  snapStore = undefined,
+  createSHA256,
 ) {
+  // the kernelKeeper wraps the host's raw key-value store in a crank buffer
+  const rawKVStore = hostStorage.kvStore;
+  insistStorageAPI(rawKVStore);
+
+  /**
+   * @param { string } key
+   * @returns { boolean }
+   */
+  function isConsensusKey(key) {
+    if (key.startsWith('local.')) {
+      return false;
+    }
+    return true;
+  }
+
+  const { abortCrank, commitCrank, enhancedCrankBuffer: kvStore } = wrapStorage(
+    rawKVStore,
+    createSHA256,
+    isConsensusKey,
+  );
   insistEnhancedStorageAPI(kvStore);
+  const { streamStore, snapStore } = hostStorage;
+
+  function getActivityhash() {
+    return rawKVStore.get('activityhash');
+  }
 
   /**
    * @param {string} key
@@ -199,11 +231,14 @@ export default function makeKernelKeeper(
   }
 
   function saveStats() {
-    kvStore.set('kernelStats', JSON.stringify(kernelStats));
+    kvStore.set('local.kernelStats', JSON.stringify(kernelStats));
   }
 
   function loadStats() {
-    kernelStats = { ...kernelStats, ...JSON.parse(getRequired('kernelStats')) };
+    kernelStats = {
+      ...kernelStats,
+      ...JSON.parse(getRequired('local.kernelStats')),
+    };
   }
 
   function getStats() {
@@ -1328,6 +1363,11 @@ export default function makeKernelKeeper(
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,
     allocateDeviceKeeperIfNeeded,
+
+    kvStore,
+    abortCrank,
+    commitCrank,
+    getActivityhash,
 
     dump,
   });

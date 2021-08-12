@@ -103,10 +103,10 @@ test('4 vats in warehouse with 2 online', async t => {
 
 function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
   const inUse = [];
-  for (const k of kvStore.getKeys(`snapshot.`, `snapshot/`)) {
+  for (const k of kvStore.getKeys(`local.snapshot.`, `local.snapshot/`)) {
     const consumers = JSON.parse(kvStore.get(k));
     if (consumers.length > 0) {
-      const id = k.slice(`snapshot.`.length);
+      const id = k.slice(`local.snapshot.`.length);
       inUse.push(id);
     }
   }

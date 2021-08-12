@@ -445,7 +445,7 @@ export function makeVatKeeper(
    * @returns {{ snapshotID: string, startPos: StreamPosition } | undefined}
    */
   function getLastSnapshot() {
-    const notation = kvStore.get(`${vatID}.lastSnapshot`);
+    const notation = kvStore.get(`local.${vatID}.lastSnapshot`);
     if (!notation) {
       return undefined;
     }
@@ -470,7 +470,7 @@ export function makeVatKeeper(
    * @param {string} snapshotID
    */
   function addToSnapshot(snapshotID) {
-    const key = `snapshot.${snapshotID}`;
+    const key = `local.snapshot.${snapshotID}`;
     const consumers = JSON.parse(kvStore.get(key) || '[]');
     assert(Array.isArray(consumers));
 
@@ -493,7 +493,7 @@ export function makeVatKeeper(
    * @param {string} snapshotID
    */
   function removeFromSnapshot(snapshotID) {
-    const key = `snapshot.${snapshotID}`;
+    const key = `local.snapshot.${snapshotID}`;
     const consumersJSON = kvStore.get(key);
     assert(consumersJSON, X`cannot remove ${vatID}: ${key} key not defined`);
     const consumers = JSON.parse(consumersJSON);
@@ -526,7 +526,7 @@ export function makeVatKeeper(
     }
     const endPosition = getTranscriptEndPosition();
     kvStore.set(
-      `${vatID}.lastSnapshot`,
+      `local.${vatID}.lastSnapshot`,
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
     addToSnapshot(snapshotID);

@@ -4,6 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
+import { createSHA256 } from '../src/hasher.js';
 
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/kernel/initializeKernel.js';
@@ -51,6 +52,7 @@ function makeEndowments() {
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
+    createSHA256,
   };
 }
 

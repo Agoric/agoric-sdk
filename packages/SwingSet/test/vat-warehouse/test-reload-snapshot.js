@@ -33,7 +33,7 @@ test('vat reload from snapshot', async t => {
   const vatID = c1.vatNameToID('target');
 
   function getPositions() {
-    const lastSnapshot = hostStorage.kvStore.get(`${vatID}.lastSnapshot`);
+    const lastSnapshot = hostStorage.kvStore.get(`local.${vatID}.lastSnapshot`);
     const start = lastSnapshot
       ? JSON.parse(lastSnapshot).startPos.itemCount
       : 0;

@@ -28,12 +28,13 @@ export function doSend(kernelKeeper, target, msg) {
 export function makeKernelSyscallHandler(tools) {
   const {
     kernelKeeper,
-    kvStore,
     ephemeral,
     notify,
     doResolve,
     setTerminationTrigger,
   } = tools;
+
+  const { kvStore } = kernelKeeper;
 
   function send(target, msg) {
     return doSend(kernelKeeper, target, msg);

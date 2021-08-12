@@ -42,7 +42,8 @@ async function simpleCall(t) {
       },
     },
   };
-  const controller = await buildVatController(config);
+  const hostStorage = provideHostStorage();
+  const controller = await buildVatController(config, [], { hostStorage });
   const data = controller.dump();
   // note: data.vatTables is sorted by vatID, but we have no particular
   // reason to believe that vat1 will get a lower ID than vatAdmin, because
@@ -86,6 +87,18 @@ async function simpleCall(t) {
 
   controller.log('2');
   t.is(controller.dump().log[1], '2');
+
+  // hash determined experimentally: will change if the initial kernel state
+  // ever changes. "h1" is what we get when defaultManagerType is "local"
+  const h1 = 'ff9faf10b93a1b5905e00a3343ce58b5ce2c83ed771ff8b619260f6c49c14d15';
+  // "h2" is for "xs-worker", when $SWINGSET_WORKER_TYPE=xs-worker
+  const h2 = 'd794586f99118a2bc00c32ffd5a1a1e698260ba18c6f7aeb5c73b7e798ca8445';
+  const type = hostStorage.kvStore.get('kernel.defaultManagerType');
+  if (type === 'local') {
+    t.is(controller.getActivityhash(), h1);
+  } else if (type === 'xs-worker') {
+    t.is(controller.getActivityhash(), h2);
+  }
 }
 
 test('simple call', async t => {
