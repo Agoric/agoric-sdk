@@ -153,9 +153,9 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   // Until we have epoched distribution, we manually set the fee disbursement.
   if (
     genesis.app_state.vbank.params &&
-    genesis.app_state.vbank.params.feeEpochDurationBlocks
+    genesis.app_state.vbank.params.fee_epoch_duration_blocks
   ) {
-    genesis.app_state.vbank.params.feeEpochDurationBlocks = BLOCKS_PER_EPOCH;
+    genesis.app_state.vbank.params.fee_epoch_duration_blocks = BLOCKS_PER_EPOCH;
   }
 
   // Use the same consensus_params.

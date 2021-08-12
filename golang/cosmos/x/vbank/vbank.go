@@ -75,7 +75,7 @@ func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[s
 		return nil, nil
 	}
 
-	nonce := keeper.GetNextNonce(ctx)
+	nonce := keeper.GetNextSequence(ctx)
 	event := vbankBalanceUpdate{
 		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
