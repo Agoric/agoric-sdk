@@ -6,18 +6,6 @@
  */
 
 /**
- * @callback ResolvePathForLocalContract
- * @param {string} contractPath
- * @returns {string}
- */
-
-/**
- * @callback ResolvePathForPackagedContract
- * @param {string} contractPath
- * @returns {string}
- */
-
-/**
  * @typedef {Object} StartInstanceAndSaveConfig
  * @property {Petname} instancePetname
  * @property {ERef<Installation>} installation

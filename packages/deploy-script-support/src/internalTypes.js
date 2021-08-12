@@ -10,18 +10,6 @@
 // TODO: import this from agoric-cli
 
 /**
- * @typedef {(...pathSegments: string[]) => string} AttenuatedPathResolve
- */
-
-/**
- * @callback MakeResolvePaths
- * @param {AttenuatedPathResolve} pathResolve
- * @param {RequireResolve} requireResolve
- * @returns {{ resolvePathForLocalContract: ResolvePathForLocalContract
-    resolvePathForPackagedContract: ResolvePathForPackagedContract }}
- */
-
-/**
  * @callback MakeStartInstanceAndSave
  * @param {ERef<IssuerManager>} issuerManager
  * @param {ERef<InstanceManager>} instanceManager
