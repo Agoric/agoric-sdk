@@ -1,17 +1,17 @@
 /* global setImmediate */
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport';
-import { makePrioritizedVaults } from '../src/prioritizedVaults';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
+import { makePrioritizedVaults } from '../src/prioritizedVaults.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to

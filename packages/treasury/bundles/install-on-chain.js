@@ -2,9 +2,9 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import liquidateBundle from './bundle-liquidateMinimum';
-import autoswapBundle from './bundle-multipoolAutoswap';
-import stablecoinBundle from './bundle-stablecoinMachine';
+import liquidateBundle from './bundle-liquidateMinimum.js';
+import autoswapBundle from './bundle-multipoolAutoswap.js';
+import stablecoinBundle from './bundle-stablecoinMachine.js';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;

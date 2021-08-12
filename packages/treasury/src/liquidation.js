@@ -2,8 +2,8 @@
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { offerTo } from '@agoric/zoe/src/contractSupport';
-import { makeTracer } from './makeTracer';
+import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeTracer } from './makeTracer.js';
 
 const trace = makeTracer('LIQ');
 

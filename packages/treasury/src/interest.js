@@ -1,9 +1,12 @@
 // @ts-check
 
-import '@agoric/zoe/exported';
-import '@agoric/zoe/src/contracts/callSpread/types';
-import './types';
-import { multiplyBy, makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import '@agoric/zoe/exported.js';
+import '@agoric/zoe/src/contracts/callSpread/types.js';
+import './types.js';
+import {
+  multiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 
 function makeResult(latestInterestUpdate, interest, newDebt) {

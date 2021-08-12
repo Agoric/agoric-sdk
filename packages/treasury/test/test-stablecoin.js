@@ -1,31 +1,35 @@
 // @ts-check
-/* global require, setImmediate */
+/* global setImmediate */
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
-import '../src/types';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
+import '../src/types.js';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@agoric/captp';
 
 import { makeZoe } from '@agoric/zoe';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { makeRatio, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import {
+  makeRatio,
+  multiplyBy,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
-import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers';
-import { makeTracer } from '../src/makeTracer';
-import { SECONDS_PER_YEAR } from '../src/interest';
+import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
+import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { makeTracer } from '../src/makeTracer.js';
+import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';
-const autoswapRoot = '@agoric/zoe/src/contracts/newSwap/multipoolAutoswap';
+const autoswapRoot = '@agoric/zoe/src/contracts/newSwap/multipoolAutoswap.js';
 const trace = makeTracer('TestST');
 
 const BASIS_POINTS = 10000n;
@@ -58,7 +62,8 @@ function setUpZoeForTest(setJig) {
 }
 
 async function makeInstall(sourceRoot, zoe) {
-  const path = require.resolve(sourceRoot);
+  const url = await importMetaResolve(sourceRoot, import.meta.url);
+  const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   const install = E(zoe).install(contractBundle);
   trace('install', sourceRoot, install);

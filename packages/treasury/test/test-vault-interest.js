@@ -1,18 +1,18 @@
 // @ts-check
-/* global require */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@agoric/captp';
 import { makeZoe } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
-import { makeTracer } from '../src/makeTracer';
+import { makeTracer } from '../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault');
@@ -48,7 +48,9 @@ trace('makeZoe');
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractBundle = await bundleSource(require.resolve(sourceRoot));
+  const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
+  const contractPath = new URL(contractUrl).pathname;
+  const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(
     zoeP,

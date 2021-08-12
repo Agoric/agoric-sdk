@@ -1,2 +1,2 @@
-import '@agoric/zoe/exported';
+import '@agoric/zoe/exported.js';
 import './types.js';
