@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { stringifyNat } from '../../../src/display/natValue/stringifyNat';
+import { stringifyNat } from '../../../src/display/natValue/stringifyNat.js';
 
 test('stringifyNat cents to dollars', t => {
   // 1 dollar is 100 cents, or 2 decimal points to the right

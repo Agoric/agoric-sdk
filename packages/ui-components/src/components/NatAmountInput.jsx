@@ -1,5 +1,5 @@
-import { parseAsNat } from '../display/natValue/parseAsNat';
-import { stringifyNat } from '../display/natValue/stringifyNat';
+import { parseAsNat } from '../display/natValue/parseAsNat.js';
+import { stringifyNat } from '../display/natValue/stringifyNat.js';
 
 // https://material-ui.com/api/text-field/
 

@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces';
+import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
 
