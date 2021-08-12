@@ -35,7 +35,7 @@ import { createFeeMint } from './feeMint.js';
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }}
  */
-const makeZoe = (
+const makeZoeKit = (
   vatAdminSvc,
   feeIssuerConfig = {
     name: 'RUN',
@@ -126,4 +126,4 @@ const makeZoe = (
   return harden({ zoeService, feeMintAccess });
 };
 
-export { makeZoe };
+export { makeZoeKit };

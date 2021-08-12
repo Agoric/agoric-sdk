@@ -6,7 +6,7 @@ import '@agoric/zoe/exported.js';
 
 import path from 'path';
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -20,7 +20,7 @@ const registrarRoot = `${dirname}/../../src/committeeRegistrar.js`;
 const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
 async function setupContract() {
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([

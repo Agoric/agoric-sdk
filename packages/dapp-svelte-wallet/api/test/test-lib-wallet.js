@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 
 import { assert } from '@agoric/assert';
@@ -45,7 +45,7 @@ async function setupTest() {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   // Create AutomaticRefund instance
@@ -1193,7 +1193,7 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1275,7 +1275,7 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

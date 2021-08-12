@@ -2,10 +2,10 @@
 
 import { Far } from '@agoric/marshal';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 
 export function buildRootObject(_vatPowers) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc),
+    buildZoe: vatAdminSvc => makeZoeKit(vatAdminSvc),
   });
 }

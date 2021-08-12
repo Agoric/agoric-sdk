@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit } from '@agoric/ertp';
@@ -19,7 +19,7 @@ test('startInstance', async t => {
   const moolaKit = makeIssuerKit('moola');
   const usdKit = makeIssuerKit('usd');
 
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const bundleUrl = new URL(
     await importMetaResolve(

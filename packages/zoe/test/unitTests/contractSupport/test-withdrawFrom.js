@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
 import { setup } from '../setupBasicMints.js';
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import {
   depositToSeat,
@@ -27,7 +27,7 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const { zoeService: zoe } = makeZoe(makeFakeVatAdmin(setJig).admin);
+  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

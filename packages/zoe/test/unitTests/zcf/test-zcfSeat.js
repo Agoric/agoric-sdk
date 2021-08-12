@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
@@ -26,7 +26,7 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService: zoe } = makeZoe(fakeVatAdminSvc);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

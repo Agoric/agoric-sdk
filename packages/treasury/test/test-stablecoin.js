@@ -12,7 +12,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@agoric/captp';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -55,7 +55,7 @@ const setUpZoeForTest = async setJig => {
    * @property {ERef<MultipoolAutoswapPublicFacet>} autoswap
    */
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoe(
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(setJig, makeRemote).admin,
   );
   /** @type {ERef<ZoeService>} */

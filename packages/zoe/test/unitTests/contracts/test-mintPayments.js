@@ -10,7 +10,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -19,7 +19,7 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const makeAlice = () => {
     return {
@@ -87,7 +87,7 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

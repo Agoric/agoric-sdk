@@ -8,7 +8,7 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
@@ -21,7 +21,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const { zoeService: zoe } = makeZoe(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installation = await zoe.install(bundle);
