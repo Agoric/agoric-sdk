@@ -1,17 +1,17 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeBoard } from '@agoric/vats/src/lib-board';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeNameHubKit } from '@agoric/vats/src/nameHub';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { Far } from '@agoric/marshal';
-import { makeWallet } from '../src/lib-wallet';
+import { makeWallet } from '../src/lib-wallet.js';
 
-import '../src/types';
+import '../src/types.js';
 
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();

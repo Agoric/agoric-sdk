@@ -13,11 +13,15 @@
   rm -rf test-template template && git clone sveltejs/template test-template && node scripts/setupTypeScript.js test-template
 */
 
-const fs = require("fs")
-const path = require("path")
-const { argv } = require("process")
+import fs from 'fs';
+import path from 'path';
 
-const projectRoot = argv[2] || path.join(__dirname, "..")
+const { argv } = process;
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const projectRoot = argv[2] || path.join(dirname, "..")
 
 // Add deps to pkg.json
 const packageJSON = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"))
@@ -99,15 +103,15 @@ if (!argv[2]) {
   fs.unlinkSync(path.join(__filename))
 
   // Check for Mac's DS_store file, and if it's the only one left remove it
-  const remainingFiles = fs.readdirSync(path.join(__dirname))
+  const remainingFiles = fs.readdirSync(path.join(dirname))
   if (remainingFiles.length === 1 && remainingFiles[0] === '.DS_store') {
-    fs.unlinkSync(path.join(__dirname, '.DS_store'))
+    fs.unlinkSync(path.join(dirname, '.DS_store'))
   }
 
   // Check if the scripts folder is empty
-  if (fs.readdirSync(path.join(__dirname)).length === 0) {
+  if (fs.readdirSync(path.join(dirname)).length === 0) {
     // Remove the scripts folder
-    fs.rmdirSync(path.join(__dirname))
+    fs.rmdirSync(path.join(dirname))
   }
 }
 

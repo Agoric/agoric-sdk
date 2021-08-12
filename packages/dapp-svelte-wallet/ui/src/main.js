@@ -1,4 +1,4 @@
-import './install-ses-lockdown';
+import './install-ses-lockdown.js';
 import './tailwind.css';
 import App from './App.svelte';
 

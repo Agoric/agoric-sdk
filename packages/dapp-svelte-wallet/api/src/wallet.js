@@ -12,11 +12,11 @@ import { E } from '@agoric/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 
-import { makeWallet } from './lib-wallet';
-import pubsub from './pubsub';
-import { bigintStringify } from './bigintStringify';
+import { makeWallet } from './lib-wallet.js';
+import pubsub from './pubsub.js';
+import { bigintStringify } from './bigintStringify.js';
 
-import './internal-types';
+import './internal-types.js';
 
 export function buildRootObject(_vatPowers) {
   let walletRoot;
