@@ -1,9 +1,6 @@
-/* global require */
+import RE2 from 're2';
 import * as c from './constants.js';
 import { makePureBabelCore } from './pure-babel-core.js';
-
-// We'd like to import this, but RE2 is cjs
-const RE2 = require('re2');
 
 const METER_GENERATED = Symbol('meter-generated');
 const getMeterId = 'getMeter';
@@ -28,6 +25,7 @@ export function makeMeteringTransformer(
   let regexpNumber = 0;
 
   const meteringPlugin = regexpList => ({ types: t }) => {
+    t = t.default || t;
     // const [[meterId]] = [[getMeterId]]();
     const getMeterDecl = () => {
       const emid = t.Identifier(getMeterId);

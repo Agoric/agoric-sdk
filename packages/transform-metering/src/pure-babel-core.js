@@ -55,8 +55,8 @@ export function makePureBabelCore() {
       }
       const visitor = traverse.visitors.merge(visitors);
       const file = makePureFile({ ast, code });
-      traverse(file.ast, visitor);
-      return generator(ast, generatorOpts, code);
+      (traverse.default || traverse)(file.ast, visitor);
+      return (generator.default || generator)(ast, generatorOpts, code);
     },
   };
 }
