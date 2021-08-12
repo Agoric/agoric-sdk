@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeGoodImportManager } from './goodImports';
+import { makeGoodImportManager } from './goodImports.js';
 
 test('import num is not empty', t => {
   const importer = makeGoodImportManager();

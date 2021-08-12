@@ -2,16 +2,15 @@
   "name": "@agoric/import-manager",
   "version": "0.2.23",
   "description": "Share code across vat boundaries",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/importManager.js",
+  "type": "module",
+  "main": "./src/importManager.js",
   "engines": {
     "node": ">=11.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "yarn lint",
@@ -34,7 +33,7 @@
     "@agoric/install-ses": "^0.5.21",
     "@agoric/swingset-vat": "^0.19.0",
     "ava": "^3.12.1",
-    "esm": "agoric-labs/esm#Agoric-built"
+    "c8": "^7.7.2"
   },
   "files": [
     "src/",
@@ -43,9 +42,6 @@
   "ava": {
     "files": [
       "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ]
   },
   "eslintConfig": {
