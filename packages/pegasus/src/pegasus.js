@@ -5,15 +5,15 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyWeakMap, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
-import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
+import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
+import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@agoric/marshal';
 
-import '@agoric/notifier/exported';
-import '@agoric/vats/exported';
-import '@agoric/swingset-vat/src/vats/network/types';
-import '@agoric/zoe/exported';
-import '../exported';
+import '@agoric/notifier/exported.js';
+import '@agoric/vats/exported.js';
+import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/zoe/exported.js';
+import '../exported.js';
 
 const DEFAULT_AMOUNT_MATH_KIND = 'nat';
 const DEFAULT_PROTOCOL = 'ics20-1';

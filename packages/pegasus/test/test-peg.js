@@ -1,20 +1,23 @@
-/* global __dirname */
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import path from 'path';
 import { E } from '@agoric/eventual-send';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,
-} from '@agoric/swingset-vat/src/vats/network';
+} from '@agoric/swingset-vat/src/vats/network/index.js';
 
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoe } from '@agoric/zoe';
 
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { Far } from '@agoric/marshal';
 
-const contractPath = `${__dirname}/../src/pegasus`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const contractPath = `${dirname}/../src/pegasus.js`;
 
 /**
  * @param {import('tape-promise/tape').Test} t

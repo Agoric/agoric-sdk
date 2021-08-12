@@ -1,17 +1,22 @@
-/* global __dirname require */
-
 // eslint-disable-next-line import/no-extraneous-dependencies
 import 'ses';
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import bundleSource from '@agoric/bundle-source';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-const srcDir = `${__dirname}/../src`;
-const bundlesDir = `${__dirname}/../bundles`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const srcDir = `${dirname}/../src`;
+const bundlesDir = `${dirname}/../bundles`;
 
 async function writeSourceBundle(contractFilename, outputPath) {
-  const path = require.resolve(contractFilename);
-  await bundleSource(path).then(bundle => {
+  const bundlePath = new URL(
+    await importMetaResolve(contractFilename, import.meta.url),
+  ).pathname;
+  await bundleSource(bundlePath).then(bundle => {
     // TODO: fix
     // @ts-ignore mkdirSync believes it only accepts 2 arguments.
     fs.mkdirSync(bundlesDir, { recursive: true }, err => {
