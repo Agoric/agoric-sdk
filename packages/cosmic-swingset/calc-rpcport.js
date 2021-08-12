@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-/* global require */
 
 // NOTE: Runs outside SES
 
-const process = require('process');
-const fs = require('fs');
-const toml = require('@iarna/toml');
+import process from 'process';
+import fs from 'fs';
+import toml from '@iarna/toml';
 
 // point this at ~/.ag-cosmos-chain/config/config.toml
 
