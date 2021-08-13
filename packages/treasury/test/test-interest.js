@@ -37,7 +37,7 @@ test('too soon', async t => {
 
 test('basic charge 1 period', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -59,7 +59,7 @@ test('basic charge 1 period', async t => {
 
 test('basic 2 charge periods', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -82,7 +82,7 @@ test('basic 2 charge periods', async t => {
 
 test('partial periods', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -104,7 +104,7 @@ test('partial periods', async t => {
 
 test('reportingPeriod: partial', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -136,7 +136,7 @@ test('reportingPeriod: partial', async t => {
 
 test('reportingPeriod: longer', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -162,7 +162,7 @@ test('reportingPeriod: longer', async t => {
 
 test('start charging later', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -190,7 +190,7 @@ test('start charging later', async t => {
 
 test('simple compounding', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -216,7 +216,7 @@ test('simple compounding', async t => {
 
 test('reportingPeriod shorter than charging', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -269,7 +269,7 @@ test('reportingPeriod shorter than charging', async t => {
 
 test('reportingPeriod shorter than charging; start day boundary', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -307,7 +307,7 @@ test('reportingPeriod shorter than charging; start day boundary', async t => {
 
 test('reportingPeriod shorter than charging; start not even days', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   const calculator = makeInterestCalculator(
     brand,
     annualRate,
@@ -340,7 +340,7 @@ test('reportingPeriod shorter than charging; start not even days', async t => {
 // 2.5 % APR charged daily, large enough loan to display compounding
 test.only('basic charge large numbers, compounding', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   // Unix epoch time:  Tuesday April 6th 2021 at 11:45am PT
   const START_TIME = 1617734746n;
   const calculator = makeInterestCalculator(
@@ -392,7 +392,7 @@ test.only('basic charge large numbers, compounding', async t => {
 // charge at reporting period intervals
 test('basic charge reasonable numbers monthly', async t => {
   const { brand } = makeIssuerKit('ducats');
-  const annualRate = makeRatio(250, brand, BASIS_POINTS);
+  const annualRate = makeRatio(250n, brand, BASIS_POINTS);
   // Unix epoch time:  Tuesday April 6th 2021 at 11:45am PT
   const START_TIME = 1617734746n;
   const calculator = makeInterestCalculator(
