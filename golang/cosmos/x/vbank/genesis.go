@@ -18,12 +18,17 @@ func ValidateGenesis(data *types.GenesisState) error {
 	if data == nil {
 		return fmt.Errorf("vbank genesis data cannot be nil")
 	}
+	if err := data.Params.ValidateBasic(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func DefaultGenesisState() *types.GenesisState {
-	gs := NewGenesisState()
-	return gs
+	return &types.GenesisState{
+		Params: types.DefaultParams(),
+		// State is defaulted to empty.
+	}
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {

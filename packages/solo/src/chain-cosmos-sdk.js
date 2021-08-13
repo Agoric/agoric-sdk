@@ -418,6 +418,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         '--gas-adjustment=1.3',
         '--from=ag-solo',
         '--yes',
+        '-ojson',
       );
 
       // Use the feeAccount for any fees.

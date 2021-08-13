@@ -5,6 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 const paramsKey string = "params"
@@ -12,8 +13,9 @@ const stateKey string = "state"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
-	cdc      codec.Codec
+	storeKey   sdk.StoreKey
+	cdc        codec.Codec
+	paramSpace paramtypes.Subspace
 
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
@@ -23,15 +25,21 @@ type Keeper struct {
 
 // NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey,
+	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
 	return Keeper{
 		storeKey:         key,
 		cdc:              cdc,
+		paramSpace:       paramSpace,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
 		CallToController: callToController,
@@ -68,18 +76,13 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, amt)
 }
 
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(paramsKey))
-	params := types.Params{}
-	k.cdc.MustUnmarshal(bz, &params)
+func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+	k.paramSpace.GetParamSet(ctx, &params)
 	return params
 }
 
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(&params)
-	store.Set([]byte(paramsKey), bz)
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
 func (k Keeper) GetState(ctx sdk.Context) types.State {
@@ -96,9 +99,9 @@ func (k Keeper) SetState(ctx sdk.Context, state types.State) {
 	store.Set([]byte(stateKey), bz)
 }
 
-func (k Keeper) GetNextNonce(ctx sdk.Context) uint64 {
+func (k Keeper) GetNextSequence(ctx sdk.Context) uint64 {
 	state := k.GetState(ctx)
-	state.LastNonce = state.GetLastNonce() + 1
+	state.LastSequence = state.GetLastSequence() + 1
 	k.SetState(ctx, state)
-	return state.LastNonce
+	return state.LastSequence
 }

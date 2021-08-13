@@ -12,6 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/log"
@@ -230,15 +232,23 @@ func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		return "", nil
 	}
-	keeper := NewKeeper(cdc, vbankStoreKey, bank, "feeCollectorName", callToController)
+
+	paramsTStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
+	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
+
+	subspace := pk.Subspace(types.ModuleName)
+	keeper := NewKeeper(cdc, vbankStoreKey, subspace, bank, "feeCollectorName", callToController)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(vbankStoreKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsTStoreKey, sdk.StoreTypeTransient, db)
 	ms.LoadLatestVersion()
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 
-	keeper.SetParams(ctx, types.Params{})
+	keeper.SetParams(ctx, types.DefaultParams())
 	keeper.SetState(ctx, types.State{})
 	return keeper, ctx
 }
@@ -524,7 +534,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 }
 
-func Test_EndBock_Rewards(t *testing.T) {
+func Test_EndBlock_Rewards(t *testing.T) {
 	bank := &mockBank{
 		allBalances: map[string]sdk.Coins{
 			ModuleName: {
