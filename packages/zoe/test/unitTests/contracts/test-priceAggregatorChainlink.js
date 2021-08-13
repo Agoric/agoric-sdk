@@ -1,4 +1,3 @@
-/* global __dirname */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -174,9 +173,9 @@ test('basic', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: basic consensus
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '300' });
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -188,9 +187,9 @@ test('basic', /** @param {ExecutionContext} t */ async t => {
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '1000'});
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '2000'});
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '3000'});
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '2000' });
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '3000' });
   await oracleTimer.tick();
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -202,9 +201,9 @@ test('basic', /** @param {ExecutionContext} t */ async t => {
   // unlike the previus test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 3, data: '5000'});
-  await E(pricePushAdminA).pushResult({roundId: 3, data: '4000'});
-  await E(pricePushAdminB).pushResult({roundId: 3, data: '6000'});
+  await E(pricePushAdminC).pushResult({ roundId: 3, data: '5000' });
+  await E(pricePushAdminA).pushResult({ roundId: 3, data: '4000' });
+  await E(pricePushAdminB).pushResult({ roundId: 3, data: '6000' });
   await oracleTimer.tick();
 
   const round1Attempt3 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -251,11 +250,11 @@ test('timeout', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: basic consensus w/ ticking: should work EXACTLY the same
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '300' });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
   t.deepEqual(round1Attempt1.roundId, 1n);
@@ -265,15 +264,15 @@ test('timeout', /** @param {ExecutionContext} t */ async t => {
   // timeout behavior is, if more ticks pass than the timeout param (5 here), the round is
   // considered "timedOut," at which point, the values are simply copied from the previous round
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '2000'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '2000' });
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick(); // --- should time out here
-  await E(pricePushAdminC).pushResult({roundId: 3, data: '1000'});
-  await E(pricePushAdminA).pushResult({roundId: 3, data: '3000'});
+  await E(pricePushAdminC).pushResult({ roundId: 3, data: '1000' });
+  await E(pricePushAdminA).pushResult({ roundId: 3, data: '3000' });
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
   t.deepEqual(round1Attempt2.answer, 200n);
@@ -321,20 +320,20 @@ test('issue check', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: ignore too low valyes
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '50'}); // should be IGNORED
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '50' }); // should be IGNORED
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '300' });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
   t.deepEqual(round1Attempt1.answer, 250n);
 
   // ----- round 2: ignore too high values
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '20000'});
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '1000'});
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '3000'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '20000' });
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '1000' });
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '3000' });
   await oracleTimer.tick();
 
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
@@ -379,9 +378,9 @@ test('supersede', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: round 1 is NOT supersedable when 3 submits, meaning it will be ignored
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '300'});
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '300' });
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -389,8 +388,8 @@ test('supersede', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 2: oracle C's value from before should have been IGNORED
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '2000'});
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '1000'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '2000' });
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
   await oracleTimer.tick();
 
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
@@ -398,7 +397,7 @@ test('supersede', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 3: oracle C should NOT be able to supersede round 3
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 4, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 4, data: '1000' });
 
   try {
     await E(aggregator.creatorFacet).getRoundData(4);
@@ -445,9 +444,9 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: we now need unanimous submission for a round for it to have consensus
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '300'});
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '300' });
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
   await oracleTimer.tick();
 
   try {
@@ -458,17 +457,17 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 2: interleaved round submission -- just making sure this works
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '300' });
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '2000'});
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '1000'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '2000' });
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 3, data: '9000'});
+  await E(pricePushAdminC).pushResult({ roundId: 3, data: '9000' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '3000'}); // assumes oracle C is going for a resubmission
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '3000' }); // assumes oracle C is going for a resubmission
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 3, data: '5000'});
+  await E(pricePushAdminA).pushResult({ roundId: 3, data: '5000' });
   await oracleTimer.tick();
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -491,9 +490,9 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
   await oracleTimer.tick();
   await oracleTimer.tick();
   // round 3 is NOT yet supersedeable (since no value present and not yet timed out), so these should fail
-  await E(pricePushAdminA).pushResult({roundId: 4, data: '4000'});
-  await E(pricePushAdminB).pushResult({roundId: 4, data: '5000'});
-  await E(pricePushAdminC).pushResult({roundId: 4, data: '6000'});
+  await E(pricePushAdminA).pushResult({ roundId: 4, data: '4000' });
+  await E(pricePushAdminB).pushResult({ roundId: 4, data: '5000' });
+  await E(pricePushAdminC).pushResult({ roundId: 4, data: '6000' });
   await oracleTimer.tick(); // --- round 3 has NOW timed out, meaning it is now supersedable
 
   try {
@@ -509,9 +508,9 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
   }
 
   // so NOW we should be able to submit round 4, and round 3 should just be copied from round 2
-  await E(pricePushAdminA).pushResult({roundId: 4, data: '4000'});
-  await E(pricePushAdminB).pushResult({roundId: 4, data: '5000'});
-  await E(pricePushAdminC).pushResult({roundId: 4, data: '6000'});
+  await E(pricePushAdminA).pushResult({ roundId: 4, data: '4000' });
+  await E(pricePushAdminB).pushResult({ roundId: 4, data: '5000' });
+  await E(pricePushAdminC).pushResult({ roundId: 4, data: '6000' });
   await oracleTimer.tick();
 
   const round3Attempt3 = await E(aggregator.creatorFacet).getRoundData(3);
@@ -521,7 +520,7 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round4Attempt2.answer, 5000n);
 
   // ----- round 5: ping-ponging should be possible (although this is an unlikely pernicious case)
-  await E(pricePushAdminC).pushResult({roundId: 5, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 5, data: '1000' });
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
@@ -529,14 +528,14 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 6, data: '1000'});
+  await E(pricePushAdminA).pushResult({ roundId: 6, data: '1000' });
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 7, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 7, data: '1000' });
 
   const round5Attempt1 = await E(aggregator.creatorFacet).getRoundData(5);
   const round6Attempt1 = await E(aggregator.creatorFacet).getRoundData(6);
@@ -591,36 +590,36 @@ test('larger', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: usual case
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '1000' });
   await oracleTimer.tick();
-  await E(pricePushAdminD).pushResult({roundId: 3, data: '3000'});
+  await E(pricePushAdminD).pushResult({ roundId: 3, data: '3000' });
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminE).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminE).pushResult({ roundId: 1, data: '300' });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
   t.deepEqual(round1Attempt1.answer, 200n);
 
   // ----- round 2: ignore late arrival
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '600'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '600' });
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '500'});
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '500' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 3, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 3, data: '1000' });
   await oracleTimer.tick();
-  await E(pricePushAdminD).pushResult({roundId: 1, data: '500'});
+  await E(pricePushAdminD).pushResult({ roundId: 1, data: '500' });
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '1000'});
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '1000' });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '700'}); // this should be IGNORED since oracle C has already sent round 2
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '700' }); // this should be IGNORED since oracle C has already sent round 2
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
@@ -666,9 +665,9 @@ test('suggest', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 1: basic consensus
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 1, data: '100'});
-  await E(pricePushAdminB).pushResult({roundId: 1, data: '200'});
-  await E(pricePushAdminC).pushResult({roundId: 1, data: '300'});
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
+  await E(pricePushAdminC).pushResult({ roundId: 1, data: '300' });
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
@@ -677,7 +676,7 @@ test('suggest', /** @param {ExecutionContext} t */ async t => {
 
   // ----- round 2: add a new oracle and confirm the suggested round is correct
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: 2, data: '1000'});
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '1000' });
   const oracleCSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
     priceOracleC.instance,
     1n,
@@ -697,10 +696,10 @@ test('suggest', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(oracleBSuggestion.oracleCount, 3);
 
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: 2, data: '2000'});
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '2000' });
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushResult({roundId: 2, data: '3000'});
+  await E(pricePushAdminC).pushResult({ roundId: 2, data: '3000' });
 
   const oracleASuggestion = await E(aggregator.creatorFacet).oracleRoundState(
     priceOracleA.instance,
@@ -712,12 +711,12 @@ test('suggest', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(oracleASuggestion.startedAt, 0n); // round 3 hasn't yet started, so it should be zeroed
 
   // ----- round 3: try using suggested round
-  await E(pricePushAdminC).pushResult({roundId: 3, data: '100'});
+  await E(pricePushAdminC).pushResult({ roundId: 3, data: '100' });
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushResult({roundId: undefined, data: '200'});
+  await E(pricePushAdminA).pushResult({ roundId: undefined, data: '200' });
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushResult({roundId: undefined, data: '300'});
+  await E(pricePushAdminB).pushResult({ roundId: undefined, data: '300' });
 
   const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
   t.deepEqual(round3Attempt1.roundId, 3n);
