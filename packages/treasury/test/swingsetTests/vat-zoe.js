@@ -4,8 +4,11 @@ import { Far } from '@agoric/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoeKit(vatAdminSvc),
+    buildZoe: vatAdminSvc => {
+      const shutdownZoeVat = vatPowers.exitVatWithFailure;
+      return makeZoeKit(vatAdminSvc, shutdownZoeVat);
+    },
   });
 }

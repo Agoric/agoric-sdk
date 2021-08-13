@@ -7,17 +7,19 @@ import { makeHandle } from '../makeHandle.js';
 const { details: X } = assert;
 /**
  * @param {FeeIssuerConfig} feeIssuerConfig
+ * @param {ShutdownWithFailure} shutdownZoeVat
  * @returns {{
  *    feeMintAccess: FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    feeIssuer: Issuer }}
  */
-const createFeeMint = feeIssuerConfig => {
+const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
   /** @type {IssuerKit} */
   const feeIssuerKit = makeIssuerKit(
     feeIssuerConfig.name,
     feeIssuerConfig.assetKind,
     feeIssuerConfig.displayInfo,
+    shutdownZoeVat,
   );
 
   /** @type {FeeMintAccess} */

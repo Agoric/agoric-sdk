@@ -31,12 +31,16 @@ import { createFeeMint } from './feeMint.js';
  *
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {ShutdownWithFailure} shutdownZoeVat - a function to
+ * shutdown the Zoe Vat. This function needs to use the vatPowers
+ * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }}
  */
 const makeZoeKit = (
   vatAdminSvc,
+  shutdownZoeVat = () => {},
   feeIssuerConfig = {
     name: 'RUN',
     assetKind: AssetKind.NAT,
@@ -51,6 +55,7 @@ const makeZoeKit = (
 
   const { feeMintAccess, getFeeIssuerKit, feeIssuer } = createFeeMint(
     feeIssuerConfig,
+    shutdownZoeVat,
   );
 
   // This method contains the power to create a new ZCF Vat, and must
@@ -73,7 +78,7 @@ const makeZoeKit = (
     getInstallationForInstance,
     getInstanceAdmin,
     invitationIssuer,
-  } = makeZoeStorageManager(createZCFVat, getFeeIssuerKit);
+  } = makeZoeStorageManager(createZCFVat, getFeeIssuerKit, shutdownZoeVat);
 
   // Pass the capabilities necessary to create zoe.startInstance
   const startInstance = makeStartInstance(

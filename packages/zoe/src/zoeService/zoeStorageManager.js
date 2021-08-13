@@ -27,9 +27,14 @@ import { makeInstallationStorage } from './installationStorage.js';
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetFeeIssuerKit} getFeeIssuerKit
+ * @param {ShutdownWithFailure} shutdownZoeVat
  * @returns {ZoeStorageManager}
  */
-export const makeZoeStorageManager = (createZCFVat, getFeeIssuerKit) => {
+export const makeZoeStorageManager = (
+  createZCFVat,
+  getFeeIssuerKit,
+  shutdownZoeVat,
+) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
   // assetKind, and displayInfo
@@ -44,7 +49,9 @@ export const makeZoeStorageManager = (createZCFVat, getFeeIssuerKit) => {
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
   // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
+  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
+    shutdownZoeVat,
+  );
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
