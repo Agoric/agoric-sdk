@@ -126,6 +126,7 @@ function neverStop() {
 export async function launch(
   kernelStateDBDir,
   mailboxStorage,
+  setActivityhash,
   bridgeOutbound,
   vatconfig,
   argv,
@@ -218,6 +219,9 @@ export async function launch(
       type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
     });
+    if (setActivityhash) {
+      setActivityhash(controller.getActivityhash());
+    }
   }
 
   async function endBlock(blockHeight, blockTime) {
@@ -232,6 +236,9 @@ export async function launch(
       blockHeight,
       blockTime,
     });
+    if (setActivityhash) {
+      setActivityhash(controller.getActivityhash());
+    }
   }
 
   async function saveChainState() {

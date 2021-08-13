@@ -77,6 +77,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     stateDBdir,
     mailboxStorage,
     undefined,
+    undefined,
     vatconfig,
     argv,
     GCI, // debugName
