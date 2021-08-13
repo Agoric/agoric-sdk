@@ -5,7 +5,12 @@ export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
     buildZoe: adminVat => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      makeZoeKit(adminVat, shutdownZoeVat, vatParameters.zcfBundleName);
+      return makeZoeKit(
+        adminVat,
+        shutdownZoeVat,
+        undefined,
+        vatParameters.zcfBundleName,
+      );
     },
   });
 }
