@@ -20,6 +20,7 @@
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer} invitationIssuer
  * @param {Function | undefined} testJigSetter
+ * @param {ERef<FeePurse>} feePurse
  * @returns {ZCFZygote}
  */
 

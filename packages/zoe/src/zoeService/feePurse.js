@@ -1,20 +1,23 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
+import { E } from '@agoric/eventual-send';
+
+const { details: X } = assert;
 
 /**
  *
  * @param {Issuer} feeIssuer
  * @returns {{
- *   makeFeePurse: MakeFeePurse
- *   isFeePurse: (feePurse: Purse) => boolean
+ *   makeFeePurse: MakeFeePurse,
+ *   assertFeePurse: AssertFeePurse,
  * }}
  */
 const setupMakeFeePurse = feeIssuer => {
   const feePurses = new WeakSet();
 
   /** @type {MakeFeePurse} */
-  const makeFeePurse = () => {
+  const makeFeePurse = async () => {
     const purse = feeIssuer.makeEmptyPurse();
     /** @type {FeePurse} */
     const feePurse = Far('feePurse', {
@@ -26,14 +29,18 @@ const setupMakeFeePurse = feeIssuer => {
     return feePurse;
   };
 
-  /**
-   * @param {Purse} feePurse
-   */
-  const isFeePurse = feePurse => feePurses.has(feePurse);
+  /** @type {IsFeePurse} */
+  const isFeePurse = feePurse => E.when(feePurse, fp => feePurses.has(fp));
+
+  /** @type {AssertFeePurse} */
+  const assertFeePurse = async feePurse => {
+    const feePurseProvided = await isFeePurse(feePurse);
+    assert(feePurseProvided, X`A feePurse must be provided, not ${feePurse}`);
+  };
 
   return {
     makeFeePurse,
-    isFeePurse,
+    assertFeePurse,
   };
 };
 

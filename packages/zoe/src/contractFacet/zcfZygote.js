@@ -17,6 +17,7 @@ import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
+import { applyFeePurse } from '../applyFeePurse';
 
 import '../../exported.js';
 import '../internal-types.js';
@@ -29,6 +30,7 @@ export const makeZCFZygote = (
   zoeService,
   invitationIssuer,
   testJigSetter,
+  feePurse,
 ) => {
   /** @type {PromiseRecord<ZoeInstanceAdmin>} */
   const zoeInstanceAdminPromiseKit = makePromiseKit();
@@ -259,7 +261,7 @@ export const makeZCFZygote = (
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
-    getZoeService: () => zoeService,
+    getZoeService: () => applyFeePurse(zoeService, feePurse),
     getInvitationIssuer: () => invitationIssuer,
     getTerms,
     getBrandForIssuer,

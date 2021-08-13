@@ -134,3 +134,15 @@
  * @param {FeeMintAccess} feeMintAccess
  * @returns {IssuerKit}
  */
+
+/**
+ * @callback IsFeePurse
+ * @param {ERef<FeePurse>} feePurse
+ * @returns {Promise<boolean>}
+ */
+
+/**
+ * @callback AssertFeePurse
+ * @param {ERef<FeePurse>} feePurse
+ * @returns {Promise<void>}
+ */
