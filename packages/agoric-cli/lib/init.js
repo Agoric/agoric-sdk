@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { makePspawn } from './helpers';
+import { makePspawn } from './helpers.js';
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {

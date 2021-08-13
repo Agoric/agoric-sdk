@@ -4,7 +4,7 @@ import {
   finishCosmosApp,
   finishTendermintConfig,
   finishCosmosGenesis,
-} from './chain-config';
+} from './chain-config.js';
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs } = powers;

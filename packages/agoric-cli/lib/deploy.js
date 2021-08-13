@@ -1,12 +1,16 @@
-/* global require process setTimeout setInterval clearInterval */
+/* global process setTimeout setInterval clearInterval */
 /* eslint-disable no-await-in-loop */
+
 import { E, makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 import inquirer from 'inquirer';
+import createRequire from 'esm';
 
 import { getAccessToken } from '@agoric/access-token';
+
+const require = createRequire({});
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling
@@ -220,8 +224,11 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
           }
 
           // use a dynamic import to load the deploy script, it is unconfined
-          // eslint-disable-next-line import/no-dynamic-require,global-require
-          const mainNS = require(pathResolve(moduleFile));
+          // eslint-disable-next-line import/no-dynamic-require
+          const mainNS = require(moduleFile);
+          // TODO Node.js ESM support if package.json of template says "type":
+          // "module":
+          //   const mainNS = await import(pathResolve(moduleFile));
           const main = mainNS.default;
           if (typeof main !== 'function') {
             console.error(

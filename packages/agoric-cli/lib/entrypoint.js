@@ -1,6 +1,9 @@
+#!/usr/bin/env -S node
+
 /* global process */
-// TODO Remove babel-standalone preinitialization
+// TODO Remove babel-standalone and esm preinitialization
 // https://github.com/endojs/endo/issues/768
+import 'esm';
 import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 
@@ -11,10 +14,10 @@ import rawFs from 'fs';
 import os from 'os';
 
 // Configure logs.
-import './anylogger-agoric';
+import './anylogger-agoric.js';
 import anylogger from 'anylogger';
 
-import main from './main';
+import main from './main.js';
 
 const fs = rawFs.promises;
 const log = anylogger('agoric');
