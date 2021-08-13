@@ -5,15 +5,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import {
-  makeAndApplyFeePurse,
-  applyFeePurse,
-} from '../../src/applyFeePurse.js';
+import { bindDefaultFeePurse } from '../../src/zoeService/feePurse.js';
 
 const zoe = Far('mockZoe', {
   makeFeePurse: () => Far('feePurse', {}),
-  // TODO Not an adequate mock. Test broken.
-  bindDefaultFeePurse: feePurse => zoe,
+  bindDefaultFeePurse: feePurse => bindDefaultFeePurse(zoe, feePurse),
   // @ts-ignore Mocked for tests
   install: (bundle, feePurse) => feePurse,
   startInstance: (
@@ -34,11 +30,11 @@ const zoe = Far('mockZoe', {
   getPublicFacet: (instance, feePurse) => feePurse,
 });
 
-test('applyFeePurse', async t => {
+test('bindDefaultFeePurse', async t => {
   const defaultFeePurse = await E(zoe).makeFeePurse();
   const customFeePurse = await E(zoe).makeFeePurse();
   // @ts-ignore Mocked for tests
-  const boundZoe = applyFeePurse(zoe, defaultFeePurse);
+  const boundZoe = E(zoe).bindDefaultFeePurse(defaultFeePurse);
 
   // @ts-ignore Mocked for tests
   t.is(await E(boundZoe).install(undefined), defaultFeePurse);
@@ -65,64 +61,6 @@ test('applyFeePurse', async t => {
   t.is(
     // @ts-ignore Mocked for tests
     await E(boundZoe).offer(undefined, undefined, undefined, undefined),
-    defaultFeePurse,
-  );
-  t.is(
-    await E(boundZoe).offer(
-      // @ts-ignore Mocked for tests
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      customFeePurse,
-    ),
-    customFeePurse,
-  );
-
-  // @ts-ignore Mocked for tests
-  t.is(await E(boundZoe).getPublicFacet(undefined), defaultFeePurse);
-  t.is(
-    // @ts-ignore Mocked for tests
-    await E(boundZoe).getPublicFacet(undefined, customFeePurse),
-    customFeePurse,
-  );
-});
-
-test('makeAndApplyFeePurse', async t => {
-  const { zoeService: boundZoe, feePurse: feePurseP } = makeAndApplyFeePurse(
-    // @ts-ignore Mocked for tests
-    zoe,
-  );
-  const defaultFeePurse = await feePurseP;
-  const customFeePurse = await E(zoe).makeFeePurse();
-
-  // @ts-ignore Mocked for tests
-  t.is(await E(boundZoe).install(undefined), defaultFeePurse);
-  // @ts-ignore Mocked for tests
-  t.is(await E(boundZoe).install(undefined, customFeePurse), customFeePurse);
-
-  t.is(
-    // @ts-ignore Mocked for tests
-    await E(boundZoe).startInstance(undefined, undefined, undefined, undefined),
-    // @ts-ignore Mocked for tests
-    defaultFeePurse,
-  );
-  t.is(
-    await E(boundZoe).startInstance(
-      // @ts-ignore Mocked for tests
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      customFeePurse,
-    ),
-    customFeePurse,
-  );
-
-  t.is(
-    // @ts-ignore Mocked for tests
-    await E(boundZoe).offer(undefined, undefined, undefined, undefined),
-    // @ts-ignore Mocked for tests
     defaultFeePurse,
   );
   t.is(

@@ -7,7 +7,6 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
@@ -18,7 +17,8 @@ const contractRoot = `${dirname}/throwInOfferHandler.js`;
 
 test('throw in offerHandler', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

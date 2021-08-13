@@ -16,7 +16,6 @@ import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 /**
  * @typedef {Object} TestContext
@@ -39,7 +38,8 @@ test.before(
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
-    const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+    const feePurse = E(zoeService).makeFeePurse();
+    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);

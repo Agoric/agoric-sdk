@@ -10,7 +10,6 @@ import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 import { ChoiceMethod } from '../../src/ballotBuilder.js';
 
@@ -22,7 +21,8 @@ const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
 async function setupContract() {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([
@@ -31,8 +31,8 @@ async function setupContract() {
   ]);
   // install the contract
   const [registrarInstallation, counterInstallation] = await Promise.all([
-    zoe.install(registrarBundle),
-    zoe.install(counterBundle),
+    E(zoe).install(registrarBundle),
+    E(zoe).install(counterBundle),
   ]);
   const terms = { committeeName: 'illuminati', committeeSize: 13 };
   const registrarStartResult = await E(zoe).startInstance(

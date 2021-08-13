@@ -16,7 +16,6 @@ import {
   swapExact,
 } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -29,12 +28,13 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
   const { zoeService } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Create TWO instances of the zcfTesterContract which have
   // different keywords

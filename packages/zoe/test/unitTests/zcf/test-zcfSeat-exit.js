@@ -6,7 +6,6 @@ import path from 'path';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 // noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -31,12 +30,13 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
   const { zoeService } = makeZoeKit(fakeVatAdminSvc);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

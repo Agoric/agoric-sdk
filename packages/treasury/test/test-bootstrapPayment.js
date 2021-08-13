@@ -13,7 +13,6 @@ import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -35,7 +34,8 @@ const makeInstall = async (root, zoe) => {
 
 test('bootstrap payment', async t => {
   const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -84,7 +84,8 @@ test('bootstrap payment', async t => {
 
 test('bootstrap payment - only minted once', async t => {
   const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);
@@ -142,7 +143,8 @@ test('bootstrap payment - only minted once', async t => {
 
 test('bootstrap payment - default value is 0n', async t => {
   const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const autoswapRoot = await autoswapRootP;
   const autoswapInstall = await makeInstall(autoswapRoot, zoe);
   const stablecoinInstall = await makeInstall(stablecoinRoot, zoe);

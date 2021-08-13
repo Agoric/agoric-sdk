@@ -17,7 +17,6 @@ import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
-import { applyFeePurse } from '../applyFeePurse';
 
 import '../../exported.js';
 import '../internal-types.js';
@@ -261,7 +260,7 @@ export const makeZCFZygote = (
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
-    getZoeService: () => applyFeePurse(zoeService, feePurse),
+    getZoeService: () => E(zoeService).bindDefaultFeePurse(feePurse),
     getInvitationIssuer: () => invitationIssuer,
     getTerms,
     getBrandForIssuer,

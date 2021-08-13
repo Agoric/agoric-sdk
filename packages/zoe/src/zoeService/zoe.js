@@ -25,7 +25,7 @@ import { makeOffer } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
-import { setupMakeFeePurse } from './feePurse.js';
+import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
 
 /**
  * Create an instance of Zoe.
@@ -61,52 +61,6 @@ const makeZoeKit = (
 
   const { makeFeePurse, assertFeePurse } = setupMakeFeePurse(feeIssuer);
 
-  // TODO Maybe move into feePurse.js ?
-  const bindDefaultFeePurse = defaultFeePurse =>
-    Far('bound zoeService', {
-      // The functions from zoe not overridden below have no impact on
-      // state within Zoe
-      // eslint-disable-next-line no-use-before-define
-      ...zoeService,
-
-      install: (bundle, feePurse = defaultFeePurse) =>
-        // eslint-disable-next-line no-use-before-define
-        zoeService.install(bundle, feePurse),
-      startInstance: (
-        installation,
-        issuerKeywordRecord,
-        terms,
-        privateArgs,
-        feePurse = defaultFeePurse,
-      ) =>
-        // eslint-disable-next-line no-use-before-define
-        zoeService.startInstance(
-          installation,
-          issuerKeywordRecord,
-          terms,
-          privateArgs,
-          feePurse,
-        ),
-      offer: (
-        invitation,
-        proposal,
-        paymentKeywordRecord,
-        offerArgs,
-        feePurse = defaultFeePurse,
-      ) =>
-        // eslint-disable-next-line no-use-before-define
-        zoeService.offer(
-          invitation,
-          proposal,
-          paymentKeywordRecord,
-          offerArgs,
-          feePurse,
-        ),
-      getPublicFacet: (instance, feePurse = defaultFeePurse) =>
-        // eslint-disable-next-line no-use-before-define
-        zoeService.getPublicFacet(instance, feePurse),
-    });
-
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
@@ -134,7 +88,7 @@ const makeZoeKit = (
     assertFeePurse,
   );
 
-  // Pass the capabilities necessary to create zoe.startInstance
+  // Pass the capabilities necessary to create E(zoe).startInstance
   const startInstance = makeStartInstance(
     zoeServicePromiseKit.promise,
     makeZoeInstanceStorageManager,
@@ -142,7 +96,7 @@ const makeZoeKit = (
     assertFeePurse,
   );
 
-  // Pass the capabilities necessary to create zoe.offer
+  // Pass the capabilities necessary to create E(zoe).offer
   const offer = makeOffer(
     invitationIssuer,
     getInstanceAdmin,
@@ -165,7 +119,8 @@ const makeZoeKit = (
     startInstance,
     offer,
     makeFeePurse,
-    bindDefaultFeePurse,
+    bindDefaultFeePurse: defaultFeePurse =>
+      bindDefaultFeePurse(zoeService, defaultFeePurse),
     getPublicFacet,
 
     // The functions below are getters only and have no impact on

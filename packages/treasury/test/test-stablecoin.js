@@ -8,7 +8,6 @@ import '../src/types.js';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@agoric/captp';
@@ -60,7 +59,8 @@ const setUpZoeForTest = async setJig => {
     zoeService: nonFarZoeService,
     feeMintAccess: nonFarFeeMintAccess,
   } = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
-  const { zoeService } = makeAndApplyFeePurse(nonFarZoeService);
+  const feePurse = E(nonFarZoeService).makeFeePurse();
+  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   trace('makeZoe');

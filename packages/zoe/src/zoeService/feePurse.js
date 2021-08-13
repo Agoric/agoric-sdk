@@ -44,5 +44,46 @@ const setupMakeFeePurse = feeIssuer => {
   };
 };
 
+const bindDefaultFeePurse = (zoeService, defaultFeePurse) =>
+  Far('bound zoeService', {
+    // The functions from zoe not overridden below have no impact on
+    // state within Zoe
+    ...zoeService,
+
+    install: (bundle, feePurse = defaultFeePurse) =>
+      zoeService.install(bundle, feePurse),
+    startInstance: (
+      installation,
+      issuerKeywordRecord,
+      terms,
+      privateArgs,
+      feePurse = defaultFeePurse,
+    ) =>
+      zoeService.startInstance(
+        installation,
+        issuerKeywordRecord,
+        terms,
+        privateArgs,
+        feePurse,
+      ),
+    offer: (
+      invitation,
+      proposal,
+      paymentKeywordRecord,
+      offerArgs,
+      feePurse = defaultFeePurse,
+    ) =>
+      zoeService.offer(
+        invitation,
+        proposal,
+        paymentKeywordRecord,
+        offerArgs,
+        feePurse,
+      ),
+    getPublicFacet: (instance, feePurse = defaultFeePurse) =>
+      zoeService.getPublicFacet(instance, feePurse),
+  });
+
 harden(setupMakeFeePurse);
-export { setupMakeFeePurse };
+harden(bindDefaultFeePurse);
+export { setupMakeFeePurse, bindDefaultFeePurse };

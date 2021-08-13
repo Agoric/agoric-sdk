@@ -10,7 +10,6 @@ import {
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { Far } from '@agoric/marshal';
@@ -49,7 +48,8 @@ async function testRemotePeg(t) {
   });
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);

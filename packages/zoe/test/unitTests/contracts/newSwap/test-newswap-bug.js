@@ -7,7 +7,6 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { makeAndApplyFeePurse } from '../../../../src/applyFeePurse.js';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
@@ -38,14 +37,15 @@ test('test bug scenario', async t => {
     harden({ decimalPlaces: 6 }),
   );
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   const fakeTimer = buildManualTimer(console.log, 30n);
-  const { publicFacet } = await zoe.startInstance(
+  const { publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: runKit.issuer }),
     {
@@ -77,7 +77,7 @@ test('test bug scenario', async t => {
     Central: runKit.mint.mintPayment(runPoolAllocation),
   };
 
-  const addLiquiditySeat = await zoe.offer(
+  const addLiquiditySeat = await E(zoe).offer(
     aliceAddLiquidityInvitation,
     aliceProposal,
     alicePayments,
@@ -126,14 +126,15 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
     harden({ decimalPlaces: 6 }),
   );
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   const fakeTimer = buildManualTimer(console.log, 30n);
-  const { publicFacet } = await zoe.startInstance(
+  const { publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: runKit.issuer }),
     {
@@ -165,7 +166,7 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
     Central: runKit.mint.mintPayment(runPoolAllocation),
   };
 
-  const addLiquiditySeat = await zoe.offer(
+  const addLiquiditySeat = await E(zoe).offer(
     aliceAddLiquidityInvitation,
     aliceProposal,
     alicePayments,

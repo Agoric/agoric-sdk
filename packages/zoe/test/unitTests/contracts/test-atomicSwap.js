@@ -37,7 +37,7 @@ test('zoe - atomicSwap', async t => {
           Asset: moolaKit.issuer,
           Price: simoleanKit.issuer,
         });
-        const adminP = zoe.startInstance(installation, issuerKeywordRecord);
+        const adminP = E(zoe).startInstance(installation, issuerKeywordRecord);
         return adminP;
       },
       offer: async firstInvitation => {
@@ -116,7 +116,7 @@ test('zoe - atomicSwap', async t => {
         });
         const payments = { Price: simoleanPayment };
 
-        const seat = await zoe.offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(invitation, proposal, payments);
 
         t.is(
           await E(seat).getOfferResult(),
@@ -199,7 +199,7 @@ test('zoe - non-fungible atomicSwap', async t => {
           Asset: ccIssuer,
           Price: rpgIssuer,
         });
-        const adminP = zoe.startInstance(installation, issuerKeywordRecord);
+        const adminP = E(zoe).startInstance(installation, issuerKeywordRecord);
         return adminP;
       },
       offer: async (firstInvitation, calico37Amount, vorpalAmount) => {
@@ -210,7 +210,7 @@ test('zoe - non-fungible atomicSwap', async t => {
         });
         const payments = { Asset: aliceCcPayment };
 
-        const seat = await zoe.offer(firstInvitation, proposal, payments);
+        const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
         seat
           .getPayout('Asset')
@@ -279,7 +279,7 @@ test('zoe - non-fungible atomicSwap', async t => {
         });
         const payments = { Price: rpgPayment };
 
-        const seat = await zoe.offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(invitation, proposal, payments);
 
         t.is(
           await E(seat).getOfferResult(),
@@ -345,7 +345,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -360,7 +360,7 @@ test('zoe - atomicSwap like-for-like', async t => {
     Asset: moolaIssuer,
     Price: moolaIssuer,
   });
-  const { creatorInvitation: aliceInvitation } = await zoe.startInstance(
+  const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -374,7 +374,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 3: Alice makes the first offer in the swap.
-  const aliceSeat = await zoe.offer(
+  const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceProposal,
     alicePayments,
@@ -407,7 +407,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayments = { Price: bobMoolaPayment };
 
   // 5: Bob makes an offer
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobExclusiveInvitation,
     bobProposal,
     bobPayments,

@@ -3,7 +3,7 @@
 import { Far } from '@agoric/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
+import { E } from '@agoric/eventual-send';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
@@ -14,7 +14,8 @@ export function buildRootObject(vatPowers, vatParameters) {
         shutdownZoeVat,
         vatParameters.zcfBundleName,
       );
-      const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+      const feePurse = E(zoeService).makeFeePurse();
+      const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
       return zoe;
     },
   });

@@ -9,7 +9,6 @@ import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards.js';
 import { E } from '@agoric/eventual-send';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
@@ -25,7 +24,8 @@ const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
@@ -150,7 +150,8 @@ test(`mint and sell opera tickets`, async t => {
   const moola = value => AmountMath.make(value, moolaBrand);
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);
@@ -317,7 +318,7 @@ test(`mint and sell opera tickets`, async t => {
 
     const jokerPaymentForTicket = jokerPurse.withdraw(pricePerItem);
 
-    const seat = await zoe.offer(
+    const seat = await E(zoe).offer(
       invitation,
       jokerProposal,
       harden({
@@ -389,7 +390,7 @@ test(`mint and sell opera tickets`, async t => {
       insufficientAmount,
     );
 
-    const seat = await zoe.offer(
+    const seat = await E(zoe).offer(
       invitation,
       jokerProposal,
       harden({
@@ -545,7 +546,8 @@ test(`mint and sell opera tickets`, async t => {
 test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   const mintAndSellNFTInstallation = await E(zoe).install(mintAndSellNFTBundle);

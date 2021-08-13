@@ -18,7 +18,6 @@ import buildManualTimer from '../../tools/manualTimer.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
-import { makeAndApplyFeePurse } from '../../src/applyFeePurse.js';
 
 // This test shows how to set up a fake oracle and use it in a contract.
 
@@ -46,7 +45,8 @@ test.before(
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
-    const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+    const feePurse = E(zoeService).makeFeePurse();
+    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);

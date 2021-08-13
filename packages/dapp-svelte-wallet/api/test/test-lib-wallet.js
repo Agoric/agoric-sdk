@@ -7,10 +7,9 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
+import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -47,7 +46,8 @@ async function setupTest() {
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const board = makeBoard();
 
   // Create AutomaticRefund instance
@@ -58,9 +58,9 @@ async function setupTest() {
   const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
     .pathname;
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
-  const installation = await zoe.install(automaticRefundBundle);
+  const installation = await E(zoe).install(automaticRefundBundle);
   const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const { creatorInvitation: invite, instance } = await zoe.startInstance(
+  const { creatorInvitation: invite, instance } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -73,7 +73,7 @@ async function setupTest() {
   );
   const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
   const autoswapBundle = await bundleSource(autoswapContractRoot);
-  const autoswapInstallationHandle = await zoe.install(autoswapBundle);
+  const autoswapInstallationHandle = await E(zoe).install(autoswapBundle);
   const autoswapIssuerKeywordRecord = harden({
     Central: moolaBundle.issuer,
     Secondary: simoleanBundle.issuer,
@@ -81,7 +81,7 @@ async function setupTest() {
   const {
     publicFacet: autoswapPublicFacet,
     instance: autoswapInstanceHandle,
-  } = await zoe.startInstance(
+  } = await E(zoe).startInstance(
     autoswapInstallationHandle,
     autoswapIssuerKeywordRecord,
   );
@@ -1196,7 +1196,8 @@ test('addOffer offer.invitation', async t => {
 
 test('addOffer makeContinuingInvitation', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1206,8 +1207,10 @@ test('addOffer makeContinuingInvitation', async t => {
   );
   const path = new URL(url).pathname;
   const bundle = await bundleSource(path);
-  const installation = await zoe.install(bundle);
-  const { creatorInvitation, instance } = await zoe.startInstance(installation);
+  const installation = await E(zoe).install(bundle);
+  const { creatorInvitation, instance } = await E(zoe).startInstance(
+    installation,
+  );
   assert(creatorInvitation);
 
   const pursesStateChangeLog = [];
@@ -1279,7 +1282,8 @@ test('addOffer makeContinuingInvitation', async t => {
 
 test('getZoe, getBoard', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

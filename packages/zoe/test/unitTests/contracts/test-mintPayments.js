@@ -7,7 +7,6 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
@@ -21,7 +20,8 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 test('zoe - mint payments', async t => {
   t.plan(2);
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const makeAlice = () => {
     return {
@@ -33,7 +33,7 @@ test('zoe - mint payments', async t => {
         return installationP;
       },
       startInstance: async installation => {
-        const adminP = zoe.startInstance(installation);
+        const adminP = E(zoe).startInstance(installation);
         return adminP;
       },
     };
@@ -90,7 +90,8 @@ test('zoe - mint payments', async t => {
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

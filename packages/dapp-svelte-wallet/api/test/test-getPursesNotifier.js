@@ -8,7 +8,7 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
+import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeWallet } from '../src/lib-wallet.js';
 
@@ -26,7 +26,8 @@ function makeFakeMyAddressNameAdmin() {
 
 const setup = async () => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

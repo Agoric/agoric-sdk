@@ -6,11 +6,10 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
+import { E } from '@agoric/eventual-send';
 
 import '../../exported.js';
 
-import { E } from '@agoric/eventual-send';
 import { makeStartInstance } from '../../src/startInstance.js';
 
 test('startInstance', async t => {
@@ -21,7 +20,8 @@ test('startInstance', async t => {
   const usdKit = makeIssuerKit('usd');
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const bundleUrl = new URL(
     await importMetaResolve(
