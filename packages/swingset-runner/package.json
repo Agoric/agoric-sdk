@@ -36,6 +36,7 @@
     "@agoric/zoe": "^0.17.6",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
+    "node-lmdb": "^0.9.4",
     "yargs": "^16.1.0"
   },
   "devDependencies": {
