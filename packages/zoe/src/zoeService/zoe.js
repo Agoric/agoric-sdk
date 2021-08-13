@@ -61,6 +61,52 @@ const makeZoeKit = (
 
   const { makeFeePurse, assertFeePurse } = setupMakeFeePurse(feeIssuer);
 
+  // TODO Maybe move into feePurse.js ?
+  const bindDefaultFeePurse = defaultFeePurse =>
+    Far('bound zoeService', {
+      // The functions from zoe not overridden below have no impact on
+      // state within Zoe
+      // eslint-disable-next-line no-use-before-define
+      ...zoeService,
+
+      install: (bundle, feePurse = defaultFeePurse) =>
+        // eslint-disable-next-line no-use-before-define
+        zoeService.install(bundle, feePurse),
+      startInstance: (
+        installation,
+        issuerKeywordRecord,
+        terms,
+        privateArgs,
+        feePurse = defaultFeePurse,
+      ) =>
+        // eslint-disable-next-line no-use-before-define
+        zoeService.startInstance(
+          installation,
+          issuerKeywordRecord,
+          terms,
+          privateArgs,
+          feePurse,
+        ),
+      offer: (
+        invitation,
+        proposal,
+        paymentKeywordRecord,
+        offerArgs,
+        feePurse = defaultFeePurse,
+      ) =>
+        // eslint-disable-next-line no-use-before-define
+        zoeService.offer(
+          invitation,
+          proposal,
+          paymentKeywordRecord,
+          offerArgs,
+          feePurse,
+        ),
+      getPublicFacet: (instance, feePurse = defaultFeePurse) =>
+        // eslint-disable-next-line no-use-before-define
+        zoeService.getPublicFacet(instance, feePurse),
+    });
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
@@ -119,6 +165,7 @@ const makeZoeKit = (
     startInstance,
     offer,
     makeFeePurse,
+    bindDefaultFeePurse,
     getPublicFacet,
 
     // The functions below are getters only and have no impact on
