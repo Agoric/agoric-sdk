@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { passStyleOf } from '@agoric/marshal';
@@ -370,4 +371,28 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
+});
+
+test(`zoe.makeFeePurse`, async t => {
+  const { zoe, zcf, feeMintAccess } = await setupZCFTest();
+
+  const feePurse = E(zoe).makeFeePurse();
+  const feeIssuer = E(zoe).getFeeIssuer();
+  const feeBrand = await E(feeIssuer).getBrand();
+
+  const zcfMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+
+  const fee1000 = AmountMath.make(feeBrand, 1000n);
+  zcfMint.mintGains({ Fee: fee1000 }, zcfSeat);
+
+  zcfSeat.exit();
+  const payment = await E(userSeat).getPayout('Fee');
+  await E(feePurse).deposit(payment);
+
+  t.true(AmountMath.isEqual(await E(feePurse).getCurrentAmount(), fee1000));
+
+  await E(feePurse).withdraw(fee1000);
+
+  t.true(AmountMath.isEmpty(await E(feePurse).getCurrentAmount()));
 });
