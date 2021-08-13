@@ -12,6 +12,8 @@ import {
 
 const zoe = Far('mockZoe', {
   makeFeePurse: () => Far('feePurse', {}),
+  // TODO Not an adequate mock. Test broken.
+  bindDefaultFeePurse: feePurse => zoe,
   // @ts-ignore Mocked for tests
   install: (bundle, feePurse) => feePurse,
   startInstance: (

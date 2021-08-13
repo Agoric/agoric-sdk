@@ -40,6 +40,7 @@
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
+ * @property {BindDefaultFeePurse} bindDefaultFeePurse
  */
 
 /**
@@ -59,6 +60,13 @@
 /**
  * @callback MakeFeePurse
  * @returns {Promise<FeePurse>}
+ */
+
+/**
+ * @callback BindDefaultFeePurse
+ * // TODO Should this type be simply {FeePurse} without the ERef?
+ * @param {ERef<FeePurse>} defaultFeePurse
+ * @returns {ZoeService}
  */
 
 /**
@@ -366,4 +374,5 @@
  * @property {GetInvitationDetails} getInvitationDetails
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
+ * @property {BindDefaultFeePurse} bindDefaultFeePurse
  */
