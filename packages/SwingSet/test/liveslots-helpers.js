@@ -3,6 +3,7 @@ import engineGC from '../src/engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeLiveSlots } from '../src/kernel/liveSlots.js';
 
 export function buildSyscall() {
@@ -46,6 +47,7 @@ export function makeDispatch(
     FinalizationRegistry,
     waitUntilQuiescent,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    meterControl: makeDummyMeterControl(),
   });
   const { setBuildRootObject, dispatch } = makeLiveSlots(
     syscall,

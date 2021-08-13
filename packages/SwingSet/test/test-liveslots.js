@@ -9,6 +9,7 @@ import { assert, details as X } from '@agoric/assert';
 import engineGC from '../src/engine-gc.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeLiveSlots } from '../src/kernel/liveSlots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
@@ -906,6 +907,7 @@ function makeMockGC() {
     getAllFRs,
     waitUntilQuiescent,
     gcAndFinalize: mockGCAndFinalize,
+    meterControl: makeDummyMeterControl(),
   });
 }
 

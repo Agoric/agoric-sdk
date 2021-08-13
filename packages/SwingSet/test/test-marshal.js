@@ -6,16 +6,19 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
+import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeMarshaller } from '../src/kernel/liveSlots.js';
 
-import { buildVatController } from '../src/index.js';
+const gcTools = harden({
+  WeakRef,
+  FinalizationRegistry,
+  meterControl: makeDummyMeterControl(),
+});
 
-const gcTools = harden({ WeakRef, FinalizationRegistry });
-
-async function prep() {
-  const config = {};
-  const controller = await buildVatController(config);
-  await controller.run();
+function makeUnmeteredMarshaller(syscall) {
+  const { m } = makeMarshaller(syscall, gcTools);
+  const unmeteredUnserialize = gcTools.meterControl.unmetered(m.unserialize);
+  return { m, unmeteredUnserialize };
 }
 
 test('serialize exports', t => {
@@ -45,9 +48,8 @@ test('serialize exports', t => {
 });
 
 test('deserialize imports', async t => {
-  await prep();
-  const { m } = makeMarshaller(undefined, gcTools);
-  const a = m.unserialize({
+  const { unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
+  const a = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
   });
@@ -56,14 +58,14 @@ test('deserialize imports', async t => {
   t.truthy(Object.isFrozen(a));
 
   // m now remembers the proxy
-  const b = m.unserialize({
+  const b = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
   });
   t.is(a, b);
 
   // the slotid is what matters, not the index
-  const c = m.unserialize({
+  const c = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":2}',
     slots: ['x', 'x', 'o-1'],
   });
@@ -71,10 +73,10 @@ test('deserialize imports', async t => {
 });
 
 test('deserialize exports', t => {
-  const { m } = makeMarshaller(undefined, gcTools);
+  const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
   const o1 = Far('o1', {});
   m.serialize(o1); // allocates slot=1
-  const a = m.unserialize({
+  const a = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o+1'],
   });
@@ -82,9 +84,8 @@ test('deserialize exports', t => {
 });
 
 test('serialize imports', async t => {
-  await prep();
-  const { m } = makeMarshaller(undefined, gcTools);
-  const a = m.unserialize({
+  const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
+  const a = unmeteredUnserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['o-1'],
   });
@@ -102,7 +103,7 @@ test('serialize promise', async t => {
     },
   };
 
-  const { m } = makeMarshaller(syscall, gcTools);
+  const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(syscall);
   const { promise, resolve } = makePromiseKit();
   t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
@@ -116,7 +117,10 @@ test('serialize promise', async t => {
 
   // inbound should recognize it and return the promise
   t.deepEqual(
-    m.unserialize({ body: '{"@qclass":"slot","index":0}', slots: ['p+5'] }),
+    unmeteredUnserialize({
+      body: '{"@qclass":"slot","index":0}',
+      slots: ['p+5'],
+    }),
     promise,
   );
 
@@ -130,7 +134,6 @@ test('serialize promise', async t => {
 });
 
 test('unserialize promise', async t => {
-  await prep();
   const log = [];
   const syscall = {
     subscribe(promiseID) {
@@ -139,7 +142,8 @@ test('unserialize promise', async t => {
   };
 
   const { m } = makeMarshaller(syscall, gcTools);
-  const p = m.unserialize({
+  const unserialize = gcTools.meterControl.unmetered(m.unserialize);
+  const p = unserialize({
     body: '{"@qclass":"slot","index":0}',
     slots: ['p-1'],
   });

@@ -16,6 +16,7 @@ import { insistMessage, insistVatDeliveryResult } from '../message.js';
 import { insistDeviceID, insistVatID } from './id.js';
 import { makeKernelSyscallHandler, doSend } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
+import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { getKpidsToRetire } from './cleanup.js';
 import { processNextGCAction } from './gc-actions.js';
 
@@ -812,6 +813,7 @@ export default function buildKernel(
     FinalizationRegistry,
     waitUntilQuiescent,
     gcAndFinalize,
+    meterControl: makeDummyMeterControl(),
   });
   const vatManagerFactory = makeVatManagerFactory({
     allVatPowers,

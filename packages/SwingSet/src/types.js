@@ -201,3 +201,20 @@
  *              crankFailed: (details: {}) => PolicyOutput,
  *             } } RunPolicy
  */
+
+/**
+ * The MeterControl object gives liveslots a mechanism to disable metering for certain GC-sensitive
+ * regions of code. Only the XS worker can actually do metering, but we track the enabled/disabled
+ * status on all workers, so that the assertions can be exercised more thoroughly (via non-XS unit
+ * tests). MeterControl.isMeteringDisabled()===false does not mean metering is happening, it just
+ * means that MeterControl isn't disabling it.
+ *
+ * @typedef {Object} MeterControl
+ * @property {() => boolean} isMeteringDisabled Ask whether metering is currently disabled.
+ * @property {*} assertIsMetered
+ * @property {*} assertNotMetered
+ * @property {*} runWithoutMetering Run a callback outside metering
+ * @property {*} runWithoutMeteringAsync Run an async callback outside metering
+ * @property {*} unmetered Wrap a callback with runWithoutMetering
+ *
+ */

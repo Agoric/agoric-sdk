@@ -69,7 +69,7 @@ Some useful things cannot be serialized: they will trigger an error.
 Uncertain:
 
 * Maps: This might actually serialize as pass-by-presence, since it has no non-function properties (in fact it has no own properties at all, they all live on `Map.prototype`, whose properties are all functions). The receiving side gets a Presence, not a Map, but invoking e.g. `E(p).get(123)` will return a promise that will be fulfilled with the results of `m.get(123)` on the sending side.
-* WeakMaps: same, except the values being passed into `get()` would be coming from the deserializer, and so they might not be that useful (especially since Liveslots does not implement distributed GC yet).
+* WeakMaps: same, except the values being passed into `get()` would be coming from the deserializer, and so they might not be that useful.
 
 ## How things get serialized
 
@@ -77,3 +77,29 @@ Uncertain:
 * local Promises: passed as a promise
 * promise returned by `E(p).foo()`: passes as a promise, with pipelining enabled
 * Function: rejected (todo: wrap)
+
+## Garbage Collection vs Metering
+
+When a swingset kernel is part of a consensus machine, the visible state must be a deterministic function of userspace activity. Every member kernel must perform the same set of operations.
+
+However we are not yet confident that the timing of garbage collection will remain identical between kernels that experience different patterns of snapshot+restart. In particular, up until recently, the amount of "headroom" in the XS memory allocator was reset upon snapshot reload: the new XS engine only allocates as much RAM as the snapshot needs, whereas before the snapshot was taken, the RAM footprint could have been larger (e.g. if a large number of objects we allocated and then released), leading to more "headroom". Automatic GC is triggered by an attempt to allocate space which cannot be satisfied by this headroom, so it will happen more frequently in the post-reload engine than before the snapshot. See issues #3428, #3458, and #3577 for details.
+
+We rely upon the engine to only invoke finalizer callback at explicitly-deterministic times, but we tolerate (guard against) objects becoming collected spontaneously, which will e.g. cause a WeakRef to become "dead" (`wr.deref() === undefined`) at a random point in the middle of a turn. Any code which calls `wr.deref`, or is conditionally executed/skipped according to the results, is "GC-sensitive". This includes `convertSlotToVal`, and therefore `m.unserialize`.
+
+We cannot allow metering results to diverge between validators, because:
+
+* 1: it might make the difference between the crank completing successfully, and the vat being terminated for a per-crank metering fault
+* 2: it will change the large-scale Meter value, which is reported to userspace
+* 3: it might cause the runPolicy to finish the block earlier on one validator than on others
+
+all of which would cause a consensus failure.
+
+To prevent this, we run most of the "inbound" side of liveslots without metering. This includes the first turn of all `dispatch.*` methods, which runs entirely within liveslots:
+
+* `dispatch.deliver` performs argument deserialization in the first turn, then executes user code in the second and subsequent turns
+* `dispatch.notify` does the same
+* the GC deliveries (`dispatch.dropExport`, etc) only use one turn
+
+We also disable metering when deserializing the return value from a (synchronous) device call, and when retiring a promise ID (which touches `slotToVal`).
+
+Finally, we disable metering for all turns of the post-crank GC `finish()` call. This excludes all invocations of the finalizer callbacks, as well as all the `processDeadSet` code which is highly sensitive to the results.
