@@ -11,8 +11,7 @@
       "./api/deploy.js"
     ]
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "scripts": {
     "lint-fix": "exit 0",
     "lint-check": "exit 0",
