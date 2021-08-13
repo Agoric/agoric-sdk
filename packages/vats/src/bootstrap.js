@@ -345,9 +345,9 @@ export function buildRootObject(vatPowers, vatParameters) {
           assert(initialPrice);
           const rates = {
             initialPrice: makeRatio(
-              initialPrice[0],
+              /** @type {bigint} */ (initialPrice[0]),
               centralBrand,
-              initialPrice[1],
+              /** @type {bigint} */ (initialPrice[1]),
               record.brand,
             ),
             initialMargin: makeRatio(config.initialMarginPercent, centralBrand),
