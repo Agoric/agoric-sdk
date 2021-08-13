@@ -4,6 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeAndApplyFeePurse } from '../../../zoe/src/applyFeePurse';
 
 const ONE_DAY = 24n * 60n * 60n;
 
@@ -67,9 +68,10 @@ function makeBootstrap(argv, cb, vatPowers) {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,
     );
-    const { zoeService: zoe, feeMintAccess } = await E(vats.zoe).buildZoe(
+    const { zoeService, feeMintAccess } = await E(vats.zoe).buildZoe(
       vatAdminSvc,
     );
+    const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
     const [liquidateMinimum, autoswap, treasury] = await Promise.all([
       E(zoe).install(cb.liquidateMinimum),
       E(zoe).install(cb.autoswap),

@@ -9,6 +9,7 @@ import { makeLoopback } from '@agoric/captp';
 import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
@@ -37,9 +38,11 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-  makeFakeVatAdmin(setJig, makeRemote).admin,
-);
+const {
+  zoeService: nonFarZoeService,
+  feeMintAccess: nonFarFeeMintAccess,
+} = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
+const { zoeService } = makeAndApplyFeePurse(nonFarZoeService);
 /** @type {ERef<ZoeService>} */
 const zoe = makeFar(zoeService);
 trace('makeZoe');

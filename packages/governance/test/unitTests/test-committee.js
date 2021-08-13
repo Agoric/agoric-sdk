@@ -22,7 +22,7 @@ const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
 async function setupContract() {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([

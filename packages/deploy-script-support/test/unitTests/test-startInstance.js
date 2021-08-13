@@ -21,7 +21,7 @@ test('startInstance', async t => {
   const usdKit = makeIssuerKit('usd');
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   const bundleUrl = new URL(
     await importMetaResolve(

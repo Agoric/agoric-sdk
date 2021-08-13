@@ -1196,7 +1196,7 @@ test('addOffer offer.invitation', async t => {
 
 test('addOffer makeContinuingInvitation', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1279,7 +1279,7 @@ const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
 test('getZoe, getBoard', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
-const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};
