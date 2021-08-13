@@ -667,7 +667,7 @@ const start = async zcf => {
           // Sample of NaN, 0, or negative numbers get culled in
           // the median calculation.
           pushResult({
-            roundId: (_roundIdRaw = undefined),
+            roundId: _roundIdRaw,
             data: _submissionRaw,
           });
         },
