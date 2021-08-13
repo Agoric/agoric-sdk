@@ -465,7 +465,8 @@ function build(
       if (type === 'object') {
         // Set.delete() metering seems unaffected by presence/absence, but it
         // doesn't matter anyway because deadSet.add only happens when
-        // finializers run, which happens deterministically
+        // finializers run, and we wrote xsnap.c to ensure they only run
+        // deterministically (during gcAndFinalize)
         deadSet.delete(slot);
         droppedRegistry.register(val, slot, val);
       }

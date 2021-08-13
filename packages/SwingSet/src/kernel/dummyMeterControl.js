@@ -27,11 +27,11 @@ export function makeDummyMeterControl() {
 
   async function runWithoutMeteringAsync(thunk) {
     meteringDisabled += 1;
-    try {
-      return await thunk();
-    } finally {
-      meteringDisabled -= 1;
-    }
+    return Promise.resolve()
+      .then(() => thunk())
+      .finally(() => {
+        meteringDisabled -= 1;
+      });
   }
 
   // return a version of f that runs outside metering

@@ -60,12 +60,12 @@ function makeMeterControl() {
     const limit = globalThis.currentMeterLimit();
     const before = globalThis.resetMeter(0, 0);
     meteringDisabled += 1;
-    try {
-      return await thunk();
-    } finally {
-      globalThis.resetMeter(limit, before);
-      meteringDisabled -= 1;
-    }
+    return Promise.resolve()
+      .then(() => thunk())
+      .finally(() => {
+        globalThis.resetMeter(limit, before);
+        meteringDisabled -= 1;
+      });
   }
 
   // return a version of f that runs outside metering
