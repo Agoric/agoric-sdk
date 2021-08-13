@@ -11,7 +11,7 @@ import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
   getAmountOut,
-  multiplyBy,
+  ceilMultiplyBy,
   getTimestamp,
 } from '../../contractSupport/index.js';
 
@@ -54,7 +54,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     const collateralPriceInLoanBrand = getAmountOut(quote);
 
     // Assert the required collateral was escrowed.
-    const requiredMargin = multiplyBy(loanWanted, mmr);
+    const requiredMargin = ceilMultiplyBy(loanWanted, mmr);
     assert(
       AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
       X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,

@@ -350,7 +350,7 @@ test('getDebtNotifier with interest', async t => {
   assertAmountsEqual(
     t,
     debtCompounded2,
-    AmountMath.make(40040n, loanKit.brand),
+    AmountMath.make(40041n, loanKit.brand),
   );
 
   const closeLoanInvitation = E(borrowFacet).makeCloseLoanInvitation();
@@ -424,7 +424,7 @@ test('aperiodic interest', async t => {
   assertAmountsEqual(
     t,
     debtCompounded2,
-    AmountMath.make(40060n, loanKit.brand),
+    AmountMath.make(40062n, loanKit.brand),
   );
 
   periodUpdater.updateState(21);
@@ -434,7 +434,7 @@ test('aperiodic interest', async t => {
   assertAmountsEqual(
     t,
     debtCompounded3,
-    AmountMath.make(40080n, loanKit.brand),
+    AmountMath.make(40083n, loanKit.brand),
   );
 });
 
@@ -527,7 +527,7 @@ test('short periods', async t => {
   assertAmountsEqual(
     t,
     debtCompounded2,
-    AmountMath.make(40040n, loanKit.brand),
+    AmountMath.make(40041n, loanKit.brand),
   );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 11n);
 
@@ -538,7 +538,7 @@ test('short periods', async t => {
   assertAmountsEqual(
     t,
     debtCompounded3,
-    AmountMath.make(40060n, loanKit.brand),
+    AmountMath.make(40062n, loanKit.brand),
   );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 16n);
 
@@ -549,7 +549,7 @@ test('short periods', async t => {
   assertAmountsEqual(
     t,
     debtCompounded4,
-    AmountMath.make(40080n, loanKit.brand),
+    AmountMath.make(40083n, loanKit.brand),
   );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 21n);
 
@@ -563,7 +563,7 @@ test('short periods', async t => {
   assertAmountsEqual(
     t,
     debtCompounded5,
-    AmountMath.make(40100n, loanKit.brand),
+    AmountMath.make(40104n, loanKit.brand),
   );
   t.is(await E(borrowFacet).getLastCalculationTimestamp(), 26n);
 });

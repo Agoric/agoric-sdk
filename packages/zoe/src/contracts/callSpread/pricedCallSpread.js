@@ -13,8 +13,7 @@ import {
   depositToSeat,
   assertNatAssetKind,
   makeRatio,
-  multiplyBy,
-  oneMinus,
+  ceilMultiplyBy,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
@@ -94,7 +93,7 @@ const start = zcf => {
   /** @type {PayoffHandler} */
   const payoffHandler = makePayoffHandler(zcf, seatPromiseKits, collateralSeat);
 
-  async function makeOptionInvitation(position, share) {
+  async function makeOptionInvitation(position, deposit) {
     const option = payoffHandler.makeOptionInvitation(position);
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
@@ -105,8 +104,6 @@ const start = zcf => {
 
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////
-
-    const required = multiplyBy(settlementAmount, share);
 
     /** @type {OfferHandler} */
     const optionPosition = depositSeat => {
@@ -123,8 +120,8 @@ const start = zcf => {
 
       // assert that the allocation includes the amount of collateral required
       assert(
-        AmountMath.isEqual(newCollateral, required),
-        X`Collateral required: ${required.value}`,
+        AmountMath.isEqual(newCollateral, deposit),
+        X`Collateral required: ${deposit.value}`,
       );
 
       // assert that the requested option was the right one.
@@ -145,7 +142,7 @@ const start = zcf => {
 
     return zcf.makeInvitation(optionPosition, `call spread ${position}`, {
       position,
-      collateral: required.value,
+      collateral: deposit.value,
       option: spreadAmount.Option,
     });
   }
@@ -159,11 +156,11 @@ const start = zcf => {
       BASIS_POINTS,
     );
 
-    const longInvitation = makeOptionInvitation(Position.LONG, longPercent);
-    const shortInvitation = makeOptionInvitation(
-      Position.SHORT,
-      oneMinus(longPercent),
-    );
+    // if there's round-off, the long side pays the extra fraction
+    const longRequired = ceilMultiplyBy(settlementAmount, longPercent);
+    const shortRequired = AmountMath.subtract(settlementAmount, longRequired);
+    const longInvitation = makeOptionInvitation(Position.LONG, longRequired);
+    const shortInvitation = makeOptionInvitation(Position.SHORT, shortRequired);
     payoffHandler.schedulePayoffs();
     return { longInvitation, shortInvitation };
   }

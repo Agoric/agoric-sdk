@@ -5,7 +5,7 @@ import './types.js';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { getAmountOut, multiplyBy } from '../../contractSupport/index.js';
+import { getAmountOut, ceilMultiplyBy } from '../../contractSupport/index.js';
 import { Position } from './position.js';
 import { calculateShares } from './calculateShares.js';
 
@@ -34,10 +34,8 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
     );
   }
 
-  function reallocateToSeat(seatPromise, sharePercent) {
+  function reallocateToSeat(seatPromise, seatPortion) {
     seatPromise.then(seat => {
-      const totalCollateral = terms.settlementAmount;
-      const seatPortion = multiplyBy(totalCollateral, sharePercent);
       seat.incrementBy(collateralSeat.decrementBy({ Collateral: seatPortion }));
       zcf.reallocate(seat, collateralSeat);
       seat.exit();
@@ -52,15 +50,20 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   function payoffOptions(quoteAmount) {
     const strike1 = terms.strikePrice1;
     const strike2 = terms.strikePrice2;
-    const { longShare, shortShare } = calculateShares(
+    const { longShare } = calculateShares(
       collateralBrand,
       quoteAmount,
       strike1,
       strike2,
     );
+    const totalCollateral = terms.settlementAmount;
+    // round in favor of the long position
+    const longPortion = ceilMultiplyBy(totalCollateral, longShare);
+    const shortPortion = AmountMath.subtract(totalCollateral, longPortion);
+
     // either offer might be exercised late, so we pay the two seats separately.
-    reallocateToSeat(seatPromiseKits[Position.LONG].promise, longShare);
-    reallocateToSeat(seatPromiseKits[Position.SHORT].promise, shortShare);
+    reallocateToSeat(seatPromiseKits[Position.LONG].promise, longPortion);
+    reallocateToSeat(seatPromiseKits[Position.SHORT].promise, shortPortion);
   }
 
   function schedulePayoffs() {

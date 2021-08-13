@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { multiplyBy } from '../../../src/contractSupport/index.js';
+import { floorMultiplyBy } from '../../../src/contractSupport/index.js';
 import {
   make100Percent,
   make0Percent,
@@ -36,7 +36,7 @@ test('ratio - ALL', t => {
 
   amountsEqual(
     t,
-    multiplyBy(moe(100000), make100Percent(brand)),
+    floorMultiplyBy(moe(100000), make100Percent(brand)),
     moe(100000),
     brand,
   );
@@ -49,7 +49,7 @@ test('ratio - NONE', t => {
   amountsEqual(
     t,
     AmountMath.makeEmpty(brand),
-    multiplyBy(moe(100000), make0Percent(brand)),
+    floorMultiplyBy(moe(100000), make0Percent(brand)),
     brand,
   );
 });

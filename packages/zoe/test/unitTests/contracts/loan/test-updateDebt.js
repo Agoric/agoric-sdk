@@ -14,7 +14,11 @@ test('test calculateInterest', async t => {
     const debt = { brand, value: oldDebt };
     const interestRateRatio = makeRatio(interestRate, brand, 10000n);
     const interest = calculateInterest(debt, interestRateRatio);
-    t.is(interest.value, expected);
+    t.is(
+      interest.value,
+      expected,
+      `(${oldDebt}, ${interestRate}) -> ${interest.value}, expected: ${expected}`,
+    );
     t.is(interest.brand, brand);
   };
 
@@ -23,7 +27,7 @@ test('test calculateInterest', async t => {
     [0n, 5n, 0n], // debt of 0 is 0 interest
     [100n, 0n, 0n], // interest rate of 0 is 0 interest
     [10000000n, 3n, 3000n],
-    [20392n, 1n, 2n],
+    [20392n, 1n, 3n],
   ];
 
   expectations.forEach(testCalculateInterest);
