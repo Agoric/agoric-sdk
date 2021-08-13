@@ -1,8 +1,11 @@
 import { Far } from '@agoric/marshal';
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
-    buildZoe: adminVat => makeZoe(adminVat, vatParameters.zcfBundleName),
+    buildZoe: adminVat => {
+      const shutdownZoeVat = vatPowers.exitVatWithFailure;
+      makeZoeKit(adminVat, shutdownZoeVat, vatParameters.zcfBundleName);
+    },
   });
 }
