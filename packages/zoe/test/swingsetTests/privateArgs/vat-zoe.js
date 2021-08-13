@@ -1,10 +1,16 @@
+// @ts-check
+
 import { Far } from '@agoric/marshal';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc),
+    buildZoe: vatAdminSvc => {
+      const shutdownZoeVat = vatPowers.exitVatWithFailure;
+      const { zoeService: zoe } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
+      return zoe;
+    },
   });
 }

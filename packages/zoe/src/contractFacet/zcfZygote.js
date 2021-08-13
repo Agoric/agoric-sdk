@@ -120,19 +120,8 @@ export const makeZCFZygote = (
     assert(amountKeywordRecord !== null, X`${name} cannot be null`);
   };
 
-  /** @type {MakeZCFMint} */
-  const makeZCFMint = async (
-    keyword,
-    assetKind = AssetKind.NAT,
-    displayInfo,
-  ) => {
-    assertUniqueKeyword(keyword);
-
-    const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
-      keyword,
-      assetKind,
-      displayInfo,
-    );
+  // A helper for the code shared between MakeZCFMint and RegisterZCFMint
+  const doMakeZCFMint = async (keyword, zoeMintP) => {
     const {
       brand: mintyBrand,
       issuer: mintyIssuer,
@@ -146,7 +135,7 @@ export const makeZCFZygote = (
     );
     recordIssuer(keyword, mintyIssuerRecord);
 
-    const empty = AmountMath.makeEmpty(mintyBrand, assetKind);
+    const empty = AmountMath.makeEmpty(mintyBrand, mintyDisplayInfo.assetKind);
     const add = (total, amountToAdd) => {
       return AmountMath.add(total, amountToAdd, mintyBrand);
     };
@@ -191,6 +180,34 @@ export const makeZCFZygote = (
       },
     });
     return zcfMint;
+  };
+
+  /** @type {MakeZCFMint} */
+  const makeZCFMint = async (
+    keyword,
+    assetKind = AssetKind.NAT,
+    displayInfo,
+  ) => {
+    assertUniqueKeyword(keyword);
+
+    const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
+      keyword,
+      assetKind,
+      displayInfo,
+    );
+
+    return doMakeZCFMint(keyword, zoeMintP);
+  };
+
+  /** @type {ZCFRegisterFeeMint} */
+  const registerFeeMint = async (keyword, feeMintAccess) => {
+    assertUniqueKeyword(keyword);
+
+    const zoeMintP = E(zoeInstanceAdmin).registerFeeMint(
+      keyword,
+      feeMintAccess,
+    );
+    return doMakeZCFMint(keyword, zoeMintP);
   };
 
   /** @type {ContractFacet} */
@@ -238,6 +255,7 @@ export const makeZCFZygote = (
     assert: makeAssert(shutdownWithFailure),
     stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
     makeZCFMint,
+    registerFeeMint,
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
