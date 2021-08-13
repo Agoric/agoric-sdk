@@ -21,7 +21,8 @@ const transcript1 = [
     '/xsnap-tests/00001-evaluate.dat',
     'issueCommand(ArrayBuffer.fromString("Hello, World!"));',
   ],
-  ['/xsnap-tests/00002-reply.dat', ''],
+  ['/xsnap-tests/00002-command.dat', '{"compute":54'],
+  ['/xsnap-tests/00003-reply.dat', ''],
 ];
 
 test('record: evaluate and issueCommand', async t => {
@@ -72,6 +73,7 @@ test('replay', async t => {
 
   t.deepEqual(done, [
     ['/xs-test/', 1, 'evaluate'],
-    ['/xs-test/', 2, 'reply'],
+    ['/xs-test/', 2, 'command'],
+    ['/xs-test/', 3, 'reply'],
   ]);
 });
