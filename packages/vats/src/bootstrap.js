@@ -75,14 +75,16 @@ export function buildRootObject(vatPowers, vatParameters) {
       sharingService,
       board,
       chainTimerService,
-      zoe,
+      { zoeService: zoe, feeMintAccess },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
       E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
       E(vats.timer).createTimerService(timerDevice),
-      /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
+      /** @type {Promise<{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }>} */ (E(
+        vats.zoe,
+      ).buildZoe(vatAdminSvc)),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
@@ -129,6 +131,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           priceAuthority,
           zoe,
           bootstrapPaymentValue,
+          feeMintAccess,
         }),
         installPegasusOnChain({
           agoricNames,

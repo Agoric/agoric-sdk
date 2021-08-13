@@ -41,7 +41,7 @@ import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 const trace = makeTracer('ST');
 
 /** @type {ContractStartFn} */
-export async function start(zcf) {
+export async function start(zcf, privateArgs) {
   // loanParams has time limits for charging interest
   const {
     autoswapInstall,
@@ -51,6 +51,8 @@ export async function start(zcf) {
     liquidationInstall,
     bootstrapPaymentValue = 0n,
   } = zcf.getTerms();
+
+  const { feeMintAccess } = privateArgs;
 
   assert.typeof(
     loanParams.chargingPeriod,
@@ -66,7 +68,7 @@ export async function start(zcf) {
   );
 
   const [runMint, govMint] = await Promise.all([
-    zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
+    zcf.registerFeeMint('RUN', feeMintAccess),
     zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
   ]);
   const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();

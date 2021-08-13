@@ -17,26 +17,46 @@ import '../internal-types.js';
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { AssetKind } from '@agoric/ertp';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOffer } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
+import { createFeeMint } from './feeMint.js';
 
 /**
  * Create an instance of Zoe.
  *
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {ShutdownWithFailure} shutdownZoeVat - a function to
+ * shutdown the Zoe Vat. This function needs to use the vatPowers
+ * available to a vat.
+ * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {ZoeService} The created Zoe service.
+ * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }}
  */
-const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
+const makeZoeKit = (
+  vatAdminSvc,
+  shutdownZoeVat = () => {},
+  feeIssuerConfig = {
+    name: 'RUN',
+    assetKind: AssetKind.NAT,
+    displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+  },
+  zcfBundleName = undefined,
+) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
   // defined. See below where the promise is resolved.
   /** @type {PromiseRecord<ZoeService>} */
   const zoeServicePromiseKit = makePromiseKit();
+
+  const { feeMintAccess, getFeeIssuerKit, feeIssuer } = createFeeMint(
+    feeIssuerConfig,
+    shutdownZoeVat,
+  );
 
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
@@ -58,7 +78,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     getInstallationForInstance,
     getInstanceAdmin,
     invitationIssuer,
-  } = makeZoeStorageManager(createZCFVat);
+  } = makeZoeStorageManager(createZCFVat, getFeeIssuerKit, shutdownZoeVat);
 
   // Pass the capabilities necessary to create zoe.startInstance
   const startInstance = makeStartInstance(
@@ -92,6 +112,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
     // The functions below are getters only and have no impact on
     // state within Zoe
     getInvitationIssuer: () => invitationIssuer,
+    getFeeIssuer: () => feeIssuer,
     getPublicFacet,
     getBrands,
     getIssuers,
@@ -107,7 +128,7 @@ const makeZoe = (vatAdminSvc, zcfBundleName = undefined) => {
   // defined. So, we pass a promise and then resolve the promise here.
   zoeServicePromiseKit.resolve(zoeService);
 
-  return zoeService;
+  return harden({ zoeService, feeMintAccess });
 };
 
-export { makeZoe };
+export { makeZoeKit };

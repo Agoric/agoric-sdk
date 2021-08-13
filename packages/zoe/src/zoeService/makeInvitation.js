@@ -2,8 +2,13 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-export const createInvitationKit = () => {
-  const invitationKit = makeIssuerKit('Zoe Invitation', AssetKind.SET);
+export const createInvitationKit = shutdownZoeVat => {
+  const invitationKit = makeIssuerKit(
+    'Zoe Invitation',
+    AssetKind.SET,
+    undefined,
+    shutdownZoeVat,
+  );
 
   /**
    * @param {Instance} instance

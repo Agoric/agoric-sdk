@@ -75,6 +75,7 @@
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
+ * @property {RegisterFeeMint} registerFeeMint
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
  * @property {WithdrawPayments} withdrawPayments
@@ -122,4 +123,14 @@
  *
  * @callback CreateZCFVat
  * @returns {Promise<RootAndAdminNode>}
+ */
+
+/**
+ * @typedef {Handle<'feeMintAccess'>} FeeMintAccess
+ */
+
+/**
+ * @callback GetFeeIssuerKit
+ * @param {FeeMintAccess} feeMintAccess
+ * @returns {IssuerKit}
  */

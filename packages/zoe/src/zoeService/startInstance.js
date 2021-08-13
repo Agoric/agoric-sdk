@@ -180,6 +180,7 @@ export const makeStartInstance = (
       exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
       makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
+      registerFeeMint: zoeInstanceStorageManager.registerFeeMint,
       replaceAllocations: seatHandleAllocations => {
         try {
           seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
