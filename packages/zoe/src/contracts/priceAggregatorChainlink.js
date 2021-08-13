@@ -39,7 +39,7 @@ const start = async zcf => {
 
   const unitIn = AmountMath.getValue(unitAmountIn, brandIn);
 
-  /** @type {TimerService} */
+  /** @type {ERef<TimerService>} */
   const timer = rawTimer;
 
   /** @type {IssuerRecord & { mint: ERef<Mint> }} */
@@ -48,20 +48,20 @@ const start = async zcf => {
   /** @type {PriceAuthority} */
   let priceAuthority;
 
-  /** @type {number} */
+  /** @type {bigint} */
   let lastValueOutForUnitIn;
 
   // --- [begin] Chainlink specific values
   /** @type {bigint} */
-  let reportingRoundId = BigInt(0);
+  let reportingRoundId = 0n;
 
-  /** @type {Store<Instance, { startingRound: bigint, endingRound: bigint, lastReportedRound: bigint, lastStartedRound: bigint, latestSubmission: bigint, index: number }>} */
+  /** @type {Store<Instance, ReturnType<typeof makeOracleStatus>>} */
   const oracleStatuses = makeStore('oracleStatus');
 
-  /** @type {Store<bigint, { answer: number, startedAt: bigint, updatedAt: bigint, answeredInRound: bigint }>} */
+  /** @type {Store<bigint, ReturnType<typeof makeRound>>} */
   const rounds = makeStore('rounds');
 
-  /** @type {Store<bigint, { submissions: bigint[], maxSubmissions: number, minSubmissions: number, roundTimeout: number }>} */
+  /** @type {Store<bigint, ReturnType<typeof makeRoundDetails>>} */
   const details = makeStore('details');
 
   /** @type {bigint} */
@@ -76,7 +76,6 @@ const start = async zcf => {
    * @param {bigint} startedAt
    * @param {bigint} updatedAt
    * @param {bigint} answeredInRound
-   * @returns {{ answer: number, startedAt: bigint, updatedAt: bigint, answeredInRound: bigint }}
    */
   const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
     return {
@@ -92,7 +91,6 @@ const start = async zcf => {
    * @param {number} maxSubmissions
    * @param {number} minSubmissions
    * @param {number} roundTimeout
-   * @returns {{ submissions: bigint[], maxSubmissions: number, minSubmissions: number, roundTimeout: number }}
    */
   const makeRoundDetails = (
     submissions,
@@ -115,7 +113,6 @@ const start = async zcf => {
    * @param {bigint} lastStartedRound
    * @param {bigint} latestSubmission
    * @param {number} index
-   * @returns {{ startingRound: bigint, endingRound: bigint, lastReportedRound: bigint, lastStartedRound: bigint, latestSubmission: bigint, index: number }}
    */
   const makeOracleStatus = (
     startingRound,
@@ -165,7 +162,6 @@ const start = async zcf => {
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**
      * @param {PriceQuery} priceQuery
-     * @returns {ERef<PriceQuote>=}
      */
     function createQuote(priceQuery) {
       // Sniff the current baseValueOut.
@@ -180,7 +176,6 @@ const start = async zcf => {
 
       /**
        * @param {Amount} amountIn the given amountIn
-       * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
         const valueIn = AmountMath.getValue(amountIn, brandIn);
@@ -192,7 +187,6 @@ const start = async zcf => {
 
       /**
        * @param {Amount} amountOut the wanted amountOut
-       * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
         const valueOut = AmountMath.getValue(amountOut, brandOut);
@@ -229,43 +223,41 @@ const start = async zcf => {
 
   /**
    * @param {bigint} _roundId
-   * @returns {boolean}
    */
-  const timedOut = _roundId => {
+  const timedOut = (_roundId, blockTimestamp) => {
     if (!details.has(_roundId) || !rounds.has(_roundId)) {
       return false;
     }
 
-    const blockTimestamp = timer.getCurrentTimestamp();
     const startedAt = rounds.get(_roundId).startedAt;
     const roundTimeout = details.get(_roundId).roundTimeout;
     const roundTimedOut =
       startedAt > 0 &&
       roundTimeout > 0 &&
       add(startedAt, roundTimeout) < blockTimestamp;
+
     return roundTimedOut;
   };
 
   /**
    * @param {bigint} _roundId
    */
-  const updateTimedOutRoundInfo = _roundId => {
+  const updateTimedOutRoundInfo = (_roundId, blockTimestamp) => {
     // round 0 is non-existent, so we avoid that case -- round 1 is ignored
     // because we can't copy from round 0 in that case
-    if (_roundId === BigInt(0) || _roundId === BigInt(1)) {
+    if (_roundId === 0n || _roundId === 1n) {
       return;
     }
 
-    const roundTimedOut = timedOut(_roundId);
+    const roundTimedOut = timedOut(_roundId, blockTimestamp);
     if (!roundTimedOut) return;
-
-    const blockTimestamp = timer.getCurrentTimestamp();
 
     const prevId = subtract(_roundId, 1);
 
-    rounds.get(_roundId).answer = rounds.get(prevId).answer;
-    rounds.get(_roundId).answeredInRound = rounds.get(prevId).answeredInRound;
-    rounds.get(_roundId).updatedAt = blockTimestamp;
+    const round = rounds.get(_roundId);
+    round.answer = rounds.get(prevId).answer;
+    round.answeredInRound = rounds.get(prevId).answeredInRound;
+    round.updatedAt = blockTimestamp;
 
     details.delete(_roundId);
   };
@@ -280,8 +272,8 @@ const start = async zcf => {
   /**
    * @param {bigint} _roundId
    */
-  const initializeNewRound = _roundId => {
-    updateTimedOutRoundInfo(subtract(_roundId, 1));
+  const initializeNewRound = (_roundId, blockTimestamp) => {
+    updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
 
     reportingRoundId = _roundId;
 
@@ -294,13 +286,12 @@ const start = async zcf => {
       _roundId,
       makeRound(
         /* answer = */ 0,
-        /* startedAt = */ BigInt(0),
-        /* updatedAt = */ BigInt(0),
-        /* answeredInRound = */ BigInt(0),
+        /* startedAt = */ 0n,
+        /* updatedAt = */ 0n,
+        /* answeredInRound = */ 0n,
       ),
     );
 
-    const blockTimestamp = timer.getCurrentTimestamp();
     rounds.get(_roundId).startedAt = blockTimestamp;
   };
 
@@ -308,19 +299,18 @@ const start = async zcf => {
    * @param {bigint} _roundId
    * @param {Instance} _oracle
    */
-  const oracleInitializeNewRound = (_roundId, _oracle) => {
+  const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
     if (!newRound(_roundId)) return;
     const lastStarted = oracleStatuses.get(_oracle).lastStartedRound; // cache storage reads
-    if (_roundId <= add(lastStarted, restartDelay) && lastStarted !== BigInt(0))
+    if (_roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n)
       return;
-    initializeNewRound(_roundId);
+    initializeNewRound(_roundId, blockTimestamp);
 
     oracleStatuses.get(_oracle).lastStartedRound = _roundId;
   };
 
   /**
    * @param {bigint} _roundId
-   * @returns {boolean}
    */
   const acceptingSubmissions = _roundId => {
     return details.has(_roundId) && details.get(_roundId).maxSubmissions !== 0;
@@ -345,9 +335,8 @@ const start = async zcf => {
 
   /**
    * @param {bigint} _roundId
-   * @returns {[boolean, number]}
    */
-  const updateRoundAnswer = _roundId => {
+  const updateRoundAnswer = (_roundId, blockTimestamp) => {
     if (
       details.get(_roundId).submissions.length <
       details.get(_roundId).minSubmissions
@@ -361,9 +350,6 @@ const start = async zcf => {
         .submissions.filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
-
-    // TODO: should we actually be using the block timestamp instead of that from the env?
-    const blockTimestamp = timer.getCurrentTimestamp();
 
     rounds.get(_roundId).answer = newAnswer;
     rounds.get(_roundId).updatedAt = blockTimestamp;
@@ -386,14 +372,12 @@ const start = async zcf => {
 
   /**
    * @param {bigint} _roundId
-   * @returns {boolean}
    */
   const validRoundId = _roundId => {
     return _roundId <= ROUND_MAX;
   };
 
   /**
-   * @returns {number}
    */
   const oracleCount = () => {
     return oracleStatuses.keys().length;
@@ -401,42 +385,37 @@ const start = async zcf => {
 
   /**
    * @param {bigint} _roundId
-   * @returns {boolean}
    */
-  const supersedable = _roundId => {
+  const supersedable = (_roundId, blockTimestamp) => {
     return (
       rounds.has(_roundId) &&
-      (rounds.get(_roundId).updatedAt > 0 || timedOut(_roundId))
+      (rounds.get(_roundId).updatedAt > 0 || timedOut(_roundId, blockTimestamp))
     );
   };
 
   /**
    * @param {bigint} _roundId
    * @param {bigint} _rrId
-   * @returns {boolean}
    */
   const previousAndCurrentUnanswered = (_roundId, _rrId) => {
-    return (
-      add(_roundId, 1) === _rrId && rounds.get(_rrId).updatedAt === BigInt(0)
-    );
+    return add(_roundId, 1) === _rrId && rounds.get(_rrId).updatedAt === 0n;
   };
 
   /**
    * @param {Instance} _oracle
    * @param {bigint} _roundId
-   * @returns {string}
    */
-  const validateOracleRound = (_oracle, _roundId) => {
+  const validateOracleRound = (_oracle, _roundId, blockTimestamp) => {
     // cache storage reads
     const startingRound = oracleStatuses.get(_oracle).startingRound;
     const rrId = reportingRoundId;
 
     let canSupersede = true;
-    if (_roundId !== BigInt(1)) {
-      canSupersede = supersedable(subtract(_roundId, 1));
+    if (_roundId !== 1n) {
+      canSupersede = supersedable(subtract(_roundId, 1), blockTimestamp);
     }
 
-    if (startingRound === BigInt(0)) return 'not enabled oracle';
+    if (startingRound === 0n) return 'not enabled oracle';
     if (startingRound > _roundId) return 'not yet enabled oracle';
     if (oracleStatuses.get(_oracle).endingRound < _roundId)
       return 'no longer allowed oracle';
@@ -448,7 +427,7 @@ const start = async zcf => {
       !previousAndCurrentUnanswered(_roundId, rrId)
     )
       return 'invalid round to report';
-    if (_roundId !== BigInt(1) && !canSupersede)
+    if (_roundId !== 1n && !canSupersede)
       return 'previous round not supersedable';
     return '';
   };
@@ -456,13 +435,10 @@ const start = async zcf => {
   /**
    * @param {Instance} _oracle
    * @param {bigint} _roundId
-   * @returns {boolean}
    */
   const delayed = (_oracle, _roundId) => {
     const lastStarted = oracleStatuses.get(_oracle).lastStartedRound;
-    return (
-      _roundId > add(lastStarted, restartDelay) || lastStarted === BigInt(0)
-    );
+    return _roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
   };
 
   /**
@@ -470,9 +446,8 @@ const start = async zcf => {
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
    * @param {Instance} _oracle
-   * @returns {{ eligibleForSpecificRound: boolean, queriedRoundId: bigint, oracleStatus: bigint, startedAt: bigint, roundTimeout: number, oracleCount: number }}
    */
-  const oracleRoundStateSuggestRound = _oracle => {
+  const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
     const oracle = oracleStatuses.get(_oracle);
 
     const shouldSupersede =
@@ -481,7 +456,7 @@ const start = async zcf => {
     // Instead of nudging oracleStatuses to submit to the next round, the inclusion of
     // the shouldSupersede Boolean in the if condition pushes them towards
     // submitting in a currently open round.
-    const canSupersede = supersedable(reportingRoundId);
+    const canSupersede = supersedable(reportingRoundId, blockTimestamp);
 
     let roundId;
     let eligibleToSubmit;
@@ -505,7 +480,7 @@ const start = async zcf => {
       roundTimeout = 0;
     }
 
-    const error = validateOracleRound(_oracle, roundId);
+    const error = validateOracleRound(_oracle, roundId, blockTimestamp);
     if (error.length !== 0) {
       eligibleToSubmit = false;
     }
@@ -523,10 +498,9 @@ const start = async zcf => {
   /**
    * @param {Instance} _oracle
    * @param {bigint} _queriedRoundId
-   * @returns {boolean}
    */
-  const eligibleForSpecificRound = (_oracle, _queriedRoundId) => {
-    const error = validateOracleRound(_oracle, _queriedRoundId);
+  const eligibleForSpecificRound = (_oracle, _queriedRoundId, blockTimestamp) => {
+    const error = validateOracleRound(_oracle, _queriedRoundId, blockTimestamp);
     if (rounds.get(_queriedRoundId).startedAt > 0) {
       return acceptingSubmissions(_queriedRoundId) && error.length === 0;
     } else {
@@ -536,12 +510,11 @@ const start = async zcf => {
 
   /**
    * @param {Instance} _oracle
-   * @returns {bigint}
    */
   const getStartingRound = _oracle => {
     const currentRound = reportingRoundId;
     if (
-      currentRound !== BigInt(0) &&
+      currentRound !== 0n &&
       currentRound === oracleStatuses.get(_oracle).endingRound
     ) {
       return currentRound;
@@ -590,20 +563,29 @@ const start = async zcf => {
         const oracleStatus = makeOracleStatus(
           /* startingRound = */ getStartingRound(oracleInstance),
           /* endingRound = */ ROUND_MAX,
-          /* lastReportedRound = */ BigInt(0),
-          /* lastStartedRound = */ BigInt(0),
-          /* latestSubmission = */ BigInt(0),
+          /* lastReportedRound = */ 0n,
+          /* lastStartedRound = */ 0n,
+          /* latestSubmission = */ 0n,
           /* index = */ oracleStatuses.keys().length,
         );
         oracleStatuses.init(oracleInstance, oracleStatus);
       }
       records.add(record);
 
-      const pushResult = async (_roundIdRaw, _submissionRaw) => {
-        const roundId = Nat(_roundIdRaw);
+      const pushResult = async ({ roundId: _roundIdRaw = undefined, data: _submissionRaw }) => {
         const parsedSubmission = Nat(parseInt(_submissionRaw, 10));
+        const blockTimestamp = await E(timer).getCurrentTimestamp();
 
-        const error = validateOracleRound(oracleInstance, roundId);
+        let roundId;
+        if (_roundIdRaw === undefined) {
+          let suggestedRound = oracleRoundStateSuggestRound(oracleInstance, blockTimestamp);
+          console.log(suggestedRound)
+          roundId = suggestedRound.queriedRoundId;
+        } else {
+          roundId = Nat(_roundIdRaw);
+        }
+        
+        const error = validateOracleRound(oracleInstance, roundId, blockTimestamp);
         if (!(parsedSubmission >= minSubmissionValue)) {
           console.error('value below minSubmissionValue');
           return;
@@ -619,7 +601,7 @@ const start = async zcf => {
           return;
         }
 
-        oracleInitializeNewRound(roundId, oracleInstance);
+        oracleInitializeNewRound(roundId, oracleInstance, blockTimestamp);
         const recorded = recordSubmission(
           parsedSubmission,
           roundId,
@@ -629,7 +611,7 @@ const start = async zcf => {
           return;
         }
 
-        updateRoundAnswer(roundId);
+        updateRoundAnswer(roundId, blockTimestamp);
         deleteRoundDetails(roundId);
       };
 
@@ -682,7 +664,6 @@ const start = async zcf => {
      * and was completed regularly.
      *
      * @param {bigint} _roundIdRaw
-     * @returns {Promise<{ roundId: bigint; answer: number; startedAt: bigint; updatedAt: bigint; answeredInRound: bigint; }>}
      */
     async getRoundData(_roundIdRaw) {
       const roundId = Nat(_roundIdRaw);
@@ -708,9 +689,9 @@ const start = async zcf => {
      *
      * @param {Instance} _oracle
      * @param {bigint} _queriedRoundId
-     * @returns Promise<{{ eligibleForSpecificRound: boolean, queriedRoundId: bigint, oracleStatus: bigint, startedAt: bigint, roundTimeout: number, oracleCount: number }}>
      */
     async oracleRoundState(_oracle, _queriedRoundId) {
+      const blockTimestamp = await E(timer).getCurrentTimestamp();
       if (_queriedRoundId > 0) {
         const round = rounds.get(_queriedRoundId);
         const detail = details.get(_queriedRoundId);
@@ -718,6 +699,7 @@ const start = async zcf => {
           eligibleForSpecificRound: eligibleForSpecificRound(
             _oracle,
             _queriedRoundId,
+            blockTimestamp
           ),
           queriedRoundId: _queriedRoundId,
           oracleStatus: oracleStatuses.get(_oracle).latestSubmission,
@@ -726,7 +708,7 @@ const start = async zcf => {
           oracleCount: oracleCount(),
         };
       } else {
-        return oracleRoundStateSuggestRound(_oracle);
+        return oracleRoundStateSuggestRound(_oracle, blockTimestamp);
       }
     },
   });
