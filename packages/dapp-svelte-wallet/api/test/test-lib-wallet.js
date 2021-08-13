@@ -1298,6 +1298,6 @@ test('getZoe, getBoard', async t => {
   });
   await initialized;
 
-  t.is(await E(wallet).getZoe(), zoe);
+  t.is(await E(wallet).getZoe(), await zoe);
   t.is(await E(wallet).getBoard(), board);
 });
