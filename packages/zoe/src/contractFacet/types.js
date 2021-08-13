@@ -39,9 +39,11 @@
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
  * @property {MakeZCFMint} makeZCFMint
+ * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => void} stopAcceptingOffers
+ * @property {() => Instance} getInstance
  */
 
 /**
@@ -105,6 +107,14 @@
  * @param {AssetKind=} assetKind
  * @param {AdditionalDisplayInfo=} displayInfo
  * @returns {Promise<ZCFMint>}
+ */
+
+/**
+ * @callback ZCFRegisterFeeMint
+ * @param {Keyword} keyword
+ * @param {FeeMintAccess} allegedFeeMintAccess - an object that
+ * purports to be the object that grants access to the fee mint
+ * @returns {Promise<ZCFMint>
  */
 
 /**

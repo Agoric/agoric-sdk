@@ -20,7 +20,14 @@ const setupBasicMints = () => {
   });
 };
 
-const makeVats = (log, vats, zoe, installations, startingValues) => {
+const makeVats = (
+  log,
+  vats,
+  zoe,
+  installations,
+  startingValues,
+  feeMintAccess,
+) => {
   const timer = buildManualTimer(console.log, 0n, ONE_DAY);
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
@@ -46,6 +53,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
     installations,
     timer,
     vats.priceAuthority,
+    feeMintAccess,
   );
 
   const result = { aliceP, treasuryPublicFacet };
@@ -59,7 +67,9 @@ function makeBootstrap(argv, cb, vatPowers) {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,
     );
-    const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
+    const { zoeService: zoe, feeMintAccess } = await E(vats.zoe).buildZoe(
+      vatAdminSvc,
+    );
     const [liquidateMinimum, autoswap, treasury] = await Promise.all([
       E(zoe).install(cb.liquidateMinimum),
       E(zoe).install(cb.autoswap),
@@ -75,6 +85,7 @@ function makeBootstrap(argv, cb, vatPowers) {
       zoe,
       installations,
       startingValues,
+      feeMintAccess,
     );
 
     await E(aliceP).startTest(testName, treasuryPublicFacet);
