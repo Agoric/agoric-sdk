@@ -130,6 +130,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   const it = xsnap({ ...options, handleCommand });
 
   return freeze({
+    name: it.name,
     isReady: async () => {
       nextFile('isReady');
       return it.isReady();

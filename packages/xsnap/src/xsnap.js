@@ -315,6 +315,7 @@ export function xsnap(options) {
   }
 
   return freeze({
+    name,
     issueCommand,
     issueStringCommand,
     isReady,
