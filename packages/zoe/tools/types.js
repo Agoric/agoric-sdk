@@ -14,7 +14,7 @@
  * @typedef {Object} PriceDescription A description of a single quote
  * @property {Amount} amountIn The amount supplied to a trade
  * @property {Amount} amountOut The quoted result of trading `amountIn`
- * @property {TimerService} timer The service that gave the `timestamp`
+ * @property {ERef<TimerService>} timer The service that gave the `timestamp`
  * @property {Timestamp} timestamp A timestamp according to `timer` for the
  * quote
  * @property {any=} conditions Additional conditions for the quote
