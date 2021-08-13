@@ -8,6 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
 import { E } from '@agoric/eventual-send';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
@@ -20,7 +21,8 @@ const contractRoot = `${dirname}/useObjExample.js`;
 test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

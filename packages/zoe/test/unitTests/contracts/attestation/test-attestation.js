@@ -10,6 +10,7 @@ import { Far } from '@agoric/marshal';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { makeAndApplyFeePurse } from '../../../../src/applyFeePurse.js';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
@@ -22,7 +23,8 @@ const attestationRoot = `${dirname}/../../../../src/contracts/attestation/attest
 test('attestation contract basic tests', async t => {
   const bundle = await bundleSource(attestationRoot);
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   const installation = await E(zoe).install(bundle);
 
   const bldIssuerKit = makeIssuerKit('BLD', AssetKind.NAT, {

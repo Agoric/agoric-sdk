@@ -7,6 +7,7 @@ import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
@@ -20,7 +21,8 @@ const contractRoot = `${dirname}/escrowToVote.js`;
 test('zoe - escrowToVote', async t => {
   t.plan(14);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

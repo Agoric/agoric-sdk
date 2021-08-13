@@ -18,6 +18,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 /**
  * @callback MakeFakePriceOracle
@@ -48,7 +49,8 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
     // Pack the contracts.
     const oracleBundle = await bundleSource(oraclePath);

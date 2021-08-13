@@ -35,7 +35,7 @@ test('autoSwap API interactions, no jig', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, autoswap);
 
   // Setup Alice
@@ -97,7 +97,7 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
   // Bob claims it
-  const bobExclInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
   const bobInstance = await E(zoe).getInstance(bobExclInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
   t.is(bobInstallation, installation, `installation`);

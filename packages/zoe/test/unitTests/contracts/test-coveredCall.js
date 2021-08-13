@@ -280,8 +280,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // contract instance that he expects as well as that Alice has
   // already escrowed.
 
-  const invitationIssuer = zoe.getInvitationIssuer();
-  const bobExclOption = await invitationIssuer.claim(optionP);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
@@ -420,10 +420,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // party in the covered call: Did the covered call use the
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await invitationIssuer.claim(optionP);
-  const optionAmount = await invitationIssuer.getAmountOf(bobExclOption);
+  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
@@ -446,7 +446,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Bob wants to swap an invitation with the same amount as his
   // current invitation from Alice. He wants 1 buck in return.
   const bobProposalSwap = harden({
-    give: { Asset: await invitationIssuer.getAmountOf(bobExclOption) },
+    give: { Asset: await E(invitationIssuer).getAmountOf(bobExclOption) },
     want: { Price: bucks(1) },
   });
 
@@ -467,9 +467,9 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   const {
     value: [{ instance: swapInstance, installation: daveSwapInstallId }],
-  } = await invitationIssuer.getAmountOf(daveSwapInvitationP);
+  } = await E(invitationIssuer).getAmountOf(daveSwapInvitationP);
 
-  const daveSwapIssuers = zoe.getIssuers(swapInstance);
+  const daveSwapIssuers = await E(zoe).getIssuers(swapInstance);
 
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
@@ -561,7 +561,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   );
 
   t.deepEqual(
-    await invitationIssuer.getAmountOf(bobInvitationPayout),
+    await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
   t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1));
@@ -670,8 +670,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // party in the covered call: Did the covered call use the
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
-  const invitationIssuer = zoe.getInvitationIssuer();
-  const bobExclOption = await invitationIssuer.claim(optionP);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
@@ -694,7 +694,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // current invitation from Alice. He wants 1 buck in return.
   const bobProposalSecondCoveredCall = harden({
     give: {
-      UnderlyingAsset: await invitationIssuer.getAmountOf(bobExclOption),
+      UnderlyingAsset: await E(invitationIssuer).getAmountOf(bobExclOption),
     },
     want: { StrikePrice: bucks(1) },
     exit: {
@@ -722,7 +722,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
   // checks that this invitation matches what he wants
-  const daveExclOption = await invitationIssuer.claim(invitationForDaveP);
+  const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
@@ -829,7 +829,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   const invitationBrand = await E(invitationIssuer).getBrand();
   t.deepEqual(
-    await invitationIssuer.getAmountOf(bobInvitationPayout),
+    await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
   t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1));
@@ -929,8 +929,8 @@ test('zoe - coveredCall non-fungible', async t => {
   // contract instance that he expects as well as that Alice has
   // already escrowed.
 
-  const invitationIssuer = zoe.getInvitationIssuer();
-  const bobExclOption = await invitationIssuer.claim(optionP);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');

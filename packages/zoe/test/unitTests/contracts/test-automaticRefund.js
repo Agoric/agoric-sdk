@@ -95,7 +95,7 @@ test('zoe with automaticRefund', async t => {
   t.plan(11);
   // Setup zoe and mints
   const { moolaR, simoleanR, moola, simoleans, zoe } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3));
@@ -148,7 +148,7 @@ test('zoe with automaticRefund', async t => {
   // will do a claim on the invitation with the Zoe invitation issuer and
   // will check that the installation and terms match what he
   // expects
-  const exclusBobInvitation = await invitationIssuer.claim(bobInvitation);
+  const exclusBobInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   const {
     value: [bobInvitationValue],

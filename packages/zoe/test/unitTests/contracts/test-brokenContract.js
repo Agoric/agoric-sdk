@@ -6,6 +6,7 @@ import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 // noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -21,7 +22,8 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installation = await zoe.install(bundle);

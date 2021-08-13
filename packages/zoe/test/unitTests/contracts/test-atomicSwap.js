@@ -91,7 +91,7 @@ test('zoe - atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await invitationIssuer.claim(untrustedInvitation);
+        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
         t.is(
           invitationValue.installation,
@@ -253,7 +253,7 @@ test('zoe - non-fungible atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await invitationIssuer.claim(untrustedInvitation);
+        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.is(
@@ -340,7 +340,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
   const { moolaIssuer, moolaMint, moola, zoe } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
@@ -385,12 +385,14 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitationP);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(
+    bobInvitationP,
+  );
   const bobInvitationValue = await E(zoe).getInvitationDetails(
     bobExclusiveInvitation,
   );
 
-  const bobIssuers = zoe.getIssuers(bobInvitationValue.instance);
+  const bobIssuers = await E(zoe).getIssuers(bobInvitationValue.instance);
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });

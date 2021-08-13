@@ -16,6 +16,7 @@ import {
   swapExact,
 } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -27,7 +28,8 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
+  const { zoeService } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

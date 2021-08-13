@@ -6,13 +6,15 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import bundleSource from '@agoric/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeAndApplyFeePurse } from '@agoric/zoe/src/applyFeePurse.js';
 
 import '../../exported.js';
 
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   let addedInstallation;
 

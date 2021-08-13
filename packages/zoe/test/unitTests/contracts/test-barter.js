@@ -27,7 +27,7 @@ test('barter with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
@@ -72,7 +72,7 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await invitationIssuer.claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);

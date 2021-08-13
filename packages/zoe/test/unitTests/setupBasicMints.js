@@ -2,6 +2,7 @@
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
+import { makeAndApplyFeePurse } from '../../src/applyFeePurse.js';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
 
@@ -21,7 +22,8 @@ const setup = () => {
     brands.init(k, allBundles[k].brand);
   }
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   const makeSimpleMake = brand => value => AmountMath.make(value, brand);
 

@@ -7,6 +7,7 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
+import { makeAndApplyFeePurse } from '../../../../src/applyFeePurse.js';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
@@ -36,7 +37,8 @@ test('test bug scenario', async t => {
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
@@ -123,7 +125,8 @@ const conductTrade = async (t, reduceWantOutBP = 30n) => {
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);

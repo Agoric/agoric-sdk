@@ -9,6 +9,7 @@ import path from 'path';
 // noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeAndApplyFeePurse } from '../../../src/applyFeePurse.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -23,7 +24,8 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
+  const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(

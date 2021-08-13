@@ -133,7 +133,7 @@ const makeBob = (
   return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -184,7 +184,7 @@ const makeBob = (
     },
     offerExpired: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -234,7 +234,7 @@ const makeBob = (
     },
     offerWantTooMuch: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -296,7 +296,7 @@ const makeBob = (
     },
     offerNotCovered: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await invitationIssuer.claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,

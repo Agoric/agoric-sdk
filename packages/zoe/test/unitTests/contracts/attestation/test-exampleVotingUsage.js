@@ -9,6 +9,7 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
+import { makeAndApplyFeePurse } from '../../../../src/applyFeePurse.js';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
@@ -23,7 +24,8 @@ const exampleVotingUsageRoot = `${dirname}/exampleVotingUsage.js`;
 test('exampleVotingUsage', async t => {
   const bundle = await bundleSource(exampleVotingUsageRoot);
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeAndApplyFeePurse(zoeService);
   const installation = await E(zoe).install(bundle);
 
   const bldIssuerKit = makeIssuerKit('BLD', AssetKind.NAT, {
