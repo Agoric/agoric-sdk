@@ -7,21 +7,22 @@ import { Far } from '@agoric/marshal';
  * Partially apply an already existing feePurse to Zoe methods.
  *
  * @param {ERef<ZoeServiceFeePurseRequired>} zoe
- * @param {ERef<FeePurse>} feePurse
+ * @param {ERef<FeePurse>} defaultFeePurse
  * @returns {ZoeService}
  */
-const applyFeePurse = (zoe, feePurse) => {
+const applyFeePurse = (zoe, defaultFeePurse) => {
   return Far('zoeService', {
     makeFeePurse: (...args) => E(zoe).makeFeePurse(...args),
 
     // A feePurse is required
-    install: (bundle, _overriddenFeePurse) => E(zoe).install(bundle, feePurse),
+    install: (bundle, feePurse = defaultFeePurse) =>
+      E(zoe).install(bundle, feePurse),
     startInstance: (
       installation,
       issuerKeywordRecord,
       terms,
       privateArgs,
-      _overriddenFeePurse,
+      feePurse = defaultFeePurse,
     ) =>
       E(zoe).startInstance(
         installation,
@@ -35,7 +36,7 @@ const applyFeePurse = (zoe, feePurse) => {
       proposal,
       paymentKeywordRecord,
       offerArgs,
-      _overriddenFeePurse,
+      feePurse = defaultFeePurse,
     ) =>
       E(zoe).offer(
         invitation,
@@ -44,7 +45,7 @@ const applyFeePurse = (zoe, feePurse) => {
         offerArgs,
         feePurse,
       ),
-    getPublicFacet: (instance, _overriddenFeePurse) =>
+    getPublicFacet: (instance, feePurse = defaultFeePurse) =>
       E(zoe).getPublicFacet(instance, feePurse),
 
     // The functions below are getters only and have no impact on
