@@ -1267,25 +1267,33 @@
   resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"
   integrity sha512-kBJtf7PH6aWwZ6fka3zQ0p6SBYzx4fl1LoZXE2RrnYST9Xljm7WfKJrU4g/Xr3Beg72MLrp1AWNUmuYJTL7Cow==
 
-"@endo/base64@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.5.tgz#4c6980ac3db80d31b2263f96496d019ff3e29af2"
-  integrity sha512-P+SMOnuCnXFDQTMCv8PPf0CJ/GExIWON7+JUJXZxP4emdECUT2CoL4J3sCHlLDm5FIVhzPK5+OuXKx4WYgXKRg==
+"@endo/base64@^0.2.6":
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.6.tgz#f6e5e00ba64b86cb53b509d6539edd28861114dc"
+  integrity sha512-K1isavDXkoRdqnv5jqwIii0JXLJO7tqXsZb3GRPBfivIBSkHeVlZd7wnrj16SYLhxt5L5Ptzhse6WCv6xPwdfQ==
 
-"@endo/cjs-module-analyzer@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.5.tgz#c55d3d5a1e251245af1ec713611c44afa1dc8969"
-  integrity sha512-7r6juw6OySbI1mfNgfU3EyaOOqPXiuo6911DX56mR/FLUBtCT3uucvdSJSsQc50+tOV6tUgx+Vv0c2mLtPS/9w==
+"@endo/cjs-module-analyzer@^0.2.6":
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.6.tgz#78750dfcc64ffd92b983e97d565fa81395dd9adb"
+  integrity sha512-8MjTSrZVAEt47kSnlTfu/tgkuBy+8iSIztte5ANL6ZV15YCtjCieufNd+NENsq8/xCovCkfHdTPKm13ajLvWBw==
 
-"@endo/compartment-mapper@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@endo/compartment-mapper/-/compartment-mapper-0.5.0.tgz#0e3a87636e71c0e04c42a171f68887c1f4c083dc"
-  integrity sha512-hElbsnEkc6afwZIPhaiTp48hp7dIZa6A64G9iYrgFn1/3X5Ivls5Z7bfZnq07pRdbf2MAVMR0Egt6O/ELLgLzw==
+"@endo/compartment-mapper@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@endo/compartment-mapper/-/compartment-mapper-0.5.1.tgz#df0c80778e794b754da18fda3cdfac848edf9a46"
+  integrity sha512-bZSOAjF2LrApQDq81o+v87lLbc1ASStGuVVOgBzozTk/7J88oQkA8izOn4iMpOROZDrTOip3yZB5CQldaozVAg==
   dependencies:
-    "@endo/cjs-module-analyzer" "^0.2.5"
-    "@endo/static-module-record" "^0.6.0"
-    "@endo/zip" "^0.2.5"
-    ses "^0.14.0"
+    "@endo/cjs-module-analyzer" "^0.2.6"
+    "@endo/static-module-record" "^0.6.1"
+    "@endo/zip" "^0.2.6"
+    ses "^0.14.1"
+
+"@endo/eslint-config@^0.3.13":
+  version "0.3.13"
+  resolved "https://registry.yarnpkg.com/@endo/eslint-config/-/eslint-config-0.3.13.tgz#f37d0c44d7017e8c6e4d05781fa82fcd34d6cadd"
+  integrity sha512-D5OY+0effPGY6xobJZOqtgTqTRK++1Zzor+fblPWVmJCvwI11CQ/J663GZjonn3zYdW8jVIdvR5KiDbArvGHXw==
+  dependencies:
+    "@endo/eslint-plugin" "^0.3.9"
+    "@jessie.js/eslint-plugin" "^0.1.1"
 
 "@endo/eslint-config@^0.3.9":
   version "0.3.12"
@@ -1301,24 +1309,31 @@
   dependencies:
     requireindex "~1.1.0"
 
-"@endo/ses-ava@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.5.tgz#0ecfe3394386245f03b231dec481865c11cb60b7"
-  integrity sha512-yyha0ahW2qtUgA13VFr6K/AcSaivyrPvSx3uP4ulL8T6Bu3pFoyepjFuh/rjdXPjYuDXfEiVBtsEDk4r14grpw==
+"@endo/eslint-plugin@^0.3.9":
+  version "0.3.9"
+  resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.3.9.tgz#cdce52ae0f3ea2646e62e550bdcbb1b53582232c"
+  integrity sha512-V0rNNJehNhppUMMv5dUwvUa7uvXh+IdQ+CdtXAOY/XT9ZqJkJiC9R4KgwkaoWopyS4Bgj8ycw9lG/Y6Ao+CuKA==
   dependencies:
-    ses "^0.14.0"
+    requireindex "~1.1.0"
 
-"@endo/static-module-record@^0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@endo/static-module-record/-/static-module-record-0.6.0.tgz#4de8945ab729c7a81fd8677936a24b82b202965d"
-  integrity sha512-9XJp+KfrkQiyJ7SUTmE2nx/eRRk7Gc3nlTSw/7Y7kuPCkKbPevBKavKzN5T8FN6LMj+HQkJF8qcaL60/YWbsNQ==
+"@endo/ses-ava@^0.2.6":
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.6.tgz#f6d441b240cd84b5194b5a74a159d72d7e42df63"
+  integrity sha512-Sh2wpBzujrph1U4gvZ5Q7YNzRCvON2OPbXN065qDr1+oerWgjpLG3tbArt0JoTOMUz2nTUhzViB2AiKEequuMQ==
+  dependencies:
+    ses "^0.14.1"
+
+"@endo/static-module-record@^0.6.1":
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/@endo/static-module-record/-/static-module-record-0.6.1.tgz#f645433233be66bfc76494204649548fa21fe668"
+  integrity sha512-qHBwJFitRUzQ1tNPMu2jSwSB+RL4PopgPVATfl8dX4XqoAyUCMV+Mz8nqFjzzK4q8f8zQbvuDfPY6mmzuR4u7A==
   dependencies:
     "@agoric/babel-standalone" "^7.14.3"
 
-"@endo/zip@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-0.2.5.tgz#1986900d8bebec6d6ae076aad23ddd69a13673e0"
-  integrity sha512-JW/f9uiCtwfAW0ZyxjC+C8p5MGhrVmxT2TZ4hQNX4hvg8Lignk/vxdarw7QMa5W2zmZt/5oY6hFBMIq6SAcGJQ==
+"@endo/zip@^0.2.6":
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-0.2.6.tgz#d8a85ca1cac77ecfef381b6ddb9c56c79029b081"
+  integrity sha512-K/CQxn6l+xDFm4wCnDVzGcNfVswVMhhRmr2GvsQnu79m1pto0okNkHt0WokRu4mOqHlIl0FKrivWOtX6D0aERg==
 
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"
@@ -1435,7 +1450,7 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.2.tgz#26520bf09abe4a5644cd5414e37125a8954241dd"
   integrity sha512-tsAQNx32a8CoFhjhijUIhI4kccIAgmGhy8LZMZgGfmXcpMbPRUqn5LWmgRttILi6yeGmBJd2xsPkFMs0PzgPCw==
 
-"@jessie.js/eslint-plugin@^0.1.3":
+"@jessie.js/eslint-plugin@^0.1.1", "@jessie.js/eslint-plugin@^0.1.3":
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@jessie.js/eslint-plugin/-/eslint-plugin-0.1.3.tgz#4df87d639dbc8ffb4c0b0168de1311b7f522cc75"
   integrity sha512-wyx/Wz/5gx87GRijQ3U6XGBYh9AnJdkw5pNgz0xZrLv6a6+l/t1p/7AeqYeolu5nDPuic/jSxfybkcWgYaP7UA==
@@ -11464,10 +11479,10 @@ serve-static@1.14.1:
     parseurl "~1.3.3"
     send "0.17.1"
 
-ses@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.14.0.tgz#d71a5ccac8e9054155c7e63a52325e924edd3b41"
-  integrity sha512-LQPb6IS19K12Osvndmu7lHoJVuYyxPPBAUSZlcVeOmHF4LMzjT8vIVoMYLyk4LHvmt6wBbrJph9JkIiD1+femQ==
+ses@^0.14.1:
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/ses/-/ses-0.14.1.tgz#d994307866771e9d8dcdc23462e99fd992123c15"
+  integrity sha512-7U8l9NBNd4E02uCB4DxtvobCxqmgm8FjOzhSe26xQa22RMVRMkmsS1thkU225KWSaomh+9JS0i1cK6IxMCKm5g==
 
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
