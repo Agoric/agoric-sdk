@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/client/cli"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/client/rest"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 
@@ -90,7 +89,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 // Register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
 }
 
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
