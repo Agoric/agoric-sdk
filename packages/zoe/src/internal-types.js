@@ -135,7 +135,7 @@
  */
 
 /**
- * @callback MakeZoeMintPremadeKit
+ * @callback WrapIssuerKitWithZoeMint
  * @param {Keyword} keyword - the keyword to use for the issuer
  * @param {IssuerKit} localIssuerKit - an issuer kit that originates
  * within Zoe

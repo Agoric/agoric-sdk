@@ -107,8 +107,8 @@ export const makeZoeStorageManager = (createZCFVat, getFeeIssuerKit) => {
       return issuerRecord;
     };
 
-    /** @type {MakeZoeMintPremadeKit} */
-    const makeZoeMintPremadeKit = (keyword, localIssuerKit) => {
+    /** @type {WrapIssuerKitWithZoeMint} */
+    const wrapIssuerKitWithZoeMint = (keyword, localIssuerKit) => {
       const {
         mint: localMint,
         issuer: localIssuer,
@@ -168,13 +168,13 @@ export const makeZoeStorageManager = (createZCFVat, getFeeIssuerKit) => {
         // eslint-disable-next-line no-use-before-define
         adminNode.terminateWithFailure,
       );
-      return makeZoeMintPremadeKit(keyword, localIssuerKit);
+      return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
     };
 
     /** @type {RegisterFeeMint} */
     const registerFeeMint = (keyword, allegedFeeMintAccess) => {
       const feeIssuerKit = getFeeIssuerKit(allegedFeeMintAccess);
-      return makeZoeMintPremadeKit(keyword, feeIssuerKit);
+      return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit);
     };
 
     /** @type {GetIssuerRecords} */
