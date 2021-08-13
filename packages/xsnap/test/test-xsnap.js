@@ -1,14 +1,16 @@
-/* global setTimeout, __filename */
+/* global setTimeout, WeakRef, setImmediate, process */
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
 import * as proc from 'child_process';
 import * as os from 'os';
+import fs, { unlinkSync } from 'fs';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
+import { recordXSnap } from '../src/replay.js';
 import { ExitCode, ErrorCode } from '../api.js';
 
 import { options, decode, encode, loader } from './message-tools.js';
@@ -332,4 +334,84 @@ test('normal close of pathological script', async t => {
   await Promise.race([vat.close().then(() => t.fail()), hang, delay(10)]);
   await vat.terminate();
   await hang;
+});
+
+async function runToGC() {
+  const trashCan = [{}];
+  const wr = new WeakRef(trashCan[0]);
+  trashCan[0] = undefined;
+
+  let qty;
+  for (qty = 0; wr.deref(); qty += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(setImmediate);
+    trashCan[1] = Array(10_000).map(() => ({}));
+  }
+  return qty;
+}
+
+function pickXSnap(env = process.env) {
+  let doXSnap = xsnap;
+  const { XSNAP_TEST_RECORD } = env;
+  if (XSNAP_TEST_RECORD) {
+    console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
+    let serial = 0;
+    doXSnap = opts => {
+      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      serial += 1;
+      fs.mkdirSync(workerTrace, { recursive: true });
+      return recordXSnap(opts, workerTrace, {
+        writeFileSync: fs.writeFileSync,
+      });
+    };
+  }
+  return doXSnap;
+}
+
+test('GC after snapshot vs restore', async t => {
+  const xsnapr = pickXSnap();
+
+  const opts = { ...options(io), name: 'original', meteringLimit: 0 };
+  const worker = xsnapr(opts);
+  t.teardown(worker.terminate);
+
+  await worker.evaluate(`
+  globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  globalThis.runToGC = (${runToGC});
+  runToGC();
+  // bloat the heap
+  send(Array.from(Array(2_000_000).keys()).length)
+  `);
+
+  const nextGC = async (w, o) => {
+    await w.evaluate(`runToGC().then(send)`);
+    const workToGC = JSON.parse(o.messages.pop());
+    t.log({ name: w.name, workToGC });
+    return workToGC;
+  };
+
+  const beforeClone = await nextGC(worker, opts);
+
+  const snapshot = './bloated.xss';
+  await worker.snapshot(snapshot);
+  t.teardown(() => unlinkSync(snapshot));
+
+  const optClone = { ...options(io), name: 'clone', snapshot };
+  const clone = xsnapr(optClone);
+  t.log('cloned', { snapshot });
+  t.teardown(clone.terminate);
+
+  let workerGC = beforeClone;
+  let cloneGC = workerGC;
+  let iters = 0;
+
+  while (workerGC === cloneGC && iters < 3) {
+    // eslint-disable-next-line no-await-in-loop
+    workerGC = await nextGC(worker, opts);
+    // eslint-disable-next-line no-await-in-loop
+    cloneGC = await nextGC(clone, optClone);
+    iters += 1;
+  }
+  t.log({ beforeClone, workerGC, cloneGC, iters });
+  t.is(workerGC, cloneGC);
 });
