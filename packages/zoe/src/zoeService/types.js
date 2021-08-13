@@ -64,7 +64,6 @@
 
 /**
  * @callback BindDefaultFeePurse
- * // TODO Should this type be simply {FeePurse} without the ERef?
  * @param {ERef<FeePurse>} defaultFeePurse
  * @returns {ZoeService}
  */
