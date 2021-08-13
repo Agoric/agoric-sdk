@@ -58,7 +58,7 @@ To use Cosmos governance to change the `fee_epoch_duration_blocks` value:
 ```sh
 $ ag-cosmos-helper query vbank params
 {"fee_epoch_duration_blocks":"720"}
-$ cat <<\EOF > epoch-duration-proposal.json
+$ cat <<EOF > epoch-duration-proposal.json
 {
   "title": "Vbank param-change test",
   "description": "Decrease the fee disbursal epoch parameter to 30 blocks.",

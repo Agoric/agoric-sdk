@@ -244,6 +244,7 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Params queries params of the vbank module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// State queries current state of the vbank module.
 	State(ctx context.Context, in *QueryStateRequest, opts ...grpc.CallOption) (*QueryStateResponse, error)
 }
 
@@ -277,6 +278,7 @@ func (c *queryClient) State(ctx context.Context, in *QueryStateRequest, opts ...
 type QueryServer interface {
 	// Params queries params of the vbank module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// State queries current state of the vbank module.
 	State(context.Context, *QueryStateRequest) (*QueryStateResponse, error)
 }
 
