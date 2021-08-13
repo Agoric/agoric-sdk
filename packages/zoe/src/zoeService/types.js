@@ -38,6 +38,12 @@
  * @property {GetInvitationDetails} getInvitationDetails - return an
  * object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
+ * @property {GetFeeIssuer} getFeeIssuer
+ */
+
+/**
+ * @callback GetFeeIssuer
+ * @returns {Issuer}
  */
 
 /**
@@ -268,4 +274,11 @@
 /**
  * @typedef {Object} Installation
  * @property {() => SourceBundle} getBundle
+ */
+
+/**
+ * @typedef {Object} FeeIssuerConfig
+ * @property {string} name
+ * @property {AssetKind} assetKind
+ * @property {DisplayInfo} displayInfo
  */

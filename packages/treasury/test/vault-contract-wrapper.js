@@ -17,15 +17,16 @@ import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const BASIS_POINTS = 10000n;
 
-/** @param {ContractFacet} zcf */
-export async function start(zcf) {
+/** @type {ContractStartFn} */
+export async function start(zcf, privateArgs) {
   console.log(`contract started`);
+  assert.typeof(privateArgs.feeMintAccess, 'object');
 
   const collateralKit = makeIssuerKit('Collateral');
   const { brand: collateralBrand } = collateralKit;
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
-  const runMint = await zcf.makeZCFMint('RUN');
+  const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { zcfSeat: _collateralSt, userSeat: liqSeat } = zcf.makeEmptySeatKit();
