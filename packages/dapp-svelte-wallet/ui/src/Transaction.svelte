@@ -24,6 +24,16 @@
     return `${match[1]} ${match[2]}`;
   }
 
+  function cmp(a, b) {
+    if (a < b) {
+      return -1;
+    }
+    if (a > b) {
+      return 1;
+    }
+    return 0;
+  }
+
   const makeRejected = context => 
     function rejected(e) {
       // We expect our caller to see this result, so just log an error.
@@ -50,8 +60,10 @@
     instancePetname,
     instanceHandleBoardId,
     installationHandleBoardId,
+    feePursePetname,
     offerId,
     requestContext: { date, dappOrigin, origin = "unknown origin" } = {},
+    invitationDetails: { fee, expiry } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
   } = item);
 
@@ -99,18 +111,33 @@
 	<Debug title="Offer Detail" target={item} />
   </div>
   <div>
-    {#each Object.entries(give) as [role, { amount, pursePetname }], i}
+    {#each Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb)) as [role, { amount, pursePetname }], i}
       <div>
-        <h6>Give</h6>
+        <h6>Give {role}</h6>
         <Amount {amount} displayInfo={amount.displayInfo} /> from <Petname name={pursePetname} />
       </div>
     {/each}
-    {#each Object.entries(want) as [role, { amount, displayInfo, pursePetname }], i}
+    {#each Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb)) as [role, { amount, pursePetname }], i}
       <div>
-        <h6>Want</h6>
+        <h6>Want {role}</h6>
         <Amount {amount} displayInfo={amount.displayInfo} /> into <Petname name={pursePetname} />
       </div>
     {/each}
+    {#if fee}
+      <div>
+        <h6>Pay Fee</h6>
+        <Amount amount={fee} displayInfo={fee.displayInfo} />
+        {#if feePursePetname}
+          from <Petname name={feePursePetname} />
+        {/if}
+      </div>
+    {/if}
+    {#if expiry}
+      <div>
+        <h6>Expiry</h6>
+        {formatDateNow(parseFloat(expiry) * 1000)}
+      </div>
+    {/if}
   </div> 
   <div class="actions">
     {#if status === 'pending'}
