@@ -25,6 +25,7 @@ import { makeOffer } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
+import { setupMakeFeePurse } from './feePurse.js';
 
 /**
  * Create an instance of Zoe.
@@ -57,6 +58,8 @@ const makeZoeKit = (
     feeIssuerConfig,
     shutdownZoeVat,
   );
+
+  const { makeFeePurse } = setupMakeFeePurse(feeIssuer);
 
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
@@ -108,6 +111,7 @@ const makeZoeKit = (
     install,
     startInstance,
     offer,
+    makeFeePurse,
 
     // The functions below are getters only and have no impact on
     // state within Zoe

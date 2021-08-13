@@ -39,11 +39,21 @@
  * object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
+ * @property {MakeFeePurse} makeFeePurse
  */
 
 /**
  * @callback GetFeeIssuer
  * @returns {Issuer}
+ */
+
+/**
+ * @typedef {Purse} FeePurse
+ */
+
+/**
+ * @callback MakeFeePurse
+ * @returns {FeePurse}
  */
 
 /**
