@@ -219,6 +219,9 @@ export async function launch(
       type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
     });
+    if (setActivityhash) {
+      setActivityhash(controller.getActivityhash());
+    }
   }
 
   async function endBlock(blockHeight, blockTime) {
