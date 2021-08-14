@@ -15,8 +15,8 @@ else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
 endif
 
-submodule.env: ../xsnap/moddable/src/build.js
-	node ../xsnap/moddable/src/build.js --show-env >$@
+submodule.env: ../xsnap/src/build.js
+	node ../xsnap/src/build.js --show-env >$@
 
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
