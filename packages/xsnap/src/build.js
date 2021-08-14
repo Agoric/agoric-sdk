@@ -1,70 +1,236 @@
+#!/usr/bin/env node
 /* global process */
-import * as childProcess from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import os from 'os';
+// @ts-check
+import * as childProcessTop from 'child_process';
+import fsTop from 'fs';
+import osTop from 'os';
 
-function exec(command, cwd, args = []) {
-  const child = childProcess.spawn(command, args, {
-    cwd,
-    stdio: ['inherit', 'inherit', 'inherit'],
-  });
-  return new Promise((resolve, reject) => {
-    child.on('close', () => {
-      resolve();
+const { freeze } = Object;
+
+/** @param { string } path */
+const asset = path => new URL(path, import.meta.url).pathname;
+
+const ModdableSDK = {
+  MODDABLE: asset('../moddable'),
+  /** @type { Record<string, { path: string, make?: string }>} */
+  platforms: {
+    Linux: { path: 'lin' },
+    Darwin: { path: 'mac' },
+    Windows_NT: { path: 'win', make: 'nmake' },
+  },
+  buildGoals: ['release', 'debug'],
+};
+
+/**
+ * Adapt spawn to Promises style.
+ *
+ * @param {string} command
+ * @param {{
+ *   spawn: typeof import('child_process').spawn,
+ * }} io
+ */
+function makeCLI(command, { spawn }) {
+  /** @param { import('child_process').ChildProcess } child */
+  const wait = child =>
+    new Promise((resolve, reject) => {
+      child.on('close', () => {
+        resolve(undefined);
+      });
+      child.on('error', err => {
+        reject(new Error(`${command} error ${err}`));
+      });
+      child.on('exit', code => {
+        if (code !== 0) {
+          reject(new Error(`${command} exited with code ${code}`));
+        }
+      });
     });
-    child.on('error', err => {
-      reject(new Error(`${command} error ${err}`));
-    });
-    child.on('exit', code => {
-      if (code !== 0) {
-        reject(new Error(`${command} exited with code ${code}`));
-      }
-    });
+
+  return freeze({
+    /**
+     * @param {string[]} args
+     * @param {{ cwd?: string }=} opts
+     */
+    run: (args, opts) => {
+      const { cwd = '.' } = opts || {};
+      const child = spawn(command, args, {
+        cwd,
+        stdio: ['inherit', 'inherit', 'inherit'],
+      });
+      return wait(child);
+    },
+    /**
+     * @param {string[]} args
+     * @param {{ cwd?: string }=} opts
+     */
+    pipe: (args, opts) => {
+      const { cwd = '.' } = opts || {};
+      const child = spawn(command, args, {
+        cwd,
+        stdio: ['inherit', 'pipe', 'inherit'],
+      });
+      let output = '';
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', data => {
+        output += data.toString();
+      });
+      return wait(child).then(() => output);
+    },
   });
 }
 
-(async () => {
-  // Allow overriding of the checked-out version of the Moddable submodule.
-  const moddableCommitHash = process.env.MODDABLE_COMMIT_HASH;
-  const moddableUrl =
-    process.env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git';
+/**
+ * @param {string} path
+ * @param {string} repoUrl
+ * @param {{ git: ReturnType<typeof makeCLI> }} io
+ */
+const makeSubmodule = (path, repoUrl, { git }) => {
+  /** @param { string } text */
+  const parseStatus = text =>
+    text
+      .split('\n')
+      .map(line => line.split(' ', 4))
+      .map(([_indent, hash, statusPath, describe]) => ({
+        hash,
+        path: statusPath,
+        describe,
+      }));
 
-  if (moddableCommitHash) {
-    // Do the moral equivalent of submodule update when explicitly overriding.
-    if (!existsSync('moddable')) {
-      await exec('git', '.', [
-        'clone',
-        // NOTE: We need to depend on cloning from agoric-labs.
-        moddableUrl,
-        'moddable',
+  return freeze({
+    path,
+    clone: async () => git.run(['clone', repoUrl, path]),
+    /** @param { string } commitHash */
+    checkout: async commitHash =>
+      git.run(['checkout', commitHash], { cwd: path }),
+    init: async () => git.run(['submodule', 'update', '--init', '--checkout']),
+    status: async () =>
+      git.pipe(['submodule', 'status', path]).then(parseStatus),
+    /** @param { string } leaf */
+    config: async leaf => {
+      // git rev-parse --show-toplevel
+      const top = await git
+        .pipe(['rev-parse', '--show-toplevel'])
+        .then(l => l.trimEnd());
+      // assume full paths
+      const name = path.slice(top.length + 1);
+      // git config -f ../../.gitmodules --get submodule."$name".url
+      const value = await git
+        .pipe([
+          'config',
+          '-f',
+          `${top}/.gitmodules`,
+          '--get',
+          `submodule.${name}.${leaf}`,
+        ])
+        .then(l => l.trimEnd());
+      return value;
+    },
+  });
+};
+
+/**
+ * @param { string[] } args
+ * @param {{
+ *   env: Record<string, string | undefined>,
+ *   stdout: typeof process.stdout,
+ *   spawn: typeof import('child_process').spawn,
+ *   fs: {
+ *     existsSync: typeof import('fs').existsSync,
+ *     readFile: typeof import('fs').promises.readFile,
+ *   },
+ *   os: {
+ *     type: typeof import('os').type,
+ *   }
+ * }} io
+ */
+async function main(args, { env, stdout, spawn, fs, os }) {
+  const git = makeCLI('git', { spawn });
+
+  const submodules = [
+    {
+      url: env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git',
+      path: ModdableSDK.MODDABLE,
+      commitHash: env.MODDABLE_COMMIT_HASH,
+      envPrefix: 'MODDABLE_',
+    },
+    {
+      url:
+        env.XSNAP_NATIVE_URL || 'https://github.com/agoric-labs/xsnap-pub.git',
+      path: asset('../xsnap-native'),
+      commitHash: env.XSNAP_NATIVE_COMMIT_HASH,
+      envPrefix: 'XSNAP_NATIVE_',
+    },
+  ];
+
+  if (args.includes('--show-env')) {
+    for (const { path, envPrefix } of submodules) {
+      const submodule = makeSubmodule(path, '?', { git });
+      // eslint-disable-next-line no-await-in-loop
+      const [[{ hash }], url] = await Promise.all([
+        submodule.status(),
+        submodule.config('url'),
       ]);
+      stdout.write(`${envPrefix}URL=${url}\n`);
+      stdout.write(`${envPrefix}COMMIT_HASH=${hash}\n`);
     }
-    await exec('git', 'moddable', ['checkout', moddableCommitHash]);
-  } else {
-    await exec('git', '.', ['submodule', 'update', '--init', '--checkout']);
+    return;
   }
 
-  const pjson = readFileSync(
-    new URL('../package.json', import.meta.url).pathname,
-    'utf-8',
-  );
-  const pkg = JSON.parse(pjson);
-  const XSNAP_VERSION = `XSNAP_VERSION=${pkg.version}`;
+  for (const { url, path, commitHash } of submodules) {
+    const submodule = makeSubmodule(path, url, { git });
 
-  // Run command depending on the OS
-  if (os.type() === 'Linux') {
-    await exec('make', 'makefiles/lin', [XSNAP_VERSION]);
-    await exec('make', 'makefiles/lin', ['GOAL=debug', XSNAP_VERSION]);
-  } else if (os.type() === 'Darwin') {
-    await exec('make', 'makefiles/mac', [XSNAP_VERSION]);
-    await exec('make', 'makefiles/mac', ['GOAL=debug', XSNAP_VERSION]);
-  } else if (os.type() === 'Windows_NT') {
-    await exec('nmake', 'makefiles/win', [XSNAP_VERSION]);
-    await exec('make', 'makefiles/win', ['GOAL=debug', XSNAP_VERSION]);
-  } else {
+    // Allow overriding of the checked-out version of the submodule.
+    if (commitHash) {
+      // Do the moral equivalent of submodule update when explicitly overriding.
+      if (!fs.existsSync(submodule.path)) {
+        // eslint-disable-next-line no-await-in-loop
+        await submodule.clone();
+      }
+      submodule.checkout(commitHash);
+    } else {
+      // eslint-disable-next-line no-await-in-loop
+      await submodule.init();
+    }
+  }
+
+  const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
+  const pkg = JSON.parse(pjson);
+
+  const platform = ModdableSDK.platforms[os.type()];
+  if (!platform) {
     throw new Error(`Unsupported OS found: ${os.type()}`);
   }
-})().catch(e => {
+
+  const make = makeCLI(platform.make || 'make', { spawn });
+  for (const goal of ModdableSDK.buildGoals) {
+    // eslint-disable-next-line no-await-in-loop
+    await make.run(
+      [
+        `MODDABLE=${ModdableSDK.MODDABLE}`,
+        `GOAL=${goal}`,
+        `XSNAP_VERSION=${pkg.version}`,
+        '-f',
+        'xsnap-worker.mk',
+      ],
+      {
+        cwd: `xsnap-native/xsnap/makefiles/${platform.path}`,
+      },
+    );
+  }
+}
+
+main(process.argv.slice(2), {
+  env: { ...process.env },
+  stdout: process.stdout,
+  spawn: childProcessTop.spawn,
+  fs: {
+    readFile: fsTop.promises.readFile,
+    existsSync: fsTop.existsSync,
+  },
+  os: {
+    type: osTop.type,
+  },
+}).catch(e => {
   console.error(e);
   process.exit(1);
 });

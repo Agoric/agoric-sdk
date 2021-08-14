@@ -14,17 +14,15 @@ jobs:
       run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
-    - name: Save MODDABLE_COMMIT_HASH, MODDABLE_URL
+    - name: Save commit hash, url of submodules to environment
       run: |
-        git submodule status packages/xsnap/moddable | \
-        sed -ne 's/^.\([^ ]*\).*/MODDABLE_COMMIT_HASH=\1/p' >> $GITHUB_ENV
-        sed -ne 's!^.*url = \(https://.*moddable\.git\).*!MODDABLE_URL=\1!p' .gitmodules >> $GITHUB_ENV
+        node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
     - name: Build SDK image
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: agoric/agoric-sdk
         dockerfile: packages/deployment/Dockerfile.sdk
-        buildargs: MODDABLE_COMMIT_HASH,MODDABLE_URL,GIT_REVISION
+        buildargs: MODDABLE_COMMIT_HASH,MODDABLE_URL,XSNAP_NATIVE_COMMIT_HASH,XSNAP_NATIVE_URL,GIT_REVISION
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true

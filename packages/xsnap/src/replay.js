@@ -103,6 +103,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
 
   /** @param { Uint8Array} msg */
   async function handleCommand(msg) {
+    nextFile('command').put(msg);
     const result = await handle(msg);
     nextFile('reply').put(result);
     return result;
@@ -130,6 +131,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   const it = xsnap({ ...options, handleCommand });
 
   return freeze({
+    name: it.name,
     isReady: async () => {
       nextFile('isReady');
       return it.isReady();
@@ -212,7 +214,7 @@ export async function replayXSnap(
       const [_match, digits, kind] = parts;
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
-      if (running && kind !== 'reply') {
+      if (running && !['command', 'reply'].includes(kind)) {
         // eslint-disable-next-line no-await-in-loop
         await running;
         running = undefined;
@@ -228,6 +230,9 @@ export async function replayXSnap(
           break;
         case 'issueCommand':
           running = it.issueCommand(file.getData());
+          break;
+        case 'command':
+          // ignore; we already know how to reply
           break;
         case 'reply':
           replies.put(file.getData());
