@@ -37,7 +37,9 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
+    const feePurse = E(zoeService).makeFeePurse();
+    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
