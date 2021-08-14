@@ -4,9 +4,9 @@ import process from 'process';
 
 import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
-import { dumpStore } from './dumpstore';
-import { auditRefCounts } from './auditstore';
-import { organizeMainStats, printMainStats } from './printStats';
+import { dumpStore } from './dumpstore.js';
+import { auditRefCounts } from './auditstore.js';
+import { organizeMainStats, printMainStats } from './printStats.js';
 
 function usage() {
   console.log(`

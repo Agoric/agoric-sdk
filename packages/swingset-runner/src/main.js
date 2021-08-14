@@ -1,4 +1,3 @@
-/* global __dirname */
 import path from 'path';
 import fs from 'fs';
 import process from 'process';
@@ -12,8 +11,8 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox';
-import engineGC from '@agoric/swingset-vat/src/engine-gc';
+import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox.js';
+import engineGC from '@agoric/swingset-vat/src/engine-gc.js';
 
 import { initSimpleSwingStore } from '@agoric/swing-store-simple';
 import {
@@ -21,15 +20,15 @@ import {
   openLMDBSwingStore,
 } from '@agoric/swing-store-lmdb';
 
-import { dumpStore } from './dumpstore';
-import { auditRefCounts } from './auditstore';
+import { dumpStore } from './dumpstore.js';
+import { auditRefCounts } from './auditstore.js';
 import {
   organizeBenchmarkStats,
   printBenchmarkStats,
   organizeMainStats,
   printMainStats,
   outputStats,
-} from './printStats';
+} from './printStats.js';
 
 const log = console.log;
 
@@ -106,7 +105,7 @@ function generateIndirectConfig(baseConfig) {
     bundles: {},
     vats: {
       launcher: {
-        sourceSpec: path.resolve(__dirname, 'vat-launcher.js'),
+        sourceSpec: new URL('vat-launcher.js', import.meta.url).pathname,
         parameters: {
           config: {
             bootstrap: baseConfig.bootstrap,

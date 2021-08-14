@@ -1,7 +1,10 @@
-/* global __dirname */
 import test from 'ava';
 import { spawn } from 'child_process';
 import fs from 'fs';
+import path from 'path';
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 async function innerTest(t, extraFlags, dbdir) {
   await new Promise(resolve => {
@@ -10,14 +13,11 @@ async function innerTest(t, extraFlags, dbdir) {
       dbdir = `${appDir}/${dbdir}`;
       extraFlags += ` --dbdir ${dbdir}`;
     }
-    const proc = spawn(
-      `node -r esm bin/runner --init ${extraFlags} run ${appDir}`,
-      {
-        cwd: `${__dirname}/..`,
-        shell: true,
-        stdio: ['ignore', 'pipe', 'inherit'],
-      },
-    );
+    const proc = spawn(`node bin/runner --init ${extraFlags} run ${appDir}`, {
+      cwd: path.resolve(dirname, '..'),
+      shell: true,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
     let output = '';
     proc.stdout.addListener('data', data => {
       output += data;

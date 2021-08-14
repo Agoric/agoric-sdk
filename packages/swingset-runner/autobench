@@ -8,7 +8,7 @@ for (const suite of SUITES) {
   console.log(`Autobenching suite=${suite} ...`);
   const prep = `demo/${suite}/prepareContracts.js`;
   if (existsSync(prep)) {
-    spawnNodeSync(['-r', 'esm', prep]);
+    spawnNodeSync([prep]);
   }
   const benchstats = `benchstats-${suite}.json`;
   try {
@@ -35,11 +35,11 @@ for (const suite of SUITES) {
     }
   }
   spawnNodeSync([
-    '-r', 'esm', 'bin/runner', '--init',
+    'bin/runner', '--init',
     '--benchmark', brounds, '--statsfile', benchstats, ...configFlags,
     'run', `demo/${suite}`, '--quiet', '--prime',
   ]);
-  spawnNodeSync(['-r', 'esm', 'src/push-metrics.js', suite, benchstats]);
+  spawnNodeSync(['src/push-metrics.js', suite, benchstats]);
 }
 
 console.log(`Done!`);

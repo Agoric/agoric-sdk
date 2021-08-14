@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
-import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable';
-import { parseVatSlot } from '@agoric/swingset-vat/src/parseVatSlots';
+import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable.js';
+import { parseVatSlot } from '@agoric/swingset-vat/src/parseVatSlots.js';
 
 /* eslint-disable no-use-before-define */
 export function auditRefCounts(store, doDump, printPrefix) {

@@ -1,9 +1,9 @@
-/* global require __dirname */
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 import bundleSource from '@agoric/bundle-source';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import fs from 'fs';
 
@@ -32,11 +32,15 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const source = require.resolve(`@agoric/zoe/src/contracts/${contractPath}`);
-    const bundle = await bundleSource(source);
+    const sourceUrl = await importMetaResolve(
+      `@agoric/zoe/src/contracts/${contractPath}`,
+      import.meta.url,
+    );
+    const sourcePath = new URL(sourceUrl).pathname;
+    const bundle = await bundleSource(sourcePath);
     const obj = { bundle, bundleName };
     fs.writeFileSync(
-      `${__dirname}/bundle-${bundleName}.js`,
+      new URL(`bundle-${bundleName}.js`, import.meta.url).pathname,
       `export default ${JSON.stringify(obj)};`,
     );
   }),

@@ -1,20 +1,20 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from './manualTimer';
+import buildManualTimer from './manualTimer.js';
 
-import { makePrintLog } from './printLog';
+import { makePrintLog } from './printLog.js';
 
 /* eslint-disable import/no-unresolved, import/extensions */
-import automaticRefundBundle from './bundle-automaticRefund';
-import coveredCallBundle from './bundle-coveredCall';
-import secondPriceAuctionBundle from './bundle-secondPriceAuction';
-import atomicSwapBundle from './bundle-atomicSwap';
-import simpleExchangeBundle from './bundle-simpleExchange';
-import autoswapBundle from './bundle-autoswap';
-import sellItemsBundle from './bundle-sellItems';
-import mintAndSellNFTBundle from './bundle-mintAndSellNFT';
-import otcDeskBundle from './bundle-otcDesk';
+import automaticRefundBundle from './bundle-automaticRefund.js';
+import coveredCallBundle from './bundle-coveredCall.js';
+import secondPriceAuctionBundle from './bundle-secondPriceAuction.js';
+import atomicSwapBundle from './bundle-atomicSwap.js';
+import simpleExchangeBundle from './bundle-simpleExchange.js';
+import autoswapBundle from './bundle-autoswap.js';
+import sellItemsBundle from './bundle-sellItems.js';
+import mintAndSellNFTBundle from './bundle-mintAndSellNFT.js';
+import otcDeskBundle from './bundle-otcDesk.js';
 /* eslint-enable import/no-unresolved, import/extensions */
 
 const setupBasicMints = () => {
