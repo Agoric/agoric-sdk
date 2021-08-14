@@ -1316,6 +1316,11 @@
   dependencies:
     requireindex "~1.1.0"
 
+"@endo/netstring@^0.2.6":
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/@endo/netstring/-/netstring-0.2.7.tgz#fb596c0757d71fba54caf894737361ef27f3f1f3"
+  integrity sha512-Al1pcgw+GM9t1lv8gNrJ6ZFel0DHWdolEw9idcsNWHrzbLY8SePfBLSvPRLJ7T8eR4h52VZqcg/iQENGz9KEig==
+
 "@endo/ses-ava@^0.2.6":
   version "0.2.6"
   resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-0.2.6.tgz#f6d441b240cd84b5194b5a74a159d72d7e42df63"
