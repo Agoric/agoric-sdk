@@ -4,13 +4,14 @@
 import { E, makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import bundleSource from '@agoric/bundle-source';
+import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import path from 'path';
 import inquirer from 'inquirer';
 import createRequire from 'esm';
 
 import { getAccessToken } from '@agoric/access-token';
 
-const require = createRequire({});
+const esmRequire = createRequire({});
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling
@@ -223,12 +224,35 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
             };
           }
 
-          // use a dynamic import to load the deploy script, it is unconfined
-          // eslint-disable-next-line import/no-dynamic-require
-          const mainNS = require(moduleFile);
-          // TODO Node.js ESM support if package.json of template says "type":
-          // "module":
-          //   const mainNS = await import(pathResolve(moduleFile));
+          // Use a dynamic import to load the deploy script.
+          // It is unconfined.
+
+          // Use Node.js ESM support if package.json of template says "type":
+          // "module".
+          const read = async url => fs.readFile(new URL(url).pathname);
+          const {
+            packageDescriptorText,
+          } = await readContainingPackageDescriptor(
+            read,
+            `file://${moduleFile}`,
+          ).catch(cause => {
+            throw new Error(
+              `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
+              { cause },
+            );
+          });
+          const packageDescriptor = JSON.parse(packageDescriptorText);
+          const nativeEsm = packageDescriptor.type === 'module';
+          console.log(
+            `Deploy script will run with ${
+              nativeEsm ? 'Node.js ESM' : 'standardthings/esm emulation'
+            }`,
+          );
+
+          const modulePath = pathResolve(moduleFile);
+          const mainNS = nativeEsm
+            ? await import(modulePath)
+            : esmRequire(modulePath);
           const main = mainNS.default;
           if (typeof main !== 'function') {
             console.error(
