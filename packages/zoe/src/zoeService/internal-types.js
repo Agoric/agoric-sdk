@@ -136,13 +136,11 @@
  */
 
 /**
- * @callback IsFeePurse
- * @param {ERef<FeePurse>} feePurse
- * @returns {Promise<boolean>}
+ * @callback ChargeZoeFee
+ * @param {ERef<Purse>} feePurse
+ * @param {Amount} feeAmount
+ * @returns {Promise<void>}
  */
 
 /**
- * @callback AssertFeePurse
- * @param {ERef<FeePurse>} feePurse
- * @returns {Promise<void>}
  */

@@ -9,12 +9,15 @@ const { details: X } = assert;
  *
  * @param {Issuer} feeIssuer
  * @returns {{
- *   makeFeePurse: MakeFeePurse,
- *   assertFeePurse: AssertFeePurse,
+ *   makeFeePurse: MakeFeePurse
+ *   chargeZoeFee: ChargeZoeFee,
+ *   feeCollectionPurse: Purse,
  * }}
  */
 const setupMakeFeePurse = feeIssuer => {
   const feePurses = new WeakSet();
+
+  const feeCollectionPurse = feeIssuer.makeEmptyPurse();
 
   /** @type {MakeFeePurse} */
   const makeFeePurse = async () => {
@@ -29,18 +32,18 @@ const setupMakeFeePurse = feeIssuer => {
     return feePurse;
   };
 
-  /** @type {IsFeePurse} */
-  const isFeePurse = feePurse => E.when(feePurse, fp => feePurses.has(fp));
-
-  /** @type {AssertFeePurse} */
-  const assertFeePurse = async feePurse => {
-    const feePurseProvided = await isFeePurse(feePurse);
-    assert(feePurseProvided, X`A feePurse must be provided, not ${feePurse}`);
+  /** @type {ChargeZoeFee} */
+  const chargeZoeFee = (feePurse, feeAmount) => {
+    return E.when(feePurse, fp => {
+      assert(feePurses.has(fp), X`A feePurse must be provided, not ${fp}`);
+      feeCollectionPurse.deposit(fp.withdraw(feeAmount));
+    });
   };
 
   return {
     makeFeePurse,
-    assertFeePurse,
+    chargeZoeFee,
+    feeCollectionPurse,
   };
 };
 
