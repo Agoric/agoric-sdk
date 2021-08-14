@@ -9,7 +9,7 @@ const { details: X } = assert;
  *
  * @param {Issuer} feeIssuer
  * @returns {{
- *   makeFeePurse: MakeFeePurse
+ *   makeFeePurse: MakeFeePurse,
  *   chargeZoeFee: ChargeZoeFee,
  *   feeCollectionPurse: Purse,
  * }}
