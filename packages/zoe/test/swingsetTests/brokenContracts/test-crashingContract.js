@@ -137,28 +137,28 @@ test.skip('ZCF metering crash in API call', async t => {
   t.deepEqual(dump.log, meteringExceededInAPILog);
 });
 
-const meteringExceptionInMakeContractILog = [
+const meteringExceptionInStartILog = [
   '=> alice is set up',
-  '=> alice.doMeterExceptionInMakeContract called',
+  '=> alice.doMeterExceptionInStart called',
   'contract creation failed: RangeError: Allocate meter exceeded',
   'newCounter: 2',
 ];
 // TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('ZCF metering crash in makeContract call', async t => {
-  const dump = await main(['meterInMakeContract', [3, 0, 0]]);
-  t.deepEqual(dump.log, meteringExceptionInMakeContractILog);
+test.skip('ZCF metering crash in `start` call', async t => {
+  const dump = await main(['meterInStart', [3, 0, 0]]);
+  t.deepEqual(dump.log, meteringExceptionInStartILog);
 });
 
-const thrownExceptionInMakeContractILog = [
+const thrownExceptionInStartILog = [
   '=> alice is set up',
-  '=> alice.doThrowInMakeContract called',
+  '=> alice.doThrowInStart called',
   'contract creation failed: Error: blowup in makeContract',
   'newCounter: 2',
 ];
 
 test('throw in makeContract call', async t => {
-  const dump = await main(['throwInMakeContract', [3, 0, 0]]);
-  t.deepEqual(dump.log, thrownExceptionInMakeContractILog);
+  const dump = await main(['throwInStart', [3, 0, 0]]);
+  t.deepEqual(dump.log, thrownExceptionInStartILog);
 });
 
 const happyTerminationLog = [
