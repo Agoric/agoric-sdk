@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.24](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.22...@agoric/spawner@0.4.24) (2021-08-14)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* zoe/spawner/pegasus: use unlimited Meter, not metered: true ([04d4fd9](https://github.com/Agoric/agoric-sdk/commit/04d4fd96982ecd02de50f09fa38c6e2800cca527)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **spawner:** set 'metered: true' for dynamic vats ([3a9cf0b](https://github.com/Agoric/agoric-sdk/commit/3a9cf0b0b1889f053c4fe12f3cc5ec81c20658e7))
+
+
+
 ### [0.4.23](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.22...@agoric/spawner@0.4.23) (2021-07-28)
 
 

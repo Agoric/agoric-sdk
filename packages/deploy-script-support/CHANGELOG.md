@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.18...@agoric/deploy-script-support@0.3.0) (2021-08-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deploy-script-support:** Convert RESM to NESM (breaking)
+
+### Code Refactoring
+
+* **deploy-script-support:** Convert RESM to NESM (breaking) ([0d59ac2](https://github.com/Agoric/agoric-sdk/commit/0d59ac2a1f748d8e3cc87b8cbb221b0188d729cc))
+
+### 0.26.10 (2021-07-28)
+
+
+
 ### [0.2.19](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.2.18...@agoric/deploy-script-support@0.2.19) (2021-07-28)
 
 **Note:** Version bump only for package @agoric/deploy-script-support
