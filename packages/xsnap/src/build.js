@@ -89,8 +89,8 @@ const makeSubmodule = (path, repoUrl, { git }) => {
   const parseStatus = text =>
     text
       .split('\n')
-      .map(line => line.split(' ', 4))
-      .map(([_indent, hash, statusPath, describe]) => ({
+      .map(line => line.slice(1).split(' ', 3))
+      .map(([hash, statusPath, describe]) => ({
         hash,
         path: statusPath,
         describe,
