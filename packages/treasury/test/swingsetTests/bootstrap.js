@@ -67,9 +67,11 @@ function makeBootstrap(argv, cb, vatPowers) {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,
     );
-    const { zoeService: zoe, feeMintAccess } = await E(vats.zoe).buildZoe(
+    const { zoeService, feeMintAccess } = await E(vats.zoe).buildZoe(
       vatAdminSvc,
     );
+    const feePurse = E(zoeService).makeFeePurse();
+    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
     const [liquidateMinimum, autoswap, treasury] = await Promise.all([
       E(zoe).install(cb.liquidateMinimum),
       E(zoe).install(cb.autoswap),

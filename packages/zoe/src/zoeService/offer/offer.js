@@ -16,6 +16,7 @@ const { details: X, quote: q } = assert;
  * @param {GetInstanceAdmin} getInstanceAdmin
  * @param {DepositPayments} depositPayments
  * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {AssertFeePurse} assertFeePurse
  * @returns {Offer}
  */
 export const makeOffer = (
@@ -23,19 +24,23 @@ export const makeOffer = (
   getInstanceAdmin,
   depositPayments,
   getAssetKindByBrand,
+  assertFeePurse,
 ) => {
-  /** @type {Offer} */
+  /** @type {OfferFeePurseRequired} */
   const offer = async (
     invitation,
     uncleanProposal = harden({}),
     paymentKeywordRecord = harden({}),
     offerArgs = undefined,
+    feePurse,
   ) => {
     const { instanceHandle, invitationHandle } = await burnInvitation(
       invitationIssuer,
       invitation,
     );
     // AWAIT ///
+
+    await assertFeePurse(feePurse);
 
     const instanceAdmin = getInstanceAdmin(instanceHandle);
     instanceAdmin.assertAcceptingOffers();

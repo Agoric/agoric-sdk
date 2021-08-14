@@ -29,6 +29,7 @@ export const makeZCFZygote = (
   zoeService,
   invitationIssuer,
   testJigSetter,
+  feePurse,
 ) => {
   /** @type {PromiseRecord<ZoeInstanceAdmin>} */
   const zoeInstanceAdminPromiseKit = makePromiseKit();
@@ -259,7 +260,7 @@ export const makeZCFZygote = (
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
-    getZoeService: () => zoeService,
+    getZoeService: () => E(zoeService).bindDefaultFeePurse(feePurse),
     getInvitationIssuer: () => invitationIssuer,
     getTerms,
     getBrandForIssuer,

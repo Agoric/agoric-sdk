@@ -37,9 +37,12 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-  makeFakeVatAdmin(setJig, makeRemote).admin,
-);
+const {
+  zoeService: nonFarZoeService,
+  feeMintAccess: nonFarFeeMintAccess,
+} = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
+const feePurse = E(nonFarZoeService).makeFeePurse();
+const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
 /** @type {ERef<ZoeService>} */
 const zoe = makeFar(zoeService);
 trace('makeZoe');

@@ -33,7 +33,7 @@ test(`zoe.getInvitationIssuer`, async t => {
   t.falsy(await E(invitationIssuer).isLive(invitation));
 });
 
-test(`zoe.install bad bundle`, async t => {
+test(`E(zoe).install bad bundle`, async t => {
   const { zoe } = setup();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
@@ -41,7 +41,7 @@ test(`zoe.install bad bundle`, async t => {
   });
 });
 
-test(`zoe.install`, async t => {
+test(`E(zoe).install`, async t => {
   const { zoe } = setup();
   const contractPath = `${dirname}/../../src/contracts/atomicSwap`;
   const bundle = await bundleSource(contractPath);
@@ -50,7 +50,7 @@ test(`zoe.install`, async t => {
   t.is(await E(installation).getBundle(), bundle);
 });
 
-test(`zoe.startInstance bad installation`, async t => {
+test(`E(zoe).startInstance bad installation`, async t => {
   const { zoe } = setup();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
@@ -69,7 +69,7 @@ function isEmptyFacet(t, facet) {
   t.deepEqual(Object.getOwnPropertyNames(facet), []);
 }
 
-test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
+test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const result = await E(zoe).startInstance(installation);
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
@@ -88,7 +88,7 @@ test(`zoe.startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
 });
 
-test(`zoe.startInstance promise for installation`, async t => {
+test(`E(zoe).startInstance promise for installation`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const {
     promise: installationP,
@@ -115,7 +115,7 @@ test(`zoe.startInstance promise for installation`, async t => {
   ]);
 });
 
-test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
+test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const { moolaKit } = setup();
   await t.throwsAsync(
@@ -138,14 +138,14 @@ test(`zoe.startInstance - terms, issuerKeywordRecord switched`, async t => {
   );
 });
 
-test(`zoe.offer`, async t => {
+test(`E(zoe).offer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitation = zcf.makeInvitation(() => 'result', 'invitation');
   const userSeat = E(zoe).offer(invitation);
   t.is(await E(userSeat).getOfferResult(), 'result');
 });
 
-test(`zoe.offer - no invitation`, async t => {
+test(`E(zoe).offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(), {
@@ -153,7 +153,7 @@ test(`zoe.offer - no invitation`, async t => {
   });
 });
 
-test(`zoe.getPublicFacet`, async t => {
+test(`E(zoe).getPublicFacet`, async t => {
   const { zoe } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
@@ -164,7 +164,7 @@ test(`zoe.getPublicFacet`, async t => {
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
 });
 
-test(`zoe.getPublicFacet - no instance`, async t => {
+test(`E(zoe).getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
