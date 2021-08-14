@@ -38,8 +38,12 @@ import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ZoeFeesConfig} zoeFees
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess,
- * initialFeeFunds: Payment }}
+ * @returns {{
+ *   zoeService: ZoeService,
+ *   feeMintAccess: FeeMintAccess,
+ *   initialFeeFunds: Payment,
+ *   getFeeCollectionPurse: GetFeeCollectionPurse,
+ * }}
  */
 const makeZoeKit = (
   vatAdminSvc,
