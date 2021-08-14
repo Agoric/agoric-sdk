@@ -131,6 +131,8 @@ const makeZoeKit = (
     chargeZoeFee,
     getPublicFacetFeeAmount,
     installFeeAmount,
+    incrementBy,
+    computronPrice,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance
