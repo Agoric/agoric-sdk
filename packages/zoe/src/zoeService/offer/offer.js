@@ -1,5 +1,6 @@
 // @ts-check
 import { passStyleOf } from '@agoric/marshal';
+import { E } from '@agoric/eventual-send';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -18,6 +19,7 @@ const { details: X, quote: q } = assert;
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ChargeZoeFee} chargeZoeFee
  * @param {Amount} offerFeeAmount
+ * @param {TimerService | undefined} timeAuthority
  * @returns {Offer}
  */
 export const makeOffer = (
@@ -27,6 +29,7 @@ export const makeOffer = (
   getAssetKindByBrand,
   chargeZoeFee,
   offerFeeAmount,
+  timeAuthority,
 ) => {
   /** @type {OfferFeePurseRequired} */
   const offer = async (
@@ -36,16 +39,32 @@ export const makeOffer = (
     offerArgs = undefined,
     feePurse,
   ) => {
-    const { instanceHandle, invitationHandle } = await burnInvitation(
-      invitationIssuer,
-      invitation,
-    );
+    const {
+      instanceHandle,
+      invitationHandle,
+      fee,
+      expiry,
+    } = await burnInvitation(invitationIssuer, invitation);
     // AWAIT ///
-
-    await chargeZoeFee(feePurse, offerFeeAmount);
 
     const instanceAdmin = getInstanceAdmin(instanceHandle);
     instanceAdmin.assertAcceptingOffers();
+
+    if (timeAuthority && expiry && fee) {
+      // TODO: is there a way to make this a top-level await?
+      const currentTime = await E(timeAuthority).getCurrentTimestamp();
+      // AWAIT ///
+
+      assert(
+        expiry >= currentTime,
+        X`The invitation has expired. It is currently ${currentTime} and the invitation expired at ${expiry}`,
+      );
+      await instanceAdmin.transferFeeToCreator(feePurse, fee);
+      // AWAIT ///
+    }
+
+    await chargeZoeFee(feePurse, offerFeeAmount);
+    // AWAIT ///
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
 

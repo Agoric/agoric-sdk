@@ -396,3 +396,39 @@ test(`zoe.makeFeePurse`, async t => {
 
   t.true(AmountMath.isEmpty(await E(feePurse).getCurrentAmount()));
 });
+
+test(`zoe.getConfiguration`, async t => {
+  const { zoe } = await setupZCFTest();
+  const config = await E(zoe).getConfiguration();
+  t.deepEqual(config, {
+    feeIssuerConfig: {
+      assetKind: 'nat',
+      displayInfo: {
+        assetKind: 'nat',
+        decimalPlaces: 6,
+      },
+      initialFunds: 0n,
+      name: 'RUN',
+    },
+    meteringConfig: {
+      incrementBy: 25000000n,
+      initial: 50000000n,
+      price: {
+        computronDenominator: 1n,
+        feeNumerator: 1n,
+      },
+      threshold: 25000000n,
+    },
+    zoeFeesConfig: {
+      getPublicFacetFee: 0n,
+      highFee: 10000000n,
+      installFee: 0n,
+      longExp: 86400000n,
+      lowFee: 500000n,
+      offerFee: 0n,
+      shortExp: 300000n,
+      startInstanceFee: 0n,
+      timeAuthority: undefined,
+    },
+  });
+});

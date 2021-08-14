@@ -61,7 +61,7 @@ test('description is omitted, wrongly', async t => {
     fruit: 'apple',
   });
 
-  t.throws(
+  await t.throwsAsync(
     () =>
       makeInvitation(
         // @ts-ignore mockInvitationHandle is mocked

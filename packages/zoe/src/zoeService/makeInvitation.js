@@ -2,7 +2,16 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-export const createInvitationKit = shutdownZoeVat => {
+/**
+ * @param {ShutdownWithFailure | undefined} shutdownZoeVat
+ * @param {TranslateFee | (() => void)} translateFee
+ * @param {TranslateExpiry | (() => void)} translateExpiry
+ */
+export const createInvitationKit = (
+  shutdownZoeVat = undefined,
+  translateFee = () => {},
+  translateExpiry = () => {},
+) => {
   const invitationKit = makeIssuerKit(
     'Zoe Invitation',
     AssetKind.SET,
@@ -20,10 +29,12 @@ export const createInvitationKit = shutdownZoeVat => {
     assert.typeof(installation, 'object');
 
     /** @type {ZoeInstanceAdminMakeInvitation} */
-    const makeInvitation = (
+    const makeInvitation = async (
       invitationHandle,
       description,
       customProperties,
+      relativeFee = undefined,
+      relativeExpiry = undefined,
     ) => {
       assert.typeof(invitationHandle, 'object');
       assert.typeof(
@@ -31,13 +42,20 @@ export const createInvitationKit = shutdownZoeVat => {
         'string',
         X`The description ${description} must be a string`,
       );
+      const absoluteFee = translateFee(relativeFee);
+      const absoluteExpiry = await translateExpiry(relativeExpiry);
+
+      let feeInfo = {};
+      if (absoluteFee && absoluteExpiry) {
+        feeInfo = { fee: absoluteFee, expiry: absoluteExpiry };
+      }
       // If the contract-provided customProperties include the
-      // properties 'description', 'handle', 'instance' and
-      // 'installation', their corresponding values will be
-      // overwritten with the actual values. For example, the value
-      // for `instance` will always be the actual instance for the
-      // contract, even if customProperties includes a property called
-      // `instance`.
+      // properties 'description', 'handle', 'instance',
+      // 'installation', 'fee', or 'expiry', their corresponding
+      // values will be overwritten with the actual values. For
+      // example, the value for `instance` will always be the actual
+      // instance for the contract, even if customProperties includes
+      // a property called `instance`.
       const invitationAmount = AmountMath.make(invitationKit.brand, [
         {
           ...customProperties,
@@ -45,6 +63,7 @@ export const createInvitationKit = shutdownZoeVat => {
           handle: invitationHandle,
           instance,
           installation,
+          ...feeInfo, // may be empty
         },
       ]);
       return invitationKit.mint.mintPayment(invitationAmount);

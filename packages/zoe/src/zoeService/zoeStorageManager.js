@@ -33,6 +33,8 @@ import { refillMeter } from './refillMeter.js';
  * @param {Amount} getPublicFacetFeeAmount
  * @param {Amount} installFeeAmount
  * @param {ChargeForComputrons} chargeForComputrons
+ * @param {TranslateFee} translateFee
+ * @param {TranslateExpiry} translateExpiry
  * @returns {ZoeStorageManager}
  */
 export const makeZoeStorageManager = (
@@ -43,6 +45,8 @@ export const makeZoeStorageManager = (
   getPublicFacetFeeAmount,
   installFeeAmount,
   chargeForComputrons,
+  translateFee,
+  translateExpiry,
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
@@ -60,6 +64,8 @@ export const makeZoeStorageManager = (
   // contains the mint capability for invitations.
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
     shutdownZoeVat,
+    translateFee,
+    translateExpiry,
   );
 
   // Every new instance of a contract creates a corresponding
