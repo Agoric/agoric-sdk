@@ -241,18 +241,16 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return valToPetname.get(val);
       }
 
-      if (!isPath(petname)) {
-        // Assert that the name doesn't exist, and add it.
-        addPetname(petname, val);
-        return petname;
-      }
-
       // Find a unique path.
       let uniquePath = petname;
       let nonce = 2;
       while (petnameToVal.has(uniquePath)) {
         // Add the nonce to the path, and try again.
-        uniquePath = [...petname, `${nonce}`];
+        if (isPath(petname)) {
+          uniquePath = [...petname, `${nonce}`];
+        } else {
+          uniquePath = `${petname}${nonce}`;
+        }
         nonce += 1;
       }
 
