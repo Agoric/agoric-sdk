@@ -15,9 +15,9 @@ import '@agoric/store/exported.js';
 import '../../exported.js';
 import '../internal-types.js';
 
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { AssetKind } from '@agoric/ertp';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -36,8 +36,10 @@ import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
+ * @param {ZoeFeesConfig} zoeFees
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
- * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }}
+ * @returns {{ zoeService: ZoeService, feeMintAccess: FeeMintAccess,
+ * initialFeeFunds: Payment }}
  */
 const makeZoeKit = (
   vatAdminSvc,
@@ -46,6 +48,13 @@ const makeZoeKit = (
     name: 'RUN',
     assetKind: AssetKind.NAT,
     displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+    initialFunds: 0n,
+  },
+  zoeFees = {
+    getPublicFacetFee: 0n,
+    installFee: 0n,
+    startInstanceFee: 0n,
+    offerFee: 0n,
   },
   zcfBundleName = undefined,
 ) => {
@@ -54,12 +63,42 @@ const makeZoeKit = (
   /** @type {PromiseRecord<ZoeService>} */
   const zoeServicePromiseKit = makePromiseKit();
 
-  const { feeMintAccess, getFeeIssuerKit, feeIssuer } = createFeeMint(
-    feeIssuerConfig,
-    shutdownZoeVat,
+  const {
+    feeMintAccess,
+    getFeeIssuerKit,
+    feeIssuer,
+    feeBrand,
+    initialFeeFunds,
+  } = createFeeMint(feeIssuerConfig, shutdownZoeVat);
+
+  // The initial funds should be enough to pay for launching the
+  // Agoric economy.
+  assert(
+    AmountMath.isGTE(
+      AmountMath.make(feeBrand, feeIssuerConfig.initialFunds),
+      AmountMath.add(
+        AmountMath.make(feeBrand, zoeFees.installFee),
+        AmountMath.make(feeBrand, zoeFees.startInstanceFee),
+      ),
+    ),
   );
 
-  const { makeFeePurse, assertFeePurse } = setupMakeFeePurse(feeIssuer);
+  const getPublicFacetFeeAmount = AmountMath.make(
+    feeBrand,
+    zoeFees.getPublicFacetFee,
+  );
+  const installFeeAmount = AmountMath.make(feeBrand, zoeFees.installFee);
+  const startInstanceFeeAmount = AmountMath.make(
+    feeBrand,
+    zoeFees.startInstanceFee,
+  );
+  const offerFeeAmount = AmountMath.make(feeBrand, zoeFees.offerFee);
+
+  const {
+    makeFeePurse,
+    chargeZoeFee,
+    getFeeCollectionPurse,
+  } = setupMakeFeePurse(feeIssuer);
 
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
@@ -85,7 +124,9 @@ const makeZoeKit = (
     createZCFVat,
     getFeeIssuerKit,
     shutdownZoeVat,
-    assertFeePurse,
+    chargeZoeFee,
+    getPublicFacetFeeAmount,
+    installFeeAmount,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance
@@ -93,7 +134,8 @@ const makeZoeKit = (
     zoeServicePromiseKit.promise,
     makeZoeInstanceStorageManager,
     unwrapInstallation,
-    assertFeePurse,
+    chargeZoeFee,
+    startInstanceFeeAmount,
   );
 
   // Pass the capabilities necessary to create E(zoe).offer
@@ -102,7 +144,8 @@ const makeZoeKit = (
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
-    assertFeePurse,
+    chargeZoeFee,
+    offerFeeAmount,
   );
 
   // Make the methods that allow users to easily and credibly get
@@ -141,7 +184,12 @@ const makeZoeKit = (
   // defined. So, we pass a promise and then resolve the promise here.
   zoeServicePromiseKit.resolve(zoeService);
 
-  return harden({ zoeService, feeMintAccess });
+  return harden({
+    zoeService,
+    feeMintAccess,
+    initialFeeFunds,
+    getFeeCollectionPurse,
+  });
 };
 
 export { makeZoeKit };

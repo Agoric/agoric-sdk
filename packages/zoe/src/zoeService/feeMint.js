@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeHandle } from '../makeHandle.js';
 
@@ -11,7 +11,10 @@ const { details: X } = assert;
  * @returns {{
  *    feeMintAccess: FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
- *    feeIssuer: Issuer }}
+ *    feeIssuer: Issuer,
+ *    feeBrand: Brand,
+ *    initialFeeFunds: Payment,
+ * }}
  */
 const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
   /** @type {IssuerKit} */
@@ -34,10 +37,16 @@ const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
     return feeIssuerKit;
   };
 
+  const initialFeeFunds = feeIssuerKit.mint.mintPayment(
+    AmountMath.make(feeIssuerKit.brand, feeIssuerConfig.initialFunds),
+  );
+
   return harden({
     feeMintAccess,
     getFeeIssuerKit,
     feeIssuer: feeIssuerKit.issuer,
+    feeBrand: feeIssuerKit.brand,
+    initialFeeFunds,
   });
 };
 

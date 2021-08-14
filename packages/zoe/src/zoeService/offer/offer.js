@@ -16,7 +16,8 @@ const { details: X, quote: q } = assert;
  * @param {GetInstanceAdmin} getInstanceAdmin
  * @param {DepositPayments} depositPayments
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {AssertFeePurse} assertFeePurse
+ * @param {ChargeZoeFee} chargeZoeFee
+ * @param {Amount} offerFeeAmount
  * @returns {Offer}
  */
 export const makeOffer = (
@@ -24,7 +25,8 @@ export const makeOffer = (
   getInstanceAdmin,
   depositPayments,
   getAssetKindByBrand,
-  assertFeePurse,
+  chargeZoeFee,
+  offerFeeAmount,
 ) => {
   /** @type {OfferFeePurseRequired} */
   const offer = async (
@@ -40,7 +42,7 @@ export const makeOffer = (
     );
     // AWAIT ///
 
-    await assertFeePurse(feePurse);
+    await chargeZoeFee(feePurse, offerFeeAmount);
 
     const instanceAdmin = getInstanceAdmin(instanceHandle);
     instanceAdmin.assertAcceptingOffers();

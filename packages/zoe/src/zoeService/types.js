@@ -63,6 +63,16 @@
  */
 
 /**
+ * @callback GetFeeCollectionPurse
+ *
+ * Allows the caller of `makeZoeKit` to get the purse in which fees
+ * are collected. Note that these fees are for using Zoe, not for
+ * paying for execution in a ZCFVat.
+ *
+ * @returns {Purse}
+ */
+
+/**
  * @callback BindDefaultFeePurse
  * @param {ERef<FeePurse>} defaultFeePurse
  * @returns {ZoeService}
@@ -352,6 +362,7 @@
  * @property {string} name
  * @property {AssetKind} assetKind
  * @property {DisplayInfo} displayInfo
+ * @property {Value} initialFunds
  */
 
 /**
@@ -374,4 +385,12 @@
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
  * @property {BindDefaultFeePurse} bindDefaultFeePurse
+ */
+
+/**
+ * @typedef {Object} ZoeFeesConfig
+ * @property {NatValue} getPublicFacetFee
+ * @property {NatValue} installFee
+ * @property {NatValue} startInstanceFee
+ * @property {NatValue} offerFee
  */
