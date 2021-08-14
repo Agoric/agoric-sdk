@@ -13,6 +13,7 @@ import { makeEscrowStorage } from './escrowStorage.js';
 import { createInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
+import { refillMeter } from './refillMeter.js';
 
 /**
  * The Zoe Storage Manager encapsulates and composes important
@@ -31,6 +32,7 @@ import { makeInstallationStorage } from './installationStorage.js';
  * @param {ChargeZoeFee} chargeZoeFee
  * @param {Amount} getPublicFacetFeeAmount
  * @param {Amount} installFeeAmount
+ * @param {ChargeForComputrons} chargeForComputrons
  * @returns {ZoeStorageManager}
  */
 export const makeZoeStorageManager = (
@@ -40,6 +42,7 @@ export const makeZoeStorageManager = (
   chargeZoeFee,
   getPublicFacetFeeAmount,
   installFeeAmount,
+  chargeForComputrons,
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
@@ -88,6 +91,7 @@ export const makeZoeStorageManager = (
     customTerms,
     uncleanIssuerKeywordRecord,
     instance,
+    feePurse,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -205,7 +209,9 @@ export const makeZoeStorageManager = (
 
     const makeInvitation = setupMakeInvitation(instance, installation);
 
-    const { root, adminNode } = await createZCFVat();
+    const { root, adminNode, meter } = await createZCFVat();
+
+    refillMeter(meter, chargeForComputrons, feePurse);
 
     return harden({
       getTerms: instanceRecordManager.getTerms,

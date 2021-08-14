@@ -423,8 +423,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
   };
 
-  const doMeterExceptionInMakeContract = async () => {
-    log(`=> alice.doMeterExceptionInMakeContract called`);
+  const doMeterExceptionInStart = async () => {
+    log(`=> alice.doMeterExceptionInStart called`);
     const installId = installations.crashAutoRefund;
 
     const issuerKeywordRecord = harden({
@@ -446,8 +446,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
   };
 
-  const doThrowInMakeContract = async () => {
-    log(`=> alice.doThrowInMakeContract called`);
+  const doThrowInStart = async () => {
+    log(`=> alice.doThrowInStart called`);
     const installId = installations.crashAutoRefund;
 
     const issuerKeywordRecord = harden({
@@ -642,11 +642,11 @@ const build = async (log, zoe, issuers, payments, installations) => {
         case 'meterInApiCall': {
           return doMeterExceptionInApiCall();
         }
-        case 'throwInMakeContract': {
-          return doThrowInMakeContract();
+        case 'throwInStart': {
+          return doThrowInStart();
         }
-        case 'meterInMakeContract': {
-          return doMeterExceptionInMakeContract();
+        case 'meterInStart': {
+          return doMeterExceptionInStart();
         }
         case 'happyTermination': {
           return doHappyTermination();

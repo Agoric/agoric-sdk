@@ -384,3 +384,15 @@
  * @property {NatValue} startInstanceFee
  * @property {NatValue} offerFee
  */
+
+/**
+ * @typedef {Object} MeteringConfig
+ * @property {Computrons} initial - the amount of computrons a meter
+ * starts with
+ * @property {Computrons} incrementBy - when a meter is refilled, this
+ * amount will be added
+ * @property {Computrons} threshold - Zoe will be notified when the meter
+ * drops below this amount
+ * @property {{ feeNumerator: bigint, computronDenominator: bigint }}
+ * price - the price of computrons in RUN
+ */
