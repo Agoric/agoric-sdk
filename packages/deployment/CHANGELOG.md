@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.6...@agoric/deployment@1.28.8) (2021-08-14)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* **deployment:** improve the `provision` command to be idempotent ([622bbd8](https://github.com/Agoric/agoric-sdk/commit/622bbd8c07e79fa1de3b00a55224b9b462f4f75b))
+* **deployment:** only format and mount /dev/sda for digitalocean ([745f90e](https://github.com/Agoric/agoric-sdk/commit/745f90e8a40745dbb832af56789a3daa5fe787c2))
+* **deployment:** properly quote JSON pubkey from Ansible ([44132fa](https://github.com/Agoric/agoric-sdk/commit/44132fad78e7a6b59a324f47d986cefe140e1c30))
+
+
+
 ### [1.28.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.6...@agoric/deployment@1.28.7) (2021-07-28)
 
 

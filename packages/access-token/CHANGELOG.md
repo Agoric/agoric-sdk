@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.7...@agoric/access-token@0.4.9) (2021-08-14)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* **access-token:** avoid clobbering temporary json-store files ([d468531](https://github.com/Agoric/agoric-sdk/commit/d46853146d2f1b51bd752ef280ce51cf227cdab0))
+
+
+
 ### [0.4.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.7...@agoric/access-token@0.4.8) (2021-07-28)
 
 

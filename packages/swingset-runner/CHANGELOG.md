@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.10...@agoric/swingset-runner@0.14.0) (2021-08-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** Convert RESM to NESM
+
+### Bug Fixes
+
+* Add zcf extensions ([862aefe](https://github.com/Agoric/agoric-sdk/commit/862aefe17d0637114aee017be79a84dbcacad48d))
+* newly missing fars ([#3557](https://github.com/Agoric/agoric-sdk/issues/3557)) ([32069cc](https://github.com/Agoric/agoric-sdk/commit/32069cc20e4e408cbc0c1881f36b44a3b9d24730))
+
+
+### Code Refactoring
+
+* **swingset:** Convert RESM to NESM ([bf7fd61](https://github.com/Agoric/agoric-sdk/commit/bf7fd6161a79e994c3bc48949e4ccb01b4048772))
+
+### 0.26.10 (2021-07-28)
+
+
+### Features
+
+* add command line flag to use XS ([66b5a5e](https://github.com/Agoric/agoric-sdk/commit/66b5a5e43c1b70124de17d971a434a11c7ebc8a3))
+* audit object refcounts ([d7c9792](https://github.com/Agoric/agoric-sdk/commit/d7c9792597d063fbc8970acb034674b15865de7d)), closes [#3445](https://github.com/Agoric/agoric-sdk/issues/3445)
+* refactor object pinning ([9941a08](https://github.com/Agoric/agoric-sdk/commit/9941a086837ad4e6c314da5a6c4faa999430c3f4))
+* update slogulator for GC syscalls and deliveries ([207d8d9](https://github.com/Agoric/agoric-sdk/commit/207d8d9583549b755903c7329e61518d17c763d6))
+
+
+### Bug Fixes
+
+* **swingset-runner:** remove --meter controls ([cc1d3c5](https://github.com/Agoric/agoric-sdk/commit/cc1d3c5604cf848a69ef55e61662c6094d5ff341))
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+
+
+
 ### [0.13.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.13.10...@agoric/swingset-runner@0.13.11) (2021-07-28)
 
 

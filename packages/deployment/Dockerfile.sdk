@@ -14,8 +14,13 @@ RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
 ###############################
 # The js build container
 FROM node:14.15-buster AS build-js
+
+# When changing/adding entries here, make sure to search the whole project for
+# `@@AGORIC_DOCKER_SUBMODULES@@`
 ARG MODDABLE_COMMIT_HASH
 ARG MODDABLE_URL
+ARG XSNAP_NATIVE_COMMIT_HASH
+ARG XSNAP_NATIVE_URL
 
 WORKDIR /usr/src/agoric-sdk
 COPY . .
@@ -29,8 +34,15 @@ RUN cd golang/cosmos && yarn build:gyp
 # Install the entry points in the path.
 RUN cd packages/cosmic-swingset && make install install-helper
 
-# Check out the specified Moddable SDK version.
-RUN MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" MODDABLE_URL="$MODDABLE_URL" yarn build
+# Check out the specified submodule versions.
+# When changing/adding entries here, make sure to search the whole project for
+# `@@AGORIC_DOCKER_SUBMODULES@@`
+RUN \
+  MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" \
+  MODDABLE_URL="$MODDABLE_URL" \
+  XSNAP_NATIVE_COMMIT_HASH="$XSNAP_NATIVE_COMMIT_HASH" \
+  XSNAP_NATIVE_URL="$XSNAP_NATIVE_URL" \
+  yarn build
 
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable

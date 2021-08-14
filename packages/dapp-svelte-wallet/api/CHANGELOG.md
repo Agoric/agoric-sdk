@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.13](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.11...@agoric/dapp-svelte-wallet-api@0.9.13) (2021-08-14)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* some missing Fars ([#3498](https://github.com/Agoric/agoric/issues/3498)) ([8f77271](https://github.com/Agoric/agoric/commit/8f77271b41a4589679ad95ff907126778466aba8))
+* **wallet:** be more defensive when escrow is supposed to happen ([4130f6a](https://github.com/Agoric/agoric/commit/4130f6a9041b24680ac5cd9d8a31d9587cf0c871))
+* **wallet:** be more robust with claiming payments ([0a67988](https://github.com/Agoric/agoric/commit/0a679889103fae9c15c37adaaa4af72dcc73b752))
+* **wallet:** more robust addPayment method handles failed deposit ([7990569](https://github.com/Agoric/agoric/commit/79905692e15a1322c269c7f697bf78374dee4d95))
+
+
+
 ### [0.9.12](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.11...@agoric/dapp-svelte-wallet-api@0.9.12) (2021-07-28)
 
 

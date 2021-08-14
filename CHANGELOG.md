@@ -3,6 +3,72 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@6.0.0...@agoric/sdk@7.0.0) (2021-08-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** don't rely on diagnostic meters
+* **deploy-script-support:** Convert RESM to NESM (breaking)
+* **swingset:** Convert plugin API to NESM
+* **swingset:** Convert RESM to NESM
+* **xsnap:** avoid O(n^2) Array, Map, Set growth
+
+### Features
+
+* **cosmic-swingset:** add swingset 'activityhash' to state vector ([5247326](https://github.com/Agoric/agoric-sdk/commit/52473260cf6df736565e93b39afbc42295e0b7b6)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **cosmic-swingset:** include activityhash for initial block too ([a8d2412](https://github.com/Agoric/agoric-sdk/commit/a8d2412e3dcd25396d3a751bd04755d1186d3e1f))
+* **cosmic-swingset:** use compute meter to decide where blocks end ([#3651](https://github.com/Agoric/agoric-sdk/issues/3651)) ([5f7317c](https://github.com/Agoric/agoric-sdk/commit/5f7317c0d1179f9d9f1ef1e9f7e7ecc887e1f53f)), closes [#3582](https://github.com/Agoric/agoric-sdk/issues/3582)
+* **cosmos:** generate GRPC REST gateway implementations ([968b78e](https://github.com/Agoric/agoric-sdk/commit/968b78e40bd8a2bdb9aff1f141c1d9489b581354))
+* **cosmos:** upgrade to v0.43.0 and add vbank governance hooks ([29137dd](https://github.com/Agoric/agoric-sdk/commit/29137dd8bd8b08776fff7a2a97405042da9222a5))
+* **solo:** accept $SOLO_SLOGFILE to write a slogfile ([20f0c04](https://github.com/Agoric/agoric-sdk/commit/20f0c045eb7e948bbbac096b2f04d239767027d9))
+* **swingset:** add "run policy" object to controller.run() ([420edda](https://github.com/Agoric/agoric-sdk/commit/420edda2f8dd668cf84acc1b7cd0929bcbd79623)), closes [#3460](https://github.com/Agoric/agoric-sdk/issues/3460)
+* **swingset:** hash kernel state changes into 'activityhash' ([47ec86b](https://github.com/Agoric/agoric-sdk/commit/47ec86be063f9021c91018dbc1f0952be543f0c7)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **vbank:** add governance and query methods ([c80912e](https://github.com/Agoric/agoric-sdk/commit/c80912e6110b8d45d6b040ee9f3d9c1addaab804))
+* **xsnap:** make name available on xsnap object ([8c4a16b](https://github.com/Agoric/agoric-sdk/commit/8c4a16bc203722d594f09bf7c5acd09c4209ba1c))
+* **xsnap:** record upstream commands as well as replies ([fc9332f](https://github.com/Agoric/agoric-sdk/commit/fc9332fc52f626b884e4998e780dbfbf87cb854d))
+* Add private arguments to contract `start` functions, via E(zoe).startInstance ([#3576](https://github.com/Agoric/agoric-sdk/issues/3576)) ([f353e86](https://github.com/Agoric/agoric-sdk/commit/f353e86d33101365845597cb374d825fe08ff129))
+* allow users to pass offerArgs with their offer ([#3578](https://github.com/Agoric/agoric-sdk/issues/3578)) ([cb1eea1](https://github.com/Agoric/agoric-sdk/commit/cb1eea1046f2de2ac90ea045eafad7c7de2afab6))
+* require that buildRootObject always returns a Far reference ([0cda623](https://github.com/Agoric/agoric-sdk/commit/0cda6230210add2bbedc40100dbfe8f0f8e98826))
+
+
+### Bug Fixes
+
+* **agoric-cli:** use 'yarn workspaces' instead of hard-coded list ([e5157e6](https://github.com/Agoric/agoric-sdk/commit/e5157e6d12748ad2645aa3d5cdb2ff3d60b9ace1))
+* **cosmic-swingset:** port more scripts to ESM ([fc062b8](https://github.com/Agoric/agoric-sdk/commit/fc062b8a87875409008aae04af921a338926511b))
+* **cosmos:** don't force the output format to JSON ([671b93d](https://github.com/Agoric/agoric-sdk/commit/671b93d6032656dceeee1616b849535145b3e10d))
+* **same-structure:** Support NESM importers ([123227e](https://github.com/Agoric/agoric-sdk/commit/123227eb83c520b9c64506d2f898815163b4e9e0))
+* **swingset:** define 'meterControl' to disable metering ([bdf8c08](https://github.com/Agoric/agoric-sdk/commit/bdf8c08ec2643217f507968bc9ae36fa548a8f69)), closes [#3458](https://github.com/Agoric/agoric-sdk/issues/3458)
+* **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
+* **swingset:** Finish vat tool RESM to NESM conversion ([b6e943b](https://github.com/Agoric/agoric-sdk/commit/b6e943b6573bd75e408987a55a597198ec2ac00d))
+* **swingset:** liveslots: disable metering of GC-sensitive calls ([a11a477](https://github.com/Agoric/agoric-sdk/commit/a11a477d867ab83415db9aff666f6d91f9ed6bd9)), closes [#3458](https://github.com/Agoric/agoric-sdk/issues/3458)
+* **swingset:** move "kernelStats" into local/non-hashed DB space ([df8359e](https://github.com/Agoric/agoric-sdk/commit/df8359eca80e28736d294a558ed6c5e3b8b14127)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **swingset:** rename snapshot-related DB keys to be "local" ([e79e43c](https://github.com/Agoric/agoric-sdk/commit/e79e43c2776161b3f872a130131ad4a7b4c16e3f)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **swingset:** Support NESM importers ([fac9b1a](https://github.com/Agoric/agoric-sdk/commit/fac9b1a97b30e037982db4c44ccc885b27d87c40))
+* **swingset:** test-marshal.js: delete leftover+slow kernel creation ([beb9f59](https://github.com/Agoric/agoric-sdk/commit/beb9f59dd3c54d39663218dd9d96fc9988a16216))
+* **swingset:** use better async style, improve comment ([64e4f2f](https://github.com/Agoric/agoric-sdk/commit/64e4f2f2c48b209b68d8a27c23b087f1ecd9a61c))
+* **vats:** vat-ibc must use LegacyMap, not Store, to hold a Set ([2479017](https://github.com/Agoric/agoric-sdk/commit/2479017af56a352574a3fba4027a055b15336a75)), closes [#3621](https://github.com/Agoric/agoric-sdk/issues/3621)
+* **xsnap:** don't rely on diagnostic meters ([8148c13](https://github.com/Agoric/agoric-sdk/commit/8148c13c5f4810c5fe92e05ced57ebf56302404d))
+* Add zcf extensions ([862aefe](https://github.com/Agoric/agoric-sdk/commit/862aefe17d0637114aee017be79a84dbcacad48d))
+* gut `packages/eslint-config` to use `[@jessie](https://github.com/jessie).js` and `[@endo](https://github.com/endo)` ([68a4f7d](https://github.com/Agoric/agoric-sdk/commit/68a4f7d8cbc70bc3d87f7581c7235f8730c32709))
+* move the assertion that `allStagedSeatsUsed` into `reallocate` rather than `reallocateInternal` ([#3615](https://github.com/Agoric/agoric-sdk/issues/3615)) ([f8d62cc](https://github.com/Agoric/agoric-sdk/commit/f8d62cc889911f821e66a281aec5f680ed8e2628))
+* newly missing fars ([#3557](https://github.com/Agoric/agoric-sdk/issues/3557)) ([32069cc](https://github.com/Agoric/agoric-sdk/commit/32069cc20e4e408cbc0c1881f36b44a3b9d24730))
+* Treasury burn debt repayment before zeroing the amount owed ([#3604](https://github.com/Agoric/agoric-sdk/issues/3604)) ([f0bc4cb](https://github.com/Agoric/agoric-sdk/commit/f0bc4cb0c7e419cafc0105869d287d571202448d)), closes [#3495](https://github.com/Agoric/agoric-sdk/issues/3495)
+* Update packages/vats/src/ibc.js ([d6d5ae2](https://github.com/Agoric/agoric-sdk/commit/d6d5ae2c7517dad53439d7f14f32a0b760b52fa1))
+* **xsnap:** Allow for an absent package.json ava.require ([2d30a11](https://github.com/Agoric/agoric-sdk/commit/2d30a11de0e1a8f167aa033af40dd34309bf65d5))
+* **xsnap:** avoid O(n^2) Array, Map, Set growth ([11e7c1c](https://github.com/Agoric/agoric-sdk/commit/11e7c1cdbc12a0a53477be3e81cf86cc6407cd28)), closes [#3012](https://github.com/Agoric/agoric-sdk/issues/3012)
+* **xsnap:** tolerate Symbols in console.log() arguments ([#3618](https://github.com/Agoric/agoric-sdk/issues/3618)) ([314ee93](https://github.com/Agoric/agoric-sdk/commit/314ee93ee8fc5e97e8c40a640b94ffa770a046bc))
+* require virtual object selves to be declared Far ([619bbda](https://github.com/Agoric/agoric-sdk/commit/619bbda5223a2fe5168d7cb9851c5ac4dcc7cbac)), closes [#3562](https://github.com/Agoric/agoric-sdk/issues/3562)
+
+
+### Code Refactoring
+
+* **deploy-script-support:** Convert RESM to NESM (breaking) ([0d59ac2](https://github.com/Agoric/agoric-sdk/commit/0d59ac2a1f748d8e3cc87b8cbb221b0188d729cc))
+* **swingset:** Convert plugin API to NESM ([8ab2b03](https://github.com/Agoric/agoric-sdk/commit/8ab2b03970aa6735ad1f05756048a3dc09a190ce))
+* **swingset:** Convert RESM to NESM ([bf7fd61](https://github.com/Agoric/agoric-sdk/commit/bf7fd6161a79e994c3bc48949e4ccb01b4048772))
+
+
+
 ## [6.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@5.4.1...@agoric/sdk@6.0.0) (2021-07-28)
 
 

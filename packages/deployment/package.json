@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "1.28.7",
+  "version": "1.28.8",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,
@@ -20,8 +20,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.3.7",
-    "@agoric/install-ses": "^0.5.21",
+    "@agoric/assert": "^0.3.8",
+    "@agoric/install-ses": "^0.5.22",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "inquirer": "^6.3.1",
@@ -29,7 +29,6 @@
     "node-fetch": "^2.6.0",
     "temp": "^0.9.0"
   },
-  "devDependencies": {},
   "publishConfig": {
     "access": "public"
   },

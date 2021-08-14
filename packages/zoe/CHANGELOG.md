@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.17.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.17.5...@agoric/zoe@0.17.7) (2021-08-14)
+
+
+### Features
+
+* Add private arguments to contract `start` functions, via E(zoe).startInstance ([#3576](https://github.com/Agoric/agoric-sdk/issues/3576)) ([f353e86](https://github.com/Agoric/agoric-sdk/commit/f353e86d33101365845597cb374d825fe08ff129))
+* allow users to pass offerArgs with their offer ([#3578](https://github.com/Agoric/agoric-sdk/issues/3578)) ([cb1eea1](https://github.com/Agoric/agoric-sdk/commit/cb1eea1046f2de2ac90ea045eafad7c7de2afab6))
+
+
+### Bug Fixes
+
+* move the assertion that `allStagedSeatsUsed` into `reallocate` rather than `reallocateInternal` ([#3615](https://github.com/Agoric/agoric-sdk/issues/3615)) ([f8d62cc](https://github.com/Agoric/agoric-sdk/commit/f8d62cc889911f821e66a281aec5f680ed8e2628))
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* zoe/spawner/pegasus: use unlimited Meter, not metered: true ([04d4fd9](https://github.com/Agoric/agoric-sdk/commit/04d4fd96982ecd02de50f09fa38c6e2800cca527)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **zoe:** use metered=true and xs-worker on all swingset tests ([32967ca](https://github.com/Agoric/agoric-sdk/commit/32967cad79ec72d938de8a0308dd590fbc916d2a)), closes [#3518](https://github.com/Agoric/agoric-sdk/issues/3518) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+
+
+
 ### [0.17.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.17.5...@agoric/zoe@0.17.6) (2021-07-28)
 
 

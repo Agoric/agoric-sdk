@@ -89,8 +89,19 @@ const makeSubmodule = (path, repoUrl, { git }) => {
   const parseStatus = text =>
     text
       .split('\n')
-      .map(line => line.split(' ', 4))
-      .map(([_indent, hash, statusPath, describe]) => ({
+      // From `git submodule --help`:
+      // Show the status of the submodules. This will print the SHA-1 of the
+      // currently checked out commit for each submodule, along with the
+      // submodule path and the output of git describe for the SHA-1. Each
+      // SHA-1 will possibly be prefixed with - if the submodule is not
+      // initialized, + if the currently checked out submodule commit does
+      // not match the SHA-1 found in the index of the containing repository
+      // and U if the submodule has merge conflicts.
+      //
+      // We discovered that in other cases, the prefix is a single space.
+      .map(line => [line[0], ...line.slice(1).split(' ', 3)])
+      .map(([prefix, hash, statusPath, describe]) => ({
+        prefix,
         hash,
         path: statusPath,
         describe,
@@ -146,6 +157,8 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 async function main(args, { env, stdout, spawn, fs, os }) {
   const git = makeCLI('git', { spawn });
 
+  // When changing/adding entries here, make sure to search the whole project
+  // for `@@AGORIC_DOCKER_SUBMODULES@@`
   const submodules = [
     {
       url: env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git',
@@ -186,7 +199,8 @@ async function main(args, { env, stdout, spawn, fs, os }) {
         // eslint-disable-next-line no-await-in-loop
         await submodule.clone();
       }
-      submodule.checkout(commitHash);
+      // eslint-disable-next-line no-await-in-loop
+      await submodule.checkout(commitHash);
     } else {
       // eslint-disable-next-line no-await-in-loop
       await submodule.init();
