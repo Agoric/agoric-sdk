@@ -352,6 +352,7 @@
  * @property {string} name
  * @property {AssetKind} assetKind
  * @property {DisplayInfo} displayInfo
+ * @property {Value} initialFunds
  */
 
 /**
@@ -374,4 +375,12 @@
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
  * @property {BindDefaultFeePurse} bindDefaultFeePurse
+ */
+
+/**
+ * @typedef {Object} ZoeFeesConfig
+ * @property {NatValue} getPublicFacetFee
+ * @property {NatValue} installFee
+ * @property {NatValue} startInstanceFee
+ * @property {NatValue} offerFee
  */
