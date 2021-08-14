@@ -16,7 +16,7 @@
  * within its vat. The contract and ZCF never have direct access to
  * the users' payments or the Zoe purses.
  *
- * @property {() => Issuer} getInvitationIssuer
+ * @property {GetInvitationIssuer} getInvitationIssuer
  *
  * Zoe has a single `invitationIssuer` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the
@@ -40,11 +40,17 @@
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
+ * @property {BindDefaultFeePurse} bindDefaultFeePurse
+ */
+
+/**
+ * @callback GetInvitationIssuer
+ * @returns {Promise<Issuer>}
  */
 
 /**
  * @callback GetFeeIssuer
- * @returns {Issuer}
+ * @returns {Promise<Issuer>}
  */
 
 /**
@@ -53,37 +59,51 @@
 
 /**
  * @callback MakeFeePurse
- * @returns {FeePurse}
+ * @returns {Promise<FeePurse>}
+ */
+
+/**
+ * @callback BindDefaultFeePurse
+ * @param {ERef<FeePurse>} defaultFeePurse
+ * @returns {ZoeService}
  */
 
 /**
  * @callback GetPublicFacet
  * @param {Instance} instance
- * @returns {Object}
+ * @param {ERef<FeePurse>=} feePurse
+ * @returns {Promise<Object>}
+ */
+
+/**
+ * @callback GetPublicFacetFeePurseRequired
+ * @param {Instance} instance
+ * @param {ERef<FeePurse>} feePurse
+ * @returns {Promise<Object>}
  */
 
 /**
  * @callback GetIssuers
  * @param {Instance} instance
- * @returns {IssuerKeywordRecord}
+ * @returns {Promise<IssuerKeywordRecord>}
  */
 
 /**
  * @callback GetBrands
  * @param {Instance} instance
- * @returns {BrandKeywordRecord}
+ * @returns {Promise<BrandKeywordRecord>}
  */
 
 /**
  * @callback GetTerms
  * @param {Instance} instance
- * @returns {Terms}
+ * @returns {Promise<Terms>}
  */
 
 /**
  * @callback GetInstallationForInstance
  * @param {Instance} instance
- * @returns {Installation}
+ * @returns {Promise<Installation>}
  */
 
 /**
@@ -111,11 +131,23 @@
  * registering it with Zoe. Returns an installation.
  *
  * @param {SourceBundle} bundle
- * @returns {Installation}
+ * @param {ERef<FeePurse>=} feePurse
+ * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback InstallFeePurseRequired
+ *
+ * See Install for comments.
+ *
+ * @param {SourceBundle} bundle
+ * @param {ERef<FeePurse>} feePurse
+ * @returns {Promise<Installation>}
  */
 
 /**
  * @callback StartInstance
+ *
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
  * as well as the `terms` of the contract. The `terms.issuers` is a
@@ -137,6 +169,20 @@
  * @param {Object=} privateArgs - an optional configuration object
  * that can be used to pass in arguments that should not be in the
  * public terms
+ * @param {ERef<FeePurse>=} feePurse
+ * @returns {Promise<StartInstanceResult>}
+ */
+
+/**
+ * @callback StartInstanceFeePurseRequired
+ *
+ * See StartInstance for comments.
+ *
+ * @param {ERef<Installation>} installation
+ * @param {IssuerKeywordRecord=} issuerKeywordRecord
+ * @param {Object=} terms
+ * @param {Object=} privateArgs
+ * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<StartInstanceResult>}
  */
 
@@ -160,6 +206,21 @@
  * @param {ERef<Invitation>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
+ * @param {Object=} offerArgs
+ * @param {ERef<FeePurse>=} feePurse
+ * @returns {Promise<UserSeat>} seat
+ */
+
+/**
+ * @callback OfferFeePurseRequired
+ *
+ * See Offer for comments.
+ *
+ * @param {ERef<Invitation>} invitation
+ * @param {Proposal=} proposal
+ * @param {PaymentPKeywordRecord=} paymentKeywordRecord
+ * @param {Object=} offerArgs
+ * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<UserSeat>} seat
  */
 
@@ -291,4 +352,26 @@
  * @property {string} name
  * @property {AssetKind} assetKind
  * @property {DisplayInfo} displayInfo
+ */
+
+/**
+ * @typedef {Object} ZoeServiceFeePurseRequired
+ *
+ * See ZoeService for further comments and explanation (not copied here).
+ *
+ * @property {GetInvitationIssuer} getInvitationIssuer
+ * @property {InstallFeePurseRequired} install
+ * @property {StartInstanceFeePurseRequired} startInstance
+ * @property {OfferFeePurseRequired} offer
+ * @property {GetPublicFacetFeePurseRequired} getPublicFacet
+ * @property {GetIssuers} getIssuers
+ * @property {GetBrands} getBrands
+ * @property {GetTerms} getTerms
+ * @property {GetInstallationForInstance} getInstallationForInstance
+ * @property {GetInstance} getInstance
+ * @property {GetInstallation} getInstallation
+ * @property {GetInvitationDetails} getInvitationDetails
+ * @property {GetFeeIssuer} getFeeIssuer
+ * @property {MakeFeePurse} makeFeePurse
+ * @property {BindDefaultFeePurse} bindDefaultFeePurse
  */

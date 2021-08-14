@@ -23,7 +23,9 @@ const exampleVotingUsageRoot = `${dirname}/exampleVotingUsage.js`;
 test('exampleVotingUsage', async t => {
   const bundle = await bundleSource(exampleVotingUsageRoot);
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const installation = await E(zoe).install(bundle);
 
   const bldIssuerKit = makeIssuerKit('BLD', AssetKind.NAT, {

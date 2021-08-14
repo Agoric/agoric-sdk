@@ -26,12 +26,14 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdminSvc);
+  const { zoeService } = makeZoeKit(fakeVatAdminSvc);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
