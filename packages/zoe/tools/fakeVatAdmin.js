@@ -3,6 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@agoric/marshal';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
@@ -31,8 +32,14 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // test-only state can be provided from contracts
   // to their tests.
   const admin = Far('vatAdmin', {
-    createMeter: () => {},
-    createUnlimitedMeter: () => {},
+    createMeter: () => {
+      const notifierKit = makeNotifierKit();
+      return harden({ getNotifier: () => notifierKit.notifier });
+    },
+    createUnlimitedMeter: () => {
+      const notifierKit = makeNotifierKit();
+      return harden({ getNotifier: () => notifierKit.notifier });
+    },
     createVat: bundle => {
       return harden({
         root: makeRemote(

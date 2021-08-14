@@ -26,6 +26,7 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
 import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
+import { natSafeMath } from '../contractSupport/index.js';
 
 /**
  * Create an instance of Zoe.
@@ -37,6 +38,7 @@ import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ZoeFeesConfig} zoeFees
+ * @param {MeteringConfig} meteringConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
@@ -59,6 +61,15 @@ const makeZoeKit = (
     installFee: 0n,
     startInstanceFee: 0n,
     offerFee: 0n,
+  },
+  meteringConfig = {
+    incrementBy: 25_000_000n,
+    initial: 50_000_000n, // executeContract for treasury is 13.5M
+    threshold: 25_000_000n,
+    price: {
+      feeNumerator: 1n,
+      computronDenominator: 1n, // default is just one-to-one
+    },
   },
   zcfBundleName = undefined,
 ) => {
@@ -102,10 +113,27 @@ const makeZoeKit = (
     feeIssuer,
   );
 
+  const { multiply, ceilDivide } = natSafeMath;
+
+  const chargeForComputrons = async feePurse => {
+    const feeValue = ceilDivide(
+      multiply(meteringConfig.incrementBy, meteringConfig.price.feeNumerator),
+      meteringConfig.price.computronDenominator,
+    );
+    const feeToCharge = AmountMath.make(feeBrand, feeValue);
+    await chargeZoeFee(feePurse, feeToCharge);
+    return meteringConfig.incrementBy;
+  };
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
+  const createZCFVat = setupCreateZCFVat(
+    vatAdminSvc,
+    meteringConfig.initial,
+    meteringConfig.threshold,
+    zcfBundleName,
+  );
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -129,6 +157,7 @@ const makeZoeKit = (
     chargeZoeFee,
     getPublicFacetFeeAmount,
     installFeeAmount,
+    chargeForComputrons,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance
