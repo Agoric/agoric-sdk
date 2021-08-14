@@ -5,7 +5,14 @@ import { natSafeMath } from '../contractSupport/index.js';
 
 const { multiply, ceilDivide } = natSafeMath;
 
+/**
+ * @param {MeteringConfig} meteringConfig
+ * @param {Brand} feeBrand
+ * @param {ChargeZoeFee} chargeZoeFee
+ * @returns {ChargeForComputrons}
+ */
 const makeChargeForComputrons = (meteringConfig, feeBrand, chargeZoeFee) => {
+  /** @type {ChargeForComputrons} */
   const chargeForComputrons = async feePurse => {
     const feeValue = ceilDivide(
       multiply(meteringConfig.incrementBy, meteringConfig.price.feeNumerator),
