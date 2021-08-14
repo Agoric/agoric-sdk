@@ -54,7 +54,18 @@ func (la *LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 }
 
 func (la *LienAccount) LienedLockedCoins(ctx sdk.Context) sdk.Coins {
-	return la.lienKeeper.GetLien(ctx, la.GetAddress())
+	state := la.lienKeeper.GetAccountState(ctx, la.GetAddress())
+	lien := la.lienKeeper.GetAccountLien(ctx, la.GetAddress())
+	return computeLienLocked(lien.GetLien(), state.Bonded, state.Unbonding)
+}
+
+func computeLienLocked(liened, bonded, unbonding sdk.Coins) sdk.Coins {
+	// We're only interested in the lien-encumbered unbonded coins.
+	// The bonded and unbonding coins are encumbered first, so we
+	// compute the remainder.
+	locked, _ := liened.SafeSub(bonded)
+	locked, _ = locked.SafeSub(unbonding)
+	return maxCoins(sdk.NewCoins(), locked)
 }
 
 func NewAccountWrapper(lk Keeper) types.AccountWrapper {

@@ -1,13 +1,11 @@
 package keeper
 
 import (
-	"encoding/json"
-	"fmt"
 	"math"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 )
@@ -18,15 +16,21 @@ import (
 const stakingToken = "ubld"
 
 type Keeper struct {
-	accountKeeper    *types.WrappedAccountKeeper
-	bankKeeper       types.BankKeeper
-	stakingKeeper    types.StakingKeeper
+	key sdk.StoreKey
+	cdc codec.Codec
+
+	accountKeeper *types.WrappedAccountKeeper
+	bankKeeper    types.BankKeeper
+	stakingKeeper types.StakingKeeper
+
 	callToController func(ctx sdk.Context, str string) (string, error)
 }
 
-func NewKeeper(ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
+func NewKeeper(key sdk.StoreKey, cdc codec.Codec, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
 	callToController func(ctx sdk.Context, str string) (string, error)) Keeper {
 	return Keeper{
+		key:              key,
+		cdc:              cdc,
 		accountKeeper:    ak,
 		bankKeeper:       bk,
 		stakingKeeper:    sk,
@@ -41,38 +45,49 @@ func (lk Keeper) GetAccountWrapper() types.AccountWrapper {
 type AccountState struct {
 	Total     sdk.Coins `json:"total"`
 	Bonded    sdk.Coins `json:"bonded"`
-	Unbonding sdk.Coins
-	Locked    sdk.Coins
+	Unbonding sdk.Coins `json:"unbonding"`
+	Locked    sdk.Coins `json:"locked"`
 }
 
-type getLiened struct {
-	Type        string `json:"type"` // LIEN_GET_LIENED_AMOUNT
-	Address     string `json:"address"`
-	CurrentTime string `json:"currentTime"`
-	Denom       string `json:"denom"`
-}
-
-func (lk Keeper) GetLien(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
-	req := getLiened{
-		Type:        "LIEN_GET_LIENED_AMOUNT",
-		Address:     addr.String(),
-		CurrentTime: ctx.BlockTime().String(), // XXX use right format
-		Denom:       stakingToken,
+func (lk Keeper) GetAccountLien(ctx sdk.Context, addr sdk.AccAddress) types.AccountLien {
+	store := ctx.KVStore(lk.key)
+	bz := store.Get(types.LienByAddressKey(addr))
+	if bz == nil {
+		return types.AccountLien{Address: addr.String()} // XXX bech32 convert?
 	}
-	bz, err := json.Marshal(&req)
+	return lk.DecodeLien(bz)
+}
+
+func (lk Keeper) SetAccountLien(ctx sdk.Context, lien types.AccountLien) {
+	store := ctx.KVStore(lk.key)
+	bz := lk.MarshalAccount(lien)
+	addr, err := sdk.AccAddressFromBech32(lien.Address)
 	if err != nil {
 		panic(err)
 	}
-	reply, err := lk.callToController(ctx, string(bz))
-	if err != nil {
-		panic(err)
+	store.Set(types.LienByAddressKey(addr), bz)
+}
+
+func (lk Keeper) MarshalAccount(lien types.AccountLien) []byte {
+	return lk.cdc.MustMarshal(&lien)
+}
+
+func (lk Keeper) DecodeLien(bz []byte) types.AccountLien {
+	var lien types.AccountLien
+	lk.cdc.MustUnmarshal(bz, &lien)
+	return lien
+}
+
+func (lk Keeper) IterateAccountLiens(ctx sdk.Context, cb func(types.AccountLien) bool) {
+	store := ctx.KVStore(lk.key)
+	iterator := store.Iterator(nil, nil)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		lien := lk.DecodeLien(iterator.Value())
+		if cb(lien) {
+			break
+		}
 	}
-	amt := sdk.NewInt(0)
-	err = amt.UnmarshalJSON([]byte(reply))
-	if err != nil {
-		panic(fmt.Sprintf(`Can't decode "%s": %v`, reply, err))
-	}
-	return sdk.NewCoins(sdk.NewCoin(stakingToken, amt))
 }
 
 func (lk Keeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState {
@@ -138,55 +153,4 @@ func (lk Keeper) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 		return sdk.NewCoins()
 	}
 	return vestingAccount.GetVestingCoins(ctx.BlockTime())
-}
-
-var _ vm.PortHandler = &Keeper{}
-
-type portMessage struct {
-	Type    string `json:"type"`
-	Address string `json:"address"`
-	Denom   string `json:"denom"`
-}
-
-type msgAccountState struct {
-	CurrentTime string `json:"currentTime"`
-	Total       string `json:"total"`
-	Bonded      string `json:"bonded"`
-	Unbonding   string `json:"unbonding"`
-	Locked      string `json:"locked"`
-}
-
-func (lk Keeper) Receive(ctx *vm.ControllerContext, str string) (string, error) {
-	var msg portMessage
-	err := json.Unmarshal([]byte(str), &msg)
-	if err != nil {
-		return "", err
-	}
-	switch msg.Type {
-	case "LIEN_GET_ACCOUNT_STATE":
-		addr, err := sdk.AccAddressFromBech32(msg.Address)
-		if err != nil {
-			return "", fmt.Errorf("cannot converts %s to address: %w", msg.Address, err)
-		}
-		if msg.Denom != stakingToken {
-			return "", fmt.Errorf("bad staking token %s", msg.Denom)
-		}
-		now := ctx.Context.BlockTime()
-		as := lk.GetAccountState(ctx.Context, addr)
-		reply := msgAccountState{
-			CurrentTime: now.String(),
-			Total:       as.Total.AmountOf(msg.Denom).String(),
-			Bonded:      as.Bonded.AmountOf(msg.Denom).String(),
-			Unbonding:   as.Unbonding.AmountOf(msg.Denom).String(),
-			Locked:      as.Locked.AmountOf(msg.Denom).String(),
-		}
-		bz, err := json.Marshal(&reply)
-		if err != nil {
-			return "", fmt.Errorf("cannot marshal %v: %s", reply, err)
-		}
-		return string(bz), nil
-
-	default:
-		return "", fmt.Errorf("unrecognized type %s", msg.Type)
-	}
 }

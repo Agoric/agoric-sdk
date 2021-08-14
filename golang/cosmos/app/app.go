@@ -132,6 +132,7 @@ var (
 		swingset.AppModuleBasic{},
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
+		lien.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -262,7 +263,7 @@ func NewAgoricApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, feegrant.StoreKey, ibctransfertypes.StoreKey,
-		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey,
+		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
 		capabilitytypes.StoreKey,
 		authzkeeper.StoreKey,
 	)
@@ -409,9 +410,10 @@ func NewAgoricApp(
 	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// Lien keeper, and circular reference back to wrappedAccountKeeper
-	app.LienKeeper = lien.NewKeeper(wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper, callToController)
+	app.LienKeeper = lien.NewKeeper(keys[lien.StoreKey], appCodec, wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper, callToController)
 	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
-	app.lienPort = vm.RegisterPortHandler("lien", app.LienKeeper)
+	lienModule := lien.NewAppModule(app.LienKeeper)
+	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -456,6 +458,7 @@ func NewAgoricApp(
 		swingset.NewAppModule(app.SwingSetKeeper),
 		vibcModule,
 		vbankModule,
+		lienModule,
 		transferModule,
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 	)
@@ -480,7 +483,7 @@ func NewAgoricApp(
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		vbank.ModuleName, swingset.ModuleName,
+		vbank.ModuleName, swingset.ModuleName, lien.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 	)

@@ -6,8 +6,10 @@ import (
 )
 
 var (
+	ModuleName              = types.ModuleName
 	NewKeeper               = keeper.NewKeeper
 	NewWrappedAccountKeeper = types.NewWrappedAccountKeeper
+	StoreKey                = types.StoreKey
 )
 
 type (
