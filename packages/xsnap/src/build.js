@@ -157,6 +157,8 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 async function main(args, { env, stdout, spawn, fs, os }) {
   const git = makeCLI('git', { spawn });
 
+  // When changing/adding entries here, make sure to search the whole project
+  // for `@@AGORIC_DOCKER_SUBMODULES@@`
   const submodules = [
     {
       url: env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git',

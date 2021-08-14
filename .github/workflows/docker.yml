@@ -22,6 +22,8 @@ jobs:
       with:
         name: agoric/agoric-sdk
         dockerfile: packages/deployment/Dockerfile.sdk
+        # When changing/adding entries here, make sure to search the whole
+        # project for `@@AGORIC_DOCKER_SUBMODULES@@`
         buildargs: MODDABLE_COMMIT_HASH,MODDABLE_URL,XSNAP_NATIVE_COMMIT_HASH,XSNAP_NATIVE_URL,GIT_REVISION
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}

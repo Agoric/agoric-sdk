@@ -15,5 +15,7 @@ packages/stat-logger
 **/swingset-kernel-state
 **/_agstate
 .vagrant
+# When changing/adding entries here, make sure to search the whole project for
+# `@@AGORIC_DOCKER_SUBMODULES@@`
 packages/xsnap/moddable
 packages/xsnap/xsnap-native
