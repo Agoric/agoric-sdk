@@ -11,9 +11,11 @@ import { makeAsyncIterableFromNotifier as iterateNotifier } from '@agoric/notifi
 const refillMeter = async (meter, chargeForComputrons, feePurse) => {
   const meterNotifier = E(meter).getNotifier();
 
-  for await (const value of iterateNotifier(meterNotifier)) {
-    console.log('NOTIFIED', value);
+  for await (const remaining of iterateNotifier(meterNotifier)) {
     const incrementBy = await chargeForComputrons(feePurse);
+    console.log(
+      `Meter down to ${remaining}. Refilling to ${remaining + incrementBy}`,
+    );
     await E(meter).addRemaining(incrementBy); // will notify at the same threshold as before
   }
 };

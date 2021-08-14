@@ -26,7 +26,7 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
 import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
-import { natSafeMath } from '../contractSupport/index.js';
+import { makeChargeForComputrons } from './chargeForComputrons.js';
 
 /**
  * Create an instance of Zoe.
@@ -113,18 +113,6 @@ const makeZoeKit = (
     feeIssuer,
   );
 
-  const { multiply, ceilDivide } = natSafeMath;
-
-  const chargeForComputrons = async feePurse => {
-    const feeValue = ceilDivide(
-      multiply(meteringConfig.incrementBy, meteringConfig.price.feeNumerator),
-      meteringConfig.price.computronDenominator,
-    );
-    const feeToCharge = AmountMath.make(feeBrand, feeValue);
-    await chargeZoeFee(feePurse, feeToCharge);
-    return meteringConfig.incrementBy;
-  };
-
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
@@ -133,6 +121,12 @@ const makeZoeKit = (
     meteringConfig.initial,
     meteringConfig.threshold,
     zcfBundleName,
+  );
+
+  const chargeForComputrons = makeChargeForComputrons(
+    meteringConfig,
+    feeBrand,
+    chargeZoeFee,
   );
 
   // The ZoeStorageManager composes and consolidates capabilities
