@@ -49,7 +49,7 @@ docker-push: docker-push-base docker-push-solo docker-push-setup \
 
 # ./docker is an emptyish directory.
 docker-build-ibc-alpha:
-	docker build --build-arg=MODDABLE_COMMIT_HASH=--build-arg=SDK_TAG=$(TAG) -t $(REPOSITORY_SDK):ibc-alpha --file=Dockerfile.ibc-alpha ./docker
+	docker build --build-arg=SDK_TAG=$(TAG) -t $(REPOSITORY_SDK):ibc-alpha --file=Dockerfile.ibc-alpha ./docker
 
 docker-push-ibc-alpha: docker-build-ibc-alpha
 	docker push $(REPOSITORY_SDK):ibc-alpha

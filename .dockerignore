@@ -16,3 +16,4 @@ packages/stat-logger
 **/_agstate
 .vagrant
 packages/xsnap/moddable
+packages/xsnap/xsnap-native
