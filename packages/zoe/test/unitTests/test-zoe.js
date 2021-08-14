@@ -362,6 +362,8 @@ test(`zoe.getInvitationDetails`, async t => {
     handle: details.handle,
     installation,
     instance,
+    fee: undefined,
+    expiry: undefined,
   });
 });
 

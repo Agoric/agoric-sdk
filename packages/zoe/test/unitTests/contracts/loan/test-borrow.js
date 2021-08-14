@@ -145,6 +145,8 @@ test('borrow assert customProps', async t => {
     installation,
     instance,
     maxLoan,
+    fee: undefined,
+    expiry: undefined,
   });
 });
 

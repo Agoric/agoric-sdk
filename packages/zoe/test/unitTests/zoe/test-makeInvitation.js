@@ -41,6 +41,8 @@ test('createInvitationKit', async t => {
         handle: mockInvitationHandle,
         installation: mockInstallation,
         instance: mockInstance,
+        fee: undefined,
+        expiry: undefined,
       },
     ]),
   );
@@ -102,6 +104,8 @@ test('customProperties ok to omit', async t => {
         handle: mockInvitationHandle,
         installation: mockInstallation,
         instance: mockInstance,
+        fee: undefined,
+        expiry: undefined,
       },
     ]),
   );

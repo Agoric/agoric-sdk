@@ -45,10 +45,7 @@ export const createInvitationKit = (
       const absoluteFee = translateFee(relativeFee);
       const absoluteExpiry = await translateExpiry(relativeExpiry);
 
-      let feeInfo = {};
-      if (absoluteFee && absoluteExpiry) {
-        feeInfo = { fee: absoluteFee, expiry: absoluteExpiry };
-      }
+      const feeInfo = { fee: absoluteFee, expiry: absoluteExpiry };
       // If the contract-provided customProperties include the
       // properties 'description', 'handle', 'instance',
       // 'installation', 'fee', or 'expiry', their corresponding
@@ -63,7 +60,7 @@ export const createInvitationKit = (
           handle: invitationHandle,
           instance,
           installation,
-          ...feeInfo, // may be empty
+          ...feeInfo, // will override customProperties if they exist
         },
       ]);
       return invitationKit.mint.mintPayment(invitationAmount);
