@@ -72,7 +72,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const chainTimerServiceP = E(vats.timer).createTimerService(timerDevice);
 
     const feeIssuerConfig = {
-      name: 'RUN',
+      name: 'RUNZ', // FIXME: CENTRAL_ISSUER_NAME
       assetKind: AssetKind.NAT,
       displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
       initialFunds: 1_000_000_000_000_000_000n,
