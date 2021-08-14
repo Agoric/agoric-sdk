@@ -1,6 +1,7 @@
 // @ts-check
 
 import bundleSource from '@agoric/bundle-source';
+import { E } from '@agoric/eventual-send';
 
 /**
  * @param {ZoeService} zoe
@@ -8,4 +9,4 @@ import bundleSource from '@agoric/bundle-source';
  * @returns {Promise<Installation>}
  */
 export const installationPFromSource = (zoe, path) =>
-  bundleSource(path).then(b => zoe.install(b));
+  bundleSource(path).then(b => E(zoe).install(b));

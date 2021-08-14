@@ -33,8 +33,10 @@ const multipoolAutoswapRoot = `${dirname}/../../../../src/contracts/multipoolAut
 
 test('multipoolAutoSwap with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Set up central token
@@ -56,10 +58,10 @@ test('multipoolAutoSwap with valid offers', async t => {
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
   const fakeTimer = buildManualTimer(console.log, 30);
-  const { instance, publicFacet } = await zoe.startInstance(
+  const { instance, publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
     { timer: fakeTimer },
@@ -68,7 +70,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     publicFacet,
   ).makeAddLiquidityInvitation();
 
-  const aliceInvitationAmount = await invitationIssuer.getAmountOf(
+  const aliceInvitationAmount = await E(invitationIssuer).getAmountOf(
     aliceAddLiquidityInvitation,
   );
   t.deepEqual(
@@ -108,7 +110,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     publicFacet,
   ).getPriceAuthorities(moolaR.brand);
 
-  const issuerKeywordRecord = zoe.getIssuers(instance);
+  const issuerKeywordRecord = await E(zoe).getIssuers(instance);
   t.deepEqual(
     issuerKeywordRecord,
     harden({
@@ -143,7 +145,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     Central: aliceCentralPayment,
   };
 
-  const addLiquiditySeat = await zoe.offer(
+  const addLiquiditySeat = await E(zoe).offer(
     aliceAddLiquidityInvitation,
     aliceProposal,
     alicePayments,
@@ -193,8 +195,10 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   const {
     value: [bobInvitationValue],
-  } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
-  const bobPublicFacet = await zoe.getPublicFacet(bobInvitationValue.instance);
+  } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
+  const bobPublicFacet = await E(zoe).getPublicFacet(
+    bobInvitationValue.instance,
+  );
 
   t.is(
     bobInvitationValue.installation,
@@ -220,7 +224,7 @@ test('multipoolAutoSwap with valid offers', async t => {
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
   // Bob swaps
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobSwapInvitation1,
     bobMoolaForCentralProposal,
     bobMoolaForCentralPayments,
@@ -285,7 +289,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     In: await E(bobCentralPurse).withdraw(centralTokens(7)),
   });
 
-  const bobSeat2 = await zoe.offer(
+  const bobSeat2 = await E(zoe).offer(
     bobSwapInvitation2,
     bobCentralForMoolaProposal,
     centralForMoolaPayments,
@@ -350,7 +354,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     Central: aliceCentralPayment2,
   };
 
-  const aliceSeat2 = await zoe.offer(
+  const aliceSeat2 = await E(zoe).offer(
     aliceSimCentralLiquidityInvitation,
     aliceSimCentralProposal,
     aliceSimCentralPayments,
@@ -437,7 +441,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     In: bobSimoleanPayment,
   });
 
-  const bobSeat3 = await zoe.offer(
+  const bobSeat3 = await E(zoe).offer(
     bobThirdInvitation,
     bobSimsForMoolaProposal,
     simsForMoolaPayments,
@@ -501,7 +505,7 @@ test('multipoolAutoSwap with valid offers', async t => {
     want: { Secondary: moola(91), Central: centralTokens(56) },
   });
 
-  const aliceSeat3 = await zoe.offer(
+  const aliceSeat3 = await E(zoe).offer(
     aliceRemoveLiquidityInvitation,
     aliceRemoveLiquidityProposal,
     harden({ Liquidity: liquidityPayout }),
@@ -546,8 +550,10 @@ test('multipoolAutoSwap with valid offers', async t => {
 
 test('multipoolAutoSwap get detailed prices', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Set up central token
@@ -565,8 +571,8 @@ test('multipoolAutoSwap get detailed prices', async t => {
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
-  const installation = await zoe.install(bundle);
-  const { instance, publicFacet } = await zoe.startInstance(
+  const installation = await E(zoe).install(bundle);
+  const { instance, publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -574,7 +580,7 @@ test('multipoolAutoSwap get detailed prices', async t => {
     publicFacet,
   ).makeAddLiquidityInvitation();
 
-  const aliceInvitationAmount = await invitationIssuer.getAmountOf(
+  const aliceInvitationAmount = await E(invitationIssuer).getAmountOf(
     aliceAddLiquidityInvitation,
   );
   t.deepEqual(
@@ -621,7 +627,7 @@ test('multipoolAutoSwap get detailed prices', async t => {
     Central: aliceCentralPayment,
   };
 
-  const addLiquiditySeat = await zoe.offer(
+  const addLiquiditySeat = await E(zoe).offer(
     aliceAddLiquidityInvitation,
     aliceProposal,
     alicePayments,
@@ -667,7 +673,7 @@ test('multipoolAutoSwap get detailed prices', async t => {
     Central: aliceCentralPayment2,
   };
 
-  const aliceSeat2 = await zoe.offer(
+  const aliceSeat2 = await E(zoe).offer(
     aliceSimCentralLiquidityInvitation,
     aliceSimCentralProposal,
     aliceSimCentralPayments,
@@ -728,8 +734,10 @@ test('multipoolAutoSwap get detailed prices', async t => {
 
 test('multipoolAutoSwap with some invalid offers', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -743,8 +751,8 @@ test('multipoolAutoSwap with some invalid offers', async t => {
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
 
-  const installation = await zoe.install(bundle);
-  const { publicFacet } = await zoe.startInstance(
+  const installation = await E(zoe).install(bundle);
+  const { publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -755,8 +763,8 @@ test('multipoolAutoSwap with some invalid offers', async t => {
 
   const {
     value: [bobInvitationValue],
-  } = await invitationIssuer.getAmountOf(bobSwapInvitation1);
-  const bobPublicFacet = zoe.getPublicFacet(bobInvitationValue.instance);
+  } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
+  const bobPublicFacet = E(zoe).getPublicFacet(bobInvitationValue.instance);
 
   // Bob tries to look up prices, but the pool isn't initiailzed
   await t.throwsAsync(
@@ -773,7 +781,7 @@ test('multipoolAutoSwap with some invalid offers', async t => {
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
   // Bob swaps
-  const failedSeat = await zoe.offer(
+  const failedSeat = await E(zoe).offer(
     bobSwapInvitation1,
     bobMoolaForCentralProposal,
     bobMoolaForCentralPayments,
@@ -789,11 +797,13 @@ test('multipoolAutoSwap with some invalid offers', async t => {
 
 test('multipoolAutoSwap jig - addLiquidity', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -806,7 +816,7 @@ test('multipoolAutoSwap jig - addLiquidity', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -911,7 +921,7 @@ test('multipoolAutoSwap jig - addLiquidity', async t => {
   });
 
   const invite = E(publicFacet).makeAddLiquidityInvitation();
-  const seat = zoe.offer(invite, proposal, payment);
+  const seat = E(zoe).offer(invite, proposal, payment);
   await t.throwsAsync(
     () => E(seat).getOfferResult(),
     { message: 'insufficient Secondary deposited' },
@@ -923,11 +933,13 @@ test('multipoolAutoSwap jig - addLiquidity', async t => {
 
 test('multipoolAutoSwap jig - check liquidity', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -940,7 +952,7 @@ test('multipoolAutoSwap jig - check liquidity', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1058,11 +1070,13 @@ test('multipoolAutoSwap jig - check liquidity', async t => {
 
 test('multipoolAutoSwap jig - swapOut', async t => {
   const { moolaR, moola, simoleanR, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1077,7 +1091,7 @@ test('multipoolAutoSwap jig - swapOut', async t => {
   const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
   simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1270,11 +1284,13 @@ test('multipoolAutoSwap jig - swapOut', async t => {
 
 test('multipoolAutoSwap jig - swapOut uneven', async t => {
   const { moolaR, moola, simoleanR, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1289,7 +1305,7 @@ test('multipoolAutoSwap jig - swapOut uneven', async t => {
   const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
   simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1452,11 +1468,13 @@ test('multipoolAutoSwap jig - swapOut uneven', async t => {
 
 test('multipoolAutoSwap jig - removeLiquidity', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1469,7 +1487,7 @@ test('multipoolAutoSwap jig - removeLiquidity', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1564,11 +1582,13 @@ test('multipoolAutoSwap jig - removeLiquidity', async t => {
 
 test('multipoolAutoSwap jig - removeLiquidity ask for too much', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1581,7 +1601,7 @@ test('multipoolAutoSwap jig - removeLiquidity ask for too much', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1660,11 +1680,13 @@ test('multipoolAutoSwap jig - removeLiquidity ask for too much', async t => {
 
 test('multipoolAutoSwap jig - remove all liquidity', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1677,7 +1699,7 @@ test('multipoolAutoSwap jig - remove all liquidity', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1755,11 +1777,13 @@ test('multipoolAutoSwap jig - remove all liquidity', async t => {
 
 test('multipoolAutoSwap jig - insufficient', async t => {
   const { moolaR, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Set up central token
   const centralR = makeIssuerKit('central');
@@ -1772,7 +1796,7 @@ test('multipoolAutoSwap jig - insufficient', async t => {
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000)));
 
-  const startRecord = await zoe.startInstance(
+  const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
   );
@@ -1849,15 +1873,17 @@ test('multipoolAutoSwap jig - insufficient', async t => {
 });
 
 test('multipoolAutoSwap collect empty fees', async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const centralR = makeIssuerKit('central');
   const centralTokens = value => AmountMath.make(value, centralR.brand);
 
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
   const fakeTimer = buildManualTimer(console.log, 30);
-  const { publicFacet, creatorFacet } = await zoe.startInstance(
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
     { timer: fakeTimer },
@@ -1866,7 +1892,7 @@ test('multipoolAutoSwap collect empty fees', async t => {
     creatorFacet,
   ).makeCollectFeesInvitation();
 
-  const feeSeat = await zoe.offer(aliceCollectFeesInvitation);
+  const feeSeat = await E(zoe).offer(aliceCollectFeesInvitation);
   t.deepEqual(await E(feeSeat).getCurrentAllocation(), {});
 
   await assertAmountsEqual(
@@ -1881,8 +1907,10 @@ test('multipoolAutoSwap collect empty fees', async t => {
 
 test('multipoolAutoSwap swapout secondary to secondary', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
-  const invitationIssuer = zoe.getInvitationIssuer();
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Set up central token
@@ -1900,10 +1928,10 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
 
   // Alice creates an autoswap instance
   const bundle = await bundleSource(multipoolAutoswapRoot);
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
   const fakeTimer = buildManualTimer(console.log, 30);
-  const { instance, publicFacet } = await zoe.startInstance(
+  const { instance, publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
     { timer: fakeTimer },
@@ -1912,7 +1940,7 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
     publicFacet,
   ).makeAddLiquidityInvitation();
 
-  const aliceInvitationAmount = await invitationIssuer.getAmountOf(
+  const aliceInvitationAmount = await E(invitationIssuer).getAmountOf(
     aliceAddLiquidityInvitation,
   );
   t.deepEqual(
@@ -1951,7 +1979,7 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
     publicFacet,
   ).getPriceAuthorities(moolaR.brand);
 
-  const issuerKeywordRecord = zoe.getIssuers(instance);
+  const issuerKeywordRecord = await E(zoe).getIssuers(instance);
   t.deepEqual(
     issuerKeywordRecord,
     harden({
@@ -1976,7 +2004,7 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
     Central: aliceCentralPayment,
   };
 
-  const addLiquiditySeat = await zoe.offer(
+  const addLiquiditySeat = await E(zoe).offer(
     aliceAddLiquidityInvitation,
     aliceProposal,
     alicePayments,
@@ -2017,7 +2045,7 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
     Central: aliceCentralPayment2,
   };
 
-  const aliceAddLiquiditySeat2 = await zoe.offer(
+  const aliceAddLiquiditySeat2 = await E(zoe).offer(
     aliceSimCentralLiquidityInvitation,
     aliceSimCentralProposal,
     aliceSimCentralPayments,
@@ -2057,7 +2085,7 @@ test('multipoolAutoSwap swapout secondary to secondary', async t => {
     In: bobSimoleanPayment,
   });
 
-  const bobSeat = await zoe.offer(
+  const bobSeat = await E(zoe).offer(
     bobInvitation,
     bobSimsForMoolaProposal,
     simsForMoolaPayments,

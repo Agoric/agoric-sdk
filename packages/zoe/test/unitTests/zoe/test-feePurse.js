@@ -11,20 +11,22 @@ const setup = () => {
   const runIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
     decimalPlaces: 6,
   });
-  const { makeFeePurse, isFeePurse } = setupMakeFeePurse(runIssuerKit.issuer);
-  return { makeFeePurse, isFeePurse, runIssuerKit };
+  const { makeFeePurse, assertFeePurse } = setupMakeFeePurse(
+    runIssuerKit.issuer,
+  );
+  return { makeFeePurse, assertFeePurse, runIssuerKit };
 };
 
 test('feePurse starts empty', async t => {
   const { makeFeePurse } = setup();
-  const feePurse = makeFeePurse();
+  const feePurse = await makeFeePurse();
 
   t.true(AmountMath.isEmpty(feePurse.getCurrentAmount()));
 });
 
 test('depositing into and withdrawing from feePurse', async t => {
   const { makeFeePurse, runIssuerKit } = setup();
-  const feePurse = makeFeePurse();
+  const feePurse = await makeFeePurse();
 
   const run1000 = AmountMath.make(runIssuerKit.brand, 1000n);
   const payment = runIssuerKit.mint.mintPayment(run1000);
@@ -37,9 +39,9 @@ test('depositing into and withdrawing from feePurse', async t => {
   t.true(AmountMath.isEmpty(feePurse.getCurrentAmount()));
 });
 
-test('isFeePurse', async t => {
-  const { makeFeePurse, isFeePurse } = setup();
-  const feePurse = makeFeePurse();
+test('assertFeePurse', async t => {
+  const { makeFeePurse, assertFeePurse } = setup();
+  const feePurse = await makeFeePurse();
 
-  t.true(isFeePurse(feePurse));
+  t.is(await assertFeePurse(feePurse), undefined);
 });

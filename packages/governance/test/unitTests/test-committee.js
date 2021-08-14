@@ -20,7 +20,9 @@ const registrarRoot = `${dirname}/../../src/committeeRegistrar.js`;
 const counterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
 
 async function setupContract() {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const [registrarBundle, counterBundle] = await Promise.all([
@@ -29,8 +31,8 @@ async function setupContract() {
   ]);
   // install the contract
   const [registrarInstallation, counterInstallation] = await Promise.all([
-    zoe.install(registrarBundle),
-    zoe.install(counterBundle),
+    E(zoe).install(registrarBundle),
+    E(zoe).install(counterBundle),
   ]);
   const terms = { committeeName: 'illuminati', committeeSize: 13 };
   const registrarStartResult = await E(zoe).startInstance(
