@@ -12,6 +12,7 @@ import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
+const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
 
@@ -105,6 +106,11 @@ const main = async (progname, rawArgs, powers) => {
       '--dapp-base <base-url>',
       'find the template relative to <base-url>',
       DEFAULT_DAPP_URL_BASE,
+    )
+    .option(
+      '--dapp-branch <branch>',
+      'use this branch instead of the repository HEAD',
+      DEFAULT_DAPP_BRANCH,
     )
     .action(async (project, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
