@@ -197,7 +197,8 @@ async function main(args, { env, stdout, spawn, fs, os }) {
         // eslint-disable-next-line no-await-in-loop
         await submodule.clone();
       }
-      submodule.checkout(commitHash);
+      // eslint-disable-next-line no-await-in-loop
+      await submodule.checkout(commitHash);
     } else {
       // eslint-disable-next-line no-await-in-loop
       await submodule.init();
