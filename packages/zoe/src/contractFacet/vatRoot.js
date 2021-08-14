@@ -36,6 +36,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
     instanceRecordFromZoe,
     issuerStorageFromZoe,
     privateArgs = undefined,
+    feePurse,
   ) => {
     /** @type {ZCFZygote} */
     const zcfZygote = makeZCFZygote(
@@ -43,6 +44,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       zoeService,
       invitationIssuer,
       testJigSetter,
+      feePurse,
     );
     zcfZygote.evaluateContract(bundle);
     return zcfZygote.startContract(

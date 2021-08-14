@@ -199,6 +199,7 @@
  * @param {InstanceRecord} instanceRecord
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {Object=} privateArgs
+ * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<ExecuteContractResult>}
  *
  */

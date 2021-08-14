@@ -134,7 +134,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       const invitation = swapIn
         ? E(publicFacet).makeSwapInInvitation()
         : E(publicFacet).makeSwapOutInvitation();
-      const seat = await zoe.offer(invitation, proposal, payment);
+      const seat = await E(zoe).offer(invitation, proposal, payment);
       return seat;
     },
 
@@ -248,7 +248,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         Secondary: withdrawPayment(sAmount),
       });
 
-      const seat = await zoe.offer(
+      const seat = await E(zoe).offer(
         E(publicFacet).makeAddLiquidityInvitation(),
         proposal,
         payment,
@@ -330,7 +330,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         Liquidity: withdrawPayment(lAmount),
       });
 
-      const seat = await zoe.offer(
+      const seat = await E(zoe).offer(
         E(publicFacet).makeRemoveLiquidityInvitation(),
         proposal,
         payment,
@@ -396,7 +396,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         Secondary: withdrawPayment(sAmount),
       });
 
-      const seat = await zoe.offer(
+      const seat = await E(zoe).offer(
         await E(publicFacet).makeAddLiquidityInvitation(),
         proposal,
         payment,
