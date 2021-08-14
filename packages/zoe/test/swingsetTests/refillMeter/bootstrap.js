@@ -17,17 +17,17 @@ export function buildRootObject(vatPowers) {
         name: 'RUN',
         assetKind: AssetKind.NAT,
         displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
-        initialFunds: 5_275_000n,
+        initialFunds: 4_470_000n,
       };
       const zoeFeesConfig = {
         getPublicFacetFee: 0n,
         installFee: 65_000n,
-        startInstanceFee: 5_000_000n,
+        startInstanceFee: 4_200_000n,
         offerFee: 0n,
       };
       const meteringConfig = {
         incrementBy: 70_000n,
-        initial: 4_396_000n, // startInstance seems to take around this much
+        initial: 4_200_000n, // startInstance seems to take around this much
         threshold: 70_000,
         price: {
           feeNumerator: 1n,
@@ -45,9 +45,7 @@ export function buildRootObject(vatPowers) {
       const preInstallationAmount = await E(feePurse).getCurrentAmount();
       let expected = feeIssuerConfig.initialFunds;
       log(
-        'pre-installation ',
-        preInstallationAmount.value,
-        '. Equals expected: ',
+        'pre-installation equals expected: ',
         preInstallationAmount.value === expected,
       );
 
@@ -57,9 +55,7 @@ export function buildRootObject(vatPowers) {
       expected -= zoeFeesConfig.installFee;
 
       log(
-        'post-installation ',
-        postInstallationAmount.value,
-        '. Equals expected: ',
+        'post-installation equals expected: ',
         postInstallationAmount.value === expected,
       );
 
@@ -69,17 +65,12 @@ export function buildRootObject(vatPowers) {
       expected -= zoeFeesConfig.startInstanceFee;
 
       // Meter was refilled
-      // Meter down to 48873. Refilling to 118873
       expected -= meteringConfig.incrementBy;
 
       log(
-        'post-startInstance ',
-        postStartInstanceAmount.value,
-        '. Equals expected: ',
+        'post-startInstance equals expected: ',
         postStartInstanceAmount.value === expected,
       );
-
-      log('if the above is true, meter was refilled once');
 
       // 1
       await E(publicFacet).smallComputation();
@@ -87,25 +78,18 @@ export function buildRootObject(vatPowers) {
       const postSmallComputation1 = await E(feePurse).getCurrentAmount();
 
       log(
-        'post-smallComputation1 ',
-        postSmallComputation1.value,
-        '. Equals expected: ',
+        'post-smallComputation1 equals expected: ',
         postSmallComputation1.value === expected,
       );
-
-      // Note meter does not refill here
-      log('meter does not refill here');
 
       // 2
       await E(publicFacet).smallComputation();
 
       const postSmallComputation2 = await E(feePurse).getCurrentAmount();
-      expected -= meteringConfig.incrementBy;
+      // No refill
 
       log(
-        'post-smallComputation2 ',
-        postSmallComputation2.value,
-        '. Equals expected: ',
+        'post-smallComputation2 equals expected: ',
         postSmallComputation2.value === expected,
       );
 
@@ -116,15 +100,13 @@ export function buildRootObject(vatPowers) {
       expected -= meteringConfig.incrementBy;
 
       log(
-        'post-smallComputation3 ',
-        postSmallComputation3.value,
-        '. Equals expected: ',
+        'post-smallComputation3 equals expected: ',
         postSmallComputation3.value === expected,
       );
 
-      // 4 + 5
-      // Note: a fifth time should kill the vat due to lack of funds
+      // This should kill the vat due to lack of funds
       // in the fee purse
+      await E(publicFacet).smallComputation();
       await E(publicFacet).smallComputation();
       await E(publicFacet)
         .smallComputation()

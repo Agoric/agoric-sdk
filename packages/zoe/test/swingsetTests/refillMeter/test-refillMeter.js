@@ -10,6 +10,8 @@ import fs from 'fs';
 import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 
+import { METER_TYPE } from '../../../../xsnap/api.js';
+
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -35,18 +37,21 @@ async function main(argv) {
 }
 
 const refillMeterLog = [
-  'pre-installation 5275000. Equals expected: true',
-  'post-installation 5210000. Equals expected: true',
-  'post-startInstance 140000. Equals expected: true',
-  'if the above is true, meter was refilled once',
-  'post-smallComputation1 140000. Equals expected: true',
-  'meter does not refill here',
-  'post-smallComputation2 70000. Equals expected: true',
-  'post-smallComputation3 0. Equals expected: true',
+  'pre-installation equals expected: true',
+  'post-installation equals expected: true',
+  'post-startInstance equals expected: true',
+  'post-smallComputation1 equals expected: true',
+  'post-smallComputation2 equals expected: true',
+  'post-smallComputation3 equals expected: true',
   'error: Error: vat terminated',
 ];
 
 test('zoe - metering - refill meter', async t => {
+  // If this assertion fails, please update this test with the new
+  // computron values. This test aims to be resilient to changes in
+  // computron values for particular actions but a significant change
+  // may break the test.
+  assert(METER_TYPE === 'xs-meter-10');
   const dump = await main(['refillMeter']);
   t.deepEqual(dump.log, refillMeterLog, 'log is correct');
 });

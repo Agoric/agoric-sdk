@@ -14,6 +14,7 @@ const { multiply, ceilDivide } = natSafeMath;
 const makeChargeForComputrons = (meteringConfig, feeBrand, chargeZoeFee) => {
   /** @type {ChargeForComputrons} */
   const chargeForComputrons = async feePurse => {
+    // Round on the side of charging higher fees
     const feeValue = ceilDivide(
       multiply(meteringConfig.incrementBy, meteringConfig.price.feeNumerator),
       meteringConfig.price.computronDenominator,

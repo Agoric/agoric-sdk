@@ -7,8 +7,8 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
  * ZCF Vats can be created.
  *
  * @param {VatAdminSvc} vatAdminSvc
- * @param {bigint} initial
- * @param {bigint} threshold
+ * @param {Computrons} initial
+ * @param {Computrons} threshold
  * @param {string=} zcfBundleName
  * @returns {CreateZCFVat}
  */

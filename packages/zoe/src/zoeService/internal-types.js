@@ -144,11 +144,18 @@
  */
 
 /**
+ * @typedef {bigint} Computrons
+ */
+
+/**
  * @typedef {Object} Meter
- * @property {(delta: bigint) => void} addRemaining
- * @property {(newThreshold: bigint) => void} setThreshold
- * @property {() => bigint} get
- * @property {() => Notifier<bigint>} getNotifier
+ *
+ * All `bigint` units here are in computrons.
+ *
+ * @property {(delta: Computrons) => void} addRemaining
+ * @property {(newThreshold: Computrons) => void} setThreshold
+ * @property {() => Computrons} get
+ * @property {() => Notifier<Computrons>} getNotifier
  */
 
 /**
