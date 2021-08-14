@@ -5,12 +5,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeInstallationStorage } from '../../../src/zoeService/installationStorage.js';
 
-const assertFeePurse = () => {};
-
 test('install, unwrap installations', async t => {
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    assertFeePurse,
-  );
+  const chargeZoeFee = () => true;
+  const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle = {};
   const feePurse = /** @type {FeePurse} */ ({});
 
@@ -21,9 +18,8 @@ test('install, unwrap installations', async t => {
 });
 
 test('unwrap promise for installation', async t => {
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    assertFeePurse,
-  );
+  const chargeZoeFee = () => true;
+  const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle = {};
   const feePurse = /** @type {FeePurse} */ ({});
 
@@ -34,9 +30,8 @@ test('unwrap promise for installation', async t => {
 });
 
 test('install several', async t => {
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    assertFeePurse,
-  );
+  const chargeZoeFee = () => true;
+  const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle1 = {};
   const fakeBundle2 = {};
   const feePurse = /** @type {FeePurse} */ ({});
@@ -53,9 +48,8 @@ test('install several', async t => {
 });
 
 test('install same twice', async t => {
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    assertFeePurse,
-  );
+  const chargeZoeFee = () => true;
+  const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle1 = {};
   const feePurse = /** @type {FeePurse} */ ({});
 
