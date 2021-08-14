@@ -15,9 +15,6 @@ else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
 endif
 
-submodule.env: ../xsnap/src/build.js
-	node ../xsnap/src/build.js --show-env >$@
-
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
 	docker build --file=Dockerfile.show-fat ../..
@@ -26,11 +23,8 @@ docker-build: docker-build-sdk docker-build-solo \
 	docker-build-setup docker-build-deployment
 
 docker-build-sdk:
-	docker build --build-arg=MODDABLE_COMMIT_HASH=$(MODDABLE_COMMIT_HASH) \
-		--build-arg=MODDABLE_URL=$(MODDABLE_URL) \
-		--build-arg=XSNAP_NATIVE_COMMIT_HASH=$(XSNAP_NATIVE_COMMIT_HASH) \
-		--build-arg=XSNAP_NATIVE_URL=$(XSNAP_NATIVE_URL) \
-		--build-arg=GIT_REVISION=$(GIT_REVISION) \
+	bargs=`node ../xsnap/src/build.js --show-env | sed -e 's/^/ --build-arg=/'`; \
+	docker build $$bargs --build-arg=GIT_REVISION=$(GIT_REVISION) \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 
