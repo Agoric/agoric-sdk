@@ -57,6 +57,7 @@ export const makeStartInstance = (
       customTerms,
       uncleanIssuerKeywordRecord,
       instance,
+      feePurse,
     );
     // AWAIT ///
 
