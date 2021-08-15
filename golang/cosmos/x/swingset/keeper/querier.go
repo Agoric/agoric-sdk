@@ -68,7 +68,7 @@ func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Ke
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get storage")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{Value: value})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
@@ -82,10 +82,10 @@ func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 	klist := keys.Keys
 
 	if klist == nil {
-		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get keys")
+		klist = []string{}
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Keys{klist})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Keys{Keys: klist})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
