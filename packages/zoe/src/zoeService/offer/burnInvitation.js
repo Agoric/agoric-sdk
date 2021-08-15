@@ -9,7 +9,12 @@ import { E } from '@agoric/eventual-send';
  *
  * @param {Issuer} invitationIssuer
  * @param {ERef<Payment>} invitation
- * @returns {Promise<{instanceHandle: Instance, invitationHandle: InvitationHandle}>}
+ * @returns {Promise<{
+ *   instanceHandle: Instance,
+ *   invitationHandle: InvitationHandle,
+ *   fee: Amount | undefined,
+ *   expiry: Timestamp | undefined,
+ * }>}
  */
 export const burnInvitation = (invitationIssuer, invitation) => {
   const handleRejected = reason => {
@@ -27,11 +32,13 @@ export const burnInvitation = (invitationIssuer, invitation) => {
       'Only one invitation can be redeemed at a time',
     );
     const [
-      { instance: instanceHandle, handle: invitationHandle },
+      { instance: instanceHandle, handle: invitationHandle, fee, expiry },
     ] = invitationValue;
     return {
       instanceHandle,
       invitationHandle,
+      fee,
+      expiry,
     };
   };
 
