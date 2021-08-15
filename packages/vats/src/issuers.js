@@ -25,6 +25,7 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  * @property {CollateralConfig} [collateralConfig]
  * @property {string} [bankDenom]
  * @property {string} [bankPurse]
+ * @property {Payment} [bankPayment]
  * @property {Array<[string, Bigish]>} [defaultPurses]
  * @property {Array<[Bigish, Bigish]>} [tradesGivenCentral]
  */
@@ -66,8 +67,18 @@ export const scaleMicro = makeScaler(6);
 export const scaleEth = makeScaler(18);
 export const scaleCentral = scaleMicro;
 
-/** @type {Array<[string, IssuerInitializationRecord]>} */
-const fromCosmosIssuerEntries = [
+/** @type {(centralRecord: Partial<IssuerInitializationRecord>) => Array<[string, IssuerInitializationRecord]>} */
+const fromCosmosIssuerEntries = centralRecord => [
+  [
+    CENTRAL_ISSUER_NAME,
+    {
+      issuerArgs: [undefined, { decimalPlaces: 6 }],
+      defaultPurses: [['Agoric RUN currency', scaleMicro(17)]],
+      bankPurse: 'Agoric RUN currency',
+      tradesGivenCentral: [[1, 1]],
+      ...centralRecord,
+    },
+  ],
   [
     'BLD',
     {
