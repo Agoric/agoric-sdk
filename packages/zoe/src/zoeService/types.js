@@ -399,7 +399,7 @@
  * @property {NatValue} installFee
  * @property {NatValue} startInstanceFee
  * @property {NatValue} offerFee
- * @property {TimerService | undefined} timeAuthority
+ * @property {ERef<TimerService> | undefined} timeAuthority
  * @property {bigint} highFee
  * @property {bigint} lowFee
  * @property {bigint} shortExp
