@@ -168,3 +168,15 @@
  * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<bigint>}
  */
+
+/**
+ * @callback TranslateFee
+ * @param {FeeChoice | undefined} relativeFee
+ * @returns {Amount | undefined}
+ */
+
+/**
+ * @callback TranslateExpiry
+ * @param {ExpiryChoice | undefined} relativeExpiry
+ * @returns {Timestamp | undefined}
+ */

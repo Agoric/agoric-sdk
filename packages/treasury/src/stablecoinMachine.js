@@ -27,6 +27,7 @@ import {
   getAmountOut,
   getAmountIn,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
 
 import {
   multiplyBy,
@@ -264,7 +265,13 @@ export async function start(zcf, privateArgs) {
       return mgr.makeLoanKit(seat);
     }
 
-    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
+    return zcf.makeInvitation(
+      makeLoanHook,
+      'MakeLoan',
+      undefined,
+      HIGH_FEE,
+      LONG_EXP,
+    );
   }
 
   zcf.setTestJig(() => ({
