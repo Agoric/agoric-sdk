@@ -6,6 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { assertProposalShape } from '../../contractSupport/index.js';
 
 import '../../../exported.js';
+import { LOW_FEE, SHORT_EXP } from '../../constants.js';
 
 /**
  * @typedef {Object} PriceAmountTriple
@@ -210,10 +211,22 @@ export const makeMakeSwapInvitation = (
   };
 
   const makeSwapInInvitation = () =>
-    zcf.makeInvitation(swapIn, 'autoswap swapIn');
+    zcf.makeInvitation(
+      swapIn,
+      'autoswap swapIn',
+      undefined,
+      LOW_FEE,
+      SHORT_EXP,
+    );
 
   const makeSwapOutInvitation = () =>
-    zcf.makeInvitation(swapOut, 'autoswap swapOut');
+    zcf.makeInvitation(
+      swapOut,
+      'autoswap swapOut',
+      undefined,
+      LOW_FEE,
+      SHORT_EXP,
+    );
 
   return { makeSwapInInvitation, makeSwapOutInvitation };
 };

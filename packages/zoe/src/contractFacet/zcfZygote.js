@@ -229,6 +229,8 @@ export const makeZCFZygote = (
       offerHandler = () => {},
       description,
       customProperties = harden({}),
+      relativeFee = undefined,
+      relativeExpiry = undefined,
     ) => {
       assert.typeof(
         description,
@@ -242,6 +244,8 @@ export const makeZCFZygote = (
         invitationHandle,
         description,
         customProperties,
+        relativeFee,
+        relativeExpiry,
       );
       return invitationP;
     },

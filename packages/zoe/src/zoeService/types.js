@@ -41,6 +41,7 @@
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
  * @property {BindDefaultFeePurse} bindDefaultFeePurse
+ * @property {GetConfiguration} getConfiguration
  */
 
 /**
@@ -66,6 +67,15 @@
  * @callback BindDefaultFeePurse
  * @param {ERef<FeePurse>} defaultFeePurse
  * @returns {ZoeService}
+ */
+
+/**
+ * @callback GetConfiguration
+ * @returns {{
+ *   feeIssuerConfig: FeeIssuerConfig,
+ *   zoeFeesConfig: ZoeFeesConfig,
+ *   meteringConfig: MeteringConfig
+ * }}
  */
 
 /**
@@ -375,6 +385,7 @@
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
  * @property {BindDefaultFeePurse} bindDefaultFeePurse
+ * @property {GetConfiguration} getConfiguration
  */
 
 /**
@@ -383,6 +394,11 @@
  * @property {NatValue} installFee
  * @property {NatValue} startInstanceFee
  * @property {NatValue} offerFee
+ * @property {TimerService | undefined} timeAuthority
+ * @property {bigint} highFee
+ * @property {bigint} lowFee
+ * @property {bigint} shortExp
+ * @property {bigint} longExp
  */
 
 /**

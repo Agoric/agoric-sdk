@@ -163,6 +163,10 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
+        transferFeeToCreator: async (userFeePurse, fee) => {
+          const payment = await E(userFeePurse).withdraw(fee);
+          return E(feePurse).deposit(payment);
+        },
       });
       return instanceAdmin;
     };

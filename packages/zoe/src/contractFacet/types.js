@@ -87,10 +87,10 @@
  *
  * Make a credible Zoe invitation for a particular smart contract
  * indicated by the `instance` in the details of the invitation. Zoe
- * also puts the `installation` and a unique `handle` in the details of
- * the invitation. The contract must provide a `description` for the
- * invitation and should include whatever information is
- * necessary for a potential buyer of the invitation to know what they are
+ * also puts the `installation` and a unique `handle` in the details
+ * of the invitation. The contract must provide a `description` for
+ * the invitation and should include whatever information is necessary
+ * for a potential buyer of the invitation to know what they are
  * getting in the `customProperties`. `customProperties` will be
  * placed in the details of the invitation.
  *
@@ -98,6 +98,13 @@
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {Object=} customProperties
+ * @param {FeeChoice=} relativeFee - If present, Zoe will transform this into
+ * an amount of RUN in the invitation details. This is the exact
+ * amount Zoe will charge when this invitation is used to make an
+ * offer.
+ * @param {ExpiryChoice=} relativeExpiry - If present, Zoe will
+ * transform this into a timestamp in the invitation details. After
+ * that timestamp, the invitation is no longer accepted by Zoe.
  * @returns {Promise<Invitation>}
  */
 
@@ -228,4 +235,19 @@
  * @property {Object=} creatorFacet
  * @property {Promise<Invitation>=} creatorInvitation
  * @property {Object=} publicFacet
+ */
+
+/**
+ * @typedef {'low'} LOW_FEE
+ * @typedef {'high'} HIGH_FEE
+ * @typedef {'short'} SHORT_EXP
+ * @typedef {'long'} LONG_EXP
+ */
+
+/**
+ * @typedef {LONG_EXP | SHORT_EXP} ExpiryChoice
+ */
+
+/**
+ * @typedef {LOW_FEE | HIGH_FEE} FeeChoice
  */
