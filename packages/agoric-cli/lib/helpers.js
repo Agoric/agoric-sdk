@@ -3,11 +3,24 @@
 
 /** @typedef {import('child_process').ChildProcess} ChildProcess */
 
+export const getSDKBinaries = () => {
+  const myUrl = import.meta.url;
+  return {
+    agSolo: new URL('../../solo/src/entrypoint.js', myUrl).pathname,
+    cosmosChain: new URL('../../cosmic-swingset/bin/ag-chain-cosmos', myUrl)
+      .pathname,
+    cosmosHelper: new URL(
+      '../../../golang/cosmos/build/ag-cosmos-helper',
+      myUrl,
+    ).pathname,
+  };
+};
+
 /**
  * Create a promisified spawn function with the following built-in parameters.
  *
  * @param {Object} param0
- * @param {Record<string, string>} [param0.env] the default environment
+ * @param {Record<string, string | undefined>} [param0.env] the default environment
  * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
  * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
@@ -26,7 +39,7 @@ export const makePspawn = ({
    * @param {Object} param2
    * @param {string | [string, string, string]} [param2.stdio] standard IO
    * specification
-   * @param {Record<string, string>} [param2.env] environment
+   * @param {Record<string, string | undefined>} [param2.env] environment
    * @returns {Promise<number> & { childProcess: ChildProcess }}} promise for
    * exit status. The return result has a `childProcess` property to obtain
    * control over the running process

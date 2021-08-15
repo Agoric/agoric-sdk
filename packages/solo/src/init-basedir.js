@@ -5,6 +5,7 @@ import { execFileSync } from 'child_process';
 
 import { assert, details as X } from '@agoric/assert';
 import anylogger from 'anylogger';
+import { HELPER } from './chain-cosmos-sdk.js';
 
 const log = anylogger('ag-solo:init');
 
@@ -75,12 +76,11 @@ export default function initBasedir(
     const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
     if (!fs.existsSync(agchServerDir)) {
       fs.mkdirSync(agchServerDir);
-      // we assume 'ag-cosmos-helper' is on $PATH for now, see chain-cosmos-sdk.js
       const keyName = 'ag-solo';
       // we suppress stderr because it displays the mnemonic phrase, but
       // unfortunately that means errors are harder to diagnose
       execFileSync(
-        'ag-cosmos-helper',
+        HELPER,
         [
           'keys',
           'add',
@@ -96,7 +96,7 @@ export default function initBasedir(
       );
       log('key generated, now extracting address');
       const kout = execFileSync(
-        'ag-cosmos-helper',
+        HELPER,
         [
           'keys',
           'show',

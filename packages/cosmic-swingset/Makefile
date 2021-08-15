@@ -17,11 +17,7 @@ BASE_PORT?=8000
 
 OTEL_EXPORTER_PROMETHEUS_PORT = 9461
 
-# On a host machine.  Stay here.
-INSPECT_ADDRESS = 127.0.0.1
-
-BREAK_CHAIN = false
-NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
+AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
@@ -47,8 +43,8 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = ./bin/ag-chain-cosmos
-AGCH = ag-cosmos-helper
+AGC = DEBUG=SwingSet:ls,SwingSet:vat ./bin/ag-chain-cosmos
+AGCH = $(GOSRC)/build/ag-cosmos-helper
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -75,8 +71,12 @@ scenario2-setup-nobuild:
 
 scenario2-run-chain:
 	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
-		DEBUG=SwingSet:ls,SwingSet:vat \
-		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
+		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
+
+# Run a chain with an explicit halt.
+scenario2-run-chain-to-halt:
+	$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + 3)); \
+		test "$$?" -eq 98
 
 # Blow away all client state to try again without resetting the chain.
 scenario2-reset-client:
@@ -129,7 +129,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
+		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 	
 
 t1-provision-one: wait-for-cosmos
@@ -142,7 +142,7 @@ t1-provision-one: wait-for-cosmos
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'; }
+		  t1/$(BASE_PORT) $$addr -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
 t1/$(BASE_PORT)/cosmos-client-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-client-account || \

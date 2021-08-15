@@ -18,7 +18,11 @@ import {
 
 const console = anylogger('chain-cosmos-sdk');
 
-const HELPER = 'ag-cosmos-helper';
+export const HELPER = new URL(
+  '../../../golang/cosmos/build/ag-cosmos-helper',
+  import.meta.url,
+).pathname;
+
 const FAUCET_ADDRESS =
   'the appropriate faucet channel on Discord (https://agoric.com/discord)';
 

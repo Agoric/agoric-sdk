@@ -7,11 +7,11 @@ const dirname = path.dirname(filename);
 
 test('make and exec', async t => {
   await new Promise(resolve =>
-    spawn('make', {
+    spawn('make', ['scenario2-setup'], {
       cwd: `${dirname}/..`,
       stdio: ['ignore', 'ignore', 'inherit'],
     }).addListener('exit', code => {
-      t.is(code, 0, 'make exits successfully');
+      t.is(code, 0, 'make scenario2-setup exits successfully');
       resolve();
     }),
   );
@@ -21,6 +21,15 @@ test('make and exec', async t => {
       stdio: ['ignore', 'ignore', 'inherit'],
     }).addListener('exit', code => {
       t.is(code, 0, 'exec exits successfully');
+      resolve();
+    }),
+  );
+  await new Promise(resolve =>
+    spawn('make', ['scenario2-run-chain-to-halt'], {
+      cwd: `${dirname}/..`,
+      stdio: ['ignore', 'ignore', 'inherit'],
+    }).addListener('exit', code => {
+      t.is(code, 0, 'make scenario2-run-chain-to-halt is successful');
       resolve();
     }),
   );

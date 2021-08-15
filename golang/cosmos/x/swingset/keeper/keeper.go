@@ -29,6 +29,21 @@ type Keeper struct {
 	CallToController func(ctx sdk.Context, str string) (string, error)
 }
 
+// A prefix of bytes, since KVStores can't handle empty slices as keys.
+var keyPrefix = []byte{':'}
+
+// keyToString converts a byte slice path to a string key
+func keyToString(key []byte) string {
+	return string(key[len(keyPrefix):])
+}
+
+// stringToKey converts a string key to a byte slice path
+func stringToKey(keyStr string) []byte {
+	key := keyPrefix
+	key = append(key, []byte(keyStr)...)
+	return key
+}
+
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey,
@@ -75,7 +90,7 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 		return err
 	}
 
-	storage := &types.Storage{string(json)}
+	storage := &types.Storage{Value: string(json)}
 	k.SetStorage(ctx, path, storage)
 
 	// Now make sure the corresponding account has been initialised.
@@ -105,8 +120,9 @@ func (k Keeper) ExportStorage(ctx sdk.Context) map[string]string {
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var storage types.Storage
+		keyStr := keyToString(iterator.Key())
 		k.cdc.MustUnmarshalLengthPrefixed(iterator.Value(), &storage)
-		exported[string(iterator.Key())] = storage.Value
+		exported[keyStr] = storage.Value
 	}
 	return exported
 }
@@ -116,10 +132,11 @@ func (k Keeper) GetStorage(ctx sdk.Context, path string) *types.Storage {
 	//fmt.Printf("GetStorage(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
-	if !dataStore.Has([]byte(path)) {
-		return &types.Storage{""}
+	dataKey := stringToKey(path)
+	if !dataStore.Has(dataKey) {
+		return &types.Storage{Value: ""}
 	}
-	bz := dataStore.Get([]byte(path))
+	bz := dataStore.Get(dataKey)
 	var storage types.Storage
 	k.cdc.MustUnmarshalLengthPrefixed(bz, &storage)
 	return &storage
@@ -129,10 +146,11 @@ func (k Keeper) GetStorage(ctx sdk.Context, path string) *types.Storage {
 func (k Keeper) GetKeys(ctx sdk.Context, path string) *types.Keys {
 	store := ctx.KVStore(k.storeKey)
 	keysStore := prefix.NewStore(store, types.KeysPrefix)
-	if !keysStore.Has([]byte(path)) {
+	key := stringToKey(path)
+	if !keysStore.Has(key) {
 		return types.NewKeys()
 	}
-	bz := keysStore.Get([]byte(path))
+	bz := keysStore.Get(key)
 	var keys types.Keys
 	k.cdc.MustUnmarshalLengthPrefixed(bz, &keys)
 	return &keys
@@ -144,45 +162,63 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	keysStore := prefix.NewStore(store, types.KeysPrefix)
 
-	fullPathArray := strings.Split(path, ".")
-	oneUp := strings.Join(fullPathArray[0:len(fullPathArray)-1], ".")
-	lastKey := fullPathArray[len(fullPathArray)-1]
-
-	// Get a map corresponding to the keys for the parent key.
-	keyNode := k.GetKeys(ctx, oneUp)
-	keyList := keyNode.Keys
-	keyMap := make(map[string]bool, len(keyList)+1)
-	for _, key := range keyList {
-		keyMap[key] = true
-	}
-
-	if storage.Value == "" {
-		delete(keyMap, lastKey)
-	} else {
-		keyMap[lastKey] = true
-	}
-
-	// Update the list of keys
-	keyList = make([]string, 0, len(keyMap))
-	for key := range keyMap {
-		keyList = append(keyList, key)
-	}
-
 	// Update the value.
+	pathKey := stringToKey(path)
 	if storage.Value == "" {
-		dataStore.Delete([]byte(path))
+		dataStore.Delete(pathKey)
 	} else {
-		dataStore.Set([]byte(path), k.cdc.MustMarshalLengthPrefixed(storage))
+		dataStore.Set(pathKey, k.cdc.MustMarshalLengthPrefixed(storage))
 	}
 
-	// Update the keys.
-	if len(keyList) == 0 {
-		keysStore.Delete([]byte(oneUp))
-	} else {
-		// Update the key node.
+	// Update the parent keys.
+	fullPathArray := strings.Split(path, ".")
+	for i := len(fullPathArray) - 1; i >= 0; i-- {
+		oneUp := strings.Join(fullPathArray[0:i], ".")
+		lastKeyStr := fullPathArray[i]
+
+		// Get a map corresponding to the parent's keys.
+		keyNode := k.GetKeys(ctx, oneUp)
+		keyList := keyNode.Keys
+		keyMap := make(map[string]bool, len(keyList)+1)
+		for _, keyStr := range keyList {
+			keyMap[keyStr] = true
+		}
+
+		// Decide if we need to add or remove the key.
+		if storage.Value == "" {
+			if _, ok := keyMap[lastKeyStr]; !ok {
+				// If the key is already gone, we don't need to remove from the key lists.
+				return
+			}
+			// Delete the key.
+			delete(keyMap, lastKeyStr)
+		} else {
+			if _, ok := keyMap[lastKeyStr]; ok {
+				// If the key already exists, we don't need to add to the key lists.
+				return
+			}
+			// Add the key.
+			keyMap[lastKeyStr] = true
+		}
+
+		// Regenerate a deterministically ordered list of the current keys.
+		keyList = make([]string, 0, len(keyMap))
+		for keyStr := range keyMap {
+			keyList = append(keyList, keyStr)
+		}
 		sort.Strings(keyList)
-		keyNode.Keys = keyList
-		keysStore.Set([]byte(oneUp), k.cdc.MustMarshalLengthPrefixed(keyNode))
+
+		// Update the list of keys
+		upKey := stringToKey(oneUp)
+		if len(keyList) == 0 {
+			// No keys left, delete the parent.
+			keysStore.Delete(upKey)
+		} else {
+			// Update the key node.
+			sort.Strings(keyList)
+			keyNode.Keys = keyList
+			keysStore.Set(upKey, k.cdc.MustMarshalLengthPrefixed(keyNode))
+		}
 	}
 }
 
@@ -201,10 +237,4 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) *types.Storage {
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox *types.Storage) {
 	path := "mailbox." + peer
 	k.SetStorage(ctx, path, mailbox)
-}
-
-// GetPeersIterator works over all peers in which the keys are the peers and the values are the mailbox
-func (k Keeper) GetPeersIterator(ctx sdk.Context) sdk.Iterator {
-	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, nil)
 }
