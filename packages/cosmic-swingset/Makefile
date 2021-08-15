@@ -129,7 +129,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) | tee /dev/stderr | grep -q '"code":0'; }
+		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 	
 
 t1-provision-one: wait-for-cosmos
@@ -142,7 +142,7 @@ t1-provision-one: wait-for-cosmos
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		  t1/$(BASE_PORT) $$addr | tee /dev/stderr | grep -q '"code":0'; }
+		  t1/$(BASE_PORT) $$addr -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
 t1/$(BASE_PORT)/cosmos-client-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-client-account || \
