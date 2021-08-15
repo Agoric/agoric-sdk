@@ -17,11 +17,7 @@ BASE_PORT?=8000
 
 OTEL_EXPORTER_PROMETHEUS_PORT = 9461
 
-# On a host machine.  Stay here.
-INSPECT_ADDRESS = 127.0.0.1
-
-BREAK_CHAIN = false
-NODE_DEBUG = node --inspect-port=$(INSPECT_ADDRESS):9229
+AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
@@ -47,8 +43,8 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = ./bin/ag-chain-cosmos
-AGCH = ag-cosmos-helper
+AGC = DEBUG=SwingSet:ls,SwingSet:vat ./bin/ag-chain-cosmos
+AGCH = $(GOSRC)/build/ag-cosmos-helper
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -75,8 +71,12 @@ scenario2-setup-nobuild:
 
 scenario2-run-chain:
 	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
-		DEBUG=SwingSet:ls,SwingSet:vat \
-		$(AGC) `$(BREAK_CHAIN) && echo --inspect-brk` --home=t1/n0 start --log_level=warn
+		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
+
+# Run a chain with an explicit halt.
+scenario2-run-chain-to-halt:
+	$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + 3)); \
+		test "$$?" -eq 98
 
 # Blow away all client state to try again without resetting the chain.
 scenario2-reset-client:
