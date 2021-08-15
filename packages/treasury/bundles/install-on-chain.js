@@ -18,7 +18,7 @@ const DEFAULT_PROTOCOL_FEE = 6n;
  * @param {ERef<TimerService>} param0.chainTimerService
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
- * @param {ERef<ZoeService>} param0.zoe
+ * @param {ERef<ZoeService>} param0.zoeWPurse
  * @param {Handle<'feeMintAccess'>} param0.feeMintAccess
  * @param {NatValue} param0.bootstrapPaymentValue
  * @param {NatValue} [param0.poolFee]
@@ -31,7 +31,7 @@ export async function installOnChain({
   chainTimerService,
   nameAdmins,
   priceAuthority,
-  zoe,
+  zoeWPurse,
   feeMintAccess,
   bootstrapPaymentValue,
   poolFee = DEFAULT_POOL_FEE,
@@ -66,7 +66,7 @@ export async function installOnChain({
   ] = await Promise.all(
     nameBundles.map(async ([name, bundle]) => {
       // Install the bundle in Zoe.
-      const install = await E(zoe).install(bundle);
+      const install = await E(zoeWPurse).install(bundle);
       // Advertise the installation in agoricNames.
       await E(installAdmin).update(name, install);
       // Return for variable assignment.
@@ -92,7 +92,7 @@ export async function installOnChain({
 
   const privateArgs = harden({ feeMintAccess });
 
-  const { instance, creatorFacet } = await E(zoe).startInstance(
+  const { instance, creatorFacet } = await E(zoeWPurse).startInstance(
     stablecoinMachineInstall,
     undefined,
     terms,
@@ -108,8 +108,8 @@ export async function installOnChain({
     },
   ] = await Promise.all([
     E(creatorFacet).getAMM(),
-    E(zoe).getInvitationIssuer(),
-    E(zoe).getTerms(instance),
+    E(zoeWPurse).getInvitationIssuer(),
+    E(zoeWPurse).getTerms(instance),
   ]);
 
   const treasuryUiDefaults = {
