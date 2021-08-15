@@ -9,14 +9,14 @@ import pegasusBundle from './bundle-pegasus.js';
  * @param {ERef<Board>} param0.board
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {NameHub} param0.namesByAddress
- * @param {ERef<ZoeService>} param0.zoe
+ * @param {ERef<ZoeService>} param0.zoeWPurse
  */
 export async function installOnChain({
   agoricNames,
   board,
   nameAdmins,
   namesByAddress,
-  zoe,
+  zoeWPurse,
 }) {
   // Fetch the nameAdmins we need.
   const [installAdmin, instanceAdmin, uiConfigAdmin] = await Promise.all(
@@ -31,7 +31,7 @@ export async function installOnChain({
   const [pegasusInstall] = await Promise.all(
     nameBundles.map(async ([name, bundle]) => {
       // Install the bundle in Zoe.
-      const install = await E(zoe).install(bundle);
+      const install = await E(zoeWPurse).install(bundle);
       // Advertise the installation in agoricNames.
       await E(installAdmin).update(name, install);
       // Return for variable assignment.
@@ -44,7 +44,7 @@ export async function installOnChain({
     namesByAddress,
   });
 
-  const { instance, creatorFacet } = await E(zoe).startInstance(
+  const { instance, creatorFacet } = await E(zoeWPurse).startInstance(
     pegasusInstall,
     undefined,
     terms,

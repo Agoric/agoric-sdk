@@ -9,18 +9,16 @@ const { details: X } = assert;
  *
  * @param {Issuer} feeIssuer
  * @returns {{
- *   makeFeePurse: MakeFeePurse,
+ *   makeFeePurse: MakeFeePurseInternal,
  *   chargeZoeFee: ChargeZoeFee,
- *   feeCollectionPurse: Purse,
+ *   feeCollectionPurse: FeePurse,
  * }}
  */
 const setupMakeFeePurse = feeIssuer => {
   const feePurses = new WeakSet();
 
-  const feeCollectionPurse = feeIssuer.makeEmptyPurse();
-
-  /** @type {MakeFeePurse} */
-  const makeFeePurse = async () => {
+  /** @type {MakeFeePurseInternal} */
+  const makeFeePurse = () => {
     const purse = feeIssuer.makeEmptyPurse();
     /** @type {FeePurse} */
     const feePurse = Far('feePurse', {
@@ -31,6 +29,8 @@ const setupMakeFeePurse = feeIssuer => {
     // After keeping the purse methods, we throw away the purse
     return feePurse;
   };
+
+  const feeCollectionPurse = makeFeePurse();
 
   /** @type {ChargeZoeFee} */
   const chargeZoeFee = (feePurse, feeAmount) => {

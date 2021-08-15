@@ -59,6 +59,11 @@
  */
 
 /**
+ * @callback MakeFeePurseInternal
+ * @returns {FeePurse}
+ */
+
+/**
  * @callback MakeFeePurse
  * @returns {Promise<FeePurse>}
  */
