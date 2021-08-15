@@ -15,9 +15,11 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
-    "lint": "eslint '**/*.{js,jsx}'"
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.20.0",
