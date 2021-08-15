@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [7.0.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@7.0.0...@agoric/sdk@7.0.1) (2021-08-15)
+
+
+### Bug Fixes
+
+* **agoric-cli:** use SDK binaries rather than relying on $PATH ([01da194](https://github.com/Agoric/agoric-sdk/commit/01da194869debb891c223580c4ff02a1845f6aaf))
+* **cosmic-swingset:** fix more places that need -ojson ([aa2da0e](https://github.com/Agoric/agoric-sdk/commit/aa2da0e8bfb2eed27c84f093dcccfdf00aa85d8b))
+* **cosmos:** deterministic storage modification and querying ([799ebdb](https://github.com/Agoric/agoric-sdk/commit/799ebdb77056ce40404358099a65f8ef673de6c9))
+* **solo:** use SDK-local binaries rather than relying on $PATH ([ad96231](https://github.com/Agoric/agoric-sdk/commit/ad962312557adf87b56b5510ff1059ad669331ad))
+
+
+
 ## [7.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@6.0.0...@agoric/sdk@7.0.0) (2021-08-14)
 
 

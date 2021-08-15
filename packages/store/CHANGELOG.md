@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.22...@agoric/store@0.6.0) (2021-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** Convert RESM to NESM
+
+### Code Refactoring
+
+* **swingset:** Convert RESM to NESM ([bf7fd61](https://github.com/Agoric/agoric-sdk/commit/bf7fd6161a79e994c3bc48949e4ccb01b4048772))
+
+### 0.26.10 (2021-07-28)
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.4.22...@agoric/store@0.5.0) (2021-08-14)
 
 

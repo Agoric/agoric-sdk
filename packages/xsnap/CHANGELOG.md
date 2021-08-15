@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.9...@agoric/xsnap@0.8.0) (2021-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** don't rely on diagnostic meters
+* **xsnap:** avoid O(n^2) Array, Map, Set growth
+
+### Features
+
+* **xsnap:** make name available on xsnap object ([8c4a16b](https://github.com/Agoric/agoric-sdk/commit/8c4a16bc203722d594f09bf7c5acd09c4209ba1c))
+* **xsnap:** record upstream commands as well as replies ([fc9332f](https://github.com/Agoric/agoric-sdk/commit/fc9332fc52f626b884e4998e780dbfbf87cb854d))
+
+
+### Bug Fixes
+
+* **deployment:** use proper path to build.js ([78d2d73](https://github.com/Agoric/agoric-sdk/commit/78d2d73e33311ee09eaec17fa3b5c4d393a73621))
+* **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
+* **xsnap:** 1st field of `git submodule status` is 1 char ([5448675](https://github.com/Agoric/agoric-sdk/commit/54486754d77bf7d65bcc590146ffce359eef955d))
+* **xsnap:** Allow for an absent package.json ava.require ([2d30a11](https://github.com/Agoric/agoric-sdk/commit/2d30a11de0e1a8f167aa033af40dd34309bf65d5))
+* **xsnap:** avoid O(n^2) Array, Map, Set growth ([11e7c1c](https://github.com/Agoric/agoric-sdk/commit/11e7c1cdbc12a0a53477be3e81cf86cc6407cd28)), closes [#3012](https://github.com/Agoric/agoric-sdk/issues/3012)
+* **xsnap:** build needs to await checkout ([a2f4861](https://github.com/Agoric/agoric-sdk/commit/a2f4861b3e1469f26baae8ce9326068f9d513195))
+* **xsnap:** don't rely on diagnostic meters ([8148c13](https://github.com/Agoric/agoric-sdk/commit/8148c13c5f4810c5fe92e05ced57ebf56302404d))
+* **xsnap:** tolerate Symbols in console.log() arguments ([#3618](https://github.com/Agoric/agoric-sdk/issues/3618)) ([314ee93](https://github.com/Agoric/agoric-sdk/commit/314ee93ee8fc5e97e8c40a640b94ffa770a046bc))
+
+### 0.26.10 (2021-07-28)
+
+
+### Features
+
+* **xsnap:** FFI to enable/disable metering ([#3480](https://github.com/Agoric/agoric-sdk/issues/3480)) ([94d9417](https://github.com/Agoric/agoric-sdk/commit/94d941707583a4c145ace144cf82bedc330979a3)), closes [#3457](https://github.com/Agoric/agoric-sdk/issues/3457)
+
+
+### Bug Fixes
+
+* tolerate endo pre and post [#822](https://github.com/Agoric/agoric-sdk/issues/822) ([#3472](https://github.com/Agoric/agoric-sdk/issues/3472)) ([e872c0c](https://github.com/Agoric/agoric-sdk/commit/e872c0c77a146a746066de583021d8c9f1721b93))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.6.9...@agoric/xsnap@0.7.0) (2021-08-14)
 
 

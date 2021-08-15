@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.33.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.9...@agoric/cosmic-swingset@0.33.0) (2021-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** Convert RESM to NESM
+
+### Features
+
+* **cosmic-swingset:** add swingset 'activityhash' to state vector ([5247326](https://github.com/Agoric/agoric-sdk/commit/52473260cf6df736565e93b39afbc42295e0b7b6)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **cosmic-swingset:** include activityhash for initial block too ([a8d2412](https://github.com/Agoric/agoric-sdk/commit/a8d2412e3dcd25396d3a751bd04755d1186d3e1f))
+* **cosmic-swingset:** use compute meter to decide where blocks end ([#3651](https://github.com/Agoric/agoric-sdk/issues/3651)) ([5f7317c](https://github.com/Agoric/agoric-sdk/commit/5f7317c0d1179f9d9f1ef1e9f7e7ecc887e1f53f)), closes [#3582](https://github.com/Agoric/agoric-sdk/issues/3582)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** fix more places that need -ojson ([aa2da0e](https://github.com/Agoric/agoric-sdk/commit/aa2da0e8bfb2eed27c84f093dcccfdf00aa85d8b))
+* **cosmic-swingset:** port more scripts to ESM ([fc062b8](https://github.com/Agoric/agoric-sdk/commit/fc062b8a87875409008aae04af921a338926511b))
+* **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
+
+
+### Code Refactoring
+
+* **swingset:** Convert RESM to NESM ([bf7fd61](https://github.com/Agoric/agoric-sdk/commit/bf7fd6161a79e994c3bc48949e4ccb01b4048772))
+
+### 0.26.10 (2021-07-28)
+
+
+### Features
+
+* **cosmic-swingset:** pass consensusMode to SwingSet on chain ([33ff03c](https://github.com/Agoric/agoric-sdk/commit/33ff03cb655f80dcee10e816c23741da9bd250ea))
+* **solo:** separate hot helper address from cold fees and egress ([20cdfa8](https://github.com/Agoric/agoric-sdk/commit/20cdfa8d89788d6903ea927bf9b3d59ece775251))
+* **SwingSet:** new `overrideVatManagerOptions` kernel option ([1ec045b](https://github.com/Agoric/agoric-sdk/commit/1ec045bad58ee7b5e9fccf36782793a3dd780337))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** messagePool ordering and authz indirection ([c49a2ea](https://github.com/Agoric/agoric-sdk/commit/c49a2ea92c6bd910316e939274a4ff80e41cdd18))
+* **cosmic-swingset:** properly detect when the chain is available ([83f3a5d](https://github.com/Agoric/agoric-sdk/commit/83f3a5d7ad035183c0e6ae71003ed73daaaafeee))
+* **cosmic-swingset:** use `cosmic-swingset-bootstrap-block-finish` ([a789b02](https://github.com/Agoric/agoric-sdk/commit/a789b020cb33d4b9b8941b970784d7db5b0f62ae))
+* **cosmic-swingset:** use BOOTSTRAP_BLOCK to avoid slog confusion ([9c8725b](https://github.com/Agoric/agoric-sdk/commit/9c8725bae6ff4038052f33947da77d3eddc0351d))
+* provide Makefile targets to use separate fee and client auth ([935f7b1](https://github.com/Agoric/agoric-sdk/commit/935f7b1e364ccc9e85d7ed2f745bec317073de05))
+* **cosmic-swingset:** use default batching parameters for sim-chain ([e16e7a7](https://github.com/Agoric/agoric-sdk/commit/e16e7a77910e5c0af647be30cdaa360ce7bff0f8))
+
+
+
 ## [0.32.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.31.9...@agoric/cosmic-swingset@0.32.0) (2021-08-14)
 
 

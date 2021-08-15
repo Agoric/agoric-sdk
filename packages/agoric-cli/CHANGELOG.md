@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.13](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.10...agoric@0.13.13) (2021-08-15)
+
+
+### Features
+
+* **vbank:** add governance and query methods ([c80912e](https://github.com/Agoric/agoric-sdk/commit/c80912e6110b8d45d6b040ee9f3d9c1addaab804))
+
+
+### Bug Fixes
+
+* **agoric-cli:** use 'yarn workspaces' instead of hard-coded list ([e5157e6](https://github.com/Agoric/agoric-sdk/commit/e5157e6d12748ad2645aa3d5cdb2ff3d60b9ace1))
+* **agoric-cli:** use SDK binaries rather than relying on $PATH ([01da194](https://github.com/Agoric/agoric-sdk/commit/01da194869debb891c223580c4ff02a1845f6aaf))
+* **cosmos:** don't force the output format to JSON ([671b93d](https://github.com/Agoric/agoric-sdk/commit/671b93d6032656dceeee1616b849535145b3e10d))
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** use BOOTSTRAP_BLOCK to avoid slog confusion ([9c8725b](https://github.com/Agoric/agoric-sdk/commit/9c8725bae6ff4038052f33947da77d3eddc0351d))
+
+
+
 ### [0.13.12](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.10...agoric@0.13.12) (2021-08-14)
 
 

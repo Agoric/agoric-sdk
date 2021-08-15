@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store-lmdb",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
   "type": "module",
   "main": "src/lmdbSwingStore.js",
@@ -19,14 +19,14 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.8",
+    "@agoric/assert": "^0.3.9",
     "better-sqlite3": "^7.4.1",
     "node-lmdb": "^0.9.4",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.22",
-    "@agoric/swing-store-simple": "^0.4.8",
+    "@agoric/install-ses": "^0.5.23",
+    "@agoric/swing-store-simple": "^0.4.9",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

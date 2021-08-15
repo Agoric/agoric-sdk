@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.23](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.20...@agoric/same-structure@0.1.23) (2021-08-15)
+
+
+### Bug Fixes
+
+* **same-structure:** Support NESM importers ([123227e](https://github.com/Agoric/agoric-sdk/commit/123227eb83c520b9c64506d2f898815163b4e9e0))
+
+### 0.26.10 (2021-07-28)
+
+
+
 ### [0.1.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/same-structure@0.1.20...@agoric/same-structure@0.1.22) (2021-08-14)
 
 
