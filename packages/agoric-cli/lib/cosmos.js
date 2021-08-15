@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { makePspawn } from './helpers.js';
+import { makePspawn, getSDKBinaries } from './helpers.js';
 
 export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const IMAGE = `agoric/agoric-sdk`;
@@ -21,7 +21,8 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
 
   function helper(args, hopts = undefined) {
     if (opts.sdk) {
-      return pspawn('ag-cosmos-helper', args, hopts);
+      const { cosmosHelper } = getSDKBinaries();
+      return pspawn(cosmosHelper, args, hopts);
     }
 
     // Don't allocate a TTY if we're not talking to one.

@@ -1,5 +1,4 @@
 /* global process setTimeout */
-import path from 'path';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 
@@ -11,10 +10,7 @@ import {
   finishCosmosApp,
 } from './chain-config.js';
 
-import { makePspawn } from './helpers.js';
-
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},50000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -49,8 +45,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   let keysSpawn;
   if (opts.sdk) {
+    const { cosmosHelper } = getSDKBinaries();
     keysSpawn = (args, ...rest) =>
-      pspawn('ag-cosmos-helper', [`--home=_agstate/keys`, ...args], ...rest);
+      pspawn(cosmosHelper, [`--home=_agstate/keys`, ...args], ...rest);
   } else {
     keysSpawn = (args, ...rest) =>
       pspawn(
@@ -116,7 +113,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   let agSolo;
   if (opts.sdk) {
-    agSolo = path.resolve(dirname, '../../solo/src/entrypoint.js');
+    ({ agSolo } = getSDKBinaries());
   } else {
     agSolo = `ag-solo`;
   }
@@ -201,8 +198,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     let chainSpawn;
     if (popts.sdk) {
-      chainSpawn = (args, spawnOpts = undefined) =>
-        pspawn('ag-chain-cosmos', [...args, `--home=${agServer}`], spawnOpts);
+      const { cosmosChain } = getSDKBinaries();
+      chainSpawn = (args, spawnOpts = undefined) => {
+        return pspawn(cosmosChain, [...args, `--home=${agServer}`], spawnOpts);
+      };
     } else {
       chainSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
         pspawn(
