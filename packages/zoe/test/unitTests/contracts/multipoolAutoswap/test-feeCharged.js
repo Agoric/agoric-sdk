@@ -127,6 +127,7 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   t.deepEqual(bobInvitationValue.fee, expectedFee);
   t.deepEqual(bobInvitationValue.expiry, expectedExpiry);
+  t.deepEqual(bobInvitationValue.zoeTimeAuthority, fakeTimer);
 
   const bobMoolaForCentralProposal = harden({
     want: { Out: centralTokens(7) },

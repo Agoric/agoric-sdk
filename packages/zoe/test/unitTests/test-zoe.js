@@ -364,6 +364,7 @@ test(`zoe.getInvitationDetails`, async t => {
     instance,
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
 });
 

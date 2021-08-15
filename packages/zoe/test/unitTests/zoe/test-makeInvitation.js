@@ -43,6 +43,7 @@ test('createInvitationKit', async t => {
         instance: mockInstance,
         fee: undefined,
         expiry: undefined,
+        zoeTimeAuthority: undefined,
       },
     ]),
   );
@@ -106,6 +107,7 @@ test('customProperties ok to omit', async t => {
         instance: mockInstance,
         fee: undefined,
         expiry: undefined,
+        zoeTimeAuthority: undefined,
       },
     ]),
   );

@@ -190,6 +190,7 @@ const makeZoeKit = (
     getPublicFacetFeeAmount,
     installFeeAmount,
     chargeForComputrons,
+    zoeFeesConfig.timeAuthority,
     translateFee,
     translateExpiry,
   );

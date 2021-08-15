@@ -100,6 +100,7 @@ test('loan - lend - exit before borrow', async t => {
     maxLoan,
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
 
   await E(lenderSeat).tryExit();

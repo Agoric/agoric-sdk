@@ -147,6 +147,7 @@ test('borrow assert customProps', async t => {
     maxLoan,
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
 });
 

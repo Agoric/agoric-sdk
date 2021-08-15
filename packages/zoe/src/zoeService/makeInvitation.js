@@ -4,13 +4,15 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 /**
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
- * @param {TranslateFee | (() => void)} translateFee
- * @param {TranslateExpiry | (() => void)} translateExpiry
+ * @param {TimerService | undefined} timeAuthority
+ * @param {TranslateFee | (() => undefined)} translateFee
+ * @param {TranslateExpiry | (() => undefined)} translateExpiry
  */
 export const createInvitationKit = (
   shutdownZoeVat = undefined,
-  translateFee = () => {},
-  translateExpiry = () => {},
+  timeAuthority,
+  translateFee = () => undefined,
+  translateExpiry = () => undefined,
 ) => {
   const invitationKit = makeIssuerKit(
     'Zoe Invitation',
@@ -45,7 +47,11 @@ export const createInvitationKit = (
       const absoluteFee = translateFee(relativeFee);
       const absoluteExpiry = await translateExpiry(relativeExpiry);
 
-      const feeInfo = { fee: absoluteFee, expiry: absoluteExpiry };
+      const feeInfo = {
+        fee: absoluteFee,
+        expiry: absoluteExpiry,
+        zoeTimeAuthority: timeAuthority,
+      };
       // If the contract-provided customProperties include the
       // properties 'description', 'handle', 'instance',
       // 'installation', 'fee', or 'expiry', their corresponding

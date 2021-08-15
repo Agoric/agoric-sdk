@@ -293,6 +293,7 @@ test(`zcf.makeInvitation - no customProperties`, async t => {
     instance,
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
 });
 
@@ -313,6 +314,7 @@ test(`zcf.makeInvitation - customProperties`, async t => {
     whatever: 'whatever',
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
 });
 
@@ -331,6 +333,7 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     instance,
     fee: undefined,
     expiry: undefined,
+    zoeTimeAuthority: undefined,
   });
   t.falsy(typeof details.handle === 'string');
 });

@@ -87,6 +87,7 @@ test('newSwap with valid offers', async t => {
           handle: aliceInvitationAmount.value[0].handle,
           fee: undefined,
           expiry: undefined,
+          zoeTimeAuthority: undefined,
         },
       ],
       invitationBrand,

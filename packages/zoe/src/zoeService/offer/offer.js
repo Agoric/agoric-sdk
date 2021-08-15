@@ -50,7 +50,11 @@ export const makeOffer = (
     const instanceAdmin = getInstanceAdmin(instanceHandle);
     instanceAdmin.assertAcceptingOffers();
 
-    if (timeAuthority && expiry && fee) {
+    if (
+      timeAuthority !== undefined &&
+      expiry !== undefined &&
+      fee !== undefined
+    ) {
       // TODO: is there a way to make this a top-level await?
       const currentTime = await E(timeAuthority).getCurrentTimestamp();
       // AWAIT ///
