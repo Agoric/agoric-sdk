@@ -4,13 +4,13 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 /**
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
- * @param {TimerService | undefined} timeAuthority
+ * @param {ERef<TimerService> | undefined} timeAuthorityP
  * @param {TranslateFee | (() => undefined)} translateFee
  * @param {TranslateExpiry | (() => undefined)} translateExpiry
  */
 export const createInvitationKit = (
   shutdownZoeVat = undefined,
-  timeAuthority,
+  timeAuthorityP,
   translateFee = () => undefined,
   translateExpiry = () => undefined,
 ) => {
@@ -46,6 +46,7 @@ export const createInvitationKit = (
       );
       const absoluteFee = translateFee(relativeFee);
       const absoluteExpiry = await translateExpiry(relativeExpiry);
+      const timeAuthority = await timeAuthorityP;
 
       const feeInfo = {
         fee: absoluteFee,

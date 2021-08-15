@@ -19,7 +19,7 @@ const { details: X, quote: q } = assert;
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ChargeZoeFee} chargeZoeFee
  * @param {Amount} offerFeeAmount
- * @param {TimerService | undefined} timeAuthority
+ * @param {ERef<TimerService> | undefined} timeAuthority
  * @returns {Offer}
  */
 export const makeOffer = (
