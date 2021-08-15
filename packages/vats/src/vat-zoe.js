@@ -1,16 +1,35 @@
 import { Far } from '@agoric/marshal';
 import { makeZoeKit } from '@agoric/zoe';
+import { E } from '@agoric/eventual-send';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
-    buildZoe: adminVat => {
+    buildZoe: async (
+      adminVat,
+      feeIssuerConfig,
+      zoeFeesConfig,
+      meteringConfig,
+    ) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      return makeZoeKit(
+      const {
+        zoeService,
+        initialFeeFunds,
+        feeMintAccess,
+        feeCollectionPurse,
+      } = makeZoeKit(
         adminVat,
         shutdownZoeVat,
-        undefined,
+        feeIssuerConfig,
+        zoeFeesConfig,
+        meteringConfig,
         vatParameters.zcfBundleName,
       );
+      await E(feeCollectionPurse).deposit(initialFeeFunds);
+      return harden({
+        zoeService,
+        feeMintAccess,
+        feeCollectionPurse,
+      });
     },
   });
 }

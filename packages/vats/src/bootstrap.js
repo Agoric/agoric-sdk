@@ -69,24 +69,56 @@ export function buildRootObject(vatPowers, vatParameters) {
     const bankBridgeManager = bridgeManager;
     const dibcBridgeManager = bridgeManager;
 
+    const chainTimerServiceP = E(vats.timer).createTimerService(timerDevice);
+
+    const feeIssuerConfig = {
+      name: 'RUN',
+      assetKind: AssetKind.NAT,
+      displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+      initialFunds: 1_000_000_000_000_000_000n,
+    };
+    const zoeFeesConfig = {
+      getPublicFacetFee: 50n,
+      installFee: 65_000n,
+      startInstanceFee: 5_000_000n,
+      offerFee: 65_000n,
+      timeAuthority: chainTimerServiceP,
+      lowFee: 500_000n,
+      highFee: 5_000_000n,
+      shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
+      longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
+    };
+    const meteringConfig = {
+      incrementBy: 10_000_000n,
+      initial: 50_000_000n,
+      threshold: 10_000_000,
+      price: {
+        feeNumerator: 1n,
+        computronDenominator: 1n, // default is just one-to-one
+      },
+    };
+
     // Create singleton instances.
     const [
       bankManager,
       sharingService,
       board,
       chainTimerService,
-      { zoeService: zoe, feeMintAccess },
+      { zoeService: zoe, feeMintAccess, feeCollectionPurse },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
       E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
-      E(vats.timer).createTimerService(timerDevice),
-      /** @type {Promise<{ zoeService: ZoeService, feeMintAccess: FeeMintAccess }>} */ (E(
+      chainTimerServiceP,
+      /** @type {Promise<{ zoeService: ZoeServiceFeePurseRequired, feeMintAccess:
+       * FeeMintAccess, feeCollectionPurse: FeePurse }>} */ (E(
         vats.zoe,
-      ).buildZoe(vatAdminSvc)),
+      ).buildZoe(vatAdminSvc, feeIssuerConfig, zoeFeesConfig, meteringConfig)),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
+
+    const zoeWPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
     const {
       nameHub: agoricNames,
@@ -129,7 +161,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoe,
+          zoeWPurse,
           bootstrapPaymentValue,
           feeMintAccess,
         }),
@@ -138,7 +170,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           board,
           nameAdmins,
           namesByAddress,
-          zoe,
+          zoeWPurse,
         }),
       ]);
       return treasuryCreator;
@@ -199,7 +231,10 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Only distribute fees if there is a collector.
       E(vats.distributeFees)
         .buildDistributor(
-          E(vats.distributeFees).makeTreasuryFeeCollector(zoe, treasuryCreator),
+          E(vats.distributeFees).makeTreasuryFeeCollector(
+            zoeWPurse,
+            treasuryCreator,
+          ),
           feeCollectorDepositFacet,
           epochTimerService,
           harden(distributorParams),
@@ -345,7 +380,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           const paymentKeywords = harden({
             Collateral: payment,
           });
-          const seat = E(zoe).offer(
+          const seat = E(zoeWPurse).offer(
             addTypeInvitation,
             proposal,
             paymentKeywords,
@@ -382,7 +417,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const [ammPublicFacet, pegasus] = await Promise.all(
       [ammInstance, pegasusInstance].map(instance =>
-        E(zoe).getPublicFacet(instance),
+        E(zoeWPurse).getPublicFacet(instance),
       ),
     );
     await addAllCollateral();

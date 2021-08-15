@@ -68,14 +68,16 @@ test.serial('home.wallet - receive zoe invite', async t => {
   const contractRoot = new URL(contractUrl).pathname;
   t.log({ contractRoot });
   const bundle = await bundleSource(contractRoot);
-  const installationHandle = await E(zoe).install(bundle);
-  const { creatorInvitation: invite } = await E(zoe).startInstance(
+  const feePurse = E(zoe).makeFeePurse();
+  const zoeWPurse = E(zoe).bindDefaultFeePurse(feePurse);
+  const installationHandle = await E(zoeWPurse).install(bundle);
+  const { creatorInvitation: invite } = await E(zoeWPurse).startInstance(
     installationHandle,
   );
 
   // Check that the wallet knows about the Zoe invite issuer and starts out
   // with a default Zoe invite issuer purse.
-  const zoeInviteIssuer = await E(zoe).getInvitationIssuer();
+  const zoeInviteIssuer = await E(zoeWPurse).getInvitationIssuer();
   const issuers = await E(wallet).getIssuers();
   const issuersMap = new Map(issuers);
   t.deepEqual(
