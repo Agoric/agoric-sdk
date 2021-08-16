@@ -44,8 +44,8 @@ REFERENCES TO YOUR TAGS.
 To make validators' lives easier, create a tag for the chain-id:
 
 ```sh
-SDK_VERSION=2.17.0 # Set this as necessary
-CHAIN_ID=agoricstage-4 # Also change this
+SDK_VERSION=$(jq -r .version package.json)
+CHAIN_ID=agoricstage-8 # Change this as necessary
 git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDK_VERSION^{}
 git push origin $CHAIN_ID
 ```
