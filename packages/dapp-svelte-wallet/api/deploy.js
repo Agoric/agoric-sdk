@@ -79,7 +79,7 @@ export default async function deployWallet(
   // Claim the payments.
   const issuerToPetname = new Map();
   const issuerToPursePetnameP = new Map();
-  const wallet = E(walletVat).getWallet(bank);
+  const wallet = E(walletVat).getWallet(bank, E(faucet).getFeePurse());
   const walletAdmin = E(wallet).getAdminFacet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {
