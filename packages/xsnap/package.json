@@ -31,6 +31,7 @@
     "@agoric/bundle-source": "^1.4.7",
     "@agoric/eventual-send": "^0.13.25",
     "@agoric/install-ses": "^0.5.23",
+    "@endo/netstring": "^0.2.6",
     "glob": "^7.1.6",
     "ses": "^0.14.1"
   },
