@@ -12,6 +12,7 @@ import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
 
 import bundleSource from '@agoric/bundle-source';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
@@ -57,6 +58,18 @@ test.serial('home.board', async t => {
   t.is(myId2, myId, `board gives the same id for the same value`);
 });
 
+test.serial('home.wallet - transfer funds to the feePurse', async t => {
+  const { wallet, faucet } = E.get(home);
+  const feePurse = E(faucet).getFeePurse();
+  const feeBrand = await E(feePurse).getAllegedBrand();
+  const feeAmount = AmountMath.make(feeBrand, 10_000_000n);
+  const feePayment = await E(
+    E(wallet).getPurse('Agoric RUN currency'),
+  ).withdraw(feeAmount);
+  const deposited = await E(feePurse).deposit(feePayment);
+  t.deepEqual(deposited, feeAmount, `all fees deposited to feePurse`);
+});
+
 test.serial('home.wallet - receive zoe invite', async t => {
   const { wallet, zoe, board } = E.get(home);
 
@@ -68,16 +81,14 @@ test.serial('home.wallet - receive zoe invite', async t => {
   const contractRoot = new URL(contractUrl).pathname;
   t.log({ contractRoot });
   const bundle = await bundleSource(contractRoot);
-  const feePurse = E(zoe).makeFeePurse();
-  const zoeWPurse = E(zoe).bindDefaultFeePurse(feePurse);
-  const installationHandle = await E(zoeWPurse).install(bundle);
-  const { creatorInvitation: invite } = await E(zoeWPurse).startInstance(
+  const installationHandle = await E(zoe).install(bundle);
+  const { creatorInvitation: invite } = await E(zoe).startInstance(
     installationHandle,
   );
 
   // Check that the wallet knows about the Zoe invite issuer and starts out
   // with a default Zoe invite issuer purse.
-  const zoeInviteIssuer = await E(zoeWPurse).getInvitationIssuer();
+  const zoeInviteIssuer = await E(zoe).getInvitationIssuer();
   const issuers = await E(wallet).getIssuers();
   const issuersMap = new Map(issuers);
   t.deepEqual(
