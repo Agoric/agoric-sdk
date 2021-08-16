@@ -112,7 +112,7 @@ test(`typical flow`, async t => {
 
   // The attestation should have been deposited and used up
   await t.throwsAsync(() => E(attestationIssuer).getAmountOf(attestation2), {
-    message: 'payment not found for "Token"',
+    message: /^payment not found for "Token"/,
   });
 
   // The amountLiened has been reduced by 50n to 100n
