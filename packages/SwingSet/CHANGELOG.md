@@ -3,6 +3,91 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.21.0...@agoric/swingset-vat@0.21.1) (2021-08-16)
+
+
+### Bug Fixes
+
+* remove more instances of `.cjs` files ([0f61d9b](https://github.com/Agoric/agoric-sdk/commit/0f61d9bff763aeb21c7b61010040ca5e7bd964eb))
+
+
+
+## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.6...@agoric/swingset-vat@0.21.0) (2021-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** Convert plugin API to NESM
+* **swingset:** Convert RESM to NESM
+
+### Features
+
+* **swingset:** add "run policy" object to controller.run() ([420edda](https://github.com/Agoric/agoric-sdk/commit/420edda2f8dd668cf84acc1b7cd0929bcbd79623)), closes [#3460](https://github.com/Agoric/agoric-sdk/issues/3460)
+* **swingset:** hash kernel state changes into 'activityhash' ([47ec86b](https://github.com/Agoric/agoric-sdk/commit/47ec86be063f9021c91018dbc1f0952be543f0c7)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* require that buildRootObject always returns a Far reference ([0cda623](https://github.com/Agoric/agoric-sdk/commit/0cda6230210add2bbedc40100dbfe8f0f8e98826))
+
+
+### Bug Fixes
+
+* **swingset:** define 'meterControl' to disable metering ([bdf8c08](https://github.com/Agoric/agoric-sdk/commit/bdf8c08ec2643217f507968bc9ae36fa548a8f69)), closes [#3458](https://github.com/Agoric/agoric-sdk/issues/3458)
+* **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
+* **swingset:** Finish vat tool RESM to NESM conversion ([b6e943b](https://github.com/Agoric/agoric-sdk/commit/b6e943b6573bd75e408987a55a597198ec2ac00d))
+* **swingset:** liveslots: disable metering of GC-sensitive calls ([a11a477](https://github.com/Agoric/agoric-sdk/commit/a11a477d867ab83415db9aff666f6d91f9ed6bd9)), closes [#3458](https://github.com/Agoric/agoric-sdk/issues/3458)
+* **swingset:** move "kernelStats" into local/non-hashed DB space ([df8359e](https://github.com/Agoric/agoric-sdk/commit/df8359eca80e28736d294a558ed6c5e3b8b14127)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **swingset:** rename snapshot-related DB keys to be "local" ([e79e43c](https://github.com/Agoric/agoric-sdk/commit/e79e43c2776161b3f872a130131ad4a7b4c16e3f)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442)
+* **swingset:** Support NESM importers ([fac9b1a](https://github.com/Agoric/agoric-sdk/commit/fac9b1a97b30e037982db4c44ccc885b27d87c40))
+* **swingset:** test-marshal.js: delete leftover+slow kernel creation ([beb9f59](https://github.com/Agoric/agoric-sdk/commit/beb9f59dd3c54d39663218dd9d96fc9988a16216))
+* **swingset:** use better async style, improve comment ([64e4f2f](https://github.com/Agoric/agoric-sdk/commit/64e4f2f2c48b209b68d8a27c23b087f1ecd9a61c))
+* newly missing fars ([#3557](https://github.com/Agoric/agoric-sdk/issues/3557)) ([32069cc](https://github.com/Agoric/agoric-sdk/commit/32069cc20e4e408cbc0c1881f36b44a3b9d24730))
+* require virtual object selves to be declared Far ([619bbda](https://github.com/Agoric/agoric-sdk/commit/619bbda5223a2fe5168d7cb9851c5ac4dcc7cbac)), closes [#3562](https://github.com/Agoric/agoric-sdk/issues/3562)
+
+
+### Code Refactoring
+
+* **swingset:** Convert plugin API to NESM ([8ab2b03](https://github.com/Agoric/agoric-sdk/commit/8ab2b03970aa6735ad1f05756048a3dc09a190ce))
+* **swingset:** Convert RESM to NESM ([bf7fd61](https://github.com/Agoric/agoric-sdk/commit/bf7fd6161a79e994c3bc48949e4ccb01b4048772))
+
+### 0.26.10 (2021-07-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **swingset:** remove support for non-XS metering
+* **swingset:** make dynamic vats unmetered by default
+
+### Features
+
+* first stage GC for virtual objects ([c1fb35c](https://github.com/Agoric/agoric-sdk/commit/c1fb35ce9bbc5299d9bef29e24b14c080c879d8d))
+* **swingset:** add Meters to kernel state ([03f148b](https://github.com/Agoric/agoric-sdk/commit/03f148b20de7f0f7d5b56da63c8358dde8d7de16)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** implement Meters for crank computation charges ([7a7d616](https://github.com/Agoric/agoric-sdk/commit/7a7d61670baedf1968fd8086cdb8824bd006bad4)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** make dynamic vats unmetered by default ([c73dd8d](https://github.com/Agoric/agoric-sdk/commit/c73dd8d8ea3b7859313f245537f04dd6f92ba0c6)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** remove support for non-XS metering ([5b95638](https://github.com/Agoric/agoric-sdk/commit/5b9563849fa7ca2f26b4ca7c55f10d1d37334f46)), closes [#3518](https://github.com/Agoric/agoric-sdk/issues/3518)
+* **SwingSet:** new `overrideVatManagerOptions` kernel option ([1ec045b](https://github.com/Agoric/agoric-sdk/commit/1ec045bad58ee7b5e9fccf36782793a3dd780337))
+* **SwingSet:** plumb consensusMode for stricter determinism ([16ec7ca](https://github.com/Agoric/agoric-sdk/commit/16ec7ca688465aa0ee3fb9ed08be5be910c2554f))
+* **SwingSet:** support more managers with consensusMode ([ea3280e](https://github.com/Agoric/agoric-sdk/commit/ea3280e061818f99681f2d9600ba140a1606671d))
+* audit object refcounts ([d7c9792](https://github.com/Agoric/agoric-sdk/commit/d7c9792597d063fbc8970acb034674b15865de7d)), closes [#3445](https://github.com/Agoric/agoric-sdk/issues/3445)
+* refactor object pinning ([9941a08](https://github.com/Agoric/agoric-sdk/commit/9941a086837ad4e6c314da5a6c4faa999430c3f4))
+* utility to replace kernel bundle in kernel DB ([07b300e](https://github.com/Agoric/agoric-sdk/commit/07b300e2b7656e12ac4b011d0ebae73c9d8fa50c))
+
+
+### Bug Fixes
+
+* **swingset:** make test less sensitive to changes in metering ([e741be3](https://github.com/Agoric/agoric-sdk/commit/e741be3fbef8c746be476b13f9eb0d6e3e326dae)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308) [#3538](https://github.com/Agoric/agoric-sdk/issues/3538)
+* various tweaks and cleanup in response to review comments ([fe777e4](https://github.com/Agoric/agoric-sdk/commit/fe777e4dde970fdfeb0189e2fbf12db68c160046))
+* **swingset:** addEgress should cause an import/reachable refcount ([230b494](https://github.com/Agoric/agoric-sdk/commit/230b4948d112cf57393c91bb1bc53714efa37e58)), closes [#3483](https://github.com/Agoric/agoric-sdk/issues/3483)
+* **swingset:** don't deduplicate inbound mailbox messages ([2018d76](https://github.com/Agoric/agoric-sdk/commit/2018d76bdbf8b16f72e9ec8a4af7786e8b4fb8cd)), closes [#3442](https://github.com/Agoric/agoric-sdk/issues/3442) [#3471](https://github.com/Agoric/agoric-sdk/issues/3471)
+* **swingset:** don't pin the interior queueMessage promise ([4379f41](https://github.com/Agoric/agoric-sdk/commit/4379f41acf6a750f2edabf0e1bfb388cb53156c6)), closes [#3482](https://github.com/Agoric/agoric-sdk/issues/3482)
+* **swingset:** gcAndFinalize needs two post-GC setImmediates on V8 ([#3486](https://github.com/Agoric/agoric-sdk/issues/3486)) ([cc9428f](https://github.com/Agoric/agoric-sdk/commit/cc9428f3c5b7d8d991f55904a958d339d3ff88d7)), closes [#3482](https://github.com/Agoric/agoric-sdk/issues/3482) [#3240](https://github.com/Agoric/agoric-sdk/issues/3240)
+* **swingset:** processRefcounts() even if crank was aborted ([3320412](https://github.com/Agoric/agoric-sdk/commit/3320412be8db63df39a2ba60e1e30928d0741f16))
+* **swingset:** test simultaneous underflow+notify, simplify kernel ([077dcec](https://github.com/Agoric/agoric-sdk/commit/077dcec47f2b999326846c561953b911f42c93f8)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+* **swingset:** test/vat-controller-one: disregard non-message deliveries ([706be79](https://github.com/Agoric/agoric-sdk/commit/706be79bb611d82742c49ae0912045e891cbc773))
+* better db location logic ([a76d3b7](https://github.com/Agoric/agoric-sdk/commit/a76d3b73e47052bacfd6b5137812356cf6953424))
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+* **SwingSet:** simplify makeVatConsole to always use a wrapper ([dc0839b](https://github.com/Agoric/agoric-sdk/commit/dc0839b44d489bccb3bdb9ab666c410863b15647))
+* make verbose flag work from the very beginning ([7edfa24](https://github.com/Agoric/agoric-sdk/commit/7edfa24ca7ca8f511775791cef690bf482a7bc81))
+
+
+
 ## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.6...@agoric/swingset-vat@0.20.0) (2021-08-14)
 
 

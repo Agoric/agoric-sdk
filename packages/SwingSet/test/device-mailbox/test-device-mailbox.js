@@ -130,6 +130,9 @@ async function initializeMailboxKernel(t) {
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
+    // Can't use 'local' because it's non-deterministic for 'mailbox
+    // determinism' number of cranks.
+    defaultManagerType: 'xs-worker',
     vats: {
       bootstrap: {
         bundle: t.context.data.bootstrap,

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.13...@agoric/eslint-config@0.3.16) (2021-08-15)
+
+
+### Bug Fixes
+
+* gut `packages/eslint-config` to use `[@jessie](https://github.com/jessie).js` and `[@endo](https://github.com/endo)` ([68a4f7d](https://github.com/Agoric/agoric-sdk/commit/68a4f7d8cbc70bc3d87f7581c7235f8730c32709))
+
+### 0.26.10 (2021-07-28)
+
+
+
 ### [0.3.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.13...@agoric/eslint-config@0.3.15) (2021-08-14)
 
 

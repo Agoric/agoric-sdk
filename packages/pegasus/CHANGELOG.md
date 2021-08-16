@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.11...@agoric/pegasus@0.3.12) (2021-08-16)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
+### [0.3.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.8...@agoric/pegasus@0.3.11) (2021-08-15)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* zoe/spawner/pegasus: use unlimited Meter, not metered: true ([04d4fd9](https://github.com/Agoric/agoric-sdk/commit/04d4fd96982ecd02de50f09fa38c6e2800cca527)), closes [#3308](https://github.com/Agoric/agoric-sdk/issues/3308)
+
+
+
 ### [0.3.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.3.8...@agoric/pegasus@0.3.10) (2021-08-14)
 
 ### 0.26.10 (2021-07-28)

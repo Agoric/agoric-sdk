@@ -27,7 +27,7 @@ RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /e
 # COPY --from=go-build /go/bin/journalbeat /usr/local/bin/
 
 WORKDIR /usr/src/agoric-sdk/packages/deployment
-RUN ln -sf $PWD/src/entrypoint.cjs /usr/local/bin/ag-setup-cosmos
+RUN ln -sf $PWD/src/entrypoint.js /usr/local/bin/ag-setup-cosmos
 
 WORKDIR /data/chains
 

@@ -7,6 +7,7 @@ export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
+export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
 // side of Earth, and multiple round trips per block.
@@ -37,6 +38,11 @@ export function finishCosmosApp({
 
   if (enableCors) {
     app.api['enabled-unsafe-cors'] = true;
+  }
+
+  if (!app['minimum-gas-prices']) {
+    // Set the default, to prevent a warning if there is an empty string.
+    app['minimum-gas-prices'] = DEFAULT_MINIMUM_GAS_PRICES;
   }
 
   // Offset the GRPC listener from our rpc port.

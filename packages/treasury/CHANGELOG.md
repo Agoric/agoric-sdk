@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.11...@agoric/treasury@0.5.12) (2021-08-16)
+
+**Note:** Version bump only for package @agoric/treasury
+
+
+
+
+
+### [0.5.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.8...@agoric/treasury@0.5.11) (2021-08-15)
+
+
+### Bug Fixes
+
+* Treasury burn debt repayment before zeroing the amount owed ([#3604](https://github.com/Agoric/agoric-sdk/issues/3604)) ([f0bc4cb](https://github.com/Agoric/agoric-sdk/commit/f0bc4cb0c7e419cafc0105869d287d571202448d)), closes [#3495](https://github.com/Agoric/agoric-sdk/issues/3495)
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* **treasury:** use xs-worker and metered=true on all swingset tests ([f76405e](https://github.com/Agoric/agoric-sdk/commit/f76405e09a29f4975cda00a33bbde4761dbe958e))
+* some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
+
+
+
 ### [0.5.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.8...@agoric/treasury@0.5.10) (2021-08-14)
 
 

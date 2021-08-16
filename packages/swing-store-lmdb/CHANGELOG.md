@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.6...@agoric/swing-store-lmdb@0.5.9) (2021-08-15)
+
+
+### Bug Fixes
+
+* **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
+
+### 0.26.10 (2021-07-28)
+
+
+
 ### [0.5.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.6...@agoric/swing-store-lmdb@0.5.8) (2021-08-14)
 
 

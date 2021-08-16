@@ -171,13 +171,13 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 	}
 
 	// Update the parent keys.
-	fullPathArray := strings.Split(path, ".")
-	for i := len(fullPathArray) - 1; i >= 0; i-- {
-		oneUp := strings.Join(fullPathArray[0:i], ".")
-		lastKeyStr := fullPathArray[i]
+	pathComponents := strings.Split(path, ".")
+	for i := len(pathComponents) - 1; i >= 0; i-- {
+		ancestor := strings.Join(pathComponents[0:i], ".")
+		lastKeyStr := pathComponents[i]
 
 		// Get a map corresponding to the parent's keys.
-		keyNode := k.GetKeys(ctx, oneUp)
+		keyNode := k.GetKeys(ctx, ancestor)
 		keyList := keyNode.Keys
 		keyMap := make(map[string]bool, len(keyList)+1)
 		for _, keyStr := range keyList {
@@ -201,23 +201,21 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 			keyMap[lastKeyStr] = true
 		}
 
-		// Regenerate a deterministically ordered list of the current keys.
 		keyList = make([]string, 0, len(keyMap))
 		for keyStr := range keyMap {
 			keyList = append(keyList, keyStr)
 		}
-		sort.Strings(keyList)
 
 		// Update the list of keys
-		upKey := stringToKey(oneUp)
+		ancestorKey := stringToKey(ancestor)
 		if len(keyList) == 0 {
 			// No keys left, delete the parent.
-			keysStore.Delete(upKey)
+			keysStore.Delete(ancestorKey)
 		} else {
-			// Update the key node.
+			// Update the key node, ordering deterministically.
 			sort.Strings(keyList)
 			keyNode.Keys = keyList
-			keysStore.Set(upKey, k.cdc.MustMarshalLengthPrefixed(keyNode))
+			keysStore.Set(ancestorKey, k.cdc.MustMarshalLengthPrefixed(keyNode))
 		}
 	}
 }

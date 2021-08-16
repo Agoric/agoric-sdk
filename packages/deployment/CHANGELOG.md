@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.9...@agoric/deployment@1.28.10) (2021-08-16)
+
+
+### Bug Fixes
+
+* remove more instances of `.cjs` files ([0f61d9b](https://github.com/Agoric/agoric-sdk/commit/0f61d9bff763aeb21c7b61010040ca5e7bd964eb))
+
+
+
+### [1.28.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.6...@agoric/deployment@1.28.9) (2021-08-15)
+
+
+### Bug Fixes
+
+* **deployment:** fix Makefile copy-pasta and dockerignore ([c8df74b](https://github.com/Agoric/agoric-sdk/commit/c8df74bc6e56ad117e01a04298e419e7646862c5))
+* **deployment:** propagate submodules to docker-build-sdk ([8af454c](https://github.com/Agoric/agoric-sdk/commit/8af454cb5851bb833924aa863f3d02cdfbbcaa8a))
+* **deployment:** use proper path to build.js ([78d2d73](https://github.com/Agoric/agoric-sdk/commit/78d2d73e33311ee09eaec17fa3b5c4d393a73621))
+
+### 0.26.10 (2021-07-28)
+
+
+### Bug Fixes
+
+* **deployment:** improve the `provision` command to be idempotent ([622bbd8](https://github.com/Agoric/agoric-sdk/commit/622bbd8c07e79fa1de3b00a55224b9b462f4f75b))
+* **deployment:** only format and mount /dev/sda for digitalocean ([745f90e](https://github.com/Agoric/agoric-sdk/commit/745f90e8a40745dbb832af56789a3daa5fe787c2))
+* **deployment:** properly quote JSON pubkey from Ansible ([44132fa](https://github.com/Agoric/agoric-sdk/commit/44132fad78e7a6b59a324f47d986cefe140e1c30))
+
+
+
 ### [1.28.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.6...@agoric/deployment@1.28.8) (2021-08-14)
 
 ### 0.26.10 (2021-07-28)

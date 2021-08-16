@@ -1,6 +1,6 @@
 {
   "name": "@agoric/transform-metering",
-  "version": "1.4.21",
+  "version": "1.4.22",
   "description": "transform-metering",
   "type": "module",
   "main": "./src/index.js",
@@ -14,12 +14,12 @@
     "build": "exit 0"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.22",
+    "@agoric/install-ses": "^0.5.23",
     "ava": "^3.12.1"
   },
   "dependencies": {
     "@agoric/nat": "^4.1.0",
-    "@agoric/tame-metering": "^2.0.8",
+    "@agoric/tame-metering": "^2.0.9",
     "@babel/generator": "^7.14.2",
     "@babel/parser": "^7.14.2",
     "@babel/traverse": "^7.14.2",
