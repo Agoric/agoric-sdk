@@ -30,13 +30,23 @@ const allValues = async obj =>
 
 /**
  * Build the source bundles for the kernel and xsnap vat worker.
+ *
+ * @param {Object} [options]
+ * @param {ModuleFormat} [options.bundleFormat]
  */
-export async function buildKernelBundles() {
+export async function buildKernelBundles(options = {}) {
   // this takes 2.7s on my computer
 
-  const src = rel => bundleSource(new URL(rel, import.meta.url).pathname);
+  const { bundleFormat = undefined } = options;
+
+  const src = rel =>
+    bundleSource(new URL(rel, import.meta.url).pathname, {
+      format: bundleFormat,
+    });
   const srcGE = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
+    bundleSource(new URL(rel, import.meta.url).pathname, {
+      format: 'getExport',
+    });
 
   const bundles = await allValues({
     kernel: src('./kernel/kernel.js'),
@@ -71,7 +81,8 @@ function byName(a, b) {
  *
  * @param {string} basedir  The directory to scan
  * @param {Object} [options]
- * @param {boolean} [options.dev] whether to include devDependencies
+ * @param {boolean} [options.includeDevDependencies] whether to include devDependencies
+ * @param {ModuleFormat} [options.bundleFormat] the bundle format to use
  * @returns {SwingSetConfig} a swingset config object: {
  *   bootstrap: "bootstrap",
  *   vats: {
@@ -89,7 +100,7 @@ function byName(a, b) {
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
 export function loadBasedir(basedir, options = {}) {
-  const { dev = false } = options;
+  const { includeDevDependencies = false, bundleFormat = undefined } = options;
   /** @type { SwingSetConfigDescriptor } */
   const vats = {};
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
@@ -122,7 +133,7 @@ export function loadBasedir(basedir, options = {}) {
     // scanning thing is something we decide we want to have long term.
     bootstrapPath = undefined;
   }
-  const config = { vats, dev };
+  const config = { vats, includeDevDependencies, format: bundleFormat };
   if (bootstrapPath) {
     vats.bootstrap = {
       sourceSpec: bootstrapPath,
@@ -284,7 +295,9 @@ export async function initializeSwingset(
   }
 
   const {
-    kernelBundles = await buildKernelBundles(),
+    kernelBundles = await buildKernelBundles({
+      bundleFormat: config.bundleFormat,
+    }),
     verbose,
   } = initializationOptions;
 
@@ -388,7 +401,10 @@ export async function initializeSwingset(
         if (desc.sourceSpec) {
           names.push(name);
           presumptiveBundles.push(
-            bundleSource(desc.sourceSpec, { dev: config.dev }),
+            bundleSource(desc.sourceSpec, {
+              dev: config.includeDevDependencies,
+              format: config.bundleFormat,
+            }),
           );
         } else if (desc.bundleSpec) {
           names.push(name);
