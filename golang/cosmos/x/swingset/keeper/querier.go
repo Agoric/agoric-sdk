@@ -104,7 +104,7 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{Value: value})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}
