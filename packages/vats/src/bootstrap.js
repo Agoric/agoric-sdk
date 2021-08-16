@@ -118,7 +118,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
 
-    const zoeWPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
+    const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
     const {
       nameHub: agoricNames,
@@ -161,7 +161,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoeWPurse,
+          zoeWPurse: zoeWUnlimitedPurse,
           bootstrapPaymentValue,
           feeMintAccess,
         }),
@@ -170,7 +170,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           board,
           nameAdmins,
           namesByAddress,
-          zoeWPurse,
+          zoeWPurse: zoeWUnlimitedPurse,
         }),
       ]);
       return treasuryCreator;
@@ -232,7 +232,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.distributeFees)
         .buildDistributor(
           E(vats.distributeFees).makeTreasuryFeeCollector(
-            zoeWPurse,
+            zoeWUnlimitedPurse,
             treasuryCreator,
           ),
           feeCollectorDepositFacet,
@@ -393,7 +393,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           const paymentKeywords = harden({
             Collateral: payment,
           });
-          const seat = E(zoeWPurse).offer(
+          const seat = E(zoeWUnlimitedPurse).offer(
             addTypeInvitation,
             proposal,
             paymentKeywords,
@@ -430,7 +430,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const [ammPublicFacet, pegasus] = await Promise.all(
       [ammInstance, pegasusInstance].map(instance =>
-        E(zoeWPurse).getPublicFacet(instance),
+        E(zoeWUnlimitedPurse).getPublicFacet(instance),
       ),
     );
     await addAllCollateral();
@@ -658,10 +658,16 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
+        const userFeePurse = await E(zoe).makeFeePurse();
+        const zoeWUserFeePurse = await E(zoe).bindDefaultFeePurse(userFeePurse);
+
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
             return faucetPaymentInfo;
+          },
+          getFeePurse() {
+            return userFeePurse;
           },
         });
 
@@ -693,7 +699,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           namesByAddress,
           priceAuthority,
           board,
-          zoe,
+          zoe: zoeWUserFeePurse,
         });
 
         return bundle;

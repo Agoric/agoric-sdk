@@ -591,7 +591,9 @@ export function makeWallet({
     const { brand } = await recP;
     if (!issuerToBoardId.has(issuer)) {
       const issuerBoardId = await E(board).getId(issuer);
-      issuerToBoardId.init(issuer, issuerBoardId);
+      if (!issuerToBoardId.has(issuer)) {
+        issuerToBoardId.init(issuer, issuerBoardId);
+      }
     }
     const addBrandPetname = () => {
       let p;
@@ -603,11 +605,12 @@ export function makeWallet({
       } else {
         p = Promise.resolve();
       }
-      return p.then(
-        _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
-      );
+      return p.then(_ => petnameForBrand);
     };
-    return addBrandPetname().then(updateAllIssuersState);
+    return addBrandPetname().then(async brandName => {
+      await updateAllIssuersState();
+      return brandName;
+    });
   };
 
   const publishIssuer = async brand => {
@@ -616,7 +619,9 @@ export function makeWallet({
       return issuerToBoardId.get(issuer);
     }
     const issuerBoardId = await E(board).getId(issuer);
-    issuerToBoardId.init(issuer, issuerBoardId);
+    if (!issuerToBoardId.has(issuer)) {
+      issuerToBoardId.init(issuer, issuerBoardId);
+    }
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -1439,7 +1444,9 @@ export function makeWallet({
       const { brand, issuer } = await brandTable.initIssuer(issuerP);
       if (!issuerToBoardId.has(issuer)) {
         const issuerBoardId = await E(board).getId(issuer);
-        issuerToBoardId.init(issuer, issuerBoardId);
+        if (!issuerToBoardId.has(issuer)) {
+          issuerToBoardId.init(issuer, issuerBoardId);
+        }
       }
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
@@ -1613,11 +1620,11 @@ export function makeWallet({
   // We don't want to expose this mechanism to the user, in case they shoot
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
-  const importBankAssets = async bank => {
+  const importBankAssets = async (bank, feePurseP) => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
-          await addIssuer(issuerName, issuer);
+          issuerName = await addIssuer(issuerName, issuer);
           const purse = await E(bank).getPurse(brand);
           // We can import this purse, because we trust the bank.
           await internalUnsafeImportPurse(
@@ -1636,6 +1643,13 @@ export function makeWallet({
         }
       },
     }).finally(() => console.error('/// This is the end of the bank assets'));
+    if (!feePurseP) {
+      return;
+    }
+    const feePurse = await feePurseP;
+    const feeIssuer = await E(zoe).getFeeIssuer();
+    const issuerName = await addIssuer('RUN', feeIssuer);
+    await internalUnsafeImportPurse(issuerName, 'Zoe fees', false, feePurse);
   };
   return { admin: wallet, initialized: initialize(), importBankAssets };
 }
