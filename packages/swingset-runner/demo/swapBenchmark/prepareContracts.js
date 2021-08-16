@@ -7,7 +7,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import fs from 'fs';
 
-const CONTRACT_FILES = ['atomicSwap'];
+const CONTRACT_FILES = ['atomicSwap.js'];
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
