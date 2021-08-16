@@ -89,9 +89,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
     };
     const meteringConfig = {
-      incrementBy: 10_000_000n,
+      incrementBy: 25_000_000n,
       initial: 50_000_000n,
-      threshold: 10_000_000,
+      threshold: 25_000_000,
       price: {
         feeNumerator: 1n,
         computronDenominator: 1n, // default is just one-to-one
