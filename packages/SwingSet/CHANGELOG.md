@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.21.0...@agoric/swingset-vat@0.21.1) (2021-08-16)
+
+
+### Bug Fixes
+
+* remove more instances of `.cjs` files ([0f61d9b](https://github.com/Agoric/agoric-sdk/commit/0f61d9bff763aeb21c7b61010040ca5e7bd964eb))
+
+
+
 ## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.18.6...@agoric/swingset-vat@0.21.0) (2021-08-15)
 
 

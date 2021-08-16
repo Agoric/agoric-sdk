@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Core governance support",
   "type": "module",
   "main": "src/paramManager.js",
@@ -30,22 +30,22 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.9",
-    "@agoric/captp": "^1.10.0",
-    "@agoric/ertp": "^0.11.13",
+    "@agoric/captp": "^1.10.1",
+    "@agoric/ertp": "^0.11.14",
     "@agoric/eventual-send": "^0.13.25",
-    "@agoric/marshal": "^0.4.22",
+    "@agoric/marshal": "^0.4.23",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.25",
+    "@agoric/notifier": "^0.3.26",
     "@agoric/promise-kit": "^0.2.23",
     "@agoric/same-structure": "^0.1.23",
-    "@agoric/store": "^0.6.0",
-    "@agoric/zoe": "^0.17.8"
+    "@agoric/store": "^0.6.1",
+    "@agoric/zoe": "^0.17.9"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
     "@agoric/bundle-source": "^1.4.7",
     "@agoric/install-ses": "^0.5.23",
-    "@agoric/swingset-vat": "^0.21.0",
+    "@agoric/swingset-vat": "^0.21.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "ses": "^0.14.1"

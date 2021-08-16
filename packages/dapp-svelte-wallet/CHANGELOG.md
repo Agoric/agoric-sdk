@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.10.13...@agoric/dapp-svelte-wallet@0.10.14) (2021-08-16)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet
+
+
+
+
+
 ### [0.10.13](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.10.10...@agoric/dapp-svelte-wallet@0.10.13) (2021-08-15)
 
 ### 0.26.10 (2021-07-28)

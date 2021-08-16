@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.9...@agoric/deployment@1.28.10) (2021-08-16)
+
+
+### Bug Fixes
+
+* remove more instances of `.cjs` files ([0f61d9b](https://github.com/Agoric/agoric-sdk/commit/0f61d9bff763aeb21c7b61010040ca5e7bd964eb))
+
+
+
 ### [1.28.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.6...@agoric/deployment@1.28.9) (2021-08-15)
 
 

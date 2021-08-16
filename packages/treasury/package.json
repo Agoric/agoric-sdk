@@ -1,6 +1,6 @@
 {
   "name": "@agoric/treasury",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/stablecoinMachine.js",
@@ -32,17 +32,17 @@
   "dependencies": {
     "@agoric/assert": "^0.3.9",
     "@agoric/bundle-source": "^1.4.7",
-    "@agoric/captp": "^1.10.0",
-    "@agoric/deploy-script-support": "^0.4.0",
-    "@agoric/ertp": "^0.11.13",
+    "@agoric/captp": "^1.10.1",
+    "@agoric/deploy-script-support": "^0.4.1",
+    "@agoric/ertp": "^0.11.14",
     "@agoric/eventual-send": "^0.13.25",
-    "@agoric/marshal": "^0.4.22",
+    "@agoric/marshal": "^0.4.23",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.25",
+    "@agoric/notifier": "^0.3.26",
     "@agoric/promise-kit": "^0.2.23",
-    "@agoric/store": "^0.6.0",
-    "@agoric/swingset-vat": "^0.21.0",
-    "@agoric/zoe": "^0.17.8"
+    "@agoric/store": "^0.6.1",
+    "@agoric/swingset-vat": "^0.21.1",
+    "@agoric/zoe": "^0.17.9"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
