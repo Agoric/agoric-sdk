@@ -137,7 +137,7 @@ test('bootstrap payment - only minted once', async t => {
   const bootstrapPayment2 = E(stablecoinMachine).getBootstrapPayment();
 
   await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
-    message: 'payment not found for "RUN"',
+    message: /^payment not found for "RUN"/,
   });
 });
 
