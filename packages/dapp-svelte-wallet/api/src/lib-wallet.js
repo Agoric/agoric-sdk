@@ -73,9 +73,6 @@ export function makeWallet({
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
-  /** @type {Purse=} */
-  let zoeFeePurse;
-
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
@@ -364,7 +361,7 @@ export function makeWallet({
   async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
     const { proposalTemplate } = offer;
-    const { instance, installation, invitationDetails } = idToOffer.get(id);
+    const { instance, installation } = idToOffer.get(id);
     if (!instance || !installation) {
       // We haven't yet deciphered the invitation, so don't send
       // this offer.
@@ -375,18 +372,14 @@ export function makeWallet({
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
-    const feePursePetname =
-      zoeFeePurse && purseMapping.valToPetname.get(zoeFeePurse);
     const offerForDisplay = {
       ...offer,
       // We cannot store the actions, installation, and instance in the
-      // displayed offer objects because they are presences and we
+      // displayed offer objects because they are presences are presences and we
       // don't wish to send presences to the frontend.
       actions: undefined,
       installation: undefined,
       instance: undefined,
-      feePursePetname,
-      invitationDetails: display(invitationDetails),
       proposalTemplate,
       instancePetname: instanceDisplay.petname,
       installationPetname: installationDisplay.petname,
@@ -555,13 +548,7 @@ export function makeWallet({
     const paymentKeywords = await withdrawAllPayments;
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
-    const seat = E(zoe).offer(
-      inviteP,
-      harden(proposal),
-      paymentKeywordRecord,
-      undefined,
-      zoeFeePurse,
-    );
+    const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
     // By the time Zoe settles the seat promise, the escrow should be complete.
     // Reclaim if it is somehow not.
     seat.finally(tryReclaimingWithdrawnPayments);
@@ -596,11 +583,7 @@ export function makeWallet({
   // === API
 
   const addIssuer = async (petnameForBrand, issuerP, makePurse = false) => {
-    const issuer = await issuerP;
-    const recP = brandTable.hasByIssuer(issuer)
-      ? brandTable.getByIssuer(issuer)
-      : brandTable.initIssuer(issuer);
-    const { brand } = await recP;
+    const { brand, issuer } = await brandTable.initIssuer(issuerP);
     if (!issuerToBoardId.has(issuer)) {
       const issuerBoardId = await E(board).getId(issuer);
       issuerToBoardId.init(issuer, issuerBoardId);
@@ -786,6 +769,7 @@ export function makeWallet({
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
+
     const compile = amountKeywordRecord => {
       return harden(
         Object.fromEntries(
@@ -830,16 +814,16 @@ export function makeWallet({
       offer,
     );
 
-    const invitationDetails = await E(zoe).getInvitationDetails(invitationP);
-    const { instance, installation } = invitationDetails;
+    const { installation, instance } = await E(zoe).getInvitationDetails(
+      invitationP,
+    );
 
     return {
-      invitationDetails,
-      instance,
-      installation,
       proposal,
       inviteP: invitationP,
       purseKeywordRecord,
+      installation,
+      instance,
     };
   };
 
@@ -1572,9 +1556,6 @@ export function makeWallet({
     },
     getUINotifier,
     getZoe() {
-      // Return a Zoe that requires fees from its caller.
-      // TODO: We will need to wrap zoe with something that prompts the user to
-      // pay fees.
       return zoe;
     },
     getBoard() {
@@ -1594,28 +1575,6 @@ export function makeWallet({
   });
 
   const initialize = async () => {
-    /**
-     * @param {Object} param0
-     * @param {string} param0.proposedName
-     * @param {string} param0.issuerName
-     */
-    const addZoeFeePurse = async ({ proposedName, issuerName }) => {
-      const feeIssuer = await E(zoe).getFeeIssuer();
-
-      // Install the fee purse.
-      await addIssuer(issuerName, feeIssuer);
-      const purse = await E(zoe).makeFeePurse();
-      await internalUnsafeImportPurse(issuerName, proposedName, false, purse);
-
-      return purse;
-    };
-
-    // Create a default fee purse and use it in this contract.
-    zoeFeePurse = await addZoeFeePurse({
-      proposedName: 'Zoe fees',
-      issuerName: 'RUN',
-    });
-
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
