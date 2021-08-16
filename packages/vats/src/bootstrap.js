@@ -91,7 +91,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     const meteringConfig = {
       incrementBy: 25_000_000n,
       initial: 50_000_000n,
-      threshold: 25_000_000,
+      threshold: 25_000_000n,
       price: {
         feeNumerator: 1n,
         computronDenominator: 1n, // default is just one-to-one
