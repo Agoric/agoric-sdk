@@ -16,7 +16,7 @@
     "lint-fix": "eslint --fix '**/*.js'",
     "lint-check": "yarn lint",
     "lint": "eslint '**/*.js'",
-    "ci:autobench": "./autobench"
+    "ci:autobench": "./autobench.js"
   },
   "dependencies": {
     "@agoric/assert": "^0.3.9",
