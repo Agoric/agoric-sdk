@@ -361,7 +361,7 @@ export function makeWallet({
   async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
     const { proposalTemplate } = offer;
-    const { instance, installation } = idToOffer.get(id);
+    const { instance, installation, invitationDetails } = idToOffer.get(id);
     if (!instance || !installation) {
       // We haven't yet deciphered the invitation, so don't send
       // this offer.
@@ -375,12 +375,13 @@ export function makeWallet({
     const offerForDisplay = {
       ...offer,
       // We cannot store the actions, installation, and instance in the
-      // displayed offer objects because they are presences are presences and we
+      // displayed offer objects because they are presences and we
       // don't wish to send presences to the frontend.
       actions: undefined,
       installation: undefined,
       instance: undefined,
       proposalTemplate,
+      invitationDetails: display(invitationDetails),
       instancePetname: instanceDisplay.petname,
       installationPetname: installationDisplay.petname,
       proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
@@ -583,7 +584,11 @@ export function makeWallet({
   // === API
 
   const addIssuer = async (petnameForBrand, issuerP, makePurse = false) => {
-    const { brand, issuer } = await brandTable.initIssuer(issuerP);
+    const issuer = await issuerP;
+    const recP = brandTable.hasByIssuer(issuer)
+      ? brandTable.getByIssuer(issuer)
+      : brandTable.initIssuer(issuer);
+    const { brand } = await recP;
     if (!issuerToBoardId.has(issuer)) {
       const issuerBoardId = await E(board).getId(issuer);
       issuerToBoardId.init(issuer, issuerBoardId);
@@ -814,14 +819,14 @@ export function makeWallet({
       offer,
     );
 
-    const { installation, instance } = await E(zoe).getInvitationDetails(
-      invitationP,
-    );
+    const invitationDetails = await E(zoe).getInvitationDetails(invitationP);
+    const { installation, instance } = invitationDetails;
 
     return {
       proposal,
       inviteP: invitationP,
       purseKeywordRecord,
+      invitationDetails,
       installation,
       instance,
     };
