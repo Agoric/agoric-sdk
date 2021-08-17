@@ -73,8 +73,8 @@ export const makeRatio = (
 
 /** @type {MakeRatioFromAmounts} */
 export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
-  AmountMath.coerce(numeratorAmount, numeratorAmount.brand);
-  AmountMath.coerce(denominatorAmount, denominatorAmount.brand);
+  AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
+  AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
     // @ts-ignore coerce ensures values are Nats
     Nat(numeratorAmount.value),
@@ -86,7 +86,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 };
 
 const multiplyHelper = (amount, ratio, divideOp) => {
-  AmountMath.coerce(amount, amount.brand);
+  AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.denominator.brand,
@@ -123,7 +123,7 @@ export const multiplyBy = (amount, ratio) => {
 };
 
 const divideHelper = (amount, ratio, divideOp) => {
-  AmountMath.coerce(amount, amount.brand);
+  AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
   assert(
     amount.brand === ratio.numerator.brand,
