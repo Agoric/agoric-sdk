@@ -404,19 +404,19 @@ test('ratio bad inputs', t => {
     message: '100.5 not a safe integer',
   });
   t.throws(() => makeRatioFromAmounts(3n, moe(30n)), {
-    message: `The brand "[3n]" doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => floorMultiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
-    message: `The brand 37 doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => ceilMultiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
-    message: `The brand 37 doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => floorDivideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
-    message: `The brand {"numerator":{"brand":"[Alleged: moe brand]","value":"[3n]"},"denominator":{"brand":"[Seen]","value":"[5n]"}} doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => ceilDivideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
-    message: `The brand {"numerator":{"brand":"[Alleged: moe brand]","value":"[3n]"},"denominator":{"brand":"[Seen]","value":"[5n]"}} doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => makeRatio(3n, brand, 0n), {
     message: /No infinite ratios! Denominator was 0/,
@@ -436,10 +436,10 @@ test('ratio bad inputs deprecated', t => {
   const moe = value => AmountMath.make(value, brand);
   // @ts-ignore invalid arguments for testing
   t.throws(() => multiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
-    message: `The brand 37 doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
   t.throws(() => divideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
-    message: `The brand {"numerator":{"brand":"[Alleged: moe brand]","value":"[3n]"},"denominator":{"brand":"[Seen]","value":"[5n]"}} doesn't look like a brand.`,
+    message: `The brand "[undefined]" doesn't look like a brand.`,
   });
 });
 
