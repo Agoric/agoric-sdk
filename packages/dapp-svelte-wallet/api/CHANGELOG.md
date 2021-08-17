@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.15...@agoric/dapp-svelte-wallet-api@0.10.0) (2021-08-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* make the run mint within Zoe, and give only the treasury the ability to create a ZCFMint with it
+
+* chore: change 'makeZoe' to 'makeZoeKit'
+
+* chore: add "shutdownZoeVat" argument to Zoe, and pass it to `makeIssuerKit` for invitation issuerKit and fee issuerKit
+
+* chore: manually lint-fix install-on-chain.js
+
+See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the root problem
+
+### Features
+
+* create feePurse in bootstrap and import to wallet ([4e9d5b0](https://github.com/Agoric/agoric/commit/4e9d5b0980cae94fdf6d8f78445da5282cbd974f))
+* **wallet:** reenable invitationDetails ([6655857](https://github.com/Agoric/agoric/commit/6655857707c9e457b5fa42609355ac709f19d29f))
+* **wallet:** set up a Zoe fee purse and forward invitationDetails ([42957ab](https://github.com/Agoric/agoric/commit/42957abc83e0152abc705ddcf36b22d2409a5443)), closes [#3669](https://github.com/Agoric/agoric/issues/3669)
+
+
+### Bug Fixes
+
+* **wallet:** never fail to suggestPetname ([dd4fbc1](https://github.com/Agoric/agoric/commit/dd4fbc166565e7ba1f1a0c06f513570305acefe7))
+
+
+* BREAKING CHANGE: create the RUN Mint within Zoe (#3647) ([48762aa](https://github.com/Agoric/agoric/commit/48762aa83a30eaa0a14b2fd87777456758594262)), closes [#3647](https://github.com/Agoric/agoric/issues/3647)
+
+
+
 ### [0.9.15](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.9.14...@agoric/dapp-svelte-wallet-api@0.9.15) (2021-08-16)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-api

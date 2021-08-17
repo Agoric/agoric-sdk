@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [8.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@7.0.2...@agoric/sdk@8.0.0) (2021-08-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* make the run mint within Zoe, and give only the treasury the ability to create a ZCFMint with it
+
+* chore: change 'makeZoe' to 'makeZoeKit'
+
+* chore: add "shutdownZoeVat" argument to Zoe, and pass it to `makeIssuerKit` for invitation issuerKit and fee issuerKit
+
+* chore: manually lint-fix install-on-chain.js
+
+See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the root problem
+
+### Features
+
+* create feePurse in bootstrap and import to wallet ([4e9d5b0](https://github.com/Agoric/agoric-sdk/commit/4e9d5b0980cae94fdf6d8f78445da5282cbd974f))
+* **agoric-cli:** Support Node.js ESM deploy scripts ([#3686](https://github.com/Agoric/agoric-sdk/issues/3686)) ([e779500](https://github.com/Agoric/agoric-sdk/commit/e7795004a281876944a3a6270aa647878735f493))
+* **cosmic-swingset:** provide RUN for sim-chain ([6d27815](https://github.com/Agoric/agoric-sdk/commit/6d2781520b1987c0a9529b300c3a368c09557ee9)), closes [#3266](https://github.com/Agoric/agoric-sdk/issues/3266)
+* **treasury:** assert getBootstrapPayment amount ([3ed8e69](https://github.com/Agoric/agoric-sdk/commit/3ed8e695deb9a0f6c5d924374e61ceb8d9aaff1c))
+* **wallet:** display the invitation fee, feePurse, and expiry ([49ece05](https://github.com/Agoric/agoric-sdk/commit/49ece054170ead8d7c18978c6d8153bcc73390c3)), closes [#3650](https://github.com/Agoric/agoric-sdk/issues/3650)
+* **wallet:** reenable invitationDetails ([6655857](https://github.com/Agoric/agoric-sdk/commit/6655857707c9e457b5fa42609355ac709f19d29f))
+* **wallet:** set up a Zoe fee purse and forward invitationDetails ([42957ab](https://github.com/Agoric/agoric-sdk/commit/42957abc83e0152abc705ddcf36b22d2409a5443)), closes [#3669](https://github.com/Agoric/agoric-sdk/issues/3669)
+
+
+### Bug Fixes
+
+* Remove dregs of node -r esm ([#3710](https://github.com/Agoric/agoric-sdk/issues/3710)) ([e30c934](https://github.com/Agoric/agoric-sdk/commit/e30c934a9de19e930677c7b65ad98abe0be16d56))
+* return funds from liquidation via a seat payout ([#3656](https://github.com/Agoric/agoric-sdk/issues/3656)) ([d1a142d](https://github.com/Agoric/agoric-sdk/commit/d1a142d47ae0cf3db6512e85ac2de583193a2fdf))
+* threshold must be a bigint ([102da87](https://github.com/Agoric/agoric-sdk/commit/102da874e9c62fb4a0acbad208445ffd9b68f0a3))
+* **agoric-cli:** upgrade empty minimum-gas-prices to 0urun ([1b2f6ff](https://github.com/Agoric/agoric-sdk/commit/1b2f6ff4bf16024d3de7c9d424f8032709b7157d))
+* **ERTP:** log the payment object when it fails liveness ([ed7d5e1](https://github.com/Agoric/agoric-sdk/commit/ed7d5e114675a8e5604d7184f238696fb96cb834))
+* **vats:** properly wire in the Zoe kit ([4b926e8](https://github.com/Agoric/agoric-sdk/commit/4b926e86b6d3814fb8e91bc83c1dd91be29cab83))
+* **wallet:** never fail to suggestPetname ([dd4fbc1](https://github.com/Agoric/agoric-sdk/commit/dd4fbc166565e7ba1f1a0c06f513570305acefe7))
+* **zoe:** relax createInvitationKit to take ERef<TimerService> ([250266b](https://github.com/Agoric/agoric-sdk/commit/250266befdff903396f507c1b13bab88b2128e18))
+* Remove superfluous -S for env in shebangs ([0b897ab](https://github.com/Agoric/agoric-sdk/commit/0b897ab04941ce1b690459e3386fd2c02d860f45))
+
+
+* BREAKING CHANGE: create the RUN Mint within Zoe (#3647) ([48762aa](https://github.com/Agoric/agoric-sdk/commit/48762aa83a30eaa0a14b2fd87777456758594262)), closes [#3647](https://github.com/Agoric/agoric-sdk/issues/3647)
+
+
+
 ### [7.0.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@7.0.1...@agoric/sdk@7.0.2) (2021-08-16)
 
 

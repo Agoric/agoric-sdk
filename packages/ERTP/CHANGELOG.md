@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.14...@agoric/ertp@0.11.15) (2021-08-17)
+
+
+### Bug Fixes
+
+* **ERTP:** log the payment object when it fails liveness ([ed7d5e1](https://github.com/Agoric/agoric-sdk/commit/ed7d5e114675a8e5604d7184f238696fb96cb834))
+
+
+
 ### [0.11.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.13...@agoric/ertp@0.11.14) (2021-08-16)
 
 **Note:** Version bump only for package @agoric/ertp

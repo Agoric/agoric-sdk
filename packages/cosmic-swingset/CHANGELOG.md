@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.33.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.1...@agoric/cosmic-swingset@0.33.2) (2021-08-17)
+
+
+### Features
+
+* **cosmic-swingset:** provide RUN for sim-chain ([6d27815](https://github.com/Agoric/agoric-sdk/commit/6d2781520b1987c0a9529b300c3a368c09557ee9)), closes [#3266](https://github.com/Agoric/agoric-sdk/issues/3266)
+
+
+
 ### [0.33.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.0...@agoric/cosmic-swingset@0.33.1) (2021-08-16)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset
