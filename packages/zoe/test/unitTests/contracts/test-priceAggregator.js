@@ -13,7 +13,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../exported.js';
@@ -48,7 +48,9 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const zoe = makeZoe(makeFakeVatAdmin().admin);
+    const { zoeService } = makeZoeKit(makeFakeVatAdmin().admin);
+    const feePurse = E(zoeService).makeFeePurse();
+    const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
     // Pack the contracts.
     const oracleBundle = await bundleSource(oraclePath);

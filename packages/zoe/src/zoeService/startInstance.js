@@ -14,20 +14,26 @@ import { handlePKitWarning } from '../handleWarning.js';
  * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
+ * @param {ChargeZoeFee} chargeZoeFee
+ * @param {Amount} startInstanceFeeAmount
  * @returns {StartInstance}
  */
 export const makeStartInstance = (
   zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
+  chargeZoeFee,
+  startInstanceFeeAmount,
 ) => {
-  /** @type {StartInstance} */
+  /** @type {StartInstanceFeePurseRequired} */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
     privateArgs = undefined,
+    feePurse,
   ) => {
+    await chargeZoeFee(feePurse, startInstanceFeeAmount);
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
 
@@ -51,6 +57,7 @@ export const makeStartInstance = (
       customTerms,
       uncleanIssuerKeywordRecord,
       instance,
+      feePurse,
     );
     // AWAIT ///
 
@@ -156,6 +163,10 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
+        transferFeeToCreator: async (userFeePurse, fee) => {
+          const payment = await E(userFeePurse).withdraw(fee);
+          return E(feePurse).deposit(payment);
+        },
       });
       return instanceAdmin;
     };
@@ -180,6 +191,7 @@ export const makeStartInstance = (
       exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
       makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
+      registerFeeMint: zoeInstanceStorageManager.registerFeeMint,
       replaceAllocations: seatHandleAllocations => {
         try {
           seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
@@ -210,6 +222,7 @@ export const makeStartInstance = (
       zoeInstanceStorageManager.getInstanceRecord(),
       zoeInstanceStorageManager.getIssuerRecords(),
       privateArgs,
+      feePurse,
     );
 
     handleOfferObjPromiseKit.resolve(handleOfferObj);

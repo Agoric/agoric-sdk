@@ -127,7 +127,7 @@ export const makeIssuerStorage = () => {
 
   /**
    *
-   * @param {IssuerPKeywordRecord} uncleanIssuerKeywordRecord
+   * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
    * @returns {Promise<{ issuers: IssuerKeywordRecord,
    *                     brands: BrandKeywordRecord }>}
    */

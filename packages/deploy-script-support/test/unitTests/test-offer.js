@@ -1,15 +1,15 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { E } from '@agoric/eventual-send';
 
 import '../../exported.js';
 
-import { E } from '@agoric/eventual-send';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {
@@ -37,7 +37,9 @@ test('offer', async t => {
     },
     saveOfferResult: () => {},
   };
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const bundleUrl = await importMetaResolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',

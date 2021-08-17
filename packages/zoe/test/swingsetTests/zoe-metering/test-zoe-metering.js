@@ -42,10 +42,10 @@ async function main(argv) {
 const infiniteInstallLoopLog = [
   'installing infiniteInstallLoop',
   'instantiating infiniteInstallLoop',
-  'error: RangeError: Compute meter exceeded',
+  'error: Error: vat terminated',
 ];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('zoe - metering - infinite loop in installation', async t => {
+
+test('zoe - metering - infinite loop in installation', async t => {
   const dump = await main(['infiniteInstallLoop']);
   t.deepEqual(dump.log, infiniteInstallLoopLog, 'log is correct');
 });
@@ -53,10 +53,10 @@ test.skip('zoe - metering - infinite loop in installation', async t => {
 const infiniteInstanceLoopLog = [
   'installing infiniteInstanceLoop',
   'instantiating infiniteInstanceLoop',
-  'error: RangeError: Compute meter exceeded',
+  'error: Error: vat terminated',
 ];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('zoe - metering - infinite loop in instantiation', async t => {
+
+test('zoe - metering - infinite loop in instantiation', async t => {
   const dump = await main(['infiniteInstanceLoop']);
   t.deepEqual(dump.log, infiniteInstanceLoopLog, 'log is correct');
 });
@@ -65,10 +65,10 @@ const infiniteTestLoopLog = [
   'installing infiniteTestLoop',
   'instantiating infiniteTestLoop',
   'invoking infiniteTestLoop.doTest()',
-  'error: RangeError: Compute meter exceeded',
+  'error: Error: vat terminated',
 ];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('zoe - metering - infinite loop in contract method', async t => {
+
+test('zoe - metering - infinite loop in contract method', async t => {
   const dump = await main(['infiniteTestLoop']);
   t.deepEqual(dump.log, infiniteTestLoopLog, 'log is correct');
 });
@@ -77,10 +77,10 @@ const testBuiltinsLog = [
   'installing testBuiltins',
   'instantiating testBuiltins',
   'invoking testBuiltins.doTest()',
-  'error: RangeError: Allocate meter exceeded',
+  'error: Error: vat terminated',
 ];
-// TODO: Unskip. See https://github.com/Agoric/agoric-sdk/issues/1625
-test.skip('zoe - metering - expensive builtins in contract method', async t => {
+
+test('zoe - metering - expensive builtins in contract method', async t => {
   const dump = await main(['testBuiltins']);
   t.deepEqual(dump.log, testBuiltinsLog, 'log is correct');
 });

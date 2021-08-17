@@ -2,10 +2,17 @@
 
 import { Far } from '@agoric/marshal';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
+import { E } from '@agoric/eventual-send';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc),
+    buildZoe: vatAdminSvc => {
+      const shutdownZoeVat = vatPowers.exitVatWithFailure;
+      const { zoeService } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
+      const feePurse = E(zoeService).makeFeePurse();
+      const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+      return zoe;
+    },
   });
 }

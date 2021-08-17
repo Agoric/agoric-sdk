@@ -1,9 +1,22 @@
-// noinspection ES6PreferShortImport
-import { makeZoe } from '@agoric/zoe';
+// @ts-check
+
 import { Far } from '@agoric/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+import { makeZoeKit } from '@agoric/zoe';
+import { E } from '@agoric/eventual-send';
+
+export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
-    buildZoe: vatAdminSvc => makeZoe(vatAdminSvc, vatParameters.zcfBundleName),
+    buildZoe: vatAdminSvc => {
+      const shutdownZoeVat = vatPowers.exitVatWithFailure;
+      const { zoeService } = makeZoeKit(
+        vatAdminSvc,
+        shutdownZoeVat,
+        vatParameters.zcfBundleName,
+      );
+      const feePurse = E(zoeService).makeFeePurse();
+      const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+      return zoe;
+    },
   });
 }

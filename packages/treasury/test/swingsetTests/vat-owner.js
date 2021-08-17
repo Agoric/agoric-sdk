@@ -20,6 +20,7 @@ const build = async (
   installations,
   timer,
   priceAuthorityVat,
+  feeMintAccess,
 ) => {
   const [moolaBrand] = brands;
   const [moolaPayment] = payments;
@@ -45,6 +46,7 @@ const build = async (
     installations.treasury,
     undefined,
     terms,
+    harden({ feeMintAccess }),
   );
 
   const {

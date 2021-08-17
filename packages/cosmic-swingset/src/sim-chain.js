@@ -64,7 +64,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     hardcodedClientAddresses: [bootAddress],
     noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
     bootMsg: {
-      supplyCoins: [{ denom: 'ubld', amount: `${50000n * 10n ** 6n}` }],
+      supplyCoins: [
+        { denom: 'ubld', amount: `${50_000n * 10n ** 6n}` },
+        { denom: 'urun', amount: `${1_000_000n * 10n ** 6n}` },
+      ],
     },
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);

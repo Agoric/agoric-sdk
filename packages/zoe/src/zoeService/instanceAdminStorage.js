@@ -2,27 +2,36 @@
 
 import { makeWeakStore } from '@agoric/store';
 
-export const makeInstanceAdminStorage = () => {
+/**
+ * @param {ChargeZoeFee} chargeZoeFee
+ * @param {Amount} getPublicFacetFeeAmount
+ */
+export const makeInstanceAdminStorage = (
+  chargeZoeFee,
+  getPublicFacetFeeAmount,
+) => {
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
-  /** @type {GetPublicFacet} */
-  const getPublicFacet = instance =>
-    instanceToInstanceAdmin.get(instance).getPublicFacet();
+  /** @type {GetPublicFacetFeePurseRequired} */
+  const getPublicFacet = async (instance, feePurse) => {
+    await chargeZoeFee(feePurse, getPublicFacetFeeAmount);
+    return instanceToInstanceAdmin.get(instance).getPublicFacet();
+  };
 
   /** @type {GetBrands} */
-  const getBrands = instance =>
+  const getBrands = async instance =>
     instanceToInstanceAdmin.get(instance).getBrands();
 
   /** @type {GetIssuers} */
-  const getIssuers = instance =>
+  const getIssuers = async instance =>
     instanceToInstanceAdmin.get(instance).getIssuers();
 
   /** @type {GetTerms} */
   const getTerms = instance => instanceToInstanceAdmin.get(instance).getTerms();
 
   /** @type {GetInstallationForInstance} */
-  const getInstallationForInstance = instance =>
+  const getInstallationForInstance = async instance =>
     instanceToInstanceAdmin.get(instance).getInstallationForInstance();
 
   return harden({

@@ -14,12 +14,24 @@ test('setupCreateZCFVat', async t => {
   const fakeVatAdminSvc = Far('fakeVatAdminSvc', {
     createMeter: () => {},
     createUnlimitedMeter: () => {},
-    createVatByName: name => name,
-    createVat: _bundle => 'zcfBundle',
+    createVatByName: _name => {
+      return harden({ adminNode: undefined, root: undefined });
+    },
+    createVat: _bundle => {
+      return harden({ adminNode: undefined, root: undefined });
+    },
   });
 
   // @ts-ignore fakeVatAdminSvc is mocked
-  t.is(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), 'zcfBundle');
+  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), {
+    meter: undefined,
+    adminNode: undefined,
+    root: undefined,
+  });
   // @ts-ignore fakeVatAdminSvc is mocked
-  t.is(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), 'myVat');
+  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), {
+    meter: undefined,
+    adminNode: undefined,
+    root: undefined,
+  });
 });

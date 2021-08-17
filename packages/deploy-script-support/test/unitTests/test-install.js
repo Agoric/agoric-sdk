@@ -1,18 +1,21 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import bundleSource from '@agoric/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { E } from '@agoric/eventual-send';
 
 import '../../exported.js';
 
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   let addedInstallation;
 

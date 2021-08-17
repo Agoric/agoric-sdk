@@ -69,22 +69,56 @@ export function buildRootObject(vatPowers, vatParameters) {
     const bankBridgeManager = bridgeManager;
     const dibcBridgeManager = bridgeManager;
 
+    const chainTimerServiceP = E(vats.timer).createTimerService(timerDevice);
+
+    const feeIssuerConfig = {
+      name: CENTRAL_ISSUER_NAME,
+      assetKind: AssetKind.NAT,
+      displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+      initialFunds: 1_000_000_000_000_000_000n,
+    };
+    const zoeFeesConfig = {
+      getPublicFacetFee: 50n,
+      installFee: 65_000n,
+      startInstanceFee: 5_000_000n,
+      offerFee: 65_000n,
+      timeAuthority: chainTimerServiceP,
+      lowFee: 500_000n,
+      highFee: 5_000_000n,
+      shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
+      longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
+    };
+    const meteringConfig = {
+      incrementBy: 25_000_000n,
+      initial: 50_000_000n,
+      threshold: 25_000_000n,
+      price: {
+        feeNumerator: 1n,
+        computronDenominator: 1n, // default is just one-to-one
+      },
+    };
+
     // Create singleton instances.
     const [
       bankManager,
       sharingService,
       board,
       chainTimerService,
-      zoe,
+      { zoeService: zoe, feeMintAccess, feeCollectionPurse },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
     ] = await Promise.all([
       E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
-      E(vats.timer).createTimerService(timerDevice),
-      /** @type {ERef<ZoeService>} */ (E(vats.zoe).buildZoe(vatAdminSvc)),
+      chainTimerServiceP,
+      /** @type {Promise<{ zoeService: ZoeServiceFeePurseRequired, feeMintAccess:
+       * FeeMintAccess, feeCollectionPurse: FeePurse }>} */ (E(
+        vats.zoe,
+      ).buildZoe(vatAdminSvc, feeIssuerConfig, zoeFeesConfig, meteringConfig)),
       E(vats.priceAuthority).makePriceAuthority(),
     ]);
+
+    const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
     const {
       nameHub: agoricNames,
@@ -127,15 +161,16 @@ export function buildRootObject(vatPowers, vatParameters) {
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoe,
+          zoeWPurse: zoeWUnlimitedPurse,
           bootstrapPaymentValue,
+          feeMintAccess,
         }),
         installPegasusOnChain({
           agoricNames,
           board,
           nameAdmins,
           namesByAddress,
-          zoe,
+          zoeWPurse: zoeWUnlimitedPurse,
         }),
       ]);
       return treasuryCreator;
@@ -196,7 +231,10 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Only distribute fees if there is a collector.
       E(vats.distributeFees)
         .buildDistributor(
-          E(vats.distributeFees).makeTreasuryFeeCollector(zoe, treasuryCreator),
+          E(vats.distributeFees).makeTreasuryFeeCollector(
+            zoeWUnlimitedPurse,
+            treasuryCreator,
+          ),
           feeCollectorDepositFacet,
           epochTimerService,
           harden(distributorParams),
@@ -204,49 +242,40 @@ export function buildRootObject(vatPowers, vatParameters) {
         .catch(e => console.error('Error distributing fees', e));
     }
 
-    // We just transfer the bootstrapValue in central tokens to the escrow
-    // purse.
-    async function depositCentralSupplyPayment() {
-      const payment = await E(treasuryCreator).getBootstrapPayment(
-        AmountMath.make(centralBrand, bootstrapPaymentValue),
-      );
-      await E(bankManager).addAsset(
-        CENTRAL_DENOM_NAME,
-        CENTRAL_ISSUER_NAME,
-        'Agoric RUN currency',
-        harden({ issuer: centralIssuer, brand: centralBrand, payment }),
-      );
+    /**
+     * @type {Store<Brand, Payment>} The store of payments that aren't actually
+     * used by the bank.
+     */
+    const unusedBankPayments = makeStore('brand');
+
+    /* Prime the bank vat with our bootstrap payment. */
+    const centralBootstrapPayment = await E(
+      treasuryCreator,
+    ).getBootstrapPayment(AmountMath.make(centralBrand, bootstrapPaymentValue));
+
+    if (!bankBridgeManager) {
+      unusedBankPayments.init(centralBrand, centralBootstrapPayment);
     }
-    await depositCentralSupplyPayment();
 
-    /** @type {[string, import('./issuers').IssuerInitializationRecord]} */
-    const CENTRAL_ISSUER_ENTRY = [
-      CENTRAL_ISSUER_NAME,
-      {
-        issuer: centralIssuer,
-        tradesGivenCentral: [[1, 1]],
-      },
-    ];
-
-    /** @type {Store<string, import('./issuers').IssuerInitializationRecord>} */
-    const issuerNameToRecord = makeStore('issuerName');
     /** @type {Array<[string, import('./issuers').IssuerInitializationRecord]>} */
-    const issuerEntries = [
-      CENTRAL_ISSUER_ENTRY,
-      ...fromCosmosIssuerEntries,
+    const rawIssuerEntries = [
+      ...fromCosmosIssuerEntries({
+        issuer: centralIssuer,
+        brand: centralBrand,
+        bankDenom: CENTRAL_DENOM_NAME,
+        bankPayment: centralBootstrapPayment,
+      }),
       ...fromPegasusIssuerEntries,
     ];
     if (!noFakeCurrencies) {
-      issuerEntries.push(...fakeIssuerEntries);
+      rawIssuerEntries.push(...fakeIssuerEntries);
     }
-    issuerEntries.forEach(entry => issuerNameToRecord.init(...entry));
 
-    const issuerNames = [...issuerNameToRecord.keys()];
-    await Promise.all(
-      issuerNames.map(async issuerName => {
-        const record = issuerNameToRecord.get(issuerName);
+    const issuerEntries = await Promise.all(
+      rawIssuerEntries.map(async entry => {
+        const [issuerName, record] = entry;
         if (record.issuer !== undefined) {
-          return record.issuer;
+          return entry;
         }
         /** @type {Issuer} */
         const issuer = await E(vats.mints).makeMintAndIssuer(
@@ -254,26 +283,48 @@ export function buildRootObject(vatPowers, vatParameters) {
           ...(record.issuerArgs || []),
         );
         const brand = await E(issuer).getBrand();
-        issuerNameToRecord.set(
-          issuerName,
-          harden({ ...record, brand, issuer }),
-        );
-        if (!record.bankDenom || !record.bankPurse) {
-          return issuer;
+
+        const newRecord = harden({ ...record, brand, issuer });
+
+        /** @type {[string, typeof newRecord]} */
+        const newEntry = [issuerName, newRecord];
+        return newEntry;
+      }),
+    );
+
+    // Add bank assets.
+    await Promise.all(
+      issuerEntries.map(async entry => {
+        const [issuerName, record] = entry;
+        const { bankDenom, bankPurse, brand, issuer, bankPayment } = record;
+        if (!bankDenom || !bankPurse) {
+          return undefined;
         }
 
-        // We need to obtain the mint in order to mint the tokens when they
-        // come from the bank.
-        // FIXME: Be more careful with the mint.
-        const mint = await E(vats.mints).getMint(issuerName);
-        const kit = harden({ brand, issuer, mint });
-        await E(bankManager).addAsset(
-          record.bankDenom,
-          issuerName,
-          record.bankPurse,
-          kit,
-        );
-        return issuer;
+        assert(brand);
+        assert(issuer);
+
+        const makeMintKit = async () => {
+          // We need to obtain the mint in order to mint the tokens when they
+          // come from the bank.
+          // FIXME: Be more careful with the mint.
+          const mint = await E(vats.mints).getMint(issuerName);
+          return harden({ brand, issuer, mint });
+        };
+
+        let kitP;
+        if (bankBridgeManager && bankPayment) {
+          // The bank needs the payment to back its existing bridge peg.
+          kitP = harden({ brand, issuer, payment: bankPayment });
+        } else if (unusedBankPayments.has(brand)) {
+          // No need to back the currency.
+          kitP = harden({ brand, issuer });
+        } else {
+          kitP = makeMintKit();
+        }
+
+        const kit = await kitP;
+        return E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
       }),
     );
 
@@ -283,8 +334,8 @@ export function buildRootObject(vatPowers, vatParameters) {
         'TreasuryGovernance',
       );
       return Promise.all(
-        issuerNames.map(async issuerName => {
-          const record = issuerNameToRecord.get(issuerName);
+        issuerEntries.map(async entry => {
+          const [issuerName, record] = entry;
           const config = record.collateralConfig;
           if (!config) {
             return undefined;
@@ -342,7 +393,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           const paymentKeywords = harden({
             Collateral: payment,
           });
-          const seat = E(zoe).offer(
+          const seat = E(zoeWUnlimitedPurse).offer(
             addTypeInvitation,
             proposal,
             paymentKeywords,
@@ -379,7 +430,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const [ammPublicFacet, pegasus] = await Promise.all(
       [ammInstance, pegasusInstance].map(instance =>
-        E(zoe).getPublicFacet(instance),
+        E(zoeWUnlimitedPurse).getPublicFacet(instance),
       ),
     );
     await addAllCollateral();
@@ -389,12 +440,11 @@ export function buildRootObject(vatPowers, vatParameters) {
     ).getAllPoolBrands();
 
     await Promise.all(
-      issuerNames.map(async issuerName => {
+      issuerEntries.map(async entry => {
         // Create priceAuthority pairs for centralIssuer based on the
         // AMM or FakePriceAuthority.
+        const [issuerName, record] = entry;
         console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
-        const record = issuerNameToRecord.get(issuerName);
-        assert(record);
         const { tradesGivenCentral, issuer } = record;
 
         assert(issuer);
@@ -507,57 +557,99 @@ export function buildRootObject(vatPowers, vatParameters) {
           }
         }
 
-        const mintIssuerNames = [];
-        const mintPurseNames = [];
-        const mintValues = [];
-        const payToBank = [];
-        issuerNames.forEach(issuerName => {
-          const record = issuerNameToRecord.get(issuerName);
-          if (!record.defaultPurses) {
-            return;
-          }
-          record.defaultPurses.forEach(([purseName, value]) => {
-            // Only pay to the bank if we don't have an actual bridge to the
-            // underlying chain (from which we'll get the assets).
-            if (purseName === record.bankPurse) {
-              if (bankBridgeManager) {
-                // Don't mint or pay if we have a separate bank layer.
-                return;
-              }
-              payToBank.push(true);
-            } else {
-              payToBank.push(false);
+        /** @type {{ issuerName: string, purseName: string, issuer: Issuer,
+         * brand: Brand, payment: Payment, payToBank: boolean }[]} */
+        const userPaymentRecords = [];
+        await Promise.all(
+          issuerEntries.map(async entry => {
+            const [issuerName, record] = entry;
+            if (!record.defaultPurses) {
+              return;
             }
-            mintIssuerNames.push(issuerName);
-            mintPurseNames.push(purseName);
-            mintValues.push(value);
-          });
-        });
-        const payments = await E(vats.mints).mintInitialPayments(
-          mintIssuerNames,
-          mintValues,
-        );
+            const { issuer, brand, bankPurse } = record;
+            assert(issuer);
+            assert(brand);
 
-        const allPayments = mintIssuerNames.map((issuerName, i) => ({
-          issuer: issuerNameToRecord.get(issuerName).issuer,
-          issuerPetname: issuerName,
-          payment: payments[i],
-          brand: issuerNameToRecord.get(issuerName).brand,
-          pursePetname: mintPurseNames[i],
-        }));
+            await Promise.all(
+              record.defaultPurses.map(async ([purseName, value]) => {
+                // Only pay to the bank if we don't have an actual bridge to the
+                // underlying chain (from which we'll get the assets).
+                let payToBank = false;
+                if (purseName === bankPurse) {
+                  if (bankBridgeManager) {
+                    // Don't mint or pay if we have a separate bank layer.
+                    // We'll obtain the assets from the bank layer.
+                    return;
+                  }
+                  payToBank = true;
+                }
+
+                const splitUnusedBankPayment = async () => {
+                  if (!payToBank || !unusedBankPayments.has(brand)) {
+                    return undefined;
+                  }
+                  // We have an unusedPayment, so we can split off a payment.
+                  const amount = AmountMath.make(brand, Nat(value));
+                  const [fragment, remaining] = await E(issuer).split(
+                    unusedBankPayments.get(brand),
+                    amount,
+                  );
+                  unusedBankPayments.set(brand, remaining);
+                  return fragment;
+                };
+
+                const getPayment = async () => {
+                  const unused = await splitUnusedBankPayment();
+                  if (unused) {
+                    return unused;
+                  }
+
+                  const [minted] = await E(vats.mints).mintInitialPayments(
+                    [issuerName],
+                    [value],
+                  );
+                  return minted;
+                };
+
+                const payment = await getPayment();
+                userPaymentRecords.push({
+                  issuerName,
+                  issuer,
+                  brand,
+                  purseName,
+                  payment,
+                  payToBank,
+                });
+              }),
+            );
+          }),
+        );
 
         const bank = await E(bankManager).getBankForAddress(address);
 
         // Separate out the purse-creating payments from the bank payments.
         const faucetPaymentInfo = [];
         await Promise.all(
-          allPayments.map(async (record, i) => {
-            if (!payToBank[i]) {
+          userPaymentRecords.map(async precord => {
+            const {
+              payToBank,
+              issuer,
+              issuerName,
+              payment,
+              brand,
+              purseName,
+            } = precord;
+            if (!payToBank) {
               // Just a faucet payment to be claimed by a wallet.
-              faucetPaymentInfo.push(record);
+              faucetPaymentInfo.push({
+                issuer,
+                issuerPetname: issuerName,
+                payment,
+                brand,
+                pursePetname: purseName,
+              });
               return;
             }
-            const { brand, payment } = record;
 
             // Deposit the payment in the bank now.
             assert(brand);
@@ -566,10 +658,16 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
+        const userFeePurse = await E(zoe).makeFeePurse();
+        const zoeWUserFeePurse = await E(zoe).bindDefaultFeePurse(userFeePurse);
+
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
             return faucetPaymentInfo;
+          },
+          getFeePurse() {
+            return userFeePurse;
           },
         });
 
@@ -601,7 +699,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           namesByAddress,
           priceAuthority,
           board,
-          zoe,
+          zoe: zoeWUserFeePurse,
         });
 
         return bundle;

@@ -75,6 +75,7 @@
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
+ * @property {RegisterFeeMint} registerFeeMint
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
  * @property {WithdrawPayments} withdrawPayments
@@ -97,6 +98,7 @@
  * @param {Object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
+ * @param {ERef<FeePurse>} feePurse
  * @returns {ZoeInstanceStorageManager}
  */
 
@@ -121,5 +123,60 @@
  * ZCF bundle
  *
  * @callback CreateZCFVat
- * @returns {Promise<RootAndAdminNode>}
+ * @returns {Promise<RootAndAdminNodeAndMeter>}
+ */
+
+/**
+ * @typedef {Handle<'feeMintAccess'>} FeeMintAccess
+ */
+
+/**
+ * @callback GetFeeIssuerKit
+ * @param {FeeMintAccess} feeMintAccess
+ * @returns {IssuerKit}
+ */
+
+/**
+ * @callback ChargeZoeFee
+ * @param {ERef<Purse>} feePurse
+ * @param {Amount} feeAmount
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @typedef {bigint} Computrons
+ */
+
+/**
+ * @typedef {Object} Meter
+ *
+ * All `bigint` units here are in computrons.
+ *
+ * @property {(delta: Computrons) => void} addRemaining
+ * @property {(newThreshold: Computrons) => void} setThreshold
+ * @property {() => Computrons} get
+ * @property {() => Notifier<Computrons>} getNotifier
+ */
+
+/**
+ * @callback ChargeForComputrons
+ *
+ * Charges the feePurse argument for a set number of computrons (This
+ * number is returned by the function and can now be added to the
+ * meter).
+ *
+ * @param {ERef<FeePurse>} feePurse
+ * @returns {Promise<bigint>}
+ */
+
+/**
+ * @callback TranslateFee
+ * @param {FeeChoice | undefined} relativeFee
+ * @returns {Amount | undefined}
+ */
+
+/**
+ * @callback TranslateExpiry
+ * @param {ExpiryChoice | undefined} relativeExpiry
+ * @returns {Timestamp | undefined}
  */

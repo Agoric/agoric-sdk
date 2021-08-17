@@ -7,7 +7,7 @@ import { assert } from '@agoric/assert';
 import path from 'path';
 
 // noinspection ES6PreferShortImport
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -23,7 +23,9 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const zoe = makeZoe(fakeVatAdmin.admin);
+  const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -34,5 +36,13 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   const { vatAdminState } = fakeVatAdmin;
   // @ts-ignore fix types to understand that zcf is always defined
   assert(zcf !== undefined);
-  return { zoe, zcf, instance, installation, creatorFacet, vatAdminState };
+  return {
+    zoe,
+    zcf,
+    instance,
+    installation,
+    creatorFacet,
+    vatAdminState,
+    feeMintAccess,
+  };
 };

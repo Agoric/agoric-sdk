@@ -41,6 +41,9 @@ test('createInvitationKit', async t => {
         handle: mockInvitationHandle,
         installation: mockInstallation,
         instance: mockInstance,
+        fee: undefined,
+        expiry: undefined,
+        zoeTimeAuthority: undefined,
       },
     ]),
   );
@@ -61,7 +64,7 @@ test('description is omitted, wrongly', async t => {
     fruit: 'apple',
   });
 
-  t.throws(
+  await t.throwsAsync(
     () =>
       makeInvitation(
         // @ts-ignore mockInvitationHandle is mocked
@@ -102,6 +105,9 @@ test('customProperties ok to omit', async t => {
         handle: mockInvitationHandle,
         installation: mockInstallation,
         instance: mockInstance,
+        fee: undefined,
+        expiry: undefined,
+        zoeTimeAuthority: undefined,
       },
     ]),
   );

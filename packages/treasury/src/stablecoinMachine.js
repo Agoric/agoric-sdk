@@ -27,6 +27,7 @@ import {
   getAmountOut,
   getAmountIn,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
 
 import {
   multiplyBy,
@@ -41,7 +42,7 @@ import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 const trace = makeTracer('ST');
 
 /** @type {ContractStartFn} */
-export async function start(zcf) {
+export async function start(zcf, privateArgs) {
   // loanParams has time limits for charging interest
   const {
     autoswapInstall,
@@ -51,6 +52,8 @@ export async function start(zcf) {
     liquidationInstall,
     bootstrapPaymentValue = 0n,
   } = zcf.getTerms();
+
+  const { feeMintAccess } = privateArgs;
 
   assert.typeof(
     loanParams.chargingPeriod,
@@ -66,7 +69,7 @@ export async function start(zcf) {
   );
 
   const [runMint, govMint] = await Promise.all([
-    zcf.makeZCFMint('RUN', undefined, harden({ decimalPlaces: 6 })),
+    zcf.registerFeeMint('RUN', feeMintAccess),
     zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
   ]);
   const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
@@ -262,7 +265,13 @@ export async function start(zcf) {
       return mgr.makeLoanKit(seat);
     }
 
-    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
+    return zcf.makeInvitation(
+      makeLoanHook,
+      'MakeLoan',
+      undefined,
+      HIGH_FEE,
+      LONG_EXP,
+    );
   }
 
   zcf.setTestJig(() => ({
@@ -304,16 +313,27 @@ export async function start(zcf) {
       zcfSeat: bootstrapZCFSeat,
       userSeat: bootstrapUserSeat,
     } = zcf.makeEmptySeatKit();
+    const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
     runMint.mintGains(
       {
-        Bootstrap: AmountMath.make(runBrand, bootstrapPaymentValue),
+        Bootstrap: bootstrapAmount,
       },
       bootstrapZCFSeat,
     );
     bootstrapZCFSeat.exit();
     const bootstrapPayment = E(bootstrapUserSeat).getPayout('Bootstrap');
 
-    function getBootstrapPayment() {
+    /**
+     * @param {Amount=} expectedAmount - if provided, assert that the bootstrap
+     * payment is at least the expected amount
+     */
+    function getBootstrapPayment(expectedAmount) {
+      if (expectedAmount) {
+        assert(
+          AmountMath.isGTE(bootstrapAmount, expectedAmount),
+          details`${bootstrapAmount} is not at least ${expectedAmount}`,
+        );
+      }
       return bootstrapPayment;
     }
     return getBootstrapPayment;

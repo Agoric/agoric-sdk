@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 
 // noinspection ES6PreferShortImport
 import { E } from '@agoric/eventual-send';
-import { makeZoe } from '../../../src/zoeService/zoe.js';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
@@ -20,12 +20,14 @@ const contractRoot = `${dirname}/useObjExample.js`;
 test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await zoe.install(bundle);
+  const installation = await E(zoe).install(bundle);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
@@ -34,7 +36,7 @@ test('zoe - useObj', async t => {
   const issuerKeywordRecord = harden({
     Pixels: moolaIssuer,
   });
-  const { publicFacet } = await zoe.startInstance(
+  const { publicFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );
@@ -48,7 +50,11 @@ test('zoe - useObj', async t => {
   const alicePayments = { Pixels: aliceMoolaPayment };
 
   // Alice makes an offer
-  const aliceSeat = await zoe.offer(invitation, aliceProposal, alicePayments);
+  const aliceSeat = await E(zoe).offer(
+    invitation,
+    aliceProposal,
+    alicePayments,
+  );
 
   const useObj = await E(aliceSeat).getOfferResult();
 
