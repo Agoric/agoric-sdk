@@ -94,6 +94,25 @@ export function makeWallet({
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
+  // Idempotently initialize the issuer's synchronous boardId mapping.
+  const initIssuerToBoardId = async issuer => {
+    if (issuerToBoardId.has(issuer)) {
+      // We already have a mapping for this issuer.
+      return issuerToBoardId.get(issuer);
+    }
+
+    // This is an interleaving point.
+    const issuerBoardId = await E(board).getId(issuer);
+    if (issuerToBoardId.has(issuer)) {
+      // Somebody else won the race to .init.
+      return issuerToBoardId.get(issuer);
+    }
+
+    // We won the race, so .init ourselves.
+    issuerToBoardId.init(issuer, issuerBoardId);
+    return issuerBoardId;
+  };
+
   /** @type {WeakStore<Purse, Brand>} */
   const purseToBrand = makeScalarWeakMap('purse');
   /** @type {Store<Brand, string>} */
@@ -589,12 +608,7 @@ export function makeWallet({
       ? brandTable.getByIssuer(issuer)
       : brandTable.initIssuer(issuer);
     const { brand } = await recP;
-    if (!issuerToBoardId.has(issuer)) {
-      const issuerBoardId = await E(board).getId(issuer);
-      if (!issuerToBoardId.has(issuer)) {
-        issuerToBoardId.init(issuer, issuerBoardId);
-      }
-    }
+    await initIssuerToBoardId(issuer);
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -615,13 +629,7 @@ export function makeWallet({
 
   const publishIssuer = async brand => {
     const { issuer } = brandTable.getByBrand(brand);
-    if (issuerToBoardId.has(issuer)) {
-      return issuerToBoardId.get(issuer);
-    }
-    const issuerBoardId = await E(board).getId(issuer);
-    if (!issuerToBoardId.has(issuer)) {
-      issuerToBoardId.init(issuer, issuerBoardId);
-    }
+    const issuerBoardId = await initIssuerToBoardId(issuer);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -1442,12 +1450,7 @@ export function makeWallet({
     },
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP);
-      if (!issuerToBoardId.has(issuer)) {
-        const issuerBoardId = await E(board).getId(issuer);
-        if (!issuerToBoardId.has(issuer)) {
-          issuerToBoardId.init(issuer, issuerBoardId);
-        }
-      }
+      await initIssuerToBoardId(issuer);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },
