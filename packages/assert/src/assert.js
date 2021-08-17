@@ -27,7 +27,7 @@ const globalAssert = globalThis.assert;
 
 if (globalAssert === undefined) {
   throw new Error(
-    `Cannot initialize @agoric/assert, missing globalThis.assert`,
+    `Cannot initialize @agoric/assert, missing globalThis.assert, import 'ses' before '@agoric/assert'`,
   );
 }
 
