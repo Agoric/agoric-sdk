@@ -1,40 +1,17 @@
 // XXX this is wrong; it needs to use the swingstore instead of opening the LMDB
 // file directly, then use stream store reads to get the transcript entries.
-import lmdb from 'node-lmdb';
-import process from 'process';
-import fs from 'fs';
+// @ts-check
+import processPowers from 'process';
+import fsPowers from 'fs';
+import '@agoric/install-ses';
+import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
 
-const argv = process.argv.splice(2);
-const dirPath = argv[0];
-const vatName = argv[1];
+const Usage = `
+extract-transcript-from-kerneldb DBDIR : list all vats in DB
+extract-transcript-from-kerneldb DBDIR VATID|VatName : extract transcript
+`;
 
-if (!dirPath) {
-  console.log('extract-transcript-from-kerneldb DBDIR : list all vats in DB');
-  console.log(
-    'extract-transcript-from-kerneldb DBDIR VATID|VatName : extract transcript',
-  );
-  process.exit(0);
-}
-
-const lmdbEnv = new lmdb.Env();
-lmdbEnv.open({
-  path: dirPath,
-  mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
-});
-
-const dbi = lmdbEnv.openDbi({
-  name: 'swingset-kernel-state',
-  create: false,
-});
-const txn = lmdbEnv.beginTxn();
-function get(key) {
-  return txn.getString(dbi, key);
-}
-
-const allVatNames = JSON.parse(get('vat.names'));
-const allDynamicVatIDs = JSON.parse(get('vat.dynamicIDs'));
-
-if (!vatName) {
+function listAllVats(allVatNames, get, allDynamicVatIDs) {
   console.log(`all vats:`);
   for (const name of allVatNames) {
     const vatID = get(`vat.name.${name}`);
@@ -49,7 +26,17 @@ if (!vatName) {
       `   (${transcriptLength} deliveries)`,
     );
   }
-} else {
+}
+
+function extractTranscript(
+  kvStore,
+  streamStore,
+  vatName,
+  allVatNames,
+  allDynamicVatIDs,
+  { fs },
+) {
+  const get = kvStore.get;
   let vatID = vatName;
   if (allVatNames.indexOf(vatName) !== -1) {
     vatID = get(`vat.name.${vatName}`);
@@ -85,26 +72,54 @@ if (!vatName) {
 
   const transcriptLength = Number(get(`${vatID}.t.nextID`));
   console.log(`${transcriptLength} transcript entries`);
-  for (let i = 0; i < transcriptLength; i += 1) {
-    const t = { transcriptNum, ...JSON.parse(get(`${vatID}.t.${i}`)) };
-    transcriptNum += 1;
+
+  const endPos = JSON.parse(get(`${vatID}.t.endPosition`));
+  for (const entry of streamStore.readStream(
+    `transcript-${vatID}`,
+    streamStore.STREAM_START,
+    endPos,
+  )) {
     // vatstoreGet can lack .response when key was missing
     // vatstoreSet has .response: null
     // console.log(`t.${i} : ${t}`);
-    fs.writeSync(fd, `${JSON.stringify(t)}\n`);
+    fs.writeSync(fd, `${JSON.stringify(entry)}\n`);
   }
   fs.closeSync(fd);
-
-  /*
-  let c = new lmdb.Cursor(txn, dbi);
-  let key = c.goToFirst();
-  while(0) {
-    //console.log(key);
-    console.log(key, txn.getString(dbi, key));
-    key = c.goToNext();
-    if (!key) {
-      break;
-    }
-  }
-*/
 }
+
+async function main(argv, { fs }) {
+  const [dirPath, vatName] = argv;
+
+  if (!dirPath) {
+    console.error(Usage);
+    return 1;
+  }
+
+  const { kvStore, streamStore } = openLMDBSwingStore(dirPath);
+
+  function get(key) {
+    return kvStore.get(key);
+  }
+
+  const allVatNames = JSON.parse(get('vat.names'));
+  const allDynamicVatIDs = JSON.parse(get('vat.dynamicIDs'));
+
+  if (!vatName) {
+    listAllVats(allVatNames, get, allDynamicVatIDs);
+  } else {
+    extractTranscript(
+      kvStore,
+      streamStore,
+      vatName,
+      allVatNames,
+      allDynamicVatIDs,
+      { fs },
+    );
+  }
+  return 0;
+}
+
+Promise.resolve()
+  .then(() => main(processPowers.argv.slice(2), { fs: fsPowers }))
+  .then(code => processPowers.exit(code))
+  .catch(err => console.error(err));
