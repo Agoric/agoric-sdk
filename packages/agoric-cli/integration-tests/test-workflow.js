@@ -89,7 +89,16 @@ test('workflow', async t => {
 
     // ==============
     // agoric init dapp-foo
-    t.is(await myMain(['init', 'dapp-foo']), 0, 'init dapp-foo works');
+    const initOptions = [];
+    if (process.env.AGORIC_INIT_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_INIT_OPTIONS);
+      initOptions.push(...opts);
+    }
+    t.is(
+      await myMain(['init', ...initOptions, 'dapp-foo']),
+      0,
+      'init dapp-foo works',
+    );
     process.chdir('dapp-foo');
 
     // ==============
