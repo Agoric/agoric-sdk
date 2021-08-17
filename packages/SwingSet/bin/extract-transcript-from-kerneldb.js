@@ -101,7 +101,7 @@ function extractTranscript(
     // vatstoreGet can lack .response when key was missing
     // vatstoreSet has .response: null
     // console.log(`t.${i} : ${t}`);
-    fs.writeSync(fd, `${JSON.stringify(entry)}\n`);
+    fs.writeSync(fd, `${entry}\n`);
   }
   fs.closeSync(fd);
 }
