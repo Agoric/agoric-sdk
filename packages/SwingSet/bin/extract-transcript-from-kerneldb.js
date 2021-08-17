@@ -11,6 +11,11 @@ extract-transcript-from-kerneldb DBDIR : list all vats in DB
 extract-transcript-from-kerneldb DBDIR VATID|VatName : extract transcript
 `;
 
+/**
+ * @param {string[]} allVatNames
+ * @param {(k: string) => string | undefined} get
+ * @param {string[]} allDynamicVatIDs
+ */
 function listAllVats(allVatNames, get, allDynamicVatIDs) {
   console.log(`all vats:`);
   for (const name of allVatNames) {
@@ -28,6 +33,18 @@ function listAllVats(allVatNames, get, allDynamicVatIDs) {
   }
 }
 
+/**
+ *
+ * @param { KVStore } kvStore
+ * @param { StreamStore } streamStore
+ * @param { string } vatName
+ * @param { string[] } allVatNames
+ * @param { string[] } allDynamicVatIDs
+ * @param {{ fs: typeof import('fs') }} io
+ *
+ * @typedef { import('@agoric/swing-store-lmdb').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store-lmdb').StreamStore } StreamStore
+ */
 function extractTranscript(
   kvStore,
   streamStore,
@@ -87,6 +104,10 @@ function extractTranscript(
   fs.closeSync(fd);
 }
 
+/**
+ * @param { string[] } argv
+ * @param {{ fs: typeof import('fs') }} io
+ */
 async function main(argv, { fs }) {
   const [dirPath, vatName] = argv;
 
