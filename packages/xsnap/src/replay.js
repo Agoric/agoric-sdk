@@ -1,6 +1,6 @@
 /**
  * Replay usage:
- *   node -r esm replay.js <folder>...
+ *   node replay.js <folder>...
  *
  * In case of more than one folder:
  *  1. Spawn based on 00000-options.json in the first folder
@@ -10,6 +10,9 @@
  */
 // @ts-check
 
+import childProcessPowers from 'child_process';
+import osPowers from 'os';
+import fsPowers from 'fs';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
 import { queue } from './stream.js';
 
@@ -293,17 +296,13 @@ export async function main(argv, { spawn, osType, readdirSync, readFileSync }) {
   await replayXSnap(options, folders, { readdirSync, readFileSync });
 }
 
-/* global require, module, process, require */
-if (typeof require !== 'undefined' && require.main === module) {
+/* global process */
+if (process.argv[1] === new URL(import.meta.url).pathname) {
   main([...process.argv.slice(2)], {
-    // eslint-disable-next-line global-require
-    spawn: require('child_process').spawn,
-    // eslint-disable-next-line global-require
-    osType: require('os').type,
-    // eslint-disable-next-line global-require
-    readdirSync: require('fs').readdirSync,
-    // eslint-disable-next-line global-require
-    readFileSync: require('fs').readFileSync,
+    spawn: childProcessPowers.spawn,
+    osType: osPowers.type,
+    readdirSync: fsPowers.readdirSync,
+    readFileSync: fsPowers.readFileSync,
   }).catch(err => {
     console.error(err);
     process.exit(err.code || 1);

@@ -23,7 +23,7 @@ By modifying the replay tool, you can control how the replay is performed:
 Suppose you have an agoric chain node (validator or non-voting fullnode) that keeps its state in `~/.ag-chain-cosmos/`. After stopping the node (so the database is not being modified during read), the following invocation will extract a list of vatIDs to choose from:
 
 ```
-$ node -r esm extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/ag-cosmos-chain-state
+$ node extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/ag-cosmos-chain-state
 
 all vats:
 v1 : bank       (26464 deliveries)
@@ -55,7 +55,7 @@ v24 : (dynamic) {"managerType":"xs-worker"}    (1 deliveries)
 To replay the "zoe" vat, first extract the transcript:
 
 ```
-$ node -r esm extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/ag-cosmos-chain-state zoe
+$ node extract-transcript-from-kerneldb.js ~/.ag-chain-cosmos/data/ag-cosmos-chain-state zoe
 
 extracting transcript for vat v11 into transcript-v11.sst
 29905 transcript entries
