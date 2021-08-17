@@ -26,6 +26,7 @@ import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAutho
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeTracer } from '../src/makeTracer.js';
 import { SECONDS_PER_YEAR } from '../src/interest.js';
+import { VaultState } from '../src/vault.js';
 
 const stablecoinRoot = '../src/stablecoinMachine.js';
 const liquidationRoot = '../src/liquidateMinimum.js';
@@ -434,9 +435,14 @@ test('price drop', async t => {
 
   await manualTimer.tick();
   const notification4 = await uiNotifier.getUpdateSince(2);
+  t.falsy(notification4.value.liquidated);
+  t.is(notification4.value.vaultState, VaultState.LIQUIDATING);
 
-  t.falsy(notification4.updateCount);
-  t.truthy(notification4.value.liquidated);
+  await manualTimer.tick();
+  const notification5 = await uiNotifier.getUpdateSince(3);
+
+  t.falsy(notification5.updateCount);
+  t.truthy(notification5.value.liquidated);
 
   const debtAmountAfter = await E(vault).getDebtAmount();
   const finalNotification = await uiNotifier.getUpdateSince();

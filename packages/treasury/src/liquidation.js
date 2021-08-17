@@ -20,6 +20,7 @@ export async function liquidate(
   strategy,
   collateralBrand,
 ) {
+  vaultKit.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;
   const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit;

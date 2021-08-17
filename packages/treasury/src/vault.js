@@ -21,6 +21,19 @@ import { makeInterestCalculator } from './interest.js';
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower
 
+/**
+ * Constants for vault state.
+ *
+ * @typedef {'active' | 'liquidating' | 'closed'} VAULT_STATE
+ *
+ * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed' }}
+ */
+export const VaultState = {
+  ACTIVE: 'active',
+  LIQUIDATING: 'liquidating',
+  CLOSED: 'closed',
+};
+
 /** @type {MakeVaultKit} */
 export function makeVaultKit(
   zcf,
@@ -38,10 +51,11 @@ export function makeVaultKit(
   } = zcf.makeEmptySeatKit(undefined);
   const liquidationPromiseKit = makePromiseKit();
 
-  let active = true; // liquidation halts all user actions
+  /** @type {VAULT_STATE} */
+  let vaultState = VaultState.ACTIVE;
 
   function assertVaultIsOpen() {
-    assert(active, 'vault must still be active');
+    assert(vaultState === VaultState.ACTIVE, 'vault must still be active');
   }
 
   const collateralBrand = manager.getCollateralBrand();
@@ -132,19 +146,31 @@ export function makeVaultKit(
       locked: getCollateralAmount(),
       debt: runDebt,
       collateralizationRatio,
-      liquidated: !active,
+      liquidated: vaultState === VaultState.CLOSED,
+      vaultState,
     });
 
-    if (active) {
-      uiUpdater.updateState(uiState);
-    } else {
-      uiUpdater.finish(uiState);
+    switch (vaultState) {
+      case VaultState.ACTIVE:
+      case VaultState.LIQUIDATING:
+        uiUpdater.updateState(uiState);
+        break;
+      case VaultState.CLOSED:
+        uiUpdater.finish(uiState);
+        break;
+      default:
+        throw Error(`unreachable vaultState: ${vaultState}`);
     }
   }
 
   function liquidated(newDebt) {
     runDebt = newDebt;
-    active = false;
+    vaultState = VaultState.CLOSED;
+    updateUiState();
+  }
+
+  function liquidating() {
+    vaultState = VaultState.LIQUIDATING;
     updateUiState();
   }
 
@@ -179,7 +205,7 @@ export function makeVaultKit(
     runMint.burnLosses({ RUN: runDebt }, burnSeat);
     seat.exit();
     burnSeat.exit();
-    active = false;
+    vaultState = VaultState.CLOSED;
     updateUiState();
 
     runDebt = AmountMath.makeEmpty(runBrand);
@@ -466,6 +492,7 @@ export function makeVaultKit(
     openLoan,
     accrueInterestAndAddToPool,
     vaultSeat,
+    liquidating,
     liquidated,
     liquidationPromiseKit,
     liquidationZcfSeat,
