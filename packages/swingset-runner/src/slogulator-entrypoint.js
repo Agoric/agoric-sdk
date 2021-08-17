@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node
+#!/usr/bin/env node
 
 /**
  * Simple boilerplate program providing linkage to launch an application written using modules within the

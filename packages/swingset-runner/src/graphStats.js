@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node
+#!/usr/bin/env node
 
 import { dataGraphApp } from './dataGraphApp.js';
 

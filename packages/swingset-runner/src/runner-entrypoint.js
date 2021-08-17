@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node
+#!/usr/bin/env node
 
 // #!/usr/bin/env -S node --inspect-brk
 
