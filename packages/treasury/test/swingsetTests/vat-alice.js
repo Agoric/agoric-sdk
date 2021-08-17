@@ -26,7 +26,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const { vault, _liquidationPayout } = await E(loanSeat).getOfferResult();
+    const { vault } = await E(loanSeat).getOfferResult();
     log(`Alice owes ${q(await E(vault).getDebtAmount())} after borrowing`);
     await E(timer).tick();
     log(`Alice owes ${q(await E(vault).getDebtAmount())} after interest`);

@@ -15,11 +15,24 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { makeTracer } from './makeTracer.js';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { makeInterestCalculator } from './interest.js';
 
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower
+
+/**
+ * Constants for vault state.
+ *
+ * @typedef {'active' | 'liquidating' | 'closed'} VAULT_STATE
+ *
+ * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed' }}
+ */
+export const VaultState = {
+  ACTIVE: 'active',
+  LIQUIDATING: 'liquidating',
+  CLOSED: 'closed',
+};
 
 /** @type {MakeVaultKit} */
 export function makeVaultKit(
@@ -31,13 +44,18 @@ export function makeVaultKit(
   loanParams,
   startTimeStamp,
 ) {
-  const trace = makeTracer('VV');
   const { updater: uiUpdater, notifier } = makeNotifierKit();
+  const {
+    zcfSeat: liquidationZcfSeat,
+    userSeat: liquidationSeat,
+  } = zcf.makeEmptySeatKit(undefined);
+  const liquidationPromiseKit = makePromiseKit();
 
-  let active = true; // liquidation halts all user actions
+  /** @type {VAULT_STATE} */
+  let vaultState = VaultState.ACTIVE;
 
   function assertVaultIsOpen() {
-    assert(active, 'vault must still be active');
+    assert(vaultState === VaultState.ACTIVE, 'vault must still be active');
   }
 
   const collateralBrand = manager.getCollateralBrand();
@@ -49,9 +67,7 @@ export function makeVaultKit(
   // (because the StableCoinMachine vat died), they'll get all their
   // collateral back. If that happens, the issuer for the RUN will be dead,
   // so their loan will be worthless.
-  const { zcfSeat: vaultSeat, userSeat } = zcf.makeEmptySeatKit();
-
-  trace('vaultSeat proposal', vaultSeat.getProposal());
+  const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
 
   const { brand: runBrand } = runMint.getIssuerRecord();
   let runDebt = AmountMath.makeEmpty(runBrand);
@@ -130,19 +146,31 @@ export function makeVaultKit(
       locked: getCollateralAmount(),
       debt: runDebt,
       collateralizationRatio,
-      liquidated: !active,
+      liquidated: vaultState === VaultState.CLOSED,
+      vaultState,
     });
 
-    if (active) {
-      uiUpdater.updateState(uiState);
-    } else {
-      uiUpdater.finish(uiState);
+    switch (vaultState) {
+      case VaultState.ACTIVE:
+      case VaultState.LIQUIDATING:
+        uiUpdater.updateState(uiState);
+        break;
+      case VaultState.CLOSED:
+        uiUpdater.finish(uiState);
+        break;
+      default:
+        throw Error(`unreachable vaultState: ${vaultState}`);
     }
   }
 
   function liquidated(newDebt) {
     runDebt = newDebt;
-    active = false;
+    vaultState = VaultState.CLOSED;
+    updateUiState();
+  }
+
+  function liquidating() {
+    vaultState = VaultState.LIQUIDATING;
     updateUiState();
   }
 
@@ -167,20 +195,24 @@ export function makeVaultKit(
     assert(AmountMath.isGTE(runReturned, runDebt));
 
     // Return any overpayment
-    vaultSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
+
+    const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
+    burnSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
     seat.incrementBy(
       vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
     );
-    zcf.reallocate(seat, vaultSeat);
-
+    zcf.reallocate(seat, vaultSeat, burnSeat);
+    runMint.burnLosses({ RUN: runDebt }, burnSeat);
     seat.exit();
-    active = false;
+    burnSeat.exit();
+    vaultState = VaultState.CLOSED;
     updateUiState();
 
-    runMint.burnLosses({ RUN: runDebt }, vaultSeat);
     runDebt = AmountMath.makeEmpty(runBrand);
     assertVaultHoldsNoRun();
     vaultSeat.exit();
+    liquidationZcfSeat.exit();
+    liquidationPromiseKit.resolve('Closed');
 
     return 'your loan is closed, thank you for your business';
   }
@@ -397,8 +429,6 @@ export function makeVaultKit(
       want: { RUN: wantedRun },
     } = seat.getProposal();
 
-    const collateralPayoutP = E(userSeat).getPayouts();
-
     // todo trigger process() check right away, in case the price dropped while we ran
 
     const fee = multiplyBy(wantedRun, manager.getLoanFee());
@@ -419,7 +449,7 @@ export function makeVaultKit(
 
     updateUiState();
 
-    return { notifier, collateralPayoutP };
+    return { notifier };
   }
 
   function accrueInterestAndAddToPool(currentTime) {
@@ -453,6 +483,8 @@ export function makeVaultKit(
     // for status/debugging
     getCollateralAmount,
     getDebtAmount,
+    getLiquidationSeat: () => liquidationSeat,
+    getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
   return harden({
@@ -460,6 +492,9 @@ export function makeVaultKit(
     openLoan,
     accrueInterestAndAddToPool,
     vaultSeat,
+    liquidating,
     liquidated,
+    liquidationPromiseKit,
+    liquidationZcfSeat,
   });
 }

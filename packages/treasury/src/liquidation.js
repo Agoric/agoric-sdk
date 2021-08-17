@@ -20,10 +20,11 @@ export async function liquidate(
   strategy,
   collateralBrand,
 ) {
+  vaultKit.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
-  const { runBrand } = runDebt.brand;
+  const { brand: runBrand } = runDebt;
+  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit;
 
-  const vaultSeat = vaultKit.vaultSeat;
   const collateralToSell = vaultSeat.getAmountAllocated(
     'Collateral',
     collateralBrand,
@@ -34,6 +35,7 @@ export async function liquidate(
     strategy.keywordMapping(),
     strategy.makeProposal(collateralToSell, runDebt),
     vaultSeat,
+    liquidationSeat,
   );
   trace(` offeredTo`, runDebt);
 
@@ -41,7 +43,7 @@ export async function liquidate(
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
 
   // Now we need to know how much was sold so we can pay off the debt
-  const runProceedsAmount = vaultSeat.getAmountAllocated('RUN', runBrand);
+  const runProceedsAmount = liquidationSeat.getAmountAllocated('RUN', runBrand);
 
   trace('RUN PROCEEDS', runProceedsAmount);
 
@@ -50,11 +52,13 @@ export async function liquidate(
 
   const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
-  burnLosses({ RUN: runToBurn }, vaultSeat);
+  burnLosses({ RUN: runToBurn }, liquidationSeat);
   vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
+  liquidationSeat.exit();
+  vaultKit.liquidationPromiseKit.resolve('Liquidated');
 }
 
 // The default strategy converts of all the collateral to RUN using autoswap,
