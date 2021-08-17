@@ -17,14 +17,15 @@ extract-transcript-from-kerneldb DBDIR VATID|VatName : extract transcript
  * @param {string[]} allDynamicVatIDs
  */
 function listAllVats(allVatNames, get, allDynamicVatIDs) {
+  const itemCount = value => JSON.parse(value).itemCount;
   console.log(`all vats:`);
   for (const name of allVatNames) {
     const vatID = get(`vat.name.${name}`);
-    const transcriptLength = Number(get(`${vatID}.t.nextID`));
+    const transcriptLength = itemCount(get(`${vatID}.t.endPosition`));
     console.log(`${vatID} : ${name}       (${transcriptLength} deliveries)`);
   }
   for (const vatID of allDynamicVatIDs) {
-    const transcriptLength = Number(get(`${vatID}.t.nextID`));
+    const transcriptLength = itemCount(get(`${vatID}.t.endPosition`));
     console.log(
       `${vatID} : (dynamic)`,
       get(`${vatID}.options`),
@@ -87,7 +88,8 @@ function extractTranscript(
   fs.writeSync(fd, JSON.stringify(first));
   fs.writeSync(fd, '\n');
 
-  const transcriptLength = Number(get(`${vatID}.t.nextID`));
+  const itemCount = value => JSON.parse(value).itemCount;
+  const transcriptLength = itemCount(get(`${vatID}.t.endPosition`));
   console.log(`${transcriptLength} transcript entries`);
 
   const endPos = JSON.parse(get(`${vatID}.t.endPosition`));
