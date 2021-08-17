@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node -r esm
+#!/usr/bin/env node
 
 import '@agoric/install-ses';
 import process from 'process';

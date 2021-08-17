@@ -227,8 +227,6 @@ export async function makeSwingsetController(
 
   // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {
-    // TODO: after we move away from `-r esm` and use real ES6 modules, point
-    // this at nodeWorkerSupervisor.js instead of the CJS intermediate
     const supercode = new URL(
       'kernel/vatManager/supervisor-nodeworker.js',
       import.meta.url,
@@ -242,7 +240,7 @@ export async function makeSwingsetController(
       'kernel/vatManager/supervisor-subprocess-node.js',
       import.meta.url,
     ).pathname;
-    const args = ['-r', 'esm', supercode];
+    const args = [supercode];
     return startSubprocessWorker(process.execPath, args);
   }
 
