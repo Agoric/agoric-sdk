@@ -73,7 +73,7 @@ const fromCosmosIssuerEntries = centralRecord => [
     CENTRAL_ISSUER_NAME,
     {
       issuerArgs: [undefined, { decimalPlaces: 6 }],
-      defaultPurses: [['Agoric RUN currency', scaleMicro(17)]],
+      defaultPurses: [['Agoric RUN currency', scaleMicro(53)]],
       bankPurse: 'Agoric RUN currency',
       tradesGivenCentral: [[1, 1]],
       ...centralRecord,
