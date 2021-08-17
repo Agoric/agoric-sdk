@@ -313,16 +313,27 @@ export async function start(zcf, privateArgs) {
       zcfSeat: bootstrapZCFSeat,
       userSeat: bootstrapUserSeat,
     } = zcf.makeEmptySeatKit();
+    const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
     runMint.mintGains(
       {
-        Bootstrap: AmountMath.make(runBrand, bootstrapPaymentValue),
+        Bootstrap: bootstrapAmount,
       },
       bootstrapZCFSeat,
     );
     bootstrapZCFSeat.exit();
     const bootstrapPayment = E(bootstrapUserSeat).getPayout('Bootstrap');
 
-    function getBootstrapPayment() {
+    /**
+     * @param {Amount=} expectedAmount - if provided, assert that the bootstrap
+     * payment is at least the expected amount
+     */
+    function getBootstrapPayment(expectedAmount) {
+      if (expectedAmount) {
+        assert(
+          AmountMath.isGTE(bootstrapAmount, expectedAmount),
+          details`${bootstrapAmount} is not at least ${expectedAmount}`,
+        );
+      }
       return bootstrapPayment;
     }
     return getBootstrapPayment;

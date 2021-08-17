@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@agoric/bundle-source": "^1.4.7",
+    "@agoric/ertp": "^0.11.14",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

@@ -73,9 +73,6 @@ export function makeWallet({
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
 }) {
-  /** @type {Purse=} */
-  let zoeFeePurse;
-
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
@@ -96,6 +93,25 @@ export function makeWallet({
   const brandTable = makeIssuerTable();
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
+
+  // Idempotently initialize the issuer's synchronous boardId mapping.
+  const initIssuerToBoardId = async issuer => {
+    if (issuerToBoardId.has(issuer)) {
+      // We already have a mapping for this issuer.
+      return issuerToBoardId.get(issuer);
+    }
+
+    // This is an interleaving point.
+    const issuerBoardId = await E(board).getId(issuer);
+    if (issuerToBoardId.has(issuer)) {
+      // Somebody else won the race to .init.
+      return issuerToBoardId.get(issuer);
+    }
+
+    // We won the race, so .init ourselves.
+    issuerToBoardId.init(issuer, issuerBoardId);
+    return issuerBoardId;
+  };
 
   /** @type {WeakStore<Purse, Brand>} */
   const purseToBrand = makeScalarWeakMap('purse');
@@ -375,8 +391,6 @@ export function makeWallet({
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
-    const feePursePetname =
-      zoeFeePurse && purseMapping.valToPetname.get(zoeFeePurse);
     const offerForDisplay = {
       ...offer,
       // We cannot store the actions, installation, and instance in the
@@ -385,9 +399,8 @@ export function makeWallet({
       actions: undefined,
       installation: undefined,
       instance: undefined,
-      feePursePetname,
-      invitationDetails: display(invitationDetails),
       proposalTemplate,
+      invitationDetails: display(invitationDetails),
       instancePetname: instanceDisplay.petname,
       installationPetname: installationDisplay.petname,
       proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
@@ -555,13 +568,7 @@ export function makeWallet({
     const paymentKeywords = await withdrawAllPayments;
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
-    const seat = E(zoe).offer(
-      inviteP,
-      harden(proposal),
-      paymentKeywordRecord,
-      undefined,
-      zoeFeePurse,
-    );
+    const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
     // By the time Zoe settles the seat promise, the escrow should be complete.
     // Reclaim if it is somehow not.
     seat.finally(tryReclaimingWithdrawnPayments);
@@ -601,10 +608,7 @@ export function makeWallet({
       ? brandTable.getByIssuer(issuer)
       : brandTable.initIssuer(issuer);
     const { brand } = await recP;
-    if (!issuerToBoardId.has(issuer)) {
-      const issuerBoardId = await E(board).getId(issuer);
-      issuerToBoardId.init(issuer, issuerBoardId);
-    }
+    await initIssuerToBoardId(issuer);
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -615,20 +619,17 @@ export function makeWallet({
       } else {
         p = Promise.resolve();
       }
-      return p.then(
-        _ => `issuer ${q(petnameForBrand)} successfully added to wallet`,
-      );
+      return p.then(_ => petnameForBrand);
     };
-    return addBrandPetname().then(updateAllIssuersState);
+    return addBrandPetname().then(async brandName => {
+      await updateAllIssuersState();
+      return brandName;
+    });
   };
 
   const publishIssuer = async brand => {
     const { issuer } = brandTable.getByBrand(brand);
-    if (issuerToBoardId.has(issuer)) {
-      return issuerToBoardId.get(issuer);
-    }
-    const issuerBoardId = await E(board).getId(issuer);
-    issuerToBoardId.init(issuer, issuerBoardId);
+    const issuerBoardId = await initIssuerToBoardId(issuer);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -786,6 +787,7 @@ export function makeWallet({
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
+
     const compile = amountKeywordRecord => {
       return harden(
         Object.fromEntries(
@@ -831,15 +833,15 @@ export function makeWallet({
     );
 
     const invitationDetails = await E(zoe).getInvitationDetails(invitationP);
-    const { instance, installation } = invitationDetails;
+    const { installation, instance } = invitationDetails;
 
     return {
-      invitationDetails,
-      instance,
-      installation,
       proposal,
       inviteP: invitationP,
       purseKeywordRecord,
+      invitationDetails,
+      installation,
+      instance,
     };
   };
 
@@ -1448,10 +1450,7 @@ export function makeWallet({
     },
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP);
-      if (!issuerToBoardId.has(issuer)) {
-        const issuerBoardId = await E(board).getId(issuer);
-        issuerToBoardId.init(issuer, issuerBoardId);
-      }
+      await initIssuerToBoardId(issuer);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },
@@ -1572,9 +1571,6 @@ export function makeWallet({
     },
     getUINotifier,
     getZoe() {
-      // Return a Zoe that requires fees from its caller.
-      // TODO: We will need to wrap zoe with something that prompts the user to
-      // pay fees.
       return zoe;
     },
     getBoard() {
@@ -1594,28 +1590,6 @@ export function makeWallet({
   });
 
   const initialize = async () => {
-    /**
-     * @param {Object} param0
-     * @param {string} param0.proposedName
-     * @param {string} param0.issuerName
-     */
-    const addZoeFeePurse = async ({ proposedName, issuerName }) => {
-      const feeIssuer = await E(zoe).getFeeIssuer();
-
-      // Install the fee purse.
-      await addIssuer(issuerName, feeIssuer);
-      const purse = await E(zoe).makeFeePurse();
-      await internalUnsafeImportPurse(issuerName, proposedName, false, purse);
-
-      return purse;
-    };
-
-    // Create a default fee purse and use it in this contract.
-    zoeFeePurse = await addZoeFeePurse({
-      proposedName: 'Zoe fees',
-      issuerName: 'RUN',
-    });
-
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
@@ -1649,11 +1623,11 @@ export function makeWallet({
   // We don't want to expose this mechanism to the user, in case they shoot
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
-  const importBankAssets = async bank => {
+  const importBankAssets = async (bank, feePurseP) => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
-          await addIssuer(issuerName, issuer);
+          issuerName = await addIssuer(issuerName, issuer);
           const purse = await E(bank).getPurse(brand);
           // We can import this purse, because we trust the bank.
           await internalUnsafeImportPurse(
@@ -1672,6 +1646,13 @@ export function makeWallet({
         }
       },
     }).finally(() => console.error('/// This is the end of the bank assets'));
+    if (!feePurseP) {
+      return;
+    }
+    const feePurse = await feePurseP;
+    const feeIssuer = await E(zoe).getFeeIssuer();
+    const issuerName = await addIssuer('RUN', feeIssuer);
+    await internalUnsafeImportPurse(issuerName, 'Zoe fees', false, feePurse);
   };
   return { admin: wallet, initialized: initialize(), importBankAssets };
 }

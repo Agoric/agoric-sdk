@@ -78,7 +78,10 @@ export const makePaymentLedger = (
    * @returns {void}
    */
   const assertLivePayment = payment => {
-    assert(paymentLedger.has(payment), X`payment not found for ${allegedName}`);
+    assert(
+      paymentLedger.has(payment),
+      X`payment not found for ${allegedName}; got ${payment}`,
+    );
   };
 
   /**

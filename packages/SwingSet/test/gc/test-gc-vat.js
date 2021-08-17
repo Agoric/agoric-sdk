@@ -31,13 +31,13 @@ function findClist(c, vatID, kref) {
 async function dropPresence(t, dropExport) {
   const config = {
     bootstrap: 'bootstrap',
+    defaultManagerType: 'xs-worker', // Avoid local vat nondeterminism
     vats: {
       bootstrap: {
         sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
       },
       target: {
         sourceSpec: new URL('vat-target.js', import.meta.url).pathname,
-        creationOptions: { managerType: 'xs-worker' },
       },
     },
   };

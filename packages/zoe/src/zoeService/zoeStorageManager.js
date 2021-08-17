@@ -33,7 +33,7 @@ import { refillMeter } from './refillMeter.js';
  * @param {Amount} getPublicFacetFeeAmount
  * @param {Amount} installFeeAmount
  * @param {ChargeForComputrons} chargeForComputrons
- * @param {TimerService | undefined} timeAuthority
+ * @param {ERef<TimerService> | undefined} timeAuthority
  * @param {TranslateFee} translateFee
  * @param {TranslateExpiry} translateExpiry
  * @returns {ZoeStorageManager}
