@@ -466,13 +466,14 @@ show-config      display the client connection parameters
       if (await rd.exists(`prometheus-tendermint.txt`)) {
         SWINGSET_PROMETHEUS_PORT = DEFAULT_SWINGSET_PROMETHEUS_PORT;
       }
+      const serviceLines = `Environment=SLOGFILE=.ag-chain-cosmos/data/chain.slog\n`;
       const agChainCosmosEnvironment = SWINGSET_PROMETHEUS_PORT
         ? [
             `-eserviceLines=${shellEscape(
-              `Environment="OTEL_EXPORTER_PROMETHEUS_PORT=${SWINGSET_PROMETHEUS_PORT}"`,
+              `${serviceLines}Environment="OTEL_EXPORTER_PROMETHEUS_PORT=${SWINGSET_PROMETHEUS_PORT}"`,
             )}`,
           ]
-        : [];
+        : [`-eserviceLines=${shellEscape(serviceLines)}`];
       await guardFile(`${COSMOS_DIR}/service.stamp`, () =>
         needReMain([
           'play',
