@@ -99,7 +99,12 @@ export async function connectToChain(
   // would live in the build tree along with bin/ag-solo . But for now we
   // assume that 'ag-cosmos-helper' is on $PATH somewhere.
 
-  // Shuffle our rpcAddresses, to help distribute load.
+  const rpcHrefs = rpcAddresses.map(
+    rpcAddr =>
+      new URL(rpcAddr.includes('://') ? rpcAddr : `http://${rpcAddr}`).href,
+  );
+
+  // Shuffle our rpcHrefs, to help distribute load.
   // Modern version of Fisher-Yates shuffle algorithm (in-place).
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i -= 1) {
@@ -109,7 +114,7 @@ export async function connectToChain(
       a[j] = x;
     }
   }
-  shuffle(rpcAddresses);
+  shuffle(rpcHrefs);
 
   const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
 
@@ -145,35 +150,35 @@ export async function connectToChain(
     '',
   );
 
-  let lastGoodRpcAddrIndex = 0;
-  async function retryRpcAddr(tryOnce) {
-    let rpcAddrIndex = lastGoodRpcAddrIndex;
+  let lastGoodRpcHrefIndex = 0;
+  async function retryRpcHref(tryOnce) {
+    let rpcHrefIndex = lastGoodRpcHrefIndex;
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const thisRpcAddr = rpcAddresses[rpcAddrIndex];
+      const thisRpcHref = rpcHrefs[rpcHrefIndex];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
       // eslint-disable-next-line no-await-in-loop
-      const ret = await tryOnce(thisRpcAddr);
+      const ret = await tryOnce(thisRpcHref);
       if (ret !== undefined) {
         // Or returns non-undefined, which we should resolve.
-        lastGoodRpcAddrIndex = rpcAddrIndex;
+        lastGoodRpcHrefIndex = rpcHrefIndex;
         return ret;
       }
 
       // It was undefined, so wait, then retry.
       // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, 5000));
-      rpcAddrIndex = (rpcAddrIndex + 1) % rpcAddresses.length;
+      rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
   }
 
-  let goodRpcAddr = rpcAddresses[0];
+  let goodRpcHref = rpcHrefs[0];
   const runHelper = (args, stdin = undefined) => {
     const fullArgs = [
       ...args,
       `--chain-id=${chainID}`,
-      `--node=tcp://${goodRpcAddr}`,
+      `--node=${goodRpcHref}`,
       `--home=${helperDir}`,
     ];
     console.debug(HELPER, ...fullArgs);
@@ -231,13 +236,13 @@ export async function connectToChain(
   };
 
   // Validate that our chain egress exists.
-  await retryRpcAddr(async rpcAddr => {
+  await retryRpcHref(async rpcHref => {
     const args = ['query', 'swingset', 'egress', clientAddr];
     const fullArgs = [
       ...args,
       `--chain-id=${chainID}`,
       '--output=json',
-      `--node=tcp://${rpcAddr}`,
+      `--node=${rpcHref}`,
       `--home=${helperDir}`,
     ];
     // log(HELPER, ...fullArgs);
@@ -248,10 +253,10 @@ export async function connectToChain(
     });
 
     if (r.stderr) {
-      console.error(r.stderr);
+      console.error(r.stderr.trimRight());
     }
     if (!r.stdout) {
-      console.error(`\
+      console.error(`
 =============
 ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         clientAddr,
@@ -286,18 +291,23 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    */
   const getBlockNotifier = () => {
     const { notifier, updater } = makeNotifierKit();
-    retryRpcAddr(async rpcAddr => {
+    retryRpcHref(async rpcHref => {
       // Every time we enter this function, we are establishing a
       // new websocket to a potentially different RPC server.
       //
       // We use the same notifier, though... it's a stable identity.
-      goodRpcAddr = rpcAddr;
+      goodRpcHref = rpcHref;
 
       // This promise is for when we're ready to retry.
       const retryPK = makePromiseKit();
 
+      // Find the websocket corresponding to the current RPC server.
+      const rpcWsURL = new URL('/websocket', rpcHref);
+      // We translate `https:` to `wss:` and `http:` to `ws:`.
+      rpcWsURL.protocol = rpcWsURL.protocol.replace(/^http/, 'ws');
+
       // Open the WebSocket.
-      const ws = new WebSocket(`ws://${rpcAddr}/websocket`);
+      const ws = new WebSocket(rpcWsURL.href);
       ws.addEventListener('error', e => {
         console.debug('WebSocket error', e);
       });
