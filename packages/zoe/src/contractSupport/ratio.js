@@ -26,12 +26,12 @@ const { multiply, floorDivide, ceilDivide, add, subtract } = natSafeMath;
 //
 // Since the ratios are represented by a numerator and a denominator, every
 // multiplication or division operation that produces an amount ends with a
-// division of the underlying bigIntegers, and bigInteger division requires that
-// the rounding mode (round up or round down) be specified. It would be a
-// mistake to hide this distinction from the caller, so we make it very visible
-// by using floorMultiplyBy, ceilMultiplyBy, floorDivideBy, and ceilDivideBy.
-// The operations without floor/ceil are still present, but won't be kept around
-// for long.
+// division of the underlying bigints, and bigint division requires that the
+// rounding mode (round up or round down) be specified. It would be a mistake to
+// hide this distinction from the caller, so we make it very visible by using
+// floorMultiplyBy, ceilMultiplyBy, floorDivideBy, and ceilDivideBy. The
+// operations without floor/ceil are still present (though deprecated), and
+// won't be kept around for long.
 
 const PERCENT = 100n;
 
@@ -76,11 +76,9 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
-    // @ts-ignore coerce ensures values are Nats
-    Nat(numeratorAmount.value),
+    Nat(/** @type {NatValue} */ (numeratorAmount.value)),
     numeratorAmount.brand,
-    // @ts-ignore coerce ensures values are Nats
-    Nat(denominatorAmount.value),
+    Nat(/** @type {NatValue} */ (denominatorAmount.value)),
     denominatorAmount.brand,
   );
 };
@@ -133,11 +131,11 @@ const divideHelper = (amount, ratio, divideOp) => {
   );
 
   return AmountMath.make(
+    ratio.denominator.brand,
     divideOp(
       multiply(amount.value, ratio.denominator.value),
       ratio.numerator.value,
     ),
-    ratio.denominator.brand,
   );
 };
 
@@ -164,11 +162,9 @@ export const invertRatio = ratio => {
   assertIsRatio(ratio);
 
   return makeRatio(
-    // @ts-ignore assertIsRatio ensures values are Nats
-    ratio.denominator.value,
+    /** @type {NatValue} */ (ratio.denominator.value),
     ratio.denominator.brand,
-    // @ts-ignore assertIsRatio ensures values are Nats
-    ratio.numerator.value,
+    /** @type {NatValue} */ (ratio.numerator.value),
     ratio.numerator.brand,
   );
 };
