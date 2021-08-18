@@ -63,11 +63,6 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     .filter(dep => dep && !provide.includes(dep))
     .sort();
 
-  if (args.length === 0 && !provide.length) {
-    console.error('you must specify at least one deploy.js (or --provide=XXX)');
-    return 1;
-  }
-
   const sendJSON = (ws, obj) => {
     if (ws.readyState !== ws.OPEN) {
       return;
