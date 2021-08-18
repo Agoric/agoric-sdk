@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.16](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.15...agoric@0.13.16) (2021-08-18)
+
+
+### Features
+
+* **agoric:** allow querying deploy state without running scripts ([1010ede](https://github.com/Agoric/agoric-sdk/commit/1010ede160059a404494a40f692909b959c70057))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** provide 50 RUN to provisioned clients ([ae092a4](https://github.com/Agoric/agoric-sdk/commit/ae092a47ad67163f42cde527066c29884320421a))
+
+
+
 ### [0.13.15](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.14...agoric@0.13.15) (2021-08-17)
 
 

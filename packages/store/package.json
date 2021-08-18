@@ -1,6 +1,6 @@
 {
   "name": "@agoric/store",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "src/index.js",
@@ -31,12 +31,12 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.10",
-    "@agoric/marshal": "^0.4.24"
+    "@agoric/assert": "^0.3.11",
+    "@agoric/marshal": "^0.4.25"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.24",
-    "@agoric/swingset-vat": "^0.21.2",
+    "@agoric/install-ses": "^0.5.25",
+    "@agoric/swingset-vat": "^0.21.3",
     "ava": "^3.12.1"
   },
   "files": [

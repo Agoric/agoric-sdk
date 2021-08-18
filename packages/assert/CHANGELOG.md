@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.10...@agoric/assert@0.3.11) (2021-08-18)
+
+
+### Bug Fixes
+
+* **assert:** Improve diagnostic for missing assert global ([#3715](https://github.com/Agoric/agoric-sdk/issues/3715)) ([28a8ad8](https://github.com/Agoric/agoric-sdk/commit/28a8ad8658d7830caee666f1de247752774630a9))
+
+
+
 ### [0.3.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.9...@agoric/assert@0.3.10) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/assert

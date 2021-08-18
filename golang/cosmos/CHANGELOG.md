@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.26.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.14...@agoric/cosmos@0.26.15) (2021-08-18)
+
+
+### Bug Fixes
+
+* **cosmos:** don't version x/swingset proto yet ([4463e89](https://github.com/Agoric/agoric-sdk/commit/4463e8950f930216ec0a1270e3c5d3a8d6ec510d))
+* **cosmos:** properly fail when querying missing egress/mailbox ([0c1be92](https://github.com/Agoric/agoric-sdk/commit/0c1be922f3742ea2e7fb7e82f567ab04b85f7ae1))
+* **cosmos:** route x/swingset queries through GRPC ([34fc9cd](https://github.com/Agoric/agoric-sdk/commit/34fc9cd89ef1c018840ed019c481a1e255d96378))
+
+
+
 ### [0.26.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.13...@agoric/cosmos@0.26.14) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/cosmos
