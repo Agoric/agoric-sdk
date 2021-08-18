@@ -88,17 +88,17 @@ async function simpleCall(t) {
   controller.log('2');
   t.is(controller.dump().log[1], '2');
 
-  // hash determined experimentally: will change if the initial kernel state
-  // ever changes. "h1" is what we get when defaultManagerType is "local"
-  const h1 = 'ff9faf10b93a1b5905e00a3343ce58b5ce2c83ed771ff8b619260f6c49c14d15';
-  // "h2" is for "xs-worker", when $SWINGSET_WORKER_TYPE=xs-worker
-  const h2 = 'd794586f99118a2bc00c32ffd5a1a1e698260ba18c6f7aeb5c73b7e798ca8445';
-  const type = hostStorage.kvStore.get('kernel.defaultManagerType');
-  if (type === 'local') {
-    t.is(controller.getActivityhash(), h1);
-  } else if (type === 'xs-worker') {
-    t.is(controller.getActivityhash(), h2);
-  }
+  // The resulting activity hash is sensitive to a significant amount of
+  // code, including the contents of marshal and assert (because they get
+  // bundled into e.g. the comms vat source bundle, which is stored in the
+  // kvStore during initializeKernel). Testing against the exact hash value
+  // would require changing this test each time one of those upstream
+  // libraries changed, which is clearly infeasible. Instead, merely check
+  // that `controller.getActivityhash()` returns a hash-shaped string.
+
+  const ah = controller.getActivityhash();
+  t.is(typeof ah, 'string', ah);
+  t.truthy(/^[0-9a-f]{64}$/.test(ah), ah);
 }
 
 test('simple call', async t => {
