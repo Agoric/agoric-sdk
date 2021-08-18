@@ -248,10 +248,10 @@ export async function connectToChain(
     });
 
     if (r.stderr) {
-      console.error(r.stderr);
+      console.error(r.stderr.trimRight());
     }
     if (!r.stdout) {
-      console.error(`\
+      console.error(`
 =============
 ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         clientAddr,
