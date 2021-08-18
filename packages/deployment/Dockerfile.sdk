@@ -54,7 +54,7 @@ RUN yarn install --frozen-lockfile --production --network-timeout 100000
 FROM node:14.15-buster AS install
 
 # Install some conveniences.
-RUN apt-get update && apt-get install -y vim jq less && apt-get clean -y
+RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
