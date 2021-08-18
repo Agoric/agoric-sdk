@@ -33,6 +33,7 @@ type bootstrapBlockAction struct {
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+	// NONDETERMINISM: order of SetStorage is not deterministic
 	var storage types.Storage
 	for key, value := range data.Storage {
 		storage.Value = value

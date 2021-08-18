@@ -476,13 +476,13 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Egress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"agoric", "swingset", "v1beta1", "egress", "peer"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Egress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"agoric", "swingset", "egress", "peer"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Mailbox_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"agoric", "swingset", "v1beta1", "mailbox", "peer"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Mailbox_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"agoric", "swingset", "mailbox", "peer"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Storage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"agoric", "swingset", "v1beta1", "storage", "data", "path"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Storage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"agoric", "swingset", "storage", "data", "path"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Keys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"agoric", "swingset", "v1beta1", "storage", "keys", "path"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Keys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"agoric", "swingset", "storage", "keys", "path"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
