@@ -1,6 +1,7 @@
 package swingset
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client/cli"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client/rest"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -63,10 +63,10 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 // Register rest routes
 func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr, StoreKey)
 }
 
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 // Get the root query command of this module

@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"fmt"
-	"os"
+	"strings"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -34,19 +35,25 @@ func GetCmdGetEgress(queryRoute string) *cobra.Command {
 		Short: "get egress info for account",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			bech32 := args[0]
-
-			res, _, err := cctx.QueryWithData(fmt.Sprintf("custom/%s/egress/%s", queryRoute, bech32), nil)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
-				// Exit while indicating failure.
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			peer, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
 			}
 
-			var out types.Egress
-			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
-			return cctx.PrintObjectLegacy(&out)
+			res, err := queryClient.Egress(cmd.Context(), &types.QueryEgressRequest{
+				Peer: peer,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 
@@ -61,18 +68,22 @@ func GetCmdGetStorage(queryRoute string) *cobra.Command {
 		Short: "get storage for path",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			path := args[0]
-
-			res, _, err := cctx.QueryWithData(fmt.Sprintf("custom/%s/storage/%s", queryRoute, path), nil)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find storage path - %s: %s\n", path, err)
-				return nil
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			path := strings.Split(args[0], ".")
+
+			res, err := queryClient.Storage(cmd.Context(), &types.QueryStorageRequest{
+				Path: path,
+			})
+			if err != nil {
+				return err
 			}
 
-			var out types.Storage
-			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
-			return cctx.PrintObjectLegacy(&out)
+			return clientCtx.PrintProto(res)
 		},
 	}
 
@@ -87,21 +98,22 @@ func GetCmdGetKeys(queryRoute string) *cobra.Command {
 		Short: "get storage subkeys for path",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			var path string
-			if len(args) > 0 {
-				path = args[0]
-			}
-
-			res, _, err := cctx.QueryWithData(fmt.Sprintf("custom/%s/keys/%s", queryRoute, path), nil)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find keys path - %s: %s\n", path, err)
-				return nil
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			path := strings.Split(args[0], ".")
+
+			res, err := queryClient.Keys(cmd.Context(), &types.QueryStorageKeysRequest{
+				Path: path,
+			})
+			if err != nil {
+				return err
 			}
 
-			var out types.Keys
-			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
-			return cctx.PrintObjectLegacy(&out)
+			return clientCtx.PrintProto(res)
 		},
 	}
 
@@ -116,18 +128,25 @@ func GetCmdMailbox(queryRoute string) *cobra.Command {
 		Short: "get mailbox for peer",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cctx := client.GetClientContextFromCmd(cmd)
-			peer := args[0]
-
-			res, _, err := cctx.QueryWithData(fmt.Sprintf("custom/%s/mailbox/%s", queryRoute, peer), nil)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not find peer mailbox - %s: %s\n", peer, err)
-				return nil
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			peer, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
 			}
 
-			var out types.Storage
-			cctx.JSONCodec.MustUnmarshalJSON(res, &out)
-			return cctx.PrintObjectLegacy(&out)
+			res, err := queryClient.Mailbox(cmd.Context(), &types.QueryMailboxRequest{
+				Peer: peer,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 

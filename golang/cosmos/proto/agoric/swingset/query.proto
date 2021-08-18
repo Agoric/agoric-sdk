@@ -12,20 +12,20 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 service Query {
   // Egress queries a provisioned egress.
   rpc Egress(QueryEgressRequest) returns (agoric.swingset.Egress) {
-    option (google.api.http).get = "/agoric/swingset/v1beta1/egress/{peer}";
+    option (google.api.http).get = "/agoric/swingset/egress/{peer}";
   }
 
   rpc Mailbox(QueryMailboxRequest) returns (QueryStorageResponse) {
-    option (google.api.http).get = "/agoric/swingset/v1beta1/mailbox/{peer}";
+    option (google.api.http).get = "/agoric/swingset/mailbox/{peer}";
   }
 
   rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
-    option (google.api.http).get = "/agoric/swingset/v1beta1/storage/data/{path}";
+    option (google.api.http).get = "/agoric/swingset/storage/data/{path}";
   }
 
   rpc Keys(QueryStorageKeysRequest)
     returns (QueryStorageKeysResponse) {
-      option (google.api.http).get = "/agoric/swingset/v1beta1/storage/keys/{path}";
+      option (google.api.http).get = "/agoric/swingset/storage/keys/{path}";
   }
 }
 

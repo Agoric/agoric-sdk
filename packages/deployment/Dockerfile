@@ -19,7 +19,7 @@ RUN curl https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform
 # Install Ansible.
 RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /etc/apt/sources.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
-    apt-get update -y && \
+    apt-get update --allow-releaseinfo-change -y && \
     apt-get install -y ansible rsync curl sudo gnupg2 jq python-jmespath && \
     apt-get clean -y
 
