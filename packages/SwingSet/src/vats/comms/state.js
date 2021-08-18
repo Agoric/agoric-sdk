@@ -131,7 +131,7 @@ export function makeState(syscall, identifierBase = 0) {
   }
   const store = makeSyscallStore(syscall);
 
-  function initialize() {
+  function maybeInitialize(controller) {
     if (!store.get('initialized')) {
       store.set('identifierBase', `${identifierBase}`);
       store.set('lo.nextID', `${identifierBase + 10}`);
@@ -140,6 +140,11 @@ export function makeState(syscall, identifierBase = 0) {
       store.set('p.nextID', `${identifierBase + 40}`);
       store.set('r.nextID', '1');
       store.set('initialized', 'true');
+      if (controller) {
+        // eslint-disable-next-line no-use-before-define
+        addMetaObject(controller);
+        cdebug(`comms controller is ${controller}`);
+      }
     }
   }
 
@@ -725,7 +730,7 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   const state = harden({
-    initialize,
+    maybeInitialize,
 
     mapFromKernel,
     mapToKernel,
