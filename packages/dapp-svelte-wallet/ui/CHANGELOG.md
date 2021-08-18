@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.18...@agoric/dapp-svelte-wallet-ui@1.8.0) (2021-08-17)
+
+
+### Features
+
+* **wallet:** display the invitation fee, feePurse, and expiry ([49ece05](https://github.com/Agoric/agoric-sdk/commit/49ece054170ead8d7c18978c6d8153bcc73390c3)), closes [#3650](https://github.com/Agoric/agoric-sdk/issues/3650)
+
+
+
 ### [1.7.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.7.17...@agoric/dapp-svelte-wallet-ui@1.7.18) (2021-08-16)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-ui
