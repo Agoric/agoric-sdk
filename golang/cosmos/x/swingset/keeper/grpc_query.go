@@ -51,6 +51,9 @@ func (k Querier) Egress(c context.Context, req *types.QueryEgressRequest) (*type
 	ctx := sdk.UnwrapSDKContext(c)
 
 	egress := k.GetEgress(ctx, req.Peer)
+	if egress.Peer == nil {
+		return nil, status.Error(codes.NotFound, "egress not found")
+	}
 
 	return &egress, nil
 }
@@ -62,6 +65,9 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 	ctx := sdk.UnwrapSDKContext(c)
 
 	mb := k.GetMailbox(ctx, req.Peer.String())
+	if mb.Value == "" {
+		return nil, status.Error(codes.NotFound, "mailbox not found")
+	}
 
 	return &types.QueryStorageResponse{
 		Value: mb.Value,
