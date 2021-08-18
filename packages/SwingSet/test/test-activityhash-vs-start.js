@@ -86,3 +86,44 @@ test('restarting kernel does not change activityhash', async t => {
 
   t.is(c1ah, c2ah);
 });
+
+test('comms initialize is deterministic', async t => {
+  // bug #3726: comms was calling vatstoreGet('initialize') and
+  // vatstoreSet('meta.o+0') during the first message after process restart,
+  // which makes it a nondeterministic function of the input events.
+
+  const sourceSpec = new URL('vat-activityhash-comms.js', import.meta.url)
+    .pathname;
+  const config = {};
+  config.bootstrap = 'bootstrap';
+  config.vats = { bootstrap: { sourceSpec } };
+  const hs1 = provideHostStorage();
+  await initializeSwingset(config, [], hs1);
+  const c1 = await makeSwingsetController(hs1, {});
+  c1.pinVatRoot('bootstrap');
+  // the bootstrap message will cause comms to initialize itself
+  await c1.run();
+
+  const state = getAllState(hs1);
+
+  // but the second message should not
+  c1.queueToVatRoot('bootstrap', 'addRemote', capargs(['remote2']));
+  await c1.run();
+  const c1ah = c1.getActivityhash();
+  await c1.shutdown();
+
+  // a kernel restart is loading a new kernel from the same state
+  const hs2 = provideHostStorage();
+  setAllState(hs2, state);
+  const c2 = await makeSwingsetController(hs2, {});
+
+  // the "am I already initialized?" check must be identical to the
+  // non-restarted version
+
+  c2.queueToVatRoot('bootstrap', 'addRemote', capargs(['remote2']));
+  await c2.run();
+  const c2ah = c2.getActivityhash();
+  await c2.shutdown();
+
+  t.is(c1ah, c2ah);
+});

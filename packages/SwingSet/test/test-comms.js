@@ -16,7 +16,7 @@ import { commsVatDriver } from './commsVatDriver.js';
 
 test('translation', t => {
   const s = makeState(null, 0);
-  s.initialize();
+  s.maybeInitialize();
   const fakeSyscall = {};
   const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal, provideLocalForRemote } = clistKit;
@@ -128,7 +128,7 @@ test('transmit', t => {
   const { syscall, sends } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
-  state.initialize();
+  state.maybeInitialize();
   const {
     provideKernelForLocal,
     provideLocalForKernel,
@@ -203,7 +203,7 @@ test('receive', t => {
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
-  state.initialize();
+  state.maybeInitialize();
   const {
     provideLocalForKernel,
     getKernelForLocal,
@@ -349,7 +349,7 @@ test('addEgress', t => {
   const { syscall } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
-  state.initialize();
+  state.maybeInitialize();
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
   const remoteName = 'remote1';
@@ -382,7 +382,7 @@ test('addIngress', t => {
   const { syscall, resolves } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit } = debugState.get(dispatch);
-  state.initialize();
+  state.maybeInitialize();
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
   const remoteName = 'remote1';
@@ -416,7 +416,7 @@ test('comms gc', t => {
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   const { state, clistKit: ck } = debugState.get(dispatch);
-  state.initialize();
+  state.maybeInitialize();
   const transmitterID = 'o-1'; // vat-tp target for B
   const { remoteID, receiverID } = state.addRemote('B', transmitterID);
   function didTx(exp) {

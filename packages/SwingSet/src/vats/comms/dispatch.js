@@ -8,7 +8,6 @@ import { insistCapData } from '../../capdata.js';
 import { makeCListKit } from './clist.js';
 import { makeDeliveryKit } from './delivery.js';
 import { makeGCKit } from './gc-comms.js';
-import { cdebug } from './cdebug.js';
 
 export const debugState = new WeakMap();
 
@@ -52,19 +51,12 @@ export function buildCommsDispatch(
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  let needToInitializeState = true;
-
-  function initializeState() {
-    state.initialize();
-    state.addMetaObject(controller);
-    cdebug(`comms controller is ${controller}`);
-    needToInitializeState = false;
+  function maybeInitializeState() {
+    state.maybeInitialize(controller);
   }
 
   function doDeliver(target, method, args, result) {
-    if (needToInitializeState) {
-      initializeState();
-    }
+    maybeInitializeState();
     // console.debug(`comms.deliver ${target} r=${result}`);
     insistCapData(args);
 
