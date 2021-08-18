@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.21.2...@agoric/swingset-vat@0.21.3) (2021-08-18)
+
+
+### Bug Fixes
+
+* **swingset:** commit crank-buffer after every c.step/c.run ([90c2b85](https://github.com/Agoric/agoric-sdk/commit/90c2b856228b926c40440172bc911568b8c1e0c5)), closes [#720](https://github.com/Agoric/agoric-sdk/issues/720) [#3720](https://github.com/Agoric/agoric-sdk/issues/3720)
+* **swingset:** comms initialization check must be deterministic ([683b771](https://github.com/Agoric/agoric-sdk/commit/683b77108dbb6afaf6b2557dfacae2298016eaca)), closes [#2910](https://github.com/Agoric/agoric-sdk/issues/2910) [#3726](https://github.com/Agoric/agoric-sdk/issues/3726)
+* **swingset:** make test-controller less sensitive to source changes ([c07ad3a](https://github.com/Agoric/agoric-sdk/commit/c07ad3af053210cc157c0766f201dd787237f79e)), closes [#3718](https://github.com/Agoric/agoric-sdk/issues/3718)
+* **swingset:** record cranks and crankhash/activityhash in slog ([8bc08de](https://github.com/Agoric/agoric-sdk/commit/8bc08de37da922803bf880303729b68c098590ae)), closes [#3720](https://github.com/Agoric/agoric-sdk/issues/3720)
+
+
+
 ### [0.21.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.21.1...@agoric/swingset-vat@0.21.2) (2021-08-17)
 
 

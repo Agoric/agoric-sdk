@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store-simple",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "Persistent storage for SwingSet, based on a Map, optionally backed by a simple JSON file",
   "type": "module",
   "main": "src/simpleSwingStore.js",
@@ -19,11 +19,11 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.10",
+    "@agoric/assert": "^0.3.11",
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.24",
+    "@agoric/install-ses": "^0.5.25",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

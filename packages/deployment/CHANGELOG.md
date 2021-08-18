@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.28.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.11...@agoric/deployment@1.28.12) (2021-08-18)
+
+
+### Bug Fixes
+
+* **deployment:** tolerate cycling of buster release ([94cbe35](https://github.com/Agoric/agoric-sdk/commit/94cbe3595488008cdd6ec9ff1bb04f55313c2b74))
+* **deployment:** update faucet urun and bootstrap supply ([7e944f7](https://github.com/Agoric/agoric-sdk/commit/7e944f71b03a6e7b640da4f87fd2f2da4a20d896))
+* **deployment:** write to .ag-chain-cosmos/data/chain.slog ([35cb64e](https://github.com/Agoric/agoric-sdk/commit/35cb64e2097938a2cb48ba1397121bd444040899))
+
+
+
 ### [1.28.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.10...@agoric/deployment@1.28.11) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/deployment

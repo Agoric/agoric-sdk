@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.11...@agoric/access-token@0.4.12) (2021-08-18)
+
+**Note:** Version bump only for package @agoric/access-token
+
+
+
+
+
 ### [0.4.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.10...@agoric/access-token@0.4.11) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/access-token

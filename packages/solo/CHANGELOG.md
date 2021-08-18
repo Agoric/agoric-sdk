@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.2...@agoric/solo@0.4.3) (2021-08-18)
+
+
+### Features
+
+* **solo:** allow rpc servers to be specified as an URL ([91650e0](https://github.com/Agoric/agoric-sdk/commit/91650e0dd5a8bea20f161b9225edb1792ca17b55))
+
+
+
 ### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.1...@agoric/solo@0.4.2) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/solo

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.33.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.2...@agoric/cosmic-swingset@0.33.3) (2021-08-18)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** provide 50 RUN to provisioned clients ([ae092a4](https://github.com/Agoric/agoric-sdk/commit/ae092a47ad67163f42cde527066c29884320421a))
+
+
+
 ### [0.33.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.1...@agoric/cosmic-swingset@0.33.2) (2021-08-17)
 
 

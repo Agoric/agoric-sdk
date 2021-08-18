@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [8.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.0.1-alpha3...@agoric/sdk@8.1.0) (2021-08-18)
+
+
+### Features
+
+* **solo:** allow rpc servers to be specified as an URL ([91650e0](https://github.com/Agoric/agoric-sdk/commit/91650e0dd5a8bea20f161b9225edb1792ca17b55))
+
+
+
 ## [8.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@7.0.2...@agoric/sdk@8.0.0) (2021-08-17)
 
 

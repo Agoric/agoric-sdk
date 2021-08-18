@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [2.0.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@2.0.10...@agoric/tame-metering@2.0.11) (2021-08-18)
+
+**Note:** Version bump only for package @agoric/tame-metering
+
+
+
+
+
 ### [2.0.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/tame-metering@2.0.9...@agoric/tame-metering@2.0.10) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/tame-metering
