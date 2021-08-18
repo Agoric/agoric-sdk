@@ -801,15 +801,15 @@ export default function buildKernel(
       }
       kernelKeeper.processRefcounts();
       kernelKeeper.saveStats();
-      const { crankhash, activityhash } = kernelKeeper.commitCrank();
       const crankNum = kernelKeeper.getCrankNumber();
+      kernelKeeper.incrementCrankNumber();
+      const { crankhash, activityhash } = kernelKeeper.commitCrank();
       kernelSlog.write({
         type: 'crank-finish',
         crankNum,
         crankhash,
         activityhash,
       });
-      kernelKeeper.incrementCrankNumber();
     } finally {
       processQueueRunning = undefined;
     }
@@ -1066,7 +1066,6 @@ export default function buildKernel(
     }
 
     kernelKeeper.loadStats();
-    kernelKeeper.incrementCrankNumber();
   }
 
   function getNextMessage() {
@@ -1094,8 +1093,10 @@ export default function buildKernel(
       if (kernelPanic) {
         throw kernelPanic;
       }
+      kernelKeeper.commitCrank();
       return 1;
     } else {
+      kernelKeeper.commitCrank();
       return 0;
     }
   }
@@ -1150,6 +1151,7 @@ export default function buildKernel(
         return count;
       }
     }
+    kernelKeeper.commitCrank();
     return count;
   }
 
