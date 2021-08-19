@@ -13,7 +13,7 @@ import { setup } from '../setupBasicMints.js';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const privateStateRoot = `${dirname}/../../../src/contracts/privateState.js`;
+const privateStateRoot = `${dirname}/../../../src/contracts/privateState/privateState.js`;
 
 test('example of private state', async t => {
   const { moolaKit, moola, zoe } = setup();
@@ -31,7 +31,7 @@ test('example of private state', async t => {
     issuerKeywordRecord,
   );
 
-  const startAddingLiquidityInvitation1 = E(publicFacet).startAddingLiquidity();
+  const startAddingLiquidityInvitation1 = E(publicFacet).openAccount();
 
   const moola1 = moola(1n);
 
@@ -64,7 +64,7 @@ test('example of private state', async t => {
   // But if someone starts from the publicFacet again, they get their
   // own private state
 
-  const startAddingLiquidityInvitation2 = E(publicFacet).startAddingLiquidity();
+  const startAddingLiquidityInvitation2 = E(publicFacet).openAccount();
 
   const moola50 = moola(50n);
 
