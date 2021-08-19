@@ -7,6 +7,8 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
+	"github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,50 +37,25 @@ var (
 )
 
 var (
-	priv1 = secp256k1.GenPrivKey()
-	priv2 = secp256k1.GenPrivKey()
-	priv3 = secp256k1.GenPrivKey()
-	addr1 = sdk.AccAddress(priv1.PubKey().Address())
-	addr2 = sdk.AccAddress(priv2.PubKey().Address())
-	addr3 = sdk.AccAddress(priv3.PubKey().Address())
+	priv1    = secp256k1.GenPrivKey()
+	priv2    = secp256k1.GenPrivKey()
+	priv3    = secp256k1.GenPrivKey()
+	addr1    = sdk.AccAddress(priv1.PubKey().Address())
+	addr2    = sdk.AccAddress(priv2.PubKey().Address())
+	addr3    = sdk.AccAddress(priv3.PubKey().Address())
+	valPriv1 = ed25519.GenPrivKey()
 )
 
 var (
 	minterAcc = authtypes.NewEmptyModuleAccount(authtypes.Minter, authtypes.Minter)
 )
 
-/*
-type mockBank struct {
-	balances map[string]sdk.Coins
-}
-
-var _ types.BankKeeper = (*mockBank)(nil)
-
-func (b *mockBank) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
-	return b.balances[addr.String()]
-}
-
-type mockStake struct {
-	bonded map[string]sdk.Coins
-	unbonding map[string]sdk.Coins
-}
-
-var _ types.StakingKeeper = (*mockStake)(nil)
-
-func (s *mockStake) GetDelegatorDelegations(_ sdk.Context, del sdk.AccAddress, _ uint16) []stakingTypes.Delegation {
-	return []stakingTypes.Delegation{} // XXX
-}
-
-func (s *mockStake) GetUnbondingDelegations(_ sdk.Context, delegator sdk.AccAddress, _ uint16) []stakingTypes.UnbondingDelegation {
-	return []stakingTypes.UnbondingDelegation{}
-}
-
-func (s *mockStake) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (stakingTypes.Validator, bool)
-*/
-
 func makeTestKit() (sdk.Context, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
 	encodingConfig := params.MakeEncodingConfig()
+	codec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	stakingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	cdc := encodingConfig.Marshaller
 
 	// params keeper
@@ -125,6 +102,9 @@ func makeTestKit() (sdk.Context, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper
 
 	wak.SetParams(ctx, authtypes.DefaultParams())
 	bk.SetParams(ctx, banktypes.DefaultParams())
+	stakingParams := stakingtypes.DefaultParams()
+	stakingParams.BondDenom = "ubld"
+	sk.SetParams(ctx, stakingParams)
 	wak.SetModuleAccount(ctx, minterAcc)
 
 	return ctx, bk, sk, keeper
@@ -200,14 +180,16 @@ func TestIterateLiens(t *testing.T) {
 }
 
 func TestAccountState(t *testing.T) {
-	ctx, bk, _, keeper := makeTestKit()
+	ctx, bk, sk, keeper := makeTestKit()
 
+	// empty
 	state := keeper.GetAccountState(ctx, addr1)
 	wantState := AccountState{}
 	if !state.IsEqual(wantState) {
 		t.Errorf("GetAccountState() of empty got %v, want %v", state, wantState)
 	}
 
+	// lien only
 	amt1 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 123))
 	keeper.SetLien(ctx, addr1, types.Lien{Coins: amt1})
 	state = keeper.GetAccountState(ctx, addr1)
@@ -216,7 +198,8 @@ func TestAccountState(t *testing.T) {
 		t.Errorf("GetAccountState() of lein only got %v, want %v", state, wantState)
 	}
 
-	amt2 := sdk.NewCoins(sdk.NewInt64Coin("urun", 5000), sdk.NewInt64Coin("moola", 22))
+	// total and lien
+	amt2 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 1000), sdk.NewInt64Coin("urun", 5000), sdk.NewInt64Coin("moola", 22))
 	bk.MintCoins(ctx, authtypes.Minter, amt2)
 	bk.SendCoinsFromModuleToAccount(ctx, authtypes.Minter, addr1, amt2)
 	state = keeper.GetAccountState(ctx, addr1)
@@ -226,5 +209,43 @@ func TestAccountState(t *testing.T) {
 	}
 	if !state.IsEqual(wantState) {
 		t.Errorf("GetAccountState() ver 3 got %v, want %v", state, wantState)
+	}
+
+	// bonded
+	pubKey := valPriv1.PubKey()
+	vaddr := sdk.ValAddress(pubKey.Address().Bytes())
+	validator, err := stakingtypes.NewValidator(vaddr, pubKey, stakingtypes.Description{})
+	if err != nil {
+		t.Fatalf("cannot create validator: %v", err)
+	}
+	validator, _ = validator.AddTokensFromDel(sdk.NewInt(100))
+	validator = stakingkeeper.TestingUpdateValidator(sk, ctx, validator, true)
+	//sk.SetValidator(ctx, validator)
+
+	shares, err := sk.Delegate(ctx, addr1, sdk.NewInt(10), stakingtypes.Unbonded, validator, true)
+	if err != nil {
+		t.Fatalf("cannot delegate: %v", err)
+	}
+
+	state = keeper.GetAccountState(ctx, addr1)
+	wantState = AccountState{
+		Total:  amt2,
+		Bonded: sdk.NewCoins(sdk.NewInt64Coin("ubld", 10)),
+		Liened: amt1,
+	}
+	if !state.IsEqual(wantState) {
+		t.Errorf("GetAccountState() ver 4 got %v, want %v", state, wantState)
+	}
+
+	// unbonding
+	_, err = sk.Undelegate(ctx, addr1, vaddr, shares.QuoInt(sdk.NewInt(10)))
+	if err != nil {
+		t.Fatalf("cannot undelegate: %v", err)
+	}
+	wantState = AccountState{
+		Total:     amt2,
+		Bonded:    sdk.NewCoins(sdk.NewInt64Coin("ubld", 9)),
+		Unbonding: sdk.NewCoins(sdk.NewInt64Coin("ubld", 1)),
+		Liened:    amt1,
 	}
 }

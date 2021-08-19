@@ -118,9 +118,7 @@ func (lk Keeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountSt
 	unbonding := lk.getUnbonding(ctx, addr)
 	locked := lk.getLocked(ctx, addr)
 	liened := lk.GetLien(ctx, addr).Coins
-	total := lk.bankKeeper.GetAllBalances(ctx, addr)
-	total.Add(bonded...)
-	total.Add(unbonding...)
+	total := lk.bankKeeper.GetAllBalances(ctx, addr).Add(bonded...).Add(unbonding...)
 	return AccountState{
 		Total:     total,
 		Bonded:    bonded,
@@ -147,7 +145,7 @@ func (lk Keeper) getBonded(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 		}
 		shares := d.GetShares()
 		tokens := validator.TokensFromShares(shares)
-		bonded.Add(sdk.NewCoin(stakingToken, tokens.RoundInt())) // XXX rounding?
+		bonded = bonded.Add(sdk.NewCoin(stakingToken, tokens.RoundInt())) // XXX rounding?
 	}
 	return bonded
 }
@@ -159,9 +157,9 @@ func (lk Keeper) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	for _, u := range unbondings {
 		amt := sdk.NewInt(0)
 		for _, e := range u.Entries {
-			amt.Add(e.Balance)
+			amt = amt.Add(e.Balance)
 		}
-		unbonding.Add(sdk.NewCoin(stakingToken, amt))
+		unbonding = unbonding.Add(sdk.NewCoin(stakingToken, amt))
 	}
 	return unbonding
 }
