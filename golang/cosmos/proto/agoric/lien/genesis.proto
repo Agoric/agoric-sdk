@@ -14,8 +14,12 @@ message GenesisState {
     ];
 }
 
+// The lien on a particular account
 message AccountLien {
+    // Account address, bech32-encoded.
     string address = 1;
+
+    // The liened amount. Should be nonzero.
     repeated cosmos.base.v1beta1.Coin lien = 2 [
         (gogoproto.nullable) = false,
         (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"

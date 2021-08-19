@@ -91,16 +91,16 @@ func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, 
 	if err != nil {
 		return "", fmt.Errorf("cannot decode lien amount %s: %w", msg.Amount, err)
 	}
-	lien := ch.keeper.GetAccountLien(ctx, addr)
-	oldAmount := lien.Lien.AmountOf(denom)
+	lien := ch.keeper.GetLien(ctx, addr)
+	oldAmount := lien.GetCoins().AmountOf(denom)
 	if amount.Equal(oldAmount) {
 		// no-op, no need to do anything
 		return "true", nil
 	} else if amount.LT(oldAmount) {
 		// always okay to reduce liened amount
 		diff := sdk.NewCoin(denom, oldAmount.Sub(amount))
-		lien.Lien = lien.Lien.Sub(sdk.NewCoins(diff))
-		ch.keeper.SetAccountLien(ctx, lien)
+		lien.Coins = lien.GetCoins().Sub(sdk.NewCoins(diff))
+		ch.keeper.SetLien(ctx, addr, lien)
 		return "true", nil
 	} else {
 		// check if it's okay to increase lein
@@ -115,8 +115,8 @@ func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, 
 			return "false", nil
 		}
 		diff := sdk.NewCoin(denom, amount.Sub(oldAmount))
-		lien.Lien = lien.Lien.Add(diff)
-		ch.keeper.SetAccountLien(ctx, lien)
+		lien.Coins = lien.GetCoins().Add(diff)
+		ch.keeper.SetLien(ctx, addr, lien)
 		return "true", nil
 	}
 }

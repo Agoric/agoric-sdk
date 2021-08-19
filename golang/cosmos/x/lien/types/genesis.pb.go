@@ -69,9 +69,12 @@ func (m *GenesisState) GetLiens() []AccountLien {
 	return nil
 }
 
+// The lien on a particular account
 type AccountLien struct {
-	Address string                                   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Lien    github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=lien,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"lien"`
+	// Account address, bech32-encoded.
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	// The liened amount. Should be nonzero.
+	Lien github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=lien,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"lien"`
 }
 
 func (m *AccountLien) Reset()         { *m = AccountLien{} }
