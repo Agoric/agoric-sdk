@@ -346,7 +346,7 @@ show-config      display the client connection parameters
       if (subOpts.genesis) {
         // Fetch the specified genesis, don't generate it.
         const loc = new URL(subOpts.genesis, `file://${cwd()}`);
-        if (loc.protocol === 'file') {
+        if (loc.protocol === 'file:') {
           genJSON = await trimReadFile(loc.pathname);
         } else {
           const res = await fetch(subOpts.genesis);
