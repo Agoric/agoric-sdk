@@ -238,7 +238,10 @@ export function makeVirtualObjectManager(
       const refCount = getRefCount(vobjID);
       const exportStatus = getExportStatus(vobjID);
       if (exportStatus !== 'reachable' && refCount === 0) {
-        // TODO: decrement refcounts on vrefs in the virtualized data being deleted
+        const rawState = fetch(vobjID);
+        for (const propValue of Object.values(rawState)) {
+          propValue.slots.map(removeReachableVref);
+        }
         syscall.vatstoreDelete(`vom.${vobjID}`);
         syscall.vatstoreDelete(`vom.rc.${vobjID}`);
         syscall.vatstoreDelete(`vom.es.${vobjID}`);
@@ -271,12 +274,18 @@ export function makeVirtualObjectManager(
   }
 
   function setRefCount(vobjID, refCount) {
+    const { virtual } = parseVatSlot(vobjID);
     syscall.vatstoreSet(`vom.rc.${vobjID}`, `${Nat(refCount)}`);
     if (refCount === 0) {
-      const exportStatus = getExportStatus(vobjID);
-      if (exportStatus !== 'reachable') {
-        possibleVirtualObjectDeath(vobjID);
+      if (virtual) {
+        const exportStatus = getExportStatus(vobjID);
+        if (exportStatus !== 'reachable') {
+          possibleVirtualObjectDeath(vobjID);
+        } else {
+          addToPossiblyDeadSet(vobjID);
+        }
       } else {
+        syscall.vatstoreDelete(`vom.rc.${vobjID}`);
         addToPossiblyDeadSet(vobjID);
       }
     }
@@ -312,23 +321,14 @@ export function makeVirtualObjectManager(
 
   function incRefCount(vobjID) {
     const oldRefCount = getRefCount(vobjID);
-    if (oldRefCount === 0) {
-      // TODO: right now we are not tracking actual refcounts, so for now a
-      // refcount of 0 means never referenced and a refcount of 1 means
-      // referenced at least once in the past.  Once actual refcounts are
-      // working (notably including calling decref at the appropriate times),
-      // take out the above if.
-      setRefCount(vobjID, oldRefCount + 1);
-    }
+    setRefCount(vobjID, oldRefCount + 1);
   }
 
-  /*
   function decRefCount(vobjID) {
     const oldRefCount = getRefCount(vobjID);
     assert(oldRefCount > 0, `attempt to decref ${vobjID} below 0`);
     setRefCount(vobjID, oldRefCount - 1);
   }
-  */
 
   const cache = makeCache(cacheSize, fetch, store);
 
@@ -339,40 +339,23 @@ export function makeVirtualObjectManager(
   const kindTable = new Map();
 
   /**
-   * Set of all import vrefs which are reachable from our virtualized data.
-   * These were Presences at one point. We add to this set whenever we store a
-   * Presence into the state of a virtual object, or into a value in a
-   * makeVirtualScalarWeakMap() instance. We currently never remove anything
-   * from the set, but eventually we'll use refcounts within virtual data to
-   * figure out when the vref becomes unreachable, allowing the vat to send a
-   * dropImport into the kernel and release the object.
-   */
-  /** @type {Set<string>} of vrefs */
-  const reachablePresences = new Set();
-
-  /**
-   * Set of all Remotables which are reachable by our virtualized data, e.g.
+   * Map of all Remotables which are reachable by our virtualized data, e.g.
    * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
    * remotable`. The serialization process stores the Remotable's vref to disk,
    * but doesn't actually retain the Remotable. To correctly unserialize that
-   * offline data later, we must ensure the Remotable remains alive. This Set
-   * keeps a strong reference to the Remotable. We currently never remove
-   * anything from the set, but eventually refcounts will let us discover when a
-   * Remotable no longer reachable via a virtual reference.  At that point we'll
-   * drop the strong reference from this set and thus permit garbage collection
-   * if the Remotable is no longer referenced in memory.
+   * offline data later, we must ensure the Remotable remains alive. This Map
+   * keeps a strong reference to the Remotable along with its (virtual) refcount.
    */
-  /** @type {Set<Object>} of Remotables */
-  const reachableRemotables = new Set();
+  /** @type {Map<Object, number>} Remotable->refcount */
+  const remotableRefCounts = new Map();
 
-  // Note that since the `reachablePresences` set is keyed by vref,
-  // `processDeadSet` must query it directly in order to determine if a presence
-  // that found its way into the dead set is live or not, whereas it never needs
-  // to query the `reachableRemotables` set because that set holds actual live
-  // references and so Remotable references will only find their way into the
-  // dead set if they are actually unreferenced (including, notably, their
-  // absence from the `reachableRemotables` set, which will (eventually) be
-  // effectuated by reference counting).
+  // Note that since presence refCounts are keyed by vref, `processDeadSet` must
+  // query the refCount directly in order to determine if a presence that found
+  // its way into the dead set is live or not, whereas it never needs to query
+  // the `remotableRefCounts` map because that map holds actual live references
+  // as keys and so Remotable references will only find their way into the dead
+  // set if they are actually unreferenced (including, notably, their absence
+  // from the `remotableRefCounts` map).
 
   function addReachableVref(vref) {
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
@@ -384,15 +367,73 @@ export function makeVirtualObjectManager(
           // exported non-virtual object: Remotable
           const remotable = getValForSlot(vref);
           assert(remotable, X`no remotable for ${vref}`);
-          // console.log(`adding ${vref} to reachableRemotables`);
-          // TODO: these should be refcounted instead of this being a journey of no return
-          reachableRemotables.add(remotable);
+          if (!remotableRefCounts.has(remotable)) {
+            remotableRefCounts.set(remotable, 1);
+          } else {
+            const oldRefCount = remotableRefCounts.get(remotable);
+            remotableRefCounts.set(remotable, oldRefCount + 1);
+          }
         }
       } else {
-        // We track imports, to preserve their vrefs against syscall.dropImport
-        // when the Presence goes away.
-        // TODO: these should be refcounted instead of this being a journey of no return
-        reachablePresences.add(vref);
+        // We refcount imports, to preserve their vrefs against
+        // syscall.dropImport when the Presence itself goes away.
+        incRefCount(vref);
+      }
+    }
+  }
+
+  function removeReachableVref(vref) {
+    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    if (type === 'object') {
+      if (allocatedByVat) {
+        if (virtual) {
+          decRefCount(vref);
+        } else {
+          // exported non-virtual object: Remotable
+          const remotable = getValForSlot(vref);
+          assert(remotable, X`no remotable for ${vref}`);
+          const oldRefCount = remotableRefCounts.get(remotable);
+          assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+          if (oldRefCount === 1) {
+            remotableRefCounts.delete(remotable);
+          } else {
+            remotableRefCounts.set(remotable, oldRefCount - 1);
+          }
+        }
+      } else {
+        decRefCount(vref);
+      }
+    }
+  }
+
+  function updateReferenceCounts(beforeSlots, afterSlots) {
+    // Note that the slots of a capdata object are not required to be
+    // deduplicated nor are they expected to be presented in any particular
+    // order, so the comparison of which references appear in the before state
+    // to which appear in the after state must look only at the presence or
+    // absence of individual elements from the slots arrays and pay no attention
+    // to the organization of the slots arrays themselves.
+    const vrefStatus = {};
+    for (const vref of beforeSlots) {
+      vrefStatus[vref] = 'drop';
+    }
+    for (const vref of afterSlots) {
+      if (vrefStatus[vref] === 'drop') {
+        vrefStatus[vref] = 'keep';
+      } else if (!vrefStatus[vref]) {
+        vrefStatus[vref] = 'add';
+      }
+    }
+    for (const [vref, status] of Object.entries(vrefStatus)) {
+      switch (status) {
+        case 'add':
+          addReachableVref(vref);
+          break;
+        case 'drop':
+          removeReachableVref(vref);
+          break;
+        default:
+          break;
       }
     }
   }
@@ -405,7 +446,7 @@ export function makeVirtualObjectManager(
    * @returns {boolean} true if the indicated presence remains reachable.
    */
   function isPresenceReachable(vref) {
-    return reachablePresences.has(vref);
+    return !!getRefCount(vref);
   }
 
   /**
@@ -619,10 +660,12 @@ export function makeVirtualObjectManager(
       set(key, value) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
-          const data = serialize(harden(value));
-          data.slots.map(addReachableVref);
-          syscall.vatstoreSet(vkey, JSON.stringify(data));
+          const rawBefore = syscall.vatstoreGet(vkey);
+          assert(rawBefore, X`${q(keyName)} not found: ${key}`);
+          const before = JSON.parse(rawBefore);
+          const after = serialize(harden(value));
+          updateReferenceCounts(before.slots, after.slots);
+          syscall.vatstoreSet(vkey, JSON.stringify(after));
         } else {
           assertKeyExists(key);
           backingMap.set(key, value);
@@ -913,10 +956,11 @@ export function makeVirtualObjectManager(
               return unserialize(innerSelf.rawData[prop]);
             },
             set: value => {
-              const serializedValue = serialize(value);
-              serializedValue.slots.map(addReachableVref);
               ensureState();
-              innerSelf.rawData[prop] = serializedValue;
+              const before = innerSelf.rawData[prop];
+              const after = serialize(value);
+              updateReferenceCounts(before.slots, after.slots);
+              innerSelf.rawData[prop] = after;
               innerSelf.dirty = true;
             },
           });
