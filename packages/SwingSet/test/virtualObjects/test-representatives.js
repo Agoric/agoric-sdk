@@ -284,6 +284,10 @@ test('exercise cache', async t => {
 
   // init cache - []
   await make('thing1', true, T1); // make t1 - [t1]
+  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-50', undefined]);
+  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-51', undefined]);
+  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-52', undefined]);
+  t.deepEqual(log.shift(), ['get', 'v1.vs.vom.rc.o-53', undefined]);
   t.deepEqual(log.shift(), ['set', esKey(1), '1']);
   t.deepEqual(log, []);
 

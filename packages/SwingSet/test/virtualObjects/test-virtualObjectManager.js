@@ -379,6 +379,7 @@ test('virtual object gc', t => {
   pretendGC('o+1/1');
   t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
   t.is(log.shift(), `get vom.es.o+1/1 => 0`);
+  t.is(log.shift(), `get vom.o+1/1 => ${thingVal(0, 'thing #1', 0)}`);
   t.is(log.shift(), `delete vom.o+1/1`);
   t.is(log.shift(), `delete vom.rc.o+1/1`);
   t.is(log.shift(), `delete vom.es.o+1/1`);
@@ -411,6 +412,7 @@ test('virtual object gc', t => {
   pretendGC('o+1/2');
   t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
   t.is(log.shift(), `get vom.es.o+1/2 => 0`);
+  t.is(log.shift(), `get vom.o+1/2 => ${thingVal(0, 'thing #2', 0)}`);
   t.is(log.shift(), `delete vom.o+1/2`);
   t.is(log.shift(), `delete vom.rc.o+1/2`);
   t.is(log.shift(), `delete vom.es.o+1/2`);
@@ -426,6 +428,7 @@ test('virtual object gc', t => {
   pretendGC('o+1/3');
   t.is(log.shift(), `get vom.rc.o+1/3 => undefined`);
   t.is(log.shift(), `get vom.es.o+1/3 => undefined`);
+  t.is(log.shift(), `get vom.o+1/3 => ${thingVal(0, 'thing #3', 0)}`);
   t.is(log.shift(), `delete vom.o+1/3`);
   t.is(log.shift(), `delete vom.rc.o+1/3`);
   t.is(log.shift(), `delete vom.es.o+1/3`);

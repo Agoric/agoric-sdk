@@ -69,12 +69,12 @@ function build(
    * Translation and tracking tables to map in-vat object/promise references
    * to/from vat-format slot strings.
    *
-   * Exports: pass-by-presence objects (Remotables) in the vat are exported
-   * as o+NN slots, as are "virtual object" exports. Promises are exported as
-   * p+NN slots. We retain a strong reference to all exports via the
-   * `exportedRemotables` Set until (TODO) the kernel tells us all external
-   * references have been dropped via dispatch.dropExports, or by some
-   * unilateral revoke-object operation executed by our user-level code.
+   * Exports: pass-by-presence objects (Remotables) in the vat are exported as
+   * o+NN slots, as are "virtual object" exports. Promises are exported as p+NN
+   * slots. We retain a strong reference to all exports via the
+   * `exportedRemotables` Set until the kernel tells us all external references
+   * have been dropped via dispatch.dropExports, or by some unilateral
+   * revoke-object operation executed by our user-level code.
    *
    * Imports: o-NN slots are represented as a Presence. p-NN slots are
    * represented as an imported Promise, with the resolver held in an
@@ -217,7 +217,9 @@ function build(
     }
     possiblyRetiredSet.clear();
 
-    for (const vref of deadSet) {
+    const deadVrefs = Array.from(deadSet);
+    deadVrefs.sort();
+    for (const vref of deadVrefs) {
       const { virtual, allocatedByVat, type } = parseVatSlot(vref);
       assert(type === 'object', `unprepared to track ${type}`);
       if (virtual) {
@@ -256,9 +258,8 @@ function build(
       syscall.retireExports(exportsToRetire);
     }
 
-    // TODO: doMore=true when we've done something that might free more local
-    // objects, which probably won't happen until we sense entire WeakMaps
-    // going away or something involving virtual collections
+    // TODO: possibly the doMore flag is never going to become relevant;
+    // investigate.
     return doMore;
   }
 
