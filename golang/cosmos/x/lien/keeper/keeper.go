@@ -10,16 +10,24 @@ import (
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 )
 
+type Keeper interface {
+	GetAccountWrapper() types.AccountWrapper
+	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
+	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
+	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
+	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState
+}
+
 // stakingToken is the single denomination used for staking.
 // The lien API pays lip service to the idea that staking is done with
 // arbitrary sdk.Coins, but the UnboindingDelegation contains only a bare
 // sdk.Int, therefore the staking token must be a single implicit denom.
 const stakingToken = "ubld"
 
-// Keeper implements the lien keeper.
+// keeperImpl implements the lien keeper.
 // The accountKeeper field must be the same one that the bankKeeper and
 // stakingKeeper use.
-type Keeper struct {
+type keeperImpl struct {
 	key sdk.StoreKey
 	cdc codec.Codec
 
@@ -34,7 +42,7 @@ type Keeper struct {
 // The ak must be the same accout keeper that the bk and sk use.
 func NewKeeper(key sdk.StoreKey, cdc codec.Codec, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
 	callToController func(ctx sdk.Context, str string) (string, error)) Keeper {
-	return Keeper{
+	return keeperImpl{
 		key:              key,
 		cdc:              cdc,
 		accountKeeper:    ak,
@@ -46,13 +54,13 @@ func NewKeeper(key sdk.StoreKey, cdc codec.Codec, ak *types.WrappedAccountKeeper
 
 // GetAccountWrapper returns an AccountWrapper that wrap/unwrap accounts
 // with lienAccount specifying this keeper.
-func (lk Keeper) GetAccountWrapper() types.AccountWrapper {
+func (lk keeperImpl) GetAccountWrapper() types.AccountWrapper {
 	return NewAccountWrapper(lk)
 }
 
 // GetLien returns the lien stored for an account.
 // Defaults to a lien of zero.
-func (lk Keeper) GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien {
+func (lk keeperImpl) GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien {
 	store := ctx.KVStore(lk.key)
 	bz := store.Get(types.LienByAddressKey(addr))
 	if bz == nil {
@@ -65,7 +73,7 @@ func (lk Keeper) GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien {
 
 // SetLien sets the lien stored for an account.
 // Deletes the entry if the new lien is zero.
-func (lk Keeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien) {
+func (lk keeperImpl) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien) {
 	store := ctx.KVStore(lk.key)
 	key := types.LienByAddressKey(addr)
 	if lien.Coins.IsZero() {
@@ -78,7 +86,7 @@ func (lk Keeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien) 
 
 // IterateLiens calls cb() on all nonzero liens in the store.
 // Stops early if cb() returns true.
-func (lk Keeper) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
+func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
 	store := ctx.KVStore(lk.key)
 	iterator := store.Iterator(nil, nil)
 	defer iterator.Close()
@@ -113,7 +121,7 @@ func (s AccountState) IsEqual(other AccountState) bool {
 }
 
 // GetAccountState retrieves the AccountState for addr.
-func (lk Keeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState {
+func (lk keeperImpl) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState {
 	bonded := lk.getBonded(ctx, addr)
 	unbonding := lk.getUnbonding(ctx, addr)
 	locked := lk.getLocked(ctx, addr)
@@ -129,7 +137,7 @@ func (lk Keeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountSt
 }
 
 // getBonded returns the bonded tokens delegated by addr.
-func (lk Keeper) getBonded(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (lk keeperImpl) getBonded(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	bonded := sdk.NewCoins()
 	delegations := lk.stakingKeeper.GetDelegatorDelegations(ctx, addr, math.MaxUint16)
 	for _, d := range delegations {
@@ -151,7 +159,7 @@ func (lk Keeper) getBonded(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 }
 
 // getUnbonding returns the unbonding tokens delegated by addr.
-func (lk Keeper) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (lk keeperImpl) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	unbonding := sdk.NewCoins()
 	unbondings := lk.stakingKeeper.GetUnbondingDelegations(ctx, addr, math.MaxUint16)
 	for _, u := range unbondings {
@@ -167,7 +175,7 @@ func (lk Keeper) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 // getLocked returns the number of locked tokens in account addr.
 // This reflects the VestingCoins in the underlying VestingAccount,
 // if any, not the LienAccount wrapping it.
-func (lk Keeper) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (lk keeperImpl) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	account := lk.accountKeeper.GetAccount(ctx, addr)
 	if account == nil {
 		return sdk.NewCoins()

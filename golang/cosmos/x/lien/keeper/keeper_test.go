@@ -57,7 +57,7 @@ func ubld(n int64) sdk.Coins {
 	return sdk.NewCoins(sdk.NewInt64Coin("ubld", n))
 }
 
-func makeTestKit() (sdk.Context, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
+func makeTestKit() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
 	encodingConfig := params.MakeEncodingConfig()
 	codec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
@@ -115,11 +115,11 @@ func makeTestKit() (sdk.Context, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper
 	sk.SetParams(ctx, stakingParams)
 	wak.SetModuleAccount(ctx, minterAcc)
 
-	return ctx, bk, sk, keeper
+	return ctx, wak, bk, sk, keeper
 }
 
 func TestGetSetLien(t *testing.T) {
-	ctx, _, _, keeper := makeTestKit()
+	ctx, _, _, _, keeper := makeTestKit()
 
 	// Empty
 	l1 := keeper.GetLien(ctx, addr1)
@@ -145,7 +145,7 @@ func TestGetSetLien(t *testing.T) {
 }
 
 func TestIterateLiens(t *testing.T) {
-	ctx, _, _, keeper := makeTestKit()
+	ctx, _, _, _, keeper := makeTestKit()
 
 	var liens map[string]types.Lien
 	cb := func(a sdk.AccAddress, l types.Lien) bool {
@@ -188,7 +188,7 @@ func TestIterateLiens(t *testing.T) {
 }
 
 func TestAccountState(t *testing.T) {
-	ctx, bk, sk, keeper := makeTestKit()
+	ctx, _, bk, sk, keeper := makeTestKit()
 
 	// empty
 	state := keeper.GetAccountState(ctx, addr1)
@@ -264,7 +264,7 @@ func TestAccountState(t *testing.T) {
 }
 
 func TestVesting(t *testing.T) {
-	ctx, bk, _, keeper := makeTestKit()
+	ctx, ak, bk, _, keeper := makeTestKit()
 
 	amt := ubld(1000)
 	err := bk.MintCoins(ctx, authtypes.Minter, amt)
@@ -276,7 +276,7 @@ func TestVesting(t *testing.T) {
 		t.Fatalf("cannot send coins: %v", err)
 	}
 
-	vestingMsgServer := vesting.NewMsgServerImpl(keeper.accountKeeper, bk)
+	vestingMsgServer := vesting.NewMsgServerImpl(ak, bk)
 	_, err = vestingMsgServer.CreateVestingAccount(sdk.WrapSDKContext(ctx), &vestingtypes.MsgCreateVestingAccount{
 		FromAddress: addr1.String(),
 		ToAddress:   addr2.String(),

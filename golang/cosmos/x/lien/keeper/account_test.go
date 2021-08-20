@@ -82,14 +82,14 @@ func TestWrap(t *testing.T) {
 	acc := authtypes.ProtoBaseAccount()
 	acc.SetAccountNumber(17)
 	wak := types.WrappedAccountKeeper{} // used as a sentinel for keeper identity
-	keeper := Keeper{accountKeeper: &wak}
+	keeper := keeperImpl{accountKeeper: &wak}
 	wrapper := NewAccountWrapper(keeper)
 	wrapped := wrapper.Wrap(acc)
 	lienAcc, ok := wrapped.(LienAccount)
 	if !ok {
 		t.Fatalf("wrapper did not create a lien account: %+v", wrapped)
 	}
-	if lienAcc.lienKeeper.accountKeeper != &wak {
+	if lienAcc.lienKeeper.(keeperImpl).accountKeeper != &wak {
 		t.Errorf("wrong lien keeper %+v, want %+v", lienAcc.lienKeeper, keeper)
 	}
 	unwrapped := wrapper.Unwrap(lienAcc)
