@@ -7,7 +7,7 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
-import { multiplyBy } from '../../contractSupport/index.js';
+import { ceilMultiplyBy } from '../../contractSupport/index.js';
 
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier
@@ -20,7 +20,7 @@ import { multiplyBy } from '../../contractSupport/index.js';
  * interest charged this period is 20 loan brand
  */
 export const calculateInterest = (oldDebt, interestRate) =>
-  multiplyBy(oldDebt, interestRate);
+  ceilMultiplyBy(oldDebt, interestRate);
 
 /** @type {MakeDebtCalculator} */
 export const makeDebtCalculator = debtCalculatorConfig => {

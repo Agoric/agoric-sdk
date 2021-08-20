@@ -6,7 +6,7 @@ import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import { liquidate } from './liquidate.js';
-import { getAmountIn, multiplyBy } from '../../contractSupport/index.js';
+import { getAmountIn, ceilMultiplyBy } from '../../contractSupport/index.js';
 
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
@@ -24,7 +24,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
   // The liquidationTriggerValue is when the value of the collateral
   // equals mmr of the current debt
   // Formula: liquidationTriggerValue = (currentDebt * mmr)
-  const liquidationTriggerValue = multiplyBy(currentDebt, mmr);
+  const liquidationTriggerValue = ceilMultiplyBy(currentDebt, mmr);
 
   const allCollateral = collateralSeat.getAmountAllocated('Collateral');
 
