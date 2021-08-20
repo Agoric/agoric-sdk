@@ -48,7 +48,7 @@ const setupContract = async () => {
   return { registrarStartResult, counterInstallation };
 };
 
-test('committee-open questions:none', async t => {
+test('committee-open no questions', async t => {
   const {
     registrarStartResult: { publicFacet },
   } = await setupContract();
@@ -72,7 +72,7 @@ test('committee-open question:one', async t => {
       timer: buildManualTimer(console.log),
       deadline: 2n,
     },
-    QuorumRule.HALF,
+    QuorumRule.MAJORITY,
     positions[1],
   );
   await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
@@ -97,7 +97,7 @@ test('committee-open question:mixed', async t => {
     ElectionType.SURVEY,
     1,
     { timer, deadline: 4n },
-    QuorumRule.HALF,
+    QuorumRule.MAJORITY,
     positions[1],
   );
   await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
@@ -106,7 +106,7 @@ test('committee-open question:mixed', async t => {
     ...ballotSpec,
     question: harden({ text: 'why2' }),
     closingRule: ballotSpec.closingRule,
-    quorumRule: QuorumRule.HALF,
+    quorumRule: QuorumRule.MAJORITY,
   };
   await E(creatorFacet).addQuestion(counterInstallation, ballotSpec2);
 
@@ -117,7 +117,7 @@ test('committee-open question:mixed', async t => {
       timer,
       deadline: 1n,
     },
-    quorumRule: QuorumRule.HALF,
+    quorumRule: QuorumRule.MAJORITY,
   };
   const { publicFacet: counterPublic } = await E(creatorFacet).addQuestion(
     counterInstallation,

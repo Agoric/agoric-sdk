@@ -35,14 +35,15 @@ const ElectionType = {
 };
 
 /** @type {{
- *   HALF: 'half',
- *   NONE: 'none',
+ *   MAJORITY: 'majority',
+ *   NO_QUORUM: 'no_quorum',
  *   ALL: 'all',
  * }}
  */
 const QuorumRule = {
-  HALF: 'half',
-  NONE: 'none',
+  MAJORITY: 'majority',
+  NO_QUORUM: 'no_quorum',
+  // The election isn't valid unless all voters cast a ballot
   ALL: 'all',
 };
 
@@ -95,7 +96,9 @@ const makeBallotSpec = (
   );
 
   assert(
-    [QuorumRule.HALF, QuorumRule.ALL, QuorumRule.NONE].includes(quorumRule),
+    [QuorumRule.MAJORITY, QuorumRule.ALL, QuorumRule.NO_QUORUM].includes(
+      quorumRule,
+    ),
     X`Illegal QuorumRule ${quorumRule}`,
   );
 

@@ -36,8 +36,8 @@ const validateParamChangeBallot = details => {
     X`maxChoices must be 1, not ${details.maxChoices}`,
   );
   assert(
-    details.quorumRule === QuorumRule.HALF,
-    X`QuorumRule must be HALF, not ${details.quorumRule}`,
+    details.quorumRule === QuorumRule.MAJORITY,
+    X`QuorumRule must be MAJORITY, not ${details.quorumRule}`,
   );
   assert(
     details.tieOutcome.noChange,
@@ -91,7 +91,7 @@ const setupGovernance = async (
       ElectionType.PARAM_CHANGE,
       1,
       { timer, deadline },
-      QuorumRule.HALF,
+      QuorumRule.MAJORITY,
       negative,
     );
 

@@ -2,11 +2,11 @@
 
 /**
  * @typedef { 'choose_n' | 'order' | 'weight' } ChoiceMethod
- *  CHOOSE_N: This is "approval voting". The voter specifies some number of
+ * * CHOOSE_N: This is "approval voting". The voter specifies some number of
  *    positions, and is endorsing them equally.
- *  ORDER: The voter assigns ordinal numbers to some of the positions. The
+ * * ORDER: The voter assigns ordinal numbers to some of the positions. The
  *    positions will be treated as an ordered list with no gaps.
- *  WEIGHT: The voter assigns a distinct integer weight to some number of
+ * * WEIGHT: The voter assigns a distinct integer weight to some number of
  *   positions. The weights are not required to be distinct or consecutive.
  *   High numbers are most preferred.
  */
@@ -20,7 +20,7 @@
  */
 
 /**
- * @typedef { 'half' | 'all' | 'none' } QuorumRule
+ * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
  */
 
 /**
@@ -29,11 +29,13 @@
  */
 
 /**
- * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' | 'unknown' } ParamType
+ * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' |
+ *   'ratio' | 'string' | 'unknown' } ParamType
  */
 
 /**
- * @typedef { Amount | Brand | Installation | Instance | bigint | Ratio | string | unknown } ParamValue
+ * @typedef { Amount | Brand | Installation | Instance | bigint | Ratio |
+ *   string | unknown } ParamValue
  */
 
 /**
@@ -41,12 +43,11 @@
  */
 
 /**
- * @typedef {Object} QuestionTerms - BallotSpec plus the Registrar Instance
- * @property {Question} question
- * @property {string[]} positions
- * @property {ChoiceMethod} method
- * @property {number} maxChoices
- * @property {ClosingRule} closingRule
+ * @typedef {Object} QuestionTerms - BallotSpec plus the Registrar Instance and
+ *   a numerical threshold for the quorum. (The ballotCounter doesn't know the
+ *   size of the electorate, so the Registrar has to say what limit to enforce.)
+ * @property {BallotSpec} ballotSpec
+ * @property {number} quorumThreshold
  * @property {Instance} registrar
  */
 
@@ -56,7 +57,8 @@
  */
 
 /**
- * @typedef { textPosition | changeParamPosition | noChangeParamPosition } Position
+ * @typedef { textPosition | changeParamPosition |
+ *   noChangeParamPosition } Position
  */
 
 /**
@@ -73,16 +75,8 @@
  */
 
 /**
- * @typedef {Object} BallotDetails
+ * @typedef {BallotSpec} BallotDetails
  *    complete ballot details: ballotSpec plus counter and handle
- * @property {ChoiceMethod} method
- * @property {Question} question
- * @property {Position[]} positions
- * @property {ElectionType} electionType
- * @property {number} maxChoices
- * @property {ClosingRule} closingRule
- * @property {QuorumRule} quorumRule
- * @property {Position} tieOutcome
  * @property {Instance} counterInstance - instance of the BallotCounter
  * @property {Handle<'Ballot'>} handle
  */
@@ -111,16 +105,16 @@
  * @typedef {Object} CompleteWeightedBallot
  * @property {Question} question
  * @property {Handle<'Ballot'>} handle
- * @property {Record<string,bigint>[]} weighted - list of positions with weights.
- *   BallotCounter may limit weights to a range or require uniqueness.
+ * @property {Record<string,bigint>[]} weighted - list of positions with
+ *   weights. BallotCounter may limit weights to a range or require uniqueness.
  */
 
 /**
  * @typedef {Object} CompleteOrderedBallot
  * @property {Question} question
  * @property {Handle<'Ballot'>} handle
- * @property {string[]} ordered - ordered list of position from most preferred to
- *   least preferred
+ * @property {string[]} ordered - ordered list of position from most preferred
+ *   to least preferred
  */
 
 /**
@@ -187,7 +181,9 @@
  */
 
 /**
- * @typedef { CompleteEqualWeightBallot | CompleteOrderedBallot | CompleteWeightedBallot } CompletedBallot
+ * @typedef { CompleteEqualWeightBallot | CompleteOrderedBallot |
+ *   CompleteWeightedBallot
+ * } CompletedBallot
  */
 
 /**
@@ -330,7 +326,8 @@
  */
 
 /**
- * @typedef {{ [updater: string]: (arg: ParamValue) => void }} ParamManagerUpdaters
+ * @typedef {{ [updater: string]: (arg: ParamValue) => void
+ *  }} ParamManagerUpdaters
  * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
  */
 
@@ -420,7 +417,8 @@
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => any} getPublicFacet - public facet of the governed contract
- * @property {() => ERef<Instance>} getInstance - instance of the governed contract
+ * @property {() => ERef<Instance>} getInstance - instance of the governed
+ *   contract
  */
 
 /**

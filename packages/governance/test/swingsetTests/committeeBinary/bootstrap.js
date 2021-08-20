@@ -69,7 +69,7 @@ const committeeBinaryStart = async (
     details,
     3n,
     tools,
-    QuorumRule.HALF,
+    QuorumRule.MAJORITY,
   );
 
   const invitations = await E(registrarFacet).getVoterInvitations();
@@ -164,7 +164,7 @@ const committeeBinaryTwoQuestions = async (
     potato,
     3n,
     tools,
-    QuorumRule.HALF,
+    QuorumRule.MAJORITY,
   );
 
   const height = {
@@ -176,7 +176,7 @@ const committeeBinaryTwoQuestions = async (
     height,
     4n,
     tools,
-    QuorumRule.HALF,
+    QuorumRule.MAJORITY,
   );
 
   const [alice, bob] = await Promise.all([aliceP, bobP, carolP, daveP, emmaP]);

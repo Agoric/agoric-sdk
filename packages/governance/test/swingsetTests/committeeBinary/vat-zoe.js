@@ -14,4 +14,4 @@ export function buildRootObject(vatPowers) {
       const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
       return zoe;
     },
-  });
+  })}

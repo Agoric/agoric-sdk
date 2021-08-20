@@ -73,17 +73,18 @@ const start = zcf => {
   const addQuestion = async (voteCounter, ballotSpec) => {
     const quorumThreshold = quorumRule => {
       switch (quorumRule) {
-        case QuorumRule.HALF:
+        case QuorumRule.MAJORITY:
           return ceilDivide(committeeSize, 2);
         case QuorumRule.ALL:
           return committeeSize;
-        case QuorumRule.NONE:
+        case QuorumRule.NO_QUORUM:
           return 0;
         default:
           throw Error(`${quorumRule} is not a recognized quorum rule`);
       }
     };
 
+    /** @type {QuestionTerms} */
     const ballotCounterTerms = {
       ballotSpec,
       registrar: zcf.getInstance(),

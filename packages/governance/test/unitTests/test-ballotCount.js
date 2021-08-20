@@ -43,7 +43,7 @@ test('binary ballot', async t => {
     ElectionType.SURVEY,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     BAIT,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -75,7 +75,7 @@ test('binary spoiled', async t => {
     ElectionType.ELECTION,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     BAIT,
   );
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
@@ -111,7 +111,7 @@ test('binary tied', async t => {
     ElectionType.PARAM_CHANGE,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -140,7 +140,7 @@ test('binary bad vote', async t => {
     ElectionType.PARAM_CHANGE,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
@@ -170,7 +170,7 @@ test('binary counter does not match ballot', async t => {
     ElectionType.PARAM_CHANGE,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
@@ -210,7 +210,7 @@ test('binary no votes', async t => {
     ElectionType.PARAM_CHANGE,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, closeFacet } = makeBinaryBallotCounter(
@@ -232,7 +232,7 @@ test('binary varying share weights', async t => {
     ElectionType.SURVEY,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -265,7 +265,7 @@ test('binary contested', async t => {
     ElectionType.ELECTION,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -297,7 +297,7 @@ test('binary revote', async t => {
     ElectionType.PARAM_CHANGE,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     negative,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -330,7 +330,7 @@ test('binary ballot too many', async t => {
     ElectionType.SURVEY,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     BAIT,
   );
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
@@ -360,7 +360,7 @@ test('binary no quorum', async t => {
     ElectionType.ELECTION,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     BAIT,
   );
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
@@ -392,7 +392,7 @@ test('binary too many positions', async t => {
     ElectionType.SURVEY,
     1,
     FAKE_CLOSING_RULE,
-    QuorumRule.NONE,
+    QuorumRule.NO_QUORUM,
     BAIT,
   );
   t.throws(

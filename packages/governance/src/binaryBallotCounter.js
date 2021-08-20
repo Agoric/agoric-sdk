@@ -83,6 +83,8 @@ const makeBinaryBallotCounter = (ballotSpec, threshold, instance) => {
 
   const ballot = buildBallot(ballotSpec, instance);
   const details = ballot.getDetails();
+  // @ts-ignore typescript is confused here. Dunno why. The declarations clearly
+  // say Ballot.getDetails() returns a ballotDetails, which has a handle.
   const { handle } = details;
 
   let isOpen = true;
