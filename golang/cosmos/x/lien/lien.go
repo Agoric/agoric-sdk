@@ -1,3 +1,7 @@
+// Package lien is a cosmos-sdk module that implements liens.
+// Liens are an encumbrance that prevents the transfer of tokens
+// out of an account, much like the unvested tokens in a vesting
+// account.  See spec/ for full details.
 package lien
 
 import (
@@ -9,10 +13,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// portHandler implements a vm.PortHandler.
 type portHandler struct {
 	keeper Keeper
 }
 
+// portMessage is a struct that any lien bridge message can unmarshal into.
 type portMessage struct {
 	Type    string `json:"type"`
 	Address string `json:"address"`
@@ -20,14 +26,17 @@ type portMessage struct {
 	Amount  string `json:"amount"`
 }
 
+// msgAccountState marshals into the AccountState message for the lien bridge.
 type msgAccountState struct {
 	CurrentTime string `json:"currentTime"`
 	Total       string `json:"total"`
 	Bonded      string `json:"bonded"`
 	Unbonding   string `json:"unbonding"`
 	Locked      string `json:"locked"`
+	Liened      string `json:"liened"`
 }
 
+// NewPortHandler returns a port handler for the Keeper.
 func NewPortHandler(k Keeper) vm.PortHandler {
 	return portHandler{keeper: k}
 }
@@ -37,6 +46,10 @@ const (
 	LIEN_SET_TOTAL         = "LIEN_SET_TOTAL"
 )
 
+// Receive implements the vm.PortHandler method.
+// Receives and processes a bridge message, returning the
+// JSON-encoded response or error.
+// See spec/02_messages.md for the messages and responses.
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, error) {
 	var msg portMessage
 	err := json.Unmarshal([]byte(str), &msg)
@@ -53,6 +66,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
 }
 
+// handleGetAccountState processes a LIEN_GET_ACCOUNT_STATE message.
+// See spec/02_messages.md for the messages and responses.
 func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
@@ -69,6 +84,7 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 		Bonded:      state.Bonded.AmountOf(denom).String(),
 		Unbonding:   state.Unbonding.AmountOf(denom).String(),
 		Locked:      state.Locked.AmountOf(denom).String(),
+		Liened:      state.Liened.AmountOf(denom).String(),
 	}
 	bz, err := json.Marshal(&reply)
 	if err != nil {
@@ -77,6 +93,8 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	return string(bz), nil
 }
 
+// handleSetTotal processes a LIEN_SET_TOTAL message.
+// See spec/02_messages.md for the messages and responses.
 func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
