@@ -8,7 +8,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { buildParamManager, ParamType } from '../src/paramManager.js';
 
-const BASIS_POINTS = 10_000;
+const BASIS_POINTS = 10_000n;
 
 test('params one Nat', async t => {
   const numberKey = 'Number';
@@ -114,13 +114,16 @@ test('params one ratio', async t => {
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
   const ratioDescription = {
     name: ratioKey,
-    value: makeRatio(7, brand),
+    value: makeRatio(7n, brand),
     type: ParamType.RATIO,
   };
   const { getParams, updateRatio } = buildParamManager([ratioDescription]);
   t.deepEqual(getParams()[ratioKey], ratioDescription);
-  updateRatio(makeRatio(701, brand, BASIS_POINTS));
-  t.deepEqual(getParams()[ratioKey].value, makeRatio(701, brand, BASIS_POINTS));
+  updateRatio(makeRatio(701n, brand, BASIS_POINTS));
+  t.deepEqual(
+    getParams()[ratioKey].value,
+    makeRatio(701n, brand, BASIS_POINTS),
+  );
 
   t.throws(
     () => updateRatio(18.1),

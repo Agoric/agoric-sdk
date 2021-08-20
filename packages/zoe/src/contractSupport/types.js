@@ -158,26 +158,35 @@
  */
 
 /**
+ * @typedef {MultiplyBy} CeilMultiplyBy
+ * @typedef {MultiplyBy} FloorMultiplyBy
+ * @typedef {DivideBy} FloorDivideBy
+ * @typedef {DivideBy} CeilDivideBy
+ * @typedef {MultiplyBy} DivideBy - use floorDivideBy() or ceilDivideBy()
+ * @typedef {DivideBy} MultiplyBy - use floorMultiplyBy() or ceilMultiplyBy()
+ */
+
+/**
  * @callback InvertRatio
  * @param {Ratio} ratio
  * @returns {Ratio}
  */
 
 /**
- * @callback oneMinus
+ * @callback OneMinus
  * @param {Ratio} ratio
  * @returns {Ratio}
  */
 
 /**
- * @callback addRatios
+ * @callback AddRatios
  * @param {Ratio} left
  * @param {Ratio} right
  * @returns {Ratio}
  */
 
 /**
- * @callback multiplyRatios
+ * @callback MultiplyRatios
  * @param {Ratio} left
  * @param {Ratio} right
  * @returns {Ratio}

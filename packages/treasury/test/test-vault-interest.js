@@ -141,7 +141,7 @@ test('interest', async t => {
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
   t.deepEqual(v2.debt, AmountMath.make(73500n + 63n, runBrand));
-  t.deepEqual(v2.interestRate, makeRatio(5, runBrand, 100n));
+  t.deepEqual(v2.interestRate, makeRatio(5n, runBrand, 100n));
   t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
   const collateralization = v2.collateralizationRatio;
   t.truthy(

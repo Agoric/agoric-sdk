@@ -7,7 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
-const BASIS_POINTS = 10000;
+const BASIS_POINTS = 10000n;
 
 // Treasury owner
 
@@ -55,11 +55,11 @@ const build = async (
   } = await E(zoe).getTerms(instance);
 
   const rates = {
-    initialPrice: makeRatio(10000, runBrand, 5, moolaBrand),
-    initialMargin: makeRatio(120, runBrand),
-    liquidationMargin: makeRatio(105, runBrand),
-    interestRate: makeRatio(250, runBrand, BASIS_POINTS),
-    loanFee: makeRatio(200, runBrand, BASIS_POINTS),
+    initialPrice: makeRatio(10000n, runBrand, 5n, moolaBrand),
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    interestRate: makeRatio(250n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(200n, runBrand, BASIS_POINTS),
   };
 
   const addTypeInvitation = await E(creatorFacet).makeAddTypeInvitation(
