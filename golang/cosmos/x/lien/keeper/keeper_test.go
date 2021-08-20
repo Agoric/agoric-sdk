@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -14,6 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -50,10 +53,15 @@ var (
 	minterAcc = authtypes.NewEmptyModuleAccount(authtypes.Minter, authtypes.Minter)
 )
 
+func ubld(n int64) sdk.Coins {
+	return sdk.NewCoins(sdk.NewInt64Coin("ubld", n))
+}
+
 func makeTestKit() (sdk.Context, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
 	encodingConfig := params.MakeEncodingConfig()
 	codec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	vestingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	stakingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	cdc := encodingConfig.Marshaller
@@ -120,7 +128,7 @@ func TestGetSetLien(t *testing.T) {
 	}
 
 	// Initialize
-	amt := sdk.NewCoins(sdk.NewInt64Coin("ubld", 123))
+	amt := ubld(123)
 	lien := types.Lien{Coins: amt}
 	keeper.SetLien(ctx, addr1, lien)
 	l2 := keeper.GetLien(ctx, addr1)
@@ -157,7 +165,7 @@ func TestIterateLiens(t *testing.T) {
 
 	// One
 	reset()
-	amt1 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 123))
+	amt1 := ubld(123)
 	keeper.SetLien(ctx, addr1, types.Lien{Coins: amt1})
 	keeper.IterateLiens(ctx, cb)
 	wantLiens := map[string]types.Lien{
@@ -169,7 +177,7 @@ func TestIterateLiens(t *testing.T) {
 
 	// Several (including zero)
 	reset()
-	amt2 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 456))
+	amt2 := ubld(456)
 	keeper.SetLien(ctx, addr2, types.Lien{Coins: amt2})
 	keeper.SetLien(ctx, addr3, types.Lien{})
 	keeper.IterateLiens(ctx, cb)
@@ -190,7 +198,7 @@ func TestAccountState(t *testing.T) {
 	}
 
 	// lien only
-	amt1 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 123))
+	amt1 := ubld(123)
 	keeper.SetLien(ctx, addr1, types.Lien{Coins: amt1})
 	state = keeper.GetAccountState(ctx, addr1)
 	wantState = AccountState{Liened: amt1}
@@ -200,8 +208,14 @@ func TestAccountState(t *testing.T) {
 
 	// total and lien
 	amt2 := sdk.NewCoins(sdk.NewInt64Coin("ubld", 1000), sdk.NewInt64Coin("urun", 5000), sdk.NewInt64Coin("moola", 22))
-	bk.MintCoins(ctx, authtypes.Minter, amt2)
-	bk.SendCoinsFromModuleToAccount(ctx, authtypes.Minter, addr1, amt2)
+	err := bk.MintCoins(ctx, authtypes.Minter, amt2)
+	if err != nil {
+		t.Fatalf("cannot mint coins: %v", err)
+	}
+	err = bk.SendCoinsFromModuleToAccount(ctx, authtypes.Minter, addr1, amt2)
+	if err != nil {
+		t.Fatalf("cannot send coins: %v", err)
+	}
 	state = keeper.GetAccountState(ctx, addr1)
 	wantState = AccountState{
 		Total:  amt2,
@@ -220,7 +234,6 @@ func TestAccountState(t *testing.T) {
 	}
 	validator, _ = validator.AddTokensFromDel(sdk.NewInt(100))
 	validator = stakingkeeper.TestingUpdateValidator(sk, ctx, validator, true)
-	//sk.SetValidator(ctx, validator)
 
 	shares, err := sk.Delegate(ctx, addr1, sdk.NewInt(10), stakingtypes.Unbonded, validator, true)
 	if err != nil {
@@ -230,7 +243,7 @@ func TestAccountState(t *testing.T) {
 	state = keeper.GetAccountState(ctx, addr1)
 	wantState = AccountState{
 		Total:  amt2,
-		Bonded: sdk.NewCoins(sdk.NewInt64Coin("ubld", 10)),
+		Bonded: ubld(10),
 		Liened: amt1,
 	}
 	if !state.IsEqual(wantState) {
@@ -244,8 +257,80 @@ func TestAccountState(t *testing.T) {
 	}
 	wantState = AccountState{
 		Total:     amt2,
-		Bonded:    sdk.NewCoins(sdk.NewInt64Coin("ubld", 9)),
-		Unbonding: sdk.NewCoins(sdk.NewInt64Coin("ubld", 1)),
+		Bonded:    ubld(9),
+		Unbonding: ubld(1),
 		Liened:    amt1,
+	}
+}
+
+func TestVesting(t *testing.T) {
+	ctx, bk, _, keeper := makeTestKit()
+
+	amt := ubld(1000)
+	err := bk.MintCoins(ctx, authtypes.Minter, amt)
+	if err != nil {
+		t.Fatalf("cannot mint coins: %v", err)
+	}
+	err = bk.SendCoinsFromModuleToAccount(ctx, authtypes.Minter, addr1, amt)
+	if err != nil {
+		t.Fatalf("cannot send coins: %v", err)
+	}
+
+	vestingMsgServer := vesting.NewMsgServerImpl(keeper.accountKeeper, bk)
+	_, err = vestingMsgServer.CreateVestingAccount(sdk.WrapSDKContext(ctx), &vestingtypes.MsgCreateVestingAccount{
+		FromAddress: addr1.String(),
+		ToAddress:   addr2.String(),
+		Amount:      amt,
+		EndTime:     math.MaxInt64,
+		Delayed:     true,
+	})
+	if err != nil {
+		t.Fatalf("cannot create vesting account: %v", err)
+	}
+
+	state := keeper.GetAccountState(ctx, addr2)
+	wantState := AccountState{
+		Total:  amt,
+		Locked: amt,
+	}
+	if !state.IsEqual(wantState) {
+		t.Errorf("GetAccountState(1) got %v, want %v", state, wantState)
+	}
+
+	err = bk.SendCoins(ctx, addr2, addr1, ubld(5))
+	if err == nil {
+		t.Fatalf("transferred coins out of fully locked account!")
+	}
+
+	amt2 := ubld(300)
+	err = bk.MintCoins(ctx, authtypes.Minter, amt2)
+	if err != nil {
+		t.Fatalf("cannot mint more coins: %v", err)
+	}
+	err = bk.SendCoinsFromModuleToAccount(ctx, authtypes.Minter, addr2, amt2)
+	if err != nil {
+		t.Fatalf("cannot transfer to vesting account: %v", err)
+	}
+	state = keeper.GetAccountState(ctx, addr2)
+	wantState = AccountState{
+		Total:  ubld(1300),
+		Locked: ubld(1000),
+	}
+	if !state.IsEqual(wantState) {
+		t.Errorf("GetAccountState(2) got %v, want %v", state, wantState)
+	}
+	err = bk.SendCoins(ctx, addr2, addr2, ubld(5))
+	if err != nil {
+		t.Errorf("cannot transfer free coins(1): %v", err)
+	}
+
+	keeper.SetLien(ctx, addr2, types.Lien{Coins: ubld(1200)})
+	err = bk.SendCoins(ctx, addr2, addr1, ubld(95))
+	if err != nil {
+		t.Errorf("cannot transfer free coins(2): %v", err)
+	}
+	err = bk.SendCoins(ctx, addr2, addr1, ubld(7))
+	if err == nil {
+		t.Errorf("transferred liened coins!")
 	}
 }
