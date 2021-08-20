@@ -730,17 +730,24 @@ test('GC syscall.dropImports', async t => {
   // the presence itself should be gone
   t.falsy(wr.deref());
 
-  // since nothing else is holding onto it, the vat should emit a dropImports
+  // first it will check that there are no VO's holding onto it
   const l2 = log.shift();
   t.deepEqual(l2, {
+    type: 'vatstoreGet',
+    key: 'vom.rc.o-1',
+  });
+
+  // since nothing else is holding onto it, the vat should emit a dropImports
+  const l3 = log.shift();
+  t.deepEqual(l3, {
     type: 'dropImports',
     slots: [arg],
   });
 
   // and since the vat never used the Presence in a WeakMap/WeakSet, they
   // cannot recognize it either, and will emit retireImports
-  const l3 = log.shift();
-  t.deepEqual(l3, {
+  const l4 = log.shift();
+  t.deepEqual(l4, {
     type: 'retireImports',
     slots: [arg],
   });
