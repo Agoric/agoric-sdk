@@ -18,8 +18,8 @@ func identWrap(a authtypes.AccountI) authtypes.AccountI {
 	return a
 }
 
-// defaultAccountWrapper is an AccountWrapper that does nothing.
-var defaultAccountWrapper = AccountWrapper{
+// DefaultAccountWrapper is an AccountWrapper that does nothing.
+var DefaultAccountWrapper = AccountWrapper{
 	Wrap:   identWrap,
 	Unwrap: identWrap,
 }
@@ -43,7 +43,7 @@ var _ authkeeper.AccountKeeper = (*WrappedAccountKeeper)(nil)
 func NewWrappedAccountKeeper(ak authkeeper.AccountKeeper) *WrappedAccountKeeper {
 	return &WrappedAccountKeeper{
 		AccountKeeper:  ak,
-		AccountWrapper: defaultAccountWrapper,
+		AccountWrapper: DefaultAccountWrapper,
 	}
 }
 

@@ -79,8 +79,8 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	}
 	state := ch.keeper.GetAccountState(ctx, addr)
 	reply := msgAccountState{
-		CurrentTime: ctx.BlockTime().String(),             // XXX check format
-		Total:       state.Total.AmountOf(denom).String(), // XXX conversion
+		CurrentTime: ctx.BlockTime().String(), // REVIEWER: what format?
+		Total:       state.Total.AmountOf(denom).String(),
 		Bonded:      state.Bonded.AmountOf(denom).String(),
 		Unbonding:   state.Unbonding.AmountOf(denom).String(),
 		Locked:      state.Locked.AmountOf(denom).String(),
