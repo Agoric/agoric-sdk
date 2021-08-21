@@ -58,7 +58,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	_, err = keeper.CallToController(ctx, string(b), "")
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		return nil, err
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	_, err = keeper.CallToController(ctx, string(b), "")
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

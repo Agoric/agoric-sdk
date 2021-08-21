@@ -229,8 +229,8 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaller
-	callToController := func(ctx sdk.Context, str string) (string, error) {
-		return "", nil
+	callToController := func(ctx sdk.Context, str, simReturn string) (string, error) {
+		return simReturn, nil
 	}
 
 	paramsTStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
@@ -472,9 +472,9 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
+	keeper.CallToController = func(ctx sdk.Context, str, simReturn string) (string, error) {
 		msgsSent = append(msgsSent, str)
-		return "", nil
+		return simReturn, nil
 	}
 	am := NewAppModule(keeper)
 
@@ -546,9 +546,9 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
+	keeper.CallToController = func(ctx sdk.Context, str, simReturn string) (string, error) {
 		msgsSent = append(msgsSent, str)
-		return "", nil
+		return simReturn, nil
 	}
 	am := NewAppModule(keeper)
 
