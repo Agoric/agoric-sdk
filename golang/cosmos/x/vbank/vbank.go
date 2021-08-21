@@ -227,9 +227,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send, simReturn string) (string, error) {
+func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
 	// fmt.Println("vbank.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send, simReturn)
+	reply, err := am.keeper.CallToController(ctx, send)
 	// fmt.Println("vbank.go upcall reply", reply, err)
 	return reply, err
 }
