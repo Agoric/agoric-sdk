@@ -60,10 +60,9 @@
     instancePetname,
     instanceHandleBoardId,
     installationHandleBoardId,
-    feePursePetname,
     offerId,
     requestContext: { date, dappOrigin, origin = "unknown origin" } = {},
-    invitationDetails: { fee, expiry } = {},
+    invitationDetails: { fee, feePursePetname, expiry } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
   } = item);
 

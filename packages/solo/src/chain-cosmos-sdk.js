@@ -18,6 +18,9 @@ import {
 
 const console = anylogger('chain-cosmos-sdk');
 
+// the `ag-cosmos-helper` tool in our repo is built by 'cd golang/cosmos &&
+// make'. It lives in the build tree along with `bin/ag-solo`, in case there are
+// multiple checkouts of `agoric-sdk`.
 export const HELPER = new URL(
   '../../../golang/cosmos/build/ag-cosmos-helper',
   import.meta.url,
@@ -94,14 +97,12 @@ export async function connectToChain(
   // query/tx functions directly without the overhead of spawning a
   // subprocess and encoding everything as strings over stdio.
 
-  // the 'ag-cosmos-helper' tool in our repo is built by 'make install' and
-  // put into the user's $GOPATH/bin . That's a bit intrusive, ideally it
-  // would live in the build tree along with bin/ag-solo . But for now we
-  // assume that 'ag-cosmos-helper' is on $PATH somewhere.
-
-  const rpcHrefs = rpcAddresses.map(
-    rpcAddr =>
-      new URL(rpcAddr.includes('://') ? rpcAddr : `http://${rpcAddr}`).href,
+  const rpcHrefs = rpcAddresses.map(rpcAddr =>
+    // Don't remove explicit port numbers from the URL, because the Cosmos
+    // `--node=xxx` flag requires them (it doesn't just assume that
+    // `--node=https://testnet.rpc.agoric.net` is the same as
+    // `--node=https://testnet.rpc.agoric.net:443`)
+    rpcAddr.includes('://') ? rpcAddr : `http://${rpcAddr}`,
   );
 
   // Shuffle our rpcHrefs, to help distribute load.

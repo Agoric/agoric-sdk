@@ -478,6 +478,21 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       id: 'unknown#1588645041696',
       rawId: '1588645041696',
+      invitationDetails: {
+        description: 'getRefund',
+        handle: {
+          kind: 'unnamed',
+          petname: 'unnamed-1',
+        },
+        installation: {
+          kind: 'installation',
+          petname: 'automaticRefund',
+        },
+        instance: {
+          kind: 'instance',
+          petname: 'automaticRefund',
+        },
+      },
       inviteHandleBoardId: '727995140',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -594,6 +609,21 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     {
       id: 'unknown#1588645041696',
       rawId: '1588645041696',
+      invitationDetails: {
+        description: 'getRefund',
+        handle: {
+          kind: 'unnamed',
+          petname: 'unnamed-1',
+        },
+        installation: {
+          kind: 'installation',
+          petname: 'automaticRefund2',
+        },
+        instance: {
+          kind: 'instance',
+          petname: 'automaticRefund',
+        },
+      },
       inviteHandleBoardId: '727995140',
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -668,6 +698,15 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         rawId: '1588645041696',
+        invitationDetails: {
+          description: 'getRefund',
+          expiry: undefined,
+          fee: undefined,
+          handle: inviteHandle,
+          installation,
+          instance,
+          zoeTimeAuthority: undefined,
+        },
         inviteHandleBoardId: '727995140',
         instance,
         installation,
@@ -769,6 +808,21 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645041696',
         rawId: '1588645041696',
+        invitationDetails: {
+          description: 'getRefund',
+          handle: {
+            kind: 'unnamed',
+            petname: 'unnamed-1',
+          },
+          installation: {
+            kind: 'unnamed',
+            petname: 'unnamed-2',
+          },
+          instance: {
+            kind: 'unnamed',
+            petname: 'unnamed-3',
+          },
+        },
         inviteHandleBoardId: '727995140',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -801,6 +855,21 @@ test('lib-wallet offer methods', async t => {
       {
         id: 'unknown#1588645230204',
         rawId: '1588645230204',
+        invitationDetails: {
+          description: 'getRefund',
+          handle: {
+            kind: 'unnamed',
+            petname: 'unnamed-6',
+          },
+          installation: {
+            kind: 'unnamed',
+            petname: 'unnamed-2',
+          },
+          instance: {
+            kind: 'unnamed',
+            petname: 'unnamed-3',
+          },
+        },
         inviteHandleBoardId: '371571443',
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },

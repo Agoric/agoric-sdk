@@ -94,6 +94,9 @@ export function makeWallet({
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
+  /** @type {Petname} */
+  let feePursePetname;
+
   // Idempotently initialize the issuer's synchronous boardId mapping.
   const initIssuerToBoardId = async issuer => {
     if (issuerToBoardId.has(issuer)) {
@@ -331,6 +334,23 @@ export function makeWallet({
 
   const display = value => fillInSlots(dehydrate(harden(value)));
 
+  const expandInvitationBrands = async invitationDetails => {
+    // We currently only add the fee's brand.
+    const { fee } = invitationDetails;
+    if (!fee) {
+      return invitationDetails;
+    }
+
+    // Add display info for the fee.
+    const displayInfo = await E(E(zoe).getFeeIssuer()).getDisplayInfo();
+    const augmentedDetails = {
+      ...invitationDetails,
+      feePursePetname,
+      fee: { ...fee, displayInfo },
+    };
+    return display(augmentedDetails);
+  };
+
   const displayProposal = proposalTemplate => {
     const { want, give, exit = { onDemand: null } } = proposalTemplate;
     const displayRecord = pursePetnameValueKeywordRecord => {
@@ -391,6 +411,10 @@ export function makeWallet({
     const alreadyDisplayed =
       inboxState.has(id) && inboxState.get(id).proposalForDisplay;
 
+    const augmentedInvitationDetails = await expandInvitationBrands(
+      invitationDetails,
+    );
+
     const offerForDisplay = {
       ...offer,
       // We cannot store the actions, installation, and instance in the
@@ -400,7 +424,7 @@ export function makeWallet({
       installation: undefined,
       instance: undefined,
       proposalTemplate,
-      invitationDetails: display(invitationDetails),
+      invitationDetails: display(augmentedInvitationDetails),
       instancePetname: instanceDisplay.petname,
       installationPetname: installationDisplay.petname,
       proposalForDisplay: displayProposal(alreadyDisplayed || proposalTemplate),
@@ -731,6 +755,8 @@ export function makeWallet({
         console.error(`failed updateState observer`, reason);
       },
     });
+
+    return petnameForPurse;
   };
 
   // This function is exposed to the walletAdmin.
@@ -964,7 +990,7 @@ export function makeWallet({
 
     // Our inbox state may have an enriched offer.
     await updateInboxState(id, idToOffer.get(id));
-    const { installation, instance } = await compiledOfferP;
+    const { installation, instance, invitationDetails } = await compiledOfferP;
 
     if (!idToOffer.has(id)) {
       return rawId;
@@ -975,6 +1001,7 @@ export function makeWallet({
         ...idToOffer.get(id),
         installation,
         instance,
+        invitationDetails,
       }),
     );
     await updateInboxState(id, idToOffer.get(id));
@@ -1652,7 +1679,12 @@ export function makeWallet({
     const feePurse = await feePurseP;
     const feeIssuer = await E(zoe).getFeeIssuer();
     const issuerName = await addIssuer('RUN', feeIssuer);
-    await internalUnsafeImportPurse(issuerName, 'Zoe fees', false, feePurse);
+    feePursePetname = await internalUnsafeImportPurse(
+      issuerName,
+      'Zoe fees',
+      false,
+      feePurse,
+    );
   };
   return { admin: wallet, initialized: initialize(), importBankAssets };
 }
