@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [8.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.1...@agoric/sdk@8.1.2) (2021-08-21)
+
+
+### Bug Fixes
+
+* **cosmos:** the bootstrap block is not a simulation, either ([c4e4727](https://github.com/Agoric/agoric-sdk/commit/c4e472748b4eed4f7ad9650a5904a526e0c2e214))
+
+
+
 ### [8.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.0...@agoric/sdk@8.1.1) (2021-08-21)
 
 **Note:** Version bump only for package @agoric/sdk

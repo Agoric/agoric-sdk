@@ -1,6 +1,6 @@
 {
   "name": "@agoric/solo",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Agoric's Solo vat runner",
   "type": "module",
   "bin": {
@@ -29,7 +29,7 @@
     "@agoric/assert": "^0.3.11",
     "@agoric/babel-standalone": "^7.14.3",
     "@agoric/captp": "^1.10.3",
-    "@agoric/cosmic-swingset": "^0.33.4",
+    "@agoric/cosmic-swingset": "^0.33.5",
     "@agoric/dapp-svelte-wallet": "^0.11.2",
     "@agoric/eventual-send": "^0.13.27",
     "@agoric/import-bundle": "^0.2.28",

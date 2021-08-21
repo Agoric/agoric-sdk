@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmos",
-  "version": "0.26.16",
+  "version": "0.26.17",
   "description": "Connect JS to the Cosmos blockchain SDK",
   "parsers": {
     "js": "mjs"
