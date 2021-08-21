@@ -53,7 +53,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 		panic(err)
 	}
 
-	_, err = keeper.CallToController(ctx, string(b), "")
+	_, err = keeper.CallToController(ctx, string(b))
 
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.

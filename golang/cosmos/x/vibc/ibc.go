@@ -172,9 +172,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send, simReturn string) (string, error) {
+func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
 	// fmt.Println("ibc.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send, simReturn)
+	reply, err := am.keeper.CallToController(ctx, send)
 	// fmt.Println("ibc.go upcall reply", reply, err)
 	return reply, err
 }
@@ -221,7 +221,7 @@ func (am AppModule) OnChanOpenInit(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (am AppModule) OnChanOpenTry(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return err
 	}
@@ -328,7 +328,7 @@ func (am AppModule) OnChanOpenAck(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -360,7 +360,7 @@ func (am AppModule) OnChanOpenConfirm(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -392,7 +392,7 @@ func (am AppModule) OnChanCloseInit(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -424,7 +424,7 @@ func (am AppModule) OnChanCloseConfirm(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	return err
 }
 
@@ -461,7 +461,7 @@ func (am AppModule) OnRecvPacket(
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
@@ -497,7 +497,7 @@ func (am AppModule) OnAcknowledgementPacket(
 		return nil, err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +532,7 @@ func (am AppModule) OnTimeoutPacket(
 		return nil, err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes), "")
+	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
 		return nil, err
 	}

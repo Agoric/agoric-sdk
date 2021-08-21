@@ -49,7 +49,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b), "")
+	_, err = keeper.CallToController(ctx, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	return err
@@ -71,7 +71,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b), "")
+	_, err = keeper.CallToController(ctx, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
@@ -102,7 +102,7 @@ func CommitBlock(keeper Keeper) error {
 		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(sdk.Context{}, string(b), "")
+	_, err = keeper.CallToController(sdk.Context{}, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {

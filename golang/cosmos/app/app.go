@@ -358,10 +358,10 @@ func NewAgoricApp(
 	)
 
 	// This function is tricky to get right, so we build it ourselves.
-	callToController := func(ctx sdk.Context, str, simReturn string) (string, error) {
+	callToController := func(ctx sdk.Context, str string) (string, error) {
 		if vm.IsSimulation(ctx) {
-			// Just return the simReturn, since the message is being simulated.
-			return simReturn, nil
+			// Just return empty, since the message is being simulated.
+			return "", nil
 		}
 		// We use SwingSet-level metering to charge the user for the call.
 		app.MustInitController(ctx)
@@ -570,7 +570,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	}
 	bz, err := json.Marshal(action)
 	if err == nil {
-		_, err = app.SwingSetKeeper.CallToController(ctx, string(bz), "")
+		_, err = app.SwingSetKeeper.CallToController(ctx, string(bz))
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
