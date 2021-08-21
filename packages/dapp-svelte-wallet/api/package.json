@@ -1,7 +1,7 @@
 {
   "name": "@agoric/dapp-svelte-wallet-api",
   "private": true,
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Wallet web server handler",
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
   "devDependencies": {
     "@agoric/bundle-source": "^1.4.9",
     "@agoric/install-ses": "^0.5.25",
-    "@agoric/vats": "^0.3.1",
+    "@agoric/vats": "^0.3.2",
     "ava": "^3.12.1"
   },
   "dependencies": {
