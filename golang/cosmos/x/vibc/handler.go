@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -12,14 +11,6 @@ import (
 // NewHandler returns a handler for "vibc" type messages.
 func NewHandler(keeper Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-		if vm.IsSimulation(ctx) {
-			// We don't support simulation.
-			return &sdk.Result{}, nil
-		} else {
-			// The simulation was done, so now allow infinite gas.
-			ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-		}
-
 		switch msg := msg.(type) {
 		case *MsgSendPacket:
 			return handleMsgSendPacket(ctx, keeper, msg)
@@ -62,7 +53,7 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*s
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	_, err = keeper.CallToController(ctx, string(b), "")
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

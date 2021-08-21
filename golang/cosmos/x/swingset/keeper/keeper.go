@@ -26,7 +26,7 @@ type Keeper struct {
 	bankKeeper    bankkeeper.Keeper
 
 	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	CallToController func(ctx sdk.Context, str, simReturn string) (string, error)
 }
 
 // A prefix of bytes, since KVStores can't handle empty slices as keys.
@@ -48,7 +48,7 @@ func stringToKey(keyStr string) []byte {
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey,
 	accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	callToController func(ctx sdk.Context, str string) (string, error),
+	callToController func(ctx sdk.Context, str, simReturn string) (string, error),
 ) Keeper {
 
 	return Keeper{

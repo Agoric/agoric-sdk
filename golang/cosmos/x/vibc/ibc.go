@@ -172,9 +172,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
+func (am AppModule) CallToController(ctx sdk.Context, send, simReturn string) (string, error) {
 	// fmt.Println("ibc.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send)
+	reply, err := am.keeper.CallToController(ctx, send, simReturn)
 	// fmt.Println("ibc.go upcall reply", reply, err)
 	return reply, err
 }
@@ -203,14 +203,6 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := channelOpenInitEvent{
 		Type:           "IBC_EVENT",
 		Event:          "channelOpenInit",
@@ -229,7 +221,7 @@ func (am AppModule) OnChanOpenInit(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	if err != nil {
 		return err
 	}
@@ -267,14 +259,6 @@ func (am AppModule) OnChanOpenTry(
 	version,
 	counterpartyVersion string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenTry",
@@ -294,7 +278,7 @@ func (am AppModule) OnChanOpenTry(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	if err != nil {
 		return err
 	}
@@ -324,14 +308,6 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	// We don't care if the channel was found.  If it wasn't then GetChannel
 	// returns an empty channel object that we can still use without crashing.
 	channel, _ := am.keeper.GetChannel(ctx, portID, channelID)
@@ -352,7 +328,7 @@ func (am AppModule) OnChanOpenAck(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	return err
 }
 
@@ -370,14 +346,6 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := channelOpenConfirmEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelOpenConfirm",
@@ -392,8 +360,7 @@ func (am AppModule) OnChanOpenConfirm(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
-
+	_, err = am.CallToController(ctx, string(bytes), "")
 	return err
 }
 
@@ -411,14 +378,6 @@ func (am AppModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := channelCloseInitEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelCloseInit",
@@ -433,7 +392,7 @@ func (am AppModule) OnChanCloseInit(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	return err
 }
 
@@ -451,14 +410,6 @@ func (am AppModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := channelCloseConfirmEvent{
 		Type:        "IBC_EVENT",
 		Event:       "channelCloseConfirm",
@@ -473,7 +424,7 @@ func (am AppModule) OnChanCloseConfirm(
 		return err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	return err
 }
 
@@ -489,14 +440,6 @@ func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) exported.Acknowledgement {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	// Sometimes we receive duplicate packets, just with a
 	// missing packet.TimeoutTimestamp.  This causes duplicate
 	// acks, with one of them being rejected.
@@ -518,8 +461,7 @@ func (am AppModule) OnRecvPacket(
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
-	// FIXME: Get acknowledgement data from this call.
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
@@ -541,14 +483,6 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 ) (*sdk.Result, error) {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return &sdk.Result{}, nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := acknowledgementPacketEvent{
 		Type:            "IBC_EVENT",
 		Event:           "acknowledgementPacket",
@@ -563,7 +497,7 @@ func (am AppModule) OnAcknowledgementPacket(
 		return nil, err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	if err != nil {
 		return nil, err
 	}
@@ -585,14 +519,6 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 ) (*sdk.Result, error) {
-	if vm.IsSimulation(ctx) {
-		// We don't support simulation.
-		return &sdk.Result{}, nil
-	} else {
-		// The simulation was done, so now allow infinite gas.
-		ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	}
-
 	event := timeoutPacketEvent{
 		Type:        "IBC_EVENT",
 		Event:       "timeoutPacket",
@@ -606,7 +532,7 @@ func (am AppModule) OnTimeoutPacket(
 		return nil, err
 	}
 
-	_, err = am.CallToController(ctx, string(bytes))
+	_, err = am.CallToController(ctx, string(bytes), "")
 	if err != nil {
 		return nil, err
 	}
