@@ -25,6 +25,8 @@ var nameToPort = make(map[string]int)
 var lastPort = 0
 
 func SetControllerContext(ctx sdk.Context) func() {
+	// We are only called by the controller, so we assume that it is billing its
+	// own meter usage.
 	controllerContext.Context = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	return func() {
 		controllerContext.Context = sdk.Context{}
