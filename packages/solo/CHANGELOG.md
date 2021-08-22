@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.5...@agoric/solo@0.4.6) (2021-08-22)
+
+
+### Bug Fixes
+
+* **solo:** make solo-to-chain more robust ([ea0ef15](https://github.com/Agoric/agoric-sdk/commit/ea0ef15645fd851d82c9edf3ad862dcc256e172d))
+
+
+
 ### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.4...@agoric/solo@0.4.5) (2021-08-21)
 
 **Note:** Version bump only for package @agoric/solo
