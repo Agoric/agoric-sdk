@@ -15,7 +15,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     return E(aliceP).testBasicFunctionality();
   }
 
-  const obj0 = {
+  const obj0 = Far('root', {
     async bootstrap(vats) {
       switch (arg0) {
         case 'basicFunctionality': {
@@ -27,6 +27,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
       }
     },
-  };
-  return Far('root', obj0);
+  });
+  return obj0;
 }

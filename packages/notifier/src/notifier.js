@@ -20,7 +20,7 @@ import './types.js';
 export const makeNotifier = baseNotifierP => {
   const asyncIterable = makeAsyncIterableFromNotifier(baseNotifierP);
 
-  return harden({
+  return Far('notifier', {
     ...asyncIterable,
     getSharableNotifierInternals: () => baseNotifierP,
   });
@@ -55,7 +55,7 @@ export const makeNotifierKit = (...args) => {
 
   const final = () => currentUpdateCount === undefined;
 
-  const baseNotifier = harden({
+  const baseNotifier = Far('baseNotifier', {
     // NaN matches nothing
     getUpdateSince(updateCount = NaN) {
       if (

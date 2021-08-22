@@ -2,7 +2,7 @@
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far, Remotable } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -212,7 +212,10 @@ export const makeZCFZygote = (
   };
 
   /** @type {ContractFacet} */
-  const zcf = Far('zcf', {
+  const zcf = Remotable('Alleged: zcf', undefined, {
+    // Using Remotable rather than Far because too many complications
+    // imposing checking wrappers: makeInvitation and setJig want to
+    // accept raw functions. assert cannot be a valid passable!
     reallocate,
     assertUniqueKeyword,
     saveIssuer: async (issuerP, keyword) => {
@@ -226,7 +229,7 @@ export const makeZCFZygote = (
       return record;
     },
     makeInvitation: (
-      offerHandler = () => {},
+      offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),
       relativeFee = undefined,

@@ -3,7 +3,7 @@ import { Far } from '@agoric/marshal';
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
-  const obj0 = {
+  const obj0 = Far('root', {
     callRight(arg1, right) {
       log(`left.callRight ${arg1}`);
       E(right)
@@ -44,6 +44,6 @@ export function buildRootObject(vatPowers) {
         }),
       );
     },
-  };
-  return Far('root', obj0);
+  });
+  return obj0;
 }

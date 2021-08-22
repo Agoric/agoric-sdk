@@ -93,7 +93,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  const obj0 = {
+  const obj0 = Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
@@ -140,6 +140,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
       );
       await E(aliceP).startTest(testName, bobP, carolP, daveP);
     },
-  };
-  return Far('root', obj0);
+  });
+  return obj0;
 }

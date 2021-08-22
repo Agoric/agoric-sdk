@@ -8,7 +8,7 @@ export function buildRootObject(vatPowers) {
   const root = Far('root', {
     init(bob, bert, carol) {
       const { setA, setB, setC, objA } = buildPatterns(vatPowers.testLog);
-      alice = Far('alice', objA);
+      alice = objA;
       const a = harden({ alice, amy });
       setA(a);
       setB(harden({ bob, bert }));

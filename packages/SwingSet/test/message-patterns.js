@@ -73,9 +73,9 @@ export function buildPatterns(log) {
   }
 
   const patterns = new Map();
-  const objA = { toString: () => 'obj-alice' };
-  const objB = { toString: () => 'obj-bob' };
-  const objC = { toString: () => 'obj-carol' };
+  let objA = { toString: () => 'obj-alice' };
+  let objB = { toString: () => 'obj-bob' };
+  let objC = { toString: () => 'obj-carol' };
   const out = {};
   const outPipelined = {};
 
@@ -948,16 +948,16 @@ export function buildPatterns(log) {
   }
   out.a100 = ['true', 'true'];
 
+  objA = Far('alice', objA);
+  objB = Far('bob', objB);
+  objC = Far('carol', objC);
+
   // TODO: kernel-allocated promise, either comms or kernel resolves it,
   // comms needs to send into kernel again
 
   // TODO: vat-allocated promise, either comms or kernel resolves it, comms
   // needs to send into kernel again
-
-  // note: we don't harden() this return value because certain callers
-  // (vat-a/b/c.js) need to Far() the objA/B/C pieces (which isn't convenient
-  // to do here), and you can't Far() something that's already hardened.
-  return {
+  return harden({
     setA,
     setB,
     setC,
@@ -967,5 +967,5 @@ export function buildPatterns(log) {
     objC,
     expected: out,
     expected_pipelined: outPipelined,
-  };
+  });
 }
