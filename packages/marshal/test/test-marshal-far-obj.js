@@ -198,29 +198,69 @@ test('transitional remotables', t => {
     let mark;
     for (const opt of opts) {
       if (opt === 'enumStringData') {
-        props.key1 = { enumerable: true, value: 'data' };
+        props.key1 = { enumerable: true, value: 'data', configurable: true };
       } else if (opt === 'enumStringFunc') {
-        props.enumStringFunc = { enumerable: true, value: () => 0 };
+        props.enumStringFunc = {
+          enumerable: true,
+          value: () => 0,
+          configurable: true,
+        };
       } else if (opt === 'enumStringGetData') {
-        props.enumStringGetData = { enumerable: true, get: () => 0 };
+        props.enumStringGetData = {
+          enumerable: true,
+          get: () => 0,
+          configurable: true,
+        };
       } else if (opt === 'enumStringGetFunc') {
-        props.enumStringGetFunc = { enumerable: true, get: () => () => 0 };
+        props.enumStringGetFunc = {
+          enumerable: true,
+          get: () => () => 0,
+          configurable: true,
+        };
       } else if (opt === 'enumStringSet') {
-        props.enumStringSet = { enumerable: true, set: () => undefined };
+        props.enumStringSet = {
+          enumerable: true,
+          set: () => undefined,
+          configurable: true,
+        };
       } else if (opt === 'enumSymbolData') {
-        props[symEnumData] = { enumerable: true, value: 2 };
+        props[symEnumData] = { enumerable: true, value: 2, configurable: true };
       } else if (opt === 'enumSymbolFunc') {
-        props[symEnumFunc] = { enumerable: true, value: () => 0 };
+        props[symEnumFunc] = {
+          enumerable: true,
+          value: () => 0,
+          configurable: true,
+        };
       } else if (opt === 'nonenumStringData') {
-        props.nonEnumStringData = { enumerable: false, value: 3 };
+        props.nonEnumStringData = {
+          enumerable: false,
+          value: 3,
+          configurable: true,
+        };
       } else if (opt === 'nonenumStringFunc') {
-        props.nonEnumStringFunc = { enumerable: false, value: () => 0 };
+        props.nonEnumStringFunc = {
+          enumerable: false,
+          value: () => 0,
+          configurable: true,
+        };
       } else if (opt === 'nonenumSymbolData') {
-        props[symNonenumData] = { enumerable: false, value: 4 };
+        props[symNonenumData] = {
+          enumerable: false,
+          value: 4,
+          configurable: true,
+        };
       } else if (opt === 'nonenumSymbolFunc') {
-        props[symNonenumFunc] = { enumerable: false, value: () => 0 };
+        props[symNonenumFunc] = {
+          enumerable: false,
+          value: () => 0,
+          configurable: true,
+        };
       } else if (opt === 'nonenumSymbolGetFunc') {
-        props[symNonenumGetFunc] = { enumerable: false, get: () => () => 0 };
+        props[symNonenumGetFunc] = {
+          enumerable: false,
+          get: () => () => 0,
+          configurable: true,
+        };
       } else if (opt === 'far') {
         mark = 'far';
       } else {

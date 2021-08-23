@@ -273,3 +273,12 @@
  * @param {Details=} details
  * @returns {boolean}
  */
+
+/**
+ * @typedef {Object} FarOptionsRecord
+ * @property {boolean} allowNonPassables
+ */
+
+/**
+ * @typedef {Partial<FarOptionsRecord>} FarOptions
+ */

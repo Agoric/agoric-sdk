@@ -12,8 +12,10 @@ import {
 } from './helpers/remotable.js';
 import { passStyleOf } from './passStyleOf.js';
 
+const { ownKeys } = Reflect;
 const { prototype: functionPrototype } = Function;
 const {
+  defineProperty,
   getPrototypeOf,
   setPrototypeOf,
   create,
@@ -200,17 +202,120 @@ export const Remotable = (
 harden(Remotable);
 
 /**
+ * Wrap function with defensive layer for hardening and checking the
+ * args and outcome (result or error).
+ *
+ * @param {(...args: any[]) => any} func
+ * @param {FarOptions=} options
+ * @returns {(...args: any[]) => any}
+ */
+const wrapFuncDefensively = (func, { allowNonPassables = false } = {}) => {
+  const name = func.name;
+  const wrapper = (...args) => {
+    let result;
+    for (const arg of args) {
+      harden(arg);
+      if (!allowNonPassables) {
+        try {
+          passStyleOf(arg);
+        } catch (er) {
+          // eslint-disable-next-line no-debugger
+          debugger;
+          assert.fail(
+            X`${q(name)} arg ${arg} should be passable: ${er} ${q(`${func}`)}`,
+          );
+        }
+      }
+    }
+    // eslint-disable-next-line no-useless-catch
+    try {
+      // Purposely drop `this`. If we decide to preserve `this` somewhat,
+      // we could `apply(meth, wrapper, args)` though this would
+      // fail at inheritance. If we need to support inheritance as well,
+      // we could change from an arrow function to a concise method.
+      result = func(...args);
+    } catch (err) {
+      harden(err);
+      // Don't bother checking. Consider it legal to throw unpassable
+      // errors. TODO: We should check that it *is* an error.
+      throw err;
+    }
+    harden(result);
+    if (!allowNonPassables) {
+      try {
+        passStyleOf(result);
+      } catch (er) {
+        // eslint-disable-next-line no-debugger
+        debugger;
+        assert.fail(
+          X`${q(name)} result ${result} should be passable: ${er} ${q(
+            `${func}`,
+          )}`,
+        );
+      }
+    }
+    return result;
+  };
+  defineProperty(wrapper, 'name', { value: name });
+  return wrapper;
+};
+
+/**
  * A concise convenience for the most common `Remotable` use.
  *
  * @template T
  * @param {string} farName This name will be prepended with `Alleged: `
  * for now to form the `Remotable` `iface` argument.
  * @param {T|undefined} [remotable={}] The object used as the remotable
- * @returns {T} remotable, modified for debuggability
+ * @param {FarOptions=} options
+ * @returns {T} remotable, modified for debuggability and wrapped to
+ * enforce only passables pass.
  */
-export const Far = (farName, remotable = undefined) => {
-  const r = remotable === undefined ? {} : remotable;
-  return Remotable(`Alleged: ${farName}`, undefined, r);
+export const Far = (farName, remotable = undefined, options = {}) => {
+  let wrapper;
+  if (remotable === undefined) {
+    wrapper = undefined;
+  } else if (typeof remotable === 'object') {
+    wrapper = {};
+    // @ts-ignore If we get here, typeof remotable === 'object'.
+    // I thought typescript would figure this out. I even rewrote it this
+    // way so that it would.
+    for (const name of ownKeys(remotable)) {
+      const meth = remotable[name];
+      if (typeof meth === 'function' && getInterfaceOf(meth) === undefined) {
+        wrapper[name] = wrapFuncDefensively(meth, options);
+      } else {
+        // For now, just to preserve the error for tests
+        wrapper[name] = meth;
+      }
+      // Now that we've grabbed this property, ruin the original enough
+      // to likely detect if it is used again.
+      delete remotable[name];
+    }
+    // Now that we've grabbed its methods, ruin the original enough
+    // to likely detect if it is used again.
+    setPrototypeOf(remotable, null);
+  } else if (typeof remotable === 'function') {
+    // @ts-ignore If we get here, remotable is a function
+    wrapper = wrapFuncDefensively(remotable, options);
+    // We rely only on `remotable`'s call behavior. Ruin the rest of it
+    // as much as we can to help detect if it is directly used again.
+
+    for (const name of ownKeys(remotable)) {
+      try {
+        delete remotable[name];
+      } catch {
+        // We know we cannot delete all own properties of a function.
+        // That's ok. We ruin it as much as we can.
+      }
+    }
+    setPrototypeOf(remotable, null);
+  } else {
+    assert.fail(
+      X`unexpected remotable typeof ${q(typeof remotable)}: ${remotable}`,
+    );
+  }
+  return Remotable(`Alleged: ${farName}`, undefined, wrapper);
 };
 harden(Far);
 
