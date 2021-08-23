@@ -3,8 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeLegacyMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
+import { TimeMath } from '@agoric/swingset-vat';
 
 import './types.js';
 import './internal-types.js';
@@ -14,16 +14,18 @@ import { makeNotifierKit } from '@agoric/notifier';
  * A fake clock that also logs progress.
  *
  * @param {(...args: any[]) => void} log
- * @param {Timestamp} [startValue=0n]
- * @param {RelativeTime} [timeStep=1n]
+ * @param {AbsoluteTimeish} [startValue=0n]
+ * @param {Durationish} [timeStep=1n]
  * @returns {ManualTimer}
  */
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
-  let ticks = Nat(startValue);
+  // TODO should be something like
+  // let ticks = TimeMath.coerceToAbsoluteTimeish(startValue);
+  let ticks = TimeMath.absoluteTimeValue(startValue);
 
-  /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
+  /** @type {Store<AbsoluteTimeish, Array<ERef<TimerWaker>>>} */
   // Legacy because the value is mutated after it is stored.
-  const schedule = makeLegacyMap('Timestamp');
+  const schedule = makeLegacyMap('AbsoluteTimeish');
 
   const makeRepeater = (delaySecs, interval, timer) => {
     assert.typeof(delaySecs, 'bigint');
@@ -114,7 +116,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       return baseTime;
     },
     removeWakeup(waker) {
-      /** @type {Array<Timestamp>} */
+      /** @type {Array<AbsoluteTimeish>} */
       const baseTimes = [];
       for (const [baseTime, wakers] of schedule.entries()) {
         if (wakers.includes(waker)) {

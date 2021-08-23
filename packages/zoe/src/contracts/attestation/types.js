@@ -16,7 +16,7 @@
 
 /**
  * @typedef AttMaker
- * @property {(amountToLien: Amount, expiration: Timestamp) => Promise<AttestationPair>} makeAttestations
+ * @property {(amountToLien: Amount, expiration: AbsoluteTimeish) => Promise<AttestationPair>} makeAttestations
  * @property {MakeReturnAttInvitation} makeReturnAttInvitation
  * @property {MakeExtendAttInvitation} makeExtendAttInvitation
  */
@@ -31,7 +31,7 @@
  * @callback MakeAttestationsInternal
  * @param {Address} address
  * @param {Amount} amountToLien
- * @param {Timestamp} expiration
+ * @param {AbsoluteTimeish} expiration
  * @returns {Promise<AttestationPair>}
  */
 
@@ -48,7 +48,7 @@
  * @callback GetLienAmount
  *
  * @param {Address} address
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} currentTime
  * @returns {Amount}
  */
 
@@ -68,7 +68,7 @@
  *
  * @param {Address} address
  * @param {Amount} amount
- * @param {Timestamp} expiration
+ * @param {AbsoluteTimeish} expiration
  * @returns {Promise<Payment>}
  */
 
@@ -88,7 +88,7 @@
  * @typedef {Object} ExpiringAttElem
  * @property {Address} address
  * @property {Amount} amountLiened
- * @property {Timestamp} expiration
+ * @property {AbsoluteTimeish} expiration
  * @property {Handle<'attestation'>} handle
  */
 
@@ -128,7 +128,7 @@
  * handle).
  *
  * @param {ZCFSeat} seat
- * @param {Timestamp} newExpiration
+ * @param {AbsoluteTimeish} newExpiration
  * @returns {void}
  */
 
@@ -138,7 +138,7 @@
  * On slashing, we disallow any extensions. We do not reduce the liens.
  *
  * @param {Array<Address>} addresses
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} currentTime
  * @returns {void}
  */
 
@@ -157,8 +157,8 @@
  * attestation. Internal because the currentTime must be passed in,
  * and that can only come from a trusted source.
  *
- * @param {Timestamp} newExpiration
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} newExpiration
+ * @param {AbsoluteTimeish} currentTime
  * @returns {Promise<Invitation>}
  */
 
@@ -168,7 +168,7 @@
  * Make an invitation for extending the expiration date of an expiring
  * attestation.
  *
- * @param {Timestamp} newExpiration
+ * @param {AbsoluteTimeish} newExpiration
  * @returns {Promise<Invitation>}
  */
 
@@ -177,12 +177,12 @@
  * Get the amount currently liened for the address and brand.
  *
  * @param {Address} addresses
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} currentTime
  * @param {Brand} brand
  * @returns {Amount}
  */
 
 /**
- * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
- * Timestamp) => void}} StoredTime
+ * @typedef {{getTime: () => AbsoluteTimeish, updateTime: (currentTime:
+ * AbsoluteTimeish) => void}} StoredTime
  */

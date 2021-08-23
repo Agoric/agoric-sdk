@@ -18,7 +18,7 @@ const { details: X } = assert;
  * @param {(address: Address) => boolean} canExtend
  * @param {(newAttestationElem: ExpiringAttElem) => void} updateLienedAmount
  * @param {Brand} attestationBrand
- * @param {Timestamp} newExpiration
+ * @param {AbsoluteTimeish} newExpiration
  * @returns {void}
  */
 const extendExpiration = (

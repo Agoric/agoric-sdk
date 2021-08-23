@@ -105,7 +105,7 @@
  * @typedef {Object} VaultKit
  * @property {Vault} vault
  * @property {(ZCFSeat) => Promise<OpenLoanKit>} openLoan
- * @property {(Timestamp) => Amount} accrueInterestAndAddToPool
+ * @property {(AbsoluteTimeish) => Amount} accrueInterestAndAddToPool
  * @property {ZCFSeat} vaultSeat
  * @property {PromiseRecord<string>} liquidationPromiseKit
  * @property {ZCFSeat} liquidationZcfSeat
@@ -113,8 +113,8 @@
 
 /**
  * @typedef {Object} LoanParams
- * @property {RelativeTime} chargingPeriod
- * @property {RelativeTime} recordingPeriod
+ * @property {Durationish} chargingPeriod
+ * @property {Durationish} recordingPeriod
  */
 
 /**
@@ -147,13 +147,13 @@
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {LoanParams} loanParams
- * @param {Timestamp} startTimeStamp
+ * @param {AbsoluteTimeish} startTimeStamp
  * @returns {VaultKit}
  */
 
 /**
  * @typedef {Object} DebtStatus
- * @property {Timestamp} latestInterestUpdate
+ * @property {AbsoluteTimeish} latestInterestUpdate
  * @property {Amount} interest
  * @property {Amount} newDebt
  */
@@ -161,7 +161,7 @@
 /**
  * @callback Calculate
  * @param {DebtStatus} debtStatus
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} currentTime
  * @returns {DebtStatus}
  */
 
@@ -179,7 +179,7 @@
  * @callback MakeInterestCalculator
  * @param {Brand} brand
  * @param {Ratio} rate
- * @param {RelativeTime} chargingPeriod
- * @param {RelativeTime} recordingPeriod
+ * @param {Durationish} chargingPeriod
+ * @param {Durationish} recordingPeriod
  * @returns {CalculatorKit}
  */

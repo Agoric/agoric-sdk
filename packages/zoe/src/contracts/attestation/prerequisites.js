@@ -14,13 +14,13 @@ const { details: X } = assert;
  * Assert the cosmos-specific prerequisites
  *
  * @param {ERef<{getAccountState: (address: Address, brand: Brand) => {total: Amount, bonded: Amount, locked: Amount,
- * currentTime: Timestamp}}>} stakeReporter
+ * currentTime: AbsoluteTimeish}}>} stakeReporter
  * @param {StoredTime} storedTime
  * @param {GetLiened} getLiened
  * @param {Brand} underlyingBrand
  * @param {Address} address
  * @param {Amount} amountToLien
- * @param {Timestamp} expiration
+ * @param {AbsoluteTimeish} expiration
  */
 const assertPrerequisites = async (
   stakeReporter,

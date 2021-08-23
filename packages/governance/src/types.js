@@ -160,7 +160,7 @@
 /**
  * @typedef {Object} ClosingRule
  * @property {Timer} timer
- * @property {Timestamp} deadline
+ * @property {AbsoluteTimeish} deadline
  */
 
 /**
