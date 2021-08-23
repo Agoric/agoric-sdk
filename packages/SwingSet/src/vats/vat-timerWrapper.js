@@ -9,7 +9,7 @@ export function buildRootObject(vatPowers) {
 
   async function createTimerService(timerNode) {
     /** @type {TimerService} */
-    const timerService = {
+    const timerService = Far('timerService', {
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
       },
@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers) {
       // deprecated in favor of makeRepeater().
       // TODO(#2164): remove before Beta
       createRepeater(delaySecs, interval) {
-        return this.makeRepeater(delaySecs, interval);
+        return timerService.makeRepeater(delaySecs, interval);
       },
       makeRepeater(delaySecs, interval) {
         Nat(delaySecs);
@@ -62,8 +62,8 @@ export function buildRootObject(vatPowers) {
 
         return notifier;
       },
-    };
-    return Far('timerService', timerService);
+    });
+    return timerService;
   }
 
   return Far('root', { createTimerService });

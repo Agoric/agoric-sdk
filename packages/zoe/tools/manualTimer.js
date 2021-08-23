@@ -42,7 +42,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     let nextWakeup;
 
     /** @type {TimerWaker} */
-    const repeaterWaker = {
+    const repeaterWaker = Far('repeatWaker', {
       async wake(timestamp) {
         assert.typeof(timestamp, 'bigint');
         assert(
@@ -56,7 +56,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         timer.setWakeup(nextWakeup, repeaterWaker);
         await Promise.allSettled(wakers.map(waker => E(waker).wake(timestamp)));
       },
-    };
+    });
 
     /** @type {TimerRepeater} */
     const repeater = Far('TimerRepeater', {
@@ -151,13 +151,13 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       );
       const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
-      const repeaterWaker = {
+      const repeaterWaker = Far('repeatWaker', {
         async wake(timestamp) {
           assert.typeof(timestamp, 'bigint');
           updater.updateState(timestamp);
           timer.setWakeup(ticks + interval, repeaterWaker);
         },
-      };
+      });
       timer.setWakeup(ticks + delaySecs, repeaterWaker);
       return notifier;
     },

@@ -267,14 +267,18 @@ function build(
       },
     };
 
-    let presence;
+    let remotePresence;
     const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
-      const remote = resolveWithPresence(fulfilledHandler);
-      presence = Remotable(iface, undefined, remote);
+      // Use Remotable rather than Far to make a remote from a presence
+      remotePresence = Remotable(
+        iface,
+        undefined,
+        resolveWithPresence(fulfilledHandler),
+      );
       // remote === presence, actually
 
-      // todo: mfig says to swap remote and presence (resolveWithPresence
-      // gives us a Presence, Remotable gives us a Remote). I think that
+      // todo: mfig says resolveWithPresence
+      // gives us a Presence, Remotable gives us a Remote. I think that
       // implies we have a lot of renaming to do, 'makeRemote' instead of
       // 'makeImportedPresence', etc. I'd like to defer that for a later
       // cleanup/renaming pass.
@@ -297,7 +301,7 @@ function build(
     // p.eventualSend('foo', [args]), which uses the fulfilledHandler.
 
     // We harden the presence for the same safety reasons.
-    return harden(presence);
+    return harden(remotePresence);
   }
 
   function makePipelinablePromise(vpid) {

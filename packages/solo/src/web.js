@@ -208,15 +208,6 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
-  const wsActions = {
-    noop() {
-      // do nothing.
-    },
-    heartbeat() {
-      this.isAlive = true;
-    },
-  };
-
   const pingInterval = setInterval(function ping() {
     wss.clients.forEach(ws => {
       if (!ws.isAlive) {
@@ -224,7 +215,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
         return;
       }
       ws.isAlive = false;
-      ws.ping(wsActions.noop);
+      ws.ping(() => {});
     });
   }, 30000);
 
@@ -242,7 +233,9 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
 
     // Manage connection pings.
     ws.isAlive = true;
-    ws.on('pong', wsActions.heartbeat);
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
 
     // Register the point-to-point channel.
     channels.set(channelID, ws);

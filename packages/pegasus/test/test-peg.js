@@ -29,7 +29,7 @@ async function testRemotePeg(t) {
    * @type {import('@agoric/ertp').DepositFacet?}
    */
   let localDepositFacet;
-  const fakeBoard = harden({
+  const fakeBoard = Far('fakeBoard', {
     getValue(id) {
       if (id === '0x1234') {
         return localDepositFacet;
@@ -38,7 +38,7 @@ async function testRemotePeg(t) {
       throw Error(`unrecognized board id ${id}`);
     },
   });
-  const fakeNamesByAddress = harden({
+  const fakeNamesByAddress = Far('fakeNamesByAddress', {
     lookup(...keys) {
       t.is(keys[0], 'agoric1234567', 'unrecognized fakeNamesByAddress');
       t.is(keys[1], 'depositFacet', 'lookup not for the depositFacet');

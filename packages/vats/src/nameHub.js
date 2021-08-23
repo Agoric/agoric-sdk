@@ -18,7 +18,7 @@ export const makeNameHubKit = () => {
   const keyToRecord = makeLegacyMap('nameKey');
 
   /** @type {NameHub} */
-  const nameHub = {
+  const nameHub = Far('nameHub', {
     async lookup(...path) {
       if (path.length === 0) {
         return nameHub;
@@ -43,10 +43,10 @@ export const makeNameHubKit = () => {
     keys() {
       return keyToRecord.keys();
     },
-  };
+  });
 
   /** @type {NameAdmin} */
-  const nameAdmin = {
+  const nameAdmin = Far('nameAdmin', {
     reserve(key) {
       assert.typeof(key, 'string');
       if (keyToRecord.has(key)) {
@@ -85,13 +85,11 @@ export const makeNameHubKit = () => {
       // This delete may throw.  Reflect it to callers.
       keyToRecord.delete(key);
     },
-  };
+  });
 
-  const nameHubKit = {
-    nameHub: Far('nameHub', nameHub),
-    nameAdmin: Far('nameAdmin', nameAdmin),
-  };
-
-  harden(nameHubKit);
+  const nameHubKit = harden({
+    nameHub,
+    nameAdmin,
+  });
   return nameHubKit;
 };

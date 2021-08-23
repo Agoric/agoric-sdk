@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
+
 /**
  * This is a a broken contact to test zoe's error handling
  *
@@ -10,7 +12,12 @@ const start = zcf => {
     seat.exit();
     return `The offer was accepted`;
   };
-  const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
+  // The Far would not normally happen in the erroneous accident
+  // we're "testing". However, if we omit it, we get a completely
+  // different error which is besides the point of this test.
+  const makeRefundInvitation = Far('broken make refund', () =>
+    zcf.makeInvitation(refund, 'getRefund'),
+  );
   // should be makeRefundInvitation(). Intentionally wrong to provoke
   // an error.
   // @ts-ignore invalid arguments for testing

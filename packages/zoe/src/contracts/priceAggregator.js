@@ -79,7 +79,7 @@ const start = async zcf => {
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
   /** @type {TimerWaker} */
-  const waker = {
+  const waker = Far('waker', {
     async wake(timestamp) {
       // Run all the queriers.
       const querierPs = [];
@@ -90,7 +90,7 @@ const start = async zcf => {
       });
       await Promise.all(querierPs);
     },
-  };
+  });
   E(repeaterP).schedule(waker);
 
   /**

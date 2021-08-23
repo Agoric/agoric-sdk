@@ -4,7 +4,7 @@ import { makeStore } from '@agoric/store';
 import { makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Remotable, Far } from '@agoric/marshal';
 
 import '@agoric/store/exported.js';
 
@@ -173,7 +173,8 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
 
       const actions = Far('actions', {
         /**
-         * Create a stable identity that just forwards to the current implementation.
+         * Create a stable identity that just forwards to the current
+         * implementation.
          *
          * @type {MakeStableForwarder}
          */
@@ -181,20 +182,25 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
           let pr;
           // eslint-disable-next-line no-new
           new HandledPromise((_resolve, _reject, resolveWithPresence) => {
-            pr = resolveWithPresence({
-              applyMethod(_p, name, args) {
-                // console.warn('applying method epoch', currentEpoch);
-                const targetP = E(walker).walk(pluginRootPK.promise);
-                return HandledPromise.applyMethod(targetP, name, args);
-              },
-              get(_p, name) {
-                // console.warn('applying get epoch', currentEpoch);
-                const targetP = E(walker).walk(pluginRootPK.promise);
-                return HandledPromise.get(targetP, name);
-              },
-            });
+            // Use Remotable rather than Far to make a remote from a presence
+            pr = Remotable(
+              'Alleged: stableForwarder',
+              undefined,
+              resolveWithPresence({
+                applyMethod(_p, name, args) {
+                  // console.warn('applying method epoch', currentEpoch);
+                  const targetP = E(walker).walk(pluginRootPK.promise);
+                  return HandledPromise.applyMethod(targetP, name, args);
+                },
+                get(_p, name) {
+                  // console.warn('applying get epoch', currentEpoch);
+                  const targetP = E(walker).walk(pluginRootPK.promise);
+                  return HandledPromise.get(targetP, name);
+                },
+              }),
+            );
           });
-          return Far('stableForwarder', pr);
+          return pr;
         },
       });
 

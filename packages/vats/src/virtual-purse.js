@@ -96,7 +96,7 @@ function makeVirtualPurse(vpc, kit) {
   }).catch(fail);
 
   /** @type {EOnly<DepositFacet>} */
-  const depositFacet = {
+  const depositFacet = Far('Virtual Deposit Facet', {
     async receive(payment, optAmount = undefined) {
       if (isPromise(payment)) {
         throw TypeError(
@@ -116,11 +116,10 @@ function makeVirtualPurse(vpc, kit) {
         .pushAmount(amt)
         .then(_ => amt);
     },
-  };
-  Far('Virtual Deposit Facet', depositFacet);
+  });
 
   /** @type {EOnly<Purse>} */
-  const purse = {
+  const purse = Far('Virtual Purse', {
     deposit: depositFacet.receive,
     getAllegedBrand() {
       return brand;
@@ -149,8 +148,8 @@ function makeVirtualPurse(vpc, kit) {
       });
       return pmt;
     },
-  };
-  return Far('Virtual Purse', purse);
+  });
+  return purse;
 }
 harden(makeVirtualPurse);
 

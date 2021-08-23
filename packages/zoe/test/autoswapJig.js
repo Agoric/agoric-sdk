@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Remotable } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
@@ -124,7 +124,9 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
   const getPoolAllocation = issuer =>
     E(publicFacet).getPoolAllocation(issuer.getBrand());
 
-  const trader = Far('trader', {
+  const trader = Remotable('Alleged: trader', undefined, {
+    // Using Remotable rather than Far because the methods accept
+    // an ava ExecutionContext as `t`, which is not a passable.
     offerAndTrade: async (outAmount, inAmount, swapIn) => {
       const proposal = harden({
         want: { Out: outAmount },

@@ -26,7 +26,7 @@ const start = zcf => {
   };
 
   const makeCommitteeVoterInvitation = index => {
-    const handler = voterSeat => {
+    const handler = Far('handler', voterSeat => {
       return Far(`voter${index}`, {
         castBallot: ballotp => {
           E.when(ballotp, ballot => {
@@ -41,7 +41,7 @@ const start = zcf => {
           return E(voter).submitVote(voterSeat, ballot);
         },
       });
-    };
+    });
 
     return zcf.makeInvitation(handler, `Voter${index}`);
   };

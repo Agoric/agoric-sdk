@@ -326,7 +326,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
        * @type {Set<Peg>}
        */
       const pegs = new Set();
-      return {
+      return Far('pegConnectionHandler', {
         async onOpen(c) {
           // Register C with the table of Peg receivers.
           connectionToLocalDenomState.init(c, {
@@ -362,7 +362,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           }
           updater.updateState([...pegToConnection.keys()]);
         },
-      };
+      });
     },
     /**
      * Peg a remote asset over a network connection.

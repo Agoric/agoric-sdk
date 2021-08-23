@@ -27,7 +27,7 @@ const start = async zcf => {
   const { zcfSeat: feeSeat } = zcf.makeEmptySeatKit();
 
   /** @type {OracleCreatorFacet} */
-  const realCreatorFacet = {
+  const realCreatorFacet = Far('realCreatorFacet', {
     makeWithdrawInvitation(total = false) {
       return zcf.makeInvitation(seat => {
         const gains = total
@@ -52,7 +52,7 @@ const start = async zcf => {
       };
       return zcf.makeInvitation(shutdown, 'shutdown');
     },
-  };
+  });
 
   const creatorFacet = Far('creatorFacet', {
     initialize(privateParams) {

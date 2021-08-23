@@ -34,11 +34,11 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   const admin = Far('vatAdmin', {
     createMeter: () => {
       const notifierKit = makeNotifierKit();
-      return harden({ getNotifier: () => notifierKit.notifier });
+      return Far('fakeMeter', { getNotifier: () => notifierKit.notifier });
     },
     createUnlimitedMeter: () => {
       const notifierKit = makeNotifierKit();
-      return harden({ getNotifier: () => notifierKit.notifier });
+      return Far('fakeMeter', { getNotifier: () => notifierKit.notifier });
     },
     createVat: bundle => {
       return harden({

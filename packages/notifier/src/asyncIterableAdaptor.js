@@ -3,6 +3,7 @@
 /// <reference types="ses"/>
 
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 import './types.js';
 
@@ -36,13 +37,13 @@ import './types.js';
  * @returns {AsyncIterable<T>}
  */
 export const makeAsyncIterableFromNotifier = notifierP => {
-  return harden({
+  return Far('asyncIterableFromNotifier', {
     [Symbol.asyncIterator]: () => {
       /** @type {UpdateCount} */
       let localUpdateCount;
       /** @type {Promise<{value: T, done: boolean}> | undefined} */
       let myIterationResultP;
-      return harden({
+      return Far('asyncIteratorFromNotifier', {
         next: () => {
           if (!myIterationResultP) {
             // In this adaptor, once `next()` is called and returns an

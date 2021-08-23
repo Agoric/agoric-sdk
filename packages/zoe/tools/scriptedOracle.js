@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
+import { Far } from '@agoric/marshal';
 
 /**
  * Start an instance of an Oracle that follows a script. The Oracle has access
@@ -26,7 +27,7 @@ export async function makeScriptedOracle(
   feeIssuer,
 ) {
   /** @type {OracleHandler} */
-  const oracleHandler = harden({
+  const oracleHandler = Far('oracleHandler', {
     async onQuery(query) {
       const time = await E(timer).getCurrentTimestamp();
       const event = script[`${time}`] || 'Nothing to report';

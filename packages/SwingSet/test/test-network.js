@@ -173,7 +173,7 @@ test('protocol connection listen', async t => {
   const connectionHandler = makeEchoConnectionHandler();
   await port2.connect(
     '/net/ordered/ordered/some-portname',
-    harden({
+    Far('connectionHandlerWithOpen', {
       ...connectionHandler,
       async onOpen(connection, localAddr, remoteAddr, c) {
         if (connectionHandler.onOpen) {

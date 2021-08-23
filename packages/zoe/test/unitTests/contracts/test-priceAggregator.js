@@ -283,14 +283,17 @@ test('quoteAtTime', /** @param {ExecutionContext} t */ async t => {
 
   /** @type {PromiseRecord<PriceQuote>} */
   const userQuotePK = makePromiseKit();
-  await E(userTimer).setWakeup(1n, {
-    async wake(_timestamp) {
-      userQuotePK.resolve(
-        E(pa).quoteGiven(AmountMath.make(23n, brandIn), usdBrand),
-      );
-      await userQuotePK.promise;
-    },
-  });
+  await E(userTimer).setWakeup(
+    1n,
+    Far('wakeHandler', {
+      async wake(_timestamp) {
+        userQuotePK.resolve(
+          E(pa).quoteGiven(AmountMath.make(23n, brandIn), usdBrand),
+        );
+        await userQuotePK.promise;
+      },
+    }),
+  );
   const quoteAtUserTime = userQuotePK.promise;
 
   /** @type {PriceQuote | undefined} */
