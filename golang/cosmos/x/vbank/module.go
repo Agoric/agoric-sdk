@@ -192,7 +192,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 	if bz != nil {
-		_, err := am.CallToController(ctx, string(bz), "")
+		_, err := am.CallToController(ctx, string(bz))
 		if err != nil {
 			panic(err)
 		}

@@ -28,7 +28,7 @@ type Keeper struct {
 	bankKeeper    bankkeeper.Keeper
 
 	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str, simReturn string) (string, error)
+	CallToController func(ctx sdk.Context, str string) (string, error)
 }
 
 // NewKeeper creates a new dIBC Keeper instance
@@ -37,7 +37,7 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	bankKeeper bankkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
-	callToController func(ctx sdk.Context, str, simReturn string) (string, error),
+	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
 	return Keeper{
