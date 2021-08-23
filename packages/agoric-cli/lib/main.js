@@ -12,7 +12,7 @@ import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
-const DEFAULT_DAPP_BRANCH = undefined;
+const DEFAULT_DAPP_BRANCH = 'kris-renesm';
 
 const STAMP = '_agstate';
 
