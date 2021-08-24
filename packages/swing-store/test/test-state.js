@@ -6,13 +6,13 @@ import '@agoric/install-ses';
 import fs from 'fs';
 
 import test from 'ava';
-import { getAllState } from '@agoric/swing-store-simple';
 
 import {
-  initLMDBSwingStore,
-  openLMDBSwingStore,
+  initSwingStore,
+  openSwingStore,
+  getAllState,
   isSwingStore,
-} from '../src/lmdbSwingStore.js';
+} from '../src/swingStore.js';
 
 function testKVStore(t, store) {
   const kvStore = store.kvStore;
@@ -49,12 +49,16 @@ function testKVStore(t, store) {
   t.deepEqual(getAllState(store), reference, 'check state after changes');
 }
 
-test('storageInLMDB under SES', t => {
+test('in-memory kvStore read/write', t => {
+  testKVStore(t, initSwingStore(null));
+});
+
+test('persistent kvStore read/write/re-open', t => {
   const dbDir = 'testdb';
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const store = initLMDBSwingStore(dbDir);
+  const store = initSwingStore(dbDir);
   const { commit, close } = store;
   testKVStore(t, store);
   commit();
@@ -62,19 +66,15 @@ test('storageInLMDB under SES', t => {
   close();
   t.is(isSwingStore(dbDir), true);
 
-  const store2 = openLMDBSwingStore(dbDir);
+  const store2 = openSwingStore(dbDir);
   const { close: close2 } = store2;
   t.deepEqual(getAllState(store2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
   close2();
 });
 
-test('streamStore read/write', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
-  t.is(isSwingStore(dbDir), false);
-  const { streamStore, commit, close } = initLMDBSwingStore(dbDir);
+function testStreamStore(t, dbDir) {
+  const { streamStore, commit, close } = initSwingStore(dbDir);
 
   const start = streamStore.STREAM_START;
   let s1pos = start;
@@ -110,14 +110,22 @@ test('streamStore read/write', t => {
 
   commit();
   close();
+}
+
+test('in-memory streamStore read/write', t => {
+  testStreamStore(t, null);
 });
 
-test('streamStore mode interlock', t => {
+test('persistent streamStore read/write', t => {
   const dbDir = 'testdb';
   t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
   fs.rmdirSync(dbDir, { recursive: true });
   t.is(isSwingStore(dbDir), false);
-  const { streamStore, commit, close } = initLMDBSwingStore(dbDir);
+  testStreamStore(t, dbDir);
+});
+
+function testStreamStoreModeInterlock(t, dbDir) {
+  const { streamStore, commit, close } = initSwingStore(dbDir);
   const start = streamStore.STREAM_START;
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);
@@ -139,4 +147,16 @@ test('streamStore mode interlock', t => {
 
   commit();
   close();
+}
+
+test('in-memory streamStore mode interlock', t => {
+  testStreamStoreModeInterlock(t, null);
+});
+
+test('persistent streamStore mode interlock', t => {
+  const dbDir = 'testdb';
+  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
+  fs.rmdirSync(dbDir, { recursive: true });
+  t.is(isSwingStore(dbDir), false);
+  testStreamStoreModeInterlock(t, dbDir);
 });

@@ -1,14 +1,14 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { initSimpleSwingStore } from '@agoric/swing-store-simple';
+import { initSwingStore } from '@agoric/swing-store';
 import { createSHA256 } from '../src/hasher.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSimpleSwingStore();
+  const hostStorage = initSwingStore(null);
   const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
   const s = kk.kvStore;
   kk.createStartingKernelState('local');
@@ -93,7 +93,7 @@ test(`clist reachability`, async t => {
 
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSimpleSwingStore();
+  const hostStorage = initSwingStore(null);
   const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
 
   kk.createStartingKernelState('local');

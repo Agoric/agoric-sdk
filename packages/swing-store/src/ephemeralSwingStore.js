@@ -2,43 +2,20 @@
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
- * @typedef {{
- *   has: (key: string) => boolean,
- *   getKeys: (start: string, end: string) => Iterable<string>,
- *   get: (key: string) => string | undefined,
- *   set: (key: string, value: string) => void,
- *   delete: (key: string) => void,
- * }} KVStore
- *
- * @typedef {{
- *   offset?: number,
- *   itemCount: number,
- * }} StreamPosition
- *
- * @typedef {{
- *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
- *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => Iterable<string>,
- *   closeStream: (streamName: string) => void,
- *   STREAM_START: StreamPosition,
- * }} StreamStore
- *
- * @typedef {{
- *   kvStore: KVStore, // a key-value storage API object to load and store data
- *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
- *   commit: () => void,  // commit changes made since the last commit
- *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
- *   diskUsage?: () => number, // optional stats method
- * }} SwingStore
+ * @typedef { import('./swingStore').KVStore } KVStore
+ * @typedef { import('./swingStore').StreamPosition } StreamPosition
+ * @typedef { import('./swingStore').StreamStore } StreamStore
+ * @typedef { import('./swingStore').SwingStore } SwingStore
  */
 
 const streamPeek = new WeakMap(); // for tests to get raw access to the streams
 
 /**
- * Create a swingset store that based on an in-memory map.
+ * Create a non-persistent swing store based on an in-memory map.
  *
  * @returns {SwingStore}
  */
-export function initSimpleSwingStore() {
+export function initEphemeralSwingStore() {
   const state = new Map();
 
   /**
@@ -269,12 +246,12 @@ export function initSimpleSwingStore() {
 /**
  * Produce a representation of all the state found in a swing store.
  *
- * WARNING: This is a helper function intended for use in testing and
- * debugging.  It extracts *everything*, and does so in the simplest and
- * stupidest possible way, hence it is likely to be a performance and memory
- * hog if you attempt to use it on anything real.
+ * WARNING: This is a helper function intended for use in testing and debugging.
+ * It extracts *everything*, and does so in the simplest and stupidest possible
+ * way, hence it is likely to be a performance and memory hog if you attempt to
+ * use it on anything real.
  *
- * @param {SwingStore} swingStore  The swing storage whose state is to be extracted.
+ * @param {SwingStore} swingStore  The swing store whose state is to be extracted.
  *
  * @returns {{
  *   kvStuff: Record<string, string>,
@@ -303,10 +280,10 @@ export function getAllState(swingStore) {
  * Stuff a bunch of state into a swing store.
  *
  * WARNING: This is intended to support testing and should not be used as a
- * general store initialization mechanism.  In particular, note that it does
- * not bother to remove any existing state in the store that it is given.
+ * general store initialization mechanism.  In particular, note that it does not
+ * bother to remove any pre-existing state from the store that it is given.
  *
- * @param {SwingStore} swingStore  The swing storage whose state is to be set.
+ * @param {SwingStore} swingStore  The swing store whose state is to be set.
  * @param {{
  *   kvStuff: Record<string, string>,
  *   streamStuff: Map<string, Array<string>>,

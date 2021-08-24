@@ -1,10 +1,5 @@
 // @ts-check
-import { initSimpleSwingStore } from '@agoric/swing-store-simple';
-import {
-  initLMDBSwingStore,
-  openLMDBSwingStore,
-} from '@agoric/swing-store-lmdb';
-
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { assert, details as X } from '@agoric/assert';
 
 /*
@@ -34,7 +29,7 @@ directly.
  */
 export function buildHostDBInMemory(kvStore) {
   if (!kvStore) {
-    kvStore = initSimpleSwingStore().kvStore;
+    kvStore = initSwingStore(null).kvStore;
   }
 
   /**
@@ -155,12 +150,12 @@ export function provideHostStorage(
   let swingStore;
   if (kernelStateDBDir) {
     if (initialize) {
-      swingStore = initLMDBSwingStore(kernelStateDBDir);
+      swingStore = initSwingStore(kernelStateDBDir);
     } else {
-      swingStore = openLMDBSwingStore(kernelStateDBDir);
+      swingStore = openSwingStore(kernelStateDBDir);
     }
   } else {
-    swingStore = initSimpleSwingStore();
+    swingStore = initSwingStore(null);
   }
   return {
     kvStore: swingStore.kvStore,

@@ -7,7 +7,7 @@ import { type as osType } from 'os';
 import tmp from 'tmp';
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
-import { makeSnapStore } from '@agoric/swing-store-lmdb';
+import { makeSnapStore } from '@agoric/swing-store';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;

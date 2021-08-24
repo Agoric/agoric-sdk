@@ -39,7 +39,7 @@
     "@agoric/promise-kit": "^0.2.25",
     "@agoric/spawner": "^0.4.28",
     "@agoric/store": "^0.6.3",
-    "@agoric/swing-store-lmdb": "^0.5.11",
+    "@agoric/swing-store": "^0.5.11",
     "@agoric/swingset-vat": "^0.21.3",
     "@agoric/vats": "^0.3.1",
     "@agoric/xsnap": "^0.8.2",

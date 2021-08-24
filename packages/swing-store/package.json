@@ -1,9 +1,9 @@
 {
-  "name": "@agoric/swing-store-lmdb",
+  "name": "@agoric/swing-store",
   "version": "0.5.11",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
   "type": "module",
-  "main": "src/lmdbSwingStore.js",
+  "main": "src/swingStore.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.25",
-    "@agoric/swing-store-simple": "^0.4.11",
+    "@agoric/swing-store": "^0.5.11",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

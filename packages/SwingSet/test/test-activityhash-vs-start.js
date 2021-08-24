@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store-simple';
+import { getAllState, setAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { capargs } from './util.js';

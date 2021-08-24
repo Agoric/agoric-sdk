@@ -296,12 +296,8 @@ jobs:
       run: cd packages/store && yarn test
       env:
         ESM_DISABLE_CACHE: true
-    - name: yarn test (swing-store-lmdb)
-      run: cd packages/swing-store-lmdb && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-    - name: yarn test (swing-store-simple)
-      run: cd packages/swing-store-simple && yarn test
+    - name: yarn test (swing-store)
+      run: cd packages/swing-store && yarn test
       env:
         ESM_DISABLE_CACHE: true
 

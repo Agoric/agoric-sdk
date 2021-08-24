@@ -32,7 +32,7 @@
     "@agoric/import-bundle": "^0.2.28",
     "@agoric/install-ses": "^0.5.25",
     "@agoric/store": "^0.6.3",
-    "@agoric/swing-store-lmdb": "^0.5.11",
+    "@agoric/swing-store": "^0.5.11",
     "@agoric/swingset-vat": "^0.21.3",
     "@agoric/vats": "^0.3.1",
     "@agoric/xsnap": "^0.8.2",
