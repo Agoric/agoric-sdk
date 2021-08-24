@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@agoric/bundle-source';
-import { getAllState } from '@agoric/swing-store-simple';
+import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../src/hostStorage.js';
 
 import {

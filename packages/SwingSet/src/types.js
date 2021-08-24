@@ -132,7 +132,7 @@
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
- * @typedef { ReturnType<typeof import('@agoric/swing-store-lmdb').makeSnapStore> } SnapStore
+ * @typedef { ReturnType<typeof import('@agoric/swing-store').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
@@ -175,10 +175,10 @@
  * @typedef {{ bundleName: string} | { bundle: Bundle }} SourceOfBundle
  */
 /**
- * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
- * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
- * @typedef { import('@agoric/swing-store-simple').StreamPosition } StreamPosition
- * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ * @typedef { import('@agoric/swing-store').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
+ * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
+ * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
  *
  * @typedef {{
  *   kvStore: KVStore,

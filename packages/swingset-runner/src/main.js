@@ -14,11 +14,7 @@ import {
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox.js';
 import engineGC from '@agoric/swingset-vat/src/engine-gc.js';
 
-import { initSimpleSwingStore } from '@agoric/swing-store-simple';
-import {
-  initLMDBSwingStore,
-  openLMDBSwingStore,
-} from '@agoric/swing-store-lmdb';
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
@@ -353,7 +349,7 @@ export async function main() {
       if (dbSize) {
         fail('--dbsize only valid with --lmdb');
       }
-      swingStore = initSimpleSwingStore();
+      swingStore = initSwingStore(null);
       break;
     case '--lmdb': {
       if (!dbDir) {
@@ -365,9 +361,9 @@ export async function main() {
         dbOptions.mapSize = dbSize * 1024 * 1024;
       }
       if (forceReset) {
-        swingStore = initLMDBSwingStore(kernelStateDBDir, dbOptions);
+        swingStore = initSwingStore(kernelStateDBDir, dbOptions);
       } else {
-        swingStore = openLMDBSwingStore(kernelStateDBDir, dbOptions);
+        swingStore = openSwingStore(kernelStateDBDir, dbOptions);
       }
       break;
     }

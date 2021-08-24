@@ -4,7 +4,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import tmp from 'tmp';
-import { initLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { initSwingStore } from '@agoric/swing-store';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
@@ -124,7 +124,7 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
 test('snapshot after deliveries', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
-  const { kvStore, streamStore, commit } = initLMDBSwingStore(swingStorePath);
+  const { kvStore, streamStore, commit } = initSwingStore(swingStorePath);
   const hostStorage = { kvStore, streamStore };
   const c = await makeController('xs-worker', {
     hostStorage,

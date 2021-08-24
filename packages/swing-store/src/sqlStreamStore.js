@@ -4,6 +4,9 @@ import sqlite3ambient from 'better-sqlite3';
 import { assert, details as X, q } from '@agoric/assert';
 
 const STREAM_START = { itemCount: 0 };
+/**
+ * @typedef { import('./swingStore').StreamPosition } StreamPosition
+ */
 
 /**
  * @param { unknown } streamName
@@ -18,7 +21,6 @@ function insistStreamName(streamName) {
 /**
  * @param {unknown} position
  * @returns { asserts position is StreamPosition }
- * @typedef {{ itemCount: number }} StreamPosition
  */
 function insistStreamPosition(position) {
   assert.typeof(position, 'object');

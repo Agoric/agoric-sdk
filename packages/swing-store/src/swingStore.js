@@ -11,6 +11,7 @@ import { assert } from '@agoric/assert';
 
 import { sqlStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
+import { initEphemeralSwingStore } from './ephemeralSwingStore.js';
 
 export { makeSnapStore };
 
@@ -28,14 +29,75 @@ export function makeSnapStoreIO() {
 }
 
 /**
- * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
- * @typedef { import('./sqlStreamStore.js').StreamPosition } StreamPosition
- * @typedef { import('@agoric/swing-store-simple').StreamStore } StreamStore
- * @typedef { import('@agoric/swing-store-simple').SwingStore } SwingStore
+ * @typedef {{
+ *   has: (key: string) => boolean,
+ *   getKeys: (start: string, end: string) => Iterable<string>,
+ *   get: (key: string) => string | undefined,
+ *   set: (key: string, value: string) => void,
+ *   delete: (key: string) => void,
+ * }} KVStore
+ *
+ * @typedef {{ itemCount: number }} StreamPosition
+ *
+ * @typedef {{
+ *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
+ *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => Iterable<string>,
+ *   closeStream: (streamName: string) => void,
+ *   STREAM_START: StreamPosition,
+ * }} StreamStore
+ *
+ * @typedef {{
+ *   kvStore: KVStore, // a key-value storage API object to load and store data
+ *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
+ *   commit: () => void,  // commit changes made since the last commit
+ *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ *   diskUsage?: () => number, // optional stats method
+ * }} SwingStore
  */
 
 /**
- * Do the work of `initLMDBSwingStore` and `openLMDBSwingStore`.
+ * A swing store holds the state of a swingset instance.  This "store" is
+ * actually several different stores of different types that travel as a flock
+ * and are managed according to a shared transactional model.  Each component
+ * store serves a different purpose and satisfies a different set of access
+ * constraints and access patterns.  The individual stores, each with its own
+ * API, are available from the object that `makeSwingStore` returns:
+ *
+ * kvStore - a key-value store used to hold the kernel's working state.  Keys
+ *   and values are both strings.  Provides random access to a large number of
+ *   mostly small data items.  Persistently stored in an LMDB database.
+ *
+ * streamStore - a streaming store used to hold kernel transcripts.  Transcripts
+ *   are both written and read (if they are read at all) sequentially, according
+ *   to metadata kept in the kvStore.  Persistently stored in a slqLite
+ *   database.
+ *
+ * snapStore - large object store used to hold XS memory image snapshots of
+ *   vats.  Objects are stored in files named by the cryptographic hash of the
+ *   data they hold, with tracking metadata kep in the kvStore.
+ *
+ * All persistent data is kept within a single directory belonging to the swing
+ * store.  The individual stores present individual APIs suitable for their
+ * intended uses, but we bundle them all here so that we can isolate a lot of
+ * implementation dependencies.  In particular, we think it not unlikely that
+ * additional types of stores may need to be added or that the storage
+ * substrates used for one or more of these may change (or be consolidated) as
+ * our implementation evolves.
+ *
+ * The units of data consistency in the swingset are the crank and the block.  A
+ * crank is the execution of a single delivery into the swingset, typically a
+ * message delivered to a vat.  A block is a series of cranks (how many is a
+ * host-determined parameter) that are considered to either all happen as a
+ * unit.  Crank-to-crank trnsactionality is managed by the crank buffer, a
+ * kernel abstraction that wraps the kvStore.  Block-to-block transactionality
+ * is provided by the swing store directly.  It provides a 'commit' operation
+ * which will commit all changes made up to the time it is called.  It is the
+ * responsibility of the kvStore to maintain a consistent view of what is going
+ * on in the streamStore and snapStore.
+ */
+
+/**
+ * Do the work of `initSwingStore` and `openSwingStore`.
  *
  * @param {string} dirPath  Path to a directory in which database files may be kept.
  * @param {boolean} forceReset  If true, initialize the database to an empty state
@@ -43,7 +105,7 @@ export function makeSnapStoreIO() {
  *
  * @returns {SwingStore}
  */
-function makeLMDBSwingStore(dirPath, forceReset, options) {
+function makeSwingStore(dirPath, forceReset, options) {
   let txn = null;
 
   if (forceReset) {
@@ -224,25 +286,32 @@ function makeLMDBSwingStore(dirPath, forceReset, options) {
 }
 
 /**
- * Create a swingset store backed by an LMDB database.  If there is an existing
- * store at the given `dirPath`, it will be reinitialized to an empty state.
+ * Create a new swingset store.  If given a directory path string, a persistent
+ * store will be created in that directory; if there is already a store there,
+ * it will be reinitialized to an empty state.  If the path is null or
+ * undefined, a memory-only ephemeral store will be created that will evaporate
+ * on program exit.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
- *   created) but it is reserved (by the caller) for the exclusive use of this
- *   swing store instance.
+ * @param {string|null} dirPath  Path to a directory in which database files may
+ *   be kept.  This directory need not actually exist yet (if it doesn't it will
+ *   be created) but it is reserved (by the caller) for the exclusive use of
+ *   this swing store instance.  If null, an ephemeral store will be created.
  * @param {Object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
-export function initLMDBSwingStore(dirPath, options = {}) {
-  assert.typeof(dirPath, 'string');
-  return makeLMDBSwingStore(dirPath, true, options);
+export function initSwingStore(dirPath, options = {}) {
+  if (!dirPath) {
+    return initEphemeralSwingStore();
+  } else {
+    assert.typeof(dirPath, 'string');
+    return makeSwingStore(dirPath, true, options);
+  }
 }
 
 /**
- * Open a swingset store backed by an LMDB database.  If there is no existing
- * store at the given `dirPath`, a new, empty store will be created.
+ * Open a persistent swingset store.  If there is no existing store at the given
+ * `dirPath`, a new, empty store will be created.
  *
  * @param {string} dirPath  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
@@ -252,9 +321,9 @@ export function initLMDBSwingStore(dirPath, options = {}) {
  *
  * @returns {SwingStore}
  */
-export function openLMDBSwingStore(dirPath, options = {}) {
+export function openSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');
-  return makeLMDBSwingStore(dirPath, false, options);
+  return makeSwingStore(dirPath, false, options);
 }
 
 /**
@@ -264,8 +333,8 @@ export function openLMDBSwingStore(dirPath, options = {}) {
  *   This directory need not actually exist
  *
  * @returns {boolean}
- *   If the directory is present and contains the files created by initLMDBSwingStore
- *   or openLMDBSwingStore, returns true. Else returns false.
+ *   If the directory is present and contains the files created by initSwingStore
+ *   or openSwingStore, returns true. Else returns false.
  *
  */
 export function isSwingStore(dirPath) {
@@ -278,3 +347,5 @@ export function isSwingStore(dirPath) {
   }
   return false;
 }
+
+export { getAllState, setAllState } from './ephemeralSwingStore.js';

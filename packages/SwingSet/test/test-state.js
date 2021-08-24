@@ -3,11 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
-import {
-  initSimpleSwingStore,
-  getAllState,
-  setAllState,
-} from '@agoric/swing-store-simple';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import { createSHA256 } from '../src/hasher.js';
 import { buildHostDBInMemory } from '../src/hostStorage.js';
 import { buildBlockBuffer } from '../src/blockBuffer.js';
@@ -72,12 +68,12 @@ function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', t => {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
 function buildHostDBAndGetState() {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   const hostDB = buildHostDBInMemory(store.kvStore);
   return { hostDB, getState: () => getAllState(store).kvStuff };
 }
@@ -123,7 +119,7 @@ test('blockBuffer fulfills storage API', t => {
 });
 
 test('crankBuffer fulfills storage API', t => {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   const { crankBuffer, commitCrank } = buildCrankBuffer(
     store.kvStore,
     createSHA256,
@@ -188,7 +184,7 @@ test('crankBuffer can abortCrank', t => {
 });
 
 test('storage helpers', t => {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   const s = addHelpers(store.kvStore);
 
   s.set('foo.0', 'f0');
@@ -238,12 +234,12 @@ test('storage helpers', t => {
 });
 
 function buildKeeperStorageInMemory() {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   return { getState: () => getAllState(store).kvStuff, ...store };
 }
 
 function duplicateKeeper(getState) {
-  const store = initSimpleSwingStore();
+  const store = initSwingStore(null);
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   return makeKernelKeeper(store, null, createSHA256);
 }

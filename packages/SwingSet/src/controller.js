@@ -396,7 +396,7 @@ export async function makeSwingsetController(
  *   overrideVatManagerOptions?: { consensusMode?: boolean },
  *   slogFile?: string,
  * }} runtimeOptions
- * @typedef { import('@agoric/swing-store-simple').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,

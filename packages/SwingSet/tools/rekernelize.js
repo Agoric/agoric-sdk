@@ -9,7 +9,7 @@ import path from 'path';
 import process from 'process';
 
 import bundleSource from '@agoric/bundle-source';
-import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { openSwingStore } from '@agoric/swing-store';
 
 function fail(message) {
   console.error(message);
@@ -56,7 +56,7 @@ async function main() {
     fail(`can't find a database at ${dbDir}`);
   }
 
-  const swingStore = openLMDBSwingStore(kernelStateDBDir);
+  const swingStore = openSwingStore(kernelStateDBDir);
   const kvStore = swingStore.kvStore;
   assert(kvStore.get('initialized'), 'kernel store not initialized');
 
