@@ -1,10 +1,8 @@
-// XXX this is wrong; it needs to use the swingstore instead of opening the LMDB
-// file directly, then use stream store reads to get the transcript entries.
 // @ts-check
 import processPowers from 'process';
 import fsPowers from 'fs';
 import '@agoric/install-ses';
-import { openLMDBSwingStore } from '@agoric/swing-store-lmdb';
+import { openSwingStore } from '@agoric/swing-store';
 
 const Usage = `
 extract-transcript-from-kerneldb DBDIR : list all vats in DB
@@ -118,7 +116,7 @@ async function main(argv, { fs }) {
     return 1;
   }
 
-  const { kvStore, streamStore } = openLMDBSwingStore(dirPath);
+  const { kvStore, streamStore } = openSwingStore(dirPath);
 
   function get(key) {
     return kvStore.get(key);
