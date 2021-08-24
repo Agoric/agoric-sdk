@@ -29,13 +29,25 @@
  */
 
 /**
- * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' |
- *   'ratio' | 'string' | 'unknown' } ParamType
+ * @typedef { Amount | Brand | Installation | Instance | bigint |
+ *   Ratio | string | unknown } ParamValue
  */
 
 /**
- * @typedef { Amount | Brand | Installation | Instance | bigint | Ratio |
- *   string | unknown } ParamValue
+ * @template T
+ * @typedef {{ type: T, name: string }} ParamRecord
+ */
+
+/**
+ * @typedef {ParamRecord<'amount'> & { value: Amount } |
+ *   ParamRecord<'brand'> & { value: Brand } |
+ *   ParamRecord<'installation'> & { value: Installation } |
+ *   ParamRecord<'instance'> & { value: Instance } |
+ *   ParamRecord<'nat'> & { value: bigint } |
+ *   ParamRecord<'ratio'> & { value: Ratio } |
+ *   ParamRecord<'string'> & { value: string } |
+ *   ParamRecord<'unknown'> & { value: unknown }
+ * } ParamDescription
  */
 
 /**
@@ -310,13 +322,6 @@
  * @property {noChangeParamPosition} tieOutcome
  * @property {Instance} counterInstance - instance of the BallotCounter
  * @property {Handle<'Ballot'>} handle
- */
-
-/**
- * @typedef {Object} ParamDescription
- * @property {string} name
- * @property {ParamValue} value
- * @property {ParamType} type
  */
 
 /**
