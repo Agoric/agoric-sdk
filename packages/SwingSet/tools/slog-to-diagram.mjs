@@ -42,21 +42,34 @@ async function* slogToDiagram(entries) {
       case 'cosmic-swingset-end-block-start':
         tBlock = entry.time;
         blockHeight = entry.blockHeight;
-        departure.set(blockHeight, { blockTime: entry.blockTime });
+        arrival.set(blockHeight, {
+          time: entry.time,
+          blockTime: entry.blockTime,
+        });
         break;
       case 'deliver': {
         const { kd } = entry;
         vatInfo.set(entry.vatID, null);
         switch (kd[0]) {
           case 'message': {
-            const [_tag, target, { method, result }] = kd;
-            arrival.set(result, {
-              time: entry.time - tBlock,
+            const [
+              _tag,
+              target,
+              {
+                method,
+                args: { body },
+                result,
+              },
+            ] = kd;
+            arrival.set(result || {}, {
+              time: entry.time,
+              elapsed: entry.time - tBlock,
               crankNum: entry.crankNum,
               deliveryNum: entry.deliveryNum,
               vatID: entry.vatID,
               target,
               method,
+              argSize: body.length,
             });
             break;
           }
@@ -64,7 +77,8 @@ async function* slogToDiagram(entries) {
             const [_tag, resolutions] = kd;
             for (const [kp] of resolutions) {
               arrival.set(`R${kp}`, {
-                time: entry.time - tBlock,
+                time: entry.time,
+                elapsed: entry.time - tBlock,
                 vatID: entry.vatID,
                 method: '@',
                 target: kp,
@@ -83,7 +97,12 @@ async function* slogToDiagram(entries) {
             const {
               ksc: [_, target, { method, result }],
             } = entry;
-            departure.set(result, { vatID: entry.vatID, target, method });
+            departure.set(result, {
+              time: entry.time,
+              vatID: entry.vatID,
+              target,
+              method,
+            });
             break;
           }
           case 'resolve': {
@@ -91,7 +110,7 @@ async function* slogToDiagram(entries) {
               ksc: [_, _thatVat, parts],
             } = entry;
             for (const [kp, _rejected, _args] of parts) {
-              departure.set(`R${kp}`, { vatID: entry.vatID });
+              departure.set(`R${kp}`, { time: entry.time, vatID: entry.vatID });
             }
             break;
           }
@@ -111,31 +130,31 @@ async function* slogToDiagram(entries) {
     yield `control ${vatID}\n`;
   }
 
-  for (const [ref, { vatID: src, blockTime }] of departure) {
+  const byTime = [...arrival].sort((a, b) => a[1].time - b[1].time);
+
+  for (const [
+    ref,
+    { elapsed, vatID: dest, target, method, argSize, blockTime },
+  ] of byTime) {
     if (typeof ref === 'number') {
       blockHeight = ref;
-      const dt = new Date(blockTime * 1000).toISOString();
+      const dt = new Date(blockTime * 1000).toISOString().slice(0, -5);
       yield `... block ${blockHeight} ${dt} ...\n`;
       continue;
     }
-    if (!arrival.has(ref)) {
+    const t = Math.round(elapsed * 1000) / 1000;
+    // yield `autonumber ${blockHeight}.${t}\n`;
+    yield `autonumber ${t}\n`;
+    if (typeof ref === 'object') {
+      yield `[-> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+      continue;
+    }
+    if (!departure.has(ref)) {
       console.warn({ ref });
       continue;
     }
-    const {
-      time,
-      crankNum,
-      deliveryNum,
-      vatID: dest,
-      target,
-      method,
-    } = arrival.get(ref);
-    const t = new Date(time * 1000)
-      .toISOString()
-      .slice(14, -1)
-      .replace(/:/g, '.');
-    yield `autonumber ${blockHeight}.${t}\n`;
-    yield `${src} -> ${dest} : ${target}.${method}()\n`;
+    const { vatID: src } = departure.get(ref);
+    yield `${src} -> ${dest} : ${target}.${method}(${argSize || ''})\n`;
   }
 }
 
