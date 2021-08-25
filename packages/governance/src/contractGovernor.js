@@ -10,7 +10,7 @@ import { assertContractGovernance } from './validators.js';
 
 /** @type {ValidateBallotDetails} */
 const validateBallotDetails = async (zoe, registrar, details) => {
-  const { handle, counterInstance } = details;
+  const { counterInstance } = details;
   validateParamChangeBallot(details);
 
   const {
@@ -24,7 +24,7 @@ const validateBallotDetails = async (zoe, registrar, details) => {
 
   return Promise.all([
     E(governorPublic).validateBallotCounter(counterInstance),
-    E(governorPublic).validateBallotRegistrar(handle, registrar),
+    E(governorPublic).validateBallotRegistrar(registrar),
     E(governorPublic).validateBallotTimer(details),
   ]);
 };
@@ -136,7 +136,7 @@ const start = async zcf => {
     );
   };
 
-  const validateBallotRegistrar = async (ballotHandle, regP) => {
+  const validateBallotRegistrar = async regP => {
     const [reg, myRegistrar] = await Promise.all([regP, registrarPK.promise]);
     assert(reg === myRegistrar, X`Registrar doesn't match my Registrar`);
   };
@@ -145,6 +145,7 @@ const start = async zcf => {
     startGovernedInstance,
   });
 
+  /** @type {GovernorPublic} */
   const publicFacet = Far('contract governor public', {
     getRegistrar: () => registrarPK.promise,
     getGovernedContract: () => governedInstancePK.promise,

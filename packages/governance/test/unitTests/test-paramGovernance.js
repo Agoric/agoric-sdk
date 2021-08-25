@@ -214,6 +214,7 @@ test('governParam bad update', async t => {
     ballotCounterInstall,
     2n,
   );
+  // @ts-ignore details are from a fake
   t.deepEqual(await details, fakeDetails);
 
   await t.throwsAsync(

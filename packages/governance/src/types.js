@@ -367,19 +367,12 @@
  */
 
 /**
- * @callback GovernContract
- *
- * @param {Instance} governedInstance
- * @param {ParamManagerFull} mgr - a ParamManager
- * @param {string} name
- * @returns {Governor}
- */
-
-/**
  * @typedef {Object} GovernorPublic
- * @property {GovernContract} governContract
- * @property {() => Instance} getRegistrar
- * @property {(i: Instance) => boolean} governsContract
+ * @property {() => ERef<Instance>} getRegistrar
+ * @property {() => ERef<Instance>} getGovernedContract
+ * @property {(ballotCounter: Instance) => void} validateBallotCounter
+ * @property {(regP: ERef<Instance>) => void} validateBallotRegistrar
+ * @property {(details: BallotDetails) => void} validateBallotTimer
  */
 
 /**
@@ -391,7 +384,7 @@
 /**
  * @typedef {Object} ParamChangeVoteResult
  * @property {Instance} instance - instance of the BallotCounter
- * @property {Details} details
+ * @property {ERef<BallotDetails>} details
  * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
  *    of updating the parameter value. Primarily useful for its behavior on
  *    rejection.

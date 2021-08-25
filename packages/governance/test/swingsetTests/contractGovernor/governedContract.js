@@ -25,11 +25,7 @@ harden(governedParameterTerms);
 
 /** @type {ContractStartFn} */
 const start = async zcf => {
-  const {
-    /** @type {Instance} */ electionManager,
-    /** @type {ParameterNameList} */ governedParams,
-  } = zcf.getTerms();
-  /** @type {ERef<GovernorPublic>} */
+  const { electionManager, governedParams } = zcf.getTerms();
 
   assert(
     sameStructure(governedParams, governedParameterTerms),
