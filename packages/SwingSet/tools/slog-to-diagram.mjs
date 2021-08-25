@@ -77,12 +77,12 @@ async function* slogToDiagram(entries) {
           }
           case 'notify': {
             const [_tag, resolutions] = kd;
-            for (const [kp] of resolutions) {
+            for (const [kp, { state }] of resolutions) {
               dInfo = {
                 time: entry.time,
                 elapsed: entry.time - tBlock,
                 vatID: entry.vatID,
-                method: '@',
+                method: state,
                 target: kp,
               };
               arrival.set(`R${kp}`, dInfo);
@@ -137,6 +137,8 @@ async function* slogToDiagram(entries) {
     }
   }
 
+  yield '@startuml slog\n';
+
   for (const [vatID, _info] of vatInfo) {
     yield `control ${vatID}\n`;
   }
@@ -156,10 +158,11 @@ async function* slogToDiagram(entries) {
     const t = Math.round(elapsed * 1000) / 1000;
     // yield `autonumber ${blockHeight}.${t}\n`;
     yield `autonumber ${t}\n`;
-    const showCompute = compute && compute > 50000 ? compute : '';
     if (typeof ref === 'object') {
-      yield `[-> ${dest} : ${target}.${method}(${argSize ||
-        ''}) ${showCompute}\n`;
+      yield `[-> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+      if (compute && compute > 50000) {
+        yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
+      }
       continue;
     }
     if (!departure.has(ref)) {
@@ -167,9 +170,13 @@ async function* slogToDiagram(entries) {
       continue;
     }
     const { vatID: src } = departure.get(ref);
-    yield `${src} -> ${dest} : ${target}.${method}(${argSize ||
-      ''}) ${showCompute}\n`;
+    yield `${src} -> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+    if (compute && compute > 50000) {
+      yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
+    }
   }
+
+  yield '@enduml\n';
 }
 
 /**
