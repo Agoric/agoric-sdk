@@ -32,6 +32,7 @@ async function* slogToDiagram(entries) {
 
   let tBlock;
   let blockHeight;
+  let dInfo;
 
   for await (const entry of entries) {
     switch (entry.type) {
@@ -61,7 +62,7 @@ async function* slogToDiagram(entries) {
                 result,
               },
             ] = kd;
-            arrival.set(result || {}, {
+            dInfo = {
               time: entry.time,
               elapsed: entry.time - tBlock,
               crankNum: entry.crankNum,
@@ -70,24 +71,34 @@ async function* slogToDiagram(entries) {
               target,
               method,
               argSize: body.length,
-            });
+            };
+            arrival.set(result || {}, dInfo);
             break;
           }
           case 'notify': {
             const [_tag, resolutions] = kd;
             for (const [kp] of resolutions) {
-              arrival.set(`R${kp}`, {
+              dInfo = {
                 time: entry.time,
                 elapsed: entry.time - tBlock,
                 vatID: entry.vatID,
                 method: '@',
                 target: kp,
-              });
+              };
+              arrival.set(`R${kp}`, dInfo);
             }
             break;
           }
           default:
             break;
+        }
+        break;
+      }
+      case 'deliver-result': {
+        const { dr } = entry;
+        if (dr[2] && 'compute' in dr[2]) {
+          const { compute } = dr[2];
+          dInfo.compute = compute;
         }
         break;
       }
@@ -134,7 +145,7 @@ async function* slogToDiagram(entries) {
 
   for (const [
     ref,
-    { elapsed, vatID: dest, target, method, argSize, blockTime },
+    { elapsed, vatID: dest, target, method, argSize, compute, blockTime },
   ] of byTime) {
     if (typeof ref === 'number') {
       blockHeight = ref;
@@ -145,8 +156,10 @@ async function* slogToDiagram(entries) {
     const t = Math.round(elapsed * 1000) / 1000;
     // yield `autonumber ${blockHeight}.${t}\n`;
     yield `autonumber ${t}\n`;
+    const showCompute = compute && compute > 50000 ? compute : '';
     if (typeof ref === 'object') {
-      yield `[-> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+      yield `[-> ${dest} : ${target}.${method}(${argSize ||
+        ''}) ${showCompute}\n`;
       continue;
     }
     if (!departure.has(ref)) {
@@ -154,7 +167,8 @@ async function* slogToDiagram(entries) {
       continue;
     }
     const { vatID: src } = departure.get(ref);
-    yield `${src} -> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+    yield `${src} -> ${dest} : ${target}.${method}(${argSize ||
+      ''}) ${showCompute}\n`;
   }
 }
 
