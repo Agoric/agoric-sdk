@@ -12,6 +12,7 @@ import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
+import { insistValidVatstoreKey } from './vatTranslator.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -1080,16 +1081,38 @@ function build(
     if (enableVatstore) {
       vpow.vatstore = harden({
         get: key => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           return syscall.vatstoreGet(`vvs.${key}`);
         },
         set: (key, value) => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           assert.typeof(value, 'string');
           syscall.vatstoreSet(`vvs.${key}`, value);
         },
+        getAfter: (keyPrefix, priorKey) => {
+          insistValidVatstoreKey(keyPrefix);
+          if (priorKey !== '') {
+            insistValidVatstoreKey(priorKey);
+            assert(
+              priorKey.startsWith(keyPrefix),
+              'priorKey must start with keyPrefix',
+            );
+            priorKey = `vvs.${priorKey}`;
+          }
+          const fetched = syscall.vatstoreGetAfter(
+            `vvs.${keyPrefix}`,
+            priorKey,
+          );
+          if (fetched) {
+            const [key, value] = fetched;
+            assert(key.startsWith('vvs.'));
+            return [key.slice(4), value];
+          } else {
+            return undefined;
+          }
+        },
         delete: key => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           syscall.vatstoreDelete(`vvs.${key}`);
         },
       });

@@ -41,6 +41,11 @@ export const KERNEL_STATS_SUM_METRICS = [
     description: 'Total number of SwingSet vatstore set kernel calls',
   },
   {
+    key: 'syscallVatstoreGetAfter',
+    name: 'swingset_syscall_vatstore_getAfter_total',
+    description: 'Total number of SwingSet vatstore getAfter kernel calls',
+  },
+  {
     key: 'syscallVatstoreDelete',
     name: 'swingset_syscall_vatstore_delete_total',
     description: 'Total number of SwingSet vatstore delete kernel calls',
