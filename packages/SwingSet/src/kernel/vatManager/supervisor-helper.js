@@ -117,10 +117,18 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       doSyscall(['callNow', target, method, args]),
     vatstoreGet: key => doSyscall(['vatstoreGet', key]),
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
+    vatstoreGetAfter: (keyPrefix, priorKey) =>
+      doSyscall(['vatstoreGetAfter', keyPrefix, priorKey]),
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
 
-  const blocking = ['callNow', 'vatstoreGet', 'vatstoreSet', 'vatstoreDelete'];
+  const blocking = [
+    'callNow',
+    'vatstoreGet',
+    'vatstoreSet',
+    'vatstoreGetAfter',
+    'vatstoreDelete',
+  ];
 
   if (!workerCanBlock) {
     for (const name of blocking) {

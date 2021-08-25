@@ -51,6 +51,16 @@ export function makeKernelSyscallHandler(tools) {
     return `${vatID}.vs.${key}`;
   }
 
+  let workingKeyPrefix;
+  let workingPriorKey;
+  let workingKeyIterator;
+
+  function clearVatStoreIteration() {
+    workingKeyPrefix = undefined;
+    workingPriorKey = undefined;
+    workingKeyIterator = undefined;
+  }
+
   function vatstoreGet(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
@@ -64,7 +74,51 @@ export function makeKernelSyscallHandler(tools) {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreSet');
     kvStore.set(actualKey, value);
+    clearVatStoreIteration();
     return OKNULL;
+  }
+
+  function vatstoreGetAfter(vatID, keyPrefix, priorKey) {
+    const actualKeyPrefix = vatstoreKeyKey(vatID, keyPrefix);
+    const actualPriorKey = vatstoreKeyKey(vatID, priorKey);
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallVatstoreGetAfter');
+    let nextIter;
+    if (
+      workingKeyPrefix === actualKeyPrefix &&
+      workingPriorKey === actualPriorKey &&
+      workingKeyIterator
+    ) {
+      nextIter = workingKeyIterator.next();
+    } else {
+      let startKey;
+      if (priorKey === '') {
+        startKey = actualKeyPrefix;
+      } else {
+        startKey = actualPriorKey;
+      }
+      assert(startKey.startsWith(actualKeyPrefix));
+      const lastChar = String.fromCharCode(
+        actualKeyPrefix.slice(-1).charCodeAt(0) + 1,
+      );
+      const endKey = `${actualKeyPrefix.slice(0, -1)}${lastChar}`;
+      workingKeyPrefix = actualKeyPrefix;
+      workingKeyIterator = kvStore.getKeys(startKey, endKey);
+      nextIter = workingKeyIterator.next();
+      if (!nextIter.done && nextIter.value === actualPriorKey) {
+        nextIter = workingKeyIterator.next();
+      }
+    }
+    if (nextIter.done) {
+      clearVatStoreIteration();
+      return harden(['ok', undefined]);
+    } else {
+      const nextKey = nextIter.value;
+      const resultValue = kvStore.get(nextKey);
+      workingPriorKey = nextKey;
+      const resultKey = nextKey.slice(vatID.length + 4); // `${vatID}.vs.`.length
+      return harden(['ok', [resultKey, resultValue]]);
+    }
   }
 
   function vatstoreDelete(vatID, key) {
@@ -72,6 +126,7 @@ export function makeKernelSyscallHandler(tools) {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreDelete');
     kvStore.delete(actualKey);
+    clearVatStoreIteration();
     return OKNULL;
   }
 
@@ -160,6 +215,8 @@ export function makeKernelSyscallHandler(tools) {
         return vatstoreGet(...args);
       case 'vatstoreSet':
         return vatstoreSet(...args);
+      case 'vatstoreGetAfter':
+        return vatstoreGetAfter(...args);
       case 'vatstoreDelete':
         return vatstoreDelete(...args);
       case 'dropImports':
