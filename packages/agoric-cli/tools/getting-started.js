@@ -1,6 +1,4 @@
 /* global process setTimeout clearTimeout setInterval clearInterval */
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -27,7 +25,9 @@ const dirname = new URL('./', import.meta.url).pathname;
 // (For simple-exchange and autoswap, the above also makes and accepts offers)
 // cd ui && yarn install
 // cd ui && yarn start
-test('workflow', async t => {
+
+export const gettingStartedWorkflowTest = async (t, options = {}) => {
+  const { init: initOptions = [] } = options;
   // FIXME: Do a search for an unused port or allow specification.
   const PORT = '7999';
   process.env.PORT = PORT;
@@ -89,7 +89,6 @@ test('workflow', async t => {
 
     // ==============
     // agoric init dapp-foo
-    const initOptions = [];
     if (process.env.AGORIC_INIT_OPTIONS) {
       const opts = JSON.parse(process.env.AGORIC_INIT_OPTIONS);
       initOptions.push(...opts);
@@ -222,4 +221,4 @@ test('workflow', async t => {
     process.chdir(olddir);
     removeCallback();
   }
-});
+};
