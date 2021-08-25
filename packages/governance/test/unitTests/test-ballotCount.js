@@ -9,10 +9,10 @@ import { q } from '@agoric/assert';
 
 import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter.js';
 import {
-  makeBallotSpec,
   ChoiceMethod,
   ElectionType,
   QuorumRule,
+  looksLikeBallotSpec,
 } from '../../src/ballotBuilder.js';
 import { makeParamChangePositions } from '../../src/governParam.js';
 
@@ -36,16 +36,16 @@ const FAKE_CLOSING_RULE = {
 const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 
 test('binary ballot', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [FISH, BAIT],
-    ElectionType.SURVEY,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    BAIT,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     0n,
@@ -68,16 +68,16 @@ test('binary ballot', async t => {
 });
 
 test('binary spoiled', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [FISH, BAIT],
-    ElectionType.ELECTION,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    BAIT,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
     ballotSpec,
     0n,
@@ -104,16 +104,16 @@ test('binary spoiled', async t => {
 });
 
 test('binary tied', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    PARAM_CHANGE_QUESTION,
-    [positive, negative],
-    ElectionType.PARAM_CHANGE,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: PARAM_CHANGE_QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     2n,
@@ -133,16 +133,16 @@ test('binary tied', async t => {
 });
 
 test('binary bad vote', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    PARAM_CHANGE_QUESTION,
-    [positive, negative],
-    ElectionType.PARAM_CHANGE,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: PARAM_CHANGE_QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
     ballotSpec,
     0n,
@@ -163,16 +163,16 @@ test('binary bad vote', async t => {
 });
 
 test('binary counter does not match ballot', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    PARAM_CHANGE_QUESTION,
-    [positive, negative],
-    ElectionType.PARAM_CHANGE,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: PARAM_CHANGE_QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
     ballotSpec,
     0n,
@@ -203,16 +203,16 @@ test('binary counter does not match ballot', async t => {
 });
 
 test('binary no votes', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    PARAM_CHANGE_QUESTION,
-    [positive, negative],
-    ElectionType.PARAM_CHANGE,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: PARAM_CHANGE_QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     0n,
@@ -225,16 +225,16 @@ test('binary no votes', async t => {
 });
 
 test('binary varying share weights', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [positive, negative],
-    ElectionType.SURVEY,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     1n,
@@ -258,16 +258,16 @@ test('binary varying share weights', async t => {
 });
 
 test('binary contested', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [positive, negative],
-    ElectionType.ELECTION,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     3n,
@@ -290,16 +290,16 @@ test('binary contested', async t => {
 });
 
 test('binary revote', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    PARAM_CHANGE_QUESTION,
-    [positive, negative],
-    ElectionType.PARAM_CHANGE,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    negative,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: PARAM_CHANGE_QUESTION,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     5n,
@@ -323,16 +323,16 @@ test('binary revote', async t => {
 });
 
 test('binary ballot too many', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [FISH, BAIT],
-    ElectionType.SURVEY,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    BAIT,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
   const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
     ballotSpec,
     1n,
@@ -353,16 +353,16 @@ test('binary ballot too many', async t => {
 });
 
 test('binary no quorum', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [FISH, BAIT],
-    ElectionType.ELECTION,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    BAIT,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
     ballotSpec,
     2n,
@@ -385,16 +385,16 @@ test('binary no quorum', async t => {
 });
 
 test('binary too many positions', async t => {
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    QUESTION,
-    [FISH, BAIT, harden({ text: 'sleep' })],
-    ElectionType.SURVEY,
-    1,
-    FAKE_CLOSING_RULE,
-    QuorumRule.NO_QUORUM,
-    BAIT,
-  );
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: QUESTION,
+    positions: [FISH, BAIT, harden({ text: 'sleep' })],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
   t.throws(
     () => makeBinaryBallotCounter(ballotSpec, 0n, FAKE_COUNTER_INSTANCE),
     {

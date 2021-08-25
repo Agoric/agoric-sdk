@@ -10,7 +10,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   ElectionType,
-  makeBallotSpec,
+  looksLikeBallotSpec,
 } from './ballotBuilder.js';
 import { assertType } from './paramManager.js';
 
@@ -79,21 +79,21 @@ const setupGovernance = async (
       paramSpec,
       proposedValue,
     );
-    const question = {
+    const question = harden({
       paramSpec,
       contract: contractInstance,
       proposedValue,
-    };
-    const ballotSpec = makeBallotSpec(
-      ChoiceMethod.CHOOSE_N,
+    });
+    const ballotSpec = looksLikeBallotSpec({
+      method: ChoiceMethod.CHOOSE_N,
       question,
-      [positive, negative],
-      ElectionType.PARAM_CHANGE,
-      1,
-      { timer, deadline },
-      QuorumRule.MAJORITY,
-      negative,
-    );
+      positions: [positive, negative],
+      electionType: ElectionType.PARAM_CHANGE,
+      maxChoices: 1,
+      closingRule: { timer, deadline },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: negative,
+    });
 
     const {
       publicFacet: counterPublicFacet,

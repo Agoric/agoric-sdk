@@ -199,6 +199,18 @@
  */
 
 /**
+ * @callback LooksLikeBallotSpec
+ * @param {BallotSpec} allegedBallotSpec
+ * @returns {BallotSpec}
+ */
+
+/**
+ * @callback LooksLikeQuestionForType
+ * @param {ElectionType} electionType
+ * @param {Question} question
+ */
+
+/**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} seat
  * @param {ERef<CompletedBallot>} filledBallot
@@ -452,7 +464,7 @@
  * @callback SetupGovernance
  * @param {ERef<ParamManagerAccessor>} accessor
  * @param {ERef<PoserFacet>} poserFacet
- * @param {ERef<Instance>} contractInstance
+ * @param {Instance} contractInstance
  * @param {Timer} timer
  * @returns {ParamGovernor}
  */
@@ -465,9 +477,16 @@
  */
 
 /**
+ * @callback PositionIncluded
+ * @param {Position[]} positions
+ * @param {Position} position
+ * @returns {boolean}
+ */
+
+/**
  * @callback AssertContractGovernance
  *
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGoverned
  * @param {Instance} allegedGovernor
  * @returns {GovernancePair}
@@ -477,7 +496,7 @@
  * @callback AssertContractRegistrar - assert that the contract uses the
  *   registrar
  *
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedRegistrar
  */
@@ -489,7 +508,7 @@
  * that the registrar hosts, and that the ballotCounter and other details are
  * consistent.
  *
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {Instance} registrar
  * @param {ParamChangeBallotDetails} details
  * @returns {Promise<*>}
@@ -502,7 +521,7 @@
  * parameter change question that the registrar hosts, and that the
  * ballotCounter and other details are consistent.
  *
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {Instance} registrar
  * @param {Instance} ballotCounter
  * @returns {Promise<*>}

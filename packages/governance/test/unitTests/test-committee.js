@@ -13,9 +13,9 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import {
   ChoiceMethod,
-  makeBallotSpec,
   ElectionType,
   QuorumRule,
+  looksLikeBallotSpec,
 } from '../../src/ballotBuilder.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -64,19 +64,19 @@ test('committee-open question:one', async t => {
   } = await setupContract();
 
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    harden({ text: 'why' }),
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: harden({ text: 'why' }),
     positions,
-    ElectionType.SURVEY,
-    1,
-    {
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: {
       timer: buildManualTimer(console.log),
       deadline: 2n,
     },
-    QuorumRule.MAJORITY,
-    positions[1],
-  );
+    quorumRule: QuorumRule.MAJORITY,
+    tieOutcome: positions[1],
+  });
   await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
   const question = await publicFacet.getOpenQuestions();
   const ballot = E(publicFacet).getBallot(question[0]);
@@ -92,16 +92,16 @@ test('committee-open question:mixed', async t => {
 
   const timer = buildManualTimer(console.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    harden({ text: 'why' }),
+  const ballotSpec = looksLikeBallotSpec({
+    method: ChoiceMethod.CHOOSE_N,
+    question: harden({ text: 'why' }),
     positions,
-    ElectionType.SURVEY,
-    1,
-    { timer, deadline: 4n },
-    QuorumRule.MAJORITY,
-    positions[1],
-  );
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: { timer, deadline: 4n },
+    quorumRule: QuorumRule.MAJORITY,
+    tieOutcome: positions[1],
+  });
   await E(creatorFacet).addQuestion(counterInstallation, ballotSpec);
 
   const ballotSpec2 = {

@@ -10,7 +10,7 @@ import { makeStore } from '@agoric/store';
 import {
   ChoiceMethod,
   buildBallot,
-  verifyQuestionFormat,
+  looksLikeQuestionForType,
   positionIncluded,
 } from './ballotBuilder.js';
 import { scheduleClose } from './closingRule.js';
@@ -46,7 +46,7 @@ const validateBinaryBallotSpec = ballotSpec => {
     ),
   );
 
-  verifyQuestionFormat(ballotSpec.electionType, ballotSpec.question);
+  looksLikeQuestionForType(ballotSpec.electionType, ballotSpec.question);
 
   assert(
     positions.every(

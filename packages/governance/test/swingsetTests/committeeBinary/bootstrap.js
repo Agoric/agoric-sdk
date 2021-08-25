@@ -7,9 +7,9 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { q } from '@agoric/assert';
 import {
   ChoiceMethod,
-  makeBallotSpec,
   QuorumRule,
   ElectionType,
+  looksLikeBallotSpec,
 } from '../../../src/ballotBuilder.js';
 
 const makeVoterVat = async (log, vats, zoe) => {
@@ -26,15 +26,17 @@ const addQuestion = async (qDetails, closingTime, tools, quorumRule) => {
     deadline: 3n,
   };
 
-  const ballotSpec = makeBallotSpec(
-    ChoiceMethod.CHOOSE_N,
-    question,
-    positions,
-    electionType,
-    1,
-    closingRule,
-    quorumRule,
-    positions[1],
+  const ballotSpec = looksLikeBallotSpec(
+    harden({
+      method: ChoiceMethod.CHOOSE_N,
+      question,
+      positions,
+      electionType,
+      maxChoices: 1,
+      closingRule,
+      quorumRule,
+      tieOutcome: positions[1],
+    }),
   );
 
   const { instance: ballotInstance, publicFacet } = await E(

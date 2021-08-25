@@ -4,6 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far, passStyleOf } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { Nat } from '@agoric/nat';
 
 import { assertType, ParamType } from './paramManager.js';
 
@@ -47,36 +48,71 @@ const QuorumRule = {
   ALL: 'all',
 };
 
-const verifyQuestionFormat = (electionType, question) => {
+/** @param {SimpleQuestion} question */
+const looksLikeSimpleQuestion = question => {
+  assert.typeof(
+    question.text,
+    'string',
+    X`Question ("${question}") must be a record with text: aString`,
+  );
+};
+
+/** @param {ParamChangeQuestion} question */
+const looksLikeParamChangeQuestion = question => {
+  assert.typeof(
+    question.paramSpec,
+    'object',
+    X`Question ("${question}") must be a record with paramSpec: anObject`,
+  );
+  assert(question.proposedValue);
+  assertType(ParamType.INSTANCE, question.contract, 'contract');
+};
+
+/** @type {LooksLikeQuestionForType} */
+const looksLikeQuestionForType = (electionType, question) => {
+  assert(
+    passStyleOf(question) === 'copyRecord',
+    X`A question can only be a pass-by-copy record: ${question}`,
+  );
+
   switch (electionType) {
     case ElectionType.SURVEY:
     case ElectionType.ELECTION:
-      assert.typeof(
-        question.text,
-        'string',
-        X`Question ("${question}") must be a record with text: aString`,
-      );
+      looksLikeSimpleQuestion(/** @type {SimpleQuestion} */ (question));
       break;
     case ElectionType.PARAM_CHANGE:
-      assert.typeof(
-        question.paramSpec,
-        'object',
-        X`Question ("${question}") must be a record with paramSpec: anObject`,
+      looksLikeParamChangeQuestion(
+        /** @type {ParamChangeQuestion} */ (question),
       );
-      assert(question.proposedValue);
-      assertType(ParamType.INSTANCE, question.contract, electionType);
       break;
     default:
       throw Error(`Election type unrecognized`);
   }
 };
 
+/** @type {PositionIncluded} */
 const positionIncluded = (positions, p) =>
   positions.some(e => sameStructure(e, p));
 
 // BallotSpec contains the subset of BallotDetails that can be specified before
+function looksLikeClosingRule(closingRule) {
+  const { timer, deadline } = closingRule;
+  Nat(deadline);
+  assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
+}
+
+const assertEnumIncludes = (enumeration, value, name) => {
+  assert(
+    Object.getOwnPropertyNames(enumeration)
+      .map(k => enumeration[k])
+      .includes(value),
+    X`Illegal ${name}: ${value}`,
+  );
+};
+
 // the ballot is created.
-const makeBallotSpec = (
+/** @type {LooksLikeBallotSpec} */
+const looksLikeBallotSpec = ({
   method,
   question,
   positions,
@@ -85,8 +121,8 @@ const makeBallotSpec = (
   closingRule,
   quorumRule,
   tieOutcome,
-) => {
-  verifyQuestionFormat(electionType, question);
+}) => {
+  looksLikeQuestionForType(electionType, question);
 
   assert(
     positions.every(
@@ -94,24 +130,27 @@ const makeBallotSpec = (
       X`positions must be records`,
     ),
   );
-
   assert(
-    [QuorumRule.MAJORITY, QuorumRule.ALL, QuorumRule.NO_QUORUM].includes(
-      quorumRule,
-    ),
-    X`Illegal QuorumRule ${quorumRule}`,
+    positions.includes(tieOutcome),
+    X`tieOutcome must be a legal position: ${tieOutcome}`,
   );
+  assertEnumIncludes(QuorumRule, quorumRule, 'QuorumRule');
+  assertEnumIncludes(ElectionType, electionType, 'ElectionType');
+  assertEnumIncludes(ChoiceMethod, method, 'ChoiceMethod');
+  assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
 
-  return {
+  looksLikeClosingRule(closingRule);
+
+  return harden({
     method,
     question,
     positions,
-    maxChoices,
+    maxChoices: Number(maxChoices),
     electionType,
     closingRule,
     quorumRule,
     tieOutcome,
-  };
+  });
 };
 
 const buildEqualWeightBallot = (ballotSpec, counterInstance) => {
@@ -147,7 +186,7 @@ const buildEqualWeightBallot = (ballotSpec, counterInstance) => {
 
 /** @type {BuildBallot} */
 const buildBallot = (ballotSpec, counterInstance) => {
-  verifyQuestionFormat(ballotSpec.electionType, ballotSpec.question);
+  looksLikeQuestionForType(ballotSpec.electionType, ballotSpec.question);
 
   switch (ballotSpec.method) {
     case ChoiceMethod.CHOOSE_N:
@@ -164,8 +203,7 @@ harden(buildBallot);
 harden(ChoiceMethod);
 harden(QuorumRule);
 harden(ElectionType);
-harden(makeBallotSpec);
-harden(verifyQuestionFormat);
+harden(looksLikeQuestionForType);
 harden(positionIncluded);
 
 export {
@@ -173,7 +211,7 @@ export {
   ElectionType,
   QuorumRule,
   buildBallot,
-  makeBallotSpec,
+  looksLikeBallotSpec,
   positionIncluded,
-  verifyQuestionFormat,
+  looksLikeQuestionForType,
 };

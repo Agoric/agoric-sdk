@@ -33,7 +33,6 @@ const ParamType = {
   STRING: 'string',
   UNKNOWN: 'unknown',
 };
-harden(ParamType);
 
 const assertType = (type, value, name) => {
   switch (type) {
@@ -128,5 +127,7 @@ const buildParamManager = paramDescriptions => {
   });
 };
 
+harden(ParamType);
 harden(buildParamManager);
+harden(assertType);
 export { ParamType, buildParamManager, assertType };
