@@ -11,8 +11,8 @@ import {
   QuorumRule,
   ElectionType,
   makeBallotSpec,
-} from './ballotBuilder';
-import { assertType } from './paramManager';
+} from './ballotBuilder.js';
+import { assertType } from './paramManager.js';
 
 /** @type {MakeParamChangePositions} */
 const makeParamChangePositions = (paramSpec, proposedValue) => {

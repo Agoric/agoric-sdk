@@ -50,7 +50,8 @@ const assertType = (type, value, name) => {
     case ParamType.INSTALLATION:
       // TODO(3344): add a better assertion once Zoe validates installations
       assert(
-        typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
+        typeof value === 'object' &&
+          Object.getOwnPropertyNames(value).length === 1,
         X`value for ${name} must be an Installation, was ${value}`,
       );
       break;

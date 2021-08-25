@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';
 
-import { buildParamManager, ParamType } from '../../../src/paramManager';
+import { buildParamManager, ParamType } from '../../../src/paramManager.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 

@@ -25,7 +25,7 @@
 
 /**
  * @typedef {Object} SimpleQuestion
- * @property {string} question
+ * @property {string} text
  */
 
 /**

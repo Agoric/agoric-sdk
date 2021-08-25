@@ -5,8 +5,8 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { setupGovernance, validateParamChangeBallot } from './governParam';
-import { assertContractGovernance } from './validators';
+import { setupGovernance, validateParamChangeBallot } from './governParam.js';
+import { assertContractGovernance } from './validators.js';
 
 /** @type {ValidateBallotDetails} */
 const validateBallotDetails = async (zoe, registrar, details) => {

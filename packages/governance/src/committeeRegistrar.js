@@ -5,9 +5,9 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { allComparable } from '@agoric/same-structure';
 import { makeStore } from '@agoric/store';
-import { natSafeMath } from '@agoric/zoe/src/contractSupport';
+import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { QuorumRule } from './ballotBuilder';
+import { QuorumRule } from './ballotBuilder.js';
 
 const { ceilDivide } = natSafeMath;
 

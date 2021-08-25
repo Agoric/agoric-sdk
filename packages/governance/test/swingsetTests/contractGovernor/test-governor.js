@@ -1,5 +1,3 @@
-/* global __dirname */
-
 // @ts-check
 
 // TODO Remove babel-standalone preinitialization
@@ -10,6 +8,7 @@ import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
+import path from 'path';
 
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
@@ -23,6 +22,9 @@ const CONTRACT_FILES = [
     bundleName: 'governedContract',
   },
 ];
+
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
 
 test.before(async t => {
   const start = Date.now();
@@ -39,7 +41,7 @@ test.before(async t => {
       } else {
         ({ bundleName, contractPath } = settings);
       }
-      const source = `${__dirname}${contractPath}`;
+      const source = `${dirname}${contractPath}`;
       const bundle = await bundleSource(source);
       contractBundles[bundleName] = bundle;
     }),
@@ -49,12 +51,12 @@ test.before(async t => {
   const vats = {};
   await Promise.all(
     ['voter', 'zoe'].map(async name => {
-      const source = `${__dirname}/vat-${name}.js`;
+      const source = `${dirname}/vat-${name}.js`;
       const bundle = await bundleSource(source);
       vats[name] = { bundle };
     }),
   );
-  const bootstrapSource = `${__dirname}/bootstrap.js`;
+  const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),
     parameters: { contractBundles }, // argv will be added to this

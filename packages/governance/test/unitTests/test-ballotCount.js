@@ -3,18 +3,18 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { q } from '@agoric/assert';
 
 import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter.js';
-import { q } from '@agoric/assert';
 import {
   makeBallotSpec,
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-} from '../../src/ballotBuilder';
-import { makeParamChangePositions } from '../../src/governParam';
+} from '../../src/ballotBuilder.js';
+import { makeParamChangePositions } from '../../src/governParam.js';
 
 const QUESTION = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });

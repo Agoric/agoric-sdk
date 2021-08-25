@@ -4,9 +4,9 @@ import { q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { assertContractRegistrar } from '../../../src/validators';
-import { validateBallotFromCounter } from '../../../src/contractGovernor';
-import { assertBallotConcernsQuestion } from '../../../src/governParam';
+import { assertContractRegistrar } from '../../../src/validators.js';
+import { validateBallotFromCounter } from '../../../src/contractGovernor.js';
+import { assertBallotConcernsQuestion } from '../../../src/governParam.js';
 
 const build = async (log, zoe) => {
   return Far('voter', {
@@ -24,29 +24,38 @@ const build = async (log, zoe) => {
           governedInstance,
           registrarInstance,
           governorInstance,
+          installations,
         ) => {
-          // I'd like to validate Installations, but there doesn't seem to be a
-          // way to get it from an Instance. I'd verify the Registrar,
-          // ballotCounter, and contractGovernor.
-
           await validateBallotFromCounter(
             zoe,
             registrarInstance,
             counterInstance,
           );
 
-          const governedTermsP = E(zoe).getTerms(governedInstance);
-          const governedParamP = E.get(governedTermsP).governedParams;
-          const counterPublicP = E(zoe).getPublicFacet(counterInstance);
-          const ballotDetailsP = E(counterPublicP).getDetails();
-
-          const [governedParam, ballotDetails] = await Promise.all([
-            governedParamP,
-            ballotDetailsP,
+          const [
+            governedParam,
+            ballotDetails,
+            registrarInstallation,
+            ballotCounterInstallation,
+            governedInstallation,
+            governorInstallation,
+          ] = await Promise.all([
+            E.get(E(zoe).getTerms(governedInstance)).governedParams,
+            E(E(zoe).getPublicFacet(counterInstance)).getDetails(),
+            E(zoe).getInstallationForInstance(registrarInstance),
+            E(zoe).getInstallationForInstance(counterInstance),
+            E(zoe).getInstallationForInstance(governedInstance),
+            E(zoe).getInstallationForInstance(governorInstance),
           ]);
 
           const contractParam = governedParam.contractParams;
           assertBallotConcernsQuestion(contractParam[0], ballotDetails);
+          assert(
+            installations.binaryBallotCounter === ballotCounterInstallation,
+          );
+          assert(installations.governedContract === governedInstallation);
+          assert(installations.contractGovernor === governorInstallation);
+          assert(installations.committeeRegistrar === registrarInstallation);
           await assertContractRegistrar(
             zoe,
             governorInstance,

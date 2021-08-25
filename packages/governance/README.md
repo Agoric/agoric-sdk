@@ -9,7 +9,7 @@ that voters can verify that their votes mean what they say and will be tabulated
 as expected.
 
 Any occasion of governance starts with the creation of a Registrar. Two kinds
-exist currently (Stakeholder support will be added shortly] that represent
+exist currently (Stakeholder support will be added shortly) that represent
 committees and stakeholders. The electorate may deal with many questions
 governing many things, so the electorate has to exist before any questions can
 be posed.
@@ -69,7 +69,7 @@ contract instance. The registrar creates new questions, and makes a new instance
 of a BallotCounter so everyone can see how ballots will be counted.
 
 Registrars have a public method to get from the ballot handle to a ballot.
-ballots include the ballotSpec, the BallotCounter instance and closingRule. For
+Ballots include the ballotSpec, the BallotCounter instance and closingRule. For
 contract governance, the question specifies the governed contract instance, the
 parameter to be changed, and the proposed new value.
 
@@ -94,10 +94,9 @@ private facet that contains only the method voteOnParamChange().
 
 When a prospective user of a contract receives a link to an instance of a
 contract, they can check the terms to see if the contract names a governor.  The
-governor's public facet will also refer to the contract it governs. With the
-instance links you'll eventually be able to retrieve the installation from Zoe
-(https://github.com/Agoric/agoric-sdk/issues/3449), which allows you to examine
-the souce.
+governor's public facet will also refer to the contract it governs. Once you
+have the instance you can retrieve the installation from Zoe which allows you to
+examine the source.
 
 The governedContract will provide the registrar, which allows you to check the
 electorate, and retrieve a list of open questions. (We should add closed
@@ -119,3 +118,51 @@ we'll come up with more types.) When it is `PARAM_CHANGE`, the ballotDetails
 will also identify the contract instance, the partcular parameter to be changed,
 and the proposed new value. At present, all parameter change elections are by
 majority vote, and if a majority doesn't vote in favor, then no change is made.
+
+## Future Extensions
+
+The architecture is intended to support several scenarios that haven't been
+filled in yet.
+
+### Registrars
+
+We currently have a committeeRegistrar, which has an opaque group of voters. The
+contract makes no attempt to make the voters legible to others. This might be
+useful for a private group making a decision, or a case where a dictator has the
+ability to appoint a committee that will make decisions.
+
+The ClaimsRegistrar (coming soon!) is a Registrar that gives the ability to vote
+to anyone who has an Attestation payment from the Attestation contract.
+Observers can't tell who the voters are, but they can validate the
+qualifications to vote.
+
+Another plausible registrar would use the result of a public vote to give voting
+facets to the election winners. There would have to be some kind of public
+registration of the identities of the candidates to make them visible.
+
+### BallotCounters
+
+The only ballot counter currently is the BinaryBallotCounter, which presumes
+there are two positions on the ballot and assigns every vote to one or the other
+or to 'spoiled'. At the end, it looks for a majority winner and announces that.
+It can be configured to have one of the possible outcomes as the default
+outcome. If there's a tie and no default, the winner is `undefined`.
+
+ContractGovernance uses this to make 'no change' be the default when voting on
+parameter changes.
+
+We should have ballotCounters for multiple candidate questions. I hope we'll
+eventually have IRV (instant runnoff) and various forms of proportional
+representation.
+
+### ElectionManager
+
+The election manager has a role in governance, but not a specific API. The
+manager's role is to make the setup of particular elections legible to voters
+and other observers. The current example is the ContractGovernor, which manages
+changes to contract parameters. There should also be managers that
+
+* take some action (i.e. add a new collateral type to the AMM) when a vote
+  passes.
+* manage a plebiscite amount stake holders to allow participants to express
+  opinions about the future of the chain.

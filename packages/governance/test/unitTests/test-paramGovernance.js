@@ -1,30 +1,33 @@
-/* global __dirname */
-
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import '@agoric/zoe/exported';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import '@agoric/zoe/exported.js';
 
-import { makeZoe } from '@agoric/zoe';
+import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import path from 'path';
+
 import {
   setupGovernance,
   makeParamChangePositions,
-} from '../../src/governParam';
+} from '../../src/governParam.js';
 import {
   governedParameterTerms,
   MALLEABLE_NUMBER,
-} from '../swingsetTests/contractGovernor/governedContract';
+} from '../swingsetTests/contractGovernor/governedContract.js';
 
-const ballotCounterRoot = `${__dirname}/../../src/binaryBallotCounter.js`;
-const governedRoot = `${__dirname}/../swingsetTests/contractGovernor/governedContract.js`;
+const filename = new URL(import.meta.url).pathname;
+const dirname = path.dirname(filename);
+
+const ballotCounterRoot = `${dirname}/../../src/binaryBallotCounter.js`;
+const governedRoot = `${dirname}/../swingsetTests/contractGovernor/governedContract.js`;
 
 const makeInstall = async (sourceRoot, zoe) => {
   const bundle = await bundleSource(sourceRoot);
@@ -32,7 +35,9 @@ const makeInstall = async (sourceRoot, zoe) => {
 };
 
 test('governParam happy path with fakes', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const timer = buildManualTimer(console.log);
 
@@ -92,7 +97,9 @@ test('governParam happy path with fakes', async t => {
 
 test('governParam no votes', async t => {
   const timer = buildManualTimer(console.log);
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   const ballotCounterInstall = await makeInstall(ballotCounterRoot, zoe);
   const governedInstall = await makeInstall(governedRoot, zoe);
@@ -155,7 +162,9 @@ test('governParam no votes', async t => {
 });
 
 test('governParam bad update', async t => {
-  const zoe = makeZoe(fakeVatAdmin);
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const timer = buildManualTimer(console.log);
 
   const ballotCounterInstall = await makeInstall(ballotCounterRoot, zoe);

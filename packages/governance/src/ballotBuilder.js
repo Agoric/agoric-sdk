@@ -3,9 +3,9 @@
 import { assert, details as X } from '@agoric/assert';
 import { Far, passStyleOf } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
-import { assertType, ParamType } from './paramManager';
+import { assertType, ParamType } from './paramManager.js';
 
 /**
  * @type {{

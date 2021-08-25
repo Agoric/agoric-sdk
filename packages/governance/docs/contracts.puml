@@ -14,8 +14,7 @@ class GovernedContract {
     +terms: { electionManager, governedParams }
     +getState()
     +getContractGovernor()
-    -getContractGovernor
-    -getParamManagerAccessor
+    -getParamManagerAccessor()
 }
 note  left : calls buildParamManager(paramDesc);\nmakes paramMgr state public\nreturns paramMgr in creatorFacet
 

@@ -10,7 +10,7 @@ import {
   makeBallotSpec,
   QuorumRule,
   ElectionType,
-} from '../../../src/ballotBuilder';
+} from '../../../src/ballotBuilder.js';
 
 const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);

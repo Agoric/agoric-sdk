@@ -2,9 +2,9 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { q } from '@agoric/assert';
-import { governedParameterTerms } from './governedContract';
+import { governedParameterTerms } from './governedContract.js';
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -50,7 +50,6 @@ const installContracts = async (zoe, cb) => {
     committeeRegistrar,
     binaryBallotCounter,
     contractGovernor,
-
     governedContract,
   };
   return installations;
@@ -97,6 +96,7 @@ const oneVoterValidate = async (
   governedInstanceP,
   registrarInstance,
   governorInstanceP,
+  installations,
 ) => {
   const [
     voters,
@@ -116,6 +116,7 @@ const oneVoterValidate = async (
     governedInstance,
     registrarInstance,
     governorInstance,
+    installations,
   );
 };
 
@@ -174,6 +175,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         governedInstance,
         registrarInstance,
         governorInstance,
+        installations,
       );
 
       await E(timer).tick();

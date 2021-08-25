@@ -6,8 +6,9 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { Far } from '@agoric/marshal';
 import { buildParamManager, ParamType } from '../../src/paramManager.js';
-import { makeParamChangePositions } from '../../src/governParam';
+import { makeParamChangePositions } from '../../src/governParam.js';
 
 const BASIS_POINTS = 10_000n;
 
@@ -119,7 +120,9 @@ test('params one ratio', async t => {
     type: ParamType.RATIO,
   };
 
-  const { getParams, updateRatio } = buildParamManager([ratioDescription]);
+  const { getParam, getParams, updateRatio } = buildParamManager([
+    ratioDescription,
+  ]);
   // t.deepEqual(getParams()[ratioKey], ratioDescription);
   t.deepEqual(getParam(ratioKey), ratioDescription);
   updateRatio(makeRatio(701n, brand, BASIS_POINTS));
@@ -131,7 +134,7 @@ test('params one ratio', async t => {
   t.throws(
     () => updateRatio(18.1),
     {
-      message: 'Ratio 18.1 must be a record with 2 fields.',
+      message: 'Expected "number" is same as "copyRecord"',
     },
     'value should be a ratio',
   );
@@ -202,7 +205,9 @@ test('params one installation', async t => {
   const installationKey = 'Installation';
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
-  const installationHandle = makeHandle('installation');
+  const installationHandle = Far('fake Installation', {
+    getBundle: () => ({ obfuscated: 42 }),
+  });
   const installationDescription = {
     name: installationKey,
     value: installationHandle,
@@ -219,7 +224,9 @@ test('params one installation', async t => {
     },
     'value should be an installation',
   );
-  const handle2 = makeHandle('another installation');
+  const handle2 = Far('another fake Installation', {
+    getBundle: () => ({ condensed: '() => {})' }),
+  });
   updateInstallation(handle2);
   t.deepEqual(getParam(installationKey).value, handle2);
 });
@@ -371,14 +378,14 @@ test('positions Nat', t => {
 test('positions Ratio', t => {
   const ratioSpec = { parameterName: 'ratio', key: 'something' };
   const { brand } = makeIssuerKit('elo', AssetKind.NAT);
-  const ratio = makeRatio(2500, brand, 2400);
+  const ratio = makeRatio(2500n, brand, 2400n);
 
   const positions = makeParamChangePositions(ratioSpec, ratio);
   t.deepEqual(positions.positive, positive(ratioSpec, ratio));
   t.deepEqual(positions.negative, negative(ratioSpec));
   t.notDeepEqual(
     positions.positive,
-    positive(ratioSpec, makeRatio(2500, brand, 2200)),
+    positive(ratioSpec, makeRatio(2500n, brand, 2200n)),
   );
 });
 
