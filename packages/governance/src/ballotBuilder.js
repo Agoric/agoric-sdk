@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { Far, passStyleOf } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
@@ -131,8 +131,8 @@ const looksLikeBallotSpec = ({
     ),
   );
   assert(
-    positions.includes(tieOutcome),
-    X`tieOutcome must be a legal position: ${tieOutcome}`,
+    positionIncluded(positions, tieOutcome),
+    X`tieOutcome must be a legal position: ${q(tieOutcome)}`,
   );
   assertEnumIncludes(QuorumRule, quorumRule, 'QuorumRule');
   assertEnumIncludes(ElectionType, electionType, 'ElectionType');

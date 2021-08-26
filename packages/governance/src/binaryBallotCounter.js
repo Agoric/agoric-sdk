@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far, passStyleOf } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { sameStructure } from '@agoric/same-structure';
 import { makeStore } from '@agoric/store';
@@ -12,6 +12,7 @@ import {
   buildBallot,
   looksLikeQuestionForType,
   positionIncluded,
+  looksLikeBallotSpec,
 } from './ballotBuilder.js';
 import { scheduleClose } from './closingRule.js';
 
@@ -30,6 +31,8 @@ const makeQuorumCounter = quorumThreshold => {
 };
 
 const validateBinaryBallotSpec = ballotSpec => {
+  looksLikeBallotSpec(ballotSpec);
+
   const positions = ballotSpec.positions;
   assert(
     positions.length === 2,
@@ -39,21 +42,8 @@ const validateBinaryBallotSpec = ballotSpec => {
     ballotSpec.maxChoices <= positions.length,
     X`Choices must not exceed length`,
   );
-  assert(
-    positions.every(
-      p => passStyleOf(p) === 'copyRecord',
-      X`positions must be records`,
-    ),
-  );
 
   looksLikeQuestionForType(ballotSpec.electionType, ballotSpec.question);
-
-  assert(
-    positions.every(
-      p => passStyleOf(p) === 'copyRecord',
-      X`positions must be records`,
-    ),
-  );
 
   assert(
     ballotSpec.maxChoices === 1,
@@ -63,11 +53,6 @@ const validateBinaryBallotSpec = ballotSpec => {
     ballotSpec.method === ChoiceMethod.CHOOSE_N,
     X`${ballotSpec.method} must be CHOOSE_N`,
   );
-  assert(
-    positionIncluded(positions, ballotSpec.tieOutcome),
-    X`The default outcome on a tie must be one of the positions, not ${ballotSpec.tieOutcome}`,
-  );
-
   // We don't check the quorumRule or quorumThreshold here. The quorumThreshold
   // is provided by the Registrar that creates this ballotCounter, since only it
   // can translate the quorumRule to a required number of votes.
