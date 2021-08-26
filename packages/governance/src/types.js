@@ -432,6 +432,12 @@
  */
 
 /**
+ * @callback AssertBallotConcernsQuestion
+ * @param {string} paramName
+ * @param {BallotDetails} ballotDetails
+ */
+
+/**
  * @callback StartGovernedContract
  * @param {RegistrarCreator} registrarCreatorFacet
  * @param {Installation} governedContractInstallation

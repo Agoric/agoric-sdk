@@ -45,8 +45,11 @@ const validateParamChangeBallot = details => {
   );
 };
 
+/** @type {AssertBallotConcernsQuestion} */
 const assertBallotConcernsQuestion = (paramName, ballotDetails) => {
   assert(
+    // @ts-ignore typescript isn't sure the question is a paramChangeQuestion
+    // if it isn't, the assertion will fail.
     ballotDetails.question.paramSpec.parameterName === paramName,
     X`expected ${paramName} to be included`,
   );

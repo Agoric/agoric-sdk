@@ -48,18 +48,18 @@ const validateBallotFromCounter = async (zoe, registrar, ballotCounter) => {
  *
  * The governedContract is responsible for supplying getParamMgrAccessor() in
  * its creatorFacet. getParamMgrAccessor() takes a ParamSpecification, which
- *  identifies the parameter to be voted on. A minimal ParamSpecification
- *  specifies the key which identifies a particular paramManager (even if
- *  there's only one) and the parameterName. The interpretation of
- *  ParamSpecification is up to the contract.
+ * identifies the parameter to be voted on. A minimal ParamSpecification
+ * specifies the key which identifies a particular paramManager (even if there's
+ * only one) and the parameterName. The interpretation of ParamSpecification is
+ * up to the contract.
  *
  * The call to startGovernedInstance() returns a facet with voteOnParamChange(),
  * which is used to create ballot questions that will automatically update
  * contract parameters if passed. This facet will usually be closely held.
  *
- * The govened contract's terms include the instance of this (governing)
- *  contract (as electionManager) so clients will be able to look up the state
- *  of the governed parameters.
+ * The governed contract's terms include the instance of this (governing)
+ * contract (as electionManager) so clients will be able to look up the state
+ * of the governed parameters.
  *
  * @type {ContractStartFn}
  */
@@ -74,7 +74,7 @@ const start = async zcf => {
   /** @type {PromiseRecord<Instance>} */
   const governedInstancePK = makePromiseKit();
 
-  // a predicate that identifies ballots created by this governor
+  // Promise for a predicate that identifies ballots created by this governor
   /** @type {PromiseRecord<CreatedBallot>} */
   const createdBallotPK = makePromiseKit();
 
@@ -92,10 +92,10 @@ const start = async zcf => {
       E.get(E(zoe).getInvitationDetails(poserInvitation)).instance,
     );
 
-    const augmentedTerms = {
+    const augmentedTerms = harden({
       ...customTerms,
       electionManager: zcf.getInstance(),
-    };
+    });
 
     const { creatorFacet, instance, publicFacet } = await E(zoe).startInstance(
       governedContractInstallation,
