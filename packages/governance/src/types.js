@@ -20,6 +20,11 @@
  */
 
 /**
+ * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'nat' |
+ * 'ratio' | 'string' | 'unknown' } ParamType
+ */
+
+/**
  * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
  */
 
@@ -354,6 +359,13 @@
 
 /**
  * @typedef {Record<string, string[]>} ParameterNameList
+ */
+
+/**
+ * @callback AssertParamManagerType
+ * @param {ParamType} type
+ * @param {ParamValue} value
+ * @param {string} name
  */
 
 /**

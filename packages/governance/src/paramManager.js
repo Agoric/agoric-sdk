@@ -34,14 +34,17 @@ const ParamType = {
   UNKNOWN: 'unknown',
 };
 
+/** @type {AssertParamManagerType} */
 const assertType = (type, value, name) => {
   switch (type) {
     case ParamType.AMOUNT:
       // It would be nice to have a clean way to assert something is an amount.
+      // @ts-ignore value is undifferentiated to this point
       AmountMath.coerce(value.brand, value);
       break;
     case ParamType.BRAND:
       assert(
+        // @ts-ignore value is undifferentiated to this point
         looksLikeBrand(value),
         X`value for ${name} must be a brand, was ${value}`,
       );
@@ -81,8 +84,8 @@ const assertType = (type, value, name) => {
 /** @type {BuildParamManager} */
 const buildParamManager = paramDescriptions => {
   const typesAndValues = {};
-  // manager will have updateFoo() for each Foo param.
-  const manager = {};
+  // updateFns will have updateFoo() for each Foo param.
+  const updateFns = {};
 
   paramDescriptions.forEach(({ name, value, type }) => {
     // we want to create function names like updateFeeRatio(), so we insist that
@@ -96,14 +99,14 @@ const buildParamManager = paramDescriptions => {
     assertType(type, value, name);
 
     typesAndValues[name] = { type, value };
-    manager[`update${name}`] = newValue => {
+    updateFns[`update${name}`] = newValue => {
       assertType(type, newValue, name);
       typesAndValues[name].value = newValue;
       return newValue;
     };
   });
 
-  const description = name => ({
+  const makeDescription = name => ({
     name,
     type: typesAndValues[name].type,
     value: typesAndValues[name].value,
@@ -112,18 +115,19 @@ const buildParamManager = paramDescriptions => {
     /** @type {Record<Keyword,ParamDescription>} */
     const descriptions = {};
     Object.getOwnPropertyNames(typesAndValues).forEach(name => {
-      descriptions[name] = description(name);
+      descriptions[name] = makeDescription(name);
     });
     return harden(descriptions);
   };
-  const getParam = name => harden(description(name));
+  const getParam = name => harden(makeDescription(name));
 
+  // Contracts that call buildParamManager should only export the resulting
+  // paramManager to their creatorFacet, where it will be picked up by
+  // contractGovernor. The getParams method can be shared widely.
   return Far('param manager', {
     getParams,
     getParam,
-    // Contracts that use buildParamManager should only export "manager" to
-    // their creatorFacet, where it will be picked up by contractGovernor.
-    ...manager,
+    ...updateFns,
   });
 };
 
