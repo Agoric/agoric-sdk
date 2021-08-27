@@ -7,8 +7,7 @@
  * @param {Amount=} opt.amountGiven
  * @param {{ Central: Amount, Secondary: Amount }} opt.poolAllocation
  * @param {Amount=} opt.amountWanted
- * @returns {{ x: Amount, y: Amount, deltaX: Amount, wantedDeltaY:
- * Amount }}
+ * @returns {{ x: Amount, y: Amount, deltaX: Amount, deltaY: Amount }}
  */
 export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
   // Regardless of whether we are specifying the amountIn or the
@@ -20,7 +19,7 @@ export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
 
   const deltas = {
     deltaX: amountGiven,
-    wantedDeltaY: amountWanted,
+    deltaY: amountWanted,
   };
 
   if (secondaryBrand === xBrand || centralBrand === yBrand) {

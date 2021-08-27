@@ -3,10 +3,10 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { makeRatioFromAmounts } from '../../contractSupport/ratio';
-import { natSafeMath } from '../../contractSupport';
+import { makeRatioFromAmounts } from '../../contractSupport/ratio.js';
+import { natSafeMath } from '../../contractSupport/index.js';
 
-import { BASIS_POINTS } from './defaults';
+import { BASIS_POINTS } from './defaults.js';
 
 /**
  * xy <= (x + deltaX)(y - deltaY)

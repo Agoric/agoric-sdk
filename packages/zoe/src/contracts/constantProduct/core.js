@@ -1,20 +1,28 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
+import { assert, details as X, q } from '@agoric/assert';
 
-import { natSafeMath } from '../../contractSupport';
-import { makeRatioFromAmounts } from '../../contractSupport/ratio';
-import { getXY } from './getXY';
+import { natSafeMath } from '../../contractSupport/index.js';
+import { makeRatioFromAmounts } from '../../contractSupport/ratio.js';
+import { getXY } from './getXY.js';
 
-// TODO: fix this up with more assertions and rename
-// Used for multiplying y by a ratio with both numerators and
-// denominators of brand x
+const assertSingleBrand = ratio => {
+  assert(
+    ratio.numerator.brand === ratio.denominator.brand,
+    X`Ratio was expected to have same brand in numerator and denominator ${q(
+      ratio,
+    )}`,
+  );
+};
+
 /**
  * @param {Amount} amount
  * @param {Ratio} ratio
  * @returns {Amount}
  */
-const multiplyByOtherBrandFloorDivide = (amount, ratio) => {
+const floorMultiplyKeepBrand = (amount, ratio) => {
+  assertSingleBrand(ratio);
   const value = natSafeMath.floorDivide(
     natSafeMath.multiply(amount.value, ratio.numerator.value),
     ratio.denominator.value,
@@ -22,15 +30,13 @@ const multiplyByOtherBrandFloorDivide = (amount, ratio) => {
   return AmountMath.make(amount.brand, value);
 };
 
-// TODO: fix this up with more assertions and rename
-// Used for multiplying y by a ratio with both numerators and
-// denominators of brand x
 /**
  * @param {Amount} amount
  * @param {Ratio} ratio
  * @returns {Amount}
  */
-const multiplyByOtherBrandCeilDivide = (amount, ratio) => {
+const ceilMultiplyKeepBrand = (amount, ratio) => {
+  assertSingleBrand(ratio);
   const value = natSafeMath.ceilDivide(
     natSafeMath.multiply(amount.value, ratio.numerator.value),
     ratio.denominator.value,
@@ -39,63 +45,74 @@ const multiplyByOtherBrandCeilDivide = (amount, ratio) => {
 };
 
 /**
- * Calculate deltaY when user is selling brand X. This calculates how much of
- * brand Y to give the user in return.
+ * Calculate the change to the shrinking pool when the user specifies how much
+ * they're willing to add. Also used to improve a proposed trade when the amount
+ * contributed would buy more than the user asked for.
  *
- * deltaY = (deltaXToX/(1 + deltaXToX))*y
+ * deltaY = (deltaXOverX/(1 + deltaXOverX))*y
  * Equivalently: (deltaX / (deltaX + x)) * y
  *
- * @param {Amount} x - the amount of Brand X in pool, xPoolAllocation
- * @param {Amount} y - the amount of Brand Y in pool, yPoolAllocation
- * @param {Amount} deltaX - the amount of Brand X to be added
- * @returns {Amount} deltaY - the amount of Brand Y to be taken out
+ * @param {Amount} x - the amount of the growing brand in the pool
+ * @param {Amount} y - the amount of the shrinking brand in the pool
+ * @param {Amount} deltaX - the amount of the growing brand to be added
+ * @returns {Amount} deltaY - the amount of the shrinking brand to be taken out
  */
 export const calcDeltaYSellingX = (x, y, deltaX) => {
   const deltaXPlusX = AmountMath.add(deltaX, x);
   const xRatio = makeRatioFromAmounts(deltaX, deltaXPlusX);
-  // Result is an amount in y.brand
-  // We would want to err on the side of the pool, so this should be a
-  // floorDivide so that less deltaY is given out
-  return multiplyByOtherBrandFloorDivide(y, xRatio);
+  // We want to err on the side of the pool, so this will use floorDivide to
+  // round down the amount paid out.
+  return floorMultiplyKeepBrand(y, xRatio);
 };
 
 /**
- * Calculate deltaX when user is selling brand X. This allows us to give the user a
- * small refund if the amount they will as a payout could have been
- * achieved by a smaller input.
+ * Calculate the change to the growing pool when the user specifies how much
+ * they want to receive. Also used to improve a proposed trade when the amount
+ * requested can be purchased for a smaller input.
  *
- * deltaX = (deltaYToY/(1 - deltaYToY))*x
- * Equivalently: (deltaY / (y - deltaY )) * x
+ * deltaX = (deltaYOverY/(1 - deltaYOverY))*x
+ * Equivalently: (deltaY / (Y - deltaY )) * x
  *
- * @param {Amount} x - the amount of Brand X in pool, xPoolAllocation
- * @param {Amount} y - the amount of Brand Y in pool, yPoolAllocation
- * @param {Amount} deltaY - the amount of Brand Y to be taken out
- * @returns {Amount} deltaX - the amount of Brand X to be added
+ * @param {Amount} x - the amount of the growing brand in the pool
+ * @param {Amount} y - the amount of the shrinking brand in the pool
+ * @param {Amount} deltaY - the amount of the shrinking brand to take out
+ * @returns {Amount} deltaX - the amount of the growingn brand to add
  */
 export const calcDeltaXSellingX = (x, y, deltaY) => {
   const yMinusDeltaY = AmountMath.subtract(y, deltaY);
   const yRatio = makeRatioFromAmounts(deltaY, yMinusDeltaY);
-  // Result is an amount in x.brand
-  // We want to err on the side of the pool, so this should be a
-  // ceiling divide so that more deltaX is taken
-  return multiplyByOtherBrandCeilDivide(x, yRatio);
+  // We want to err on the side of the pool, so this will use ceilMultiply to
+  // round up the amount required.
+  return ceilMultiplyKeepBrand(x, yRatio);
 };
 
-const swapInReduced = ({ x, y, deltaX }) => {
-  const deltaY = calcDeltaYSellingX(x, y, deltaX);
-  const reducedDeltaX = calcDeltaXSellingX(x, y, deltaY);
+const swapInReduced = ({ x: inPool, y: outPool, deltaX: offeredAmountIn }) => {
+  const amountOut = calcDeltaYSellingX(inPool, outPool, offeredAmountIn);
+  const reducedAmountIn = calcDeltaXSellingX(inPool, outPool, amountOut);
+
+  assert(AmountMath.isGTE(offeredAmountIn, reducedAmountIn));
+
   return harden({
-    amountIn: reducedDeltaX,
-    amountOut: deltaY,
+    amountIn: reducedAmountIn,
+    amountOut,
+    improvement: AmountMath.subtract(offeredAmountIn, reducedAmountIn),
   });
 };
 
-const swapOutImproved = ({ x, y, wantedDeltaY }) => {
-  const requiredDeltaX = calcDeltaXSellingX(x, y, wantedDeltaY);
-  const improvedDeltaY = calcDeltaYSellingX(x, y, requiredDeltaX);
+const swapOutImproved = ({
+  x: inPool,
+  y: outPool,
+  deltaY: wantedAmountOut,
+}) => {
+  const amountIn = calcDeltaXSellingX(inPool, outPool, wantedAmountOut);
+  const improvedAmountOut = calcDeltaYSellingX(inPool, outPool, amountIn);
+
+  assert(AmountMath.isGTE(improvedAmountOut, wantedAmountOut));
+
   return harden({
-    amountIn: requiredDeltaX,
-    amountOut: improvedDeltaY,
+    amountIn,
+    amountOut: improvedAmountOut,
+    improvement: AmountMath.subtract(improvedAmountOut, wantedAmountOut),
   });
 };
 

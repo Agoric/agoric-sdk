@@ -1,11 +1,11 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
-import { calcDeltaYSellingX } from '../../../../src/contracts/constantProduct/core';
-import { setupMintKits } from './setupMints';
+import { calcDeltaYSellingX } from '../../../../src/contracts/constantProduct/core.js';
+import { setupMintKits } from './setupMints.js';
 
 // the brands of x and y shouldn't matter (test this explicitly in a
 // separate test)
@@ -66,4 +66,12 @@ test('9, 3, 17, 1', t => {
 
 test('10000, 5000, 209, 102', t => {
   doTest(t, 10000, 5000, 209, 102);
+});
+
+test('1000000, 5000, 209, 1', t => {
+  doTest(t, 1000000, 5000, 209, 1);
+});
+
+test('5000, 1000000, 209, 1', t => {
+  doTest(t, 5000, 1000000, 209, 40122);
 });

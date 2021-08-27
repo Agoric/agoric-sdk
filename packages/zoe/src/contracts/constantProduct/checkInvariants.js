@@ -1,12 +1,12 @@
 // @ts-check
 
-import { assertRightsConserved } from '../../contractFacet/rightsConservation';
+import { assertRightsConserved } from '../../contractFacet/rightsConservation.js';
 
 import {
   assertKInvariantSellingX,
   assertPoolFee,
   assertProtocolFee,
-} from './invariants';
+} from './invariants.js';
 
 export const checkAllInvariants = (
   runPoolAllocation,

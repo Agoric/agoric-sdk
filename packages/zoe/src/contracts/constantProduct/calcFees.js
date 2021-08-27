@@ -1,9 +1,9 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { multiplyByCeilDivide, makeRatio } from '../../contractSupport/ratio';
+import { ceilMultiplyBy, makeRatio } from '../../contractSupport/ratio.js';
 
-import { BASIS_POINTS } from './defaults';
+import { BASIS_POINTS } from './defaults.js';
 
 /**
  * Make a ratio given a nat representing basis points
@@ -12,18 +12,22 @@ import { BASIS_POINTS } from './defaults';
  * @param {Brand} brandOfFee
  * @returns {Ratio}
  */
-const makeFeeRatio = (feeBP, brandOfFee) => {
+export const makeFeeRatio = (feeBP, brandOfFee) => {
   return makeRatio(feeBP, brandOfFee, BASIS_POINTS);
 };
 
-const minimum = (left, right) => {
-  // If left is greater or equal, return right. Otherwise return left.
-  return AmountMath.isGTE(left, right) ? right : left;
+export const maximum = (left, right) => {
+  // If left is greater or equal, return left. Otherwise return right.
+  return AmountMath.isGTE(left, right) ? left : right;
 };
 
+export const amountGT = (left, right) =>
+  AmountMath.isGTE(left, right) && !AmountMath.isEqual(left, right);
+
 /**
- * @param {{ amountIn: Amount, amountOut: Amount}} amounts - an array of two amounts in different
- * brands. We must select the amount of the same brand as the feeRatio.
+ * @param {{ amountIn: Amount, amountOut: Amount}} amounts - an array of two
+ *   amounts in different brands. We must select the amount of the same brand as
+ *   the feeRatio.
  * @param {Ratio} feeRatio
  * @returns {Amount}
  */
@@ -31,10 +35,12 @@ const calcFee = ({ amountIn, amountOut }, feeRatio) => {
   const sameBrandAmount =
     amountIn.brand === feeRatio.numerator.brand ? amountIn : amountOut;
   // Always round fees up
-  const fee = multiplyByCeilDivide(sameBrandAmount, feeRatio);
+  const fee = ceilMultiplyBy(sameBrandAmount, feeRatio);
 
-  // Fee cannot be more than what exists
-  return minimum(fee, sameBrandAmount);
+  // Fee cannot exceed the amount on which it is levied
+  assert(AmountMath.isGTE(sameBrandAmount, fee));
+
+  return fee;
 };
 
 // SwapIn uses calcDeltaYSellingX

@@ -1,7 +1,9 @@
 // @ts-check
 
-import { swap } from './swap';
-import { swapInNoFees } from './core';
+import { swap } from './swap.js';
+import { swapInNoFees } from './core.js';
+import { assertKInvariantSellingX } from './invariants.js';
+import { getXY } from './getXY.js';
 
 export const swapIn = (
   amountGiven,
@@ -10,7 +12,7 @@ export const swapIn = (
   protocolFeeRatio,
   poolFeeRatio,
 ) => {
-  return swap(
+  const result = swap(
     amountGiven,
     poolAllocation,
     amountWanted,
@@ -18,4 +20,11 @@ export const swapIn = (
     poolFeeRatio,
     swapInNoFees,
   );
+  const { x, y } = getXY({
+    amountGiven,
+    poolAllocation,
+    amountWanted,
+  });
+  assertKInvariantSellingX(x, y, result.xIncrement, result.yDecrement);
+  return result;
 };

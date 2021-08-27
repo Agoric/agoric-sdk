@@ -1,12 +1,12 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava';
-import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
 
-import { swapIn } from '../../../../src/contracts/constantProduct/swapIn';
-import { swapOut } from '../../../../src/contracts/constantProduct/swapOut';
-import { setupMintKits } from './setupMints';
-import { makeRatio } from '../../../../src/contractSupport';
+import { swapIn } from '../../../../src/contracts/constantProduct/swapIn.js';
+import { swapOut } from '../../../../src/contracts/constantProduct/swapOut.js';
+import { setupMintKits } from './setupMints.js';
+import { makeRatio } from '../../../../src/contractSupport/index.js';
 
 // This assumes run is swapped in. The test should function the same
 // regardless of what brand is the amountIn, because no run fee is
@@ -18,7 +18,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
     Central: run(inputReserve),
     Secondary: bld(outputReserve),
   });
-  const amountWanted = bld(3n);
+  const amountWanted = bld(0n);
   const protocolFeeRatio = makeRatio(0n, runKit.brand, BASIS_POINTS);
   const poolFeeRatio = makeRatio(3n, bldKit.brand, BASIS_POINTS);
 
@@ -59,7 +59,7 @@ const getInputPriceThrows = (t, inputs, message) => {
 // charged.
 const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
   const { run, bld, runKit } = setupMintKits();
-  const amountGiven = run(10000n); // hard-coded
+  const amountGiven = run(0n);
   const poolAllocation = harden({
     Central: run(inputReserve),
     Secondary: bld(outputReserve),
@@ -95,8 +95,6 @@ const getOutputPriceThrows = (t, inputs, message) => {
   });
 };
 
-// If these tests of `getInputPrice` fail, it would indicate that we have
-// diverged from the calculation in the Uniswap paper.
 test('getInputPrice no reserves', t => {
   const input = {
     inputReserve: 0n,
@@ -104,7 +102,7 @@ test('getInputPrice no reserves', t => {
     inputValue: 1n,
   };
   const message =
-    '"poolAllocation.Central" was not greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
+    '"poolAllocation.Central" must be greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
   getInputPriceThrows(t, input, message);
 });
 
@@ -124,7 +122,12 @@ test('getInputPrice ok 3', t => {
     outputReserve: 7743n,
     inputValue: 6635n,
   };
-  const expectedOutput = 3466n;
+  const expectedOutput = 3470n;
+  // const expected = {
+  //   poolFee: 2n,
+  //   swapperGives: 6634n,
+  //   swapperGets: 3470n,
+  // };
   testGetPrice(t, input, expectedOutput);
 });
 
@@ -134,7 +137,12 @@ test('getInputPrice ok 4', t => {
     outputReserve: 10n,
     inputValue: 1000n,
   };
-  const expectedOutput = 9n;
+  const expectedOutput = 8n;
+  // const expected = {
+  //   poolFee: 1n,
+  //   swapperGives: 90n,
+  //   swapperGets: 8n,
+  // };
   testGetPrice(t, input, expectedOutput);
 });
 
@@ -144,24 +152,34 @@ test('getInputPrice ok 5', t => {
     outputReserve: 50n,
     inputValue: 17n,
   };
-  const expectedOutput = 7n;
+  const expectedOutput = 6n;
+  // const expected = {
+  //   poolFee: 1n,
+  //   swapperGives: 17,
+  //   swapperGets: 6,
+  // };
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 6', t => {
   const input = {
-    outputReserve: 117n,
     inputReserve: 43n,
+    outputReserve: 117n,
     inputValue: 7n,
   };
-  const expectedOutput = 16n;
+  // const expected = {
+  //   poolFee: 1n,
+  //   swapperGives: 7,
+  //   swapperGets: 15,
+  // };
+  const expectedOutput = 15n;
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice negative', t => {
   const input = {
-    outputReserve: 117n,
     inputReserve: 43n,
+    outputReserve: 117n,
     inputValue: -7n,
   };
   const message = 'value "[-7n]" must be a Nat or an array';
@@ -170,117 +188,123 @@ test('getInputPrice negative', t => {
 
 test('getInputPrice bad reserve 1', t => {
   const input = {
-    outputReserve: 0n,
     inputReserve: 43n,
+    outputReserve: 0n,
     inputValue: 347n,
   };
   const message =
-    '"poolAllocation.Secondary" was not greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"}';
+    '"poolAllocation.Secondary" must be greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"}';
   getInputPriceThrows(t, input, message);
 });
 
 test('getInputPrice bad reserve 2', t => {
   const input = {
-    outputReserve: 50n,
     inputReserve: 0n,
+    outputReserve: 50n,
     inputValue: 828n,
   };
   const message =
-    '"poolAllocation.Central" was not greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
+    '"poolAllocation.Central" must be greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
   getInputPriceThrows(t, input, message);
 });
 
 test('getInputPrice zero input', t => {
   const input = {
-    outputReserve: 50n,
     inputReserve: 320n,
+    outputReserve: 50n,
     inputValue: 0n,
   };
   const message =
-    '"allocation.In" was not greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
+    'amountGiven or amountWanted must be greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"} {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
   getInputPriceThrows(t, input, message);
 });
 
 test('getInputPrice big product', t => {
   const input = {
-    outputReserve: 100000000n,
-    inputReserve: 100000000n,
+    inputReserve: 100_000_000n,
+    outputReserve: 100_000_000n,
     inputValue: 1000n,
   };
-  const expectedOutput = 996n;
+  const expectedOutput = 998n;
+  // const expected = {
+  //   poolFee: 1n,
+  //   swapperGives: 1000n,
+  //   swapperGets: 998n,
+  // };
   testGetPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice ok', t => {
   const input = {
-    outputReserve: 117n,
     inputReserve: 43n,
+    outputReserve: 117n,
     outputValue: 37n,
   };
-  const expectedOutput = 20n;
+  const expectedOutput = 21n;
   testGetOutputPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice zero output reserve', t => {
   const input = {
-    outputReserve: 0n,
     inputReserve: 43n,
+    outputReserve: 0n,
     outputValue: 37n,
   };
   const message =
-    '"poolAllocation.Secondary" was not greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"}';
+    '"poolAllocation.Secondary" must be greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"}';
   getOutputPriceThrows(t, input, message);
 });
 
 test('getOutputPrice zero input reserve', t => {
   const input = {
-    outputReserve: 92n,
     inputReserve: 0n,
+    outputReserve: 92n,
     outputValue: 37n,
   };
   const message =
-    '"poolAllocation.Central" was not greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
+    '"poolAllocation.Central" must be greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
   getOutputPriceThrows(t, input, message);
 });
 
 test('getOutputPrice too much output', t => {
   const input = {
-    outputReserve: 1024n,
     inputReserve: 1132n,
+    outputReserve: 1024n,
     outputValue: 20923n,
   };
-  const message =
-    'The poolAllocation {"brand":"[Alleged: BLD brand]","value":"[1024n]"} did not have enough to satisfy the wanted amountOut {"brand":"[Alleged: BLD brand]","value":"[20923n]"}';
-  getOutputPriceThrows(t, input, message);
+  testGetOutputPrice(t, input, 0n);
 });
 
 test('getOutputPrice too much output 2', t => {
   const input = {
-    outputReserve: 345n,
     inputReserve: 1132n,
+    outputReserve: 345n,
     outputValue: 345n,
   };
-  const message =
-    'The poolAllocation {"brand":"[Alleged: BLD brand]","value":"[345n]"} did not have enough to satisfy the wanted amountOut {"brand":"[Alleged: BLD brand]","value":"[345n]"}';
-  getOutputPriceThrows(t, input, message);
+  testGetOutputPrice(t, input, 0n);
 });
 
 test('getOutputPrice big product', t => {
   const input = {
-    outputReserve: 100000000n,
-    inputReserve: 100000000n,
+    inputReserve: 100_000_000n,
+    outputReserve: 100_000_000n,
     outputValue: 1000n,
   };
-  const expectedOutput = 1004n;
+  const expectedOutput = 1005n;
   testGetOutputPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice minimum price', t => {
   const input = {
-    outputReserve: 10n,
     inputReserve: 1n,
+    outputReserve: 10n,
     outputValue: 1n,
   };
-  const expectedOutput = 1n;
+  // const expected = {
+  //   poolFee: 1n,
+  //   swapperGives: 2n,
+  //   swapperGets: 5n,
+  // };
+  const expectedOutput = 2n;
   testGetOutputPrice(t, input, expectedOutput);
 });
