@@ -20,7 +20,7 @@ const a = () => {b()};
 try {
   a();
 } catch (err) {
-  send(err.stack);
+  err.stack;
 }
 
 //# sourceURL=/filename.js
@@ -31,25 +31,30 @@ async function makeWorker() {
   const vat = xsnap(opts);
 
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
-    globalThis.send = send;
+    globalThis.handleCommand = bytes => {
+      const report = {};
+      const src = String.fromArrayBuffer(bytes);
+      const it = eval(src);
+      report.result = ArrayBuffer.fromString(JSON.stringify(it));
+      return report;
+    };
   `);
 
   return {
-    async run(js) {
-      await vat.evaluate(js);
-      // console.log(opts.messages);
-      const result = opts.messages.pop();
-      return JSON.parse(result);
+    /** @param { string } src */
+    async run(src) {
+      const { reply } = await vat.issueStringCommand(src);
+      return JSON.parse(reply);
     },
   };
 }
 
-test.failing('XS stack traces include file, line numbers', async t => {
+test('XS stack traces include file, line numbers', async t => {
   const w = await makeWorker();
 
-  const x = await w.run('send(1+1)');
+  const x = await w.run('1+1');
   t.is(x, 2);
   const stack = await w.run(code);
-  t.regex(stack, /filename/);
+  t.log(stack);
+  t.regex(stack, /filename.js:9/);
 });
