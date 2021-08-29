@@ -7,7 +7,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@agoric/marshal';
-import { buildParamManager, ParamType } from '../../src/paramManager.js';
+import { buildParamManager } from '../../src/paramManager.js';
 import { makeParamChangePositions } from '../../src/governParam.js';
 
 const BASIS_POINTS = 10_000n;
@@ -17,27 +17,11 @@ test('params one Nat', async t => {
   const numberDescription = {
     name: numberKey,
     value: 13n,
-    type: ParamType.NAT,
   };
   const { getParam, updateNumber } = buildParamManager([numberDescription]);
   t.deepEqual(getParam(numberKey), numberDescription);
   updateNumber(42n);
   t.deepEqual(getParam(numberKey).value, 42n);
-
-  t.throws(
-    () => updateNumber(18.1),
-    {
-      message: '18.1 must be a bigint',
-    },
-    'value should be a nat',
-  );
-  t.throws(
-    () => updateNumber(13),
-    {
-      message: '13 must be a bigint',
-    },
-    'must be bigint',
-  );
 });
 
 test('params one String', async t => {
@@ -45,20 +29,11 @@ test('params one String', async t => {
   const stringDescription = {
     name: stringKey,
     value: 'foo',
-    type: ParamType.STRING,
   };
   const { getParam, updateString } = buildParamManager([stringDescription]);
   t.deepEqual(getParam(stringKey), stringDescription);
   updateString('bar');
   t.deepEqual(getParam(stringKey).value, 'bar');
-
-  t.throws(
-    () => updateString(18.1),
-    {
-      message: '18.1 must be a string',
-    },
-    'value should be a string',
-  );
 });
 
 test('params one Amount', async t => {
@@ -67,20 +42,11 @@ test('params one Amount', async t => {
   const amountDescription = {
     name: amountKey,
     value: AmountMath.makeEmpty(brand),
-    type: ParamType.AMOUNT,
   };
   const { getParam, updateAmount } = buildParamManager([amountDescription]);
   t.deepEqual(getParam(amountKey), amountDescription);
   updateAmount(AmountMath.make(brand, [13]));
   t.deepEqual(getParam(amountKey).value, AmountMath.make(brand, [13]));
-
-  t.throws(
-    () => updateAmount(18.1),
-    {
-      message: 'The brand "[undefined]" doesn\'t look like a brand.',
-    },
-    'value should be a amount',
-  );
 });
 
 test('params one BigInt', async t => {
@@ -88,27 +54,11 @@ test('params one BigInt', async t => {
   const bigIntDescription = {
     name: bigintKey,
     value: 314159n,
-    type: ParamType.NAT,
   };
   const { getParam, updateBigint } = buildParamManager([bigIntDescription]);
   t.deepEqual(getParam(bigintKey), bigIntDescription);
   updateBigint(271828182845904523536n);
   t.deepEqual(getParam(bigintKey).value, 271828182845904523536n);
-
-  t.throws(
-    () => updateBigint(18.1),
-    {
-      message: '18.1 must be a bigint',
-    },
-    'value should be a bigint',
-  );
-  t.throws(
-    () => updateBigint(-1000n),
-    {
-      message: '-1000 is negative',
-    },
-    'NAT params must be positive',
-  );
 });
 
 test('params one ratio', async t => {
@@ -117,7 +67,6 @@ test('params one ratio', async t => {
   const ratioDescription = {
     name: ratioKey,
     value: makeRatio(7n, brand),
-    type: ParamType.RATIO,
   };
 
   const { getParam, getParams, updateRatio } = buildParamManager([
@@ -130,14 +79,6 @@ test('params one ratio', async t => {
     getParams()[ratioKey].value,
     makeRatio(701n, brand, BASIS_POINTS),
   );
-
-  t.throws(
-    () => updateRatio(18.1),
-    {
-      message: 'Expected "number" is same as "copyRecord"',
-    },
-    'value should be a ratio',
-  );
 });
 
 test('params one brand', async t => {
@@ -147,20 +88,11 @@ test('params one brand', async t => {
   const brandDescription = {
     name: brandKey,
     value: roseBrand,
-    type: ParamType.BRAND,
   };
   const { getParam, updateBrand } = buildParamManager([brandDescription]);
   t.deepEqual(getParam(brandKey), brandDescription);
   updateBrand(thornBrand);
   t.deepEqual(getParam(brandKey).value, thornBrand);
-
-  t.throws(
-    () => updateBrand(18.1),
-    {
-      message: 'value for "Brand" must be a brand, was 18.1',
-    },
-    'value should be a brand',
-  );
 });
 
 test('params one unknown', async t => {
@@ -169,7 +101,6 @@ test('params one unknown', async t => {
   const stuffDescription = {
     name: stuffKey,
     value: stiltonBrand,
-    type: ParamType.UNKNOWN,
   };
   const { getParam, updateStuff } = buildParamManager([stuffDescription]);
   t.deepEqual(getParam(stuffKey), stuffDescription);
@@ -185,17 +116,9 @@ test('params one instance', async t => {
   const instanceDescription = {
     name: instanceKey,
     value: instanceHandle,
-    type: ParamType.INSTANCE,
   };
   const { getParam, updateInstance } = buildParamManager([instanceDescription]);
   t.deepEqual(getParam(instanceKey), instanceDescription);
-  t.throws(
-    () => updateInstance(18.1),
-    {
-      message: 'value for "Instance" must be an Instance, was 18.1',
-    },
-    'value should be an Instance',
-  );
   const handle2 = makeHandle('another Instance');
   updateInstance(handle2);
   t.deepEqual(getParam(instanceKey).value, handle2);
@@ -211,19 +134,11 @@ test('params one installation', async t => {
   const installationDescription = {
     name: installationKey,
     value: installationHandle,
-    type: ParamType.INSTALLATION,
   };
   const { getParam, updateInstallation } = buildParamManager([
     installationDescription,
   ]);
   t.deepEqual(getParam(installationKey), installationDescription);
-  t.throws(
-    () => updateInstallation(18.1),
-    {
-      message: 'value for "Installation" must be an Installation, was 18.1',
-    },
-    'value should be an installation',
-  );
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
@@ -240,31 +155,16 @@ test('params duplicate entry', async t => {
         {
           name: stuffKey,
           value: 37n,
-          type: ParamType.NAT,
         },
         {
           name: stuffKey,
           value: stiltonBrand,
-          type: ParamType.UNKNOWN,
         },
       ]),
     {
       message: `each parameter name must be unique: "Stuff" duplicated`,
     },
   );
-});
-
-test('params unknown type', async t => {
-  const stuffKey = 'Stuff';
-  const stuffDescription = {
-    name: stuffKey,
-    value: 'It was the best of times, it was the worst of times',
-    type: 'quote',
-  };
-  // @ts-ignore  illegal value for testing
-  t.throws(() => buildParamManager([stuffDescription]), {
-    message: 'unrecognized type "quote"',
-  });
 });
 
 test('params multiple values', t => {
@@ -274,12 +174,10 @@ test('params multiple values', t => {
   const cheeseDescription = {
     name: stuffKey,
     value: parmesanBrand,
-    type: ParamType.UNKNOWN,
   };
   const constantDescription = {
     name: natKey,
     value: 602214076000000000000000n,
-    type: ParamType.NAT,
   };
   const { getParams, getParam, updateNat, updateStuff } = buildParamManager([
     cheeseDescription,
@@ -290,7 +188,6 @@ test('params multiple values', t => {
   const floatDescription = {
     name: stuffKey,
     value: 18.1,
-    type: ParamType.UNKNOWN,
   };
   t.deepEqual(getParam(stuffKey), floatDescription);
   t.deepEqual(getParam(natKey), constantDescription);

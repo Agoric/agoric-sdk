@@ -12,7 +12,7 @@ import {
   ElectionType,
   looksLikeBallotSpec,
 } from './ballotBuilder.js';
-import { assertType } from './paramManager.js';
+import { looksLikeParam } from './paramManager.js';
 
 /** @type {MakeParamChangePositions} */
 const makeParamChangePositions = (paramSpec, proposedValue) => {
@@ -74,8 +74,7 @@ const setupGovernance = async (
   ) => {
     const paramMgr = E(paramManagerAccessor).get(paramSpec);
     const paramName = paramSpec.parameterName;
-    const param = await E(paramMgr).getParam(paramName);
-    assertType(param.type, proposedValue, paramName);
+    looksLikeParam(proposedValue, paramName);
     const outcomeOfUpdateP = makePromiseKit();
 
     const { positive, negative } = makeParamChangePositions(

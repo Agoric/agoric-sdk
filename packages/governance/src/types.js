@@ -20,11 +20,6 @@
  */
 
 /**
- * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'nat' |
- * 'ratio' | 'string' | 'unknown' } ParamType
- */
-
-/**
  * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
  */
 
@@ -39,20 +34,9 @@
  */
 
 /**
- * @template T
- * @typedef {{ type: T, name: string }} ParamRecord
- */
-
-/**
- * @typedef {ParamRecord<'amount'> & { value: Amount } |
- *   ParamRecord<'brand'> & { value: Brand } |
- *   ParamRecord<'installation'> & { value: Installation } |
- *   ParamRecord<'instance'> & { value: Instance } |
- *   ParamRecord<'nat'> & { value: bigint } |
- *   ParamRecord<'ratio'> & { value: Ratio } |
- *   ParamRecord<'string'> & { value: string } |
- *   ParamRecord<'unknown'> & { value: unknown }
- * } ParamDescription
+ * @typedef {Object} ParamDescription
+ * @property {string} name
+ * @property {ParamValue} value
  */
 
 /**
@@ -363,7 +347,6 @@
 
 /**
  * @callback AssertParamManagerType
- * @param {ParamType} type
  * @param {ParamValue} value
  * @param {string} name
  */

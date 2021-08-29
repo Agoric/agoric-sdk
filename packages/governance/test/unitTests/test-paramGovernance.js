@@ -89,7 +89,6 @@ test('governParam happy path with fakes', async t => {
   t.deepEqual(governedFacets.publicFacet.getState(), {
     MalleableNumber: {
       name: MALLEABLE_NUMBER,
-      type: 'nat',
       value: 25n,
     },
   });
@@ -155,7 +154,6 @@ test('governParam no votes', async t => {
   t.deepEqual(governedFacets.publicFacet.getState(), {
     MalleableNumber: {
       name: MALLEABLE_NUMBER,
-      type: 'nat',
       value: 602214090000000000000000n,
     },
   });
@@ -177,7 +175,7 @@ test('governParam bad update', async t => {
   );
   const brokenParamMgr = Far('broken ParamMgr', {
     getParam: () => {
-      return harden({ type: 'nat' });
+      return harden({});
     },
   });
   const accessor = Far('param accessor', {
@@ -228,7 +226,6 @@ test('governParam bad update', async t => {
   t.deepEqual(governedFacets.publicFacet.getState(), {
     MalleableNumber: {
       name: MALLEABLE_NUMBER,
-      type: 'nat',
       value: 602214090000000000000000n,
     },
   });
