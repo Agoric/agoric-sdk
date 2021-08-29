@@ -59,4 +59,12 @@ export const TimeMath = harden({
       return relativeTimeValue;
     }
   },
+  mod: (abs, step) => {
+    sharedTimeAuthority(abs, step); // just assert they're compat
+    return TimeMath.absoluteTimeValue(abs) % TimeMath.relativeTimeValue(step);
+  },
+  modRel: (rel, step) => {
+    sharedTimeAuthority(rel, step); // just assert they're compat
+    return TimeMath.relativeTimeValue(rel) % TimeMath.relativeTimeValue(step);
+  },
 });

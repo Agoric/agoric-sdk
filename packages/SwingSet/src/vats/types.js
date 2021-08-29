@@ -76,4 +76,6 @@
  * @property {(rel: Durationish) => RelativeTime} relativeTimeValue
  * @property {(abs: AbsoluteTimeish, rel: Durationish) => AbsoluteTimeish} add
  * @property {(rel1: Durationish, rel: Durationish) => Durationish} addRel
+ * @property {(abs: AbsoluteTimeish, step: Durationish) => bigint} mod
+ * @property {(rel: Durationish, step: Durationish) => bigint} modRel
  */
