@@ -29,8 +29,7 @@
  */
 
 /**
- * @typedef { Amount | Brand | Installation | Instance | bigint |
- *   Ratio | string | unknown } ParamValue
+ * @typedef {Comparable} ParamValue
  */
 
 /**
