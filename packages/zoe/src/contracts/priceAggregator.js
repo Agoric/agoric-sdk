@@ -63,7 +63,7 @@ const start = async zcf => {
 
   /**
    * @typedef {Object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: AbsoluteTimeish) => Promise<void>=} querier
    * @property {bigint} lastSample
    */
 
@@ -96,7 +96,7 @@ const start = async zcf => {
   /**
    * @param {Object} param0
    * @param {bigint} [param0.overrideValueOut]
-   * @param {Timestamp} [param0.timestamp]
+   * @param {AbsoluteTimeish} [param0.timestamp]
    */
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**
@@ -165,7 +165,7 @@ const start = async zcf => {
 
   /**
    * @param {Array<bigint>} samples
-   * @param {Timestamp} timestamp
+   * @param {AbsoluteTimeish} timestamp
    */
   const updateQuote = async (samples, timestamp) => {
     const median = calculateMedian(
@@ -298,7 +298,7 @@ const start = async zcf => {
       let lastWakeTimestamp = 0n;
 
       /**
-       * @param {Timestamp} timestamp
+       * @param {AbsoluteTimeish} timestamp
        */
       record.querier = async timestamp => {
         // Submit the query.

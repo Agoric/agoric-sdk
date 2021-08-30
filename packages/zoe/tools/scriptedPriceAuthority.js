@@ -65,7 +65,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  /** @type {ERef<Notifier<Timestamp>>} */
+  /** @type {ERef<Notifier<AbsoluteTimeish>>} */
   const notifier = E(timer).makeNotifier(0n, quoteInterval);
   const priceAuthorityOptions = harden({
     timer,

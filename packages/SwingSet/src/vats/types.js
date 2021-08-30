@@ -2,15 +2,15 @@
  * @typedef {Object} TimerService Gives the ability to get the current time,
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
- * @property {() => Timestamp} getCurrentTimestamp Retrieve the latest timestamp
- * @property {(baseTime: Timestamp, waker: ERef<TimerWaker>) => Timestamp} setWakeup Return
+ * @property {() => AbsoluteTimeish} getCurrentTimestamp Retrieve the latest timestamp
+ * @property {(baseTime: AbsoluteTimeish, waker: ERef<TimerWaker>) => AbsoluteTimeish} setWakeup Return
  * value is the time at which the call is scheduled to take place
- * @property {(waker: ERef<TimerWaker>) => Array<Timestamp>} removeWakeup Remove the waker
+ * @property {(waker: ERef<TimerWaker>) => Array<AbsoluteTimeish>} removeWakeup Remove the waker
  * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
  * `repeater.schedule(h)`.
- * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} createRepeater
+ * @property {(delay: Durationish, interval: Durationish) => TimerRepeater} createRepeater
  * DEPRECATED: use makeRepeater instead.
- * @property {(delaySecs: RelativeTime, interval: RelativeTime) => TimerRepeater} makeRepeater
+ * @property {(delaySecs: Durationish, interval: Durationish) => TimerRepeater} makeRepeater
  * Create and return a repeater that will schedule `wake()` calls
  * repeatedly at times that are a multiple of interval following delay.
  * Interval is the difference between successive times at which wake will be
@@ -18,7 +18,7 @@
  * called after the next multiple of interval from the base. Since times can be
  * coarse-grained, the actual call may occur later, but this won't change when
  * the next event will be called.
- * @property {(delaySecs: RelativeTime, interval: RelativeTime) => Notifier<Timestamp>} makeNotifier
+ * @property {(delaySecs: Durationish, interval: Durationish) => Notifier<AbsoluteTimeish>} makeNotifier
  * Create and return a Notifier that will deliver updates repeatedly at times
  * that are a multiple of interval following delay.
  */
@@ -33,17 +33,49 @@
  */
 
 /**
+ * @typedef {Object} AbsoluteTime
+ * @property {TimerService} timeAuthority
+ * @property {Timestamp} absoluteTimeValue
+ */
+
+/**
+ * @typedef {Object} Duration
+ * @property {TimerService} timeAuthority
+ * @property {RelativeTime} relativeTimeValue
+ */
+
+/**
+ * @typedef {AbsoluteTime | Timestamp} AbsoluteTimeish
+ * Transitional measure until all are converted to AbsoluteTime
+ */
+
+/**
+ * @typedef {Duration | RelativeTime} Durationish
+ * Transitional measure until all are converted to Duration
+ */
+
+/**
  * @typedef {Object} TimerWaker
- * @property {(timestamp: Timestamp) => void} wake The timestamp passed to
+ * @property {(timestamp: AbsoluteTimeish) => void} wake The timestamp passed to
  * `wake()` is the time that the call was scheduled to occur.
  */
 
 /**
  * @typedef {Object} TimerRepeater
- * @property {(waker: ERef<TimerWaker>) => Timestamp} schedule Returns the time scheduled for
+ * @property {(waker: ERef<TimerWaker>) => AbsoluteTimeish} schedule Returns the time scheduled for
  * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
  * every interval until the repeater is disabled.
  * @property {() => void} disable Disable this repeater, so `schedule(w)` can't
  * be called, and wakers already scheduled with this repeater won't be
  * rescheduled again after `E(waker).wake()` is next called on them.
+ */
+
+/**
+ * @typedef TimeMathType
+ * @property {(abs: AbsoluteTimeish) => Timestamp} absoluteTimeValue
+ * @property {(rel: Durationish) => RelativeTime} relativeTimeValue
+ * @property {(abs: AbsoluteTimeish, rel: Durationish) => AbsoluteTimeish} add
+ * @property {(rel1: Durationish, rel: Durationish) => Durationish} addRel
+ * @property {(abs: AbsoluteTimeish, step: Durationish) => bigint} mod
+ * @property {(rel: Durationish, step: Durationish) => bigint} modRel
  */

@@ -25,8 +25,8 @@ const addToLiened = (store, attestationElem) => {
  * the expiration has only expired when the currentTime is past
  * (greater than and not equal to) the expiration.
  *
- * @param {Timestamp} expiration
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} expiration
+ * @param {AbsoluteTimeish} currentTime
  * @returns {boolean}
  */
 const hasExpired = (expiration, currentTime) => expiration < currentTime;
@@ -37,7 +37,7 @@ const hasExpired = (expiration, currentTime) => expiration < currentTime;
  * @param {Address} address
  * @param {Amount} amountLiened - the amount of the underlying asset to put
  * a lien on
- * @param {Timestamp} expiration
+ * @param {AbsoluteTimeish} expiration
  * @param {Handle<'attestation'>} handle - the unique handle
  * @returns {ExpiringAttElem}
  */

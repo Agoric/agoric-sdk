@@ -10,7 +10,7 @@ import { hasExpired } from './expiringHelpers.js';
  * @param {Store<Address,Array<ExpiringAttElem>>} store
  * @param {Amount} empty - an empty amount of the externalBrand
  * @param {Address} address
- * @param {Timestamp} currentTime
+ * @param {AbsoluteTimeish} currentTime
  * @returns {Amount} amountLiened
  */
 const unlienExpiredAmounts = (store, empty, address, currentTime) => {

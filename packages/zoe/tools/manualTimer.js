@@ -3,8 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { makeLegacyMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
+import { TimeMath } from '@agoric/swingset-vat';
 
 import './types.js';
 import './internal-types.js';
@@ -14,26 +14,31 @@ import { makeNotifierKit } from '@agoric/notifier';
  * A fake clock that also logs progress.
  *
  * @param {(...args: any[]) => void} log
- * @param {Timestamp} [startValue=0n]
- * @param {RelativeTime} [timeStep=1n]
+ * @param {AbsoluteTimeish} [startValue=0n]
+ * @param {Durationish} [timeStep=1n]
  * @returns {ManualTimer}
  */
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
-  let ticks = Nat(startValue);
+  // TODO should be something like
+  // let ticks = TimeMath.coerceToAbsoluteTimeish(startValue);
+  let ticks = TimeMath.absoluteTimeValue(startValue);
 
-  /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
+  /** @type {Store<AbsoluteTimeish, Array<ERef<TimerWaker>>>} */
   // Legacy because the value is mutated after it is stored.
-  const schedule = makeLegacyMap('Timestamp');
+  const schedule = makeLegacyMap('AbsoluteTimeish');
 
+  /**
+   * @param {Durationish} delaySecs
+   * @param {Durationish} interval
+   * @param {Timer} timer
+   */
   const makeRepeater = (delaySecs, interval, timer) => {
-    assert.typeof(delaySecs, 'bigint');
     assert(
-      delaySecs % timeStep === 0n,
+      TimeMath.modRel(delaySecs, timeStep) === 0n,
       `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
     );
-    assert.typeof(interval, 'bigint');
     assert(
-      interval % timeStep === 0n,
+      TimeMath.modRel(interval, timeStep) === 0n,
       `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
     );
 
@@ -44,15 +49,14 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     /** @type {TimerWaker} */
     const repeaterWaker = Far('repeatWaker', {
       async wake(timestamp) {
-        assert.typeof(timestamp, 'bigint');
         assert(
-          timestamp % timeStep === 0n,
+          TimeMath.mod(timestamp, timeStep) === 0n,
           `timer has a resolution of ${timeStep}; ${timestamp} is not divisible`,
         );
         if (!wakers) {
           return;
         }
-        nextWakeup = ticks + interval;
+        nextWakeup = TimeMath.add(ticks, interval);
         timer.setWakeup(nextWakeup, repeaterWaker);
         await Promise.allSettled(wakers.map(waker => E(waker).wake(timestamp)));
       },
@@ -70,7 +74,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         timer.removeWakeup(repeaterWaker);
       },
     });
-    nextWakeup = ticks + delaySecs;
+    nextWakeup = TimeMath.add(ticks, delaySecs);
     timer.setWakeup(nextWakeup, repeaterWaker);
     return repeater;
   };
@@ -79,7 +83,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   const timer = Far('ManualTimer', {
     // This function will only be called in testing code to advance the clock.
     async tick(msg) {
-      ticks += timeStep;
+      ticks = TimeMath.add(ticks, timeStep);
       log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
       if (schedule.has(ticks)) {
         const wakers = schedule.get(ticks);
@@ -96,9 +100,8 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       return ticks;
     },
     setWakeup(baseTime, waker) {
-      assert.typeof(baseTime, 'bigint');
       assert(
-        baseTime % timeStep === 0n,
+        TimeMath.mod(baseTime, timeStep) === 0n,
         `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
       );
       if (baseTime <= ticks) {
@@ -114,7 +117,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       return baseTime;
     },
     removeWakeup(waker) {
-      /** @type {Array<Timestamp>} */
+      /** @type {Array<AbsoluteTimeish>} */
       const baseTimes = [];
       for (const [baseTime, wakers] of schedule.entries()) {
         if (wakers.includes(waker)) {
@@ -139,14 +142,12 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       return makeRepeater(delaySecs, interval, timer);
     },
     makeNotifier(delaySecs, interval) {
-      assert.typeof(delaySecs, 'bigint');
       assert(
-        (delaySecs % timeStep) === 0n,
+        TimeMath.modRel(delaySecs, timeStep) === 0n,
         `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
       );
-      assert.typeof(interval, 'bigint');
       assert(
-        interval % timeStep === 0n,
+        TimeMath.modRel(interval, timeStep) === 0n,
         `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
       );
       const { notifier, updater } = makeNotifierKit();
@@ -155,10 +156,10 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         async wake(timestamp) {
           assert.typeof(timestamp, 'bigint');
           updater.updateState(timestamp);
-          timer.setWakeup(ticks + interval, repeaterWaker);
+          timer.setWakeup(TimeMath.add(ticks, interval), repeaterWaker);
         },
       });
-      timer.setWakeup(ticks + delaySecs, repeaterWaker);
+      timer.setWakeup(TimeMath.add(ticks, delaySecs), repeaterWaker);
       return notifier;
     },
   });

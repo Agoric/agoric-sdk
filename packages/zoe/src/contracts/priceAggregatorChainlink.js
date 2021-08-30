@@ -150,7 +150,7 @@ const start = async zcf => {
 
   /**
    * @typedef {Object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: AbsoluteTimeish) => Promise<void>=} querier
    * @property {number} lastSample
    */
 
@@ -160,7 +160,7 @@ const start = async zcf => {
   /**
    * @param {Object} param0
    * @param {number} [param0.overrideValueOut]
-   * @param {Timestamp} [param0.timestamp]
+   * @param {AbsoluteTimeish} [param0.timestamp]
    */
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**

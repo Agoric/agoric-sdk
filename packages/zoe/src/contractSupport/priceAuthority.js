@@ -32,7 +32,7 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
 /**
  * @typedef {Object} OnewayPriceAuthorityOptions
  * @property {Issuer} quoteIssuer
- * @property {ERef<Notifier<Timestamp>>} notifier
+ * @property {ERef<Notifier<AbsoluteTimeish>>} notifier
  * @property {ERef<TimerService>} timer
  * @property {PriceQuoteCreate} createQuote
  * @property {Brand} actualBrandIn

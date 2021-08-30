@@ -292,7 +292,7 @@
  */
 
 /**
- * @typedef {bigint} Deadline
+ * @typedef {AbsoluteTimeish} Deadline
  */
 
 /**
@@ -402,8 +402,8 @@
  * @property {ERef<TimerService> | undefined} timeAuthority
  * @property {bigint} highFee
  * @property {bigint} lowFee
- * @property {bigint} shortExp
- * @property {bigint} longExp
+ * @property {Durationish} shortExp
+ * @property {Durationish} longExp
  */
 
 /**

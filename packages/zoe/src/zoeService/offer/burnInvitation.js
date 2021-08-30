@@ -13,7 +13,7 @@ import { E } from '@agoric/eventual-send';
  *   instanceHandle: Instance,
  *   invitationHandle: InvitationHandle,
  *   fee: Amount | undefined,
- *   expiry: Timestamp | undefined,
+ *   expiry: AbsoluteTimeish | undefined,
  * }>}
  */
 export const burnInvitation = (invitationIssuer, invitation) => {

@@ -19,6 +19,7 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
+import { TimeMath } from '@agoric/swingset-vat';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -160,9 +161,9 @@ const makeZoeKit = (
       zoeFeesConfig.timeAuthority,
     ).getCurrentTimestamp();
     if (relativeExpiry === SHORT_EXP) {
-      return currentTime + zoeFeesConfig.shortExp;
+      return TimeMath.add(currentTime, zoeFeesConfig.shortExp);
     } else if (relativeExpiry === LONG_EXP) {
-      return currentTime + zoeFeesConfig.longExp;
+      return TimeMath.add(currentTime, zoeFeesConfig.longExp);
     }
     assert.fail(X`relativeExpiry ${relativeExpiry} was not recognized`);
   };

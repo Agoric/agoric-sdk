@@ -178,5 +178,5 @@
 /**
  * @callback TranslateExpiry
  * @param {ExpiryChoice | undefined} relativeExpiry
- * @returns {Timestamp | undefined}
+ * @returns {AbsoluteTimeish | undefined}
  */
