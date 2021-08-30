@@ -69,13 +69,13 @@
  */
 
 /**
- * @typedef {Object} textPosition
+ * @typedef {Object} TextPosition
  * @property {string} text
  */
 
 /**
- * @typedef { textPosition | changeParamPosition |
- *   noChangeParamPosition } Position
+ * @typedef { TextPosition | ChangeParamPosition |
+ *   NoChangeParamPosition } Position
  */
 
 /**
@@ -311,8 +311,8 @@
 
 /**
  * @typedef {Object} ParamChangePositions
- * @property {changeParamPosition} positive
- * @property {noChangeParamPosition} negative
+ * @property {ChangeParamPosition} positive
+ * @property {NoChangeParamPosition} negative
  */
 
 /**
@@ -336,7 +336,7 @@
  * @property {number} maxChoices
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
- * @property {noChangeParamPosition} tieOutcome
+ * @property {NoChangeParamPosition} tieOutcome
  * @property {Instance} counterInstance - instance of the BallotCounter
  * @property {Handle<'Ballot'>} handle
  */
@@ -375,13 +375,13 @@
  */
 
 /**
- * @typedef {Object} changeParamPosition
+ * @typedef {Object} ChangeParamPosition
  * @property {ParamSpecification} changeParam
  * @property {ParamValue} proposedValue
  */
 
 /**
- * @typedef {Object} noChangeParamPosition
+ * @typedef {Object} NoChangeParamPosition
  * @property {ParamSpecification} noChange
  */
 
