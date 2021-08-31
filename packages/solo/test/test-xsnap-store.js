@@ -7,7 +7,7 @@ import { type as osType } from 'os';
 import tmp from 'tmp';
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
-import { makeSnapStore } from '@agoric/swing-store';
+import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;
@@ -76,12 +76,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.c
   t.teardown(() => pool.removeCallback());
   await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   const h = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
@@ -102,12 +97,7 @@ test('SES bootstrap, save, compress', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
@@ -127,12 +117,7 @@ test('create SES worker, save, restore, resume', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
