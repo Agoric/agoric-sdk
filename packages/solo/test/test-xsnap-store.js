@@ -135,8 +135,41 @@ test('create SES worker, save, restore, resume', async t => {
   t.pass();
 });
 
-// see https://github.com/Agoric/agoric-sdk/issues/2776
-test.failing('XS + SES snapshots should be deterministic', t => {
-  const h = 'abc';
-  t.is('66244b4bfe92ae9138d24a9b50b492d231f6a346db0cf63543d200860b423724', h);
+test('XS + SES snapshots are deterministic', async t => {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  t.log({ pool: pool.name });
+  await fs.promises.mkdir(pool.name, { recursive: true });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+
+  const vat = await bootWorker('xs1', async m => m, '1 + 1');
+  t.teardown(() => vat.close());
+
+  const h1 = await store.save(vat.snapshot);
+
+  t.is(
+    h1,
+    '43bbda815d5b1c2cd63061588081bc2cf4805a66887fb00b30c1b85a2a0e0899',
+    'initial snapshot',
+  );
+
+  const bootScript = await ld.asset(
+    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
+  );
+  await vat.evaluate(bootScript);
+
+  const h2 = await store.save(vat.snapshot);
+  t.is(
+    h2,
+    'fdd8c4e16329e1436ad7b0ecbcfc37cbf3aaec436c14fd6d3eb42d81db332795',
+    'after SES boot',
+  );
+
+  await vat.evaluate('globalThis.x = harden({a: 1})');
+  const h3 = await store.save(vat.snapshot);
+  t.is(
+    h3,
+    '808240d01126e43c21e90625f2685a6046c804109212e0544a9137d526171617',
+    'after use of harden()',
+  );
 });
