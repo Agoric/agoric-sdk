@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div id="demo"></div>
+
+  <script type="module">
+    import { html, render } from 'lit';
+    import '../agoric-wallet-connection.js';
+
+    const onOpen = ev => {
+      console.log('connected', ev);
+      const walletBridge = E(ev.wallet).getScopedBridge('Example Dapp', window.location.origin);
+      const zoe = E(walletBridge).getZoe();
+      console.log(zoe);
+    };
+    render(
+      html`
+        <agoric-wallet-connection @open=${onOpen} connecting></agoric-wallet-connection>
+      `,
+      document.querySelector('#demo')
+    );
+  </script>
+</body>
+</html>
