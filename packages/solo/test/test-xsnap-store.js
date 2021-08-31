@@ -5,6 +5,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import tmp from 'tmp';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
