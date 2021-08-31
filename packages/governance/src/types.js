@@ -224,7 +224,7 @@
 
 /**
  * @typedef {Object} RegistrarPublic
- * @property {() => Notifier<BallotDetails>} getQuestionNotifier
+ * @property {() => Subscription<BallotDetails>} getQuestionSubscription
  * @property {() => ERef<Handle<'Ballot'>[]>} getOpenQuestions,
  * @property {() => string} getName
  * @property {() => Instance} getInstance
@@ -244,7 +244,7 @@
  * @property {() => ERef<Invitation>} getPoserInvitation
  * @property {AddQuestion} addQuestion
  * @property {() => Invitation[]} getVoterInvitations
- * @property {() => Notifier<BallotDetails>} getQuestionNotifier
+ * @property {() => Subscription<BallotDetails>} getQuestionSubscription
  * @property {() => RegistrarPublic} getPublicFacet
  */
 

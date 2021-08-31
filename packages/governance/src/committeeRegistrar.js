@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeSubscriptionKit } from '@agoric/notifier';
 import { allComparable } from '@agoric/same-structure';
 import { makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
@@ -29,7 +29,7 @@ const start = zcf => {
 
   /** @type {Store<Handle<'Ballot'>, QuestionRecord>} */
   const allQuestions = makeStore('Question');
-  const { notifier, updater } = makeNotifierKit();
+  const { subscription, publication } = makeSubscriptionKit();
   const invitations = [];
 
   const getOpenQuestions = async () => {
@@ -99,13 +99,13 @@ const start = zcf => {
     const facets = { voter: E(creatorFacet).getVoterFacet(), publicFacet };
     allQuestions.init(details.handle, facets);
 
-    updater.updateState(details);
+    publication.updateState(details);
     return { creatorFacet, publicFacet, instance };
   };
 
   /** @type {RegistrarPublic} */
   const publicFacet = Far('publicFacet', {
-    getQuestionNotifier: () => notifier,
+    getQuestionSubscription: () => subscription,
     getOpenQuestions,
     getName: () => committeeName,
     getInstance: zcf.getInstance,
@@ -125,7 +125,7 @@ const start = zcf => {
     getPoserInvitation,
     addQuestion,
     getVoterInvitations: () => invitations,
-    getQuestionNotifier: () => notifier,
+    getQuestionSubscription: () => subscription,
     getPublicFacet: () => publicFacet,
   });
 

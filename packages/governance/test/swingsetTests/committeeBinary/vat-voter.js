@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { observeNotifier } from '@agoric/notifier';
+import { observeIteration } from '@agoric/notifier';
 import { q } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 
@@ -43,8 +43,8 @@ const build = async (log, zoe) => {
           return E(voteFacet).castBallotFor(details.handle, [choice]);
         },
       });
-      const notifier = E(registrarPublicFacet).getQuestionNotifier();
-      observeNotifier(notifier, votingObserver);
+      const subscription = E(registrarPublicFacet).getQuestionSubscription();
+      observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
@@ -71,8 +71,8 @@ const build = async (log, zoe) => {
           return E(voteFacet).castBallotFor(details.handle, [choice]);
         },
       });
-      const notifier = E(registrarPublicFacet).getQuestionNotifier();
-      observeNotifier(notifier, votingObserver);
+      const subscription = E(registrarPublicFacet).getQuestionSubscription();
+      observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
