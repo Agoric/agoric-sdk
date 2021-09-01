@@ -10,14 +10,15 @@ export class AgoricIframeMessenger extends LitElement {
     super();
     this.src = '';
     this._contentWindow = null;
+
+    // Need to bind since these aren't declarative event handlers.
+    this.send = this.send.bind(this);
     this._onMessage = this._onMessage.bind(this);
-    this._onLoad = this._onLoad.bind(this);
-    this._onError = this._onError.bind(this);
   }
 
   connectedCallback() {
-    window.addEventListener('message', this._onMessage);
     super.connectedCallback();
+    window.addEventListener('message', this._onMessage);
   }
 
   disconnectedCallback() {
@@ -27,7 +28,12 @@ export class AgoricIframeMessenger extends LitElement {
 
   render() {
     return html`
-      <iframe src=${this.src} @load=${this._onLoad} @error=${this._onError}></iframe>
+      <iframe
+        src=${this.src}
+        @load=${this._onLoad}
+        @abort=${this._onError}
+        @error=${this._onError}
+      ></iframe>
     `;
   }
 
@@ -38,7 +44,8 @@ export class AgoricIframeMessenger extends LitElement {
 
   _onLoad(event) {
     event.preventDefault();
-    const ev = new CustomEvent('open');
+    const ev = new CustomEvent('open', { detail: { send: this.send } });
+    this._origin = new URL(this.src).origin;
     this.dispatchEvent(ev);
   }
 
@@ -48,17 +55,17 @@ export class AgoricIframeMessenger extends LitElement {
     }
     event.preventDefault();
 
-    const ev = new CustomEvent('message', { detail: { href: event.data } });
+    const ev = new CustomEvent('message', { detail: event.data });
     this.dispatchEvent(ev);
   }
 
   _onError(event) {
     event.preventDefault();
-    const ev = new CustomEvent('error', { detail: event });
+    const ev = new CustomEvent('error', { detail: { error: event.error } });
     this.dispatchEvent(ev);
   }
 
   send(data) {
-    this._contentWindow.postMessage(data, new URL(this.src).origin);
+    this._contentWindow.postMessage(data, this._origin);
   }
 }

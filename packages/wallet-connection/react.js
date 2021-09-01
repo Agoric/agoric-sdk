@@ -11,8 +11,6 @@ export const makeReactAgoricWalletConnection = React =>
     'agoric-wallet-connection',
     AgoricWalletConnection,
     {
-      onconnect: 'connect',
-      ondisconnect: 'disconnect',
-      onerror: 'error',
+      onState: 'state',
     },
   );

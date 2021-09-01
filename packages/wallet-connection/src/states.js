@@ -13,44 +13,43 @@ import { createMachine, guard, immediate, invoke, reduce as rawReduce, state, tr
  */
 const reduce = rawReduce;
 
-const abortable = [
-  // Allow the 'reset' transition to start back at the idle state.
-  transition('reset', 'idle'),
-  // Make the 'error' transition go to the error state.
+const common = [
+  // Allow the 'reset' event to go back to the 'idle' state.
+  transition('reset', 'idle',
+    reduce(ctx => ({ ...ctx, error: null })),
+  ),
+  // Make the 'error' event go to the 'error' state.
   transition('error', 'error',
     reduce((ctx, ev) => ({ ...ctx, error: ev.error }))
   ),
 ];
 
 /**
- * @param {(ctx: Context) => Promise<any>} [backoff]
+ * Create a state machine for the wallet connection.
  */
-export const makeMachine = (backoff = undefined) => createMachine({
+export const makeConnectionMachine = () => createMachine({
   idle: state(
-    ...abortable,
-    transition('locate', 'locating'),
+    ...common,
+    transition('locate', 'locating',
+      reduce((ctx, ev) => ({ ...ctx, suggestedDappPetname: ev.suggestedDappPetname }))
+    ),
     transition('connect', 'connecting'),
   ),
   locating: state(
-    ...abortable,
+    ...common,
     immediate('connecting', guard(({ location }) => !!location)),
     transition('located', 'connecting',
       reduce((ctx, ev) => ({ ...ctx, location: ev.href })),
     ),
   ),
   connecting: state(
-    ...abortable,
+    ...common,
     transition('connected', 'bridged'),
   ),
   bridged: state(
-    ...abortable,
+    ...common,
   ),
   error: state(
-    ...abortable,
-    immediate('retry', guard(() => !!backoff)),
+    ...common,
   ),
-  retry: invoke(backoff,
-    ...abortable,
-    transition('done', 'locating'),
-  ),
-}, () => ({ error: null, location: null }));
+}, () => ({ error: null, location: null, suggestedDappPetname: null }));

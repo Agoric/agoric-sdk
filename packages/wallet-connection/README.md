@@ -48,35 +48,37 @@ environment that `agoric-wallet-connection` uses:
 import './install-ses-lockdown.js';
 ```
 
-Somewhere else, you will need to define custom event handlers:
+Somewhere else, you will need to define a custom state event handler:
 
 ```js
 import { E } from '@agoric/eventual-send';
 
-// This will possibly run multiple times whenever `.connecting` is set.
-const onOpen = ev => {
-  // You should reconstruct all state here, given that the wallet is only now freshly open.
-  console.log('Agoric wallet connected');
+const onWalletState = ev => {
+  const { walletConnection, state } = ev.detail;
+  console.log('onWalletState', state);
+  switch (state) {
+    case 'idle': {
+      console.log('idle', ev.detail);
 
-  // This is one of the only methods that the wallet facet allows.
-  /** @type {ERef<WalletBridge>} */
-  const walletBridge = E(ev.wallet).getScopedBridge('My dapp', window.location.origin);
-  // Now use the WalletBridge as desired.
-  const zoe = E(walletBridge).getZoe();
-  // ...
-};
+      // This is one of the only methods that the wallet connection facet allows.
+      // It connects asynchronously, but you can use promise pipelining immediately.
+      /** @type {ERef<WalletBridge>} */
+      const bridge = E(walletConnection).getScopedBridge('my dapp');
 
-// This will run for every notable error, maybe multiple times per wallet connection.
-const onError = ev => {
-  console.error('Agoric wallet got connection error', ev.message);
-};
-
-// This will run every time the wallet connection closes, including if the
-// latest connection attempt has failed to open.
-// If `.connecting` is still set after this callback, then the connection will retry.
-const onClose = ev => {
-  // Clean up app state since the wallet connection is closed.
-  console.log('Agoric wallet closed', ev.code, ev.reason);
+      // You should reconstruct all state here.
+      const zoe = E(bridge).getZoe();
+      // ...
+      break;
+    }
+    case 'error': {
+      console.log('error', ev.detail);
+      // In case of an error, reset to 'idle'.
+      // Backoff or other retry strategies would go here instead of immediate reset.
+      E(walletConnection).reset();
+      break;
+    }
+    default:
+  }
 };
 ```
 
@@ -95,16 +97,11 @@ This is an example of how to use the wallet connection in plain HTML:
 
   // Set up event handlers.
   const awc = document.querySelector('agoric-wallet-connection');
-  awc.addEventListener('open', onOpen);
-  awc.addEventListener('error', onError);
-  awc.addEventListener('close', onClose);
+  awc.addEventListener('state', onWalletState);
 
-  // Configure the listener.
-  document.querySelector('button').addEventListener(ev => {
-    // Start the wallet connection.
-    // Will retry until `.connecting` is explicitly set to `false`.
-    awc.connecting = true;
-  });
+  // You're free to use the wallet connection object directly:
+  E(awc.walletConnection).getScopedBridge('my dapp');
+  // ...
 </script>
 ```
 
@@ -122,16 +119,9 @@ import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react
 const AgoricWalletConnection = makeReactAgoricWalletConnection(React);
 
 const MyWalletConnection = ({ connecting }) => {
-  const onOpen = useCallback(ev => { /* use ev.wallet */ }, []);
-  const onClose = useCallback(ev => { /* use ev.code, ev.reason */ }, []);
-  const onError = useCallback(ev => { /* use ev.message */ }, []);
+  const onWalletState = useCallback(ev => { /* similar to above */ }, []);
   return (
-    <AgoricWalletConnection
-      connecting={connecting}
-      onOpen={onOpen}
-      onClose={onClose}
-      onError={onError}
-    />
+    <AgoricWalletConnection onState={onWalletState} />
   );
 }
 ```
