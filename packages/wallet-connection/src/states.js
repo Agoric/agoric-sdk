@@ -13,10 +13,12 @@ import { createMachine, guard, immediate, invoke, reduce as rawReduce, state, tr
  */
 const reduce = rawReduce;
 
+const initialContext = () => ({ error: null, location: null, suggestedDappPetname: null });
+
 const common = [
   // Allow the 'reset' event to go back to the 'idle' state.
   transition('reset', 'idle',
-    reduce(ctx => ({ ...ctx, error: null })),
+    reduce(initialContext),
   ),
   // Make the 'error' event go to the 'error' state.
   transition('error', 'error',
@@ -48,8 +50,22 @@ export const makeConnectionMachine = () => createMachine({
   ),
   bridged: state(
     ...common,
+    transition('needDappApproval', 'approving',
+      reduce((ctx, ev) => ({
+        ...ctx,
+        dappOrigin: ev.dappOrigin,
+        suggestedDappPetname: ev.suggestedDappPetname,
+      })),
+    ),
+  ),
+  approving: state(
+    ...common,
+    transition('needDappApproval', 'approving'),
+    transition('dappApproved', 'bridged',
+      reduce((ctx, ev) => ({ ...ctx, dappOrigin: ev.dappOrigin })),
+    ),
   ),
   error: state(
     ...common,
   ),
-}, () => ({ error: null, location: null, suggestedDappPetname: null }));
+}, initialContext);

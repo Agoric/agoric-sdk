@@ -50,12 +50,13 @@ export class AgoricIframeMessenger extends LitElement {
   }
 
   _onMessage(event) {
+    // console.log('iframe message', event);
     if (event.source !== this._contentWindow) {
       return;
     }
     event.preventDefault();
 
-    const ev = new CustomEvent('message', { detail: event.data });
+    const ev = new CustomEvent('message', { detail: { data: event.data, send: this.send } });
     this.dispatchEvent(ev);
   }
 

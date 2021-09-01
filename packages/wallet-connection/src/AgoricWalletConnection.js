@@ -54,10 +54,9 @@ export class AgoricWalletConnection extends LitElement {
       },
       reset: () => {
         this.service.send({ type: 'reset' });
-        const abort = this._abort;
-        if (abort) {
-          this._abort = null;
-          abort();
+        if (this._captp) {
+          this._captp.abort();
+          this._captp = null;
         }
         this._bridgePK = makePromiseKit();
       },
@@ -92,44 +91,47 @@ export class AgoricWalletConnection extends LitElement {
 
     this._nextEpoch = 0;
     this._bridgePK = makePromiseKit();
+
+    this._walletCallbacks = Far('walletCallbacks', {
+      needDappApproval: (dappOrigin, suggestedDappPetname) => {
+        this.service.send({ type: 'needDappApproval', dappOrigin, suggestedDappPetname });
+      },
+      dappApproved: (dappOrigin) => {
+        this.service.send({ type: 'dappApproved', dappOrigin });
+      },
+    });
   }
 
   onOpen(ev) {
     console.log(this.state, 'open', ev);
-    this._send = ev.detail.send;
+    if (this.state === 'bridged') {
+      this._bridgePK.resolve(this._captp.getBootstrap());
+    }
   }
 
   onLocateMessage(ev) {
     console.log(this.state, 'locate', ev);
-    assert.typeof(ev.detail, 'string', X`Expected locate message to be a string`);
-    this.service.send({ type: 'located', href: ev.detail });
+    const { data } = ev.detail;
+    assert.typeof(data, 'string', X`Expected locate message to be a string`);
+    this.service.send({ type: 'located', href: data });
   }
 
   onConnectMessage(event) {
     console.log(this.state, 'connect received', event);
+    const { data, send } = event.detail;
+    assert.equal(data.type, 'walletBridgeLoaded', X`Unexpected connect message type ${data.type}`);
+
+    this._startCapTP(send);
 
     // Received bridge announcement, so mark the connection as bridged.
     this.service.send({ type: 'connected' });
-
-    // Start a new epoch of the bridge captp.
-    const epoch = this._nextEpoch;
-    this._nextEpoch += 1;
-
-    const { abort, dispatch, getBootstrap } = makeCapTP(
-      `${this.service.context.suggestedDappPetname}.${epoch}`,
-      this._send,
-      undefined,
-      { epoch },
-    );
-    this._bridgePK.resolve(getBootstrap());
-    this._abort = abort;
-    this._dispatch = dispatch;
   }
 
   onBridgeMessage(ev) {
     console.log(this.state, 'bridge received', ev);
-    if (ev.detail && typeof ev.detail.type === 'string' && ev.detail.type.startsWith('CTP_')) {
-      this._dispatch(ev.detail);
+    const { data } = ev.detail;
+    if (data && typeof data.type === 'string' && data.type.startsWith('CTP_')) {
+      this._captp.dispatch(data);
     }
   }
 
@@ -138,12 +140,26 @@ export class AgoricWalletConnection extends LitElement {
     this.service.send({ type: 'error', error: event.detail.error });
 
     // Allow retries to get a fresh bridge.
-    this._bridgePK = makePromiseKit();
-    this._abort = null;
-    this._dispatch = null;
+    this._captp = null;
   }
 
-  getBridgeURL() {
+  _startCapTP(send) {
+    // Start a new epoch of the bridge captp.
+    const epoch = this._nextEpoch;
+    this._nextEpoch += 1;
+
+    this._captp = makeCapTP(
+      `${this.service.context.suggestedDappPetname}.${epoch}`,
+      obj => {
+        // console.log('sending', obj);
+        send(obj);
+      },
+      this._walletCallbacks,
+      { epoch },
+    );
+  }    
+
+  _getBridgeURL() {
     const { location, suggestedDappPetname } = this.service.context;
     const url = new URL(location);
     url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
@@ -160,12 +176,13 @@ export class AgoricWalletConnection extends LitElement {
         break;
       }
       case 'connecting': {
-        src = this.getBridgeURL();
+        src = this._getBridgeURL();
         onMessage = this.onConnectMessage;
         break;
       }
+      case 'approving':
       case 'bridged': {
-        src = this.getBridgeURL();
+        src = this._getBridgeURL();
         onMessage = this.onBridgeMessage;
         break;
       }

@@ -362,18 +362,18 @@ export function buildRootObject(_vatPowers) {
         );
 
         const approve = async () => {
-          let needApproval = false;
+          let notYetEnabled = false;
           await walletAdmin.waitForDappApproval(
             suggestedDappPetname,
             dappOrigin,
             () => {
-              needApproval = true;
+              notYetEnabled = true;
               E(otherSide)
                 .needDappApproval(dappOrigin, suggestedDappPetname)
                 .catch(_ => {});
             },
           );
-          if (needApproval) {
+          if (notYetEnabled) {
             E(otherSide).dappApproved(dappOrigin);
           }
         };
