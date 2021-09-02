@@ -135,6 +135,12 @@ test('create SES worker, save, restore, resume', async t => {
   t.pass();
 });
 
+/**
+ * The snapshot hashes in this test are, naturally,
+ * sensitive to any changes in bundle-ses-boot.umd.js;
+ * that is: any changes to the SES shim or to the
+ * xsnap-worker supervisor.
+ */
 test('XS + SES snapshots are deterministic', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
