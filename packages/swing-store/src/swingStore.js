@@ -109,7 +109,20 @@ function makeSwingStore(dirPath, forceReset, options) {
   let txn = null;
 
   if (forceReset) {
-    fs.rmdirSync(dirPath, { recursive: true });
+    try {
+      // Node.js 16.8.0 warns:
+      // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+      // be removed. Use fs.rm(path, { recursive: true }) instead
+      if (fs.rmSync) {
+        fs.rmSync(dirPath, { recursive: true });
+      } else {
+        fs.rmdirSync(dirPath, { recursive: true });
+      }
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
   }
   fs.mkdirSync(dirPath, { recursive: true });
 

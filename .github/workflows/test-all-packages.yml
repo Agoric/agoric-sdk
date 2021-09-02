@@ -14,8 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/checkout@v2
       with:
@@ -30,6 +29,12 @@ jobs:
         key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
+    
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
@@ -181,8 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -307,8 +311,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -374,8 +377,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -413,8 +415,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -461,8 +462,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -507,8 +507,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -545,8 +544,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: ['14.x', '16.x']
-        node-version: ['14.x']
+        node-version: ['14.x', '16.x']
     steps:
     - uses: actions/setup-node@v1
       with:
