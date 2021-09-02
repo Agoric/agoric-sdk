@@ -8,7 +8,9 @@
   "module": "index.js",
   "scripts": {
     "analyze": "cem analyze --litelement",
+    "build": "exit 0",
     "start": "web-dev-server --port 8100",
+    "lint-check": "yarn lint",
     "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
     "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
     "test": "web-test-runner --coverage",
