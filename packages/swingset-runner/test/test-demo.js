@@ -6,6 +6,23 @@ import path from 'path';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
+function rimraf(dirPath) {
+  try {
+    // Node.js 16.8.0 warns:
+    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+    // be removed. Use fs.rm(path, { recursive: true }) instead
+    if (fs.rmSync) {
+      fs.rmSync(dirPath, { recursive: true });
+    } else {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+  } catch (e) {
+    if (e.code !== 'ENOENT') {
+      throw e;
+    }
+  }
+}
+
 async function innerTest(t, extraFlags, dbdir) {
   await new Promise(resolve => {
     const appDir = 'demo/encouragementBot';
@@ -30,7 +47,7 @@ async function innerTest(t, extraFlags, dbdir) {
       t.not(output.indexOf(`\n${bMsg}\n`), -1, bMsg);
       resolve();
       if (dbdir) {
-        fs.rmdirSync(dbdir, { recursive: true });
+        rimraf(dbdir);
       }
     });
   });
