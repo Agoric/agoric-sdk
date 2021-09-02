@@ -14,6 +14,23 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
+function rimraf(dirPath) {
+  try {
+    // Node.js 16.8.0 warns:
+    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+    // be removed. Use fs.rm(path, { recursive: true }) instead
+    if (fs.rmSync) {
+      fs.rmSync(dirPath, { recursive: true });
+    } else {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+  } catch (e) {
+    if (e.code !== 'ENOENT') {
+      throw e;
+    }
+  }
+}
+
 function testKVStore(t, store) {
   const kvStore = store.kvStore;
   t.falsy(kvStore.has('missing'));
@@ -55,8 +72,8 @@ test('in-memory kvStore read/write', t => {
 
 test('persistent kvStore read/write/re-open', t => {
   const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
+  t.teardown(() => rimraf(dbDir));
+  rimraf(dbDir);
   t.is(isSwingStore(dbDir), false);
   const store = initSwingStore(dbDir);
   const { commit, close } = store;
@@ -118,8 +135,8 @@ test('in-memory streamStore read/write', t => {
 
 test('persistent streamStore read/write', t => {
   const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
+  t.teardown(() => rimraf(dbDir));
+  rimraf(dbDir);
   t.is(isSwingStore(dbDir), false);
   testStreamStore(t, dbDir);
 });
@@ -155,8 +172,8 @@ test('in-memory streamStore mode interlock', t => {
 
 test('persistent streamStore mode interlock', t => {
   const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
+  t.teardown(() => rimraf(dbDir));
+  rimraf(dbDir);
   t.is(isSwingStore(dbDir), false);
   testStreamStoreModeInterlock(t, dbDir);
 });
