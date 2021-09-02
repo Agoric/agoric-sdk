@@ -5,9 +5,10 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import tmp from 'tmp';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
-import { makeSnapStore } from '@agoric/swing-store';
+import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;
@@ -76,12 +77,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.c
   t.teardown(() => pool.removeCallback());
   await fs.promises.mkdir(pool.name, { recursive: true });
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   const h = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
@@ -102,12 +98,7 @@ test('SES bootstrap, save, compress', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
@@ -127,12 +118,7 @@ test('create SES worker, save, restore, resume', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const store = makeSnapStore(pool.name, {
-    ...tmp,
-    ...path,
-    ...fs,
-    ...fs.promises,
-  });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
@@ -149,8 +135,47 @@ test('create SES worker, save, restore, resume', async t => {
   t.pass();
 });
 
-// see https://github.com/Agoric/agoric-sdk/issues/2776
-test.failing('XS + SES snapshots should be deterministic', t => {
-  const h = 'abc';
-  t.is('66244b4bfe92ae9138d24a9b50b492d231f6a346db0cf63543d200860b423724', h);
+/**
+ * The snapshot hashes in this test are, naturally,
+ * sensitive to any changes in bundle-ses-boot.umd.js;
+ * that is: any changes to the SES shim or to the
+ * xsnap-worker supervisor.
+ */
+test('XS + SES snapshots are deterministic', async t => {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  t.log({ pool: pool.name });
+  await fs.promises.mkdir(pool.name, { recursive: true });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+
+  const vat = await bootWorker('xs1', async m => m, '1 + 1');
+  t.teardown(() => vat.close());
+
+  const h1 = await store.save(vat.snapshot);
+
+  t.is(
+    h1,
+    '43bbda815d5b1c2cd63061588081bc2cf4805a66887fb00b30c1b85a2a0e0899',
+    'initial snapshot',
+  );
+
+  const bootScript = await ld.asset(
+    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
+  );
+  await vat.evaluate(bootScript);
+
+  const h2 = await store.save(vat.snapshot);
+  t.is(
+    h2,
+    'fdd8c4e16329e1436ad7b0ecbcfc37cbf3aaec436c14fd6d3eb42d81db332795',
+    'after SES boot',
+  );
+
+  await vat.evaluate('globalThis.x = harden({a: 1})');
+  const h3 = await store.save(vat.snapshot);
+  t.is(
+    h3,
+    '808240d01126e43c21e90625f2685a6046c804109212e0544a9137d526171617',
+    'after use of harden()',
+  );
 });
