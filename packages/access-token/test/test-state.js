@@ -8,6 +8,23 @@ import {
   isJSONStore,
 } from '../src/json-store.js';
 
+function rimraf(dirPath) {
+  try {
+    // Node.js 16.8.0 warns:
+    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+    // be removed. Use fs.rm(path, { recursive: true }) instead
+    if (fs.rmSync) {
+      fs.rmSync(dirPath, { recursive: true });
+    } else {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+  } catch (e) {
+    if (e.code !== 'ENOENT') {
+      throw e;
+    }
+  }
+}
+
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));
   t.is(storage.get('missing'), undefined);
@@ -41,8 +58,8 @@ function testStorage(t, storage) {
 
 test('storageInFile', t => {
   const dbDir = 'testdb';
-  t.teardown(() => fs.rmdirSync(dbDir, { recursive: true }));
-  fs.rmdirSync(dbDir, { recursive: true });
+  t.teardown(() => rimraf(dbDir));
+  rimraf(dbDir);
   t.is(isJSONStore(dbDir), false);
   const { storage, commit, close } = initJSONStore(dbDir);
   testStorage(t, storage);
