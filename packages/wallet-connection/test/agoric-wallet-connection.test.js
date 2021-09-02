@@ -1,27 +1,38 @@
+import '../demo/install-ses-lockdown.js';
+import { E } from '@agoric/eventual-send';
 import { html } from 'lit';
 import { fixture, expect } from '@open-wc/testing';
 
 import '../agoric-wallet-connection.js';
 
 describe('AgoricWalletConnection', () => {
-  it('has a default title "Hey there" and counter 5', async () => {
-    const el = await fixture(html`<agoric-wallet-connection></agoric-wallet-connection>`);
+  it(`has a default state of 'idle' and has a walletConnection`, async () => {
+    const onState = ev => {
+      expect(ev.detail.state).to.equal('idle');
+    };
+    const el = await fixture(html`<agoric-wallet-connection @state=${onState}></agoric-wallet-connection>`);
 
-    expect(el.title).to.equal('Hey there');
-    expect(el.counter).to.equal(5);
+    expect(el.walletConnection).not.undefined;
   });
 
-  it('increases the counter on button click', async () => {
-    const el = await fixture(html`<agoric-wallet-connection></agoric-wallet-connection>`);
-    el.shadowRoot.querySelector('button').click();
+  it('transitions on getScopedBridge', async () => {
+    const onState = ev => {
+      switch (ev.detail.state) {
+        case 'idle': {
+          E(ev.detail.walletConnection).getScopedBridge('My Dapp');
+          break;
+        }
+      }
+    };
 
-    expect(el.counter).to.equal(6);
+    const el = await fixture(html`<agoric-wallet-connection @state=${onState}></agoric-wallet-connection>`);
+    expect(el.state).to.equal('locating');
   });
 
-  it('can override the title via attribute', async () => {
-    const el = await fixture(html`<agoric-wallet-connection title="attribute title"></agoric-wallet-connection>`);
-
-    expect(el.title).to.equal('attribute title');
+  it(`can't override the state`, async () => {
+    const el = await fixture(html`<agoric-wallet-connection></agoric-wallet-connection>`);
+    expect(el.state).to.equal('idle');
+    expect(() => el.state = 'foo').to.throw(/Cannot set/);
   });
 
   it('passes the a11y audit', async () => {
