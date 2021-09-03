@@ -6413,11 +6413,6 @@ eslint-config-prettier@^6.15.0, eslint-config-prettier@^6.9.0:
   dependencies:
     get-stdin "^6.0.0"
 
-eslint-config-prettier@^8.3.0:
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.3.0.tgz#f7471b20b6fe8a9a9254cc684454202886a2dd7a"
-  integrity sha512-BgZuLUSeKzvlL/VUjx/Yb787VQ26RU3gGjA3iiFvdsp/2bMfVIWUVP7tjxtjS0e+HP409cPlPvNkQloz8C91ew==
-
 eslint-config-react-app@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/eslint-config-react-app/-/eslint-config-react-app-6.0.0.tgz#ccff9fc8e36b322902844cbd79197982be355a0e"
@@ -6561,7 +6556,7 @@ eslint-plugin-lit-a11y@^1.0.1:
     parse5-htmlparser2-tree-adapter "^6.0.0"
     requireindex "~1.1.0"
 
-eslint-plugin-lit@^1.2.0:
+eslint-plugin-lit@^1.2.0, eslint-plugin-lit@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-lit/-/eslint-plugin-lit-1.5.1.tgz#e5b86fee4aeb6023ad4bb90b3d9e462ca8eff755"
   integrity sha512-pYB0QM11uyOk5L55QfGhBmWi8a56PkNsnx+zVpY4bxz9YVquEo4BeRnFmf9AwFyT89rhGud9QruFhM2xJ4piwg==
@@ -11910,11 +11905,6 @@ prettier@^1.13.0, prettier@^1.18.2, prettier@^1.19.0:
   version "1.19.1"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.19.1.tgz#f7d7f5ff8a9cd872a7be4ca142095956a60797cb"
   integrity sha512-s7PoyDv/II1ObgQunCbB9PdLmUcBZcnWOcxDh7O0N/UwDEsHyqkW+Qh28jW+mVuCdx7gLB0BotYI1Y6uI9iyew==
-
-prettier@^2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.3.2.tgz#ef280a05ec253712e486233db5c6f23441e7342d"
-  integrity sha512-lnJzDfJ66zkMy58OL5/NY5zp70S7Nz6KqcKkXYzn2tMVrNxvbqaBpg7H3qHaLxCJ5lNMsGuM8+ohS7cZrthdLQ==
 
 pretty-hrtime@^1.0.3:
   version "1.0.3"
