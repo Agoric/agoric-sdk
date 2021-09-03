@@ -1,5 +1,6 @@
-import 'ses/lockdown';
-import '@agoric/eventual-send/shim';
+/* eslint-disable import/no-extraneous-dependencies */
+import 'ses';
+import '@agoric/eventual-send/shim.js';
 
 lockdown({
   __allowUnsafeMonkeyPatching__: 'unsafe',

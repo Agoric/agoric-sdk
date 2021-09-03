@@ -10,7 +10,11 @@ describe('AgoricWalletConnection', () => {
     const onState = ev => {
       expect(ev.detail.state).to.equal('idle');
     };
-    const el = await fixture(html`<agoric-wallet-connection @state=${onState}></agoric-wallet-connection>`);
+    const el = await fixture(
+      html`
+        <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
+      `,
+    );
 
     expect(el.walletConnection).not.undefined;
   });
@@ -22,21 +26,34 @@ describe('AgoricWalletConnection', () => {
           E(ev.detail.walletConnection).getScopedBridge('My Dapp');
           break;
         }
+        default:
       }
     };
 
-    const el = await fixture(html`<agoric-wallet-connection @state=${onState}></agoric-wallet-connection>`);
+    const el = await fixture(
+      html`
+        <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
+      `,
+    );
     expect(el.state).to.equal('locating');
   });
 
   it(`can't override the state`, async () => {
-    const el = await fixture(html`<agoric-wallet-connection></agoric-wallet-connection>`);
+    const el = await fixture(
+      html`
+        <agoric-wallet-connection></agoric-wallet-connection>
+      `,
+    );
     expect(el.state).to.equal('idle');
-    expect(() => el.state = 'foo').to.throw(/Cannot set/);
+    expect(() => (el.state = 'foo')).to.throw(/Cannot set/);
   });
 
   it('passes the a11y audit', async () => {
-    const el = await fixture(html`<agoric-wallet-connection></agoric-wallet-connection>`);
+    const el = await fixture(
+      html`
+        <agoric-wallet-connection></agoric-wallet-connection>
+      `,
+    );
 
     await expect(el).shadowDom.to.be.accessible();
   });

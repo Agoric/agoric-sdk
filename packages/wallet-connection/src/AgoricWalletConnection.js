@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 // @ts-check
 import { html, css, LitElement } from 'lit';
 
@@ -13,11 +14,9 @@ import { makeConnectionMachine } from './states.js';
 
 import './agoric-iframe-messenger.js';
 
-
 // TODO: Use something on agoric.app instead.
-const DEFAULT_LOCATOR_URL = 'https://local.agoric.com/?append=/wallet-bridge.html';
-
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const DEFAULT_LOCATOR_URL =
+  'https://local.agoric.com/?append=/wallet-bridge.html';
 
 export class AgoricWalletConnection extends LitElement {
   static get styles() {
@@ -47,8 +46,15 @@ export class AgoricWalletConnection extends LitElement {
     }
 
     this._walletConnection = Far('WalletConnection', {
-      getScopedBridge: (suggestedDappPetname, dappOrigin = window.location.origin) => {
-        assert.equal(this.state, 'idle', X`Cannot get scoped bridge in state ${this.state}`);
+      getScopedBridge: (
+        suggestedDappPetname,
+        dappOrigin = window.location.origin,
+      ) => {
+        assert.equal(
+          this.state,
+          'idle',
+          X`Cannot get scoped bridge in state ${this.state}`,
+        );
         this.service.send({ type: 'locate', suggestedDappPetname, dappOrigin });
         return this._bridgePK.promise;
       },
@@ -78,7 +84,7 @@ export class AgoricWalletConnection extends LitElement {
           ...this.machine.context,
           state: this.machine.state.name,
           walletConnection: this.walletConnection,
-        }
+        },
       });
       this.dispatchEvent(ev);
       this.requestUpdate();
@@ -94,9 +100,13 @@ export class AgoricWalletConnection extends LitElement {
 
     this._walletCallbacks = Far('walletCallbacks', {
       needDappApproval: (dappOrigin, suggestedDappPetname) => {
-        this.service.send({ type: 'needDappApproval', dappOrigin, suggestedDappPetname });
+        this.service.send({
+          type: 'needDappApproval',
+          dappOrigin,
+          suggestedDappPetname,
+        });
       },
-      dappApproved: (dappOrigin) => {
+      dappApproved: dappOrigin => {
         this.service.send({ type: 'dappApproved', dappOrigin });
       },
     });
@@ -119,7 +129,11 @@ export class AgoricWalletConnection extends LitElement {
   onConnectMessage(event) {
     console.log(this.state, 'connect received', event);
     const { data, send } = event.detail;
-    assert.equal(data.type, 'walletBridgeLoaded', X`Unexpected connect message type ${data.type}`);
+    assert.equal(
+      data.type,
+      'walletBridgeLoaded',
+      X`Unexpected connect message type ${data.type}`,
+    );
 
     this._startCapTP(send);
 
@@ -157,7 +171,7 @@ export class AgoricWalletConnection extends LitElement {
       this._walletCallbacks,
       { epoch },
     );
-  }    
+  }
 
   _getBridgeURL() {
     const { location, suggestedDappPetname } = this.service.context;
@@ -186,6 +200,7 @@ export class AgoricWalletConnection extends LitElement {
         onMessage = this.onBridgeMessage;
         break;
       }
+      default:
     }
 
     /** @type {import('lit-html').TemplateResult} */
@@ -206,4 +221,4 @@ export class AgoricWalletConnection extends LitElement {
       ${backend}
     `;
   }
-};
+}

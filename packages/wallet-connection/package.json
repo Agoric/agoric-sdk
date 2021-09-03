@@ -11,50 +11,47 @@
     "build": "exit 0",
     "start": "web-dev-server --port 8100",
     "lint-check": "yarn lint",
-    "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
-    "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
+    "lint": "eslint --ext .js,.html . --ignore-path .gitignore",
+    "lint-fix": "eslint --ext .js,.html . --fix --ignore-path .gitignore",
     "test": "web-test-runner --coverage",
     "test:watch": "web-test-runner --watch"
   },
   "dependencies": {
+    "@agoric/assert": "^0.3.11",
+    "@agoric/captp": "^1.10.3",
+    "@agoric/marshal": "^0.4.25",
+    "@agoric/promise-kit": "^0.2.25",
     "@lit-labs/react": "^1.0.0-rc.3",
     "lit": "^2.0.0-rc.3",
     "lit-robot": "^0.2.1",
     "robot3": "^0.2.19"
   },
   "devDependencies": {
+    "@agoric/eventual-send": "^0.13.27",
     "@custom-elements-manifest/analyzer": "^0.4.17",
     "@open-wc/eslint-config": "^4.3.0",
     "@open-wc/testing": "next",
     "@web/dev-server": "^0.1.22",
     "@web/test-runner": "^0.13.16",
     "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-lit": "^1.5.1",
+    "eslint-plugin-lit-a11y": "^1.0.1",
     "eslint-plugin-wc": "^1.3.1",
     "lint-staged": "^10.5.4",
-    "prettier": "^2.3.2"
+    "ses": "^0.14.1"
   },
   "customElements": "custom-elements.json",
   "eslintConfig": {
     "extends": [
       "@open-wc",
-      "@endo",
-      "prettier"
+      "@endo"
     ]
   },
   "prettier": {
-    "singleQuote": true,
-    "arrowParens": "avoid"
+    "trailingComma": "all",
+    "singleQuote": true
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "prettier --write"
-    ]
+  "publishConfig": {
+    "access": "public"
   }
 }

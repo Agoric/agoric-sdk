@@ -6,11 +6,6 @@ import { AgoricWalletConnection } from './index.js';
 import './agoric-wallet-connection.js';
 
 export const makeReactAgoricWalletConnection = React =>
-  createComponent(
-    React,
-    'agoric-wallet-connection',
-    AgoricWalletConnection,
-    {
-      onState: 'state',
-    },
-  );
+  createComponent(React, 'agoric-wallet-connection', AgoricWalletConnection, {
+    onState: 'state',
+  });

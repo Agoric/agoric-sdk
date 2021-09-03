@@ -13,14 +13,18 @@
 
   <script type="module">
     import './install-ses-lockdown.js';
+
+    // eslint-disable-next-line import/no-extraneous-dependencies
     import { E } from '@agoric/eventual-send';
     import { html, render } from 'lit';
-    import { repeat } from 'lit/directives/repeat.js';
     import '../agoric-wallet-connection.js';
 
     const demo = document.querySelector('#demo');
 
-    const c = new Compartment({ E });
+    const cmds = [];
+    const history = [];
+
+    const c = new Compartment({ E, h: history });
 
     const onState = ev => {
       const { walletConnection, state } = ev.detail;
@@ -32,33 +36,47 @@
       if (ev.key === 'Enter') {
         const cmd = ev.target.value;
         ev.target.value = '';
+        // eslint-disable-next-line no-use-before-define
         submit(cmd);
       }
     };
 
-    const rerender = () => render(
-      html`
-        <div>Welcome to the Agoric Wallet Connection shell!
-          <dl>
-            <dt>h[n]</dt> <dd>the nth command history result</dd>
-            <dt>walletConnection</dt> <dd>the wallet connection</dd>
-            <dt>state</dt> <dd>the wallet connection state</dd>
-            <dt>E(x).method(...args)</dt> <dd>eventual method send to x</dd>
-          </dl>
-        </div>
-        <hr />
-        <ol start="0">
-          ${cmds.map((cmd, i) => html`<li>${cmd}<br />${history[i]}</li>`)}
-        </ol>
-        h[${cmds.length}]>&nbsp;<input type="text" value="E(walletConnection).getScopedBridge('myDapp')" id="input" size="80" @keypress=${onKeyPress} />
-        <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
-      `,
-      demo
-    );
-
-    const cmds = [];
-    const history = [];
-    c.globalThis.h = history;
+    const rerender = () =>
+      render(
+        html`
+          <div>
+            Welcome to the Agoric Wallet Connection shell!
+            <dl>
+              <dt>h[n]</dt>
+              <dd>the nth command history result</dd>
+              <dt>walletConnection</dt>
+              <dd>the wallet connection</dd>
+              <dt>state</dt>
+              <dd>the wallet connection state</dd>
+              <dt>E(x).method(...args)</dt>
+              <dd>eventual method send to x</dd>
+            </dl>
+          </div>
+          <hr />
+          <ol start="0">
+            ${cmds.map(
+              (cmd, i) =>
+                html`
+                  <li>${cmd}<br />${history[i]}</li>
+                `,
+            )}
+          </ol>
+          h[${cmds.length}]>&nbsp;<input
+            type="text"
+            value="E(walletConnection).getScopedBridge('myDapp')"
+            id="input"
+            size="80"
+            @keypress=${onKeyPress}
+          />
+          <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
+        `,
+        demo,
+      );
 
     const submit = cmd => {
       const i = cmds.length;
@@ -67,11 +85,14 @@
       history.push(p);
       rerender();
       if (Promise.resolve(p) === p) {
-        p.then(result => {
-          history[i] = result;
-        }, err => {
-          history[i] = err;
-        }).finally(rerender);
+        p.then(
+          result => {
+            history[i] = result;
+          },
+          err => {
+            history[i] = err;
+          },
+        ).finally(rerender);
       }
     };
 

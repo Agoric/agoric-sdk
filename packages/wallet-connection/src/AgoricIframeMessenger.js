@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 // @ts-check
 import { LitElement, html } from 'lit';
 
@@ -29,6 +30,7 @@ export class AgoricIframeMessenger extends LitElement {
   render() {
     return html`
       <iframe
+        title="Agoric Iframe Messenger"
         src=${this.src}
         @load=${this._onLoad}
         @abort=${this._onError}
@@ -56,7 +58,9 @@ export class AgoricIframeMessenger extends LitElement {
     }
     event.preventDefault();
 
-    const ev = new CustomEvent('message', { detail: { data: event.data, send: this.send } });
+    const ev = new CustomEvent('message', {
+      detail: { data: event.data, send: this.send },
+    });
     this.dispatchEvent(ev);
   }
 
