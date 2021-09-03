@@ -115,6 +115,7 @@ export class AgoricWalletConnection extends LitElement {
   onOpen(ev) {
     console.log(this.state, 'open', ev);
     if (this.state === 'bridged') {
+      assert(this._captp);
       this._bridgePK.resolve(this._captp.getBootstrap());
     }
   }
@@ -145,6 +146,7 @@ export class AgoricWalletConnection extends LitElement {
     console.log(this.state, 'bridge received', ev);
     const { data } = ev.detail;
     if (data && typeof data.type === 'string' && data.type.startsWith('CTP_')) {
+      assert(this._captp);
       this._captp.dispatch(data);
     }
   }
@@ -175,8 +177,11 @@ export class AgoricWalletConnection extends LitElement {
 
   _getBridgeURL() {
     const { location, suggestedDappPetname } = this.service.context;
+    assert(location);
     const url = new URL(location);
-    url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
+    if (suggestedDappPetname) {
+      url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
+    }
     return url.href;
   }
 
@@ -203,8 +208,8 @@ export class AgoricWalletConnection extends LitElement {
       default:
     }
 
-    /** @type {import('lit-html').TemplateResult} */
-    let backend = null;
+    /** @type {import('lit-html').TemplateResult<1>} */
+    let backend;
     if (src) {
       backend = html`
         <agoric-iframe-messenger
@@ -214,6 +219,8 @@ export class AgoricWalletConnection extends LitElement {
           @error=${this.onError}
         ></agoric-iframe-messenger>
       `;
+    } else {
+      backend = html``;
     }
 
     return html`

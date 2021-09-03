@@ -12,6 +12,7 @@ import {
  * @typedef {Object} Context
  * @property {any?} error
  * @property {string?} location
+ * @property {string?} suggestedDappPetname
  */
 
 /**
@@ -20,6 +21,9 @@ import {
  */
 const reduce = rawReduce;
 
+/**
+ * @returns {Context}
+ */
 const initialContext = () => ({
   error: null,
   location: null,

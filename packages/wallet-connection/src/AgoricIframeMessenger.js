@@ -2,6 +2,8 @@
 // @ts-check
 import { LitElement, html } from 'lit';
 
+import { assert } from '@agoric/assert';
+
 export class AgoricIframeMessenger extends LitElement {
   static get properties() {
     return { src: { type: String } };
@@ -11,6 +13,7 @@ export class AgoricIframeMessenger extends LitElement {
     super();
     this.src = '';
     this._contentWindow = null;
+    this._origin = null;
 
     // Need to bind since these aren't declarative event handlers.
     this.send = this.send.bind(this);
@@ -40,8 +43,10 @@ export class AgoricIframeMessenger extends LitElement {
   }
 
   firstUpdated() {
+    const iframe = this.renderRoot.querySelector('iframe');
+    assert(iframe);
     // Detect the content window of the iframe to verify message sources.
-    this._contentWindow = this.renderRoot.querySelector('iframe').contentWindow;
+    this._contentWindow = iframe.contentWindow;
   }
 
   _onLoad(event) {
@@ -71,6 +76,8 @@ export class AgoricIframeMessenger extends LitElement {
   }
 
   send(data) {
+    assert(this._contentWindow);
+    assert(this._origin);
     this._contentWindow.postMessage(data, this._origin);
   }
 }
