@@ -7,7 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '../src/contractSupport/index.js';
 import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers.js';
 
-const { add, subtract, multiply, floorDivide } = natSafeMath;
+const { add, subtract, multiply, floorDivide, ceilDivide } = natSafeMath;
 
 // A test Harness that simplifies tests of autoswap and multipoolAutoswap. The
 // main component is the Trader, which can be instructed to make various offers
@@ -43,11 +43,9 @@ export const outputFromInputPrice = (xPre, yPre, deltaX, fee) => {
 //    deltaX = (deltaY * xPre * 10000 / (yPre - deltaY ) * gammaNum)) + 1
 export const priceFromTargetOutput = (deltaY, yPre, xPre, fee) => {
   const gammaNumerator = 10000n - fee;
-  return (
-    floorDivide(
-      multiply(multiply(deltaY, xPre), 10000n),
-      multiply(subtract(yPre, deltaY), gammaNumerator),
-    ) + 1n
+  return ceilDivide(
+    multiply(multiply(deltaY, xPre), 10000n),
+    multiply(subtract(yPre, deltaY), gammaNumerator),
   );
 };
 
