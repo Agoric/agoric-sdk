@@ -1,3 +1,4 @@
+/* global process */
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
@@ -12,6 +13,11 @@ const COMMIT_BLOCK = 'COMMIT_BLOCK';
 const IBC_EVENT = 'IBC_EVENT';
 const PLEASE_PROVISION = 'PLEASE_PROVISION';
 const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
+
+// Artificially create load if set.
+const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
+  ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
+  : 0;
 
 export default function makeBlockManager({
   deliverInbound,
@@ -70,9 +76,18 @@ export default function makeBlockManager({
         break;
       }
 
-      case END_BLOCK:
+      case END_BLOCK: {
         p = endBlock(action.blockHeight, action.blockTime);
+        if (END_BLOCK_SPIN_MS) {
+          // Introduce a busy-wait to artificially put load on the chain.
+          p = p.then(res => {
+            const startTime = Date.now();
+            while (Date.now() - startTime < END_BLOCK_SPIN_MS);
+            return finish(res);
+          });
+        }
         break;
+      }
 
       default:
         assert.fail(X`${action.type} not recognized`);
