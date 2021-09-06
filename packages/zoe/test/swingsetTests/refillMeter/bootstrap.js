@@ -27,7 +27,7 @@ export function buildRootObject(vatPowers) {
       };
       const meteringConfig = {
         incrementBy: 70_000n,
-        initial: 4_200_000n, // startInstance seems to take around this much
+        initial: 4_300_000n, // startInstance seems to take around this much
         threshold: 70_000,
         price: {
           feeNumerator: 1n,
