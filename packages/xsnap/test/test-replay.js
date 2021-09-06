@@ -21,7 +21,7 @@ const transcript1 = [
     '/xsnap-tests/00001-evaluate.dat',
     'issueCommand(ArrayBuffer.fromString("Hello, World!"));',
   ],
-  ['/xsnap-tests/00002-command.dat', '{"compute":54'],
+  ['/xsnap-tests/00002-command.dat', '{"compute":58'],
   ['/xsnap-tests/00003-reply.dat', ''],
 ];
 
