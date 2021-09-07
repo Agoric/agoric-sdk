@@ -1,15 +1,13 @@
-# Inventory of Agoric SDK Environment Variables
+# Agoric SDK Environment Variables
 
 ```js
 process.env.DOCUMENTATION // for power users
 ```
 
-TODO: Fill out more details!
-
 This file describes environment variables that influence the execution of the
-Agoric SDK.  They are documented here as an advanced feature to be kept
-up-to-date with the source code.
+Agoric SDK.
 
+<!--
 ## Template
 
 **Add to a new section in alphabetical order.**
@@ -21,6 +19,8 @@ Purpose:
 Description:
 
 Lifetime:
+
+-->
 
 ## ALLOW_IMPLICIT_REMOTABLES
 
@@ -79,7 +79,7 @@ Lifetime: until we have a more consistent load testing regimen
 
 ## NO_FAKE_CURRENCIES
 
-Used by: cosmic-swingset
+Affects: cosmic-swingset
 
 Purpose: skipping the creation of pretend tokens
 
@@ -91,9 +91,9 @@ Lifetime: until chain is mature enough not to need any pretend tokens
 ## OTEL_EXPORTER_PROMETHEUS_HOST
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
-Used by: cosmic-swingset
+Affects: cosmic-swingset
 
-Used for: enabling Prometheus metrics exports
+Purpose: enabling Prometheus metrics exports
 
 Description: When either is set, these are the host IP and port number to use
 for the Prometheus scrape endpoint to export telemetry.
@@ -108,7 +108,7 @@ Lifetime: ?
 
 ## SLOGFILE
 
-Used by: cosmic-swingset
+Affects: cosmic-swingset
 
 Purpose: record an on-chain Swingset LOG file
 
