@@ -170,6 +170,10 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 		dataStore.Set(pathKey, k.cdc.MustMarshalLengthPrefixed(storage))
 	}
 
+	ctx.EventManager().EmitEvent(
+		types.NewStorageEvent(path, storage.Value),
+	)
+
 	// Update the parent keys.
 	pathComponents := strings.Split(path, ".")
 	for i := len(pathComponents) - 1; i >= 0; i-- {
