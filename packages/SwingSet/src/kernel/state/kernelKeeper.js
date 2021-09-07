@@ -48,6 +48,9 @@ const enableKernelGC = true;
 
 // kernelBundle = JSON(bundle)
 // bundle.$NAME = JSON(bundle)
+//
+// kernel.defaultManagerType = managerType
+// kernel.defaultBoydFrequency = $NN
 
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
 // v$NN.options = JSON
@@ -61,7 +64,9 @@ const enableKernelGC = true;
 // v$NN.nextDeliveryNum = $NN
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
-// v$NN.meter = m$NN
+// v$NN.meter = m$NN // XXX does this exist?
+// v$NN.boydFrequency = $NN or 'never'
+// v$NN.boydCountdown = $NN or 'never'
 // exclude from consensus
 // local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
@@ -80,8 +85,9 @@ const enableKernelGC = true;
 // d$NN.options = JSON
 
 // crankNumber = $NN
-// runQueue = JSON(runQueue) // usually empty on disk
-// gcActions = JSON(gcActions) // usually empty on disk
+// runQueue = JSON(runQueue)
+// gcActions = JSON(gcActions)
+// boydQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
 
 // ko.nextID = $NN
@@ -270,8 +276,9 @@ export default function makeKernelKeeper(
 
   /**
    * @param { ManagerType } defaultManagerType
+   * @param { number } defaultBoydFrequency
    */
-  function createStartingKernelState(defaultManagerType) {
+  function createStartingKernelState(defaultManagerType, defaultBoydFrequency) {
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
@@ -282,13 +289,19 @@ export default function makeKernelKeeper(
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
     kvStore.set('meter.nextID', `${FIRST_METER_ID}`);
     kvStore.set('gcActions', '[]');
+    kvStore.set('boydQueue', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
+    kvStore.set('kernel.defaultBoydFrequency', `${defaultBoydFrequency}`);
   }
 
   function getDefaultManagerType() {
     return getRequired('kernel.defaultManagerType');
+  }
+
+  function getDefaultBoydFrequency() {
+    return getRequired('kernel.defaultBoydFrequency');
   }
 
   function addBundle(name, bundle) {
@@ -323,6 +336,25 @@ export default function makeKernelKeeper(
       actions.add(action);
     }
     setGCActions(actions);
+  }
+
+  function scheduleBoyd(vatID) {
+    const boydQueue = JSON.parse(getRequired('boydQueue'));
+    if (!boydQueue.includes(vatID)) {
+      boydQueue.push(vatID);
+      kvStore.set('boydQueue', JSON.stringify(boydQueue));
+    }
+  }
+
+  function nextBoydAction() {
+    const boydQueue = JSON.parse(getRequired('boydQueue'));
+    if (boydQueue.length > 0) {
+      const vatID = boydQueue.shift();
+      kvStore.set('boydQueue', JSON.stringify(boydQueue));
+      return harden({ type: 'bringOutYourDead', vatID });
+    } else {
+      return undefined;
+    }
   }
 
   /**
@@ -1278,6 +1310,8 @@ export default function makeKernelKeeper(
     const gcActions = Array.from(getGCActions());
     gcActions.sort();
 
+    const boydQueue = JSON.parse(getRequired('boydQueue'));
+
     const runQueue = JSON.parse(getRequired('runQueue'));
 
     return harden({
@@ -1286,6 +1320,7 @@ export default function makeKernelKeeper(
       promises,
       objects,
       gcActions,
+      boydQueue,
       runQueue,
     });
   }
@@ -1295,6 +1330,7 @@ export default function makeKernelKeeper(
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,
+    getDefaultBoydFrequency,
     addBundle,
     getBundle,
 
@@ -1311,6 +1347,8 @@ export default function makeKernelKeeper(
     getGCActions,
     setGCActions,
     addGCActions,
+    scheduleBoyd,
+    nextBoydAction,
 
     addKernelObject,
     ownerOfKernelObject,

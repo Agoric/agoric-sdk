@@ -61,6 +61,7 @@ export function makeVatManagerFactory({
       'enableVatstore',
       'virtualObjectCacheSize',
       'useTranscript',
+      'boydFrequency',
       'vatParameters',
       'vatConsole',
       'name',

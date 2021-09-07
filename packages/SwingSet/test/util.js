@@ -123,6 +123,10 @@ export function makeMessage(target, method, args, result = null) {
   return vatDeliverObject;
 }
 
+export function makeBringOutYourDead() {
+  return harden(['bringOutYourDead']);
+}
+
 export function makeResolutions(resolutions) {
   const vatDeliverObject = harden(['notify', resolutions]);
   return vatDeliverObject;

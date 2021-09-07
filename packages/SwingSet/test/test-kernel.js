@@ -1263,3 +1263,73 @@ test('xs-worker default manager type', async t => {
     'xs-worker',
   );
 });
+
+async function boydTest(t, freq) {
+  const kernel = makeKernel();
+  await kernel.start();
+  const log = [];
+  function setup() {
+    function dispatch(vatDeliverObject) {
+      log.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vat1', setup, {}, { boydFrequency: freq });
+  const vat1 = kernel.vatNameToID('vat1');
+  t.deepEqual(log, []);
+
+  const vatRoot = kernel.addExport(vat1, 'o+1');
+  function deliverMessage(ordinal) {
+    kernel.queueToKref(vatRoot, `msg_${ordinal}`, capdata('[]'));
+  }
+  function matchMsg(ordinal) {
+    return [
+      'message',
+      'o+1',
+      {
+        args: {
+          body: '[]',
+          slots: [],
+        },
+        method: `msg_${ordinal}`,
+        result: `p-${60 + ordinal}`,
+      },
+    ];
+  }
+  function matchBoyd() {
+    return ['bringOutYourDead'];
+  }
+
+  for (let i = 0; i < 100; i += 1) {
+    deliverMessage(i);
+  }
+  t.deepEqual(log, []);
+  await kernel.run();
+  for (let i = 0; i < 100; i += 1) {
+    t.deepEqual(log.shift(), matchMsg(i));
+    if (freq !== 'never' && (i + 1) % freq === 0) {
+      t.deepEqual(log.shift(), matchBoyd());
+    }
+  }
+  t.deepEqual(log, []);
+}
+
+test('boyd frequency 1', async t => {
+  await boydTest(t, 1);
+});
+
+test('boyd frequency 2', async t => {
+  await boydTest(t, 2);
+});
+
+test('boyd frequency 5', async t => {
+  await boydTest(t, 5);
+});
+
+test('boyd frequency 17', async t => {
+  await boydTest(t, 17);
+});
+
+test('boyd frequency never', async t => {
+  await boydTest(t, 'never');
+});
