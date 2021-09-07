@@ -347,14 +347,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           // We want to subscribe.
           method: 'subscribe',
           params: {
-            // Here is the Tendermint event for new blocks.
-            // query: `tm.event = 'NewBlockHeader'`,
-
-            // This is the Cosmos event for activityhash changes.
-            // query: `storage.path = 'activityhash'`,
-
-            // This is the Cosmos event for our mailbox changes.
-            query: `storage.path = '${mailboxPath}'`,
+            // This is the minimal query for mailbox changes.
+            query: `tm.event = 'NewBlockHeader' AND storage.path = '${mailboxPath}'`,
           },
         };
         // Send that message, and wait for the subscription.
@@ -363,7 +357,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         // Poll to establish our initial mailbox.
         const pollMailboxWhileFirstUpdate = async () => {
           if (!firstUpdate) {
-            // Already got the subscription.
+            // We're too late.
             return;
           }
           const mb = await getMailbox().then(
@@ -373,12 +367,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
             },
           );
           if (!firstUpdate) {
-            // Already got the subscription.
+            // We're too late.
             return;
           }
-          console.error('got first mb', mb);
+          // console.error('got first mb', mb);
           if (mb !== undefined) {
-            // Found the first mailbox.
+            // Found the initial mailbox.
             // console.error('Updating in pollMailboxWhileFirstUpdate');
             updater.updateState(mb);
             firstUpdate = false;
@@ -412,6 +406,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           return;
         }
 
+        if (obj.error) {
+          console.error(`Error subscribing to events`, obj.error);
+          ws.close();
+          return;
+        }
+
         // It matches our subscription, so maybe notify.
         const events = obj.result.events;
         if (!events) {
@@ -420,18 +420,19 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         const paths = events['storage.path'];
         const values = events['storage.value'];
 
-        // Find only the latest value.
-        let latestValue;
+        // Find only the latest value in the events.
+        let latestMailboxValue;
         paths.forEach((key, i) => {
           if (key === mailboxPath) {
-            latestValue = values[i];
+            latestMailboxValue = values[i];
           }
         });
-        if (latestValue === undefined) {
+        if (latestMailboxValue === undefined) {
+          // No matching events found.
           return;
         }
 
-        const mb = JSON.parse(latestValue);
+        const mb = JSON.parse(latestMailboxValue);
 
         // Update our notifier.
         // console.error('Updating in ws.message');
