@@ -1156,6 +1156,15 @@ function build(
   // metered
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
+  async function bringOutYourDead() {
+    await gcTools.gcAndFinalize();
+    const doMore = await scanForDeadObjects();
+    if (doMore) {
+      return bringOutYourDead();
+    }
+    return undefined;
+  }
+
   /**
    * This low-level liveslots code is responsible for deciding when userspace
    * is done with a crank. Userspace code can use Promises, so it can add as
@@ -1168,23 +1177,24 @@ function build(
    * @returns { Promise<void> }
    */
   async function dispatch(delivery) {
-    // Start user code running, record any internal liveslots errors. We do
-    // *not* directly wait for the userspace function to complete, nor for
-    // any promise it returns to fire.
-    Promise.resolve(delivery)
-      .then(unmeteredDispatch)
-      .catch(err =>
-        console.log(`liveslots error ${err} during delivery ${delivery}`),
-      );
+    // We must short-circuit dispatch to bringOutYourDead here because it has to
+    // be async
+    if (delivery[0] === 'bringOutYourDead') {
+      return meterControl.runWithoutMeteringAsync(bringOutYourDead);
+    } else {
+      // Start user code running, record any internal liveslots errors. We do
+      // *not* directly wait for the userspace function to complete, nor for
+      // any promise it returns to fire.
+      Promise.resolve(delivery)
+        .then(unmeteredDispatch)
+        .catch(err =>
+          console.log(`liveslots error ${err} during delivery ${delivery}`),
+        );
 
-    // Instead, we wait for userspace to become idle by draining the promise
-    // queue.
-    await gcTools.waitUntilQuiescent();
-    // Userspace will not get control again within this crank.
-
-    // Now that userspace is idle, we can drive GC until we think we've
-    // stopped.
-    return meterControl.runWithoutMeteringAsync(scanForDeadObjects);
+      // Instead, we wait for userspace to become idle by draining the promise
+      // queue.
+      return gcTools.waitUntilQuiescent();
+    }
   }
   harden(dispatch);
 

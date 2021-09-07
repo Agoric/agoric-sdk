@@ -118,6 +118,30 @@ export function makeVatKeeper(
     return harden(options);
   }
 
+  function initializeBoydCountdown(count) {
+    kvStore.set(`${vatID}.boydFrequency`, `${count}`);
+    kvStore.set(`${vatID}.boydCountdown`, `${count}`);
+  }
+
+  function boydCountdown() {
+    const rawCount = getRequired(`${vatID}.boydCountdown`);
+    if (rawCount === 'never') {
+      return false;
+    } else {
+      const count = Number.parseInt(rawCount, 10);
+      if (count === 1) {
+        kvStore.set(
+          `${vatID}.boydCountdown`,
+          getRequired(`${vatID}.boydFrequency`),
+        );
+        return true;
+      } else {
+        kvStore.set(`${vatID}.boydCountdown`, `${count - 1}`);
+        return false;
+      }
+    }
+  }
+
   function nextDeliveryNum() {
     const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
@@ -582,6 +606,8 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
+    initializeBoydCountdown,
+    boydCountdown,
     nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,

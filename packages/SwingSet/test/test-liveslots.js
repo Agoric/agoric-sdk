@@ -17,6 +17,7 @@ import {
   capargsOneSlot,
   capdataOneSlot,
   makeMessage,
+  makeBringOutYourDead,
   makeResolve,
   makeReject,
   makeDropExports,
@@ -718,14 +719,17 @@ test('GC syscall.dropImports', async t => {
   // tell the vat make a Presence and hold it for a moment
   // rp1 = root~.one(arg)
   await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg)));
+  await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // an intermediate message will trigger GC, but the presence is still held
   await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // now tell the vat to drop the 'arg' presence we gave them earlier
   await dispatch(makeMessage(rootA, 'three', capargs([]), null));
+  await dispatch(makeBringOutYourDead());
 
   // the presence itself should be gone
   t.falsy(wr.deref());
@@ -1087,6 +1091,7 @@ test('GC dispatch.dropExports', async t => {
   // ex1 = await rp1
   const rp1 = 'p-1';
   await dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
+  await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
@@ -1101,10 +1106,12 @@ test('GC dispatch.dropExports', async t => {
 
   // an intermediate message will trigger GC, but the presence is still held
   await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // now tell the vat we don't need a strong reference to that export.
   await dispatch(makeDropExports(ex1));
+  await dispatch(makeBringOutYourDead());
 
   // that should allow ex1 to be collected
   t.falsy(wr.deref());
@@ -1146,6 +1153,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   // ex1 = await rp1
   const rp1 = 'p-1';
   await dispatch(makeMessage(rootA, 'hold', capargs([]), rp1));
+  await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
@@ -1160,16 +1168,19 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
 
   // an intermediate message will trigger GC, but the presence is still held
   await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // now tell the vat we don't need a strong reference to that export.
   await dispatch(makeDropExports(ex1));
+  await dispatch(makeBringOutYourDead());
 
   // that removes the liveslots strongref, but the vat's remains in place
   t.truthy(wr.deref());
 
   // now the kernel tells the vat we can't even recognize the export
   await dispatch(makeRetireExports(ex1));
+  await dispatch(makeBringOutYourDead());
 
   // that ought to delete the table entry, but doesn't affect the vat
   // strongref
@@ -1177,6 +1188,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
 
   // now tell the vat to drop its strongref
   await dispatch(makeMessage(rootA, 'drop', capargs([])));
+  await dispatch(makeBringOutYourDead());
 
   // which should let the export be collected
   t.falsy(wr.deref());

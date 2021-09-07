@@ -116,6 +116,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
+  function translateBringOutYourDead() {
+    const vatDelivery = harden(['bringOutYourDead']);
+    return vatDelivery;
+  }
+
   function kernelDeliveryToVatDelivery(kd) {
     const [type, ...args] = kd;
     switch (type) {
@@ -129,6 +134,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         return translateRetireExports(...args);
       case 'retireImports':
         return translateRetireImports(...args);
+      case 'bringOutYourDead':
+        return translateBringOutYourDead(...args);
       default:
         assert.fail(X`unknown kernelDelivery.type ${type}`);
     }
@@ -138,6 +145,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['dropExports', vrefs]
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
+    //  ['bringOutYourDead']
   }
 
   return kernelDeliveryToVatDelivery;

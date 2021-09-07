@@ -435,6 +435,11 @@ export default function buildKernel(
       // eslint-disable-next-line no-use-before-define
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
+      if (vd[0] !== 'bringOutYourDead') {
+        if (vatKeeper.boydCountdown()) {
+          kernelKeeper.scheduleBoyd(vatID);
+        }
+      }
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
         // probably a metering fault, or a bug in the vat's dispatch()
@@ -661,6 +666,28 @@ export default function buildKernel(
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
+  async function processBringOutYourDead(message) {
+    /** @type { PolicyInput } */
+    let policyInput = ['none'];
+    const { type, vatID } = message;
+    // console.log(`-- processBringOutYourDead(${vatID})`);
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    if (!vatWarehouse.lookup(vatID)) {
+      return harden(policyInput); // can't collect from the dead
+    }
+    const kd = harden([type]);
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
+    return harden(policyInput);
+  }
+
+  /**
+   *
+   * @param { * } message
+   * @returns { Promise<PolicyInput> }
+   */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
@@ -670,7 +697,11 @@ export default function buildKernel(
     if (!dynamicOptions.managerType) {
       options.managerType = kernelKeeper.getDefaultManagerType();
     }
+    if (!dynamicOptions.boydFrequency) {
+      options.boydFrequency = kernelKeeper.getDefaultBoydFrequency();
+    }
     vatKeeper.setSourceAndOptions(source, options);
+    vatKeeper.initializeBoydCountdown(options.boydFrequency);
 
     function makeSuccessResponse() {
       // build success message, giving admin vat access to the new vat's root
@@ -723,6 +754,8 @@ export default function buildKernel(
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
       return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
+    } else if (message.type === 'bringOutYourDead') {
+      return `${message.type} ${message.vatID}`;
     } else {
       return `unknown message type ${message.type}`;
     }
@@ -764,6 +797,8 @@ export default function buildKernel(
         policyInput = await processNotify(message);
       } else if (message.type === 'create-vat') {
         policyInput = await processCreateVat(message);
+      } else if (message.type === 'bringOutYourDead') {
+        policyInput = await processBringOutYourDead(message);
       } else if (gcMessages.includes(message.type)) {
         policyInput = await processGCMessage(message);
       } else {
@@ -948,13 +983,23 @@ export default function buildKernel(
       'function',
       X`setup is not a function, rather ${setup}`,
     );
-    assertKnownOptions(creationOptions, ['enablePipelining', 'metered']);
+    assertKnownOptions(creationOptions, [
+      'enablePipelining',
+      'metered',
+      'boydFrequency',
+    ]);
 
     assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
     creationOptions.vatParameters = vatParameters;
 
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
+
+    if (!creationOptions.boydFrequency) {
+      creationOptions.boydFrequency = 'never';
+    }
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.initializeBoydCountdown(creationOptions.boydFrequency);
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
     return vatID;
@@ -1076,6 +1121,11 @@ export default function buildKernel(
     if (gcMessage) {
       return gcMessage;
     }
+    const boydMessage = kernelKeeper.nextBoydAction();
+    if (boydMessage) {
+      return boydMessage;
+    }
+
     if (!kernelKeeper.isRunQueueEmpty()) {
       return kernelKeeper.getNextMsg();
     }

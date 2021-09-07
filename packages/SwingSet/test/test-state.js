@@ -270,6 +270,7 @@ test('kernel state', async t => {
     ['initialized', 'true'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['boydQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
@@ -279,6 +280,7 @@ test('kernel state', async t => {
     ['kd.nextID', '30'],
     ['kp.nextID', '40'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultBoydFrequency', 'undefined'],
     ['meter.nextID', '1'],
   ]);
 });
@@ -299,6 +301,7 @@ test('kernelKeeper vat names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['boydQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
     ['vat.dynamicIDs', '[]'],
@@ -310,6 +313,7 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.vatname5', 'v1'],
     ['vat.name.Frank', 'v2'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultBoydFrequency', 'undefined'],
     ['meter.nextID', '1'],
   ]);
   t.deepEqual(k.getStaticVats(), [
@@ -344,6 +348,7 @@ test('kernelKeeper device names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['boydQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
@@ -355,6 +360,7 @@ test('kernelKeeper device names', async t => {
     ['device.name.devicename5', 'd7'],
     ['device.name.Frank', 'd8'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultBoydFrequency', 'undefined'],
     ['meter.nextID', '1'],
   ]);
   t.deepEqual(k.getDevices(), [
@@ -519,6 +525,7 @@ test('kernelKeeper promises', async t => {
     ['device.names', '[]'],
     ['gcActions', '[]'],
     ['runQueue', JSON.stringify(expectedRunqueue)],
+    ['boydQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '21'],
     ['kp.nextID', '41'],
@@ -529,6 +536,7 @@ test('kernelKeeper promises', async t => {
     [`${ko}.owner`, 'v1'],
     [`${ko}.refCount`, '1,1'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultBoydFrequency', 'undefined'],
     ['meter.nextID', '1'],
   ]);
 });
@@ -687,7 +695,7 @@ test('crankhash', t => {
   k.commitCrank();
   // the initial state additions happen to hash to this:
   const oldActivityhash =
-    '2062d4a479c62d3f83b7ca654f911fdd5320609e003deb0a0396872639d170a1';
+    '668ec0ad794255845b124656da85f6e30a4bc32378ceb7bfb610bf2529e3196b';
   t.is(store.kvStore.get('activityhash'), oldActivityhash);
 
   k.kvStore.set('one', '1');
@@ -705,7 +713,7 @@ test('crankhash', t => {
   const expActivityhash = h.digest('hex');
   t.is(
     expActivityhash,
-    '3c963c0082282e486edfcb62d31322e72f5e0c2c9f296ea61f613eeea23b8770',
+    '8ba058e647d22eb503790f94212945f5e1085ad6142d168d37ad20b0e16f2df3',
   );
 
   const { crankhash, activityhash } = k.commitCrank();

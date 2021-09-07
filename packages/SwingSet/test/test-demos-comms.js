@@ -12,6 +12,7 @@ import {
 async function main(basedir, argv) {
   const config = await loadBasedir(basedir);
   const enableSetup = true;
+  config.defaultBoydFrequency = 'never';
   if (config.vats.botcomms) {
     config.vats.botcomms.creationOptions = { enableSetup };
   }

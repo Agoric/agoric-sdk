@@ -65,6 +65,10 @@ export function insistVatDeliveryObject(vdo) {
       }
       break;
     }
+    case 'bringOutYourDead': {
+      assert(rest.length === 0);
+      break;
+    }
     default:
       assert.fail(`unknown delivery type ${type}`);
   }
