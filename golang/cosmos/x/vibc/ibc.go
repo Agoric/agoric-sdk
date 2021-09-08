@@ -439,6 +439,7 @@ type receivePacketEvent struct {
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
+	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
 	// Sometimes we receive duplicate packets, just with a
 	// missing packet.TimeoutTimestamp.  This causes duplicate
@@ -482,6 +483,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
+	relayer sdk.AccAddress,
 ) (*sdk.Result, error) {
 	event := acknowledgementPacketEvent{
 		Type:            "IBC_EVENT",
@@ -518,6 +520,7 @@ type timeoutPacketEvent struct {
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
+	relayer sdk.AccAddress,
 ) (*sdk.Result, error) {
 	event := timeoutPacketEvent{
 		Type:        "IBC_EVENT",
