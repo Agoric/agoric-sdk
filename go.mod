@@ -24,17 +24,19 @@ require (
 // Silence a warning on MacOS
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
 
+replace github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
-// At least until post-v0.34.8 is released with
-// https://github.com/tendermint/tendermint/pull/6204.
-// replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.33.1-dev2.0.20210310191408-9156bacf449c
-
+// At least until post-v0.34.12 is released with
+// https://github.com/tendermint/tendermint/issue/6899 resolved.
+replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.1
+ 
 // At least until GetABCIEventHistory() is implemented and released.
-// And also `gentx --keyring-dir=...`
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric
+// And also until the above tendermint issue is released.
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.2
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
