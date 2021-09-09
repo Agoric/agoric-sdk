@@ -6,23 +6,29 @@
   import Button from 'smelte/src/components/Button';
   import Dapps from './Dapps.svelte';
   import Payments from './Payments.svelte';
-  import Issuers from './Issuers.svelte';
-  import Contacts from './Contacts.svelte';
-  import Purses from './Purses.svelte';
+  import Inbox from './Inbox.svelte';
+  import PursesV2 from './PursesV2.svelte';
+  import DappsV2 from './DappsV2.svelte';
+  import ContactsV2 from './ContactsV2.svelte';
+  import IssuersV2 from './IssuersV2.svelte';
+  import History from './History.svelte';
+
   import Config from './Config.svelte';
-  import Transactions from './Transactions.svelte';
+  import NavMenu from './NavMenu.svelte';
   import { connected, ready } from './store';
 
-  import ListItems from '../lib/ListItems.svelte';
-  import MenuButton from '../lib/MenuButton.svelte';
-
   const menu = [
-    { id: 'inbox', text: 'Inbox' },
-    { id: 'transfers', text: 'Transfers' },
-    { id: 'setup', text: 'Setup' },
+    { id: 'inbox', text: 'Inbox', icon: 'mail' },
+    { id: 'purses', text: 'Purses', icon: 'account_balance_wallet' },
+    { id: 'dapps', text: 'Dapps', icon: 'apps' },
+    { id: 'contacts', text: 'Contacts', icon: 'people' },
+    { id: 'issuers', text: 'Issuers', icon: 'arrow_circle_right' },
+    { id: 'history', text: 'History', icon: 'history' },
   ];
 
   let navPanel = 'inbox';
+  let isNavMenuExpanded = true;
+  let isMobileLayout = false;
 
   import { ThemeWrapper } from 'svelte-themer';
 
@@ -31,6 +37,18 @@
   $: connectStatus = $connected ? 'Connected' : 'Disconnected';
   $: connectLabel = $connected ? 'Disconnect' : 'Connect';
   $: connectAction = $connected ? connected.disconnect : connected.connect;
+
+  // Adjust layout for small screens.
+  const calculateLayoutSize = () => {
+    isMobileLayout = window.innerWidth < 769;
+  };
+  onMount(() => {
+    window.addEventListener('resize', calculateLayoutSize);
+    return () => {
+      window.removeEventListener('resize', calculateLayoutSize);
+    };
+  });
+  afterUpdate(calculateLayoutSize);
 </script>
 
 <style>
@@ -80,7 +98,6 @@
     margin: auto;
     color: #ab2328;
     background-color: var(--agoric-bg-v2);
-    padding: 10px 20px;
     position: absolute;
     top: 0;
     left: 0;
@@ -96,7 +113,7 @@
     flex-wrap: nowrap;
   }
 
-  header > a {
+  a {
     text-decoration: none;
   }
 
@@ -104,22 +121,9 @@
     transform: scale(0.85);
   }
 
-  .site-name {
-    align-self: baseline;
-    color: #2c3e50;
-    left: -16px;
-    position: relative;
-    font-size: 18px;
-    font-weight: 600;
-  }
-
   main {
-    padding: 8px;
-    max-width: var(--content-width-v2);
-    margin: 1em auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 10px;
+    width: 100%;
+    padding: 32px 272px;
   }
 
   footer {
@@ -143,6 +147,19 @@
   .full {
     grid-column: 1 / span 2;
   }
+
+  .app-bar-section {
+    display: flex;
+    flex-direction: row;
+    padding: 4px;
+    height: 100%;
+  }
+
+  @media only screen and (max-width: 768px) {
+    main {
+      padding: 16px 24px;
+    }
+  }
 </style>
 
 <svelte:head>
@@ -151,62 +168,49 @@
 
 <ThemeWrapper>
   <header>
-    <a href="https://agoric.com" class="flex items-center">
-      <img
-        src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
-        class="product-logo"
-        alt="Agoric"
-        width="200"
-        height="43" />
-      <div class="site-name">Wallet</div>
-    </a>
+    <div class="app-bar-section">
+      <div>
+        {#if isMobileLayout}
+          <Button
+            on:click={() => isNavMenuExpanded = !isNavMenuExpanded}
+            class="text-red-500"
+            icon="menu" text light flat />
+        {/if}
+      </div>
+      <a href="https://agoric.com" class="flex items-center">
+        <img
+          src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
+          class="product-logo"
+          alt="Agoric"
+          width="200"
+          height="43" />
+      </a>
+    </div>
   </header>
   {#if !$ready}
     <div
       class="disconnected-background"
       on:click|preventDefault|stopPropagation={() => {}} />
   {/if}
-
+  <NavMenu
+    bind:navPanel={navPanel}
+    bind:isExpanded={isNavMenuExpanded}
+    isDrawer={isMobileLayout}
+    menu={menu}>
+  </NavMenu>
   <main>
-    {#if navPanel === 'transfers'}
-      <div class="full">
-        <Purses />
-      </div>
-      <div class="full">
-        <Contacts />
-      </div>
-      <!-- <div class="history">
-          <History />
-        </div> -->
-    {:else if navPanel === 'setup'}
-      <!-- Issuers
-          Payees
-          Apps
-          Instances
-          Installations -->
-      <div class="dapps">
-        <Dapps />
-      </div>
-      <div class="issuers">
-        <Issuers />
-      </div>
-      <div class="full">
-        <Contacts />
-      </div>
+    {#if navPanel === 'purses'}
+      <PursesV2/>
+    {:else if navPanel === 'dapps'}
+      <DappsV2 />
+    {:else if navPanel === 'contacts'}
+      <ContactsV2 />
+    {:else if navPanel === 'issuers'}
+      <IssuersV2 />
+    {:else if navPanel === 'history'}
+      <History />
     {:else}
-      <!-- inbox -->
-      <div class="full">
-        <Transactions />
-      </div>
-      <div class="payments">
-        <Payments />
-      </div>
-      <div class="dapps">
-        <Dapps />
-      </div>
-      <div class="transfers">
-        <Purses />
-      </div>
+      <Inbox></Inbox>
     {/if}
   </main>
 
