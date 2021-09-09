@@ -97,8 +97,15 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
       connected = true;
       try {
         console.debug('Connected to CapTP!');
-        const { dispatch, getBootstrap } = makeCapTP('bundle', obj =>
-          sendJSON(ws, obj),
+        // Help disambiguate connections.
+        const epoch = Date.now();
+        const { dispatch, getBootstrap } = makeCapTP(
+          'bundle',
+          obj => sendJSON(ws, obj),
+          undefined,
+          {
+            epoch,
+          },
         );
         ws.on('message', data => {
           try {
