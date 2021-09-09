@@ -1,4 +1,4 @@
-/* global setTimeout */
+/* global setTimeout Buffer */
 import path from 'path';
 import fs from 'fs';
 import { execFile } from 'child_process';
@@ -39,9 +39,24 @@ Send:
 
 to ${FAUCET_ADDRESS}`;
 
-const SEND_RETRY_DELAY_MS = Math.min(DEFAULT_BATCH_TIMEOUT_MS, 500);
+// Retry if our latest message failed.
+const SEND_RETRY_DELAY_MS = 1_000;
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+
+// How much of each delay to leave to randomness.
+const RANDOM_SCALE = 0.1;
+
+// Tradeoff:
+// true: clear out messages from mailbox when we are waiting for more activity.
+// Costs an extra tx per string of messages.
+//
+// false: leave acknowledged messages in mailbox until we have something else to
+// send.  Costs more mailbox space over time.
+const SEND_EMPTY_ACKS = false;
+
+const randomizeDelay = delay =>
+  Math.ceil(delay + delay * RANDOM_SCALE * Math.random());
 
 const makeTempFile = async (prefix, contents) => {
   const tmpInfo = await new Promise((resolve, reject) => {
@@ -211,31 +226,6 @@ export async function connectToChain(
     await fs.promises.writeFile(dstFile, stdout);
   };
 
-  const getMailbox = async () => {
-    const { stdout, stderr } = await runHelper([
-      'query',
-      'swingset',
-      'mailbox',
-      clientAddr,
-      '-ojson',
-    ]);
-
-    const errMsg = stderr.trimRight();
-    if (errMsg) {
-      console.error(errMsg);
-    }
-    if (stdout) {
-      console.debug(`helper said: ${stdout}`);
-      try {
-        // Try to parse the stdout.
-        return JSON.parse(JSON.parse(stdout).value);
-      } catch (e) {
-        assert.fail(X`failed to parse output: ${e}`);
-      }
-    }
-    return undefined;
-  };
-
   // Validate that our chain egress exists.
   await retryRpcHref(async rpcHref => {
     const args = ['query', 'swingset', 'egress', clientAddr];
@@ -290,7 +280,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    *
    * @returns {Notifier<any>}
    */
-  const getBlockNotifier = () => {
+  const getMailboxNotifier = () => {
     const { notifier, updater } = makeNotifierKit();
     retryRpcHref(async rpcHref => {
       // Every time we enter this function, we are establishing a
@@ -315,36 +305,123 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // This magic identifier just distinguishes our subscription
       // from other noise on the Websocket, if there is any.
-      const MAGIC_ID = 13254;
+      const MAILBOX_SUBSCRIPTION_ID = 13254;
+      const MAILBOX_QUERY_ID = 198772;
+      const mailboxPath = `mailbox.${clientAddr}`;
+      let firstUpdate = true;
       ws.addEventListener('open', _ => {
         // We send a message to subscribe to every
         // new block header.
         const obj = {
           // JSON-RPC version 2.0.
           jsonrpc: '2.0',
-          id: MAGIC_ID,
+          id: MAILBOX_SUBSCRIPTION_ID,
           // We want to subscribe.
           method: 'subscribe',
           params: {
-            // Here is the Tendermint event for new blocks.
-            query: "tm.event = 'NewBlockHeader'",
+            // This is the minimal query for mailbox changes.
+            query: `tm.event = 'NewBlockHeader' AND storage.path = '${mailboxPath}'`,
           },
         };
         // Send that message, and wait for the subscription.
         ws.send(JSON.stringify(obj));
 
-        // Ensure our sender wakes up again.
-        // eslint-disable-next-line no-use-before-define
-        sendUpdater.updateState(true);
+        // Query for our initial mailbox.
+        const obj2 = {
+          jsonrpc: '2.0',
+          id: MAILBOX_QUERY_ID,
+          method: 'abci_query',
+          params: {
+            path: `/custom/swingset/storage/${mailboxPath}`,
+          },
+        };
+        ws.send(JSON.stringify(obj2));
       });
+
+      const handleMailboxQuery = obj => {
+        // We received our initial mailbox query.
+        // console.info('got mailbox query', obj);
+        if (!firstUpdate) {
+          return;
+        }
+        if (obj.result && obj.result.response && obj.result.response.value) {
+          // Decode all the layers.
+          const { value: b64JsonStorage } = obj.result.response;
+          const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
+            'utf8',
+          );
+          const { value: mailboxValue } = JSON.parse(jsonStorage);
+
+          const mb = JSON.parse(mailboxValue);
+          // console.info('got mailbox value', mb);
+          updater.updateState(mb);
+          firstUpdate = false;
+        } else if (
+          obj.result &&
+          obj.result.response &&
+          obj.result.response.code === 6
+        ) {
+          // No need to try again, just a missing mailbox that our subscription
+          // will pick up.
+        } else {
+          console.error('Error from mailbox query', obj);
+          ws.close();
+        }
+      };
+
+      const handleEventSubscription = obj => {
+        if (obj.error) {
+          console.error(`Error subscribing to events`, obj.error);
+          ws.close();
+          return;
+        }
+
+        // It matches our subscription, so maybe notify the mailbox.
+        const events = obj.result.events;
+        if (!events) {
+          return;
+        }
+        const paths = events['storage.path'];
+        const values = events['storage.value'];
+
+        // Find only the latest value in the events.
+        let latestMailboxValue;
+        paths.forEach((key, i) => {
+          if (key === mailboxPath) {
+            latestMailboxValue = values[i];
+          }
+        });
+        if (latestMailboxValue === undefined) {
+          // No matching events found.
+          return;
+        }
+
+        const mb = JSON.parse(latestMailboxValue);
+
+        // Update our notifier.
+        // console.error('Updating in ws.message');
+        updater.updateState(mb);
+      };
+
       ws.addEventListener('message', ev => {
         // We received a message.
+        // console.info('got message', ev.data);
         const obj = JSON.parse(ev.data);
-        if (obj.id === MAGIC_ID) {
-          // It matches our subscription, so notify.
-          updater.updateState(obj);
+        switch (obj.id) {
+          case MAILBOX_SUBSCRIPTION_ID: {
+            handleEventSubscription(obj);
+            break;
+          }
+          case MAILBOX_QUERY_ID: {
+            handleMailboxQuery(obj);
+            break;
+          }
+          default: {
+            console.error('Unknown JSON-RPC message ID', obj);
+          }
         }
       });
+
       ws.addEventListener('close', _ => {
         // The value `undefined` as the resolution of this retry
         // tells the caller to retry again with a different RPC server.
@@ -358,8 +435,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     return notifier;
   };
 
-  // Begin the block notifier cycle.
-  const blockNotifier = getBlockNotifier();
+  // Begin the mailbox notifier cycle.
+  const mbNotifier = getMailboxNotifier();
 
   const { notifier: sendNotifier, updater: sendUpdater } = makeNotifierKit();
 
@@ -503,33 +580,32 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   /**
-   * This function is entered at most the same number of times
-   * as the blockNotifier announces a new block.
+   * This function is entered at most the same number of times as the
+   * mailboxNotifier announces a new mailbox.
    *
-   * It then gets the mailbox.  There are no optimisations.
+   * It then delivers the mailbox to inbound.  There are no optimisations.
    *
-   * @param {number=} lastBlockUpdate
+   * @param {number=} lastMailboxUpdate
    */
-  const recurseEachNewBlock = async (lastBlockUpdate = undefined) => {
-    const { updateCount } = await blockNotifier.getUpdateSince(lastBlockUpdate);
-    console.debug(`new block on ${GCI}, fetching mailbox`);
+  const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
+    const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
+      lastMailboxUpdate,
+    );
     assert(updateCount, X`${GCI} unexpectedly finished!`);
-    await getMailbox()
-      .then(ret => {
-        if (!ret) {
-          return;
-        }
-        const { outbox, ack } = ret;
-        // console.debug('have outbox', outbox, ack);
-        inbound(GCI, outbox, ack);
-        removeAckedFromMessagePool(ack);
-      })
-      .catch(e => console.error(`Failed to fetch ${GCI} mailbox:`, e));
-    recurseEachNewBlock(updateCount);
+    const { outbox, ack } = mailbox;
+    // console.info('have mailbox', mailbox);
+    inbound(GCI, outbox, ack);
+    removeAckedFromMessagePool(ack);
+
+    recurseEachMailboxUpdate(updateCount).catch(e =>
+      console.error(`Failed to fetch ${GCI} mailbox:`, e),
+    );
   };
 
-  // Begin the block consumer.
-  recurseEachNewBlock();
+  // Begin the mailbox consumer.
+  recurseEachMailboxUpdate().catch(e =>
+    console.error(`Failed to fetch first ${GCI} mailbox:`, e),
+  );
 
   // Retry sending, but no more than one pending retry at a time.
   let retryPending;
@@ -544,7 +620,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     retryPending = setTimeout(() => {
       retryPending = undefined;
       sendUpdater.updateState(true);
-    }, SEND_RETRY_DELAY_MS);
+    }, randomizeDelay(SEND_RETRY_DELAY_MS));
   };
 
   // This function ensures we only have one outgoing send operation at a time.
@@ -564,7 +640,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     let doSend = false;
     if (acknum > highestAck) {
       highestAck = acknum;
-      doSend = true;
+      // We never send just an ack without messages.  But if we did, the
+      // following line would do it:
+      doSend = SEND_EMPTY_ACKS;
     }
     if (newMessages.length) {
       addToMessagePool(newMessages);
@@ -578,5 +656,5 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return makeBatchedDeliver(deliver, SEND_RETRY_DELAY_MS);
+  return makeBatchedDeliver(deliver, Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000));
 }

@@ -65,7 +65,7 @@ func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Ke
 	value := storage.Value
 
 	if value == "" {
-		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get storage")
+		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get storage %+v", path)
 	}
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{Value: value})
