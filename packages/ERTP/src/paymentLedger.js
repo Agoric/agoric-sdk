@@ -291,7 +291,22 @@ export const makePaymentLedger = (
    */
   const withdraw = (currentBalance, updatePurseBalance, amount) => {
     amount = coerce(amount);
-    const newPurseBalance = subtract(currentBalance, amount);
+    let newPurseBalance;
+    try {
+      newPurseBalance = subtract(currentBalance, amount);
+    } catch (err) {
+      if (err instanceof RangeError) {
+        const withdrawalError = Error(
+          // @ts-ignore `X` (aka `details`) lazily constructs a
+          // string, but the types do not reflect that
+          X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
+        );
+        assert.note(withdrawalError, X`Caused by: ${err}`);
+        throw withdrawalError;
+      }
+      throw err;
+    }
+
     const payment = makePayment(allegedName, brand);
     try {
       // COMMIT POINT

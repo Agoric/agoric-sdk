@@ -129,6 +129,22 @@ test('issuer.makeEmptyPurse', async t => {
     .then(checkWithdrawal);
 });
 
+test('purse.withdraw overdrawn', async t => {
+  t.plan(1);
+  const { issuer, mint, brand } = makeIssuerKit('fungible');
+  const purse = issuer.makeEmptyPurse();
+  const purseBalance = AmountMath.make(brand, 103980n);
+  const payment = mint.mintPayment(purseBalance);
+  purse.deposit(payment);
+
+  const tooMuch = AmountMath.make(brand, 103981n);
+
+  t.throws(() => purse.withdraw(tooMuch), {
+    message:
+      'Withdrawal of {"brand":"[Alleged: fungible brand]","value":"[103981n]"} failed because the purse only contained {"brand":"[Alleged: fungible brand]","value":"[103980n]"}',
+  });
+});
+
 test('purse.deposit', async t => {
   t.plan(7);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
