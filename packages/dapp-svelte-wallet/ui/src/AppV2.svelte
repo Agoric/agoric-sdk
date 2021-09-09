@@ -4,6 +4,8 @@
   import { afterUpdate, onMount } from 'svelte';
 
   import Button from 'smelte/src/components/Button';
+  import Tooltip from 'smelte/src/components/Tooltip';
+  import Menu from 'smelte/src/components/Menu';
   import Dapps from './Dapps.svelte';
   import Payments from './Payments.svelte';
   import Inbox from './Inbox.svelte';
@@ -34,7 +36,6 @@
 
   connected.connect();
 
-  $: connectStatus = $connected ? 'Connected' : 'Disconnected';
   $: connectLabel = $connected ? 'Disconnect' : 'Connect';
   $: connectAction = $connected ? connected.disconnect : connected.connect;
 
@@ -43,6 +44,7 @@
     isMobileLayout = window.innerWidth < 769;
   };
   onMount(() => {
+    window.document.documentElement.style.setProperty('--theme-background', '#fff');
     window.addEventListener('resize', calculateLayoutSize);
     return () => {
       window.removeEventListener('resize', calculateLayoutSize);
@@ -90,7 +92,7 @@
     height: calc(max(100%, 100vh) - var(--banner-height-v2));
     border: none;
     background: rgba(0, 0, 0, 0.4);
-    z-index: 1000;
+    z-index: 21;
   }
 
   header {
@@ -106,7 +108,7 @@
     height: var(--banner-height-v2);
     z-index: 25;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     flex-shrink: 0;
     justify-content: space-between;
     flex-direction: row;
@@ -117,13 +119,22 @@
     text-decoration: none;
   }
 
+  .product-link {
+    margin-left: 16px;
+  }
+
   .product-logo {
     transform: scale(0.85);
   }
 
   main {
     width: 100%;
-    padding: 32px 272px;
+    padding: 32px 32px 32px 272px;
+    position: fixed;
+    height: calc(100vh - 64px);
+    max-width: var(--content-width-v2);
+    top: 64px;
+    overflow-y: auto;
   }
 
   footer {
@@ -144,10 +155,6 @@
     display: none;
   }
 
-  .full {
-    grid-column: 1 / span 2;
-  }
-
   .app-bar-section {
     display: flex;
     flex-direction: row;
@@ -155,9 +162,47 @@
     height: 100%;
   }
 
+  .connector {
+    margin-right: 16px;
+  }
+
+  .connection-indicator {
+    pointer-events: none; 
+    position: absolute;
+    height: 8px;
+    width: 8px;
+    background-color: #00c853;
+    border-radius: 4px;
+    top: 34px;
+    left: 34px;
+  }
+
+  .connection-indicator.disconnected {
+    background-color: #e0e0e0;
+    border-color: #9e9e9e;
+    border-width: 1px;
+  }
+
+  :global(.app-bar-section button) {
+    padding: 12px;
+  }
+
+  :global(.app-bar-section i) {
+    color: #cb2328;
+    font-size: 32px;
+  }
+
+  .product-link {
+    margin-left: 16px;
+  }
+
   @media only screen and (max-width: 768px) {
     main {
       padding: 16px 24px;
+    }
+
+    .product-link {
+      margin-left: 0;
     }
   }
 </style>
@@ -173,11 +218,11 @@
         {#if isMobileLayout}
           <Button
             on:click={() => isNavMenuExpanded = !isNavMenuExpanded}
-            class="text-red-500"
+            color="primary"
             icon="menu" text light flat />
         {/if}
       </div>
-      <a href="https://agoric.com" class="flex items-center">
+      <a href="https://agoric.com" class="flex items-center product-link">
         <img
           src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
           class="product-logo"
@@ -185,6 +230,21 @@
           width="200"
           height="43" />
       </a>
+    </div>
+    <div class="app-bar-section">
+      <div class="connector">
+          <Tooltip>
+            <div slot="activator">
+              <Button
+                on:click={connectAction}
+                color="primary"
+                icon="public"
+                text light flat />
+              <div class={`connection-indicator ${$connected ? "" : "disconnected"}`}/>
+            </div>
+            {connectLabel}
+          </Tooltip>
+      </div>
     </div>
   </header>
   {#if !$ready}
