@@ -2,25 +2,27 @@ import { Far } from '@agoric/marshal';
 
 export default function makeScratchPad() {
   const map = new Map();
-  async function get(idP) {
-    const id = await idP;
-    return map.get(id);
-  }
-  async function set(idP, objP) {
-    const [id, obj] = await Promise.all([idP, objP]);
-    map.set(id, obj);
-    return id;
-  }
-  function list() {
-    const ids = [];
-    for (const id of map.keys()) {
-      ids.push(id);
-    }
-    return harden(ids.sort());
-  }
   return Far('scratchPad', {
-    get,
-    set,
-    list,
+    get: async idP => {
+      const id = await idP;
+      return map.get(id);
+    },
+    set: async (idP, objP) => {
+      const [id, obj] = await Promise.all([idP, objP]);
+      map.set(id, obj);
+      return id;
+    },
+    init: async (idP, objP) => {
+      const [id, obj] = await Promise.all([idP, objP]);
+      if (map.has(id)) {
+        throw Error(`Scratchpad already has id ${id}`);
+      }
+      map.set(id, obj);
+      return id;
+    },
+    list: async () => {
+      const ids = [...map.keys()];
+      return harden(ids.sort());
+    },
   });
 }
