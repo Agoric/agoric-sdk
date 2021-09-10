@@ -25,25 +25,32 @@ export default async function deployWallet(
       faucet,
       zoe,
     },
-    local: { http, spawner, wallet: oldWallet },
+    local: { http, spawner, wallet: oldWallet, scratch },
   } = home;
 
-  // Bundle the wallet sources.
-  const bundle = await bundleSource(pathResolve(dirname, './src/wallet.js'));
+  let walletVat = await E(scratch).get('dapp-svelte-wallet/api');
+  if (!walletVat) {
+    // Bundle the wallet sources.
+    const bundle = await bundleSource(pathResolve(dirname, './src/wallet.js'));
 
-  // Install it on the local spawner.
-  const walletInstall = E(spawner).install(bundle);
+    // Install it on the local spawner.
+    const walletInstall = E(spawner).install(bundle);
 
-  // Wallet for both end-user client and dapp dev client
-  const walletVat = await E(walletInstall).spawn({
-    agoricNames,
-    namesByAddress,
-    myAddressNameAdmin,
-    zoe,
-    board,
-    faucet,
-    http,
-  });
+    // Wallet for both end-user client and dapp dev client
+    walletVat = await E(walletInstall).spawn({
+      agoricNames,
+      namesByAddress,
+      myAddressNameAdmin,
+      zoe,
+      board,
+    });
+  }
+
+  // Ensure we have the wallet we installed first.
+  await E(scratch)
+    .init('dapp-svelte-wallet/api', walletVat)
+    .catch(_ => {});
+  walletVat = await E(scratch).get('dapp-svelte-wallet/api');
 
   const walletToPaymentInfo = async wallet => {
     if (!wallet) {

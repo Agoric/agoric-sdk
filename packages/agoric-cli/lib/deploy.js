@@ -30,7 +30,7 @@ const RETRY_DELAY_MS = 1000;
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
 export default async function deployMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, makeWebSocket } = powers;
+  const { anylogger, fs, makeWebSocket, now } = powers;
   const console = anylogger('agoric:deploy');
 
   const allowUnsafePlugins = opts.allowUnsafePlugins;
@@ -97,8 +97,15 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
       connected = true;
       try {
         console.debug('Connected to CapTP!');
-        const { dispatch, getBootstrap } = makeCapTP('bundle', obj =>
-          sendJSON(ws, obj),
+        // Help disambiguate connections.
+        const epoch = now();
+        const { dispatch, getBootstrap } = makeCapTP(
+          'bundle',
+          obj => sendJSON(ws, obj),
+          undefined,
+          {
+            epoch,
+          },
         );
         ws.on('message', data => {
           try {
