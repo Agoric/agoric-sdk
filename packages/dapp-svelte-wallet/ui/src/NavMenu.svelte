@@ -17,13 +17,31 @@
         justify-content: space-between;
         padding: 4px;
     }
+
+    :global(.nav-menu-item) {
+        border-radius: 0 32px 32px 0;
+        width: 246px;
+    }
+
+    :global(.nav-menu-item i) {
+        font-size: 20px;
+    }
+
+    :global(.header button) {
+        padding: 12px;
+    }
+
+    :global(.header i) {
+        color: #cb2328;
+        font-size: 32px;
+    }
 </style>
 <nav role="navigation" class="nav-menu">
     <NavigationDrawer
         bind:show={isExpanded}
         persistent={!isDrawer}
         elevation={isDrawer}
-        borderClasses="border-grey-100 border-r">
+        borderClasses="">
         <div class="header">
             <h6 class="p-3 ml-1 text-m text-gray-900">
                 Wallet
@@ -31,7 +49,7 @@
             {#if isDrawer}
                 <Button
                     on:click={() => isExpanded = !isExpanded}
-                    class="close-button text-red-500"
+                    color="primary"
                     icon="close" text light flat />
             {/if}
         </div>
@@ -39,6 +57,7 @@
             <span slot="item" let:item={item} class="cursor-pointer">
                 <ListItem
                     on:click={() => navPanel = item.id}
+                    class="nav-menu-item"
                     text={item.text}
                     icon={item.icon}
                     selected={navPanel === item.id}
