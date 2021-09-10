@@ -227,42 +227,7 @@ export async function connectToChain(
   };
 
   // Validate that our chain egress exists.
-  await retryRpcHref(async rpcHref => {
-    const args = ['query', 'swingset', 'egress', clientAddr];
-    const fullArgs = [
-      ...args,
-      `--chain-id=${chainID}`,
-      '--output=json',
-      `--node=${rpcHref}`,
-      `--home=${helperDir}`,
-    ];
-    // log(HELPER, ...fullArgs);
-    const r = await new Promise(resolve => {
-      execFile(HELPER, fullArgs, (error, stdout, stderr) => {
-        resolve({ error, stdout, stderr });
-      });
-    });
-
-    if (r.stderr) {
-      console.error(r.stderr.trimRight());
-    }
-    if (!r.stdout) {
-      console.error(`
-=============
-${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
-        clientAddr,
-      )}
-=============
-`);
-      return undefined;
-    } else if (r.error) {
-      console.error(`Error running`, HELPER, ...args);
-      console.error(r.stderr);
-      return undefined;
-    }
-
-    return r;
-  });
+  let hasEgress = false;
 
   // We need one subscription-type thing
   // to tell us that a new block exists, then we can use a different
@@ -303,122 +268,169 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         console.debug('WebSocket error', e);
       });
 
-      // This magic identifier just distinguishes our subscription
-      // from other noise on the Websocket, if there is any.
-      const MAILBOX_SUBSCRIPTION_ID = 13254;
-      const MAILBOX_QUERY_ID = 198772;
-      const mailboxPath = `mailbox.${clientAddr}`;
-      let firstUpdate = true;
-      ws.addEventListener('open', _ => {
-        // We send a message to subscribe to every
-        // new block header.
-        const obj = {
-          // JSON-RPC version 2.0.
+      // We have a new instance of the map and id per connection.
+      let lastId = 0;
+      const idToCallback = new Map();
+
+      const sendRPC = (method, params) => {
+        lastId += 1;
+        const id = lastId;
+        const fullObj = {
           jsonrpc: '2.0',
-          id: MAILBOX_SUBSCRIPTION_ID,
-          // We want to subscribe.
-          method: 'subscribe',
-          params: {
-            // This is the minimal query for mailbox changes.
-            query: `tm.event = 'NewBlockHeader' AND storage.path = '${mailboxPath}'`,
-          },
+          id,
+          method,
+          params,
         };
-        // Send that message, and wait for the subscription.
-        ws.send(JSON.stringify(obj));
-
-        // Query for our initial mailbox.
-        const obj2 = {
-          jsonrpc: '2.0',
-          id: MAILBOX_QUERY_ID,
-          method: 'abci_query',
-          params: {
-            path: `/custom/swingset/storage/${mailboxPath}`,
-          },
-        };
-        ws.send(JSON.stringify(obj2));
-      });
-
-      const handleMailboxQuery = obj => {
-        // We received our initial mailbox query.
-        // console.info('got mailbox query', obj);
-        if (!firstUpdate) {
-          return;
-        }
-        if (obj.result && obj.result.response && obj.result.response.value) {
-          // Decode all the layers.
-          const { value: b64JsonStorage } = obj.result.response;
-          const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
-            'utf8',
-          );
-          const { value: mailboxValue } = JSON.parse(jsonStorage);
-
-          const mb = JSON.parse(mailboxValue);
-          // console.info('got mailbox value', mb);
-          updater.updateState(mb);
-          firstUpdate = false;
-        } else if (
-          obj.result &&
-          obj.result.response &&
-          obj.result.response.code === 6
-        ) {
-          // No need to try again, just a missing mailbox that our subscription
-          // will pick up.
-        } else {
-          console.error('Error from mailbox query', obj);
-          ws.close();
-        }
+        ws.send(JSON.stringify(fullObj));
+        return id;
       };
 
-      const handleEventSubscription = obj => {
-        if (obj.error) {
-          console.error(`Error subscribing to events`, obj.error);
-          ws.close();
-          return;
-        }
-
-        // It matches our subscription, so maybe notify the mailbox.
-        const events = obj.result.events;
-        if (!events) {
-          return;
-        }
-        const paths = events['storage.path'];
-        const values = events['storage.value'];
-
-        // Find only the latest value in the events.
-        let latestMailboxValue;
-        paths.forEach((key, i) => {
-          if (key === mailboxPath) {
-            latestMailboxValue = values[i];
-          }
+      const subscribeToStorage = (storagePath, cb) => {
+        let lastHeight = 0n;
+        const query = `tm.event = 'NewBlockHeader' AND storage.path = '${storagePath}'`;
+        const subscriptionId = sendRPC('subscribe', { query });
+        const queryId = sendRPC('abci_query', {
+          path: `/custom/swingset/storage/${storagePath}`,
         });
-        if (latestMailboxValue === undefined) {
-          // No matching events found.
+
+        const cleanup = () => {
+          idToCallback.delete(subscriptionId);
+          idToCallback.delete(queryId);
+          sendRPC('unsubscribe', { query });
+        };
+
+        const guardedCb = (height, value) => {
+          if (height <= lastHeight) {
+            return;
+          }
+          lastHeight = height;
+          cb(null, value);
+        };
+
+        // Query for our initial value.
+        idToCallback.set(queryId, obj => {
+          // console.log(`got ${storagePath} query`, obj);
+          if (obj.result && obj.result.response && obj.result.response.value) {
+            // Decode the layers up to the actual storage value.
+            const {
+              value: b64JsonStorage,
+              height: heightString,
+            } = obj.result.response;
+            const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
+              'utf8',
+            );
+            const { value: storageValue } = JSON.parse(jsonStorage);
+            guardedCb(BigInt(heightString), storageValue);
+          } else if (
+            obj.result &&
+            obj.result.response &&
+            obj.result.response.code === 6
+          ) {
+            // No need to try again, just a missing value that our subscription
+            // will pick up.
+            const { height: heightString } = obj.result.response;
+            guardedCb(BigInt(heightString), null);
+          } else {
+            // Unexpected error.
+            cb(obj, null);
+          }
+          idToCallback.delete(queryId);
+        });
+
+        idToCallback.set(subscriptionId, obj => {
+          // console.log(`got ${storagePath} subscription`, obj);
+          if (obj.error) {
+            cleanup();
+            cb(obj.error, null);
+            return;
+          }
+
+          const events = obj.result.events;
+          if (!events) {
+            return;
+          }
+
+          const { height: heightString } = obj.result.data.value.header;
+
+          const paths = events['storage.path'];
+          const values = events['storage.value'];
+
+          // Find only the latest value in the events.
+          let storageValue;
+          paths.forEach((key, i) => {
+            if (key === storagePath) {
+              storageValue = values[i];
+            }
+          });
+          if (storageValue === undefined) {
+            // No matching events found.
+            return;
+          }
+
+          guardedCb(BigInt(heightString), storageValue);
+        });
+
+        return cleanup;
+      };
+
+      const followMailbox = () => {
+        // Tell the sender to go.
+        updater.updateState(undefined);
+        subscribeToStorage(`mailbox.${clientAddr}`, (err, storageValue) => {
+          if (err) {
+            console.error(`Error subscribing to mailbox`, err);
+            ws.close();
+            return;
+          }
+          if (!storageValue) {
+            return;
+          }
+          const mb = JSON.parse(storageValue);
+          updater.updateState(mb);
+        });
+      };
+
+      ws.addEventListener('open', _ => {
+        if (hasEgress) {
+          // No need to requery egress, we already have it.
+          followMailbox();
           return;
         }
 
-        const mb = JSON.parse(latestMailboxValue);
+        const stopEgress = subscribeToStorage(
+          `egress.${clientAddr}`,
+          (err, storageValue) => {
+            if (err) {
+              console.error(`Error subscribing to egress`, err);
+              ws.close();
+              return;
+            }
+            if (!storageValue) {
+              console.error(`
+=============
+${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
+                clientAddr,
+              )}
+=============
+`);
+              return;
+            }
+            // Found egress.
+            hasEgress = true;
 
-        // Update our notifier.
-        // console.error('Updating in ws.message');
-        updater.updateState(mb);
-      };
+            followMailbox();
+            stopEgress();
+          },
+        );
+      });
 
       ws.addEventListener('message', ev => {
         // We received a message.
         // console.info('got message', ev.data);
         const obj = JSON.parse(ev.data);
-        switch (obj.id) {
-          case MAILBOX_SUBSCRIPTION_ID: {
-            handleEventSubscription(obj);
-            break;
-          }
-          case MAILBOX_QUERY_ID: {
-            handleMailboxQuery(obj);
-            break;
-          }
-          default: {
-            console.error('Unknown JSON-RPC message ID', obj);
-          }
+        const cb = idToCallback.get(obj.id);
+        if (cb) {
+          cb(obj);
         }
       });
 
@@ -592,10 +604,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       lastMailboxUpdate,
     );
     assert(updateCount, X`${GCI} unexpectedly finished!`);
-    const { outbox, ack } = mailbox;
-    // console.info('have mailbox', mailbox);
-    inbound(GCI, outbox, ack);
-    removeAckedFromMessagePool(ack);
+    if (mailbox) {
+      const { outbox, ack } = mailbox;
+      // console.info('have mailbox', mailbox);
+      inbound(GCI, outbox, ack);
+      removeAckedFromMessagePool(ack);
+    }
 
     recurseEachMailboxUpdate(updateCount).catch(e =>
       console.error(`Failed to fetch ${GCI} mailbox:`, e),
@@ -633,8 +647,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     recurseEachSend(updateCount);
   };
 
-  // Begin the sender.
-  recurseEachSend();
+  // Begin the sender when we get the first (empty) mailbox update.
+  mbNotifier.getUpdateSince().then(() => recurseEachSend());
 
   async function deliver(newMessages, acknum) {
     let doSend = false;
