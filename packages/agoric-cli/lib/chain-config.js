@@ -14,6 +14,8 @@ export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 //
 // 5 seconds is about as fast as we can go without penalising validators.
 export const BLOCK_CADENCE_S = 5;
+export const RPC_BROADCAST_TIMEOUT_S = 30;
+export const RPC_MAX_BODY_BYTES = 15_000_000;
 
 export const EPOCH_DURATION_S = 60 * 60; // 1 hour
 export const BLOCKS_PER_EPOCH = Math.floor(EPOCH_DURATION_S / BLOCK_CADENCE_S);
@@ -93,7 +95,8 @@ export function finishTendermintConfig({
   config.p2p.unconditional_peer_ids = unconditionalPeerIds;
   config.p2p.seeds = seeds;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
-  config.rpc.max_body_bytes = 15 * 10 ** 6;
+  config.rpc.max_body_bytes = RPC_MAX_BODY_BYTES;
+  config.rpc.timeout_broadcast_tx_commit = `${RPC_BROADCAST_TIMEOUT_S}s`;
 
   if (
     enableCors &&

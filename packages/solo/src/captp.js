@@ -6,6 +6,7 @@ export const getCapTPHandler = (
   getLocalBootstrap,
   fallback = undefined,
 ) => {
+  let lastEpoch;
   const chans = new Map();
   const doFallback = async (method, ...args) => {
     if (!fallback) {
@@ -16,7 +17,9 @@ export const getCapTPHandler = (
   const handler = Far('capTpHandler', {
     onOpen(obj, meta) {
       const { channelHandle, origin = 'unknown' } = meta || {};
-      console.debug(`Starting CapTP`, meta);
+      lastEpoch += 1;
+      const epoch = lastEpoch;
+      console.debug(`Starting CapTP#${epoch}`, meta);
       const sendObj = o => {
         send(o, [channelHandle]);
       };
@@ -25,6 +28,9 @@ export const getCapTPHandler = (
         sendObj,
         async o => getLocalBootstrap(getRemoteBootstrap(), meta, o),
         {
+          // Disambiguate in case we receive messages from different
+          // connections.
+          epoch,
           onReject(err) {
             // Be quieter for sanity's sake.
             console.log('CapTP', origin, 'exception:', err);
