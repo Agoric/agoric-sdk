@@ -52,6 +52,11 @@ jobs:
           console.log(branch);
           return branch;
 
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
     - name: yarn install
       run: yarn install
     # 'yarn build' loops over all workspaces

@@ -74,6 +74,12 @@ jobs:
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -107,6 +113,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -147,6 +159,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -202,6 +220,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -328,6 +352,12 @@ jobs:
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -394,6 +424,12 @@ jobs:
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -431,6 +467,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -479,6 +521,12 @@ jobs:
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -524,6 +572,12 @@ jobs:
       with:
         submodules: 'true'
       if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
       if: steps.built.outputs.cache-hit != 'true'
@@ -560,6 +614,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
@@ -599,6 +659,12 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: install node-canvas dependencies
+      run: |
+        set -e
+        sudo apt update -y
+        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn install
       run: yarn install
