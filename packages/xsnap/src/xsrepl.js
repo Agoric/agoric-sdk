@@ -40,7 +40,11 @@ async function main() {
   let vat = xsnap({ ...xsnapOptions, handleCommand });
 
   await vat.evaluate(`
-    const compartment = new Compartment();
+    const compartment = new Compartment({
+      TextEncoder,
+      TextDecoder,
+      Base64
+    });
     function handleCommand(request) {
       const command = String.fromArrayBuffer(request);
       let result = compartment.evaluate(command);
