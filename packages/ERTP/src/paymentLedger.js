@@ -291,7 +291,12 @@ export const makePaymentLedger = (
    */
   const withdraw = (currentBalance, updatePurseBalance, amount) => {
     amount = coerce(amount);
+    assert(
+      AmountMath.isGTE(currentBalance, amount),
+      X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
+    );
     const newPurseBalance = subtract(currentBalance, amount);
+
     const payment = makePayment(allegedName, brand);
     try {
       // COMMIT POINT
