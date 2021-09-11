@@ -3,6 +3,10 @@
 // import '@agoric/marshal/src/types.js';
 
 /**
+ * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
+ */
+
+/**
  * @typedef {CapData<string>} SwingSetCapData
  */
 
@@ -163,9 +167,14 @@
 /**
  * @typedef {Object} SwingSetConfig a swingset config object
  * @property {string} [bootstrap]
+ * @property {boolean} [includeDevDependencies] indicates that
+ * `devDependencies` of the surrounding `package.json` should be accessible to
+ * bundles.
  * @property { ManagerType } [defaultManagerType]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
+ * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
+ * format.
  * @property {*} [devices]
  *
  * Swingsets defined by scanning a directory in this manner define no devices.
