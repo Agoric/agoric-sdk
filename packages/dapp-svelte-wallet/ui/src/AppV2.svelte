@@ -8,7 +8,7 @@
   import Menu from 'smelte/src/components/Menu';
   import Dapps from './Dapps.svelte';
   import Payments from './Payments.svelte';
-  import Inbox from './Inbox.svelte';
+  import Dashboard from './Dashboard.svelte';
   import PursesV2 from './PursesV2.svelte';
   import DappsV2 from './DappsV2.svelte';
   import ContactsV2 from './ContactsV2.svelte';
@@ -20,7 +20,7 @@
   import { connected, ready } from './store';
 
   const menu = [
-    { id: 'inbox', text: 'Inbox', icon: 'mail' },
+    { id: 'dashboard', text: 'Dashboard', icon: 'dashboard' },
     { id: 'purses', text: 'Purses', icon: 'account_balance_wallet' },
     { id: 'dapps', text: 'Dapps', icon: 'apps' },
     { id: 'contacts', text: 'Contacts', icon: 'people' },
@@ -28,7 +28,7 @@
     { id: 'history', text: 'History', icon: 'history' },
   ];
 
-  let navPanel = 'inbox';
+  let navPanel = 'dashboard';
   let isNavMenuExpanded = true;
   let isMobileLayout = false;
 
@@ -61,6 +61,7 @@
     --agoric-bg-v2: rgb(255, 255, 255);
     --banner-height-v2: 64px;
     --content-width-v2: 1024px;
+    --nav-offset-width: 272px;
   }
 
   :global(.highlighted) {
@@ -132,7 +133,6 @@
     padding: 32px 32px 32px 272px;
     position: fixed;
     height: calc(100vh - 64px);
-    max-width: var(--content-width-v2);
     top: 64px;
     overflow-y: auto;
   }
@@ -270,7 +270,7 @@
     {:else if navPanel === 'history'}
       <History />
     {:else}
-      <Inbox></Inbox>
+      <Dashboard bind:navPanel={navPanel} />
     {/if}
   </main>
 

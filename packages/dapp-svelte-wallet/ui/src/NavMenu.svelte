@@ -10,7 +10,7 @@
     export let navPanel;
 </script>
 <style>
-    .header {
+    .nav-header {
         display: flex;
         flex-direction: row;
         align-items: baseline;
@@ -27,11 +27,11 @@
         font-size: 20px;
     }
 
-    :global(.header button) {
+    :global(.nav-header button) {
         padding: 12px;
     }
 
-    :global(.header i) {
+    :global(.nav-header i) {
         color: #cb2328;
         font-size: 32px;
     }
@@ -42,7 +42,7 @@
         persistent={!isDrawer}
         elevation={isDrawer}
         borderClasses="">
-        <div class="header">
+        <div class="nav-header">
             <h6 class="p-3 ml-1 text-m text-gray-900">
                 Wallet
             </h6>
