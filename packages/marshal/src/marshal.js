@@ -10,6 +10,7 @@ import { passStyleOf } from './passStyleOf.js';
 import './types.js';
 import { getInterfaceOf } from './helpers/remotable.js';
 import { ErrorHelper, getErrorConstructor } from './helpers/error.js';
+import { isPrimitive } from './helpers/passStyleHelpers.js';
 
 const { ownKeys } = Reflect;
 const { isArray } = Array;
@@ -301,7 +302,7 @@ export function makeMarshal(
      * @param {Encoding} rawTree must be hardened
      */
     function fullRevive(rawTree) {
-      if (Object(rawTree) !== rawTree) {
+      if (isPrimitive(rawTree)) {
         // primitives pass through
         return rawTree;
       }

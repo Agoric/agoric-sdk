@@ -18,6 +18,7 @@ import {
   hasOwnPropertyOf,
   PASS_STYLE,
   checkTagRecord,
+  isObject,
 } from './passStyleHelpers.js';
 import { getEnvironmentOption } from './environment-options.js';
 
@@ -202,7 +203,7 @@ export const RemotableHelper = harden({
     if (
       !(
         check(
-          typeof candidate === 'object' || typeof candidate === 'function',
+          isObject(candidate),
           X`cannot serialize non-objects like ${candidate}`,
         ) &&
         check(!isArray(candidate), X`Arrays cannot be pass-by-remote`) &&

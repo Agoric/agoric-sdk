@@ -2,6 +2,7 @@
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
+import { isPrimitive } from '@agoric/marshal';
 
 const console = anylogger('block-manager');
 
@@ -245,7 +246,7 @@ function deepEquals(a, b, already = new WeakSet()) {
   }
 
   // Must both be objects.
-  if (Object(a) !== a || Object(b) !== b) {
+  if (isPrimitive(a) || isPrimitive(b)) {
     return false;
   }
 

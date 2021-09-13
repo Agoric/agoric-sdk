@@ -1,4 +1,8 @@
-export { PASS_STYLE } from './src/helpers/passStyleHelpers.js';
+export {
+  PASS_STYLE,
+  isPrimitive,
+  isObject,
+} from './src/helpers/passStyleHelpers.js';
 export { getErrorConstructor } from './src/helpers/error.js';
 export {
   getInterfaceOf,
