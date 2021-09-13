@@ -105,7 +105,7 @@ export const boardP = makeStableForwarder(bootP => E.get(bootP).board);
 // We initialize as false, but reset to true on disconnects.
 const [ready, setReady] = makeReadable(false, true);
 const [inbox, setInbox] = makeReadable([]);
-const [purses, setPurses] = makeReadable([]);
+const [purses, setPurses] = makeReadable(null);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
 const [contacts, setContacts] = makeReadable([]);
