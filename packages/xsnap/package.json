@@ -36,6 +36,7 @@
     "ses": "^0.14.1"
   },
   "devDependencies": {
+    "@endo/base64": "^0.2.6",
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
