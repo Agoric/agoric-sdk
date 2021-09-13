@@ -32,11 +32,10 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 // At least until post-v0.34.12 is released with
 // https://github.com/tendermint/tendermint/issue/6899 resolved.
-replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.1
+replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.8
  
-// At least until GetABCIEventHistory() is implemented and released.
-// And also until the above tendermint issue is released.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.2
+// We need a fork of cosmos-sdk until all of the differences are merged.
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.5
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
