@@ -262,37 +262,37 @@
       import '@material/mwc-list/mwc-list-item';
       import { suggestChain } from '@agoric/wallet/components/use-keplr.js';
 
-      const suggestCosmosHub = async (chainId, rpc, api) => {
-                    const stakeCurrency = {
-    coinDenom: 'ATOM',
-    coinMinimalDenom: 'uphoton',
-    coinDecimals: 6,
-    coinGeckoId: '$ATOM',
-  };
-            const chainInfo = {
-    rpc,
-    rest: api,
-    chainId,
-    chainName: chainId,
-    stakeCurrency,
-    walletUrlForStaking: `http://localhost`,
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: 'cosmos',
-      bech32PrefixAccPub: 'cosmospub',
-      bech32PrefixValAddr: 'cosmosvaloper',
-      bech32PrefixValPub: 'cosmosvaloperpub',
-      bech32PrefixConsAddr: 'cosmosvalcons',
-      bech32PrefixConsPub: 'cosmosvalconspub',
-    },
-    currencies: [stakeCurrency],
-    feeCurrencies: [stakeCurrency],
-    features: ['stargate', 'ibc-transfer'],
-  };
-            await window.keplr.experimentalSuggestChain(chainInfo);
-            await window.keplr.enable(chainId);
+      const suggestCosmosHubTestnet = async (chainId, rpc, api) => {
+        const stakeCurrency = {
+          coinDenom: 'ATOM',
+          coinMinimalDenom: 'uphoton',
+          coinDecimals: 3,
+          coinGeckoId: '$ATOM',
+        };
+        const chainInfo = {
+          rpc,
+          rest: api,
+          chainId,
+          chainName: `Cosmos Hub Demo`,
+          stakeCurrency,
+          walletUrlForStaking: `http://localhost`,
+          bip44: {
+            coinType: 118,
+          },
+          bech32Config: {
+            bech32PrefixAccAddr: 'cosmos',
+            bech32PrefixAccPub: 'cosmospub',
+            bech32PrefixValAddr: 'cosmosvaloper',
+            bech32PrefixValPub: 'cosmosvaloperpub',
+            bech32PrefixConsAddr: 'cosmosvalcons',
+            bech32PrefixConsPub: 'cosmosvalconspub',
+          },
+          currencies: [stakeCurrency],
+          feeCurrencies: [stakeCurrency],
+          features: ['stargate', 'ibc-transfer'],
+        };
+        await window.keplr.experimentalSuggestChain(chainInfo);
+        await window.keplr.enable(chainId);
       }
 
       const checkHash = () => {
@@ -323,7 +323,7 @@
         st.innerText = 'Configuring Keplr...';
         try {
           if (nc === 'cosmos-hub-testnet') {
-            await suggestCosmosHub('cosmos-hub-testnet', 'https://rpc.testnet.cosmos.network:443', 'https://api.testnet.cosmos.network:443');
+            await suggestCosmosHubTestnet('cosmos-hub-testnet', 'https://rpc.testnet.cosmos.network:443', 'https://api.testnet.cosmos.network:443');
           } else {
             await suggestChain(nc);
           }
