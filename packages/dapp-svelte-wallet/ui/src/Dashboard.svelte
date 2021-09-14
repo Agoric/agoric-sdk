@@ -10,7 +10,7 @@
         display: flex;
         flex-direction: row;
         flex-wrap: wrap-reverse;
-        align-items: baseline;
+        align-items: flex-end;
         justify-content: start;
         max-width: 100%;
     }

@@ -25,7 +25,6 @@
     { id: 'dapps', text: 'Dapps', icon: 'apps' },
     { id: 'contacts', text: 'Contacts', icon: 'people' },
     { id: 'issuers', text: 'Issuers', icon: 'arrow_circle_right' },
-    { id: 'history', text: 'History', icon: 'history' },
   ];
 
   let navPanel = 'dashboard';
