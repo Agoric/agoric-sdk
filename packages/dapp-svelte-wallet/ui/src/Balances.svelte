@@ -43,7 +43,7 @@
 
     .purses-link {
         text-decoration: none;
-        color: #00b0ff;
+        color: rgb(0,100,200);
         cursor: pointer;
         line-height: 16px;
         vertical-align: top;

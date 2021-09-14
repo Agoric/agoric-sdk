@@ -17,8 +17,8 @@
 <style>
   div {
     float: right;
-    z-index: 20;
   }
+  
   pre {
     width: calc(100vw - 4em);
     max-width: 48em;

@@ -6,7 +6,7 @@
         display: flex;
         justify-content: flex-start;
         flex-direction: column;
-        padding: 16px 0 16px;;
+        padding: 16px 0 16px;
         border-radius: 8px;
         border-color: #e0e0e0;
         border-width: 1px;
