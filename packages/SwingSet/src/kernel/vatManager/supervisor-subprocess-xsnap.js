@@ -286,6 +286,9 @@ function makeWorker(port) {
       assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
+      TextEncoder,
+      TextDecoder,
+      Base64: globalThis.Base64, // Present only in XSnap
     };
 
     const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };

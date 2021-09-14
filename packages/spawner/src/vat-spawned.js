@@ -1,7 +1,14 @@
+/* global globalThis */
+
 import { importBundle } from '@agoric/import-bundle';
 import { Far } from '@agoric/marshal';
 
-const endowments = { console, assert };
+const endowments = {
+  console,
+  assert,
+  Base64: globalThis.Base64, // Present only on XSnap
+  URL: globalThis.URL, // Absent only on XSnap
+};
 
 export function buildRootObject() {
   return Far('root', {

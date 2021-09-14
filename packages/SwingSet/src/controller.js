@@ -1,4 +1,6 @@
 // @ts-check
+/* global globalThis */
+
 import fs from 'fs';
 import process from 'process';
 import re2 from 're2';
@@ -213,6 +215,8 @@ export async function makeSwingsetController(
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
       assert,
       require: kernelRequire,
+      URL: globalThis.Base64, // Unavailable only on XSnap
+      Base64: globalThis.Base64, // Available only on XSnap
     },
   });
   const buildKernel = kernelNS.default;

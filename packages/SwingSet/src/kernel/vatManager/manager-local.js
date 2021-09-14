@@ -1,4 +1,6 @@
 // @ts-check
+/* global globalThis */
+
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeLiveSlots } from '../liveSlots.js';
@@ -124,6 +126,10 @@ export function makeLocalVatManagerFactory(tools) {
         consensusMode || logger(...args);
       }),
       assert,
+      TextEncoder,
+      TextDecoder,
+      Base64: globalThis.Base64, // Available only on XSnap
+      URL: globalThis.URL, // Unavailable only on XSnap
     });
     const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
 

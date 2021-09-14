@@ -7,6 +7,8 @@
 // https://github.com/endojs/endo/blob/master/packages/ses/lockdown-options.md
 // for more explanation of these lockdown options.
 
+/* global globalThis */
+
 import 'ses';
 import '@agoric/eventual-send/shim.js';
 // TODO Remove babel-standalone preinitialization
@@ -73,3 +75,5 @@ Error.stackTraceLimit = Infinity;
 
 harden(TextEncoder);
 harden(TextDecoder);
+harden(globalThis.URL); // Absent only on XSnap
+harden(globalThis.Base64); // Present only on XSnap
