@@ -95,8 +95,12 @@ github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric h1:X5D4QHvjlhq5CntQR1jlVd
 github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric/go.mod h1:ENm1b98MKZzKfYKbWwpVNfjcTZToveK+IDhHa2WRNQo=
 github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.2 h1:s9vdQixPCD5qGY6MubGypDkjpikkIcmUuSZQYwUaFjI=
 github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.2/go.mod h1:ENm1b98MKZzKfYKbWwpVNfjcTZToveK+IDhHa2WRNQo=
+github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.5 h1:6gI2FSFqnTcYO7ZBfHm1wlOjSG2tooWfYRyNW9UjENk=
+github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.5/go.mod h1:wvjoIRARpPFK8Xrrj11cexWRA1oBbvlBO3zbIIsmDls=
 github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.1 h1:N6qCgZLeSa2CzmNnjxmxoxY7r7rZGtY5vCtoHrauOSo=
 github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.1/go.mod h1:aeHL7alPh4uTBIJQ8mgFEE8VwJLXI1VD3rVOmH2Mcy0=
+github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.8 h1:Enx/u3VEVSuTySMyUVSIWlQRHAbQHrHTnDRSHKJS2Po=
+github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.8/go.mod h1:aeHL7alPh4uTBIJQ8mgFEE8VwJLXI1VD3rVOmH2Mcy0=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
