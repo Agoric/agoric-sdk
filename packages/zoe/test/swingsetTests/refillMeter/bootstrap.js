@@ -86,7 +86,7 @@ export function buildRootObject(vatPowers) {
       await E(publicFacet).smallComputation();
 
       const postSmallComputation2 = await E(feePurse).getCurrentAmount();
-      // No refill
+      expected -= meteringConfig.incrementBy;
 
       log(
         'post-smallComputation2 equals expected: ',
@@ -97,7 +97,7 @@ export function buildRootObject(vatPowers) {
       await E(publicFacet).smallComputation();
 
       const postSmallComputation3 = await E(feePurse).getCurrentAmount();
-      expected -= meteringConfig.incrementBy;
+      // no refill
 
       log(
         'post-smallComputation3 equals expected: ',
