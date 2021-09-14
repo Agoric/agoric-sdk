@@ -5,6 +5,7 @@
 import test from 'ava';
 import * as proc from 'child_process';
 import * as os from 'os';
+import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
@@ -48,6 +49,61 @@ test('simple TextEncoder / TextDecoder are available', async t => {
     send(decoder.decode(new Uint8Array([65, 0, 65]).buffer));
   `);
   t.deepEqual(opts.messages, ['"Hello! 😊"', '"A\\u0000A"']);
+});
+
+test('Base64.encode', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    globalThis.handleCommand = inputBuffer => {
+      const outputString = Base64.encode(inputBuffer);
+      const outputUint8Array = encoder.encode(outputString);
+      globalThis.issueCommand(outputUint8Array.buffer);
+    };
+  `);
+  const inputUint8Array = new TextEncoder().encode('Hello, World! 😃🌍');
+  const expectedOutputString = encodeBase64(inputUint8Array);
+  await vat.issueCommand(inputUint8Array);
+  t.deepEqual(opts.messages, [expectedOutputString]);
+});
+
+test('Base64.encode degenerate input case', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const encoder = new TextEncoder();
+    globalThis.handleCommand = inputBuffer => {
+      const outputString = Base64.encode(inputBuffer);
+      const outputUint8Array = encoder.encode(outputString);
+      globalThis.issueCommand(outputUint8Array.buffer);
+    };
+  `);
+  const inputUint8Array = new Uint8Array();
+  const expectedOutputString = '';
+  await vat.issueCommand(inputUint8Array);
+  t.deepEqual(opts.messages, [expectedOutputString]);
+});
+
+test('Base64.decode', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  await vat.evaluate(`
+    const decoder = new TextDecoder();
+    globalThis.handleCommand = inputBuffer => {
+      const inputString = decoder.decode(inputBuffer);
+      const outputBuffer = Base64.decode(inputString);
+      globalThis.issueCommand(outputBuffer);
+    };
+  `);
+  const expectedOutputString = 'Hello, World! 😃🌍  ';
+  const expectedOutputUint8Array = new TextEncoder().encode(expectedOutputString);
+  const inputString = encodeBase64(expectedOutputUint8Array);
+  await vat.issueStringCommand(inputString);
+  t.deepEqual(opts.messages, [expectedOutputString]);
 });
 
 test('bigint map key', async t => {
