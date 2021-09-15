@@ -1,6 +1,6 @@
 {
   "name": "@agoric/treasury",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/stablecoinMachine.js",
@@ -33,7 +33,7 @@
     "@agoric/assert": "^0.3.11",
     "@agoric/bundle-source": "^1.4.9",
     "@agoric/captp": "^1.10.3",
-    "@agoric/deploy-script-support": "^0.5.1",
+    "@agoric/deploy-script-support": "^0.5.2",
     "@agoric/ertp": "^0.11.16",
     "@agoric/eventual-send": "^0.13.27",
     "@agoric/marshal": "^0.4.25",
