@@ -1,6 +1,5 @@
 <script>
     import ListCard from "../lib/ListCard.svelte";
-    import Card from 'smelte/src/components/Card';
     import Dapp from "./Dapp.svelte";
 
     import { dapps } from './store';

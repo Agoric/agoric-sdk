@@ -2,7 +2,6 @@
   import { E } from "@agoric/eventual-send";
   import TextField from 'smelte/src/components/TextField';
   import Switch from 'smelte/src/components/Switch';
-import { strikethrough } from "svelte-awesome/icons";
 
   export let item;
   export let details = true;

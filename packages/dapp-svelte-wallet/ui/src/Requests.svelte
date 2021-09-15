@@ -1,10 +1,8 @@
 
 <script>
-    import CardV2 from '../lib/CardV2.svelte';
     import TransactionV2 from './TransactionV2.svelte';
     import DappV2 from './DappV2.svelte';
     import PaymentV2 from './PaymentV2.svelte';
-    import ProgressCircular from 'smelte/src/components/ProgressCircular';
 
     import { inbox, dapps, payments } from './store';
 
@@ -14,22 +12,25 @@
     $: offers = ($inbox || []).filter(({ status }) => status === undefined || status === 'pending');
     $: dappConnections = ($dapps || []).filter(({ enable }) => !enable);
 
-    $: mappedPayments = incomingPayments.map((i) => { 
+    $: mappedPayments = incomingPayments.map((i) => {
         return {
-            'type': 'payment',
-            'data': i
+            type: 'payment',
+            data: i,
+            id: i,
         };
     });
     $: mappedOffers = offers.map((i) => { 
         return {
-            'type': 'transaction',
-            'data': i
+            type: 'transaction',
+            data: i,
+            id: i.id,
         };
     });
     $: mappedDapps = dappConnections.map((i) => { 
         return {
-            'type': 'dapp',
-            'data': i
+            type: 'dapp',
+            data: i,
+            id: i.dappOrigin || i.origin,
         };
     });
 
@@ -54,17 +55,8 @@
 </style>
  
 <div class={`content ${classes}`}>
-    {#if !items.length}
-        <img class="splash-image"
-            src="generic-agoric.svg"
-            alt="Empty Inbox"
-            width="320"
-            height="320" />
-        <p class="text-gray-700">
-            No requests.
-        </p>
-    {:else}
-        {#each items as item}
+    {#if items.length}
+        {#each items as item (item.id)}
             {#if item.type === "transaction"}
                 <TransactionV2 item={item.data} />
             {:else if item.type === "payment"}
@@ -73,5 +65,14 @@
                 <DappV2 item={item.data} />
             {/if}
         {/each}
+    {:else}
+        <img class="splash-image"
+            src="generic-agoric.svg"
+            alt="Empty Inbox"
+            width="320"
+            height="320" />
+        <p class="text-gray-700">
+            No requests.
+        </p>
     {/if}
 </div>
