@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X, quote as q } from '@agoric/assert';
@@ -214,19 +215,19 @@ export function makeVirtualObjectManager(
    * delete it if so.
    *
    * A virtual object is kept alive by being reachable by any of three legs:
-   *  - any in-memory references to it (if so, it will have a non-null slot-to-val entry)
+   *  - any in-memory references to it (if so, it will have a representative and
+   *    thus a non-null slot-to-val entry)
    *  - any virtual references to it (if so, it will have a refcount > 0)
    *  - being exported (if so, its export flag will be set)
    *
-   * This function is called code that removes one of these three legs, to see
+   * This function is called by code that removes one of these three legs, to see
    * if the other two legs are now gone also.
    *
    * Deletion consists of removing the vatstore entries that describe its state
-   * and track its refcount status.  In addition, when a virtual object becomes
-   * dead, even though it may still be recognizable in a technical sense, it
-   * will never actually be recognized since nobody can ever present a reference
-   * to it for recognition.  Consequently we also expunge any weak collection
-   * entries for which it is a key.
+   * and track its refcount status.  In addition, when a virtual object is
+   * deleted, we delete any weak collection entries for which it was a key. If
+   * it had been exported, we also inform the kernel that the vref has been
+   * retired, so other vats can delete their weak collection entries too.
    *
    * @param {string} vobjID  The vref of the virtual object that's plausibly dead
    *
@@ -284,6 +285,12 @@ export function makeVirtualObjectManager(
   function setExportStatus(vobjID, exportStatus) {
     const key = `vom.es.${vobjID}`;
     switch (exportStatus) {
+      // POSSIBLE TODO: An anticipated refactoring may merge
+      // dispatch.dropExports with dispatch.retireExports. If this happens, and
+      // the export status can drop from 'reachable' to 'none' in a single step, we
+      // must perform this "the export pillar has dropped" check in both the
+      // reachable and the none cases (possibly reading the old status first, if
+      // we must ensure addToPossiblyDeadSet only happens once).
       case 'recognizable': {
         syscall.vatstoreSet(key, '0');
         const refCount = getRefCount(vobjID);
@@ -432,10 +439,13 @@ export function makeVirtualObjectManager(
    *
    * TODO: concoct a better type def than Set<any>
    */
-  /** @type {Map<string, Set<any>>} */
+  /**
+   * @typedef { Map<string, *> | Set<string> | ((string) => void) } Recognizer
+   */
+  /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
 
-  function addRecognizableVref(value, recognizer) {
+  function addRecognizableValue(value, recognizer) {
     const vref = getSlotForVal(value);
     if (vref) {
       const { type, allocatedByVat, virtual } = parseVatSlot(vref);
@@ -454,7 +464,7 @@ export function makeVirtualObjectManager(
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
     if (type === 'object' && (!allocatedByVat || virtual)) {
       const recognizerSet = vrefRecognizers.get(vref);
-      assert(recognizerSet.has(recognizer));
+      assert(recognizerSet && recognizerSet.has(recognizer));
       recognizerSet.delete(recognizer);
       if (recognizerSet.size === 0) {
         vrefRecognizers.delete(vref);
@@ -586,7 +596,7 @@ export function makeVirtualObjectManager(
             !syscall.vatstoreGet(vkey),
             X`${q(keyName)} already registered: ${key}`,
           );
-          addRecognizableVref(key, deleter);
+          addRecognizableValue(key, deleter);
           const data = serialize(value);
           data.slots.map(addReachableVref);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
@@ -650,7 +660,7 @@ export function makeVirtualObjectManager(
       for (const vref of body.values()) {
         removeRecognizableVref(vref, body);
       }
-    } else if (typeof body === 'string') {
+    } else if (typeof body === 'object') {
       // XXX oops, need to iterate vatstore keys and the API doesn't support that
       console.log(`can't finalize WeakStore ${body} yet`);
     }
@@ -703,7 +713,7 @@ export function makeVirtualObjectManager(
       if (vkey) {
         const vmap = virtualObjectMaps.get(this);
         if (!vmap.has(vkey)) {
-          addRecognizableVref(key, vmap);
+          addRecognizableValue(key, vmap);
         }
         vmap.set(vkey, value);
       } else {
@@ -760,7 +770,7 @@ export function makeVirtualObjectManager(
       if (vkey) {
         const vset = virtualObjectSets.get(this);
         if (!vset.has(value)) {
-          addRecognizableVref(value, vset);
+          addRecognizableValue(value, vset);
           vset.add(vkey);
         }
       } else {

@@ -207,6 +207,8 @@ function build(
     for (const vref of possiblyRetiredSet) {
       // eslint-disable-next-line no-use-before-define
       if (!getValForSlot(vref) && !deadSet.has(vref)) {
+        // Don't retire things that haven't yet made the transition to dead,
+        // i.e., always drop before retiring
         // eslint-disable-next-line no-use-before-define
         if (!vom.isVrefRecognizable(vref)) {
           importsToRetire.push(vref);
