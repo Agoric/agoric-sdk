@@ -1,10 +1,8 @@
 <script>
   import { slide } from 'svelte/transition';
 
-  import List from 'smelte/src/components/List';
-
+  import List from './List.svelte';
   import Icon from "smelte/src/components/Icon";
-  import Card from "smelte/src/components/Card";
   import ListItem from 'smelte/src/components/List/ListItem.svelte';
 
   export let items = [];

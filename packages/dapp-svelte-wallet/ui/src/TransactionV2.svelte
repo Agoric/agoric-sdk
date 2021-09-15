@@ -139,7 +139,7 @@
         <h6>Give {role}</h6>
         <div class="token">
           <img alt="icon"
-            src={icons[item.brandPetname] ?? defaultIcon}
+            src={icons[amount.brand.petname] ?? defaultIcon}
             height="28px"
             width="28px" />
             <div>
@@ -154,7 +154,7 @@
         <h6>Want {role}</h6>
         <div class="token">
           <img alt="icon"
-            src={icons[item.brandPetname] ?? defaultIcon}
+            src={icons[amount.brand.petname] ?? defaultIcon}
             height="28px"
             width="28px" />
             <div>
@@ -170,7 +170,7 @@
         <div class="token">
           {#if feePursePetname}
             <img alt="icon"
-              src={icons[item.brandPetname] ?? defaultIcon}
+              src={icons[fee.brand.petname] ?? defaultIcon}
               height="28px"
               width="28px" />
           {/if}
