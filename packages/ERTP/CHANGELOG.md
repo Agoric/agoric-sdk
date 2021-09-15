@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.16...@agoric/ertp@0.12.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* improve error message when a purse is overdrawn (#3811)
+
+### Bug Fixes
+
+* improve error message when a purse is overdrawn ([#3811](https://github.com/Agoric/agoric-sdk/issues/3811)) ([7b5841c](https://github.com/Agoric/agoric-sdk/commit/7b5841caf6a3d99464c2156156e0f6337bb04690))
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+
+
+
 ### [0.11.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.11.15...@agoric/ertp@0.11.16) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/ertp

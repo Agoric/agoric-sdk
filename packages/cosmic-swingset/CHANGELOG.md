@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.34.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.5...@agoric/cosmic-swingset@0.34.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **issuers:** clean up issuers for demo
+* clean up organization of swing-store
+
+### Features
+
+* **issuers:** clean up issuers for demo ([228cf1a](https://github.com/Agoric/agoric-sdk/commit/228cf1a80d100e653460823cae62fdd547447cb3))
+
+
+### Code Refactoring
+
+* clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
+
+
+
 ### [0.33.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.4...@agoric/cosmic-swingset@0.33.5) (2021-08-21)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

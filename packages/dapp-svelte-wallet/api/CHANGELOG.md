@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.10.2...@agoric/dapp-svelte-wallet-api@0.10.3) (2021-09-15)
+
+
+### Features
+
+* **wallet:** wire through the Zoe fee information ([f52ea9a](https://github.com/Agoric/agoric/commit/f52ea9a0a94b8d7c88a18afd603b22896306613f))
+
+
+### Bug Fixes
+
+* **wallet:** handle solo restarts while deploying wallet backend ([a6c7bf8](https://github.com/Agoric/agoric/commit/a6c7bf8d781d3b2c5350d6b47d61b1ea9293b8d4))
+
+
+
 ### [0.10.2](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.10.1...@agoric/dapp-svelte-wallet-api@0.10.2) (2021-08-21)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet-api
