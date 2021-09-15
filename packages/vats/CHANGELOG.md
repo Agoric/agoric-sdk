@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.3.2...@agoric/vats@0.4.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **issuers:** clean up issuers for demo
+
+### Features
+
+* **issuers:** clean up issuers for demo ([228cf1a](https://github.com/Agoric/agoric-sdk/commit/228cf1a80d100e653460823cae62fdd547447cb3))
+
+
+### Bug Fixes
+
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+
+
+
+### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.3.1...@agoric/vats@0.3.2) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/vats
+
+
+
+
+
 ### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.3.0...@agoric/vats@0.3.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/vats

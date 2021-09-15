@@ -62,7 +62,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
-    noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
+    noFakeCurrencies: !process.env.FAKE_CURRENCIES,
     bootMsg: {
       supplyCoins: [
         { denom: 'ubld', amount: `${50_000n * 10n ** 6n}` },

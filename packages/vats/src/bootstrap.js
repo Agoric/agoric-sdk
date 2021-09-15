@@ -20,9 +20,8 @@ import { makeBridgeManager } from './bridge.js';
 import { makeNameHubKit } from './nameHub.js';
 import {
   CENTRAL_ISSUER_NAME,
-  fakeIssuerEntries,
+  demoIssuerEntries,
   fromCosmosIssuerEntries,
-  fromPegasusIssuerEntries,
 } from './issuers';
 
 const NUM_IBC_PORTS = 3;
@@ -265,11 +264,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         bankDenom: CENTRAL_DENOM_NAME,
         bankPayment: centralBootstrapPayment,
       }),
-      ...fromPegasusIssuerEntries,
+      // We still create demo currencies, but not obviously fake ones unless
+      // $FAKE_CURRENCIES is given.
+      ...demoIssuerEntries(noFakeCurrencies),
     ];
-    if (!noFakeCurrencies) {
-      rawIssuerEntries.push(...fakeIssuerEntries);
-    }
 
     const issuerEntries = await Promise.all(
       rawIssuerEntries.map(async entry => {

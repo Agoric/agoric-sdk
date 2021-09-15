@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.13.16",
+  "version": "0.13.17",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "lib/main.js",
@@ -22,20 +22,20 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.21.3",
+    "@agoric/swingset-vat": "^0.22.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "tmp": "^0.1.0"
   },
   "dependencies": {
-    "@agoric/access-token": "^0.4.12",
-    "@agoric/assert": "^0.3.11",
+    "@agoric/access-token": "^0.4.13",
+    "@agoric/assert": "^0.3.12",
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/bundle-source": "^1.4.9",
-    "@agoric/captp": "^1.10.3",
-    "@agoric/install-ses": "^0.5.25",
+    "@agoric/bundle-source": "^1.4.10",
+    "@agoric/captp": "^1.10.4",
+    "@agoric/install-ses": "^0.5.26",
     "@agoric/nat": "^4.1.0",
-    "@agoric/promise-kit": "^0.2.25",
+    "@agoric/promise-kit": "^0.2.26",
     "@endo/compartment-mapper": "^0.5.1",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",

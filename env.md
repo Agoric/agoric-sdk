@@ -77,14 +77,14 @@ end-of-block processing for `ag-chain-cosmos` and the sim-chain.
 
 Lifetime: until we have a more consistent load testing regimen
 
-## NO_FAKE_CURRENCIES
+## FAKE_CURRENCIES
 
 Affects: cosmic-swingset
 
-Purpose: skipping the creation of pretend tokens
+Purpose: allow the creation of pretend tokens
 
-Description: When nonempty, don't create pretend prepopulated tokens like
-"moola" or "simoleans".
+Description: When nonempty, create pretend prepopulated tokens like "moola" and
+"simoleans".
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 

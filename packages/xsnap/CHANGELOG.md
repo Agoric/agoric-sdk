@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.8.2...@agoric/xsnap@0.9.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** moddable resync for stack-trace changes metering
+
+### Features
+
+* **xsnap:** Add base 64 bindings ([a8279a4](https://github.com/Agoric/agoric-sdk/commit/a8279a43ef6f4686efba301fe2cb93e1d4e9b156))
+* **xsnap:** integrate native TextEncoder / TextDecoder ([9d65dbe](https://github.com/Agoric/agoric-sdk/commit/9d65dbe2410e1856c3ac1fa6ff7eb921bb24ec0c))
+
+
+### Bug Fixes
+
+* **xsnap:** moddable resync for stack-trace changes metering ([34e5e18](https://github.com/Agoric/agoric-sdk/commit/34e5e1877eb74cf39fc32cf1cc53524c3f365635))
+* **xsnap:** supply missing file, line numbers based on sourceURL ([be3386c](https://github.com/Agoric/agoric-sdk/commit/be3386cbcd2255c469791830984fc385856226cc)), closes [#2578](https://github.com/Agoric/agoric-sdk/issues/2578)
+
+
+
 ### [0.8.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.8.1...@agoric/xsnap@0.8.2) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/xsnap

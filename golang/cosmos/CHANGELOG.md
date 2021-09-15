@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.26.18](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.17...@agoric/cosmos@0.26.18) (2021-09-15)
+
+
+### Features
+
+* **cosmos:** publish event when `x/swingset` storage is modified ([8b63eb0](https://github.com/Agoric/agoric-sdk/commit/8b63eb08006807af547f4b1e166fef34c6cdde75))
+
+
+### Bug Fixes
+
+* **cosmos:** ensure simulated transactions can't trigger SwingSet ([997329a](https://github.com/Agoric/agoric-sdk/commit/997329a92f5380edab586f4186a2092ce361dcde))
+* **cosmos:** the bootstrap block is not a simulation, either ([f906a54](https://github.com/Agoric/agoric-sdk/commit/f906a54a9a3cdb2342c8b274a7132fb6aa9e9fcc))
+* **solo:** query WebSocket for mailbox instead of ag-cosmos-helper ([9a23c34](https://github.com/Agoric/agoric-sdk/commit/9a23c344e3d2c1980e27db23e3caa306a9bd655f))
+
+
+
+### [0.26.17](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.16...@agoric/cosmos@0.26.17) (2021-08-21)
+
+
+### Bug Fixes
+
+* **cosmos:** the bootstrap block is not a simulation, either ([c4e4727](https://github.com/Agoric/agoric-sdk/commit/c4e472748b4eed4f7ad9650a5904a526e0c2e214))
+
+
+
+### [0.26.16](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.15...@agoric/cosmos@0.26.16) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/cosmos
+
+
+
+
+
 ### [0.26.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.14...@agoric/cosmos@0.26.15) (2021-08-18)
 
 

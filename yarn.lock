@@ -10131,9 +10131,10 @@ plur@^4.0.0:
   dependencies:
     irregular-plurals "^3.2.0"
 
-"polycrc@https://github.com/agoric-labs/node-polycrc":
-  version "1.0.1-agoric"
-  resolved "https://github.com/agoric-labs/node-polycrc#f396a902c5ba663cb91b6c8c13ec0afe792108d0"
+polycrc@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/polycrc/-/polycrc-1.1.0.tgz#7ee75bd0b47d377d26d78ee7f5c529dde0c77af0"
+  integrity sha512-rEOTU2hpsys8CwOre1XptjEm1pGA8F2mCLI0Hxb1lc7HweXi0m9K70FX5uiGB63v1kklyZ0UfbWNo7pOXp/BHg==
 
 popper.js@1.16.1-lts:
   version "1.16.1-lts"

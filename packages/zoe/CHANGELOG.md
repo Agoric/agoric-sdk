@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.18.1...@agoric/zoe@0.19.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* add required rounding modes to ratio APIs
+
+### Features
+
+* add required rounding modes to ratio APIs ([dc8d6dc](https://github.com/Agoric/agoric-sdk/commit/dc8d6dca5898890ef4d956c83685bc28eb189791))
+
+
+### Bug Fixes
+
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+* update error messages in tests. ([76d590d](https://github.com/Agoric/agoric-sdk/commit/76d590d11d6c6798f1f334c7b477b056f312a1b7))
+
+
+
 ### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.18.0...@agoric/zoe@0.18.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/zoe

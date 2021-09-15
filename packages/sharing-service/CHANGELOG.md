@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.29](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.28...@agoric/sharing-service@0.1.29) (2021-09-15)
+
+
+### Features
+
+* **swingset-vat:** Thread dev dependencies explicitly ([f55982f](https://github.com/Agoric/agoric-sdk/commit/f55982fccf211fba9625cd8015b5c06e9644ee60))
+* **swingset-vat:** Thread module format through loadBasedir, swingset config ([b243889](https://github.com/Agoric/agoric-sdk/commit/b243889d2f5e7c3c279373943b593cf9773c6366))
+
+
+
 ### [0.1.28](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.27...@agoric/sharing-service@0.1.28) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/sharing-service
