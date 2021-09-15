@@ -247,7 +247,7 @@
         <mwc-list-item value="https://devnet.agoric.net/network-config">Agoric Devnet</mwc-list-item>
         <mwc-list-item value="https://stage.agoric.net/network-config">Agoric
         Stage</mwc-list-item>
-        <mwc-list-item value="cosmos-hub-testnet">Cosmos Hub Testnet</mwc-list-item>
+        <mwc-list-item value="cosmoshub-testnet">Cosmos Hub Testnet</mwc-list-item>
       </mwc-select>
       <button id="chooseNetworkConfig">Configure</button>
       </p>
@@ -263,11 +263,14 @@
       import { suggestChain } from '@agoric/wallet/components/use-keplr.js';
 
       const suggestCosmosHubTestnet = async (chainId, rpc, api) => {
+        const actualDecimals = 6;
+        const fakeDecimals = 2;
+        const gasScale = 0.001; // 10 ** (actualDecimals - fakeDecimals);
         const stakeCurrency = {
           coinDenom: 'ATOM',
           coinMinimalDenom: 'uphoton',
-          coinDecimals: 3,
-          coinGeckoId: '$ATOM',
+          coinDecimals: fakeDecimals,
+          coinGeckoId: 'cosmos',
         };
         const chainInfo = {
           rpc,
@@ -289,6 +292,11 @@
           },
           currencies: [stakeCurrency],
           feeCurrencies: [stakeCurrency],
+          gasPriceStep: {
+            low: 0.01 * gasScale,
+            average: 0.025 * gasScale,
+            high: 0.04 * gasScale, 
+          },
           features: ['stargate', 'ibc-transfer'],
         };
         await window.keplr.experimentalSuggestChain(chainInfo);
@@ -322,8 +330,8 @@
         const st = document.querySelector('#keplr-status');
         st.innerText = 'Configuring Keplr...';
         try {
-          if (nc === 'cosmos-hub-testnet') {
-            await suggestCosmosHubTestnet('cosmos-hub-testnet', 'https://rpc.testnet.cosmos.network:443', 'https://api.testnet.cosmos.network:443');
+          if (nc === 'cosmoshub-testnet') {
+            await suggestCosmosHubTestnet('cosmoshub-testnet', 'https://rpc.testnet.cosmos.network:443', 'https://api.testnet.cosmos.network:443');
           } else {
             await suggestChain(nc);
           }
