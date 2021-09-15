@@ -106,115 +106,118 @@ const fromCosmosIssuerEntries = centralRecord => [
 harden(fromCosmosIssuerEntries);
 export { fromCosmosIssuerEntries };
 
-/** @type {Array<[string, IssuerInitializationRecord]>} */
-const fromPegasusIssuerEntries = [
-  [
-    'ATOM',
-    {
-      issuerArgs: [undefined, { decimalPlaces: 6 }],
-      defaultPurses: [['Cosmos Staking', scaleMicro(68)]],
-      collateralConfig: {
-        keyword: 'ATOM',
-        collateralValue: scaleMicro(1_000_000n),
-        initialMarginPercent: 150n,
-        liquidationMarginPercent: 125n,
-        interestRateBasis: 250n,
-        loanFeeBasis: 1n,
+/**
+ * Note that we can still add these fake currencies to be traded on the AMM.
+ * Just don't add a defaultPurses entry if you don't want them to be given out
+ * on bootstrap.  They might still be tradable on the AMM.
+ *
+ * @param {boolean} noObviouslyFakeCurrencies
+ * @returns {Array<[string, IssuerInitializationRecord]>}
+ */
+export const demoIssuerEntries = noObviouslyFakeCurrencies => {
+  const doFakePurses = noObviouslyFakeCurrencies ? undefined : true;
+  return [
+    /* We actually can IBC-transfer Atoms via Pegasus right now. */
+    [
+      'ATOM',
+      {
+        issuerArgs: [undefined, { decimalPlaces: 6 }],
+        defaultPurses: doFakePurses && [['Cosmos Staking', scaleMicro(68)]],
+        collateralConfig: {
+          keyword: 'ATOM',
+          collateralValue: scaleMicro(1_000_000n),
+          initialMarginPercent: 150n,
+          liquidationMarginPercent: 125n,
+          interestRateBasis: 250n,
+          loanFeeBasis: 1n,
+        },
+        tradesGivenCentral: [
+          [scaleCentral(33.28, 2), scaleMicro(1)],
+          [scaleCentral(34.61, 2), scaleMicro(1)],
+          [scaleCentral(37.83, 2), scaleMicro(1)],
+        ],
       },
-      tradesGivenCentral: [
-        [scaleCentral(18.61, 2), scaleMicro(1)],
-        [scaleCentral(19.97, 2), scaleMicro(1)],
-        [scaleCentral(19.17, 2), scaleMicro(1)],
-      ],
-    },
-  ],
-  [
-    'ETH',
-    {
-      issuerArgs: [undefined, { decimalPlaces: 18 }],
-      collateralConfig: {
-        keyword: 'ETH',
-        collateralValue: scaleEth(1_000_000n),
-        initialMarginPercent: 150n,
-        liquidationMarginPercent: 125n,
-        interestRateBasis: 250n,
-        loanFeeBasis: 1n,
+    ],
+    [
+      'WETH',
+      {
+        issuerArgs: [undefined, { decimalPlaces: 18 }],
+        collateralConfig: {
+          keyword: 'WETH',
+          collateralValue: scaleEth(1_000_000n),
+          initialMarginPercent: 150n,
+          liquidationMarginPercent: 125n,
+          interestRateBasis: 250n,
+          loanFeeBasis: 1n,
+        },
+        tradesGivenCentral: [
+          [scaleCentral(3286.01, 2), scaleEth(1)],
+          [scaleCentral(3435.86, 2), scaleEth(1)],
+          [scaleCentral(3443.21, 2), scaleEth(1)],
+        ],
       },
-      tradesGivenCentral: [
-        [scaleCentral(1914.86, 2), scaleEth(1)],
-        [scaleCentral(1489.87, 2), scaleEth(1)],
-        [scaleCentral(1924.4, 2), scaleEth(1)],
-      ],
-    },
-  ],
-  [
-    'LINK',
-    {
-      issuerArgs: [undefined, { decimalPlaces: 18 }],
-      defaultPurses: [['Oracle fee', scaleEth(51n)]],
-      collateralConfig: {
-        keyword: 'LINK',
-        collateralValue: scaleEth(1_000_000n),
-        initialMarginPercent: 150n,
-        liquidationMarginPercent: 125n,
-        interestRateBasis: 250n,
-        loanFeeBasis: 1n,
+    ],
+    [
+      'LINK',
+      {
+        issuerArgs: [undefined, { decimalPlaces: 18 }],
+        defaultPurses: [['Oracle fee', scaleEth(51n)]],
+        collateralConfig: {
+          keyword: 'LINK',
+          collateralValue: scaleEth(1_000_000n),
+          initialMarginPercent: 150n,
+          liquidationMarginPercent: 125n,
+          interestRateBasis: 250n,
+          loanFeeBasis: 1n,
+        },
+        tradesGivenCentral: [
+          [scaleCentral(26.9, 2), scaleEth(1)],
+          [scaleCentral(30.59, 2), scaleEth(1)],
+          [scaleCentral(30.81, 2), scaleEth(1)],
+        ],
       },
-      tradesGivenCentral: [
-        [scaleCentral(27.9, 2), scaleEth(1)],
-        [scaleCentral(25.7, 2), scaleEth(1)],
-        [scaleCentral(26.8, 2), scaleEth(1)],
-      ],
-    },
-  ],
-  [
-    'USDC',
-    {
-      issuerArgs: [undefined, { decimalPlaces: 18 }],
-      defaultPurses: [['USD Coin', scaleEth(1_323n)]],
-      collateralConfig: {
-        keyword: 'USDC',
-        collateralValue: scaleEth(10_000_000n),
-        initialMarginPercent: 150n,
-        liquidationMarginPercent: 125n,
-        interestRateBasis: 250n,
-        loanFeeBasis: 1n,
+    ],
+    [
+      'USDC',
+      {
+        issuerArgs: [undefined, { decimalPlaces: 18 }],
+        defaultPurses: [['USD Coin', scaleEth(1_323n)]],
+        collateralConfig: {
+          keyword: 'USDC',
+          collateralValue: scaleEth(10_000_000n),
+          initialMarginPercent: 150n,
+          liquidationMarginPercent: 125n,
+          interestRateBasis: 250n,
+          loanFeeBasis: 1n,
+        },
+        tradesGivenCentral: [[scaleCentral(1), scaleEth(1)]],
       },
-      tradesGivenCentral: [[scaleCentral(1), scaleEth(1)]],
-    },
-  ],
-];
+    ],
+    [
+      'moola',
+      {
+        defaultPurses: doFakePurses && [['Fun budget', 1900]],
+        tradesGivenCentral: [
+          [scaleCentral(1), 1],
+          [scaleCentral(1.3, 1), 1],
+          [scaleCentral(1.2, 1), 1],
+          [scaleCentral(1.8, 1), 1],
+          [scaleCentral(1.5, 1), 1],
+        ],
+      },
+    ],
+    [
+      'simolean',
+      {
+        defaultPurses: doFakePurses && [['Nest egg', 970]],
+        tradesGivenCentral: [
+          [scaleCentral(21.35, 2), 1],
+          [scaleCentral(21.72, 2), 1],
+          [scaleCentral(21.24, 2), 1],
+        ],
+      },
+    ],
+  ];
+};
 
-harden(fromPegasusIssuerEntries);
-export { fromPegasusIssuerEntries };
-
-/** @type {Array<[string, IssuerInitializationRecord]>} */
-const fakeIssuerEntries = [
-  [
-    'moola',
-    {
-      defaultPurses: [['Fun budget', 1900]],
-      tradesGivenCentral: [
-        [scaleCentral(1), 1],
-        [scaleCentral(1.3, 1), 1],
-        [scaleCentral(1.2, 1), 1],
-        [scaleCentral(1.8, 1), 1],
-        [scaleCentral(1.5, 1), 1],
-      ],
-    },
-  ],
-  [
-    'simolean',
-    {
-      defaultPurses: [['Nest egg', 970]],
-      tradesGivenCentral: [
-        [scaleCentral(21.35, 2), 1],
-        [scaleCentral(21.72, 2), 1],
-        [scaleCentral(21.24, 2), 1],
-      ],
-    },
-  ],
-];
-
-harden(fakeIssuerEntries);
-export { fakeIssuerEntries };
+harden(demoIssuerEntries);

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.29](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.28...@agoric/notifier@0.3.29) (2021-09-15)
+
+
+### Bug Fixes
+
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+
+
+
 ### [0.3.28](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.27...@agoric/notifier@0.3.28) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/notifier

@@ -3,6 +3,63 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.6...@agoric/solo@0.5.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **solo:** watch for mailbox updates; not every Tendermint block
+* clean up organization of swing-store
+
+### Features
+
+* **solo:** add `keys`, `init`, and `delete` to `home.scratch` ([1cecdcb](https://github.com/Agoric/agoric-sdk/commit/1cecdcb7dd571146164aba1e8eda0b6ad91a975a))
+
+
+### Bug Fixes
+
+* **deploy:** use `@agoric/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
+* **solo:** make solo-to-chain more robust ([b266666](https://github.com/Agoric/agoric-sdk/commit/b2666665b1881d5f98fa853ba05627d945783c7c))
+* **solo:** only subscribe to one copy of mailbox events ([9d58314](https://github.com/Agoric/agoric-sdk/commit/9d583148727ed90e9ac555fef75fef40ad90a0cf))
+* **solo:** preserve ports in the `rpcAddr`; `--node` needs them ([7d83576](https://github.com/Agoric/agoric-sdk/commit/7d83576ca3aa4fd81077284bb544a56dcdd75f8c))
+* **solo:** query WebSocket for mailbox instead of ag-cosmos-helper ([9a23c34](https://github.com/Agoric/agoric-sdk/commit/9a23c344e3d2c1980e27db23e3caa306a9bd655f))
+* **solo:** watch for mailbox updates; not every Tendermint block ([35e9c87](https://github.com/Agoric/agoric-sdk/commit/35e9c87f263f9a6c7f0471ed268c8f52126a6dd6))
+* **wallet:** handle solo restarts while deploying wallet backend ([a6c7bf8](https://github.com/Agoric/agoric-sdk/commit/a6c7bf8d781d3b2c5350d6b47d61b1ea9293b8d4))
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+* XS + SES snapshots are deterministic (test) ([#3781](https://github.com/Agoric/agoric-sdk/issues/3781)) ([95c5f01](https://github.com/Agoric/agoric-sdk/commit/95c5f014b2808ef1b3a32302bb37b3894e449abe)), closes [#2776](https://github.com/Agoric/agoric-sdk/issues/2776)
+
+
+### Code Refactoring
+
+* clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
+
+
+
+### [0.4.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.5...@agoric/solo@0.4.6) (2021-08-22)
+
+
+### Bug Fixes
+
+* **solo:** make solo-to-chain more robust ([ea0ef15](https://github.com/Agoric/agoric-sdk/commit/ea0ef15645fd851d82c9edf3ad862dcc256e172d))
+
+
+
+### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.4...@agoric/solo@0.4.5) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
+### [0.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.3...@agoric/solo@0.4.4) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/solo
+
+
+
+
+
 ### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.2...@agoric/solo@0.4.3) (2021-08-18)
 
 

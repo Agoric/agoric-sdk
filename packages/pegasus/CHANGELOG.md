@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.4.2...@agoric/pegasus@0.4.3) (2021-09-15)
+
+
+### Bug Fixes
+
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+
+
+
+### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.4.1...@agoric/pegasus@0.4.2) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/pegasus
+
+
+
+
+
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.4.0...@agoric/pegasus@0.4.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/pegasus

@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.2...@agoric/dapp-svelte-wallet@0.11.3) (2021-09-15)
+
+
+### Features
+
+* **wallet:** Add balances to dashboard view ([c2c68e1](https://github.com/Agoric/agoric-sdk/commit/c2c68e179576cfac931b526f6c76ac9ba0f1a782))
+* **wallet:** add connection indicator to app bar ([f6acd29](https://github.com/Agoric/agoric-sdk/commit/f6acd29a6b7da499c7d4e8b54f9f38a3afffe939))
+* **wallet:** Add requests feed to dashboard ([#3824](https://github.com/Agoric/agoric-sdk/issues/3824)) ([c02eb8e](https://github.com/Agoric/agoric-sdk/commit/c02eb8ec04b9fbd0366675ef9ed56b39e8bc86ee))
+* **wallet:** Add responsive nav menu ([39e5a0a](https://github.com/Agoric/agoric-sdk/commit/39e5a0ac30f0114ef4de53e93c908f309ca5cb1a))
+* **wallet:** Add url param to hide ui changes ([7fde345](https://github.com/Agoric/agoric-sdk/commit/7fde34514d5fb8ed392bc9862faf591e3d1397f2))
+* **wallet:** Drop old components into contacts, dapps, issuers, and purses views ([#3825](https://github.com/Agoric/agoric-sdk/issues/3825)) ([5a52315](https://github.com/Agoric/agoric-sdk/commit/5a52315783dc075aca2dfb2b689d6c1f8865f612))
+* **wallet:** wire through the Zoe fee information ([f52ea9a](https://github.com/Agoric/agoric-sdk/commit/f52ea9a0a94b8d7c88a18afd603b22896306613f))
+
+
+### Bug Fixes
+
+* **wallet:** handle solo restarts while deploying wallet backend ([a6c7bf8](https://github.com/Agoric/agoric-sdk/commit/a6c7bf8d781d3b2c5350d6b47d61b1ea9293b8d4))
+
+
+
+### [0.11.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.1...@agoric/dapp-svelte-wallet@0.11.2) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/dapp-svelte-wallet
+
+
+
+
+
 ### [0.11.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.0...@agoric/dapp-svelte-wallet@0.11.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/dapp-svelte-wallet

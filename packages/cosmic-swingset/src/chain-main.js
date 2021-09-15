@@ -244,7 +244,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     ).pathname;
     const argv = {
       ROLE: 'chain',
-      noFakeCurrencies: env.NO_FAKE_CURRENCIES,
+      noFakeCurrencies: !env.FAKE_CURRENCIES,
       bootMsg,
     };
     const meterProvider = getMeterProvider(console, env);

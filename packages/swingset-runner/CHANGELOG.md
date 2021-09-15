@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.16.1...@agoric/swingset-runner@0.17.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* clean up organization of swing-store
+
+### Bug Fixes
+
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+
+
+### Code Refactoring
+
+* clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
+
+
+
 ### [0.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.16.0...@agoric/swingset-runner@0.16.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/swingset-runner
