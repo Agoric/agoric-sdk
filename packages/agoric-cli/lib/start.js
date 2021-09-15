@@ -24,6 +24,7 @@ const FAKE_CHAIN_DELAY =
 const PORT = process.env.PORT || 8000;
 const HOST_PORT = process.env.HOST_PORT || PORT;
 const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
+const DEFAULT_NETCONFIG = 'https://testnet.agoric.net/network-config';
 
 /**
  * Resolve after a delay in milliseconds.
@@ -571,8 +572,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const port = startArgs[0] || PORT;
-    const netconfig =
-      startArgs[1] || 'https://testnet.agoric.com/network-config';
+    const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
     const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
     if (popts.reset) {
@@ -600,8 +600,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   async function startTestnetSdk(profileName, startArgs, popts) {
     const port = startArgs[0] || PORT;
-    const netconfig =
-      startArgs[1] || 'https://testnet.agoric.com/network-config';
+    const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
     const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
 
     if (popts.reset) {
