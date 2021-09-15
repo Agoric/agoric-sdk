@@ -40,7 +40,7 @@
     "@agoric/swingset-vat": "^0.21.3",
     "@agoric/treasury": "^0.6.1",
     "@agoric/zoe": "^0.18.1",
-    "polycrc": "https://github.com/agoric-labs/node-polycrc"
+    "polycrc": "^1.1.0"
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
