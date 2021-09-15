@@ -4,19 +4,25 @@
     import DappV2 from './DappV2.svelte';
     import PaymentV2 from './PaymentV2.svelte';
 
-    import { inbox, dapps, payments } from './store';
+    import { inbox, dapps, payments, purses } from './store';
 
     export let classes = '';
 
-    $: incomingPayments = ($payments || []).filter(({ status }) => status === undefined || status === 'pending');
+    const hasAutoDeposit = (payment) =>
+        $purses.filter((p) =>
+            p.brand === payment.brand && (p.depositBoardId || '').length > 0
+        ).length > 0;
+
+    $: incomingPayments = ($payments || []).filter((i) => i.status !== 'deposited' && !hasAutoDeposit(i));
     $: offers = ($inbox || []).filter(({ status }) => status === undefined || status === 'pending');
     $: dappConnections = ($dapps || []).filter(({ enable }) => !enable);
 
     $: mappedPayments = incomingPayments.map((i) => {
+        console.log(i);
         return {
             type: 'payment',
             data: i,
-            id: i,
+            id: i.displayPayment.payment.petname,
         };
     });
     $: mappedOffers = offers.map((i) => { 
@@ -52,6 +58,17 @@
     h6 {
         font-size: 18px;
     }
+
+    .empty {
+        animation: fadeIn 2s;
+        text-align: center;
+    }
+
+    @keyframes fadeIn {
+        0% { opacity: 0; }
+        5% { opacity: 0; }
+        100% { opacity: 1; }
+    }
 </style>
  
 <div class={`content ${classes}`}>
@@ -66,13 +83,15 @@
             {/if}
         {/each}
     {:else}
-        <img class="splash-image"
-            src="generic-agoric.svg"
-            alt="Empty Inbox"
-            width="320"
-            height="320" />
-        <p class="text-gray-700">
-            No requests.
-        </p>
+        <div class="empty">
+            <img class="splash-image"
+                src="generic-agoric.svg"
+                alt="Empty Inbox"
+                width="320"
+                height="320" />
+            <p class="text-gray-700">
+                No requests.
+            </p>
+        </div>
     {/if}
 </div>

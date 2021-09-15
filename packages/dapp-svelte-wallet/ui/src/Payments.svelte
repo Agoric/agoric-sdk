@@ -4,10 +4,10 @@
   import Payment from './Payment.svelte';
 
   import { payments } from './store';
-import ListCard from "../lib/ListCard.svelte";
-import Card from "smelte/src/components/Card";
+  import ListCard from "../lib/ListCard.svelte";
+  import Card from "smelte/src/components/Card";
 
-$: paymentItems = $payments.filter(pmt => pmt.status !== 'deposited');
+  $: paymentItems = $payments.filter(pmt => pmt.status !== 'deposited');
 </script>
 
 <ListCard items={paymentItems} storeKey="payments.true" expandDefault={true}>
