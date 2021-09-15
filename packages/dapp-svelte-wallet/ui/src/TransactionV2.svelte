@@ -10,9 +10,6 @@
   import Chip from "../lib/Chip.svelte";
 
   export let item;
-  export let summary = true;
-  export let summaryLine = 0;
-  export let details = true;
 
   function formatDateNow(stamp) {
     if (!stamp) {
@@ -126,7 +123,7 @@
 
   <div>
     <Petname name={instancePetname} board={instanceHandleBoardId} />
-    (via <span class="blue">{dappOrigin || origin}</span>)  
+    <i>via</i> <span class="blue">{dappOrigin || origin}</span> 
   </div>
 
   <div>
