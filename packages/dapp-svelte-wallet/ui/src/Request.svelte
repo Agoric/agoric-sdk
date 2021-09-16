@@ -12,6 +12,7 @@
     border: 1px solid #e0e0e0;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
     margin-bottom: 16px;
+    animation: expand 0.4s;
 }
 
 .summary {
@@ -23,6 +24,15 @@
     margin-bottom: 16px;
     padding: 8px 0;
     border-bottom: 1px solid #eeeeee;
+}
+
+@keyframes expand {
+    0% { 
+        transform: scale(0.0);
+    }
+    100% {
+        transform: scale(1.0)
+    }
 }
 </style>
   
