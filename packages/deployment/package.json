@@ -22,7 +22,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.12",
     "@agoric/install-ses": "^0.5.26",
-    "@agoric/marshal": "^0.4.25",
+    "@agoric/marshal": "^0.4.26",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "inquirer": "^6.3.1",

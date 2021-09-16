@@ -31,7 +31,7 @@
     "@agoric/dapp-svelte-wallet": "^0.11.3",
     "@agoric/import-bundle": "^0.2.29",
     "@agoric/install-ses": "^0.5.26",
-    "@agoric/marshal": "^0.4.25",
+    "@agoric/marshal": "^0.4.26",
     "@agoric/store": "^0.6.4",
     "@agoric/swing-store": "^0.6.0",
     "@agoric/swingset-vat": "^0.22.0",
