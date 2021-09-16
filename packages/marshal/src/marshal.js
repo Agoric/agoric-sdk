@@ -403,8 +403,8 @@ export function makeMarshal(
 
           default: {
             assert(
-              // @ts-ignore This value indeed violates the current types. We
-              // test for it to give a more informative diagnostic if we
+              // @ts-expect-error This value indeed violates the current types.
+              // We test for it to give a more informative diagnostic if we
               // receive it from a counterparty using an older version of the
               // protocol.
               qclass !== 'ibid',
