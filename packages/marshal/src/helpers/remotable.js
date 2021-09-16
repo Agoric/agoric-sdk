@@ -205,9 +205,7 @@ export const RemotableHelper = harden({
         check(
           isObject(candidate),
           X`cannot serialize non-objects like ${candidate}`,
-        ) &&
-        check(!isArray(candidate), X`Arrays cannot be pass-by-remote`) &&
-        check(candidate !== null, X`null cannot be pass-by-remote`)
+        ) && check(!isArray(candidate), X`Arrays cannot be pass-by-remote`)
       )
     ) {
       return false;
