@@ -5,20 +5,15 @@
   import Request from './Request.svelte';
   
   export let item;
+  export let dismiss;
 
   $: ({ enable, actions, suggestedPetname,
     petname: origPetname, dappOrigin, origin } = item);
   let petname = item.petname || item.suggestedPetname;
 
-  const toggleDappEnabled = () => {
-    if (enable) {
-      E(E(actions).setPetname(petname)).disable();
-    } else {
-      E(E(actions).setPetname(petname)).enable();
-    }
-  };
-
-  const enableDapp = () => E(E(actions).setPetname(petname)).enable();
+  const enableDapp = () => {
+    E(E(actions).setPetname(petname)).enable();
+  }
 
   const keydown = ev => {
     if (ev.key === 'Escape') {
@@ -45,7 +40,7 @@
   }
 </style>
 
-<Request>
+<Request dismiss={dismiss} completed={enable}>
   <span slot="header">
     Incoming Dapp Connection
   </span>
@@ -59,14 +54,22 @@
     Alleged user interface: <strikethrough class="blue">{dappOrigin || origin}</strikethrough>
     {/if}
   </div>
-  <div on:keydown|capture={keydown}><TextField
-    hint="Alleged name: {JSON.stringify(suggestedPetname)}"
-    label="Dapp petname"
-    bind:value={petname}
-  /></div>
+  {#if !enable}
+    <div on:keydown|capture={keydown}><TextField
+      hint="Alleged name: {JSON.stringify(suggestedPetname)}"
+      label="Dapp petname"
+      bind:value={petname}
+    /></div>
+  {/if}
   <div class="enable">
-    <Chip on:click={enableDapp} icon="check" selected color="success">
-      Enable
-    </Chip>
+    {#if enable}
+      <Chip selected color="success">
+        Enabled
+      </Chip>
+    {:else}
+      <Chip on:click={enableDapp} icon="check" selected color="success">
+        Enable
+      </Chip>
+    {/if}
   </div>
 </Request>
