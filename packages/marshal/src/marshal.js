@@ -403,7 +403,10 @@ export function makeMarshal(
 
           default: {
             assert(
-              // @ts-expect-error This value indeed violates the current types.
+              // @ts-ignore Should be at-ts-expect-error, but see
+              // https://github.com/Agoric/agoric-sdk/issues/3840
+              //
+              // This value indeed violates the current types.
               // We test for it to give a more informative diagnostic if we
               // receive it from a counterparty using an older version of the
               // protocol.
