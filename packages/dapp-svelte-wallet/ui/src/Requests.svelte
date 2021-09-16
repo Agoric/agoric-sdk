@@ -4,7 +4,7 @@
     import DappV2 from './DappV2.svelte';
     import PaymentV2 from './PaymentV2.svelte';
 
-    import { inbox, dapps, payments, purses, dismissedDapps } from './store';
+    import { inbox, dapps, payments, purses, dismissedRequests, setDismissedRequests } from './store';
 
     export let classes = '';
 
@@ -13,12 +13,16 @@
             p.brand === payment.brand && (p.depositBoardId || '').length
         ).length;
 
-    $: incomingPayments = ($payments || []).filter((i) => 
-        i.status !== 'deposited' && !hasAutoDeposit(i));
-    $: offers = ($inbox || []).filter(({ status }) => 
-        status === undefined || status === 'pending');
-    $: dappConnections = ($dapps || []).filter(({ enable, dappOrigin, origin }) => 
-        !enable && !$dismissedDapps.includes(dappOrigin || origin))
+    const dismiss = (id) => {
+        localStorage.setItem(
+            'DismissedRequests',
+            JSON.stringify([...$dismissedRequests, id]));
+        setDismissedRequests([...$dismissedRequests, id]);
+    }
+
+    $: incomingPayments = ($payments || []).filter((i) => !hasAutoDeposit(i));
+    $: offers = ($inbox || []);
+    $: dappConnections = ($dapps || []);
 
     $: mappedPayments = incomingPayments.map((i) => {
         return {
@@ -42,7 +46,8 @@
         };
     });
 
-    $: items = [...mappedPayments, ...mappedOffers, ...mappedDapps];
+    $: items = [...mappedPayments, ...mappedOffers, ...mappedDapps]
+        .filter(({ id }) => !$dismissedRequests.includes(id));
 </script>
 
 <style>
@@ -77,11 +82,11 @@
     {#if items.length}
         {#each items as item (item.id)}
             {#if item.type === "transaction"}
-                <TransactionV2 item={item.data} />
+                <TransactionV2 dismiss={() => dismiss(item.id)} item={item.data} />
             {:else if item.type === "payment"}
-                <PaymentV2 item={item.data} />
+                <PaymentV2 dismiss={() => dismiss(item.id)} item={item.data} />
             {:else}
-                <DappV2 item={item.data} />
+                <DappV2 dismiss={() => dismiss(item.id)} item={item.data} />
             {/if}
         {/each}
     {:else}

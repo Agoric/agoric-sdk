@@ -10,6 +10,7 @@
   import Chip from "../lib/Chip.svelte";
 
   export let item;
+  export let dismiss;
 
   function formatDateNow(stamp) {
     if (!stamp) {
@@ -43,6 +44,7 @@
     decline: "Declined",
     rejected: "Rejected",
     accept: "Accepted",
+    complete: "Accepted",
     pending: "Pending",
     proposed: "Proposed",
   };
@@ -53,6 +55,7 @@
     decline: "error",
     pending: "alert",
     proposed: "grey",
+    complete: "success",
   };
 
   $: ({
@@ -106,7 +109,8 @@
   }
 </style>
 
-<Request>
+<Request dismiss={dismiss}
+  completed={status === 'accept' || status === 'decline' || status === 'complete'}>
   <span slot="header">
     Incoming Offer
   </span>
@@ -137,8 +141,8 @@
         <div class="token">
           <img alt="icon"
             src={icons[amount.brand.petname] ?? defaultIcon}
-            height="28px"
-            width="28px" />
+            height="32px"
+            width="32px" />
             <div>
               <Amount {amount} displayInfo={amount.displayInfo} /> from
               <Petname name={pursePetname} />
@@ -152,8 +156,8 @@
         <div class="token">
           <img alt="icon"
             src={icons[amount.brand.petname] ?? defaultIcon}
-            height="28px"
-            width="28px" />
+            height="32px"
+            width="32px" />
             <div>
               <Amount {amount} displayInfo={amount.displayInfo} /> into
               <Petname name={pursePetname} />
@@ -168,8 +172,8 @@
           {#if feePursePetname}
             <img alt="icon"
               src={icons[fee.brand.petname] ?? defaultIcon}
-              height="28px"
-              width="28px" />
+              height="32px"
+              width="32px" />
           {/if}
           <div>
             <Amount amount={fee} displayInfo={fee.displayInfo} />
