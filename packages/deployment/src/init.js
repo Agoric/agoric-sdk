@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import { isObject } from '@agoric/marshal';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
 import { shellEscape } from './run.js';
 
@@ -32,7 +33,7 @@ const tfStringify = obj => {
       sep = ',';
     }
     ret += ']';
-  } else if (Object(obj) === obj) {
+  } else if (isObject(obj)) {
     ret += '{';
     let sep = '';
     for (const key of Object.keys(obj).sort()) {

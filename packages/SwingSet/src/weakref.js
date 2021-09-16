@@ -1,5 +1,6 @@
 /* global globalThis */
 import { assert, details as X } from '@agoric/assert';
+import { isObject } from '@agoric/marshal';
 
 const { defineProperties } = Object;
 
@@ -33,12 +34,7 @@ const FakeWeakRef = function WeakRef(target) {
     X`WeakRef Constructor requires 'new'`,
     TypeError,
   );
-  assert.equal(
-    Object(target),
-    target,
-    X`WeakRef target must be an object`,
-    TypeError,
-  );
+  assert(isObject(target), X`WeakRef target must be an object`, TypeError);
   weakRefTarget.set(this, target);
 };
 

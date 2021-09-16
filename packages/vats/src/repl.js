@@ -1,6 +1,6 @@
 import { isPromise } from '@agoric/promise-kit';
 import { E } from '@agoric/eventual-send';
-import { getInterfaceOf, Remotable, Far } from '@agoric/marshal';
+import { getInterfaceOf, Remotable, Far, isObject } from '@agoric/marshal';
 
 import { Nat } from '@agoric/nat';
 import makeUIAgentMakers from './ui-agent.js';
@@ -19,7 +19,7 @@ export const dump = (value, spaces = '') =>
   dump0(value, spaces, new WeakSet(), 0);
 
 function dump0(value, spaces, inProgress, depth) {
-  if (Object(value) !== value) {
+  if (!isObject(value)) {
     if (typeof value === 'bigint') {
       return `${value}n`;
     }
