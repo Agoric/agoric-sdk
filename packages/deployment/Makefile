@@ -69,5 +69,3 @@ docker-push-solo:
 docker-push-deployment:
 	$(DONT_PUSH_LATEST) docker push agoric/deployment:latest
 	docker push agoric/deployment:$(TAG)
-
--include submodule.env

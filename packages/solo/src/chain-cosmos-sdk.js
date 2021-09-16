@@ -287,20 +287,30 @@ export async function connectToChain(
 
       const subscribeToStorage = (storagePath, cb) => {
         let lastHeight = 0n;
-        const query = `tm.event = 'NewBlockHeader' AND storage.path = '${storagePath}'`;
-        const subscriptionId = sendRPC('subscribe', { query });
+
+        // This takes care of BeginBlock/EndBlock events.
+        const blockQuery = `tm.event = 'NewBlockHeader' AND storage.path = '${storagePath}'`;
+        // We need a separate query for events raised by transactions.
+        const txQuery = `tm.event = 'Tx' and storage.path = '${storagePath}'`;
+
+        // console.info('subscribeToStorage', blockQuery);
+        const blockSubscriptionId = sendRPC('subscribe', { query: blockQuery });
+        const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
           path: `/custom/swingset/storage/${storagePath}`,
         });
 
         const cleanup = () => {
-          idToCallback.delete(subscriptionId);
+          // console.info('Unsubscribing from', blockSubscriptionId);
+          idToCallback.delete(blockSubscriptionId);
+          idToCallback.delete(txSubscriptionId);
           idToCallback.delete(queryId);
-          sendRPC('unsubscribe', { query });
+          sendRPC('unsubscribe', { query: blockQuery });
+          sendRPC('unsubscribe', { query: txQuery });
         };
 
         const guardedCb = (height, value) => {
-          if (height <= lastHeight) {
+          if (height < lastHeight) {
             return;
           }
           lastHeight = height;
@@ -309,7 +319,7 @@ export async function connectToChain(
 
         // Query for our initial value.
         idToCallback.set(queryId, obj => {
-          // console.log(`got ${storagePath} query`, obj);
+          // console.info(`got ${storagePath} query`, obj);
           if (obj.result && obj.result.response && obj.result.response.value) {
             // Decode the layers up to the actual storage value.
             const {
@@ -337,8 +347,8 @@ export async function connectToChain(
           idToCallback.delete(queryId);
         });
 
-        idToCallback.set(subscriptionId, obj => {
-          // console.log(`got ${storagePath} subscription`, obj);
+        const handleSubscription = obj => {
+          // console.info(`got ${storagePath} subscription`, obj);
           if (obj.error) {
             cleanup();
             cb(obj.error, null);
@@ -350,7 +360,28 @@ export async function connectToChain(
             return;
           }
 
-          const { height: heightString } = obj.result.data.value.header;
+          let height = 0n;
+          // Get the height from the 'Tx' subscription.
+          if (obj.result.events['tx.height']) {
+            const txHeight = BigInt(obj.result.events['tx.height'][0]);
+            if (txHeight > height) {
+              height = txHeight;
+            }
+          }
+
+          // Get the header from 'NewBlockHeader' or 'NewBlock' subscriptions.
+          const blockValue = obj.result.data.value;
+          if (blockValue) {
+            const blockHeader = blockValue.block
+              ? blockValue.block.header
+              : blockValue.header;
+            if (blockHeader) {
+              const blockHeaderHeight = BigInt(blockHeader.height);
+              if (blockHeaderHeight > height) {
+                height = blockHeaderHeight;
+              }
+            }
+          }
 
           const paths = events['storage.path'];
           const values = events['storage.value'];
@@ -367,8 +398,11 @@ export async function connectToChain(
             return;
           }
 
-          guardedCb(BigInt(heightString), storageValue);
-        });
+          guardedCb(height, storageValue);
+        };
+
+        idToCallback.set(blockSubscriptionId, handleSubscription);
+        idToCallback.set(txSubscriptionId, handleSubscription);
 
         return cleanup;
       };
