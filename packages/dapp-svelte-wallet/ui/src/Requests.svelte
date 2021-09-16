@@ -4,7 +4,7 @@
     import DappV2 from './DappV2.svelte';
     import PaymentV2 from './PaymentV2.svelte';
 
-    import { inbox, dapps, payments, purses } from './store';
+    import { inbox, dapps, payments, purses, dismissedDapps } from './store';
 
     export let classes = '';
 
@@ -13,9 +13,12 @@
             p.brand === payment.brand && (p.depositBoardId || '').length
         ).length;
 
-    $: incomingPayments = ($payments || []).filter((i) => i.status !== 'deposited' && !hasAutoDeposit(i));
-    $: offers = ($inbox || []).filter(({ status }) => status === undefined || status === 'pending');
-    $: dappConnections = ($dapps || []).filter(({ enable }) => !enable);
+    $: incomingPayments = ($payments || []).filter((i) => 
+        i.status !== 'deposited' && !hasAutoDeposit(i));
+    $: offers = ($inbox || []).filter(({ status }) => 
+        status === undefined || status === 'pending');
+    $: dappConnections = ($dapps || []).filter(({ enable, dappOrigin, origin }) => 
+        !enable && !$dismissedDapps.includes(dappOrigin || origin))
 
     $: mappedPayments = incomingPayments.map((i) => {
         return {

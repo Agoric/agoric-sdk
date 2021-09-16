@@ -3,6 +3,8 @@
   import TextField from 'smelte/src/components/TextField';
   import Chip from '../lib/Chip.svelte';
   import Request from './Request.svelte';
+
+  import { dismissedDapps, setDismissedDapps } from './store.js';
   
   export let item;
 
@@ -10,15 +12,18 @@
     petname: origPetname, dappOrigin, origin } = item);
   let petname = item.petname || item.suggestedPetname;
 
-  const toggleDappEnabled = () => {
-    if (enable) {
-      E(E(actions).setPetname(petname)).disable();
-    } else {
-      E(E(actions).setPetname(petname)).enable();
-    }
-  };
+  const dismiss = () => {
+    localStorage.setItem(
+        'DismissedDapps',
+        JSON.stringify([...$dismissedDapps, dappOrigin || origin]),
+      );
+    setDismissedDapps([...$dismissedDapps, dappOrigin || origin]);
+  }
 
-  const enableDapp = () => E(E(actions).setPetname(petname)).enable();
+  const enableDapp = () => {
+    E(E(actions).setPetname(petname)).enable();
+    dismiss();
+  }
 
   const keydown = ev => {
     if (ev.key === 'Escape') {
@@ -65,6 +70,9 @@
     bind:value={petname}
   /></div>
   <div class="enable">
+    <Chip on:click={dismiss} icon="cancel" selected color="error">
+      Dismiss
+    </Chip>
     <Chip on:click={enableDapp} icon="check" selected color="success">
       Enable
     </Chip>
