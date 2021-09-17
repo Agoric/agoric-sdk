@@ -34,7 +34,7 @@ const makeIssuerTable = () => {
     getByIssuer: issuerToIssuerRecord.get,
     // `issuerP` may be a promise, presence, or local object. If there's
     // already a record, return it. Otherwise, save the record.
-    initIssuer: async issuerP => {
+    initIssuer: async (issuerP, now = undefined) => {
       const brandP = E(issuerP).getBrand();
       const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
       const displayInfoP = E(brandP).getDisplayInfo();
@@ -55,6 +55,7 @@ const makeIssuerTable = () => {
         `issuer was using a brand which was not its own`,
       );
       issuerTable.initIssuerByRecord({
+        creationStamp: now,
         brand,
         issuer,
         assetKind: displayInfo.assetKind,

@@ -25,7 +25,7 @@ export default async function deployWallet(
       faucet,
       zoe,
     },
-    local: { http, spawner, wallet: oldWallet, scratch },
+    local: { http, localTimerService, spawner, wallet: oldWallet, scratch },
   } = home;
 
   let walletVat = await E(scratch).get('dapp-svelte-wallet/api');
@@ -43,6 +43,7 @@ export default async function deployWallet(
       myAddressNameAdmin,
       zoe,
       board,
+      localTimerService,
     });
   }
 
