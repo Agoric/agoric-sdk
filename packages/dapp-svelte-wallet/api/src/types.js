@@ -132,6 +132,6 @@
  * @property {(brand: Brand) => IssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
- * @property {(issuerP: ERef<Issuer>, addMeta = x => x) => Promise<IssuerRecord>} initIssuer
+ * @property {(issuerP: ERef<Issuer>, addMeta?: (x: any) => any) => Promise<IssuerRecord>} initIssuer
  * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
  */

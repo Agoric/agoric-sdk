@@ -494,6 +494,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       },
       inviteHandleBoardId: '727995140',
+      meta: {
+        sequence: 3,
+      },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -625,6 +628,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       },
       inviteHandleBoardId: '727995140',
+      meta: {
+        sequence: 3,
+      },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -710,6 +716,9 @@ test('lib-wallet offer methods', async t => {
         inviteHandleBoardId: '727995140',
         instance,
         installation,
+        meta: {
+          sequence: 2,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -824,6 +833,9 @@ test('lib-wallet offer methods', async t => {
           },
         },
         inviteHandleBoardId: '727995140',
+        meta: {
+          sequence: 2,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -859,7 +871,7 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-6',
+            petname: 'unnamed-7',
           },
           installation: {
             kind: 'unnamed',
@@ -871,6 +883,9 @@ test('lib-wallet offer methods', async t => {
           },
         },
         inviteHandleBoardId: '371571443',
+        meta: {
+          sequence: 5,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },

@@ -78,7 +78,6 @@ export function makeWallet({
   let nowMs;
 
   // Subscribe to the timer service to update our stamp.
-  assert(localTimerService, 'localTimerService is required');
   if (localTimerService) {
     observeNotifier(E(localTimerService).makeNotifier(0n, 1000n), {
       updateState(bigStamp) {
@@ -91,17 +90,19 @@ export function makeWallet({
   let lastSequence = 0;
   const addMeta = record => {
     const { meta: oldMeta = {} } = record;
-    let { sequence, creationStamp } = oldMeta;
-    if (!sequence) {
+    const meta = { ...oldMeta };
+    if (!meta.sequence) {
       // Add a sequence number to the record.
       lastSequence += 1;
-      sequence = lastSequence;
+      meta.sequence = lastSequence;
     }
-    if (!creationStamp) {
-      // Set the creationStamp to be right now.
-      creationStamp = nowMs;
+    if (nowMs !== undefined) {
+      if (!meta.creationStamp) {
+        // Set the creationStamp to be right now.
+        meta.creationStamp = nowMs;
+      }
+      meta.updatedStamp = nowMs;
     }
-    const meta = { ...oldMeta, sequence, creationStamp, updatedStamp: nowMs };
     return { ...record, meta };
   };
 
@@ -1194,7 +1195,11 @@ export function makeWallet({
       actions,
       displayPayment,
     });
-    payments.set(paymentRecord.payment, harden(paymentRecord));
+    if (payments.has(paymentRecord.payment)) {
+      payments.set(paymentRecord.payment, harden(paymentRecord));
+    } else {
+      payments.init(paymentRecord.payment, harden(paymentRecord));
+    }
     paymentsUpdater.updateState([...payments.values()]);
   };
 
@@ -1208,14 +1213,13 @@ export function makeWallet({
       paymentP,
       E(paymentP).getAllegedBrand(),
     ]);
+
     const depositedPK = makePromiseKit();
 
     /** @type {PaymentRecord} */
     let paymentRecord = addMeta({
       payment,
       brand,
-      issuer: undefined,
-      status: undefined,
       actions: Far('payment actions', {
         async deposit(purseOrPetname = undefined) {
           /** @type {Purse} */
