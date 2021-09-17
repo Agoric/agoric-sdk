@@ -7,10 +7,13 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { passStyleOf } from './passStyleOf.js';
 
-import './types.js';
 import { getInterfaceOf } from './helpers/remotable.js';
 import { ErrorHelper, getErrorConstructor } from './helpers/error.js';
 import { isObject } from './helpers/passStyleHelpers.js';
+
+/** @typedef {import('./types.js').Passable} Passable */
+/** @typedef {import('./types.js').InterfaceSpec} InterfaceSpec */
+/** @typedef {import('./types.js').Encoding} Encoding */
 
 const { ownKeys } = Reflect;
 const { isArray } = Array;
@@ -28,7 +31,7 @@ const defaultSlotToValFn = (x, _) => x;
 
 /**
  * @template Slot
- * @type {MakeMarshal<Slot>}
+ * @type {import('./types.js').MakeMarshal<Slot>}
  */
 export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
@@ -57,7 +60,7 @@ export function makeMarshal(
 
   /**
    * @template Slot
-   * @type {Serialize<Slot>}
+   * @type {import('./types.js').Serialize<Slot>}
    */
   const serialize = root => {
     const slots = [];
@@ -441,7 +444,7 @@ export function makeMarshal(
 
   /**
    * @template Slot
-   * @type {Unserialize<Slot>}
+   * @type {import('./types.js').Unserialize<Slot>}
    */
   const unserialize = data => {
     assert.typeof(

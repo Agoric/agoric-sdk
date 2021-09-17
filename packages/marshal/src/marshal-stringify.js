@@ -3,13 +3,13 @@
 import { assert, details as X } from '@agoric/assert';
 import { makeMarshal } from './marshal.js';
 
-import './types.js';
+/** @typedef {import('./types.js').OnlyData} OnlyData */
 
-/** @type {ConvertValToSlot<any>} */
+/** @type {import('./types.js').ConvertValToSlot<any>} */
 const doNotConvertValToSlot = val =>
   assert.fail(X`Marshal's stringify rejects presences and promises ${val}`);
 
-/** @type {ConvertSlotToVal<any>} */
+/** @type {import('./types.js').ConvertSlotToVal<any>} */
 const doNotConvertSlotToVal = (slot, _iface) =>
   assert.fail(X`Marshal's parse must not encode any slots ${slot}`);
 

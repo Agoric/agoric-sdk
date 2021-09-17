@@ -11,8 +11,10 @@ import { CopyRecordHelper } from './helpers/copyRecord.js';
 import { ErrorHelper } from './helpers/error.js';
 import { RemotableHelper } from './helpers/remotable.js';
 
-import './types.js';
-import './helpers/internal-types.js';
+/** @typedef {import('./helpers/internal-types.js').Checker} Checker */
+/** @typedef {import('./types.js').PassStyleOf} PassStyleOf */
+/** @typedef {import('./types.js').Passable} Passable */
+/** @typedef {import('./types.js').PassStyle} PassStyle */
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
@@ -34,6 +36,7 @@ const { isFrozen } = Object;
  * @returns {{passStyleOf: PassStyleOf, HelperTable: any}}
  */
 const makePassStyleOfKit = passStyleHelper => {
+  /** @type {any} */
   const HelperTable = {
     __proto__: null,
     copyArray: undefined,

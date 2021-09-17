@@ -4,6 +4,9 @@ import { assert, details as X, q } from '@agoric/assert';
 import { isObject } from './helpers/passStyleHelpers.js';
 import { passStyleOf, everyPassableChild } from './passStyleOf.js';
 
+/** @typedef {import('./types.js').Passable} Passable */
+/** @typedef {import('./types.js').Structure} Structure */
+
 const { is, fromEntries, getOwnPropertyNames } = Object;
 
 const { ownKeys } = Reflect;

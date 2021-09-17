@@ -3,14 +3,10 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import '../types.js';
-import './internal-types.js';
-/**
- * TODO Why do I need these?
- *
- * @typedef {import('./internal-types.js').Checker} Checker
- */
 import '@agoric/assert/exported.js';
+
+/** @typedef {import('../types.js').PassStyle} PassStyle */
+/** @typedef {import('./internal-types.js').Checker} Checker */
 
 const { details: X, quote: q } = assert;
 const {

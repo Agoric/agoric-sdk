@@ -1,23 +1,25 @@
-// @ts-nocheck TODO Fix the recursive types to it checks. Will this
-// require a .d.ts file? I don't know.
+/* eslint-disable */
 
-// eslint-disable-next-line spaced-comment
-/// <reference path="extra-types.d.ts" />
-
-/**
- * @typedef { "undefined" | "null" |
- *   "boolean" | "number" | "bigint" | "string" | "symbol" |
- *   "copyArray" | "copyRecord" | "remotable" |
- *   "error" | "promise"
- * } PassStyle
- */
+export type NestedArray<T> = Array<T | NestedArray<T>>;
 
 // TODO declare more precise types throughout this file, so the type system
 // and IDE can be more helpful.
 
+export type PassStyle =
+  | 'undefined'
+  | 'null'
+  | 'boolean'
+  | 'number'
+  | 'bigint'
+  | 'string'
+  | 'symbol'
+  | 'copyArray'
+  | 'copyRecord'
+  | 'remotable'
+  | 'error'
+  | 'promise';
+
 /**
- * @typedef {*} Passable
- *
  * A Passable value that may be marshalled. It is classified as one of
  * PassStyle. A Passable must be hardened.
  *
@@ -35,16 +37,11 @@
  * structure and classification cannot change even if some of the objects are
  * proxies.
  */
+export type Passable = any;
+
+export type PassStyleOf = (passable: Passable) => PassStyle;
 
 /**
- * @callback PassStyleOf
- * @param {Passable} passable
- * @returns {PassStyle}
- */
-
-/**
- * @typedef {Passable} Structure
- *
  * A Passable is a Structure when it contains only
  *    * pass-by-copy primitives,
  *    * pass-by-copy containers,
@@ -71,23 +68,21 @@
  *      and multimaps, so we recursively order according to the
  *      set of values associated with each equivalence class of keys.
  */
+export type Structure = Passable;
 
 /**
  * @deprecated Renamed to `Structure`
- * @typedef {Structure} Comparable
  */
+export type Comparable = Structure;
 
 /**
- * @typedef {Structure} OnlyData
- *
  * A Structure is OnlyData when its pass-by-copy superstructure has no
  * remotables, i.e., when all the leaves of the data structure tree are
  * primitive data types or empty composites.
  */
+export type OnlyData = Structure;
 
 /**
- * @typedef {OnlyData} PureData
- *
  * An OnlyData value is PureData when it contains no hidden mutable state,
  * e.g., when none of its pass-by-copy composite data objects are proxies. This
  * cannot be determined by inspection. It can only be achieved by trusted
@@ -95,69 +90,78 @@
  * and can therefore be safely shared with subgraphs that should not be able
  * to communicate with each other.
  */
+export type PureData = OnlyData;
 
 /**
- * @typedef {Passable} Remotable
  * Might be an object explicitly declared to be `Remotable` using the
  * `Far` or `Remotable` functions, or a remote presence of a Remotable.
  */
+export type Remotable = Passable;
 
 /**
- * @typedef {Promise | Remotable} PassableCap
  * The leaves of a Passable's pass-by-copy superstructure.
  */
+export type PassableCap = Promise<any> | Remotable;
 
-/**
- * @typedef {Passable} CopySet
- */
+export type CopySet = Passable;
 
-/**
- * @typedef {Passable} CopyMap
- */
+export type CopyMap = Passable;
 
-/**
- * @typedef {Passable} PatternNode
- */
+export type PatternNode = Passable;
 
 // /////////////////////////////////////////////////////////////////////////////
 
+export type ConvertValToSlot<Slot> = (val: PassableCap) => Slot;
+
+export type ConvertSlotToVal<Slot> = (
+  slot: Slot,
+  iface?: InterfaceSpec | undefined,
+) => PassableCap;
+
+export type EncodingClass<T> = {
+  '@qclass': T;
+};
+
+export type EncodingUnion =
+  | EncodingClass<'NaN'>
+  | EncodingClass<'undefined'>
+  | EncodingClass<'Infinity'>
+  | EncodingClass<'-Infinity'>
+  | (EncodingClass<'bigint'> & {
+      digits: string;
+    })
+  | EncodingClass<'@@asyncIterator'>
+  | (EncodingClass<'error'> & {
+      name: string;
+      message: string;
+      errorId?: string;
+    })
+  | (EncodingClass<'slot'> & {
+      index: number;
+      iface?: InterfaceSpec;
+    })
+  | (EncodingClass<'hilbert'> & {
+      original: Encoding;
+      rest?: Encoding;
+    });
 /**
- * @template Slot
- * @callback ConvertValToSlot
- * @param {PassableCap} val
- * @returns {Slot}
+ *
  */
+export type EncodingRecord = {
+  [index: string]: Encoding;
+} & {
+  // We exclude '@qclass' as a property in encoding records.
+  '@qclass'?: undefined;
+};
+export type EncodingElement =
+  | EncodingUnion
+  | null
+  | string
+  | boolean
+  | number
+  | EncodingRecord;
 
 /**
- * @template Slot
- * @callback ConvertSlotToVal
- * @param {Slot} slot
- * @param {InterfaceSpec=} iface
- * @returns {PassableCap}
- */
-
-/**
- * @template T
- * @typedef {{ '@qclass': T }} EncodingClass
- */
-
-/**
- * @typedef {EncodingClass<'NaN'> |
- * EncodingClass<'undefined'> |
- * EncodingClass<'Infinity'> |
- * EncodingClass<'-Infinity'> |
- * EncodingClass<'bigint'> & { digits: string } |
- * EncodingClass<'@@asyncIterator'> |
- * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
- * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
- * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
- * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
- * We exclude '@qclass' as a property in encoding records.
- * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
- */
-
-/**
- * @typedef {EncodingElement | NestedArray<EncodingElement>} Encoding
  * The JSON structure that the data portion of a Passable serializes to.
  *
  * The QCLASS 'hilbert' is a reference to the Hilbert Hotel
@@ -166,77 +170,71 @@
  * as a QCLASS record of type 'hilbert'. To do so, we must move the other
  * parts of the record into fields of the hilbert record.
  */
+export type Encoding = EncodingElement | NestedArray<EncodingElement>;
 
-/**
- * @template Slot
- * @typedef CapData
- * @property {string} body A JSON.stringify of an Encoding
- * @property {Slot[]} slots
- */
+export type CapData<Slot> = {
+  /** A JSON.stringify of an Encoding */
+  body: string;
+  slots: Slot[];
+};
 
-/**
- * @template Slot
- * @callback Serialize
- * @param {Passable} val
- * @returns {CapData<Slot>}
- */
+export type Serialize<Slot> = (val: Passable) => CapData<Slot>;
 
-/**
- * @template Slot
- * @callback Unserialize
- * @param {CapData<Slot>} data
- * @returns {Passable}
- */
+export type Unserialize<Slot> = (data: CapData<Slot>) => Passable;
 
-/**
- * @template Slot
- * @typedef Marshal
- * @property {Serialize<Slot>} serialize
- * @property {Unserialize<Slot>} unserialize
- */
+export type Marshal<Slot> = {
+  serialize: Serialize<Slot>;
+  unserialize: Unserialize<Slot>;
+};
 
-/**
- * @template Slot
- * @callback MakeMarshal
- * @param {ConvertValToSlot<Slot>=} convertValToSlot
- * @param {ConvertSlotToVal<Slot>=} convertSlotToVal
- * @param {MakeMarshalOptions=} options
- * @returns {Marshal<Slot>}
- */
+export type MakeMarshal<Slot> = (
+  convertValToSlot?: ConvertValToSlot<Slot> | undefined,
+  convertSlotToVal?: ConvertSlotToVal<Slot> | undefined,
+  options?: MakeMarshalOptions | undefined,
+) => Marshal<Slot>;
 
-/**
- * @typedef MakeMarshalOptions
- * @property {'on'|'off'=} errorTagging controls whether serialized errors
- * also carry tagging information, made from `marshalName` and numbers
- * generated (currently by counting) starting at `errorIdNum`. The
- * `errorTagging` option defaults to `'on'`. Serialized
- * errors are also logged to `marshalSaveError` only if tagging is `'on'`.
- * @property {string=} marshalName Used to identify sent errors.
- * @property {number=} errorIdNum Ascending numbers staring from here
- * identify the sending of errors relative to this marshal instance.
- * @property {(err: Error) => void=} marshalSaveError If `errorTagging` is
- * `'on'`, then errors serialized by this marshal instance are also
- * logged by calling `marshalSaveError` *after* `assert.note` associated
- * that error with its errorId. Thus, if `marshalSaveError` in turn logs
- * to the normal console, which is the default, then the console will
- * show that note showing the associated errorId.
- */
+export type MakeMarshalOptions = {
+  /**
+   * controls whether serialized errors
+   * also carry tagging information, made from `marshalName` and numbers
+   * generated (currently by counting) starting at `errorIdNum`. The
+   * `errorTagging` option defaults to `'on'`. Serialized
+   * errors are also logged to `marshalSaveError` only if tagging is `'on'`.
+   */
+  errorTagging?: ('on' | 'off') | undefined;
+  /**
+   * Used to identify sent errors.
+   */
+  marshalName?: string | undefined;
+  /**
+   * Ascending numbers staring from here
+   * identify the sending of errors relative to this marshal instance.
+   */
+  errorIdNum?: number | undefined;
+  /**
+   * If `errorTagging` is
+   * `'on'`, then errors serialized by this marshal instance are also
+   * logged by calling `marshalSaveError` *after* `assert.note` associated
+   * that error with its errorId. Thus, if `marshalSaveError` in turn logs
+   * to the normal console, which is the default, then the console will
+   * show that note showing the associated errorId.
+   */
+  marshalSaveError?: ((err: Error) => void) | undefined;
+};
 
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {string} InterfaceSpec
  * This is an interface specification.
  * For now, it is just a string, but will eventually be any OnlyData. Either
  * way, it must remain pure, so that it can be safely shared by subgraphs that
  * are not supposed to be able to communicate.
  */
+export type InterfaceSpec = string;
 
 /**
- * @callback MarshalGetInterfaceOf
  * Simple semantics, just tell what interface (or undefined) a remotable has.
- *
- * @param {*} maybeRemotable the value to check
- * @returns {InterfaceSpec|undefined} the interface specification, or undefined
- * if not a deemed to be a Remotable
  */
+export type MarshalGetInterfaceOf = (
+  maybeRemotable: any,
+) => InterfaceSpec | undefined;

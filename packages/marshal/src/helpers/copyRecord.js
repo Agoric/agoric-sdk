@@ -9,8 +9,6 @@ import {
   checkNormalProperty,
 } from './passStyleHelpers.js';
 
-import '../types.js';
-import './internal-types.js';
 /**
  * TODO Why do I need these?
  *

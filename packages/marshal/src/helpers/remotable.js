@@ -3,14 +3,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import '../types.js';
-import './internal-types.js';
-/**
- * TODO Why do I need these?
- *
- * @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper
- * @typedef {import('./internal-types.js').Checker} Checker
- */
 import '@agoric/assert/exported.js';
 import {
   assertChecker,
@@ -21,6 +13,12 @@ import {
   isObject,
 } from './passStyleHelpers.js';
 import { getEnvironmentOption } from './environment-options.js';
+
+/** @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper */
+/** @typedef {import('./internal-types.js').Checker} Checker */
+/** @typedef {import('../types.js').InterfaceSpec} InterfaceSpec */
+/** @typedef {import('../types.js').Remotable} Remotable */
+/** @typedef {import('../types.js').MarshalGetInterfaceOf} MarshalGetInterfaceOf */
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;

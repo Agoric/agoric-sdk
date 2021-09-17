@@ -7,9 +7,10 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { QCLASS } from './marshal.js';
 
-import './types.js';
 import { getErrorConstructor } from './helpers/error.js';
 import { isObject } from './helpers/passStyleHelpers.js';
+
+/** @typedef {import('./types.js').Encoding} Encoding */
 
 const { ownKeys } = Reflect;
 const { isArray } = Array;
@@ -363,7 +364,7 @@ const decodeToJustin = (encoding, shouldIndent = false) => {
         return out.close(']');
       }
     } else {
-      const names = ownKeys(rawTree);
+      const names = /** @type {string[]} */ (ownKeys(rawTree));
       if (names.length === 0) {
         return out.next('{}');
       } else {

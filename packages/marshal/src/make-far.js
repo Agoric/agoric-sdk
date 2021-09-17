@@ -12,6 +12,9 @@ import {
 } from './helpers/remotable.js';
 import { passStyleOf } from './passStyleOf.js';
 
+/** @typedef {import('./types.js').InterfaceSpec} InterfaceSpec */
+/** @typedef {import('./types.js').OnlyData} OnlyData */
+
 const { prototype: functionPrototype } = Function;
 const {
   getPrototypeOf,

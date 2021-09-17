@@ -3,8 +3,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import '../types.js';
-import './internal-types.js';
 /**
  * TODO Why do I need these?
  *
