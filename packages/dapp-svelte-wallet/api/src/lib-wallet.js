@@ -662,7 +662,7 @@ export function makeWallet({
     const issuer = await issuerP;
     const recP = brandTable.hasByIssuer(issuer)
       ? brandTable.getByIssuer(issuer)
-      : brandTable.initIssuer(issuer, nowMs);
+      : brandTable.initIssuer(issuer, addMeta);
     const { brand } = await recP;
     await initIssuerToBoardId(issuer);
     const addBrandPetname = () => {
