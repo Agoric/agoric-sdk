@@ -20,11 +20,45 @@ const send = (ws, msg) => {
   }
 };
 
+/**
+ * This is a constant-time operation so that the caller cannot tell the
+ * difference between initial characters that match vs. ones that don't.
+ *
+ * This is our interpretation of `secure-compare`s algorithm.
+ *
+ * @param {unknown} actual
+ * @param {unknown} expected
+ * @returns {boolean}
+ */
 const verifyToken = (actual, expected) => {
-  // TODO: This should be a constant-time operation so that
-  // the caller cannot tell the difference between initial characters
-  // that match vs. ones that don't.
-  return actual === expected;
+  assert.typeof(actual, 'string');
+  assert.typeof(expected, 'string');
+
+  const expectedLength = expected.length;
+
+  /** @type {string} */
+  let stringToCompare;
+
+  /** @type {number} */
+  let failed;
+  if (actual.length !== expectedLength) {
+    // We force a failure, but run the comparison in constant time.
+    failed = 1;
+    stringToCompare = expected;
+  } else {
+    // We do the actual comparison in constant time, starting from no failure.
+    failed = 0;
+    stringToCompare = actual;
+  }
+
+  // The bitwise operations here and fixed loop length are necessary to
+  // guarantee constant time.
+  for (let i = 0; i < expectedLength; i += 1) {
+    // eslint-disable-next-line no-bitwise
+    failed |= stringToCompare.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+
+  return !failed;
 };
 
 export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
@@ -91,13 +125,10 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   //
   // path outside /private: always accept
   //
-  // all paths within /private: origin-based access control: reject anything except
-  // chrome-extension:, moz-extension:, and http:/https: localhost/127.0.0.1
+  // path /private/wallet-bridge: always accept
   //
-  // path in /private but not /private/wallet-bridge: also require correct
-  // accessToken= in query params
-  const validateOriginAndAccessToken = async req => {
-    const { origin } = req.headers;
+  // other path in /private: require correct accessToken= in query params
+  const validateAccessToken = async req => {
     const id = `${req.socket.remoteAddress}:${req.socket.remotePort}:`;
 
     const parsedUrl = new URL(req.url, 'http://some-host');
@@ -108,52 +139,31 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
       return true;
     }
 
-    // Bypass accessToken just for the wallet bridge.
-    if (fullPath !== '/private/wallet-bridge') {
-      // Validate the private accessToken.
-      const accessToken = await getAccessToken(port);
-      const reqToken = parsedUrl.searchParams.get('accessToken');
-
-      if (!verifyToken(reqToken, accessToken)) {
-        log.error(
-          id,
-          `Invalid access token ${JSON.stringify(
-            reqToken,
-          )}; try running "agoric open"`,
-        );
-        return false;
-      }
-    }
-
-    if (!origin) {
-      log.error(id, `Missing origin header`);
-      return false;
-    }
-    const originUrl = new URL(origin);
-    const isLocalhost = hostname =>
-      hostname.match(/^(localhost|127\.0\.0\.1)$/);
-
-    if (['chrome-extension:', 'moz-extension:'].includes(originUrl.protocol)) {
-      // Extensions such as metamask are local and can access the wallet.
-      // Especially since the access token has been supplied.
+    if (fullPath === '/private/wallet-bridge') {
+      // Bypass accessToken just for the wallet bridge.
       return true;
     }
 
-    if (!isLocalhost(originUrl.hostname)) {
-      log.error(id, `Invalid origin host ${origin} is not localhost`);
-      return false;
+    // Validate the private accessToken.
+    const accessToken = await getAccessToken(port);
+    const reqToken = parsedUrl.searchParams.get('accessToken');
+
+    if (verifyToken(reqToken, accessToken)) {
+      return true;
     }
 
-    if (!['http:', 'https:'].includes(originUrl.protocol)) {
-      log.error(id, `Invalid origin protocol ${origin}`, originUrl.protocol);
-      return false;
-    }
-    return true;
+    log.error(
+      id,
+      `Invalid access token ${JSON.stringify(
+        reqToken,
+      )}; try running "agoric open"`,
+    );
+    return false;
   };
 
   // accept POST messages to arbitrary endpoints
   app.post('*', async (req, res) => {
-    if (!(await validateOriginAndAccessToken(req))) {
+    if (!(await validateAccessToken(req))) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -172,7 +182,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', async (req, socket, head) => {
-    if (!(await validateOriginAndAccessToken(req))) {
+    if (!(await validateAccessToken(req))) {
       socket.destroy();
       return;
     }
