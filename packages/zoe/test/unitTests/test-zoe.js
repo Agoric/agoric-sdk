@@ -418,7 +418,7 @@ test(`zoe.getConfiguration`, async t => {
     },
     meteringConfig: {
       incrementBy: 25000000n,
-      initial: 50000000n,
+      initial: 75000000n,
       price: {
         computronDenominator: 1n,
         feeNumerator: 1n,
