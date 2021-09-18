@@ -32,7 +32,9 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.13",
-    "@agoric/marshal": "^0.4.27"
+    "@agoric/marshal": "^0.4.27",
+    "@agoric/eventual-send": "^0.13.23",
+    "@agoric/promise-kit": "^0.2.21"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.27",

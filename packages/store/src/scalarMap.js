@@ -1,42 +1,22 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { passStyleOf, assertStructure, Far } from '@agoric/marshal';
+import { passStyleOf, Far, isObject, assertPassable } from '@agoric/marshal';
+import { assertKey } from './keys/checkKey.js';
 
-const assertKey = key => {
-  // TODO: Just a transition kludge. Remove when possible.
-  // See https://github.com/Agoric/agoric-sdk/issues/3606
-  harden(key);
-  assertStructure(key);
-  const passStyle = passStyleOf(key);
-  switch (passStyle) {
-    case 'bigint':
-    case 'boolean':
-    case 'null':
-    case 'number':
-    case 'string':
-    case 'symbol':
-    case 'undefined':
-    case 'remotable': {
-      return;
-    }
-    case 'copyArray':
-    case 'copyRecord':
-    case 'error': {
-      assert.fail(X`composite keys not yet allowed: ${key}`);
-    }
-    // case 'promise': is precluded by `assertStructure` above
-    default: {
-      assert.fail(X`unexpected passStyle ${passStyle}`);
-    }
-  }
+const isScalar = key => !isObject(key) || passStyleOf(key) === 'remotable';
+
+const assertScalarKey = key => {
+  harden(key); // TODO: Just a transition kludge #3606
+  assertKey(key);
+  assert(isScalar(key), X`Must be scalar: ${key}`);
 };
 
 const assertValue = value => {
   // TODO: Just a transition kludge. Remove when possible.
   // See https://github.com/Agoric/agoric-sdk/issues/3606
   harden(value);
-  passStyleOf(value); // asserts that value is passable
+  assertPassable(value);
 };
 
 /**
@@ -69,7 +49,8 @@ export const makeScalarMap = (keyName = 'key', _options = {}) => {
       return m.has(key);
     },
     init: (key, value) => {
-      assertKey(key);
+      harden(key); // TODO: Just a transition kludge #3606
+      assertScalarKey(key);
       assertValue(value);
       assertKeyDoesNotExist(key);
       m.set(key, value);

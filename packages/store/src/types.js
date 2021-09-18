@@ -14,7 +14,7 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} Store
  *
@@ -37,7 +37,7 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} WeakStore
  *
@@ -81,4 +81,18 @@
  *
  * @param {string} [keyName='key'] - the column name for the key
  * @returns {LegacyWeakMap}
+ */
+
+// ////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef {Passable} Key
+ */
+
+/**
+ * @typedef {CopyTagged} CopySet
+ */
+
+/**
+ * @typedef {CopyTagged} CopyMap
  */
