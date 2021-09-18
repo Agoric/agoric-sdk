@@ -6,7 +6,7 @@ import { Far } from '@agoric/marshal';
 
 import engineGC from '../../src/engine-gc.js';
 import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 // empty object, used as makeVirtualScalarWeakMap() key
 function makeKeyInstance(_state) {

@@ -9,7 +9,7 @@
 import '@agoric/install-ses/pre-bundle-source.js';
 
 import './install-ses-debug.js';
-import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
+import { makeFakeVirtualObjectManager } from './fakeVirtualSupport.js';
 
 const { makeKind, makeVirtualScalarWeakMap } = makeFakeVirtualObjectManager({
   cacheSize: 3,

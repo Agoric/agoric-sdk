@@ -335,6 +335,8 @@ export async function main() {
   }
   if (useXS) {
     config.defaultManagerType = 'xs-worker';
+  } else {
+    config.defaultManagerType = 'local';
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);

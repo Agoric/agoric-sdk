@@ -11,8 +11,9 @@ import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';
+import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
-import { insistValidVatstoreKey } from './vatTranslator.js';
+import { makeCollectionManager } from './collectionManager.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -118,7 +119,7 @@ function build(
     if (type === 'object' && allocatedByVat) {
       if (virtual) {
         // eslint-disable-next-line no-use-before-define
-        vom.setExportStatus(vref, 'reachable');
+        vrm.setExportStatus(vref, 'reachable');
       } else {
         // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
@@ -234,7 +235,7 @@ function build(
           // Don't retire things that haven't yet made the transition to dead,
           // i.e., always drop before retiring
           // eslint-disable-next-line no-use-before-define
-          if (!vom.isVrefRecognizable(vref)) {
+          if (!vrm.isVrefRecognizable(vref)) {
             importsToRetire.push(vref);
           }
         }
@@ -249,7 +250,7 @@ function build(
         if (virtual) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
-          const [gcAgain, doRetire] = vom.possibleVirtualObjectDeath(vref);
+          const [gcAgain, doRetire] = vrm.possibleVirtualObjectDeath(vref);
           if (doRetire) {
             exportsToRetire.push(vref);
           }
@@ -263,10 +264,10 @@ function build(
         } else {
           // Presence: send dropImport unless reachable by VOM
           // eslint-disable-next-line no-lonely-if, no-use-before-define
-          if (!vom.isPresenceReachable(vref)) {
+          if (!vrm.isPresenceReachable(vref)) {
             importsToDrop.push(vref);
             // eslint-disable-next-line no-use-before-define
-            if (!vom.isVrefRecognizable(vref)) {
+            if (!vrm.isVrefRecognizable(vref)) {
               importsToRetire.push(vref);
             }
           }
@@ -486,6 +487,8 @@ function build(
       console.info('Logging sent error stack', err),
   });
   const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
+  // eslint-disable-next-line no-use-before-define
+  const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
   function getSlotForVal(val) {
     return valToSlot.get(val);
@@ -512,19 +515,35 @@ function build(
     possiblyRetiredSet.add(vref);
   }
 
-  const vom = makeVirtualObjectManager(
+  const vrm = makeVirtualReferenceManager(
     syscall,
-    allocateExportID,
     getSlotForVal,
     requiredValForSlot,
+    FinalizationRegistry,
+    addToPossiblyDeadSet,
+    addToPossiblyRetiredSet,
+  );
+
+  const vom = makeVirtualObjectManager(
+    syscall,
+    vrm,
+    allocateExportID,
+    getSlotForVal,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
-    FinalizationRegistry,
-    addToPossiblyDeadSet,
-    addToPossiblyRetiredSet,
+  );
+
+  const collectionManager = makeCollectionManager(
+    syscall,
+    vrm,
+    // eslint-disable-next-line no-use-before-define
+    convertValToSlot,
+    unmeteredConvertSlotToVal,
+    m.serialize,
+    unmeteredUnserialize,
   );
 
   function convertValToSlot(val) {
@@ -962,7 +981,7 @@ function build(
       }
       const { virtual } = parseVatSlot(vref);
       if (virtual) {
-        vom.setExportStatus(vref, 'recognizable');
+        vrm.setExportStatus(vref, 'recognizable');
       }
     }
   }
@@ -974,7 +993,7 @@ function build(
     assert.equal(type, 'object');
     // console.log(`-- liveslots acting on retireExports ${vref}`);
     if (virtual) {
-      vom.setExportStatus(vref, 'none');
+      vrm.setExportStatus(vref, 'none');
     } else {
       // Remotable
       // console.log(`-- liveslots acting on retireExports ${vref}`);
@@ -1017,7 +1036,7 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    vrefs.forEach(vom.ceaseRecognition);
+    vrefs.forEach(vrm.ceaseRecognition);
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -1056,6 +1075,11 @@ function build(
   const vatGlobals = harden({
     makeVirtualScalarWeakMap: vom.makeVirtualScalarWeakMap,
     makeKind: vom.makeKind,
+    makeScalarMapStore: collectionManager.makeScalarMapStore,
+    makeScalarWeakMapStore: collectionManager.makeScalarWeakMapStore,
+    makeScalarSetStore: collectionManager.makeScalarSetStore,
+    makeScalarWeakSetStore: collectionManager.makeScalarWeakSetStore,
+    M: collectionManager.M,
   });
 
   const inescapableGlobalProperties = harden({
@@ -1063,7 +1087,12 @@ function build(
     WeakSet: vom.VirtualObjectAwareWeakSet,
   });
 
-  const testHooks = harden({ ...vom.testHooks });
+  const testHooks = harden({ ...vom.testHooks, ...vrm.testHooks });
+
+  function assertValidUserVatstoreKey(key) {
+    assert.typeof(key, 'string');
+    assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
+  }
 
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
@@ -1088,26 +1117,26 @@ function build(
     if (enableVatstore) {
       vpow.vatstore = harden({
         get: key => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           return syscall.vatstoreGet(`vvs.${key}`);
         },
         set: (key, value) => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           assert.typeof(value, 'string');
           syscall.vatstoreSet(`vvs.${key}`, value);
         },
         getAfter: (priorKey, lowerBound, upperBound) => {
           let scopedPriorKey = '';
           if (priorKey !== '') {
-            insistValidVatstoreKey(priorKey);
+            assertValidUserVatstoreKey(priorKey);
             assert(priorKey >= lowerBound, 'priorKey must be >= lowerBound');
             scopedPriorKey = `vvs.${priorKey}`;
           }
-          insistValidVatstoreKey(lowerBound);
+          assertValidUserVatstoreKey(lowerBound);
           const scopedLowerBound = `vvs.${lowerBound}`;
           let scopedUpperBound;
           if (upperBound) {
-            insistValidVatstoreKey(upperBound);
+            assertValidUserVatstoreKey(upperBound);
             assert(upperBound > lowerBound, 'upperBound must be > lowerBound');
             scopedUpperBound = `vvs.${upperBound}`;
           }
@@ -1125,7 +1154,7 @@ function build(
           }
         },
         delete: key => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           syscall.vatstoreDelete(`vvs.${key}`);
         },
       });

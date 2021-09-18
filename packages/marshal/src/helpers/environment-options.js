@@ -23,15 +23,15 @@ const { details: X, quote: q } = assert;
  * of a module instance derived from a static module according to the
  * three namespaces provided by the JavaScript semantics, affecting the
  * meaning of a module instance.
- *    * The global variable namespaces.
- *       * The global scope, aliased to properties of the global object.
+ *    The global variable namespaces.
+ *       The global scope, aliased to properties of the global object.
  *         This is necessarily compartment-wide, and therefore in our
  *         recommened usage pattern, packages-wide.
- *       * The global lexical scope. The SES-shim compartments supports
+ *       The global lexical scope. The SES-shim compartments supports
  *         these both compartment-wide as well as per-module. But it is
  *         not yet clear what we will propose in the Compartment proposal.
- *    * The import namespace.
- *    * The host hooks.
+ *    The import namespace.
+ *    The host hooks.
  *
  * This `environment-options.js` module looks for a setting of of an
  * `optionName` parameter rooted in the global scope. If follows the Node

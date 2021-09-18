@@ -2,7 +2,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { Far } from '@agoric/marshal';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import {
+  makeFakeVirtualObjectManager,
+  makeFakeVirtualStuff,
+} from '../../tools/fakeVirtualSupport.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -316,13 +319,10 @@ test('virtual object operations', t => {
 
 test('virtual object gc', t => {
   const log = [];
-  const {
-    makeKind,
-    dumpStore,
-    setExportStatus,
-    deleteEntry,
-    possibleVirtualObjectDeath,
-  } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
+  const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ cacheSize: 3, log });
+  const { makeKind } = vom;
+  const { setExportStatus, possibleVirtualObjectDeath } = vrm;
+  const { deleteEntry, dumpStore } = fakeStuff;
 
   const thingMaker = makeKind(makeThingInstance);
   const refMaker = makeKind(makeRefInstance);
