@@ -119,8 +119,8 @@ function build(
         // eslint-disable-next-line no-use-before-define
         vom.setExportStatus(vref, 'reachable');
       } else {
-        const remotable = slotToVal.get(vref).deref();
-        assert(remotable, X`somehow lost Remotable for ${vref}`);
+        // eslint-disable-next-line no-use-before-define
+        const remotable = requiredValForSlot(vref);
         exportedRemotables.add(remotable);
       }
     }
@@ -173,6 +173,10 @@ function build(
   */
 
   function finalizeDroppedImport(vref) {
+    // TODO: Ideally this function should assert that it is not metered.  This
+    // appears to be fine in practice, but it breaks a number of unit tests in
+    // ways that are not obvious how to fix.
+    // meterControl.assertNotMetered();
     const wr = slotToVal.get(vref);
     // The finalizer for a given Presence might run in any state:
     // * COLLECTED: most common. Action: move to FINALIZED
@@ -186,8 +190,6 @@ function build(
     if (wr && !wr.deref()) {
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
       deadSet.add(vref);
-      slotToVal.delete(vref);
-      // console.log(`-- adding ${vref} to deadSet`);
     }
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
@@ -196,54 +198,58 @@ function build(
     const doMore = false;
     const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
 
-    for (const vref of possiblyDeadSet) {
-      // eslint-disable-next-line no-use-before-define
-      if (!getValForSlot(vref)) {
-        deadSet.add(vref);
-      }
-    }
-    possiblyDeadSet.clear();
-
-    for (const vref of possiblyRetiredSet) {
-      // eslint-disable-next-line no-use-before-define
-      if (!getValForSlot(vref) && !deadSet.has(vref)) {
-        // Don't retire things that haven't yet made the transition to dead,
-        // i.e., always drop before retiring
+    do {
+      for (const vref of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
-        if (!vom.isVrefRecognizable(vref)) {
-          importsToRetire.push(vref);
+        if (!getValForSlot(vref)) {
+          deadSet.add(vref);
         }
       }
-    }
-    possiblyRetiredSet.clear();
+      possiblyDeadSet.clear();
 
-    const deadVrefs = Array.from(deadSet);
-    deadVrefs.sort();
-    for (const vref of deadVrefs) {
-      const { virtual, allocatedByVat, type } = parseVatSlot(vref);
-      assert(type === 'object', `unprepared to track ${type}`);
-      if (virtual) {
-        // Representative: send nothing, but perform refcount checking
+      for (const vref of possiblyRetiredSet) {
         // eslint-disable-next-line no-use-before-define
-        if (vom.possibleVirtualObjectDeath(vref)) {
-          exportsToRetire.push(vref);
-        }
-      } else if (allocatedByVat) {
-        // Remotable: send retireExport
-        exportsToRetire.push(vref);
-      } else {
-        // Presence: send dropImport unless reachable by VOM
-        // eslint-disable-next-line no-lonely-if, no-use-before-define
-        if (!vom.isPresenceReachable(vref)) {
-          importsToDrop.push(vref);
+        if (!getValForSlot(vref) && !deadSet.has(vref)) {
+          // Don't retire things that haven't yet made the transition to dead,
+          // i.e., always drop before retiring
           // eslint-disable-next-line no-use-before-define
           if (!vom.isVrefRecognizable(vref)) {
             importsToRetire.push(vref);
           }
         }
       }
-    }
-    deadSet.clear();
+      possiblyRetiredSet.clear();
+
+      const deadVrefs = Array.from(deadSet);
+      deadVrefs.sort();
+      for (const vref of deadVrefs) {
+        const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+        assert(type === 'object', `unprepared to track ${type}`);
+        if (virtual) {
+          // Representative: send nothing, but perform refcount checking
+          if (slotToVal.get(vref)) {
+            // eslint-disable-next-line no-use-before-define
+            if (vom.possibleVirtualObjectDeath(vref)) {
+              exportsToRetire.push(vref);
+            }
+          }
+        } else if (allocatedByVat) {
+          // Remotable: send retireExport
+          exportsToRetire.push(vref);
+        } else {
+          // Presence: send dropImport unless reachable by VOM
+          // eslint-disable-next-line no-lonely-if, no-use-before-define
+          if (!vom.isPresenceReachable(vref)) {
+            importsToDrop.push(vref);
+            // eslint-disable-next-line no-use-before-define
+            if (!vom.isVrefRecognizable(vref)) {
+              importsToRetire.push(vref);
+            }
+          }
+        }
+      }
+      deadSet.clear();
+    } while (possiblyDeadSet.size > 0 || possiblyRetiredSet.size > 0);
 
     if (importsToDrop.length) {
       importsToDrop.sort();
@@ -446,8 +452,16 @@ function build(
   }
 
   function getValForSlot(slot) {
+    meterControl.assertNotMetered();
     const wr = slotToVal.get(slot);
     return wr && wr.deref();
+  }
+
+  function requiredValForSlot(slot) {
+    const wr = slotToVal.get(slot);
+    const result = wr && wr.deref();
+    assert(result, X`no value for ${slot}`);
+    return result;
   }
 
   function addToPossiblyDeadSet(vref) {
@@ -462,7 +476,7 @@ function build(
     syscall,
     allocateExportID,
     getSlotForVal,
-    getValForSlot,
+    requiredValForSlot,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
@@ -546,8 +560,7 @@ function build(
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
     const { type, allocatedByVat, virtual } = parseVatSlot(slot);
-    const wr = slotToVal.get(slot);
-    let val = wr && wr.deref();
+    let val = getValForSlot(slot);
     if (val) {
       if (virtual) {
         // If it's a virtual object for which we already have a representative,
@@ -608,9 +621,7 @@ function build(
         const { type } = parseVatSlot(slot);
         if (type === 'promise') {
           // this can run metered because it's supposed to always be present
-          const wr = slotToVal.get(slot);
-          const p = wr && wr.deref();
-          assert(p, X`should have a value for ${slot} but didn't`);
+          const p = requiredValForSlot(slot);
           const priorResolution = knownResolutions.get(p);
           if (priorResolution && !doneResolutions.has(slot)) {
             const [priorRejected, priorRes] = priorResolution;
@@ -808,9 +819,7 @@ function build(
   function retirePromiseID(promiseID) {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
-    meterControl.assertNotMetered();
-    const wr = slotToVal.get(promiseID);
-    const p = wr && wr.deref();
+    const p = getValForSlot(promiseID);
     if (p) {
       valToSlot.delete(p);
       pendingPromises.delete(p);
@@ -886,6 +895,7 @@ function build(
       retirePromiseID(vpid);
     }
     const imports = finishCollectingPromiseImports();
+    meterControl.assertNotMetered();
     for (const slot of imports) {
       if (slotToVal.get(slot)) {
         // we'll only subscribe to new promises, which is within consensus
@@ -899,9 +909,9 @@ function build(
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
     // console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
+    meterControl.assertNotMetered();
     for (const vref of vrefs) {
-      const wr = slotToVal.get(vref);
-      const o = wr && wr.deref();
+      const o = getValForSlot(vref);
       if (o) {
         exportedRemotables.delete(o);
       }

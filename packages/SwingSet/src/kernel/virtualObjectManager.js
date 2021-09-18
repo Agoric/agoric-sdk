@@ -131,8 +131,8 @@ export function makeCache(size, fetch, store) {
  *   export ID for the enclosing vat.
  * @param { (val: Object) => string} getSlotForVal  A function that returns the object ID (vref) for a given object, if any.
  *   their corresponding export IDs
- * @param { (slot: string) => Object} getValForSlot  A function that converts an object ID (vref) to an
- *   object, if any, else undefined.
+ * @param { (slot: string) => Object} requiredValForSlot  A function that converts an object ID (vref) to an
+ *   object.
  * @param {*} registerEntry  Function to register a new slot+value in liveSlot's
  *   various tables
  * @param {*} serialize  Serializer for this vat
@@ -175,7 +175,7 @@ export function makeVirtualObjectManager(
   syscall,
   allocateExportID,
   getSlotForVal,
-  getValForSlot,
+  requiredValForSlot,
   registerEntry,
   serialize,
   unserialize,
@@ -234,20 +234,18 @@ export function makeVirtualObjectManager(
    * @returns {boolean} true if the object should now be regarded as unrecognizable
    */
   function possibleVirtualObjectDeath(vobjID) {
-    if (!getValForSlot(vobjID)) {
-      const refCount = getRefCount(vobjID);
-      const exportStatus = getExportStatus(vobjID);
-      if (exportStatus !== 'reachable' && refCount === 0) {
-        const rawState = fetch(vobjID);
-        for (const propValue of Object.values(rawState)) {
-          propValue.slots.map(removeReachableVref);
-        }
-        syscall.vatstoreDelete(`vom.${vobjID}`);
-        syscall.vatstoreDelete(`vom.rc.${vobjID}`);
-        syscall.vatstoreDelete(`vom.es.${vobjID}`);
-        ceaseRecognition(vobjID);
-        return exportStatus !== 'none';
+    const refCount = getRefCount(vobjID);
+    const exportStatus = getExportStatus(vobjID);
+    if (exportStatus !== 'reachable' && refCount === 0) {
+      const rawState = fetch(vobjID);
+      for (const propValue of Object.values(rawState)) {
+        propValue.slots.map(removeReachableVref);
       }
+      syscall.vatstoreDelete(`vom.${vobjID}`);
+      syscall.vatstoreDelete(`vom.rc.${vobjID}`);
+      syscall.vatstoreDelete(`vom.es.${vobjID}`);
+      ceaseRecognition(vobjID);
+      return exportStatus !== 'none';
     }
     return false;
   }
@@ -277,17 +275,10 @@ export function makeVirtualObjectManager(
     const { virtual } = parseVatSlot(vobjID);
     syscall.vatstoreSet(`vom.rc.${vobjID}`, `${Nat(refCount)}`);
     if (refCount === 0) {
-      if (virtual) {
-        const exportStatus = getExportStatus(vobjID);
-        if (exportStatus !== 'reachable') {
-          possibleVirtualObjectDeath(vobjID);
-        } else {
-          addToPossiblyDeadSet(vobjID);
-        }
-      } else {
+      if (!virtual) {
         syscall.vatstoreDelete(`vom.rc.${vobjID}`);
-        addToPossiblyDeadSet(vobjID);
       }
+      addToPossiblyDeadSet(vobjID);
     }
   }
 
@@ -365,13 +356,14 @@ export function makeVirtualObjectManager(
           incRefCount(vref);
         } else {
           // exported non-virtual object: Remotable
-          const remotable = getValForSlot(vref);
-          assert(remotable, X`no remotable for ${vref}`);
-          if (!remotableRefCounts.has(remotable)) {
-            remotableRefCounts.set(remotable, 1);
-          } else {
-            const oldRefCount = remotableRefCounts.get(remotable);
+          const remotable = requiredValForSlot(vref);
+          if (remotableRefCounts.has(remotable)) {
+            const oldRefCount = /** @type {number} */ (remotableRefCounts.get(
+              remotable,
+            ));
             remotableRefCounts.set(remotable, oldRefCount + 1);
+          } else {
+            remotableRefCounts.set(remotable, 1);
           }
         }
       } else {
@@ -390,9 +382,10 @@ export function makeVirtualObjectManager(
           decRefCount(vref);
         } else {
           // exported non-virtual object: Remotable
-          const remotable = getValForSlot(vref);
-          assert(remotable, X`no remotable for ${vref}`);
-          const oldRefCount = remotableRefCounts.get(remotable);
+          const remotable = requiredValForSlot(vref);
+          const oldRefCount = /** @type {number} */ (remotableRefCounts.get(
+            remotable,
+          ));
           assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
           if (oldRefCount === 1) {
             remotableRefCounts.delete(remotable);
