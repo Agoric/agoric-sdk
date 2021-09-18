@@ -1,7 +1,7 @@
 {
   "name": "@agoric/same-structure",
   "version": "0.1.28",
-  "description": "Deep equals",
+  "description": "Deprecated deep key comparison",
   "type": "module",
   "main": "index.js",
   "engines": {
@@ -31,13 +31,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.14",
-    "@agoric/marshal": "^0.4.28"
+    "@agoric/marshal": "^0.4.28",
+    "@agoric/store": "^0.6.3"
   },
   "devDependencies": {
     "ava": "^3.12.1"
   },
   "files": [
-    "src/",
     "*.js",
     "NEWS.md"
   ],

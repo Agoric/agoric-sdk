@@ -5,7 +5,6 @@
 
 /**
  * @typedef {Object} StoreOptions
- *
  * @property {boolean=} longLived Which way to optimize. True means that we
  * expect this store to outlive most of its keys, in which
  * case we internally may use a `WeakMap`. Otherwise we internally may
@@ -14,10 +13,9 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} Store
- *
  * @property {(key: any) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this map
@@ -37,10 +35,9 @@
  */
 
 /**
- * @template {Structure} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {Object} WeakStore
- *
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this map
@@ -61,7 +58,6 @@
 /**
  * @template K,V
  * @typedef {Object} LegacyWeakMap
- *
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K, value: V) => void} init
@@ -78,7 +74,20 @@
 /**
  * @template K,V
  * @callback MakeLegacyWeakMap
- *
  * @param {string} [keyName='key'] - the column name for the key
  * @returns {LegacyWeakMap}
+ */
+
+// ////////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef {Passable} Key
+ */
+
+/**
+ * @typedef {CopyTagged} CopySet
+ */
+
+/**
+ * @typedef {CopyTagged} CopyMap
  */
