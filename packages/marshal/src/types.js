@@ -143,17 +143,28 @@
 
 /**
  * @typedef {EncodingClass<'NaN'> |
- * EncodingClass<'undefined'> |
- * EncodingClass<'Infinity'> |
- * EncodingClass<'-Infinity'> |
- * EncodingClass<'bigint'> & { digits: string } |
- * EncodingClass<'@@asyncIterator'> |
- * EncodingClass<'error'> & { name: string, message: string, errorId?: string } |
- * EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
- * EncodingClass<'hilbert'> & { original: Encoding, rest?: Encoding }} EncodingUnion
- * @typedef {{ [index: string]: Encoding, '@qclass'?: undefined }} EncodingRecord
+ *           EncodingClass<'undefined'> |
+ *           EncodingClass<'Infinity'> |
+ *           EncodingClass<'-Infinity'> |
+ *           EncodingClass<'bigint'> & { digits: string } |
+ *           EncodingClass<'@@asyncIterator'> |
+ *           EncodingClass<'error'> & { name: string,
+ *                                      message: string,
+ *                                      errorId?: string
+ *           } |
+ *           EncodingClass<'slot'> & { index: number, iface?: InterfaceSpec } |
+ *           EncodingClass<'hilbert'> & { original: Encoding,
+ *                                        rest?: Encoding }
+ * } EncodingUnion
+ *
+ * @typedef {{ [index: string]: Encoding,
+ *             '@qclass'?: undefined }
+ * } EncodingRecord
  * We exclude '@qclass' as a property in encoding records.
- * @typedef {EncodingUnion | null | string | boolean | number | EncodingRecord} EncodingElement
+ *
+ * @typedef {EncodingUnion | null | string |
+ *           boolean | number | EncodingRecord
+ * } EncodingElement
  */
 
 /**

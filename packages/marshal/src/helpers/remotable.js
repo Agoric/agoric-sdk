@@ -9,7 +9,6 @@ import './internal-types.js';
  * TODO Why do I need these?
  *
  * @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper
- * @typedef {import('./internal-types.js').Checker} Checker
  */
 import '@agoric/assert/exported.js';
 import {
@@ -19,6 +18,7 @@ import {
   PASS_STYLE,
   checkTagRecord,
   isObject,
+  getTag,
 } from './passStyleHelpers.js';
 import { getEnvironmentOption } from './environment-options.js';
 
@@ -49,7 +49,7 @@ export const ALLOW_IMPLICIT_REMOTABLES =
 
 /**
  * @param {InterfaceSpec} iface
- * @param {Checker} check
+ * @param {Checker=} check
  */
 const checkIface = (iface, check = x => x) => {
   return (
@@ -132,20 +132,16 @@ const checkRemotableProtoOf = (original, check = x => x) => {
   }
 
   const {
-    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
-    [PASS_STYLE]: _passStyleDesc,
-    // @ts-ignore https://github.com/microsoft/TypeScript/issues/1863
-    [Symbol.toStringTag]: ifaceDesc,
-    ...restDescs
-  } = getOwnPropertyDescriptors(proto);
+    [PASS_STYLE]: _passStyle,
+    [Symbol.toStringTag]: iface,
+    ...rest
+  } = proto;
 
   return (
     check(
-      ownKeys(restDescs).length === 0,
-      X`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`,
-    ) &&
-    // @ts-ignore red highlights in vscode but `yarn test` clean.
-    checkIface(ifaceDesc && ifaceDesc.value, check)
+      ownKeys(rest).length === 0,
+      X`Unexpected properties on Remotable Proto ${ownKeys(rest)}`,
+    ) && checkIface(iface, check)
   );
 };
 
@@ -188,7 +184,7 @@ export const getInterfaceOf = val => {
   ) {
     return undefined;
   }
-  return val[Symbol.toStringTag];
+  return getTag(val);
 };
 harden(getInterfaceOf);
 
