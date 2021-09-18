@@ -40,8 +40,7 @@ import {
 // the first state transition is always to Lerv.
 //
 // When the state reaches le.v the VO is no longer reachable and may be garbage
-// collected (although right now the transition ...V -> ...v never happens
-// because we still need to implement vprop refcounting for this).
+// collected.
 //
 // When the state reaches lerv the VO is no longer recognizable anywhere and
 // any weak collection entries that use the VO as a key should be removed.
@@ -51,10 +50,8 @@ import {
 // to l is handled by a JS finalizer.
 
 // There may be more than one vprop reference, hence V subsumes all states with
-// 1 or more, whereas v implies there are 0.  However, since we currently lack
-// GC for vprop references, V more properly implies that there was at least 1
-// reference at some point, although currently there may be any number including
-// 0 (i.e., the transition from V to v is currently undetectable).
+// 1 or more, whereas v implies there are 0.  The number of vprop references to
+// a virtual object is tracked via explicit reference counting.
 
 // The transitions from E to e and R to r happen as the result of explicit
 // deliveries (dropExport and retireExport respectively) from the kernel.  (The
@@ -126,8 +123,6 @@ import {
 //   leRV -retexp-> lerV
 //   LeRv -retexp-> Lerv
 //   LeRV -retexp-> LerV
-
-// Theese transitions will not be available until we refcount virtualized references:
 
 //   lerV -overwr-> lerv gc
 //   leRV -overwr-> lerv gc, ret
@@ -436,7 +431,6 @@ function validateDropStore(v, rp, postCheck) {
   validate(v, matchVatstoreGet('vom.o+2/1'));
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
   validate(v, matchVatstoreGet('vom.o+1/1'));
   validateReturned(v, rp);
@@ -451,12 +445,24 @@ function validateDropStoreAndRetire(v, rp) {
   validate(v, matchVatstoreGet('vom.o+2/1'));
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
-  validateStatusCheck(v, 'o+1/2');
-  validateDelete(v, 'o+1/2');
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
   validate(v, matchVatstoreGet('vom.o+1/1'));
   validateReturned(v, rp);
+  validateStatusCheck(v, 'o+1/2');
+  validateDelete(v, 'o+1/2');
+  validateDone(v);
+}
+
+function validateDropStoreWithGCAndRetire(v, rp) {
+  validate(v, matchVatstoreGet('vom.o+2/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
+  validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validateReturned(v, rp);
+  validateStatusCheck(v, 'o+1/2');
+  validateDelete(v, 'o+1/2');
+  validate(v, matchRetireExports('o+1/2'));
   validateDone(v);
 }
 
@@ -740,7 +746,7 @@ test.serial('VO lifecycle 6', async t => {
 
   // leRV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
-  validateDropStoreAndRetire(v, rp);
+  validateDropStoreWithGCAndRetire(v, rp);
 });
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
@@ -847,12 +853,11 @@ test.serial('VO refcount management 1', async t => {
   validate(v, matchVatstoreGet('vom.o+2/4'));
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
-  validateStatusCheck(v, 'o+1/2');
-  validateDelete(v, 'o+1/2');
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue(null)));
   validate(v, matchVatstoreGet('vom.o+1/1'));
   validateReturned(v, rp);
+  validateStatusCheck(v, 'o+1/2');
+  validateDelete(v, 'o+1/2');
   validateDone(v);
 });
 
@@ -882,11 +887,10 @@ test.serial('VO refcount management 2', async t => {
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
 
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
+  validateDelete(v, 'o+2/4');
+
   validateStatusCheck(v, 'o+1/2');
   validateDelete(v, 'o+1/2');
-
-  validateDelete(v, 'o+2/4');
 
   validateDone(v);
 });
@@ -922,24 +926,22 @@ test.serial('VO refcount management 3', async t => {
   validateStatusCheck(v, 'o+2/4');
   validate(v, matchVatstoreGet('vom.rc.o+2/3'));
   validate(v, matchVatstoreSet('vom.rc.o+2/3', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+2/3'));
+
+  validateDelete(v, 'o+2/4');
 
   validateStatusCheck(v, 'o+2/3');
   validate(v, matchVatstoreGet('vom.rc.o+2/2'));
   validate(v, matchVatstoreSet('vom.rc.o+2/2', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+2/2'));
+  validateDelete(v, 'o+2/3');
 
   validateStatusCheck(v, 'o+2/2');
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
+  validateDelete(v, 'o+2/2');
 
   validateStatusCheck(v, 'o+1/2');
-
   validateDelete(v, 'o+1/2');
-  validateDelete(v, 'o+2/2');
-  validateDelete(v, 'o+2/3');
-  validateDelete(v, 'o+2/4');
+
   validateDone(v);
 });
 
@@ -1030,10 +1032,6 @@ test.serial('presence refcount management 2', async t => {
   validate(v, matchVatstoreSet('vom.rc.o-5', '0'));
   validate(v, matchVatstoreDelete('vom.rc.o-5'));
   validateDelete(v, 'o+2/4');
-  validateDone(v);
-
-  rp = await dispatchMessage('noOp');
-  validateReturned(v, rp);
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchDropImports('o-5'));
   validate(v, matchRetireImports('o-5'));
