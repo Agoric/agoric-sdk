@@ -1,3 +1,6 @@
+export { isKey, assertKey } from './keys/checkKey.js';
+export { keyEQ, keyGTE, keyGT } from './keys/compareKeys.js';
+
 export { makeScalarMap, makeScalarMap as makeStore } from './scalarMap.js';
 export {
   makeScalarWeakMap,

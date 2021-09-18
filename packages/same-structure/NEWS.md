@@ -3,11 +3,11 @@ User-visible changes in @agoric/same-structure:
 ## Next Release
 
 This entire package is now deprecated, with its code migrated
-to `@agoric/marshal` with the exports renamed to their modern
+to `@agoric/store` with the exports renamed to their modern
 names. This package remains for now in order to
-re-export the new names from `@agoric/marshal` under the old
+re-export the new names from `@agoric/store` under the old
 deprecated names that this package used to export. Please update
-uses to the new names as imported from `@agoric/marshal`.
+uses to the new names as imported from `@agoric/store`.
 ```js
 import {
   sameStructure,
@@ -19,10 +19,10 @@ import {
 to
 ```js
 import {
-  sameStructure,
-  isStructure,
-  assertStructure,
-  fulfillToStructure,
+  keyEQ,
+  isKey,
+  assertKey,
+  fulfillToKey,
 } from '@agoric/marshal';
 
 ## Release 0.0.1 (3-Feb-2020)
