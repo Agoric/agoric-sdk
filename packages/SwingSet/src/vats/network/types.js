@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @typedef {string|Buffer|ArrayBuffer} Data
  * @typedef {string} Bytes
@@ -22,7 +24,7 @@
  * @typedef {Object} Port A port that has been bound to a protocol
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this port
  * @property {(acceptHandler: ListenHandler) => Promise<void>} addListener Begin accepting incoming connections
- * @property {(remote: Endpoint, connectionHandler: ConnectionHandler = {}) => Promise<Connection>} connect Make an outbound connection
+ * @property {(remote: Endpoint, connectionHandler?: ConnectionHandler) => Promise<Connection>} connect Make an outbound connection
  * @property {(acceptHandler: ListenHandler) => Promise<void>} removeListener Remove the currently-bound listener
  * @property {() => void} revoke Deallocate the port entirely, removing all listeners and closing all active connections
  */
@@ -48,7 +50,7 @@
  * @typedef {Object} ConnectionHandler A handler for a given Connection
  * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
  * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
- * @property {(connection: Connection, reason?: CloseReason, c: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
+ * @property {(connection: Connection, reason?: CloseReason, c?: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
  *
  * @typedef {any?} CloseReason The reason a connection was closed
  */

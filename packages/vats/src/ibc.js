@@ -26,11 +26,6 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
  */
 
 /**
- * @template U
- * @typedef {import('@agoric/promise-kit').PromiseRecord<U>} PromiseRecord
- */
-
-/**
  * @typedef {string} IBCPortID
  * @typedef {string} IBCChannelID
  * @typedef {string} IBCConnectionID

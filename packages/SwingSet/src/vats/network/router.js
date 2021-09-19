@@ -8,7 +8,6 @@ import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';
 import './types.js';
-import './internal-types.js';
 
 /**
  * @typedef {Object} Router A delimited string router implementation

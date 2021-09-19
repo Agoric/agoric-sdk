@@ -9,7 +9,6 @@ import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
 import './types.js';
-import './internal-types.js';
 
 /**
  * Compatibility note: this must match what our peers use,
