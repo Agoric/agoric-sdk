@@ -18,11 +18,6 @@ const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
 const { isFrozen } = Object;
 
-// TODO Why do I need to import the type this time? I still don't have a model.
-/**
- * @typedef {import('./helpers/internal-types.js').PassStyleHelper} PassStyleHelper
- */
-
 /**
  * @param {PassStyleHelper[]} passStyleHelpers The passStyleHelpers to register,
  * in priority order.

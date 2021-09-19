@@ -3,8 +3,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference path="../extra-types.d.ts" />
 
-import '../types.js';
-
 /**
  * The PassStyleHelper are only used to make a `passStyleOf` function.
  * Thus, it should not depend on an ambient one. Rather, each helper should be
