@@ -52,7 +52,7 @@ const makeSubscriptionIterator = tailP => {
 };
 
 /**
- * Makes a `{ publicaction, subscription }` for doing lossless efficient
+ * Makes a `{ publication, subscription }` for doing lossless efficient
  * distributed pub/sub.
  *
  * @template T

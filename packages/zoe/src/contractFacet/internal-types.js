@@ -1,13 +1,4 @@
-/**
- * @callback ExecuteContract
- * @param {SourceBundle} bundle
- * @param {ERef<ZoeService>} zoeService
- * @param {Issuer} invitationIssuer
- * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
- * @param {InstanceRecord} instanceRecordFromZoe
- * @param {IssuerRecords} issuerStorageFromZoe
- * @returns {Promise<ExecuteContractResult>}
- */
+// @ts-check
 
 /**
  * @callback MakeZCFZygote
@@ -30,6 +21,6 @@
  * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
  *     instanceRecordFromZoe: InstanceRecord,
  *     issuerStorageFromZoe: IssuerRecords,
- *     privateArgs: Object=,
+ *     privateArgs?: Object,
  * ) => Promise<ExecuteContractResult>} startContract
  */

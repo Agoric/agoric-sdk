@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @template T
  * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
@@ -60,7 +62,7 @@
 
 /**
  * @typedef {any} NotifierInternals Purposely opaque. Will be shared between
- * machines, so it must be same to expose. But other software should avoid
+ * machines, so it must be safe to expose. But other software should avoid
  * depending on its internal structure.
  */
 
@@ -100,7 +102,7 @@
 
 /**
  * @typedef {any} SubscriptionInternals Purposely opaque. Will be shared between
- * machines, so it must be same to expose. But other software should avoid
+ * machines, so it must be safe to expose. But other software should avoid
  * depending on its internal structure.
  */
 
@@ -117,7 +119,7 @@
  * local representative of a Subscription, do
  * ```js
  * localIterable =
- *   makeAsyncIterable(E(remoteIterable).getSharableSubscriptionInternals());
+ *   makeSubscription(E(remoteIterable).getSharableSubscriptionInternals());
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.

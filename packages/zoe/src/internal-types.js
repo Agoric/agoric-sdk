@@ -1,13 +1,4 @@
-/**
- * @template T
- * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
- */
-
-/**
- * @template T
- * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
- */
-
+// @ts-check
 /**
  * @typedef {Object} SeatData
  * @property {ProposalRecord} proposal
@@ -77,7 +68,7 @@
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
  *     proposal: ProposalRecord,
- *     offerArgs: Object=,
+ *     offerArgs?: Object,
  * ) => UserSeat } makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
@@ -199,19 +190,19 @@
  * @property {Promise<Invitation>} creatorInvitation
  * @property {Object} publicFacet
  * @property {HandleOfferObj} handleOfferObj
- *
- *
+ */
+
+/**
  * @callback ExecuteContract
  * @param {SourceBundle} bundle
- * @param {Promise<ZoeService>} zoeServicePromise
+ * @param {ERef<ZoeService>} zoeService
  * @param {Issuer} invitationIssuer
- * @param {ZoeInstanceAdmin} zoeInstanceAdmin
- * @param {InstanceRecord} instanceRecord
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
+ * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {Object=} privateArgs
  * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<ExecuteContractResult>}
- *
  */
 
 /**
@@ -306,6 +297,17 @@
     reallocate: Reallocate,
     reallocateInternal: ReallocateInternal,
     dropAllReferences: DropAllReferences }}
+ */
+
+/**
+ * @callback AddIssuerToInstanceRecord
+ *
+ * Add an issuer and its keyword to the instanceRecord for the
+ * contract instance
+ *
+ * @param {Keyword} keyword
+ * @param {IssuerRecord} issuerRecord
+ * @returns {void}
  */
 
 /**
