@@ -10,11 +10,12 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js'
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@agoric/marshal';
 
+import { buildParamManager } from '@agoric/governance/src/paramManager';
 import { makeVaultKit } from '../src/vault.js';
 import { paymentFromZCFMint } from '../src/burn.js';
-import { SECONDS_PER_YEAR } from '../src/interest.js';
 
 const BASIS_POINTS = 10000n;
+const SECONDS_PER_HOUR = 60n * 60n;
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
@@ -68,10 +69,15 @@ export async function start(zcf, privateArgs) {
     getCollateralBrand() {
       return collateralBrand;
     },
+    getChargingPeriod() {
+      return SECONDS_PER_HOUR * 24n;
+    },
+    getRecordingPeriod() {
+      return SECONDS_PER_HOUR * 24n * 7n;
+    },
     reallocateReward,
   });
 
-  const SECONDS_PER_HOUR = SECONDS_PER_YEAR / 365n / 24n;
   const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
   const options = {
     actualBrandIn: collateralBrand,
@@ -83,16 +89,15 @@ export async function start(zcf, privateArgs) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
+  const { publicFacet } = buildParamManager([]);
+
   const { vault, openLoan, accrueInterestAndAddToPool } = await makeVaultKit(
     zcf,
     managerMock,
     runMint,
     autoswapMock,
     priceAuthority,
-    {
-      chargingPeriod: SECONDS_PER_HOUR * 24n,
-      recordingPeriod: SECONDS_PER_HOUR * 24n * 7n,
-    },
+    publicFacet,
     timer.getCurrentTimestamp(),
   );
 

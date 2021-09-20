@@ -41,7 +41,7 @@ export function makeVaultKit(
   runMint,
   autoswap,
   priceAuthority,
-  loanParams,
+  loanParamManager,
   startTimeStamp,
 ) {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
@@ -57,6 +57,8 @@ export function makeVaultKit(
   function assertVaultIsOpen() {
     assert(vaultState === VaultState.ACTIVE, 'vault must still be active');
   }
+
+  console.log(`VALT   ${q(manager)}`);
 
   const collateralBrand = manager.getCollateralBrand();
   // timestamp of most recent update to interest
@@ -74,8 +76,8 @@ export function makeVaultKit(
   const interestCalculator = makeInterestCalculator(
     runBrand,
     manager.getInterestRate(),
-    loanParams.chargingPeriod,
-    loanParams.recordingPeriod,
+    manager.getChargingPeriod(),
+    manager.getRecordingPeriod(),
   );
 
   function getCollateralAllocated(seat) {
