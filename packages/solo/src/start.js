@@ -235,7 +235,7 @@ async function buildSwingset(
   // other inbound messages.
   const queuedMoveTimeForward = withInputQueue(
     async function moveTimeForward() {
-      const now = Math.floor(Date.now() / intervalMillis);
+      const now = Date.now();
       try {
         if (timer.poll(now)) {
           await processKernel();

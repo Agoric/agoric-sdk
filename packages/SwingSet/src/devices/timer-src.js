@@ -1,10 +1,10 @@
 /**
  * A Timer device that provides a capability that can be used to schedule wake()
  * calls at particular times. The simpler form is a handler object with a wake()
- * function can be passed to D(timer).setWakeup(delaySecs, handler) to be woken
- * after delaySecs.
+ * function can be passed to D(timer).setWakeup(baseTime, handler) to be woken
+ * after baseTime.
  *
- * The other form r = D(timer).makeRepeater(startTime, interval) allows one to
+ * The other form r = D(timer).makeRepeater(baseTime, interval) allows one to
  * create a repeater object which can be used to scheduled regular wakeups. Each
  * time D(timer).schedule(r, w) is called, w.wake(r) will be scheduled to be
  * called after the next multiple of interval since startTime. This doesn't
@@ -265,11 +265,11 @@ export function buildRootDeviceNode(tools) {
   // but the repeated calls won't accumulate timing drift, so the trigger
   // point will be reached at consistent intervals.
   return Far('root', {
-    setWakeup(delaySecs, handler) {
-      assert.typeof(delaySecs, 'bigint');
-      deadlines.add(lastPolled + Nat(delaySecs), handler);
+    setWakeup(baseTime, handler) {
+      baseTime = Nat(baseTime);
+      deadlines.add(baseTime, handler);
       saveState();
-      return lastPolled + Nat(delaySecs);
+      return baseTime;
     },
     removeWakeup(handler) {
       const times = deadlines.remove(handler);

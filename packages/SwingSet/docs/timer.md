@@ -33,29 +33,43 @@ and creating the service. The vat is responsible for creating repeater objects
 to wrap the device node as a capability that can be accessed by regular vat
 code.
 
-In `bootstrap()` for a particular SwingSet, we create a timerService, and
-make it accessible to the user in `home`
+In `bootstrap()` for a particular SwingSet, we create a timerService, and make
+it accessible to the user in `home.localTimerService` (whose timestamps are
+measured in milliseconds).
 
 ```
 const timerService = E(vats.timerWrapper).createTimerService(devices.timer);
 ```
 
-Then users in the REPL can use the timerService to schedule wakeups.
+Then users in the REPL can use the `localTimerService` (in milliseconds since
+the epoch) or `chainTimerService` (in seconds since the epoch) to schedule wakeups.
 
+There is a simple promise-based `delay` function that resolves its returned promise
+when at least its first `delay` argument has passed.
+
+```js
+E(home.localTimerService).delay(60_000n);
 ```
-const timestampP = E(timerService).getCurrentTimestamp();
 
-const handler = harden({wake(now) { console.log(`woke up ${now}`); }});
-const willWakeAt = E(timerService).setWakeup(60, handler);
+This promise will resolve to the current timestamp after 60 seconds from now.
+
+Alteratively, if you wish to be able to cancel the delay, you can use the more
+powerful `setWakeup` method:
+
+```js
+timestamp = E(home.localTimerService).getCurrentTimestamp();
+
+handler = Far('waker', { wake(now) { console.log(`woke up ${now}`); } });
+willWakeAt = E(home.localTimerService).setWakeup(timestamp + 60_000n, handler);
 ```
 
 The handler will fire somewhat after 60 seconds from now.
 
-```
-const repeater = E(timerService).makeRepeater(20, 60);
+```js
+repeater = E(home.localTimerService).makeRepeater(20_000n, 60_000n);
 E(repeater).schedule(handler);
 ```
 
 The handler will fire in somewhat after 80 seconds from now, and every 60
-seconds thereafter. Calling `E(repeater).disable()` will cancel prevent the repeater
-from scheduling future activations
+seconds thereafter. Calling `E(repeater).disable()` will cancel the repeater and
+prevent it from scheduling future activations

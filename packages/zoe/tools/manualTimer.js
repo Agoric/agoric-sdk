@@ -9,6 +9,7 @@ import { Far } from '@agoric/marshal';
 import './types.js';
 import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 /**
  * A fake clock that also logs progress.
@@ -25,11 +26,11 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   // Legacy because the value is mutated after it is stored.
   const schedule = makeLegacyMap('Timestamp');
 
-  const makeRepeater = (delaySecs, interval, timer) => {
-    assert.typeof(delaySecs, 'bigint');
+  const makeRepeater = (delay, interval, timer) => {
+    assert.typeof(delay, 'bigint');
     assert(
-      delaySecs % timeStep === 0n,
-      `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
+      delay % timeStep === 0n,
+      `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
     );
     assert.typeof(interval, 'bigint');
     assert(
@@ -70,7 +71,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         timer.removeWakeup(repeaterWaker);
       },
     });
-    nextWakeup = ticks + delaySecs;
+    nextWakeup = ticks + delay;
     timer.setWakeup(nextWakeup, repeaterWaker);
     return repeater;
   };
@@ -132,17 +133,14 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       }
       return harden(baseTimes);
     },
-    createRepeater(delay, interval) {
+    makeRepeater(delay, interval) {
       return makeRepeater(delay, interval, timer);
     },
-    makeRepeater(delaySecs, interval) {
-      return makeRepeater(delaySecs, interval, timer);
-    },
-    makeNotifier(delaySecs, interval) {
-      assert.typeof(delaySecs, 'bigint');
+    makeNotifier(delay, interval) {
+      assert.typeof(delay, 'bigint');
       assert(
-        (delaySecs % timeStep) === 0n,
-        `timer has a resolution of ${timeStep}; ${delaySecs} is not divisible`,
+        (delay % timeStep) === 0n,
+        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       assert.typeof(interval, 'bigint');
       assert(
@@ -158,8 +156,23 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
           timer.setWakeup(ticks + interval, repeaterWaker);
         },
       });
-      timer.setWakeup(ticks + delaySecs, repeaterWaker);
+      timer.setWakeup(ticks + delay, repeaterWaker);
       return notifier;
+    },
+    delay(delay) {
+      assert.typeof(delay, 'bigint');
+      assert(
+        (delay % timeStep) === 0n,
+        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+      );
+      const promiseKit = makePromiseKit();
+      const delayWaker = Far('delayWaker', {
+        wake(timestamp) {
+          promiseKit.resolve(timestamp);
+        },
+      });
+      timer.setWakeup(delay, delayWaker);
+      return promiseKit.promise;
     },
   });
   return timer;
