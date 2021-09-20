@@ -33,6 +33,20 @@
  */
 
 /**
+ * @callback OnObservedCallback
+ * @param {UpdateCount} observedUpdateCount which future update is being
+ * observed
+ * @returns {void}
+ */
+
+/**
+ * @callback RegisterOnObserved Register `onObserved` to be called when at least one
+ * client is actually waiting for a state update.
+ * @param {OnObservedCallback} onObserved the callback to register
+ * @returns {() => void} a function to call to unregister the callback
+ */
+
+/**
  * @template T
  * @typedef {Object} UpdateRecord<T>
  * @property {T} value is whatever state the service wants to publish
@@ -89,6 +103,9 @@
  * @template T
  * @typedef {Object} NotifierRecord<T> the produced notifier/updater pair
  * @property {IterationObserver<T>} updater the (closely-held) notifier producer
+ * @property {RegisterOnObserved} registerOnObserved (closely-held) call a
+ * function when the notifier is being asked for a new state that hasn't been
+ * updated yet
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
 

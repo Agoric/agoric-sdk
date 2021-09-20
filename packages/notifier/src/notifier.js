@@ -57,8 +57,13 @@ export const makeNotifierKit = (...args) => {
   let nextPromiseKit = makePromiseKit();
   /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
+  /** @type {UpdateCount} */
+  let lastObservedUpdateCount;
   /** @type {UpdateRecord<T>|undefined} */
   let currentResponse;
+
+  /** @type {Set<OnObservedCallback>|undefined} */
+  let onObservedCallbacks = new Set();
 
   const hasState = () => currentResponse !== undefined;
 
@@ -77,7 +82,36 @@ export const makeNotifierKit = (...args) => {
         assert(currentResponse !== undefined);
         return Promise.resolve(currentResponse);
       }
-      // otherwise return a promise for the next state.
+
+      if (
+        currentUpdateCount &&
+        (!lastObservedUpdateCount ||
+          lastObservedUpdateCount <= currentUpdateCount)
+      ) {
+        // Notice that the promise for the next state has just now been observed.
+        lastObservedUpdateCount = currentUpdateCount + 1;
+
+        // Queue the callbacks in a later turn so that they can't interfere with
+        // our plans.
+        const observedUpdateCount = lastObservedUpdateCount;
+        Promise.resolve().then(() => {
+          if (!onObservedCallbacks) {
+            return;
+          }
+          onObservedCallbacks.forEach(cb => {
+            try {
+              cb(observedUpdateCount);
+            } catch (e) {
+              console.error(
+                `Error observing notifier update ${observedUpdateCount}:`,
+                e,
+              );
+            }
+          });
+        });
+      }
+
+      // return a promise for the next state.
       assert(nextPromiseKit);
       return nextPromiseKit.promise;
     },
@@ -115,6 +149,7 @@ export const makeNotifierKit = (...args) => {
       // become hasState() && final()
       assert(nextPromiseKit);
       currentUpdateCount = undefined;
+      onObservedCallbacks = undefined;
       currentResponse = harden({
         value: finalState,
         updateCount: currentUpdateCount,
@@ -132,6 +167,7 @@ export const makeNotifierKit = (...args) => {
       // become !hasState() && final()
       assert(nextPromiseKit);
       currentUpdateCount = undefined;
+      onObservedCallbacks = undefined;
       currentResponse = undefined;
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning
       nextPromiseKit.promise.catch(_ => {});
@@ -143,9 +179,22 @@ export const makeNotifierKit = (...args) => {
     updater.updateState(args[0]);
   }
 
+  /** @type {RegisterOnObserved} */
+  const registerOnObserved = onObserved => {
+    if (onObservedCallbacks) {
+      onObservedCallbacks.add(onObserved);
+    }
+    return () => {
+      if (!onObservedCallbacks) {
+        return;
+      }
+      onObservedCallbacks.delete(onObserved);
+    };
+  };
+
   // notifier facet is separate so it can be handed out while updater
   // is tightly held
-  return harden({ notifier, updater });
+  return harden({ notifier, updater, registerOnObserved });
 };
 
 /**
