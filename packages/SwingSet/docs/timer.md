@@ -41,20 +41,32 @@ measured in milliseconds).
 const timerService = E(vats.timerWrapper).createTimerService(devices.timer);
 ```
 
-Then users in the REPL can use the `localTimerService` or `chainTimerService`
-(both in seconds) to schedule wakeups.
+Then users in the REPL can use the `localTimerService` (in milliseconds since
+the epoch) or `chainTimerService` (in seconds since the epoch) to schedule wakeups.
 
+There is a simple promise-based `delay` function that resolves its returned promise
+when at least its first `delay` argument has passed.
+
+```js
+E(home.localTimerService).delay(60_000n);
 ```
+
+This promise will resolve to the current timestamp after 60 seconds from now.
+
+Alteratively, if you wish to be able to cancel the delay, you can use the more
+powerful `setWakeup` method:
+
+```js
 timestamp = E(home.localTimerService).getCurrentTimestamp();
 
 handler = Far('waker', { wake(now) { console.log(`woke up ${now}`); } });
-willWakeAt = E(home.localTimerService).setWakeup(timestamp + 60n, handler);
+willWakeAt = E(home.localTimerService).setWakeup(timestamp + 60_000n, handler);
 ```
 
 The handler will fire somewhat after 60 seconds from now.
 
-```
-const repeater = E(home.localTimerService).makeRepeater(20n, 60n);
+```js
+repeater = E(home.localTimerService).makeRepeater(20_000n, 60_000n);
 E(repeater).schedule(handler);
 ```
 
