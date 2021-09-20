@@ -3,7 +3,7 @@
 // We use setQuote() below to break the cycle
 // where SES requires console and console is
 // implemented using assert.quote from SES.
-let quote = v => (typeof v === 'string' ? v : '[?]');
+let quote = _v => '[?]';
 
 function tryPrint(...args) {
   // eslint-disable-next-line
