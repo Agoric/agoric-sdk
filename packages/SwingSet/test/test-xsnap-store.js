@@ -109,7 +109,7 @@ test('SES bootstrap, save, compress', async t => {
   const zfile = path.resolve(pool.name, `${h}.gz`);
   t.is(
     relativeSize(zfile, snapSize.SESboot),
-    snapSize.compression,
+    0.2,
     'compressed snapshots are smaller',
   );
 });
@@ -167,7 +167,7 @@ test('XS + SES snapshots are deterministic', async t => {
   const h2 = await store.save(vat.snapshot);
   t.is(
     h2,
-    '3659d88bd99032afa15dbe5f938182dffa63abad2cfe53df2f81e8646af2d8b3',
+    'f62c6fce5accbbfbb5f08bb25f9414e9ba611359af1fb3a889d6171e25e58d6a',
     'after SES boot',
   );
 
@@ -175,7 +175,7 @@ test('XS + SES snapshots are deterministic', async t => {
   const h3 = await store.save(vat.snapshot);
   t.is(
     h3,
-    'b938034b72a3bfa68accb802554cd6bc1c08bbcb8fe80573dabec8584b4ddd9c',
+    '911f4ea5fa42b5245d7024f269c59bdf382dc0521146ecc03e017136023f9435',
     'after use of harden()',
   );
 });
