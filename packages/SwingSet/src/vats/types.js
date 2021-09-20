@@ -10,7 +10,7 @@
  * `repeater.schedule(h)`.
  * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} createRepeater
  * DEPRECATED: use makeRepeater instead.
- * @property {(delaySecs: RelativeTime, interval: RelativeTime) => TimerRepeater} makeRepeater
+ * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} makeRepeater
  * Create and return a repeater that will schedule `wake()` calls
  * repeatedly at times that are a multiple of interval following delay.
  * Interval is the difference between successive times at which wake will be
@@ -18,9 +18,11 @@
  * called after the next multiple of interval from the base. Since times can be
  * coarse-grained, the actual call may occur later, but this won't change when
  * the next event will be called.
- * @property {(delaySecs: RelativeTime, interval: RelativeTime) => Notifier<Timestamp>} makeNotifier
+ * @property {(delay: RelativeTime, interval: RelativeTime) => Notifier<Timestamp>} makeNotifier
  * Create and return a Notifier that will deliver updates repeatedly at times
  * that are a multiple of interval following delay.
+ * @property {(delay: RelativeTime) => Promise<Timestamp>} delay
+ * Create and return a promise that will resolve after the relative time has passed.
  */
 
 /**

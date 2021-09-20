@@ -1,7 +1,10 @@
+// @ts-check
+
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -13,8 +16,9 @@ export function buildRootObject(vatPowers) {
       getCurrentTimestamp() {
         return Nat(D(timerNode).getLastPolled());
       },
-      setWakeup(delaySecs, handler) {
-        return D(timerNode).setWakeup(delaySecs, handler);
+      setWakeup(baseTime, handler) {
+        baseTime = Nat(baseTime);
+        return D(timerNode).setWakeup(baseTime, handler);
       },
       // can be used after setWakeup(h) or schedule(h)
       removeWakeup(handler) {
@@ -22,17 +26,20 @@ export function buildRootObject(vatPowers) {
       },
       // deprecated in favor of makeRepeater().
       // TODO(#2164): remove before Beta
-      createRepeater(delaySecs, interval) {
-        return timerService.makeRepeater(delaySecs, interval);
+      createRepeater(delay, interval) {
+        delay = Nat(delay);
+        interval = Nat(interval);
+        return timerService.makeRepeater(delay, interval);
       },
-      makeRepeater(delaySecs, interval) {
-        Nat(delaySecs);
+      makeRepeater(delay, interval) {
+        delay = Nat(delay);
+        interval = Nat(interval);
         assert(
-          Nat(interval) > 0,
+          interval > 0,
           X`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).makeRepeater(delaySecs, interval);
+        const index = D(timerNode).makeRepeater(delay, interval);
 
         const vatRepeater = Far('vatRepeater', {
           schedule(h) {
@@ -46,21 +53,43 @@ export function buildRootObject(vatPowers) {
         repeaters.set(index, vatRepeater);
         return vatRepeater;
       },
-      makeNotifier(delaySecs, interval) {
-        Nat(delaySecs);
+      makeNotifier(delay, interval) {
+        delay = Nat(delay);
+        interval = Nat(interval);
         assert(
-          Nat(interval) > 0,
+          interval > 0,
           X`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).makeRepeater(delaySecs, interval);
+        const index = D(timerNode).makeRepeater(delay, interval);
         const { notifier, updater } = makeNotifierKit();
         const updateHandler = Far('updateHandler', {
           wake: updater.updateState,
         });
         D(timerNode).schedule(index, updateHandler);
 
+        // FIXME: The fact that we never delete the repeater (for the `index`)
+        // means that there is a resource leak and no way the repeater ever
+        // stops.
+        //
+        // This happens even if every recipient of the notifier permanently
+        // stops asking for updates, or equivalently, they drop all references
+        // to the notifier.
+        //
+        // To solve this problem, we could elegantly use something like #3854.
+
         return notifier;
+      },
+      delay(delay) {
+        delay = Nat(delay);
+        const now = timerService.getCurrentTimestamp();
+        const baseTime = now + delay;
+        const promiseKit = makePromiseKit();
+        const delayHandler = Far('delayHandler', {
+          wake: promiseKit.resolve,
+        });
+        timerService.setWakeup(baseTime, delayHandler);
+        return promiseKit.promise;
       },
     });
     return timerService;
