@@ -54,22 +54,48 @@ export function buildRootObject(vatPowers) {
           X`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).makeRepeater(delay, interval);
-        const { notifier, updater } = makeNotifierKit();
-        const updateHandler = Far('updateHandler', {
+        // Find where the first notification will fire.
+        const baseTime = timerService.getCurrentTimestamp() + delay + interval;
+
+        // We use an onObserved handler to ensure we don't have timers pending
+        // that nobody's waiting for.
+        const { notifier, updater, registerOnObserved } = makeNotifierKit();
+
+        const notifierDelayHandler = Far('notifierDelayHandler', {
           wake: updater.updateState,
         });
-        D(timerNode).schedule(index, updateHandler);
 
-        // FIXME: The fact that we never delete the repeater (for the `index`)
-        // means that there is a resource leak and no way the repeater ever
-        // stops.
-        //
-        // This happens even if every recipient of the notifier permanently
-        // stops asking for updates, or equivalently, they drop all references
-        // to the notifier.
-        //
-        // To solve this problem, we could elegantly use something like #3854.
+        // The latest stamp we have produced a notifier update for.
+        let latestNotifiedStamp = baseTime;
+        registerOnObserved(_observedUpdateCount => {
+          // Whenever we have an observer for a new state, we need to handle two
+          // different cases:
+          // 1. If there would have been a prior wakeup since the last
+          //    notification, report it immediately.
+          // 2. Otherwise, set a wakeup when the next one would be scheduled.
+
+          const now = timerService.getCurrentTimestamp();
+
+          // Calculate where we are relative to our base time.
+          const currentOffset = now > baseTime ? now - baseTime : 0n;
+          const intervalRemaining = interval - (currentOffset % interval);
+
+          // Find the previous wakeup relative to our last one.
+          const nextWakeup = baseTime + currentOffset + intervalRemaining;
+          const priorWakeup = nextWakeup - interval;
+
+          if (priorWakeup > latestNotifiedStamp) {
+            // At least one interval has passed since the prior one we notified
+            // for, so we can do an immediate update.
+            latestNotifiedStamp = priorWakeup;
+            updater.updateState(priorWakeup);
+          } else {
+            // The last notification we know about is in the future, so notify
+            // later because the client is waiting on a promise.
+            latestNotifiedStamp = nextWakeup;
+            D(timerNode).setWakeup(nextWakeup, notifierDelayHandler);
+          }
+        });
 
         return notifier;
       },
