@@ -17,6 +17,7 @@ import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
+import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../../exported.js';
 import '../internal-types.js';
@@ -56,7 +57,7 @@ export const makeZCFZygote = (
   const {
     makeZCFSeat,
     reallocate,
-    reallocateInternal,
+    reallocateForZCFMint,
     dropAllReferences,
   } = createSeatManager(
     zoeInstanceAdmin,
@@ -152,31 +153,64 @@ export const makeZCFZygote = (
           zcfSeat = makeEmptySeatKit().zcfSeat;
         }
         const totalToMint = Object.values(gains).reduce(add, empty);
-        zcfSeat.incrementBy(gains);
+        assert(
+          !zcfSeat.hasExited(),
+          `zcfSeat must be active to mint gains for the zcfSeat`,
+        );
+        const allocationPlusGains = addToAllocation(
+          zcfSeat.getCurrentAllocation(),
+          gains,
+        );
+
+        // Increment the stagedAllocation if it exists so that the
+        // stagedAllocation is kept up to the currentAllocation
+        if (zcfSeat.hasStagedAllocation()) {
+          zcfSeat.incrementBy(gains);
+        }
+
         // verifies offer safety
-        assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
-        // No effects above. The following two steps
-        // *should* be committed atomically, but it is not a
-        // disaster if they are not. If we minted only, no one would
-        // ever get those invisibly-minted assets.
+        assert(
+          zcfSeat.isOfferSafe(allocationPlusGains),
+          `The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
+        );
+        // No effects above, apart from incrementBy. Note COMMIT POINT within
+        // reallocateForZCFMint. The following two steps *should* be
+        // committed atomically, but it is not a disaster if they are
+        // not. If we minted only, no one would ever get those
+        // invisibly-minted assets.
         E(zoeMintP).mintAndEscrow(totalToMint);
-        // Note COMMIT POINT within reallocateInternal.
-        reallocateInternal([zcfSeat]);
+        reallocateForZCFMint(zcfSeat, allocationPlusGains);
         return zcfSeat;
       },
       burnLosses: (losses, zcfSeat) => {
         assertAmountKeywordRecord(losses, 'losses');
         const totalToBurn = Object.values(losses).reduce(add, empty);
-        zcfSeat.decrementBy(losses);
+        assert(
+          !zcfSeat.hasExited(),
+          `zcfSeat must be active to burn losses from the zcfSeat`,
+        );
+        const allocationMinusLosses = subtractFromAllocation(
+          zcfSeat.getCurrentAllocation(),
+          losses,
+        );
+
+        // Decrement the stagedAllocation if it exists so that the
+        // stagedAllocation is kept up to the currentAllocation
+        if (zcfSeat.hasStagedAllocation()) {
+          zcfSeat.decrementBy(losses);
+        }
+
         // verifies offer safety
-        assert(zcfSeat.isOfferSafe(zcfSeat.getStagedAllocation()));
-        // No effects above.
-        // Note COMMIT POINT within reallocateInternal.
-        // The following two steps
-        // *should* be committed atomically, but it is not a disaster
-        // if they are not. If we only commit the stagedAllocation no
-        // one would ever get the unburned assets.
-        reallocateInternal([zcfSeat]);
+        assert(
+          zcfSeat.isOfferSafe(allocationMinusLosses),
+          `The allocation after burning losses ${allocationMinusLosses}for the zcfSeat was not offer safe`,
+        );
+        // No effects above, apart from decrementBy. Note COMMIT POINT within
+        // reallocateForZCFMint. The following two steps *should* be
+        // committed atomically, but it is not a disaster if they are
+        // not. If we only commit the allocationMinusLosses no one would
+        // ever get the unburned assets.
+        reallocateForZCFMint(zcfSeat, allocationMinusLosses);
         E(zoeMintP).withdrawAndBurn(totalToBurn);
       },
     });

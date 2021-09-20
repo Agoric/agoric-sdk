@@ -278,8 +278,9 @@
  */
 
 /**
- * @callback ReallocateInternal
- * @param {ZCFSeat[]} seats
+ * @callback ReallocateForZCFMint
+ * @param {ZCFSeat} zcfSeat
+ * @param {Allocation} newAllocation
  * @returns {void}
  */
 
@@ -295,7 +296,7 @@
  * @param {ShutdownWithFailure} shutdownWithFailure
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
-    reallocateInternal: ReallocateInternal,
+    reallocateForZCFMint: ReallocateForZCFMint,
     dropAllReferences: DropAllReferences }}
  */
 
