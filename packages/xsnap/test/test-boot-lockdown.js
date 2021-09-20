@@ -72,10 +72,7 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
-  const opts = options(io);
-  const vat = xsnap(opts);
-  await vat.evaluate(bootScript);
+  const { worker: vat, opts } = await bootSESWorker(t.title);
 
   const script = await ld.asset('escapeCompartment.js');
   await vat.evaluate(script);
@@ -95,10 +92,7 @@ test('child compartment cannot access start powers', async t => {
 });
 
 test('SES deep stacks work on xsnap', async t => {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
-  const opts = options(io);
-  const vat = xsnap(opts);
-  await vat.evaluate(bootScript);
+  const { worker: vat, opts } = await bootSESWorker(t.title);
   await vat.evaluate(`
     const encoder = new TextEncoder();
     const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
@@ -115,10 +109,7 @@ test('SES deep stacks work on xsnap', async t => {
 });
 
 test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
-  const opts = options(io);
-  const vat = xsnap(opts);
-  await vat.evaluate(bootScript);
+  const { worker: vat, opts } = await bootSESWorker(t.title);
   await vat.evaluate(`
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -138,10 +129,7 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
 
 test('console - symbols', async t => {
   // our console-shim.js handles Symbol specially
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
-  const opts = options(io);
-  const vat = xsnap(opts);
-  await vat.evaluate(bootScript);
+  const { worker: vat, opts } = await bootSESWorker(t.title);
   t.deepEqual([], opts.messages);
   await vat.evaluate(`
     const encoder = new TextEncoder();
