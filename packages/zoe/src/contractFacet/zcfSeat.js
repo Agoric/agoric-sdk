@@ -113,7 +113,7 @@ export const createSeatManager = (
    * and so can be used internally for reallocations that violate
    * conservation.
    *
-   * @type {reallocateForZCFMint}
+   * @type {ReallocateForZCFMint}
    */
   const reallocateForZCFMint = (zcfSeat, newAllocation) => {
     try {
