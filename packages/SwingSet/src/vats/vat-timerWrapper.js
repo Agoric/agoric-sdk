@@ -24,13 +24,6 @@ export function buildRootObject(vatPowers) {
       removeWakeup(handler) {
         return D(timerNode).removeWakeup(handler);
       },
-      // deprecated in favor of makeRepeater().
-      // TODO(#2164): remove before Beta
-      createRepeater(delay, interval) {
-        delay = Nat(delay);
-        interval = Nat(interval);
-        return timerService.makeRepeater(delay, interval);
-      },
       makeRepeater(delay, interval) {
         delay = Nat(delay);
         interval = Nat(interval);

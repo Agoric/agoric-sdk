@@ -8,8 +8,6 @@
  * @property {(waker: ERef<TimerWaker>) => Array<Timestamp>} removeWakeup Remove the waker
  * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
  * `repeater.schedule(h)`.
- * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} createRepeater
- * DEPRECATED: use makeRepeater instead.
  * @property {(delay: RelativeTime, interval: RelativeTime) => TimerRepeater} makeRepeater
  * Create and return a repeater that will schedule `wake()` calls
  * repeatedly at times that are a multiple of interval following delay.

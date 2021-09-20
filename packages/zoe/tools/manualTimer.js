@@ -133,9 +133,6 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       }
       return harden(baseTimes);
     },
-    createRepeater(delay, interval) {
-      return makeRepeater(delay, interval, timer);
-    },
     makeRepeater(delay, interval) {
       return makeRepeater(delay, interval, timer);
     },
