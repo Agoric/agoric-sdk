@@ -1,16 +1,13 @@
 /* global globalThis */
+
+// We use setQuote() below to break the cycle
+// where SES requires console and console is
+// implemented using assert.quote from SES.
+let quote = v => (typeof v === 'string' ? v : '[?]');
+
 function tryPrint(...args) {
-  try {
-    // eslint-disable-next-line
-    print(...args.map(arg => typeof arg === 'symbol' ? arg.toString() : arg));
-  } catch (err) {
-    // eslint-disable-next-line
-    print('cannot print:', err.message);
-    args.forEach((a, i) => {
-      // eslint-disable-next-line
-      print(` ${i}:`, a.toString ? a.toString() : '<no .toString>', typeof a);
-    });
-  }
+  // eslint-disable-next-line
+  print(...args.map(v => typeof v === 'string' ? v : quote(v)));
 }
 
 const noop = _ => {};
@@ -51,5 +48,13 @@ const console = {
   profileEnd: noop,
   timeStamp: noop,
 };
+
+let quoteSet = false;
+
+export function setQuote(f) {
+  if (quoteSet) throw TypeError('quote already set');
+  quote = f;
+  quoteSet = true;
+}
 
 globalThis.console = console;
