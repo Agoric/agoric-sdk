@@ -1,14 +1,15 @@
-/* global globalThis */
+/* global globalThis, print */
 
 // We use setQuote() below to break the cycle
 // where SES requires console and console is
 // implemented using assert.quote from SES.
 let quote = _v => '[?]';
 
-function tryPrint(...args) {
-  // eslint-disable-next-line
-  print(...args.map(v => typeof v === 'string' ? v : quote(v)));
-}
+const printAll = (...args) => {
+  // Though xsnap doesn't have a whole console, it does have print().
+  // eslint-disable-next-line no-restricted-globals
+  print(...args.map(v => (typeof v === 'string' ? v : quote(v))));
+};
 
 const noop = _ => {};
 
@@ -21,11 +22,11 @@ const noop = _ => {};
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  */
 const console = {
-  debug: tryPrint,
-  log: tryPrint,
-  info: tryPrint,
-  warn: tryPrint,
-  error: tryPrint,
+  debug: printAll,
+  log: printAll,
+  info: printAll,
+  warn: printAll,
+  error: printAll,
 
   trace: noop,
   dirxml: noop,
@@ -52,7 +53,9 @@ const console = {
 let quoteSet = false;
 
 export function setQuote(f) {
-  if (quoteSet) throw TypeError('quote already set');
+  if (quoteSet) {
+    throw TypeError('quote already set');
+  }
   quote = f;
   quoteSet = true;
 }
