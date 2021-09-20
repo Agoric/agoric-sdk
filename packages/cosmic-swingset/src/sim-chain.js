@@ -166,26 +166,33 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
     intoChain.push([newMessages, acknum]);
-    if (!delay) {
+    // Only actually simulate a block if we're not in bootstrap.
+    if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
       await simulateBlock();
     }
   }
 
-  let genesisBlockP;
-  if (!blockHeight) {
+  const bootSimChain = async () => {
+    if (blockHeight) {
+      return;
+    }
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    genesisBlockP = blockManager(
-      { type: 'BOOTSTRAP_BLOCK', blockTime },
-      savedChainSends,
-    ).then(() => (blockHeight = initialHeight));
-  }
-  await genesisBlockP;
+    await blockManager({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    blockHeight = initialHeight;
+  };
 
-  // Start the first pretend block.
-  nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+  const enableDeliveries = () => {
+    // Start the first pretend block.
+    nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+  };
+
+  bootSimChain().then(enableDeliveries, e => {
+    console.error(`Cannot boot sim chain:`, e);
+    process.exit(1);
+  });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
   return makeBatchedDeliver(deliver, batchDelayMs);

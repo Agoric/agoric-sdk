@@ -836,8 +836,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     // environments.
     const spawner = E(vats.spawner).buildSpawner(vatAdminSvc);
 
+    const localTimerService = E(vats.timer).createTimerService(devices.timer);
+
     // Needed for DApps, maybe for user clients.
-    const uploads = E(vats.uploads).getUploads();
+    const scratch = E(vats.uploads).getUploads();
 
     // Only create the plugin manager if the device exists.
     let plugin;
@@ -874,11 +876,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     return allComparable(
       harden({
         ...(plugin ? { plugin } : {}),
-        // TODO: Our preferred name is "scratch", but there are many Dapps
-        // that use "uploads".
-        scratch: uploads,
-        uploads,
+        scratch,
         spawner,
+        localTimerService,
         network: vats.network,
         http: httpRegCallback,
         vattp: makeVattpFrom(vats),
@@ -945,32 +945,40 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         // ag-setup-solo runs this.
         case 'client': {
-          assert(FIXME_GCI, X`client must be given GCI`);
+          let localBundle;
+          let chainBundle;
+          const deprecated = {};
 
-          const localTimerService = await E(vats.timer).createTimerService(
-            devices.timer,
-          );
-          await registerNetworkProtocols(vats, bridgeManager, null);
+          // Tell the http server about our presences.
+          const updatePresences = () =>
+            E(vats.http).setPresences(localBundle, chainBundle, deprecated);
 
-          await setupCommandDevice(vats.http, devices.command, {
-            client: true,
-          });
-          await addRemote(FIXME_GCI);
-          // addEgress(..., index, ...) is called in vat-provisioning.
-          const demoProvider = await E(vats.comms).addIngress(
-            FIXME_GCI,
-            PROVISIONER_INDEX,
-          );
-          const localBundle = await createLocalBundle(
-            vats,
-            devices,
-            vatAdminSvc,
-          );
-          await E(vats.http).setPresences(localBundle);
-          const bundle = await E(demoProvider).getDemoBundle();
-          await E(vats.http).setPresences(localBundle, bundle, {
-            localTimerService,
-          });
+          const addLocalPresences = async () => {
+            await registerNetworkProtocols(vats, bridgeManager, null);
+
+            await setupCommandDevice(vats.http, devices.command, {
+              client: true,
+            });
+            localBundle = await createLocalBundle(vats, devices, vatAdminSvc);
+
+            // TODO: Remove this when we can.
+            deprecated.uploads = localBundle.scratch;
+            await updatePresences();
+          };
+
+          const addChainPresences = async () => {
+            assert(FIXME_GCI, X`client must be given GCI`);
+            await addRemote(FIXME_GCI);
+            // addEgress(..., index, ...) is called in vat-provisioning.
+            const demoProvider = E(vats.comms).addIngress(
+              FIXME_GCI,
+              PROVISIONER_INDEX,
+            );
+            chainBundle = await E(demoProvider).getDemoBundle();
+            await updatePresences();
+          };
+
+          await Promise.all([addLocalPresences(), addChainPresences()]);
           break;
         }
 
@@ -1017,10 +1025,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           });
           await Promise.all(
             hardcodedClientAddresses.map(async addr => {
-              const { transmitter, setReceiver } = await E(
-                vats.vattp,
-              ).addRemote(addr);
-              await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+              await addRemote(addr);
               await E(vats.comms).addEgress(
                 addr,
                 PROVISIONER_INDEX,
