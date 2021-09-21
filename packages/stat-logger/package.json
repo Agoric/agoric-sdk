@@ -15,7 +15,7 @@
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
-  "dependencies": {
+  "peerDependencies": {
     "canvas": "^2.6.1",
     "vega": "^5.10.0",
     "vega-canvas": "^1.2.1"
