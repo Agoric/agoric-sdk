@@ -135,9 +135,6 @@ export const createSeatManager = (
           allocation: newAllocation,
         },
       ];
-        const seatHandle = zcfSeatToSeatHandle.get(seat);
-        return { seatHandle, allocation: newAllocation };
-      });
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     } catch (err) {
