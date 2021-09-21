@@ -113,34 +113,10 @@ export const createSeatManager = (
    * and so can be used internally for reallocations that violate
    * conservation.
    *
-   * @type {ReallocateInternal}
+   * @type {ReallocateForZCFMint}
    */
-  const reallocateInternal = seats => {
-    // This check was already done in `reallocate`, but
-    // zcfMint.mintGains and zcfMint.burnLosses call
-    // `reallocateInternal` directly without calling `reallocate`, so
-    // we must check here as well.
-    seats.forEach(assertActive);
-    seats.forEach(assertStagedAllocation);
-
-    // Keep track of seats used so far in this call, to prevent aliasing.
-    const zcfSeatsSoFar = new Set();
-
-    seats.forEach(seat => {
-      assert(
-        zcfSeatToSeatHandle.has(seat),
-        X`The seat ${seat} was not recognized`,
-      );
-      assert(
-        !zcfSeatsSoFar.has(seat),
-        X`Seat (${seat}) was already an argument to reallocate`,
-      );
-      zcfSeatsSoFar.add(seat);
-    });
-
+  const reallocateForZCFMint = (zcfSeat, newAllocation) => {
     try {
-      // No side effects above. All conditions checked which could have
-      // caused us to reject this reallocation.
       // COMMIT POINT
       // All the effects below must succeed "atomically". Scare quotes because
       // the eventual send at the bottom is part of this "atomicity" even
@@ -148,16 +124,17 @@ export const createSeatManager = (
       // updates from zcf to zoe, its effects must occur immediately in zoe
       // on reception, and must not fail.
       //
-      // Commit the staged allocations (currentAllocation is replaced
-      // for each of the seats) and inform Zoe of the
+      // Commit the newAllocation and inform Zoe of the
       // newAllocation.
 
-      seats.forEach(commitStagedAllocation);
+      activeZCFSeats.set(zcfSeat, newAllocation);
 
-      const seatHandleAllocations = seats.map(seat => {
-        const seatHandle = zcfSeatToSeatHandle.get(seat);
-        return { seatHandle, allocation: seat.getCurrentAllocation() };
-      });
+      const seatHandleAllocations = [
+        {
+          seatHandle: zcfSeatToSeatHandle.get(zcfSeat),
+          allocation: newAllocation,
+        },
+      ];
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
     } catch (err) {
@@ -208,8 +185,47 @@ export const createSeatManager = (
       X`At least one seat has a staged allocation but was not included in the call to reallocate`,
     );
 
-    // Note COMMIT POINT within reallocateInternal
-    reallocateInternal(seats);
+    // Keep track of seats used so far in this call, to prevent aliasing.
+    const zcfSeatsSoFar = new Set();
+
+    seats.forEach(seat => {
+      assert(
+        zcfSeatToSeatHandle.has(seat),
+        X`The seat ${seat} was not recognized`,
+      );
+      assert(
+        !zcfSeatsSoFar.has(seat),
+        X`Seat (${seat}) was already an argument to reallocate`,
+      );
+      zcfSeatsSoFar.add(seat);
+    });
+
+    try {
+      // No side effects above. All conditions checked which could have
+      // caused us to reject this reallocation.
+      // COMMIT POINT
+      // All the effects below must succeed "atomically". Scare quotes because
+      // the eventual send at the bottom is part of this "atomicity" even
+      // though its effects happen later. The send occurs in the order of
+      // updates from zcf to zoe, its effects must occur immediately in zoe
+      // on reception, and must not fail.
+      //
+      // Commit the staged allocations (currentAllocation is replaced
+      // for each of the seats) and inform Zoe of the
+      // newAllocation.
+
+      seats.forEach(commitStagedAllocation);
+
+      const seatHandleAllocations = seats.map(seat => {
+        const seatHandle = zcfSeatToSeatHandle.get(seat);
+        return { seatHandle, allocation: seat.getCurrentAllocation() };
+      });
+
+      E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+    } catch (err) {
+      shutdownWithFailure(err);
+      throw err;
+    }
   };
 
   /** @type {MakeZCFSeat} */
@@ -323,7 +339,7 @@ export const createSeatManager = (
   return harden({
     makeZCFSeat,
     reallocate,
-    reallocateInternal,
+    reallocateForZCFMint,
     dropAllReferences,
   });
 };
