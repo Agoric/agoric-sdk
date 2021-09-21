@@ -12,6 +12,8 @@
   export let item;
   export let dismiss;
 
+  let isPending = false;
+
   function formatDateNow(stamp) {
     if (!stamp) {
       return "unknown time";
@@ -58,6 +60,11 @@
     complete: "success",
   };
 
+  const accept = () => {
+    isPending = true;
+    E(walletP).acceptOffer(offerId).catch(makeRejected('Cannot accept'));
+  }
+
   $: ({
     instancePetname,
     instanceHandleBoardId,
@@ -68,7 +75,7 @@
     proposalForDisplay: { give = {}, want = {} } = {},
   } = item);
 
-  $: status = item.status || 'proposed';
+  $: status = item.status || (isPending ? 'pending' : 'proposed');
 </script>
 
 <style>
@@ -201,8 +208,7 @@
     {/if}
     {#if status === 'proposed'}
     <div>
-    <Chip on:click={() =>
-      E(walletP).acceptOffer(offerId).catch(makeRejected('Cannot accept'))}
+    <Chip on:click={accept}
       selected icon="check" color="success">
       Accept
     </Chip>
