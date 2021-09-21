@@ -167,7 +167,7 @@ test('XS + SES snapshots are deterministic', async t => {
   const h2 = await store.save(vat.snapshot);
   t.is(
     h2,
-    '93dd13f6c97a2a11f2d6fd88aa2a64f800ef6c4224b6417fbe28f593418cf225',
+    '3659d88bd99032afa15dbe5f938182dffa63abad2cfe53df2f81e8646af2d8b3',
     'after SES boot',
   );
 
@@ -175,7 +175,7 @@ test('XS + SES snapshots are deterministic', async t => {
   const h3 = await store.save(vat.snapshot);
   t.is(
     h3,
-    'e8e4864ee6a9f4855c93e840028facc6ece988d83a6baafed2d0aafc37dfae76',
+    'b938034b72a3bfa68accb802554cd6bc1c08bbcb8fe80573dabec8584b4ddd9c',
     'after use of harden()',
   );
 });
