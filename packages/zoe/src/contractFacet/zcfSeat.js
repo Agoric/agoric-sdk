@@ -129,7 +129,12 @@ export const createSeatManager = (
 
       activeZCFSeats.set(zcfSeat, newAllocation);
 
-      const seatHandleAllocations = [zcfSeat].map(seat => {
+      const seatHandleAllocations = [
+        {
+          seatHandle: zcfSeatToSeatHandle.get(zcfSeat),
+          allocation: newAllocation,
+        },
+      ];
         const seatHandle = zcfSeatToSeatHandle.get(seat);
         return { seatHandle, allocation: newAllocation };
       });
