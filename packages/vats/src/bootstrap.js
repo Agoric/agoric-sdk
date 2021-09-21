@@ -949,7 +949,8 @@ export function buildRootObject(vatPowers, vatParameters) {
           let chainBundle;
           const deprecated = {};
 
-          // Tell the http server about our presences.
+          // Tell the http server about our presences.  This can be called in
+          // any order (whether localBundle and/or chainBundle are set or not).
           const updatePresences = () =>
             E(vats.http).setPresences(localBundle, chainBundle, deprecated);
 
@@ -961,7 +962,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             });
             localBundle = await createLocalBundle(vats, devices, vatAdminSvc);
 
-            // TODO: Remove this when we can.
+            // TODO: Remove this alias when we can.
             deprecated.uploads = localBundle.scratch;
             await updatePresences();
           };
@@ -970,14 +971,16 @@ export function buildRootObject(vatPowers, vatParameters) {
             assert(FIXME_GCI, X`client must be given GCI`);
             await addRemote(FIXME_GCI);
             // addEgress(..., index, ...) is called in vat-provisioning.
-            const demoProvider = E(vats.comms).addIngress(
+            const chainProvider = E(vats.comms).addIngress(
               FIXME_GCI,
               PROVISIONER_INDEX,
             );
-            chainBundle = await E(demoProvider).getDemoBundle();
+            chainBundle = await E(chainProvider).getChainBundle();
             await updatePresences();
           };
 
+          // We race to add presences, regardless of order.  This allows a solo
+          // REPL to be useful even if only some of the presences have loaded.
           await Promise.all([addLocalPresences(), addChainPresences()]);
           break;
         }
@@ -1003,9 +1006,9 @@ export function buildRootObject(vatPowers, vatParameters) {
           // This is necessary for fake-chain, which does not have Cosmos SDK
           // transactions to provision its client.
           let nonce = 0;
-          const demoProvider = Far('demoProvider', {
+          const chainProvider = Far('chainProvider', {
             // build a chain-side bundle for a client.
-            async getDemoBundle(nickname) {
+            async getChainBundle(nickname) {
               nonce += 1;
               if (giveMeAllTheAgoricPowers) {
                 // NOTE: This is a special exception to the security model,
@@ -1029,7 +1032,7 @@ export function buildRootObject(vatPowers, vatParameters) {
               await E(vats.comms).addEgress(
                 addr,
                 PROVISIONER_INDEX,
-                demoProvider,
+                chainProvider,
               );
             }),
           );

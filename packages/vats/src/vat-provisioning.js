@@ -18,7 +18,7 @@ export function buildRootObject(_vatPowers) {
   async function pleaseProvision(nickname, address, powerFlags) {
     let chainBundle;
     const fetch = Far('fetch', {
-      getDemoBundle() {
+      getChainBundle() {
         return chainBundle;
       },
     });
