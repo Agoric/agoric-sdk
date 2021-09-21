@@ -2,11 +2,6 @@
 /// <reference types="ses"/>
 
 /**
- * @template T
- * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
- */
-
-/**
  * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
  * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
  */

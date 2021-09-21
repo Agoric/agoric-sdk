@@ -104,12 +104,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const withBlockQueue = makeWithQueue();
   const unhandledSimulateBlock = withBlockQueue(
     async function unqueuedSimulateBlock() {
-      const actualStart = Date.now();
       // Gather up the new messages into the latest block.
       thisBlock.push(...intoChain);
       intoChain = [];
 
-      blockTime += PRETEND_BLOCK_DELAY;
+      blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
       await blockManager(
@@ -143,7 +142,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
       // We now advance to the next block.
       thisBlock = [];
-      blockTime += scaleBlockTime(Date.now() - actualStart);
 
       clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define

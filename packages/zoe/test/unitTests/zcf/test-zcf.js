@@ -538,7 +538,7 @@ test(`zcf.makeZCFMint - mintGains - seat exited`, async t => {
   t.throws(
     () => zcfMint.mintGains({ A: AmountMath.make(4n, brand) }, zcfSeat),
     {
-      message: `seat has been exited`,
+      message: `zcfSeat must be active to mint gains for the zcfSeat`,
     },
   );
 });
@@ -562,7 +562,7 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   t.throws(
     () => zcfMint.burnLosses({ A: AmountMath.make(1n, brand) }, zcfSeat),
     {
-      message: `seat has been exited`,
+      message: `zcfSeat must be active to burn losses from the zcfSeat`,
     },
   );
 });

@@ -1,7 +1,4 @@
-/**
- * @template T
- * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
- */
+// @ts-check
 
 /**
  * @typedef {string | string[]} Petname A petname can either be a plain string

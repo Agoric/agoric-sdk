@@ -35,11 +35,6 @@ import '@agoric/zoe/exported.js';
 import './internal-types.js';
 import './types.js';
 
-/**
- * @template T
- * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
- */
-
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 

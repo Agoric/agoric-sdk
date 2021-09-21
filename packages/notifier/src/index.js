@@ -1,3 +1,5 @@
+// @ts-check
+
 export {
   makeNotifier,
   makeNotifierKit,

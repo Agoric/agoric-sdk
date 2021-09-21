@@ -46,7 +46,11 @@ const refillMeterLog = [
   'error: Error: vat terminated',
 ];
 
-test('zoe - metering - refill meter', async t => {
+// See https://github.com/Agoric/agoric-sdk/issues/3804
+// TODO make this test more robust, or replace with something more
+// robust. This test is currently too sensitive to minor variations in
+// compute.
+test.skip('zoe - metering - refill meter', async t => {
   // If this assertion fails, please update this test with the new
   // computron values. This test aims to be resilient to changes in
   // computron values for particular actions but a significant change
