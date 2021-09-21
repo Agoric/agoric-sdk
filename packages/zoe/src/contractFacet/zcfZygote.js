@@ -168,7 +168,10 @@ export const makeZCFZygote = (
           zcfSeat.incrementBy(gains);
         }
 
-        // verifies offer safety
+        // Offer safety should never be able to be violated here, as
+        // we are adding assets. However, we keep this check so that
+        // all reallocations are covered by offer safety checks, and
+        // that any bug within Zoe that may affect this is caught.
         assert(
           zcfSeat.isOfferSafe(allocationPlusGains),
           `The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
