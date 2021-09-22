@@ -1,7 +1,6 @@
 /* global process */
 import fs from 'fs';
 import path from 'path';
-import * as vega from 'vega';
 
 const { details: X } = assert;
 
@@ -173,6 +172,12 @@ export async function renderGraph(spec, outputPath, type = 'png') {
     }
     out = fs.createWriteStream(outputPath);
   }
+
+  // NOTE: If this import expression fails, you need to install the
+  // peerDependencies.
+  // Dynamic version of `import * as vega from 'vega';`
+  // eslint-disable-next-line import/no-unresolved
+  const vega = await import('vega');
 
   const view = new vega.View(vega.parse(spec, null), {
     loader: vega.loader({ baseURL: loadDir }),
