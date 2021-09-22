@@ -10,6 +10,7 @@ import { passStyleOf } from './passStyleOf.js';
 import './types.js';
 import { getInterfaceOf } from './helpers/remotable.js';
 import { ErrorHelper, getErrorConstructor } from './helpers/error.js';
+import { isObject } from './helpers/passStyleHelpers.js';
 
 const { ownKeys } = Reflect;
 const { isArray } = Array;
@@ -301,7 +302,7 @@ export function makeMarshal(
      * @param {Encoding} rawTree must be hardened
      */
     function fullRevive(rawTree) {
-      if (Object(rawTree) !== rawTree) {
+      if (!isObject(rawTree)) {
         // primitives pass through
         return rawTree;
       }
@@ -316,7 +317,7 @@ export function makeMarshal(
           X`invalid qclass typeof ${q(typeof qclass)}`,
         );
         assert(!isArray(rawTree));
-        // Switching on `encoded[QCLASS]` (or anything less direct, like
+        // Switching on `rawTree[QCLASS]` (or anything less direct, like
         // `qclass`) does not discriminate rawTree in typescript@4.2.3 and
         // earlier.
         switch (rawTree['@qclass']) {

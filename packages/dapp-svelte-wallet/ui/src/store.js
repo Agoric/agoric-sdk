@@ -111,6 +111,9 @@ const [payments, setPayments] = makeReadable([]);
 const [contacts, setContacts] = makeReadable([]);
 const [selfContact, setSelfContact] = makeReadable(undefined);
 const [issuers, setIssuers] = makeReadable([]);
+const [dismissedRequests, setDismissedRequests] = makeReadable(
+  JSON.parse(localStorage.getItem('DismissedRequests') || '[]'),
+);
 
 export {
   ready,
@@ -121,6 +124,8 @@ export {
   issuers,
   contacts,
   selfContact,
+  dismissedRequests,
+  setDismissedRequests,
 };
 
 function cmp(a, b) {

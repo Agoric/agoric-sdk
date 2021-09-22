@@ -166,20 +166,6 @@ function makeHandler() {
   });
 }
 
-// TODO(2164): createRepeater was replaced by makeRepeater. Remove it pre-Beta
-test.serial('home.localTimerService createRepeater', async t => {
-  const { localTimerService } = E.get(home);
-  const timestamp = await E(localTimerService).getCurrentTimestamp();
-  const repeater = E(localTimerService).createRepeater(1n, 1n);
-  const handler = makeHandler();
-  await E(repeater).schedule(handler);
-  const notifier = E(localTimerService).makeNotifier(1n, 1n);
-  await E(notifier).getUpdateSince();
-
-  t.truthy(handler.getCalls() >= 1);
-  t.truthy(handler.getArgs()[0] > timestamp);
-});
-
 test.serial('home.localTimerService makeRepeater', async t => {
   const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();

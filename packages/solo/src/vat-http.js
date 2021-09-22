@@ -105,15 +105,15 @@ export function buildRootObject(vatPowers) {
     },
 
     setPresences(
-      privateObjects,
+      privateObjects = undefined,
       decentralObjects = undefined,
-      handyObjects = undefined,
+      deprecatedObjects = undefined,
     ) {
       exportedToCapTP = {
         ...exportedToCapTP,
         ...decentralObjects, // TODO: Remove; replaced by .agoric
         ...privateObjects, // TODO: Remove; replaced by .local
-        ...handyObjects,
+        ...deprecatedObjects,
         agoric: { ...decentralObjects },
         local: { ...privateObjects },
       };
@@ -129,15 +129,13 @@ export function buildRootObject(vatPowers) {
         doneLoading(['agoric']);
       }
 
-      // TODO: Remove; home object is deprecated.
-      if (decentralObjects) {
-        Object.assign(
-          replObjects.home,
-          decentralObjects,
-          privateObjects,
-          handyObjects,
-        );
-      }
+      // TODO: Maybe remove sometime; home object is deprecated.
+      Object.assign(
+        replObjects.home,
+        decentralObjects,
+        privateObjects,
+        deprecatedObjects,
+      );
     },
 
     // devices.command invokes our inbound() because we passed to

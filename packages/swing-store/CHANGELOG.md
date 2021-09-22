@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.6.0 (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* clean up organization of swing-store
+
+### Bug Fixes
+
+* **swing-store:** be resilient to Node.js 16.x fs.rmSync ([990f909](https://github.com/Agoric/agoric-sdk/commit/990f909bfb90a1ef34ebba4677d88c9eb5106294))
+
+
+### Code Refactoring
+
+* clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
+
+
+
 ### [0.5.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.10...@agoric/swing-store-lmdb@0.5.11) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb

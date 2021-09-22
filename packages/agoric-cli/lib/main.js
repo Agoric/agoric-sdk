@@ -177,7 +177,7 @@ const main = async (progname, rawArgs, powers) => {
     .option(
       '--need <subsystems>',
       'comma-separated names of subsystems to wait for',
-      'agoric,wallet',
+      'local,agoric,wallet',
     )
     .option(
       '--provide <subsystems>',

@@ -4,7 +4,7 @@
 /// <reference types="ses"/>
 
 import { isPromise } from '@agoric/promise-kit';
-import { isPrimitive, PASS_STYLE } from './helpers/passStyleHelpers.js';
+import { isObject, PASS_STYLE } from './helpers/passStyleHelpers.js';
 
 import { CopyArrayHelper } from './helpers/copyArray.js';
 import { CopyRecordHelper } from './helpers/copyRecord.js';
@@ -18,13 +18,8 @@ const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
 const { isFrozen } = Object;
 
-// TODO Why do I need to import the type this time? I still don't have a model.
 /**
- * @typedef {import('./helpers/internal-types.js').PassStyleHelper} PassStyleHelper
- */
-
-/**
- * @param {PassStyleHelper[]} passStyleHelper The passStyleHelper to register,
+ * @param {PassStyleHelper[]} passStyleHelpers The passStyleHelpers to register,
  * in priority order.
  * NOTE These must all be "trusted",
  * complete, and non-colliding. `makePassStyleOf` may *assume* that each helper
@@ -33,7 +28,7 @@ const { isFrozen } = Object;
  * accidents.
  * @returns {{passStyleOf: PassStyleOf, HelperTable: any}}
  */
-const makePassStyleOfKit = passStyleHelper => {
+const makePassStyleOfKit = passStyleHelpers => {
   const HelperTable = {
     __proto__: null,
     copyArray: undefined,
@@ -41,16 +36,20 @@ const makePassStyleOfKit = passStyleHelper => {
     error: undefined,
     remotable: undefined,
   };
-  for (const helper of passStyleHelper) {
+  for (const helper of passStyleHelpers) {
     const { styleName } = helper;
-    assert(styleName in HelperTable);
-    assert.equal(HelperTable[styleName], undefined);
+    assert(styleName in HelperTable, X`Unrecognized helper: ${q(styleName)}`);
+    assert.equal(
+      HelperTable[styleName],
+      undefined,
+      X`conflicting helpers for ${q(styleName)}`,
+    );
     HelperTable[styleName] = helper;
   }
   for (const styleName of ownKeys(HelperTable)) {
     assert(
       HelperTable[styleName] !== undefined,
-      X`missing helper for ${styleName}`,
+      X`missing helper for ${q(styleName)}`,
     );
   }
   harden(HelperTable);
@@ -69,7 +68,7 @@ const makePassStyleOfKit = passStyleHelper => {
    *
    * @type {WeakMap<Passable, PassStyle>}
    */
-  const passStyleOfCache = new WeakMap();
+  const passStyleMemo = new WeakMap();
 
   /**
    * @type {PassStyleOf}
@@ -84,11 +83,11 @@ const makePassStyleOfKit = passStyleHelper => {
      * @type {PassStyleOf}
      */
     const passStyleOfRecur = inner => {
-      const isObject = !isPrimitive(inner);
-      if (isObject) {
-        if (passStyleOfCache.has(inner)) {
+      const innerIsObject = isObject(inner);
+      if (innerIsObject) {
+        if (passStyleMemo.has(inner)) {
           // @ts-ignore TypeScript doesn't know that `get` after `has` is safe
-          return passStyleOfCache.get(inner);
+          return passStyleMemo.get(inner);
         }
         assert(
           !inProgress.has(inner),
@@ -98,8 +97,8 @@ const makePassStyleOfKit = passStyleHelper => {
       }
       // eslint-disable-next-line no-use-before-define
       const passStyle = passStyleOfInternal(inner);
-      if (isObject) {
-        passStyleOfCache.set(inner, passStyle);
+      if (innerIsObject) {
+        passStyleMemo.set(inner, passStyle);
         inProgress.delete(inner);
       }
       return passStyle;
@@ -145,7 +144,7 @@ const makePassStyleOfKit = passStyleHelper => {
             helper.assertValid(inner, passStyleOfRecur);
             return /** @type {PassStyle} */ (passStyleTag);
           }
-          for (const helper of passStyleHelper) {
+          for (const helper of passStyleHelpers) {
             if (helper.canBeValid(inner)) {
               helper.assertValid(inner, passStyleOfRecur);
               return helper.styleName;
@@ -183,7 +182,6 @@ const { passStyleOf, HelperTable } = makePassStyleOfKit([
   ErrorHelper,
   RemotableHelper,
 ]);
-
 export { passStyleOf };
 
 export const everyPassableChild = (passable, fn) => {

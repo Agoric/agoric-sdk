@@ -11,6 +11,7 @@
   import Tooltip from 'smelte/src/components/Tooltip';
 
   export let item;
+  export let dismiss;
 
   let destination = null;
 
@@ -56,53 +57,53 @@
   }
 </style>
 
-<Request>
+<Request dismiss={dismiss} completed={item.status === 'deposited'}>
   <span slot="header">
-    {#if item.status === 'deposited'}
-      Deposited <Amount amount={item.displayPayment.depositedAmount}
-                  displayInfo={item.displayPayment.displayInfo} />
-    {:else if item.issuer}
-      Incoming Payment
-    {/if}
+    Incoming Payment
   </span>
   
-  <span class="amount">
-    {#if item.lastAmount}
-      <Amount amount={item.displayPayment.lastAmount}
-        displayInfo={item.displayPayment.displayInfo}  />
-    {:else}
-      <ProgressCircular size={24}></ProgressCircular>
-    {/if}
-  </span>
-
-  {#if $purses}
-    <span class="select-purse">
-      <Select bind:value={destination}
-        items={purseItems}
-        label="Deposit to" />
-    </span>
-    <span class="bottom">
-      <Debug title="Payment Detail" target={item} />
-      <div class="actions">
-        <span class="deposit-button">
-          <Chip selected icon="check" color="success" on:click={deposit}>
-            Deposit
-          </Chip>
-        </span>
-        <span class="refresh-button">
-          <Tooltip>
-            <span slot="activator">
-              <Button icon={"refresh"}
-                on:click={() => E(item.actions).getAmountOf()}
-                color="error"
-                text flat />
-            </span>
-            Refresh
-          </Tooltip>
-        </span>
-      </div>
-    </span>
+  {#if item.status === 'deposited'}
+    Deposited <Amount amount={item.displayPayment.depositedAmount}
+                displayInfo={item.displayPayment.displayInfo} />
   {:else}
-    Unknown brand.  This payment cannot be verified.
+    <span class="amount">
+      {#if item.lastAmount}
+        <Amount amount={item.displayPayment.lastAmount}
+          displayInfo={item.displayPayment.displayInfo}  />
+      {:else}
+        <ProgressCircular size={24}></ProgressCircular>
+      {/if}
+    </span>
+
+    {#if $purses}
+      <span class="select-purse">
+        <Select bind:value={destination}
+          items={purseItems}
+          label="Deposit to" />
+      </span>
+      <span class="bottom">
+        <Debug title="Payment Detail" target={item} />
+        <div class="actions">
+          <span class="deposit-button">
+            <Chip selected icon="check" color="success" on:click={deposit}>
+              Deposit
+            </Chip>
+          </span>
+          <span class="refresh-button">
+            <Tooltip>
+              <span slot="activator">
+                <Button icon={"refresh"}
+                  on:click={() => E(item.actions).getAmountOf()}
+                  color="error"
+                  text flat />
+              </span>
+              Refresh
+            </Tooltip>
+          </span>
+        </div>
+      </span>
+    {:else}
+      Unknown brand.  This payment cannot be verified.
+    {/if}
   {/if}
 </Request>

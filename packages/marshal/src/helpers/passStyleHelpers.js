@@ -5,11 +5,6 @@
 
 import '../types.js';
 import './internal-types.js';
-/**
- * TODO Why do I need these?
- *
- * @typedef {import('./internal-types.js').Checker} Checker
- */
 import '@agoric/assert/exported.js';
 
 const { details: X, quote: q } = assert;
@@ -24,8 +19,8 @@ export const hasOwnPropertyOf = (obj, prop) =>
   apply(objectHasOwnProperty, obj, [prop]);
 harden(hasOwnPropertyOf);
 
-export const isPrimitive = val => Object(val) !== val;
-harden(isPrimitive);
+export const isObject = val => Object(val) === val;
+harden(isObject);
 
 export const PASS_STYLE = Symbol.for('passStyle');
 
@@ -106,6 +101,9 @@ export const checkNormalProperty = (
 };
 harden(checkNormalProperty);
 
+export const getTag = tagRecord => tagRecord[Symbol.toStringTag];
+harden(getTag);
+
 /**
  * @param {{ [PASS_STYLE]: string }} tagRecord
  * @param {PassStyle} passStyle
@@ -138,7 +136,7 @@ export const checkTagRecord = (tagRecord, passStyle, check = x => x) => {
       check,
     ) &&
     check(
-      typeof tagRecord[Symbol.toStringTag] === 'string',
+      typeof getTag(tagRecord) === 'string',
       X`A [Symbol.toString]-named property must be a string: ${tagRecord}`,
     )
   );

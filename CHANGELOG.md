@@ -3,6 +3,94 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [9.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.3...@agoric/sdk@9.0.0) (2021-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **issuers:** clean up issuers for demo
+* improve error message when a purse is overdrawn (#3811)
+* **xsnap:** moddable resync for stack-trace changes metering
+* **solo:** watch for mailbox updates; not every Tendermint block
+* clean up organization of swing-store
+* add required rounding modes to ratio APIs
+
+### Features
+
+* **cosmos:** publish event when `x/swingset` storage is modified ([8b63eb0](https://github.com/Agoric/agoric-sdk/commit/8b63eb08006807af547f4b1e166fef34c6cdde75))
+* **issuers:** clean up issuers for demo ([228cf1a](https://github.com/Agoric/agoric-sdk/commit/228cf1a80d100e653460823cae62fdd547447cb3))
+* **solo:** add `keys`, `init`, and `delete` to `home.scratch` ([1cecdcb](https://github.com/Agoric/agoric-sdk/commit/1cecdcb7dd571146164aba1e8eda0b6ad91a975a))
+* **swingset-vat:** Thread dev dependencies explicitly ([f55982f](https://github.com/Agoric/agoric-sdk/commit/f55982fccf211fba9625cd8015b5c06e9644ee60))
+* **swingset-vat:** Thread module format through loadBasedir, swingset config ([b243889](https://github.com/Agoric/agoric-sdk/commit/b243889d2f5e7c3c279373943b593cf9773c6366))
+* **wallet:** Add balances to dashboard view ([c2c68e1](https://github.com/Agoric/agoric-sdk/commit/c2c68e179576cfac931b526f6c76ac9ba0f1a782))
+* **wallet:** add connection indicator to app bar ([f6acd29](https://github.com/Agoric/agoric-sdk/commit/f6acd29a6b7da499c7d4e8b54f9f38a3afffe939))
+* **wallet:** Add requests feed to dashboard ([#3824](https://github.com/Agoric/agoric-sdk/issues/3824)) ([c02eb8e](https://github.com/Agoric/agoric-sdk/commit/c02eb8ec04b9fbd0366675ef9ed56b39e8bc86ee))
+* **wallet:** Add responsive nav menu ([39e5a0a](https://github.com/Agoric/agoric-sdk/commit/39e5a0ac30f0114ef4de53e93c908f309ca5cb1a))
+* **wallet:** Add url param to hide ui changes ([7fde345](https://github.com/Agoric/agoric-sdk/commit/7fde34514d5fb8ed392bc9862faf591e3d1397f2))
+* **wallet:** Drop old components into contacts, dapps, issuers, and purses views ([#3825](https://github.com/Agoric/agoric-sdk/issues/3825)) ([5a52315](https://github.com/Agoric/agoric-sdk/commit/5a52315783dc075aca2dfb2b689d6c1f8865f612))
+* **wallet:** wire through the Zoe fee information ([f52ea9a](https://github.com/Agoric/agoric-sdk/commit/f52ea9a0a94b8d7c88a18afd603b22896306613f))
+* **xsnap:** Add base 64 bindings ([a8279a4](https://github.com/Agoric/agoric-sdk/commit/a8279a43ef6f4686efba301fe2cb93e1d4e9b156))
+* **xsnap:** integrate native TextEncoder / TextDecoder ([9d65dbe](https://github.com/Agoric/agoric-sdk/commit/9d65dbe2410e1856c3ac1fa6ff7eb921bb24ec0c))
+* add required rounding modes to ratio APIs ([dc8d6dc](https://github.com/Agoric/agoric-sdk/commit/dc8d6dca5898890ef4d956c83685bc28eb189791))
+
+
+### Bug Fixes
+
+* **cosmos:** only entrain ABCI lock when persistent state changes ([d73c1bb](https://github.com/Agoric/agoric-sdk/commit/d73c1bba38217043e380fd5c60ff9505b6630bc7))
+* improve error message when a purse is overdrawn ([#3811](https://github.com/Agoric/agoric-sdk/issues/3811)) ([7b5841c](https://github.com/Agoric/agoric-sdk/commit/7b5841caf6a3d99464c2156156e0f6337bb04690))
+* **agoric-cli:** don't use `Date.now()` ambiently ([a54a3ae](https://github.com/Agoric/agoric-sdk/commit/a54a3ae4a13ee4ff0b10fe835e51b86b0d5da54d))
+* **chain-config:** increase timeouts to prevent RPC EOF errors ([d731195](https://github.com/Agoric/agoric-sdk/commit/d731195b5768017d9c5d158fd9f13da731af3544))
+* **cosmos:** ensure simulated transactions can't trigger SwingSet ([997329a](https://github.com/Agoric/agoric-sdk/commit/997329a92f5380edab586f4186a2092ce361dcde))
+* **cosmos:** the bootstrap block is not a simulation, either ([f906a54](https://github.com/Agoric/agoric-sdk/commit/f906a54a9a3cdb2342c8b274a7132fb6aa9e9fcc))
+* **deploy:** use `@agoric/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
+* **deployment:** properly handle the `file:` URL protocol ([e852b2d](https://github.com/Agoric/agoric-sdk/commit/e852b2d906b27e9170c9a44e9e5589803af39207))
+* **solo:** make solo-to-chain more robust ([b266666](https://github.com/Agoric/agoric-sdk/commit/b2666665b1881d5f98fa853ba05627d945783c7c))
+* **solo:** only subscribe to one copy of mailbox events ([9d58314](https://github.com/Agoric/agoric-sdk/commit/9d583148727ed90e9ac555fef75fef40ad90a0cf))
+* **solo:** preserve ports in the `rpcAddr`; `--node` needs them ([7d83576](https://github.com/Agoric/agoric-sdk/commit/7d83576ca3aa4fd81077284bb544a56dcdd75f8c))
+* **solo:** query WebSocket for mailbox instead of ag-cosmos-helper ([9a23c34](https://github.com/Agoric/agoric-sdk/commit/9a23c344e3d2c1980e27db23e3caa306a9bd655f))
+* **solo:** watch for mailbox updates; not every Tendermint block ([35e9c87](https://github.com/Agoric/agoric-sdk/commit/35e9c87f263f9a6c7f0471ed268c8f52126a6dd6))
+* **swing-store:** be resilient to Node.js 16.x fs.rmSync ([990f909](https://github.com/Agoric/agoric-sdk/commit/990f909bfb90a1ef34ebba4677d88c9eb5106294))
+* **wallet:** handle solo restarts while deploying wallet backend ([a6c7bf8](https://github.com/Agoric/agoric-sdk/commit/a6c7bf8d781d3b2c5350d6b47d61b1ea9293b8d4))
+* **xsnap:** moddable resync for stack-trace changes metering ([34e5e18](https://github.com/Agoric/agoric-sdk/commit/34e5e1877eb74cf39fc32cf1cc53524c3f365635))
+* **xsnap:** supply missing file, line numbers based on sourceURL ([be3386c](https://github.com/Agoric/agoric-sdk/commit/be3386cbcd2255c469791830984fc385856226cc)), closes [#2578](https://github.com/Agoric/agoric-sdk/issues/2578)
+* better type declarations caught some non-bigInts ([1668094](https://github.com/Agoric/agoric-sdk/commit/1668094138e0819c56f578d544ba0a24b1c82443))
+* more missing Fars. kill "this" ([#3746](https://github.com/Agoric/agoric-sdk/issues/3746)) ([7bd027a](https://github.com/Agoric/agoric-sdk/commit/7bd027a879f98a9a3f30429ee1b54e6057efec42))
+* update error messages in tests. ([76d590d](https://github.com/Agoric/agoric-sdk/commit/76d590d11d6c6798f1f334c7b477b056f312a1b7))
+* XS + SES snapshots are deterministic (test) ([#3781](https://github.com/Agoric/agoric-sdk/issues/3781)) ([95c5f01](https://github.com/Agoric/agoric-sdk/commit/95c5f014b2808ef1b3a32302bb37b3894e449abe)), closes [#2776](https://github.com/Agoric/agoric-sdk/issues/2776)
+
+
+### Code Refactoring
+
+* clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
+
+
+
+### [8.1.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.2...@agoric/sdk@8.1.3) (2021-08-22)
+
+
+### Bug Fixes
+
+* **solo:** make solo-to-chain more robust ([ea0ef15](https://github.com/Agoric/agoric-sdk/commit/ea0ef15645fd851d82c9edf3ad862dcc256e172d))
+
+
+
+### [8.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.1...@agoric/sdk@8.1.2) (2021-08-21)
+
+
+### Bug Fixes
+
+* **cosmos:** the bootstrap block is not a simulation, either ([c4e4727](https://github.com/Agoric/agoric-sdk/commit/c4e472748b4eed4f7ad9650a5904a526e0c2e214))
+
+
+
+### [8.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.0...@agoric/sdk@8.1.1) (2021-08-21)
+
+**Note:** Version bump only for package @agoric/sdk
+
+
+
+
+
 ## [8.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.0.1-alpha3...@agoric/sdk@8.1.0) (2021-08-18)
 
 

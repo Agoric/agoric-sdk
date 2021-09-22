@@ -235,7 +235,7 @@ async function buildSwingset(
   // other inbound messages.
   const queuedMoveTimeForward = withInputQueue(
     async function moveTimeForward() {
-      const now = Math.floor(Date.now() / intervalMillis);
+      const now = Date.now();
       try {
         if (timer.poll(now)) {
           await processKernel();
@@ -323,6 +323,10 @@ export default async function start(basedir, argv) {
     resetOutdatedState,
   } = d;
 
+  // Start timer here!
+  startTimer(800);
+  resetOutdatedState();
+
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
@@ -390,10 +394,6 @@ export default async function start(basedir, argv) {
       }
     }),
   );
-
-  // Start timer here!
-  startTimer(1200);
-  resetOutdatedState();
 
   log.info(`swingset running`);
   swingSetRunning = true;

@@ -20,9 +20,8 @@ import { makeBridgeManager } from './bridge.js';
 import { makeNameHubKit } from './nameHub.js';
 import {
   CENTRAL_ISSUER_NAME,
-  fakeIssuerEntries,
+  demoIssuerEntries,
   fromCosmosIssuerEntries,
-  fromPegasusIssuerEntries,
 } from './issuers';
 
 const NUM_IBC_PORTS = 3;
@@ -265,11 +264,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         bankDenom: CENTRAL_DENOM_NAME,
         bankPayment: centralBootstrapPayment,
       }),
-      ...fromPegasusIssuerEntries,
+      // We still create demo currencies, but not obviously fake ones unless
+      // $FAKE_CURRENCIES is given.
+      ...demoIssuerEntries(noFakeCurrencies),
     ];
-    if (!noFakeCurrencies) {
-      rawIssuerEntries.push(...fakeIssuerEntries);
-    }
 
     const issuerEntries = await Promise.all(
       rawIssuerEntries.map(async entry => {
@@ -838,8 +836,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     // environments.
     const spawner = E(vats.spawner).buildSpawner(vatAdminSvc);
 
+    const localTimerService = E(vats.timer).createTimerService(devices.timer);
+
     // Needed for DApps, maybe for user clients.
-    const uploads = E(vats.uploads).getUploads();
+    const scratch = E(vats.uploads).getUploads();
 
     // Only create the plugin manager if the device exists.
     let plugin;
@@ -876,11 +876,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     return allComparable(
       harden({
         ...(plugin ? { plugin } : {}),
-        // TODO: Our preferred name is "scratch", but there are many Dapps
-        // that use "uploads".
-        scratch: uploads,
-        uploads,
+        scratch,
         spawner,
+        localTimerService,
         network: vats.network,
         http: httpRegCallback,
         vattp: makeVattpFrom(vats),
@@ -947,32 +945,43 @@ export function buildRootObject(vatPowers, vatParameters) {
 
         // ag-setup-solo runs this.
         case 'client': {
-          assert(FIXME_GCI, X`client must be given GCI`);
+          let localBundle;
+          let chainBundle;
+          const deprecated = {};
 
-          const localTimerService = await E(vats.timer).createTimerService(
-            devices.timer,
-          );
-          await registerNetworkProtocols(vats, bridgeManager, null);
+          // Tell the http server about our presences.  This can be called in
+          // any order (whether localBundle and/or chainBundle are set or not).
+          const updatePresences = () =>
+            E(vats.http).setPresences(localBundle, chainBundle, deprecated);
 
-          await setupCommandDevice(vats.http, devices.command, {
-            client: true,
-          });
-          await addRemote(FIXME_GCI);
-          // addEgress(..., index, ...) is called in vat-provisioning.
-          const demoProvider = await E(vats.comms).addIngress(
-            FIXME_GCI,
-            PROVISIONER_INDEX,
-          );
-          const localBundle = await createLocalBundle(
-            vats,
-            devices,
-            vatAdminSvc,
-          );
-          await E(vats.http).setPresences(localBundle);
-          const bundle = await E(demoProvider).getDemoBundle();
-          await E(vats.http).setPresences(localBundle, bundle, {
-            localTimerService,
-          });
+          const addLocalPresences = async () => {
+            await registerNetworkProtocols(vats, bridgeManager, null);
+
+            await setupCommandDevice(vats.http, devices.command, {
+              client: true,
+            });
+            localBundle = await createLocalBundle(vats, devices, vatAdminSvc);
+
+            // TODO: Remove this alias when we can.
+            deprecated.uploads = localBundle.scratch;
+            await updatePresences();
+          };
+
+          const addChainPresences = async () => {
+            assert(FIXME_GCI, X`client must be given GCI`);
+            await addRemote(FIXME_GCI);
+            // addEgress(..., index, ...) is called in vat-provisioning.
+            const chainProvider = E(vats.comms).addIngress(
+              FIXME_GCI,
+              PROVISIONER_INDEX,
+            );
+            chainBundle = await E(chainProvider).getChainBundle();
+            await updatePresences();
+          };
+
+          // We race to add presences, regardless of order.  This allows a solo
+          // REPL to be useful even if only some of the presences have loaded.
+          await Promise.all([addLocalPresences(), addChainPresences()]);
           break;
         }
 
@@ -997,9 +1006,9 @@ export function buildRootObject(vatPowers, vatParameters) {
           // This is necessary for fake-chain, which does not have Cosmos SDK
           // transactions to provision its client.
           let nonce = 0;
-          const demoProvider = Far('demoProvider', {
+          const chainProvider = Far('chainProvider', {
             // build a chain-side bundle for a client.
-            async getDemoBundle(nickname) {
+            async getChainBundle(nickname) {
               nonce += 1;
               if (giveMeAllTheAgoricPowers) {
                 // NOTE: This is a special exception to the security model,
@@ -1019,14 +1028,11 @@ export function buildRootObject(vatPowers, vatParameters) {
           });
           await Promise.all(
             hardcodedClientAddresses.map(async addr => {
-              const { transmitter, setReceiver } = await E(
-                vats.vattp,
-              ).addRemote(addr);
-              await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+              await addRemote(addr);
               await E(vats.comms).addEgress(
                 addr,
                 PROVISIONER_INDEX,
-                demoProvider,
+                chainProvider,
               );
             }),
           );

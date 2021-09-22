@@ -14,17 +14,6 @@ import { assertKeywordName, getKeywords } from './cleanProposal.js';
  */
 
 /**
- * @callback AddIssuerToInstanceRecord
- *
- * Add an issuer and its keyword to the instanceRecord for the
- * contract instance
- *
- * @param {Keyword} keyword
- * @param {IssuerRecord} issuerRecord
- * @returns {void}
- */
-
-/**
  * @callback GetInstanceRecord
  * @returns {InstanceRecord}
  */

@@ -30,9 +30,21 @@
     staker: "{{ STAKER }}-{{ inventory_hostname }}"
   when: inventory_hostname != STAKER_NODE
 
+- name: "Find staking_denom from {{ STAKER_SELF_DELEGATION }}"
+  set_fact:
+    staking_denom: "{{ STAKER_SELF_DELEGATION | regex_search('^[0-9]*(.*)', '\\1') | first }}"
+
 - name: "Specially set JSON valconspub"
   set_fact:
     valconspub: "{{ lookup('file', data + '/' + inventory_hostname + '/pubkey') | string }}"
+
+- name: "Wait for transfer of {{ staking_denom }} to arrive at {{ inventory_hostname }}"
+  shell: "\
+    ag-cosmos-helper query bank balances {{ staker_address.stdout }}"
+  register: staker_balance
+  until: staker_balance.stdout.find(staking_denom) != -1
+  delay: 10
+  retries: 60
 
 - name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"

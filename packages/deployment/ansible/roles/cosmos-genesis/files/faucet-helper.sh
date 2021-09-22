@@ -5,21 +5,18 @@ thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
 
 MAX_LINES=-1
-DELEGATE_COINS=62000000ubld,9300000urun
-SOLO_COINS=250000000000urun
+STAKE=75000000ubld
+# GIFT=251000000000urun
+GIFT=100000000urun
+# SOLO_COINS=100000000urun
+SOLO_COINS=220000000000urun,75000000ubld
+
 
 OP=$1
 shift
 
-case $OP in
-show-faucet-address)
-  exec ag-cosmos-helper --home=$FAUCET_HOME \
-    keys show -a \
-    --keyring-backend=test \
-    -- faucet
-  exit $?
-  ;;
-esac
+ACH="ag-cosmos-helper --home=$FAUCET_HOME --log_level=info"
+FAUCET_ADDR=$($ACH keys show -a faucet)
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
 IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
@@ -32,6 +29,8 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
 
   # echo "Checking if $selected is alive"
   if [[ $(curl -s http://$selected/status | jq .result.sync_info.catching_up) == false ]]; then
+    QUERY="$ACH query --node=tcp://$selected"
+    TX="$ACH tx --node=tcp://$selected --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
     case $OP in
     debug)
       echo "would try $selected"
@@ -39,20 +38,35 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
     add-egress)
       NAME=$1
       ADDR=$2
-      if ag-cosmos-helper query swingset egress "$ADDR" --chain-id=$chainName; then
-        # Already provisioned.
+      if out=$($QUERY swingset egress -- "$ADDR" 2>&1); then
+        echo "$NAME has already tapped the faucet: $ADDR" 1>&2
+        echo "$out"
         exit 1
       fi
-      ag-cosmos-helper --home=$FAUCET_HOME \
-        tx swingset provision-one \
-        --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
-        --yes --broadcast-mode=block \
-        --from=faucet -- "$NAME" "$ADDR"
-      exec ag-cosmos-helper --home=$FAUCET_HOME \
-        tx bank send \
-        --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
-        --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=block \
-        -- faucet "$ADDR" "$SOLO_COINS"
+      if echo "$out" | grep -q 'egress not found'; then :
+      else
+        echo "$out" 1>&2
+        exit 2
+      fi
+      # Send the message in a single transaction.
+      body0=$($TX swingset provision-one --generate-only --gas=600000 -- "$NAME" "$ADDR")
+      msg1=$($TX bank send --generate-only --gas=600000 -- "$FAUCET_ADDR" "$ADDR" "$SOLO_COINS" | jq .body.messages)
+      txfile="/tmp/faucet.$$.json"
+      trap "rm -f $txfile" EXIT
+      echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
+      $TX sign "$txfile" | $TX broadcast $BROADCAST_FLAGS - | tee /dev/stderr | grep -q '^code: 0'
+      exit $? 
+      ;;
+    gift)
+      ADDR=$1
+      if $QUERY bank balances -- "$ADDR" | grep urun; then
+        exit 0
+      fi
+      echo sending "$GIFT" to "$ADDR"
+      exec $TX \
+        bank send \
+        --broadcast-mode=block \
+        -- faucet "$ADDR" "$GIFT"
       ;;
     add-delegate)
       UNIQUE=yes
@@ -83,17 +97,15 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         fi
       fi
 
-      if ag-cosmos-helper --home=$FAUCET_HOME \
-        tx bank send \
-        --node=tcp://$selected --chain-id=$chainName --keyring-backend=test \
-        --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=block \
-        -- faucet "$ADDR" "$DELEGATE_COINS"; then
+      if $TX \
+        bank send \
+        --broadcast-mode=block \
+        -- faucet "$ADDR" "$STAKE"; then
         # Record the information before exiting.
         sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
-        echo "$ADDR:$DELEGATE_COINS:$NAME" >> $thisdir/cosmos-delegates.txt
+        echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0
       fi
-      exit $?
       ;;
     *)
       echo 1>&2 "Unknown operation $OP"

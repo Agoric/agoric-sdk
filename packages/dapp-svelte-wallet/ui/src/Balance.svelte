@@ -21,8 +21,8 @@
 <div class="balance">
     <img alt="icon"
         src={icons[item.brandPetname] ?? defaultIcon}
-        height="28px"
-        width="28px" />
+        height="32px"
+        width="32px" />
     <div>
         <Purse {item}
             details={false}

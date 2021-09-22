@@ -1,6 +1,6 @@
 {
   "name": "@agoric/stat-logger",
-  "version": "0.4.21",
+  "version": "0.4.22",
   "description": "Simple library for logging and graphing performance statistics",
   "type": "module",
   "main": "src/index.js",
@@ -15,7 +15,7 @@
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
-  "dependencies": {
+  "peerDependencies": {
     "canvas": "^2.6.1",
     "vega": "^5.10.0",
     "vega-canvas": "^1.2.1"

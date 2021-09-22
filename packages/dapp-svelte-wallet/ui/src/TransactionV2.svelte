@@ -10,9 +10,9 @@
   import Chip from "../lib/Chip.svelte";
 
   export let item;
-  export let summary = true;
-  export let summaryLine = 0;
-  export let details = true;
+  export let dismiss;
+
+  let isPending = false;
 
   function formatDateNow(stamp) {
     if (!stamp) {
@@ -46,6 +46,7 @@
     decline: "Declined",
     rejected: "Rejected",
     accept: "Accepted",
+    complete: "Accepted",
     pending: "Pending",
     proposed: "Proposed",
   };
@@ -56,7 +57,13 @@
     decline: "error",
     pending: "alert",
     proposed: "grey",
+    complete: "success",
   };
+
+  const accept = () => {
+    isPending = true;
+    E(walletP).acceptOffer(offerId).catch(makeRejected('Cannot accept'));
+  }
 
   $: ({
     instancePetname,
@@ -68,7 +75,7 @@
     proposalForDisplay: { give = {}, want = {} } = {},
   } = item);
 
-  $: status = item.status || 'proposed';
+  $: status = item.status || (isPending ? 'pending' : 'proposed');
 </script>
 
 <style>
@@ -109,7 +116,8 @@
   }
 </style>
 
-<Request>
+<Request dismiss={dismiss}
+  completed={status === 'accept' || status === 'decline' || status === 'complete'}>
   <span slot="header">
     Incoming Offer
   </span>
@@ -126,7 +134,7 @@
 
   <div>
     <Petname name={instancePetname} board={instanceHandleBoardId} />
-    (via <span class="blue">{dappOrigin || origin}</span>)  
+    <i>via</i> <span class="blue">{dappOrigin || origin}</span> 
   </div>
 
   <div>
@@ -139,9 +147,9 @@
         <h6>Give {role}</h6>
         <div class="token">
           <img alt="icon"
-            src={icons[item.brandPetname] ?? defaultIcon}
-            height="28px"
-            width="28px" />
+            src={icons[amount.brand.petname] ?? defaultIcon}
+            height="32px"
+            width="32px" />
             <div>
               <Amount {amount} displayInfo={amount.displayInfo} /> from
               <Petname name={pursePetname} />
@@ -154,9 +162,9 @@
         <h6>Want {role}</h6>
         <div class="token">
           <img alt="icon"
-            src={icons[item.brandPetname] ?? defaultIcon}
-            height="28px"
-            width="28px" />
+            src={icons[amount.brand.petname] ?? defaultIcon}
+            height="32px"
+            width="32px" />
             <div>
               <Amount {amount} displayInfo={amount.displayInfo} /> into
               <Petname name={pursePetname} />
@@ -170,9 +178,9 @@
         <div class="token">
           {#if feePursePetname}
             <img alt="icon"
-              src={icons[item.brandPetname] ?? defaultIcon}
-              height="28px"
-              width="28px" />
+              src={icons[fee.brand.petname] ?? defaultIcon}
+              height="32px"
+              width="32px" />
           {/if}
           <div>
             <Amount amount={fee} displayInfo={fee.displayInfo} />
@@ -200,8 +208,7 @@
     {/if}
     {#if status === 'proposed'}
     <div>
-    <Chip on:click={() =>
-      E(walletP).acceptOffer(offerId).catch(makeRejected('Cannot accept'))}
+    <Chip on:click={accept}
       selected icon="check" color="success">
       Accept
     </Chip>

@@ -30,12 +30,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-yarn-
     
-    - name: install node-canvas dependencies
-      run: |
-        set -e
-        sudo apt update -y
-        sudo apt install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
-
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
     - name: yarn install

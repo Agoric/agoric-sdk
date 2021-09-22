@@ -62,7 +62,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
-    noFakeCurrencies: process.env.NO_FAKE_CURRENCIES,
+    noFakeCurrencies: !process.env.FAKE_CURRENCIES,
     bootMsg: {
       supplyCoins: [
         { denom: 'ubld', amount: `${50_000n * 10n ** 6n}` },
@@ -104,12 +104,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const withBlockQueue = makeWithQueue();
   const unhandledSimulateBlock = withBlockQueue(
     async function unqueuedSimulateBlock() {
-      const actualStart = Date.now();
       // Gather up the new messages into the latest block.
       thisBlock.push(...intoChain);
       intoChain = [];
 
-      blockTime += PRETEND_BLOCK_DELAY;
+      blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
       await blockManager(
@@ -143,7 +142,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
       // We now advance to the next block.
       thisBlock = [];
-      blockTime += scaleBlockTime(Date.now() - actualStart);
 
       clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define
@@ -168,26 +166,33 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
     intoChain.push([newMessages, acknum]);
-    if (!delay) {
+    // Only actually simulate a block if we're not in bootstrap.
+    if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
       await simulateBlock();
     }
   }
 
-  let genesisBlockP;
-  if (!blockHeight) {
+  const bootSimChain = async () => {
+    if (blockHeight) {
+      return;
+    }
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    genesisBlockP = blockManager(
-      { type: 'BOOTSTRAP_BLOCK', blockTime },
-      savedChainSends,
-    ).then(() => (blockHeight = initialHeight));
-  }
-  await genesisBlockP;
+    await blockManager({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    blockHeight = initialHeight;
+  };
 
-  // Start the first pretend block.
-  nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+  const enableDeliveries = () => {
+    // Start the first pretend block.
+    nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+  };
+
+  bootSimChain().then(enableDeliveries, e => {
+    console.error(`Cannot boot sim chain:`, e);
+    process.exit(1);
+  });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
   return makeBatchedDeliver(deliver, batchDelayMs);
