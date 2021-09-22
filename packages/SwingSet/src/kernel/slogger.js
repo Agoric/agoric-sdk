@@ -88,7 +88,13 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
     slogCallbacks,
   );
   const dummySlogger = harden({
-    provideVatSlogger: reg('provideVatSlogger', () => 0),
+    provideVatSlogger: reg('provideVatSlogger', () =>
+      harden({
+        vatSlog: {
+          delivery: () => () => 0,
+        },
+      }),
+    ),
     vatConsole: reg('vatConsole', () => makeConsole('disabled slogger')),
     startup: reg('startup', () => () => 0), // returns nop finish() function
     replayVatTranscript: reg('replayVatTranscript', () => () => 0),
