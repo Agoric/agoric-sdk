@@ -1,6 +1,7 @@
 // @ts-check
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeVatTranslators } from '../vatTranslator.js';
+import { insistVatDeliveryResult } from '../../message.js';
 
 /** @param { number } max */
 export const makeLRU = max => {
@@ -257,14 +258,29 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type { string | undefined } */
   let lastVatID;
 
-  /** @type {(vatID: string, d: VatDeliveryObject) => Promise<VatDeliveryResult> } */
-  async function deliverToVat(vatID, delivery) {
+  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
+  async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
     lastVatID = vatID;
 
     const recreate = true; // PANIC in the failure case
+    // create the worker and replay the transcript, if necessary
     const { manager } = await ensureVatOnline(vatID, recreate);
-    return manager.deliver(delivery);
+
+    // then log the delivery so it appears after transcript replay
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const crankNum = kernelKeeper.getCrankNumber();
+    const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
+    /** @type { SlogFinishDelivery } */
+    const slogFinish = vs.delivery(crankNum, deliveryNum, kd, vd);
+
+    // make the delivery
+    const deliveryResult = await manager.deliver(vd);
+    insistVatDeliveryResult(deliveryResult);
+
+    // log the delivery results, and return to caller for evaluation
+    slogFinish(deliveryResult);
+    return deliveryResult;
   }
 
   /**

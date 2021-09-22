@@ -428,18 +428,13 @@ export default function buildKernel(
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const crankNum = kernelKeeper.getCrankNumber();
-    const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
     const { meterID } = vatKeeper.getOptions();
-    /** @type { SlogFinishDelivery } */
-    const finish = kernelSlog.delivery(vatID, crankNum, deliveryNum, kd, vd);
     // Ensure that the vatSlogger is available before clist translation.
-    kernelSlog.provideVatSlogger(vatID);
+    const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     try {
       // eslint-disable-next-line no-use-before-define
-      const deliveryResult = await vatWarehouse.deliverToVat(vatID, vd);
+      const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
-      finish(deliveryResult);
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
         // probably a metering fault, or a bug in the vat's dispatch()
