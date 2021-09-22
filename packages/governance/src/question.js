@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { Far, passStyleOf } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';

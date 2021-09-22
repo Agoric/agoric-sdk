@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { E } from '@agoric/eventual-send';
 import { allComparable } from '@agoric/same-structure';
