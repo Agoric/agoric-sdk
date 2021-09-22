@@ -1,7 +1,8 @@
 /* global WeakRef FinalizationRegistry */
+import { performance } from 'perf_hooks';
+import fs from 'fs';
 // import '@agoric/install-ses';
 import '../tools/install-ses-debug.js';
-import fs from 'fs';
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
@@ -14,6 +15,9 @@ import { makeLocalVatManagerFactory } from '../src/kernel/vatManager/manager-loc
 import { makeNodeSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-node.js';
 import { startSubprocessWorker } from '../src/spawnSubprocessWorker.js';
 import { requireIdentical } from '../src/kernel/vatManager/transcript.js';
+import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
+import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import engineGC from '../src/engine-gc.js';
 
 async function makeBundles() {
   const srcGE = rel =>
@@ -40,18 +44,32 @@ function compareSyscalls(vatID, originalSyscall, newSyscall) {
   return error;
 }
 
-async function replay(transcriptFile, worker = 'xs-worker') {
+// relative timings:
+// 3.8s v8-false, 27.5s v8-gc
+// 10.8s xs-no-gc, 15s xs-gc
+const worker = 'xs-worker';
+const gcEveryCrank = false;
+
+async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
   let factory;
 
   const fakeKernelKeeper = {
     provideVatKeeper: _vatID => ({
       addToTranscript: () => undefined,
+      getLastSnapshot: () => undefined,
     }),
   };
   const kernelSlog = { write() {} };
   const testLog = undefined;
-  const gcTools = { WeakRef, FinalizationRegistry, waitUntilQuiescent };
+  const meterControl = makeDummyMeterControl();
+  const gcTools = harden({
+    WeakRef,
+    FinalizationRegistry,
+    waitUntilQuiescent,
+    gcAndFinalize: makeGcAndFinalize(gcEveryCrank ? engineGC : false),
+    meterControl: makeDummyMeterControl(),
+  });
   const allVatPowers = { testLog };
 
   if (worker === 'xs-worker') {
@@ -127,6 +145,8 @@ async function replay(transcriptFile, worker = 'xs-worker') {
         vatConsole: console,
         vatParameters,
         compareSyscalls,
+        useTranscript: true,
+        gcEveryCrank,
       };
       const vatSyscallHandler = undefined;
       manager = await factory.createFromBundle(
@@ -162,12 +182,13 @@ async function replay(transcriptFile, worker = 'xs-worker') {
 async function run() {
   const args = process.argv.slice(2);
   console.log(`argv`, args);
-  if (args.length < 2) {
+  if (args.length < 1) {
     console.log(`replay-one-vat.js transcript.sst`);
+    return;
   }
   const [transcriptFile] = args;
   console.log(`using transcript ${transcriptFile}`);
-  await replay(transcriptFile, 'local');
+  await replay(transcriptFile);
 }
 
 run().catch(err => console.log('RUN ERR', err));
