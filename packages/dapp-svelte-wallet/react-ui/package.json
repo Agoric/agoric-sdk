@@ -1,0 +1,135 @@
+{
+  "name": "react-ui",
+  "version": "0.0.1",
+  "description": "Wallet React frontend",
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "homepage": ".",
+  "type": "module",
+    "dependencies": {
+    "@agoric/assert": "*",
+    "@agoric/captp": "*",
+    "@agoric/eventual-send": "*",
+    "@agoric/notifier": "*",
+    "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "^4.11.2",
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "react-scripts": "4.0.3",
+    "ses": "^0.12.6"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "agoric": "*",
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-react": "^7.23.1",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "prettier": "^2.2.1",
+    "rimraf": "^3.0.2",
+    "@babel/eslint-plugin": "^7.12.1",
+    "babel-eslint": "^10.1.0"
+  },
+  "scripts": {
+    "start": "yarn build:ses && react-scripts start",
+    "build": "yarn build:ses && yarn build:react",
+    "build:ses": "cp ./node_modules/ses/dist/lockdown.umd.js public/",
+    "build:react": "react-scripts build",
+    "lint-check": "eslint '**/*.{js,jsx}'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "ignorePatterns": [
+      "**/*.umd.js",
+      "**/generated/*"
+    ],
+    "parser": "babel-eslint",
+    "parserOptions": {
+      "ecmaFeatures": {
+        "jsx": true
+      },
+      "ecmaVersion": 2018,
+      "sourceType": "module"
+    },
+    "plugins": [
+      "react"
+    ],
+    "rules": {
+      "react/prop-types": "off"
+    },
+    "env": {
+      "browser": true
+    },
+    "settings": {
+      "import/resolver": {
+        "node": {
+          "extensions": [
+            ".js",
+            ".jsx"
+          ]
+        }
+      },
+      "react": {
+        "version": "detect"
+      }
+    },
+    "extends": [
+      "@agoric",
+      "plugin:react/recommended"
+    ]
+  },
+  "eslintIgnore": [
+    "dist/",
+    "conf/",
+    "build/",
+    ".cache",
+    "node_modules"
+  ],
+  "staticFiles": {
+    "staticPath": [
+      {
+        "staticPath": "public/lib",
+        "staticOutDir": "lib"
+      },
+      {
+        "staticPath": "public/assets"
+      }
+    ],
+    "excludeGlob": "**/*.js",
+    "watcherGlob": "**/*.html"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": [
+          "*.js",
+          "*.cjs",
+          "*.mjs"
+        ]
+      }
+    ]
+  },
+  "browserslist": {
+    "production": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
