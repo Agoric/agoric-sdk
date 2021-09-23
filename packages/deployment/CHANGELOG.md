@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.14...@agoric/deployment@1.29.0) (2021-09-23)
+
+
+### Features
+
+* **deployment:** use latest faucet-helper.sh from testnet ([83f45f6](https://github.com/Agoric/agoric-sdk/commit/83f45f6be8112b9e74f687d9436963051d9e5308))
+
+
+### Bug Fixes
+
+* **deployment:** wait for staking tokens before creating validator ([59952d3](https://github.com/Agoric/agoric-sdk/commit/59952d3afd78ceb9b00eac5a8ccc84bef9d2ee4b))
+
+
+
 ### [1.28.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.28.13...@agoric/deployment@1.28.14) (2021-09-15)
 
 **Note:** Version bump only for package @agoric/deployment

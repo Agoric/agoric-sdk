@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.34.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.0...@agoric/cosmic-swingset@0.34.1) (2021-09-23)
+
+
+### Features
+
+* **solo:** make client objects appear earlier, parallelise chain ([656514e](https://github.com/Agoric/agoric-sdk/commit/656514e5937389c57e139bc1302fa435edd2e674))
+
+
+### Bug Fixes
+
+* **sim-chain:** update `chainTimerService` correctly ([3f49a77](https://github.com/Agoric/agoric-sdk/commit/3f49a779f253ff01fe7e71d0295efbfa99b669a9))
+
+
+
 ## [0.34.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.33.5...@agoric/cosmic-swingset@0.34.0) (2021-09-15)
 
 

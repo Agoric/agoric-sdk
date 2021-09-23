@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.9.0...@agoric/dapp-svelte-wallet-ui@1.10.0) (2021-09-23)
+
+
+### Features
+
+* **wallet:** Add dismiss option for dapp connections ([#3836](https://github.com/Agoric/agoric-sdk/issues/3836)) ([f193fa2](https://github.com/Agoric/agoric-sdk/commit/f193fa225c6e2e88b067d43e22b1fcc1230ebb98))
+* **wallet:** Don't show autodeposit payments in requests, smooth out rendering animations ([#3832](https://github.com/Agoric/agoric-sdk/issues/3832)) ([b03c7a5](https://github.com/Agoric/agoric-sdk/commit/b03c7a5d44093c356d29e807a93041a760b1a029))
+* **wallet:** Eagerly show pending state for approved offers ([#3846](https://github.com/Agoric/agoric-sdk/issues/3846)) ([20abcbe](https://github.com/Agoric/agoric-sdk/commit/20abcbed5bfab6c5a8ad19462b9b726fd2d6490b))
+* **wallet:** Fix icons and list rendering bugs ([#3827](https://github.com/Agoric/agoric-sdk/issues/3827)) ([02b7554](https://github.com/Agoric/agoric-sdk/commit/02b7554076bddbe878756ac44af736c4b5d282c2))
+
+
+
 ## [1.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet-ui@1.8.2...@agoric/dapp-svelte-wallet-ui@1.9.0) (2021-09-15)
 
 
