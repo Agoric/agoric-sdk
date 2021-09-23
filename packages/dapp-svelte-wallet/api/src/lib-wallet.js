@@ -35,6 +35,10 @@ import '@agoric/zoe/exported.js';
 import './internal-types.js';
 import './types.js';
 
+// The localTimerService uses a resolution of 1 millisecond.
+const LOCAL_TIMER_NO_DELAY = 0n;
+const LOCAL_TIMER_ONE_SECOND = 1000n;
+
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
@@ -49,6 +53,45 @@ const cmp = (a, b) => {
 };
 
 /**
+ * @param {ERef<TimerService> | undefined} timerService
+ * @param {(stamp: bigint) => void} updateClock
+ * @param {bigint} timerDelay
+ * @param {bigint} timerInterval
+ * @returns {Promise<void>}
+ */
+const initializeClock = async (
+  timerService,
+  updateClock,
+  timerDelay,
+  timerInterval,
+) => {
+  if (!timerService) {
+    return;
+  }
+
+  // Get a baseline.
+  const time0 = await E(timerService).getCurrentTimestamp();
+  updateClock(time0);
+
+  const notifier = await E(timerService).makeNotifier(
+    timerDelay,
+    timerInterval,
+  );
+
+  // Subscribe to future updates.
+  observeNotifier(notifier, {
+    updateState: updateClock,
+  }).catch(e => {
+    console.error(
+      `Observing localTimerService`,
+      timerService,
+      'failed with:',
+      e,
+    );
+  });
+};
+
+/**
  * @typedef {Object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
  * @property {Board} board
@@ -57,6 +100,7 @@ const cmp = (a, b) => {
  * @property {MyAddressNameAdmin} myAddressNameAdmin
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
+ * @property {ERef<TimerService>} [localTimerService]
  * @param {MakeWalletParams} param0
  */
 export function makeWallet({
@@ -67,7 +111,48 @@ export function makeWallet({
   myAddressNameAdmin,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
+  localTimerService,
 }) {
+  /**
+   * The current timestamp, in milliseconds (if it is known).
+   *
+   * @type {number | undefined}
+   */
+  let nowStamp;
+  let lastSequence = 0;
+
+  /**
+   * Add or update a record's `meta` property.  Note that the Stamps are in
+   * milliseconds since the epoch, and they are only added if this backend has
+   * been supplied a `localTimerService`.
+   *
+   * The `sequence` is guaranteed to be monotonically increasing, even if this
+   * backend doesn't have a `localTimerService`, or the stamp has not yet
+   * increased.
+   *
+   * @template {Record<string, any>} T
+   * @param {T} record what to add metadata to
+   * @returns {T & { meta: T['meta'] & RecordMetadata }}
+   */
+  const addMeta = record => {
+    const { meta: oldMeta = {} } = record;
+    /** @type {Record<string, any> & T['meta']} */
+    const meta = { ...oldMeta };
+    if (!meta.sequence) {
+      // Add a sequence number to the record.
+      lastSequence += 1;
+      meta.sequence = lastSequence;
+    }
+    if (nowStamp !== undefined) {
+      if (!meta.creationStamp) {
+        // Set the creationStamp to be right now.
+        meta.creationStamp = nowStamp;
+      }
+      meta.updatedStamp = nowStamp;
+    }
+    return { ...record, meta };
+  };
+
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
   const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
@@ -484,10 +569,10 @@ export function makeWallet({
       idToSeat.delete(id);
 
       const offer = idToOffer.get(id);
-      const completedOffer = {
+      const completedOffer = addMeta({
         ...offer,
         status: 'complete',
-      };
+      });
       idToOffer.set(id, completedOffer);
       updateInboxState(id, completedOffer);
       idToNotifierP.delete(id);
@@ -524,7 +609,7 @@ export function makeWallet({
 
     const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
-    // Track from whence our the payment came.
+    // Track from whence our payment came.
     /** @type {Map<Payment, Purse>} */
     const paymentToPurse = new Map();
 
@@ -625,7 +710,7 @@ export function makeWallet({
     const issuer = await issuerP;
     const recP = brandTable.hasByIssuer(issuer)
       ? brandTable.getByIssuer(issuer)
-      : brandTable.initIssuer(issuer);
+      : brandTable.initIssuer(issuer, addMeta);
     const { brand } = await recP;
     await initIssuerToBoardId(issuer);
     const addBrandPetname = () => {
@@ -660,6 +745,11 @@ export function makeWallet({
     [],
   ));
 
+  /**
+   * @param {Petname} petname
+   * @param {ERef<{receive: (payment: Payment) => Promise<void>}>} actions
+   * @param {string} [address]
+   */
   const addContact = async (petname, actions, address = undefined) => {
     const already = await E(board).has(actions);
     let depositFacet;
@@ -684,11 +774,13 @@ export function makeWallet({
       )}`,
     );
 
-    const contact = harden({
-      actions,
-      address,
-      depositBoardId,
-    });
+    const contact = harden(
+      addMeta({
+        actions,
+        address,
+        depositBoardId,
+      }),
+    );
 
     contactMapping.suggestPetname(petname, contact);
     contactsUpdater.updateState([...contactMapping.petnameToVal.entries()]);
@@ -874,7 +966,7 @@ export function makeWallet({
   } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
   function updateDapp(dappRecord) {
-    harden(dappRecord);
+    harden(addMeta(dappRecord));
     dappOrigins.set(dappRecord.origin, dappRecord);
     dappsUpdater.updateState([...dappOrigins.values()]);
   }
@@ -892,7 +984,7 @@ export function makeWallet({
       let reject;
       let approvalP;
 
-      dappRecord = {
+      dappRecord = addMeta({
         suggestedPetname,
         petname: suggestedPetname,
         origin,
@@ -908,20 +1000,20 @@ export function makeWallet({
             } else {
               petname = edgeMapping.suggestPetname(petname, origin);
             }
-            dappRecord = {
+            dappRecord = addMeta({
               ...dappRecord,
               petname,
-            };
+            });
             updateDapp(dappRecord);
             updateAllState();
             return dappRecord.actions;
           },
           enable() {
             // Enable the dapp with the attached petname.
-            dappRecord = {
+            dappRecord = addMeta({
               ...dappRecord,
               enable: true,
-            };
+            });
             edgeMapping.suggestPetname(dappRecord.petname, origin);
             updateDapp(dappRecord);
 
@@ -936,16 +1028,16 @@ export function makeWallet({
             }
             // Create a new, suspended-approval record.
             ({ resolve, reject, promise: approvalP } = makePromiseKit());
-            dappRecord = {
+            dappRecord = addMeta({
               ...dappRecord,
               enable: false,
               approvalP,
-            };
+            });
             updateDapp(dappRecord);
             return dappRecord.actions;
           },
         }),
-      };
+      });
 
       // Prepare the table entry to be updated.
       dappOrigins.init(origin, dappRecord);
@@ -968,13 +1060,15 @@ export function makeWallet({
       requestContext.dappOrigin || requestContext.origin || 'unknown';
     const { id: rawId } = rawOffer;
     const id = makeId(dappOrigin, rawId);
-    const offer = harden({
-      ...rawOffer,
-      rawId,
-      id,
-      requestContext: { ...requestContext, dappOrigin },
-      status: undefined,
-    });
+    const offer = harden(
+      addMeta({
+        ...rawOffer,
+        rawId,
+        id,
+        requestContext: { ...requestContext, dappOrigin },
+        status: undefined,
+      }),
+    );
     idToOffer.init(id, offer);
     idToOfferResultPromiseKit.init(id, makePromiseKit());
     await updateInboxState(id, offer);
@@ -992,12 +1086,14 @@ export function makeWallet({
     }
     idToOffer.set(
       id,
-      harden({
-        ...idToOffer.get(id),
-        installation,
-        instance,
-        invitationDetails,
-      }),
+      harden(
+        addMeta({
+          ...idToOffer.get(id),
+          installation,
+          instance,
+          invitationDetails,
+        }),
+      ),
     );
     await updateInboxState(id, idToOffer.get(id));
     return rawId;
@@ -1019,10 +1115,10 @@ export function makeWallet({
       return;
     }
     // Update status, drop the proposal
-    const declinedOffer = {
+    const declinedOffer = addMeta({
       ...offer,
       status: 'decline',
-    };
+    });
     idToOffer.set(id, declinedOffer);
     updateInboxState(id, declinedOffer);
   }
@@ -1037,10 +1133,10 @@ export function makeWallet({
       .then(_ => {
         idToComplete.delete(id);
         const offer = idToOffer.get(id);
-        const cancelledOffer = {
+        const cancelledOffer = addMeta({
           ...offer,
           status: 'cancel',
-        };
+        });
         idToOffer.set(id, cancelledOffer);
         updateInboxState(id, cancelledOffer);
       })
@@ -1062,20 +1158,20 @@ export function makeWallet({
       if (alreadyResolved) {
         return;
       }
-      const rejectOffer = {
+      const rejectOffer = addMeta({
         ...offer,
         status: 'rejected',
         error: `${e}`,
-      };
+      });
       idToOffer.set(id, rejectOffer);
       updateInboxState(id, rejectOffer);
     };
 
     try {
-      const pendingOffer = {
+      const pendingOffer = addMeta({
         ...offer,
         status: 'pending',
-      };
+      });
       idToOffer.set(id, pendingOffer);
       updateInboxState(id, pendingOffer);
       const compiledOffer = await idToCompiledOfferP.get(id);
@@ -1111,10 +1207,10 @@ export function makeWallet({
           // We got something back, so no longer pending or rejected.
           if (!alreadyResolved) {
             alreadyResolved = true;
-            const acceptedOffer = {
+            const acceptedOffer = addMeta({
               ...pendingOffer,
               status: 'accept',
-            };
+            });
             idToOffer.set(id, acceptedOffer);
             updateInboxState(id, acceptedOffer);
           }
@@ -1141,8 +1237,16 @@ export function makeWallet({
    */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
-    const paymentRecord = { ...preDisplay, actions, displayPayment };
-    payments.set(paymentRecord.payment, harden(paymentRecord));
+    const paymentRecord = addMeta({
+      ...preDisplay,
+      actions,
+      displayPayment,
+    });
+    if (payments.has(paymentRecord.payment)) {
+      payments.set(paymentRecord.payment, harden(paymentRecord));
+    } else {
+      payments.init(paymentRecord.payment, harden(paymentRecord));
+    }
     paymentsUpdater.updateState([...payments.values()]);
   };
 
@@ -1152,27 +1256,17 @@ export function makeWallet({
    */
   const addPayment = async (paymentP, depositTo = undefined) => {
     // We don't even create the record until we resolve the payment.
-    const payment = await paymentP;
-    const brand = await E(payment).getAllegedBrand();
+    const [payment, brand] = await Promise.all([
+      paymentP,
+      E(paymentP).getAllegedBrand(),
+    ]);
+
     const depositedPK = makePromiseKit();
 
-    /** @type {ERef<boolean>} */
-    let isAliveP = true;
-    if (brandTable.hasByBrand(brand)) {
-      isAliveP = E(brandTable.getByBrand(brand).issuer).isLive(payment);
-    }
-    const isAlive = await isAliveP;
-    if (!isAlive) {
-      // Nothing to do.
-      return;
-    }
-
     /** @type {PaymentRecord} */
-    let paymentRecord = {
+    let paymentRecord = addMeta({
       payment,
       brand,
-      issuer: undefined,
-      status: undefined,
       actions: Far('payment actions', {
         async deposit(purseOrPetname = undefined) {
           /** @type {Purse} */
@@ -1195,9 +1289,11 @@ export function makeWallet({
           const brandRecord =
             brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
           paymentRecord = {
-            ...paymentRecord,
             ...brandRecord,
-            status: 'pending',
+            ...addMeta({
+              ...paymentRecord,
+              status: 'pending',
+            }),
           };
           updatePaymentRecord(paymentRecord);
           // Now try depositing.
@@ -1206,10 +1302,12 @@ export function makeWallet({
             .then(
               depositedAmount => {
                 paymentRecord = {
-                  ...paymentRecord,
-                  status: 'deposited',
-                  depositedAmount,
                   ...brandRecord,
+                  ...addMeta({
+                    ...paymentRecord,
+                    status: 'deposited',
+                    depositedAmount,
+                  }),
                 };
                 updatePaymentRecord(paymentRecord);
                 depositedPK.resolve(depositedAmount);
@@ -1223,10 +1321,10 @@ export function makeWallet({
                 if (purseOrPetname === undefined) {
                   // Error in auto-deposit purse, just fail.  They can try
                   // again.
-                  paymentRecord = {
+                  paymentRecord = addMeta({
                     ...paymentRecord,
                     status: undefined,
-                  };
+                  });
                   depositedPK.reject(e);
                 } else {
                   // Error in designated deposit, so retry automatically without
@@ -1246,9 +1344,11 @@ export function makeWallet({
           if (!issuer) {
             const brandRecord = brandTable.getByBrand(brand);
             paymentRecord = {
-              ...paymentRecord,
               ...brandRecord,
-              issuerBoardId: issuerToBoardId.get(brandRecord.issuer),
+              ...addMeta({
+                ...paymentRecord,
+                issuerBoardId: issuerToBoardId.get(brandRecord.issuer),
+              }),
             };
             updatePaymentRecord(paymentRecord);
           }
@@ -1262,17 +1362,16 @@ export function makeWallet({
           // Fetch the current amount of the payment.
           const lastAmount = await E(issuer).getAmountOf(payment);
 
-          paymentRecord = {
+          paymentRecord = addMeta({
             ...paymentRecord,
             lastAmount,
-          };
+          });
           updatePaymentRecord(paymentRecord);
           return true;
         },
       }),
-    };
+    });
 
-    payments.init(payment, harden(paymentRecord));
     const refreshed = await paymentRecord.actions.refresh();
     if (!refreshed) {
       // Only update if the refresh didn't.
@@ -1360,6 +1459,11 @@ export function makeWallet({
       .then(value => acceptFn(petname, value));
   }
 
+  /**
+   * @param {Petname} suggestedPetname
+   * @param {string} issuerBoardId
+   * @param {string} [dappOrigin]
+   */
   async function suggestIssuer(
     suggestedPetname,
     issuerBoardId,
@@ -1377,6 +1481,11 @@ export function makeWallet({
     );
   }
 
+  /**
+   * @param {Petname} suggestedPetname
+   * @param {string} instanceHandleBoardId
+   * @param {string} [dappOrigin]
+   */
   async function suggestInstance(
     suggestedPetname,
     instanceHandleBoardId,
@@ -1394,6 +1503,11 @@ export function makeWallet({
     );
   }
 
+  /**
+   * @param {Petname} suggestedPetname
+   * @param {string} installationHandleBoardId
+   * @param {string} [dappOrigin]
+   */
   async function suggestInstallation(
     suggestedPetname,
     installationHandleBoardId,
@@ -1509,6 +1623,8 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  const { notifier: clockNotifier, updater: clockUpdater } = makeNotifierKit();
+
   const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
@@ -1563,11 +1679,6 @@ export function makeWallet({
     getPurse,
     getPurseIssuer,
     addOffer,
-    async addOfferInvitation(_offer, _invitation, _dappOrigin = undefined) {
-      // Will be part of the Rendezvous system, when landed.
-      // TODO unimplemented
-      assert.fail(X`Adding an invitation to an offer is unimplemented`);
-    },
     declineOffer,
     cancelOffer,
     acceptOffer,
@@ -1609,9 +1720,32 @@ export function makeWallet({
       );
       return E(namesByAddress).lookup(...path);
     },
+    getClockNotifier: () => clockNotifier,
   });
 
+  const updateNowStamp = bigStamp => {
+    // We convert the milliseconds from a bigint to a number (for easy
+    // Javascript date math).
+    const nextStamp = parseInt(`${bigStamp}`, 10);
+
+    if (nowStamp && nowStamp >= nextStamp) {
+      // Don't make an unnecessary update.
+      return;
+    }
+
+    nowStamp = nextStamp;
+    clockUpdater.updateState(nowStamp);
+  };
+
   const initialize = async () => {
+    // Subscribe to the timer service to update our stamp.
+    await initializeClock(
+      localTimerService,
+      updateNowStamp,
+      LOCAL_TIMER_NO_DELAY,
+      LOCAL_TIMER_ONE_SECOND,
+    );
+
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
@@ -1681,5 +1815,9 @@ export function makeWallet({
       feePurse,
     );
   };
-  return { admin: wallet, initialized: initialize(), importBankAssets };
+  return {
+    admin: wallet,
+    initialized: initialize(),
+    importBankAssets,
+  };
 }

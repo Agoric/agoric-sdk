@@ -65,14 +65,15 @@
 
 /**
  * @typedef {Object} PaymentRecord
- * @property {Issuer=} issuer
+ * @property {RecordMetadata} meta
+ * @property {Issuer} [issuer]
  * @property {Payment} payment
  * @property {Brand} brand
- * @property {'pending'|'deposited'|undefined} status
+ * @property {'pending'|'deposited'} [status]
  * @property {PaymentActions} actions
- * @property {Amount=} lastAmount
- * @property {Amount=} depositedAmount
- * @property {string=} issuerBoardId
+ * @property {Amount} [lastAmount]
+ * @property {Amount} [depositedAmount]
+ * @property {string} [issuerBoardId]
  *
  * @typedef {Object} PaymentActions
  * @property {(purseOrPetname?: (Purse | Petname)) => Promise<Value>} deposit

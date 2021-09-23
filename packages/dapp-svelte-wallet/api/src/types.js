@@ -51,8 +51,6 @@
  * wallet.
  *
  * @property {(offer: OfferState) => Promise<string>} addOffer
- * @property {(offer: OfferState, invitation: ERef<Payment>) => Promise<string>}
- * addOfferInvitation add an invitation to the specified offer
  * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
  * return the board ID to use to receive payments of the specified brand.
  * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier
@@ -85,6 +83,18 @@
  * @property {(brands: Array<Brand>) => Promise<Array<Petname>>}
  * getBrandPetnames
  * Get the petnames for the brands that are passed in
+ */
+
+/**
+ * @typedef {Object} RecordMetadata
+ * @property {number} sequence a monotonically increasing number to allow
+ * total ordering between records.
+ * @property {number} [creationStamp] the approximate time at which the record
+ * was created in milliseconds since the epoch; `undefined` if there is no
+ * timer source
+ * @property {number} [updatedStamp] the approximate time at which the record
+ * was last updated in milliseconds since the epoch; `undefined` if there is
+ * no timer source
  */
 
 /**
@@ -134,6 +144,6 @@
  * @property {(brand: Brand) => IssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
- * @property {(issuerP: ERef<Issuer>) => Promise<IssuerRecord>} initIssuer
+ * @property {(issuerP: ERef<Issuer>, addMeta?: (x: any) => any) => Promise<IssuerRecord>} initIssuer
  * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
  */

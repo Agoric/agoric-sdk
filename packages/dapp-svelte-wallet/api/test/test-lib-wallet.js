@@ -7,6 +7,7 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import makeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
@@ -494,6 +495,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       },
       inviteHandleBoardId: '727995140',
+      meta: {
+        sequence: 3,
+      },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -625,6 +629,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       },
       inviteHandleBoardId: '727995140',
+      meta: {
+        sequence: 3,
+      },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
       instancePetname: 'automaticRefund',
@@ -710,6 +717,9 @@ test('lib-wallet offer methods', async t => {
         inviteHandleBoardId: '727995140',
         instance,
         installation,
+        meta: {
+          sequence: 2,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -824,6 +834,9 @@ test('lib-wallet offer methods', async t => {
           },
         },
         inviteHandleBoardId: '727995140',
+        meta: {
+          sequence: 2,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -859,7 +872,7 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-6',
+            petname: 'unnamed-7',
           },
           installation: {
             kind: 'unnamed',
@@ -871,6 +884,9 @@ test('lib-wallet offer methods', async t => {
           },
         },
         inviteHandleBoardId: '371571443',
+        meta: {
+          sequence: 5,
+        },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
@@ -1375,4 +1391,77 @@ test('getZoe, getBoard', async t => {
 
   t.is(await E(wallet).getZoe(), await zoe);
   t.is(await E(wallet).getBoard(), board);
+});
+
+test('stamps from localTimerService', async t => {
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const board = makeBoard();
+  const manualTimer = makeManualTimer(t.log, 19199000n, 1000n);
+
+  const { admin: wallet, initialized } = makeWallet({
+    zoe,
+    board,
+    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    localTimerService: manualTimer,
+  });
+  await initialized;
+
+  const {
+    issuer: simoleanIssuer,
+    mint: simoleanMint,
+    brand: simoleanBrand,
+  } = makeIssuerKit('simolean');
+
+  await E(wallet).addIssuer('simolean', simoleanIssuer);
+  await E(wallet).makeEmptyPurse('simolean', 'Tester', true);
+
+  const [pmt1, pmt2, pmt3] = await Promise.all(
+    [30n, 50n, 71n].map(async n =>
+      E(simoleanMint).mintPayment(AmountMath.make(simoleanBrand, n)),
+    ),
+  );
+
+  const clockNotifier = E(wallet).getClockNotifier();
+  const paymentNotifier = E(wallet).getPaymentsNotifier();
+
+  const { updateCount: count0 } = await E(paymentNotifier).getUpdateSince();
+  await E(wallet).addPayment(pmt1);
+  const { updateCount: count1 } = await E(paymentNotifier).getUpdateSince(
+    count0,
+  );
+
+  // Wait for tick to take effect.
+  const { updateCount: clock0, value: clockValue0 } = await E(
+    clockNotifier,
+  ).getUpdateSince();
+  t.is(clockValue0, 19199000);
+  await manualTimer.tick();
+
+  const { value: clockValue1 } = await E(clockNotifier).getUpdateSince(clock0);
+  t.is(clockValue1, 19199000 + 1000);
+
+  await E(wallet).addPayment(pmt2);
+  await E(wallet).addPayment(pmt3);
+  const { value: payments } = await E(paymentNotifier).getUpdateSince(count1);
+
+  const paymentMeta = payments.map(p => p.meta);
+  t.deepEqual(paymentMeta, [
+    {
+      creationStamp: 19199000,
+      updatedStamp: 19199000,
+      sequence: 2,
+    },
+    {
+      creationStamp: 19200000,
+      updatedStamp: 19200000,
+      sequence: 3,
+    },
+    {
+      creationStamp: 19200000,
+      updatedStamp: 19200000,
+      sequence: 4,
+    },
+  ]);
 });

@@ -84,6 +84,7 @@ export function buildRootObject(_vatPowers) {
     agoricNames,
     namesByAddress,
     myAddressNameAdmin,
+    localTimerService,
   }) {
     const w = makeWallet({
       agoricNames,
@@ -93,6 +94,7 @@ export function buildRootObject(_vatPowers) {
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
+      localTimerService,
     });
     console.error('waiting for wallet to initialize');
     await w.initialized;
@@ -137,10 +139,6 @@ export function buildRootObject(_vatPowers) {
       async addOffer(offer) {
         await approve();
         return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
-      },
-      async addOfferInvitation(offer, invitation) {
-        await approve();
-        return walletAdmin.addOfferInvitation(offer, invitation, dappOrigin);
       },
       async getOffersNotifier(status = null) {
         await approve();
@@ -223,9 +221,6 @@ export function buildRootObject(_vatPowers) {
   const preapprovedBridge = Far('preapprovedBridge', {
     addOffer(offer) {
       return walletAdmin.addOffer(offer);
-    },
-    addOfferInvitation(offer, invitation) {
-      return walletAdmin.addOfferInvitation(offer, invitation);
     },
     getDepositFacetId(brandBoardId) {
       return walletAdmin.getDepositFacetId(brandBoardId);
