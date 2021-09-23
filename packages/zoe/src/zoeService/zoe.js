@@ -73,7 +73,7 @@ const makeZoeKit = (
   },
   meteringConfig = {
     incrementBy: 25_000_000n,
-    initial: 50_000_000n, // executeContract for treasury is 13.5M
+    initial: 75_000_000n, // executeContract for treasury is 13.5M
     threshold: 25_000_000n,
     price: {
       feeNumerator: 1n,

@@ -31,12 +31,12 @@
     "@agoric/bundle-source": "^1.4.11",
     "@agoric/eventual-send": "^0.13.29",
     "@agoric/install-ses": "^0.5.27",
-    "@endo/netstring": "^0.2.6",
+    "@endo/netstring": "^0.2.8",
     "glob": "^7.1.6",
-    "ses": "^0.14.1"
+    "ses": "^0.14.3"
   },
   "devDependencies": {
-    "@endo/base64": "^0.2.6",
+    "@endo/base64": "^0.2.8",
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2",

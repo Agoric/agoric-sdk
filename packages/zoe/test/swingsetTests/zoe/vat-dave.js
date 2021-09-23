@@ -75,20 +75,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
-      const { source } = await E(installation).getBundle();
-      // pick some arbitrary code points as a signature.
-      assert(
-        source.includes('asset: give.Asset,'),
-        X`source bundle didn't match at "asset: give.Asset,"`,
-      );
-      assert(
-        source.includes('swap(zcf, firstSeat, matchingSeat)'),
-        X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
-      );
-      assert(
-        source.includes('makeMatchingInvitation'),
-        X`source bundle didn't match at "makeMatchingInvitation"`,
-      );
+
+      // TODO Check the integrity of the installation by its hash.
+      // https://github.com/Agoric/agoric-sdk/issues/3859
+      // const installation = await E(zoe).getInstallation(invitation);
+      // const hash = await E(installation).getHash();
+      // assert.is(hash, 'XXX');
+
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
         sameStructure(

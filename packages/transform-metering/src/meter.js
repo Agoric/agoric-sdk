@@ -8,6 +8,20 @@ const ObjectConstructor = Object;
 const bigIntWord = 2n ** 64n;
 const bigIntZero = 0n;
 
+/*
+ * Getting the properties of a SES-shim module exports namespace object throws
+ * an error if inspected before the module initializes.
+ * Allowing this case is necessary for the compartment mapper to be hosted by
+ * the compartment mapper under metering.
+ */
+const maybeGetOwnPropertyDescriptors = object => {
+  try {
+    return getOwnPropertyDescriptors(object);
+  } catch (_error) {
+    return {};
+  }
+};
+
 // Stop deducting when we reach a negative number.
 const makeCounter = initBalance => {
   let balance = initBalance;
@@ -77,7 +91,7 @@ export function makeAllocateMeter(maybeAbort, meter, allocateCounter = null) {
         } else {
           // Compute the number of own properties.
           // eslint-disable-next-line guard-for-in, no-unused-vars
-          for (const p in getOwnPropertyDescriptors(value)) {
+          for (const p in maybeGetOwnPropertyDescriptors(value)) {
             meter[c.METER_COMPUTE](undefined, throwForever);
             cost += 1;
           }
