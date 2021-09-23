@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.22.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.22.0...@agoric/swingset-vat@0.22.1) (2021-09-23)
+
+
+### Features
+
+* **TimerService:** add new `delay` method and protect device args ([7a2c830](https://github.com/Agoric/agoric-sdk/commit/7a2c830b6cdea1e81cc0eb8fef517704dc30a922))
+
+
+### Bug Fixes
+
+* **solo:** make `localTimerService` in ms, and update correctly ([d6d4724](https://github.com/Agoric/agoric-sdk/commit/d6d472445a05b8c3d83fc9621879c3c91bf4d737))
+* **swingset:** DummySlogger needs to be more realistic ([d8d146d](https://github.com/Agoric/agoric-sdk/commit/d8d146de69a08d2b6582b3a778a7f44985450fc0))
+* **swingset:** have slogger record replay status for syscalls too ([722f903](https://github.com/Agoric/agoric-sdk/commit/722f903c8306f4245addad6bbe9df7b8b7a7321b))
+* **swingset:** make vat-warehouse responsible for slogging deliveries ([e317589](https://github.com/Agoric/agoric-sdk/commit/e31758914c165113c4ba6a4574a73ee888addad1))
+* **SwingSet:** improve slogging during replay ([d6e64da](https://github.com/Agoric/agoric-sdk/commit/d6e64daf4d8240ad51eafb917e6f4590c8caebfb)), closes [#3428](https://github.com/Agoric/agoric-sdk/issues/3428)
+* **timer:** remove deprecated `createRepeater` ([b45c66d](https://github.com/Agoric/agoric-sdk/commit/b45c66d6d5aadcd91bd2e50d31104bce8d4d78f6))
+* **xsnap:** format objects nicely in console using SES assert.quote ([#3856](https://github.com/Agoric/agoric-sdk/issues/3856)) ([a3306d0](https://github.com/Agoric/agoric-sdk/commit/a3306d01d8e87c4bc7483a61e42cc30b006feb81)), closes [#3844](https://github.com/Agoric/agoric-sdk/issues/3844)
+
+
+
 ## [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.21.3...@agoric/swingset-vat@0.22.0) (2021-09-15)
 
 

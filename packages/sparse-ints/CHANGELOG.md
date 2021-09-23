@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.23](https://github.com/Agoric/agoric-sdk/compare/@agoric/sparse-ints@0.1.22...@agoric/sparse-ints@0.1.23) (2021-09-23)
+
+**Note:** Version bump only for package @agoric/sparse-ints
+
+
+
+
+
 ### [0.1.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/sparse-ints@0.1.21...@agoric/sparse-ints@0.1.22) (2021-09-15)
 
 **Note:** Version bump only for package @agoric/sparse-ints

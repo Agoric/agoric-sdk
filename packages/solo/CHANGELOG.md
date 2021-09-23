@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.0...@agoric/solo@0.5.1) (2021-09-23)
+
+
+### Features
+
+* **solo:** make client objects appear earlier, parallelise chain ([656514e](https://github.com/Agoric/agoric-sdk/commit/656514e5937389c57e139bc1302fa435edd2e674))
+
+
+### Bug Fixes
+
+* **solo:** chain events come from both 'NewBlockHeader' and 'Tx' ([3cefa07](https://github.com/Agoric/agoric-sdk/commit/3cefa0758ab3c0397d7430d0b79b0e544f0d4249))
+* **solo:** don't enforce origin identity; we have access tokens ([3015ecd](https://github.com/Agoric/agoric-sdk/commit/3015ecdd71cbc5d811c2bd88e2d51096919e4754))
+* **solo:** make `localTimerService` in ms, and update correctly ([d6d4724](https://github.com/Agoric/agoric-sdk/commit/d6d472445a05b8c3d83fc9621879c3c91bf4d737))
+* **timer:** remove deprecated `createRepeater` ([b45c66d](https://github.com/Agoric/agoric-sdk/commit/b45c66d6d5aadcd91bd2e50d31104bce8d4d78f6))
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.4.6...@agoric/solo@0.5.0) (2021-09-15)
 
 

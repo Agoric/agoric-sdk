@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.9.0...@agoric/xsnap@0.9.1) (2021-09-23)
+
+
+### Bug Fixes
+
+* **xsnap:** format objects nicely in console using SES assert.quote ([#3856](https://github.com/Agoric/agoric-sdk/issues/3856)) ([a3306d0](https://github.com/Agoric/agoric-sdk/commit/a3306d01d8e87c4bc7483a61e42cc30b006feb81)), closes [#3844](https://github.com/Agoric/agoric-sdk/issues/3844)
+
+
+
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.8.2...@agoric/xsnap@0.9.0) (2021-09-15)
 
 
