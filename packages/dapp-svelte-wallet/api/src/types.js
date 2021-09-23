@@ -86,6 +86,18 @@
  */
 
 /**
+ * @typedef {Object} RecordMetadata
+ * @property {number} sequence a monotonically increasing number to allow
+ * total ordering between records.
+ * @property {number} [creationStamp] the approximate time at which the record
+ * was created in milliseconds since the epoch; `undefined` if there is no
+ * timer source
+ * @property {number} [updatedStamp] the approximate time at which the record
+ * was last updated in milliseconds since the epoch; `undefined` if there is
+ * no timer source
+ */
+
+/**
  * @typedef {Object} PursesJSONState
  * @property {Brand} brand
  * @property {string} brandBoardId  the board ID for this purse's brand

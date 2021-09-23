@@ -35,6 +35,10 @@ import '@agoric/zoe/exported.js';
 import './internal-types.js';
 import './types.js';
 
+// The localTimerService uses a resolution of 1 millisecond.
+const LOCAL_TIMER_NO_DELAY = 0n;
+const LOCAL_TIMER_ONE_SECOND = 1000n;
+
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
@@ -46,6 +50,45 @@ const cmp = (a, b) => {
     return 0;
   }
   return -1;
+};
+
+/**
+ * @param {ERef<TimerService> | undefined} timerService
+ * @param {(stamp: bigint) => void} updateClock
+ * @param {bigint} timerDelay
+ * @param {bigint} timerInterval
+ * @returns {Promise<void>}
+ */
+const initializeClock = async (
+  timerService,
+  updateClock,
+  timerDelay,
+  timerInterval,
+) => {
+  if (!timerService) {
+    return;
+  }
+
+  // Get a baseline.
+  const time0 = await E(timerService).getCurrentTimestamp();
+  updateClock(time0);
+
+  const notifier = await E(timerService).makeNotifier(
+    timerDelay,
+    timerInterval,
+  );
+
+  // Subscribe to future updates.
+  observeNotifier(notifier, {
+    updateState: updateClock,
+  }).catch(e => {
+    console.error(
+      `Observing localTimerService`,
+      timerService,
+      'failed with:',
+      e,
+    );
+  });
 };
 
 /**
@@ -75,33 +118,37 @@ export function makeWallet({
    *
    * @type {number | undefined}
    */
-  let nowMs;
-
-  // Subscribe to the timer service to update our stamp.
-  if (localTimerService) {
-    observeNotifier(E(localTimerService).makeNotifier(0n, 1000n), {
-      updateState(bigStamp) {
-        // We need to convert the bigint to a number (for easy Javascript date math).
-        nowMs = parseInt(`${bigStamp}`, 10);
-      },
-    });
-  }
-
+  let nowStamp;
   let lastSequence = 0;
+
+  /**
+   * Add or update a record's `meta` property.  Note that the Stamps are in
+   * milliseconds since the epoch, and they are only added if this backend has
+   * been supplied a `localTimerService`.
+   *
+   * The `sequence` is guaranteed to be monotonically increasing, even if this
+   * backend doesn't have a `localTimerService`, or the stamp has not yet
+   * increased.
+   *
+   * @template {Record<string, any>} T
+   * @param {T} record what to add metadata to
+   * @returns {T & { meta: T['meta'] & RecordMetadata }}
+   */
   const addMeta = record => {
     const { meta: oldMeta = {} } = record;
+    /** @type {Record<string, any> & T['meta']} */
     const meta = { ...oldMeta };
     if (!meta.sequence) {
       // Add a sequence number to the record.
       lastSequence += 1;
       meta.sequence = lastSequence;
     }
-    if (nowMs !== undefined) {
+    if (nowStamp !== undefined) {
       if (!meta.creationStamp) {
         // Set the creationStamp to be right now.
-        meta.creationStamp = nowMs;
+        meta.creationStamp = nowStamp;
       }
-      meta.updatedStamp = nowMs;
+      meta.updatedStamp = nowStamp;
     }
     return { ...record, meta };
   };
@@ -562,7 +609,7 @@ export function makeWallet({
 
     const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
 
-    // Track from whence our the payment came.
+    // Track from whence our payment came.
     /** @type {Map<Payment, Purse>} */
     const paymentToPurse = new Map();
 
@@ -1576,6 +1623,8 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  const { notifier: clockNotifier, updater: clockUpdater } = makeNotifierKit();
+
   const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
@@ -1671,9 +1720,32 @@ export function makeWallet({
       );
       return E(namesByAddress).lookup(...path);
     },
+    getClockNotifier: () => clockNotifier,
   });
 
+  const updateNowStamp = bigStamp => {
+    // We convert the milliseconds from a bigint to a number (for easy
+    // Javascript date math).
+    const nextStamp = parseInt(`${bigStamp}`, 10);
+
+    if (nowStamp && nowStamp >= nextStamp) {
+      // Don't make an unnecessary update.
+      return;
+    }
+
+    nowStamp = nextStamp;
+    clockUpdater.updateState(nowStamp);
+  };
+
   const initialize = async () => {
+    // Subscribe to the timer service to update our stamp.
+    await initializeClock(
+      localTimerService,
+      updateNowStamp,
+      LOCAL_TIMER_NO_DELAY,
+      LOCAL_TIMER_ONE_SECOND,
+    );
+
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
@@ -1743,5 +1815,9 @@ export function makeWallet({
       feePurse,
     );
   };
-  return { admin: wallet, initialized: initialize(), importBankAssets };
+  return {
+    admin: wallet,
+    initialized: initialize(),
+    importBankAssets,
+  };
 }
