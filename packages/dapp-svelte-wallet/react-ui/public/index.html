@@ -4,11 +4,11 @@
     <meta charset="utf-8" />
     <script src="lockdown.umd.js"></script>
     <script>
-      if ("%NODE_ENV%" === 'production') {
+      if ('%NODE_ENV%' === 'production') {
         const { pow: mathPow } = Math;
         Math.pow = (base, exp) => (typeof base === 'bigint' && typeof exp ==='bigint') ? base ** exp : mathPow(base, exp);
         lockdown({ __allowUnsafeMonkeyPatching__: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'severe' });
-        console.log("lockdown done.");
+        console.log('lockdown done.');
       }
     </script>
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />

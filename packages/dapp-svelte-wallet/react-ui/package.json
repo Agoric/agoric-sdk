@@ -1,5 +1,5 @@
 {
-  "name": "react-ui",
+  "name": "@agoric/dapp-react-wallet-ui",
   "version": "0.0.1",
   "description": "Wallet React frontend",
   "author": "Agoric",
