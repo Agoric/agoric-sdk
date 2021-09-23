@@ -77,12 +77,24 @@ function makeCallbackRegistry(callbacks) {
   });
 }
 
+/**
+ *
+ * @param {*} slogCallbacks
+ * @param {*} makeConsole
+ * @returns { KernelSlog }
+ */
 export function makeDummySlogger(slogCallbacks, makeConsole) {
   const { registerCallback: reg, doneRegistering } = makeCallbackRegistry(
     slogCallbacks,
   );
   const dummySlogger = harden({
-    provideVatSlogger: reg('provideVatSlogger', () => 0),
+    provideVatSlogger: reg('provideVatSlogger', () =>
+      harden({
+        vatSlog: {
+          delivery: () => () => 0,
+        },
+      }),
+    ),
     vatConsole: reg('vatConsole', () => makeConsole('disabled slogger')),
     startup: reg('startup', () => () => 0), // returns nop finish() function
     replayVatTranscript: reg('replayVatTranscript', () => () => 0),
@@ -96,6 +108,12 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
   return dummySlogger;
 }
 
+/**
+ *
+ * @param {*} slogCallbacks
+ * @param {*} writeObj
+ * @returns { KernelSlog }
+ */
 export function makeSlogger(slogCallbacks, writeObj) {
   const write = writeObj ? e => writeObj(e) : () => 0;
 
@@ -106,6 +124,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     let crankNum;
     let deliveryNum;
     let syscallNum;
+    let replay = false;
 
     function assertOldState(exp, msg) {
       assert.equal(state, exp, X`vat ${vatID} in ${state}, not ${exp}: ${msg}`);
@@ -137,12 +156,13 @@ export function makeSlogger(slogCallbacks, writeObj) {
     }
 
     // kd: kernelDelivery, vd: vatDelivery
-    function delivery(newCrankNum, newDeliveryNum, kd, vd) {
+    function delivery(newCrankNum, newDeliveryNum, kd, vd, inReplay = false) {
       assertOldState(IDLE, 'reentrant delivery?');
       state = DELIVERY;
       crankNum = newCrankNum;
       deliveryNum = newDeliveryNum;
-      const when = { crankNum, vatID, deliveryNum };
+      replay = inReplay;
+      const when = { crankNum, vatID, deliveryNum, replay };
       write({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
 
@@ -158,7 +178,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     // ksc: kernelSyscallObject, vsc: vatSyscallObject
     function syscall(ksc, vsc) {
       assertOldState(DELIVERY, 'syscall invoked outside of delivery');
-      const when = { crankNum, vatID, deliveryNum, syscallNum };
+      const when = { crankNum, vatID, deliveryNum, syscallNum, replay };
       write({ type: 'syscall', ...when, ksc, vsc });
       syscallNum += 1;
 

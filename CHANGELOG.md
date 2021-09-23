@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [9.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.0.0...@agoric/sdk@9.1.0) (2021-09-23)
+
+
+### Features
+
+* **deployment:** use latest faucet-helper.sh from testnet ([83f45f6](https://github.com/Agoric/agoric-sdk/commit/83f45f6be8112b9e74f687d9436963051d9e5308))
+* **solo:** make client objects appear earlier, parallelise chain ([656514e](https://github.com/Agoric/agoric-sdk/commit/656514e5937389c57e139bc1302fa435edd2e674))
+* **TimerService:** add new `delay` method and protect device args ([7a2c830](https://github.com/Agoric/agoric-sdk/commit/7a2c830b6cdea1e81cc0eb8fef517704dc30a922))
+* **wallet:** Add dismiss option for dapp connections ([#3836](https://github.com/Agoric/agoric-sdk/issues/3836)) ([f193fa2](https://github.com/Agoric/agoric-sdk/commit/f193fa225c6e2e88b067d43e22b1fcc1230ebb98))
+* **wallet:** Don't show autodeposit payments in requests, smooth out rendering animations ([#3832](https://github.com/Agoric/agoric-sdk/issues/3832)) ([b03c7a5](https://github.com/Agoric/agoric-sdk/commit/b03c7a5d44093c356d29e807a93041a760b1a029))
+* **wallet:** Eagerly show pending state for approved offers ([#3846](https://github.com/Agoric/agoric-sdk/issues/3846)) ([20abcbe](https://github.com/Agoric/agoric-sdk/commit/20abcbed5bfab6c5a8ad19462b9b726fd2d6490b))
+* **wallet:** Fix icons and list rendering bugs ([#3827](https://github.com/Agoric/agoric-sdk/issues/3827)) ([02b7554](https://github.com/Agoric/agoric-sdk/commit/02b7554076bddbe878756ac44af736c4b5d282c2))
+
+
+### Bug Fixes
+
+* **deployment:** wait for staking tokens before creating validator ([59952d3](https://github.com/Agoric/agoric-sdk/commit/59952d3afd78ceb9b00eac5a8ccc84bef9d2ee4b))
+* **sim-chain:** update `chainTimerService` correctly ([3f49a77](https://github.com/Agoric/agoric-sdk/commit/3f49a779f253ff01fe7e71d0295efbfa99b669a9))
+* **solo:** chain events come from both 'NewBlockHeader' and 'Tx' ([3cefa07](https://github.com/Agoric/agoric-sdk/commit/3cefa0758ab3c0397d7430d0b79b0e544f0d4249))
+* **solo:** don't enforce origin identity; we have access tokens ([3015ecd](https://github.com/Agoric/agoric-sdk/commit/3015ecdd71cbc5d811c2bd88e2d51096919e4754))
+* **solo:** make `localTimerService` in ms, and update correctly ([d6d4724](https://github.com/Agoric/agoric-sdk/commit/d6d472445a05b8c3d83fc9621879c3c91bf4d737))
+* **swingset:** DummySlogger needs to be more realistic ([d8d146d](https://github.com/Agoric/agoric-sdk/commit/d8d146de69a08d2b6582b3a778a7f44985450fc0))
+* **swingset:** have slogger record replay status for syscalls too ([722f903](https://github.com/Agoric/agoric-sdk/commit/722f903c8306f4245addad6bbe9df7b8b7a7321b))
+* **swingset:** make vat-warehouse responsible for slogging deliveries ([e317589](https://github.com/Agoric/agoric-sdk/commit/e31758914c165113c4ba6a4574a73ee888addad1))
+* **SwingSet:** improve slogging during replay ([d6e64da](https://github.com/Agoric/agoric-sdk/commit/d6e64daf4d8240ad51eafb917e6f4590c8caebfb)), closes [#3428](https://github.com/Agoric/agoric-sdk/issues/3428)
+* **timer:** remove deprecated `createRepeater` ([b45c66d](https://github.com/Agoric/agoric-sdk/commit/b45c66d6d5aadcd91bd2e50d31104bce8d4d78f6))
+* **xsnap:** format objects nicely in console using SES assert.quote ([#3856](https://github.com/Agoric/agoric-sdk/issues/3856)) ([a3306d0](https://github.com/Agoric/agoric-sdk/commit/a3306d01d8e87c4bc7483a61e42cc30b006feb81)), closes [#3844](https://github.com/Agoric/agoric-sdk/issues/3844)
+* fix bug which breaks rights conservation and offer safety guarantees ([#3858](https://github.com/Agoric/agoric-sdk/issues/3858)) ([b67bfcb](https://github.com/Agoric/agoric-sdk/commit/b67bfcb9051cdcf780aff1a10653635448b21eae))
+* skip refill meter test ([#3849](https://github.com/Agoric/agoric-sdk/issues/3849)) ([90a456f](https://github.com/Agoric/agoric-sdk/commit/90a456f78f918ad01924da4b131f5a272d03624b))
+
+
+
 ## [9.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@8.1.3...@agoric/sdk@9.0.0) (2021-09-15)
 
 

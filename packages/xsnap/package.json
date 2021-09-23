@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Description forthcoming.",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -26,11 +26,11 @@
     "test:xs": "exit 0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.12",
+    "@agoric/assert": "^0.3.13",
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/bundle-source": "^1.4.10",
-    "@agoric/eventual-send": "^0.13.28",
-    "@agoric/install-ses": "^0.5.26",
+    "@agoric/bundle-source": "^1.4.11",
+    "@agoric/eventual-send": "^0.13.29",
+    "@agoric/install-ses": "^0.5.27",
     "@endo/netstring": "^0.2.6",
     "glob": "^7.1.6",
     "ses": "^0.14.1"

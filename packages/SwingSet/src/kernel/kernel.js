@@ -140,6 +140,7 @@ export default function buildKernel(
 
   const vatAdminRootKref = hostStorage.kvStore.get('vatAdminRootKref');
 
+  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole);
@@ -427,19 +428,13 @@ export default function buildKernel(
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const crankNum = kernelKeeper.getCrankNumber();
-    const deliveryNum = vatKeeper.nextDeliveryNum(); // increments
     const { meterID } = vatKeeper.getOptions();
-    /** @typedef { any } FinishFunction TODO: static types for slog? */
-    /** @type { FinishFunction } */
-    const finish = kernelSlog.delivery(vatID, crankNum, deliveryNum, kd, vd);
     // Ensure that the vatSlogger is available before clist translation.
-    kernelSlog.provideVatSlogger(vatID);
+    const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     try {
       // eslint-disable-next-line no-use-before-define
-      const deliveryResult = await vatWarehouse.deliverToVat(vatID, vd);
+      const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
-      finish(deliveryResult);
       const [status, problem] = deliveryResult;
       if (status !== 'ok') {
         // probably a metering fault, or a bug in the vat's dispatch()
@@ -854,6 +849,9 @@ export default function buildKernel(
         return harden(['error', problem]);
       }
       let ksc;
+      let kres;
+      let vres;
+
       try {
         // This can fail if the vat asks for something not on their clist, or
         // their syscall doesn't make sense in some other way, or due to a
@@ -865,34 +863,39 @@ export default function buildKernel(
         console.log(`error during syscall translation:`, vaterr);
         const problem = 'syscall translation error: prepare to die';
         setTerminationTrigger(vatID, true, true, makeError(problem));
-        return harden(['error', problem]);
+        vres = harden(['error', problem]);
+        // we leave this catch() with ksc=undefined, so no doKernelSyscall()
       }
 
-      /** @type { FinishFunction } */
+      /** @type { SlogFinishSyscall } */
       const finish = kernelSlog.syscall(vatID, ksc, vatSyscallObject);
-      let vres;
-      try {
-        // this can fail if kernel or device code is buggy
-        const kres = kernelSyscallHandler.doKernelSyscall(ksc);
-        // kres is a KernelResult ([successFlag, value]), but since errors
-        // here are signalled with exceptions, kres is ['ok', value]. Vats
-        // (liveslots) record the response in the transcript (which is why we
-        // use 'null' instead of 'undefined', TODO clean this up), but otherwise
-        // most syscalls ignore it. The one syscall that pays attention is
-        // callNow(), which assumes it's capdata.
-        vres = translators.kernelSyscallResultToVatSyscallResult(ksc[0], kres);
-        // here, vres is either ['ok', null] or ['ok', capdata]
-        finish(kres, vres); // TODO call meaningfully on failure too?
-      } catch (err) {
-        // kernel/device errors cause a kernel panic
-        panic(`error during syscall/device.invoke: ${err}`, err);
-        // the kernel is now in a shutdown state, but it may take a while to
-        // grind to a halt
-        const problem = 'you killed my kernel. prepare to die';
-        setTerminationTrigger(vatID, true, true, makeError(problem));
-        return harden(['error', problem]);
-      }
 
+      if (ksc) {
+        try {
+          // this can fail if kernel or device code is buggy
+          kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          // kres is a KernelResult ([successFlag, value]), but since errors
+          // here are signalled with exceptions, kres is ['ok', value]. Vats
+          // (liveslots) record the response in the transcript (which is why we
+          // use 'null' instead of 'undefined', TODO clean this up), but otherwise
+          // most syscalls ignore it. The one syscall that pays attention is
+          // callNow(), which assumes it's capdata.
+          vres = translators.kernelSyscallResultToVatSyscallResult(
+            ksc[0],
+            kres,
+          );
+          // here, vres is either ['ok', null] or ['ok', capdata]
+        } catch (err) {
+          // kernel/device errors cause a kernel panic
+          panic(`error during syscall/device.invoke: ${err}`, err);
+          // the kernel is now in a shutdown state, but it may take a while to
+          // grind to a halt
+          const problem = 'you killed my kernel. prepare to die';
+          setTerminationTrigger(vatID, true, true, makeError(problem));
+          vres = harden(['error', problem]);
+        }
+      }
+      finish(kres, vres);
       return vres;
     }
     return vatSyscallHandler;

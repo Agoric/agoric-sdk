@@ -1,6 +1,6 @@
 {
   "name": "@agoric/install-metering-and-ses",
-  "version": "0.2.26",
+  "version": "0.2.27",
   "description": "tame metering and install SES at import time",
   "type": "module",
   "main": "install-metering-and-ses.js",
@@ -14,14 +14,14 @@
     "lint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/transform-metering": "^1.4.25",
+    "@agoric/transform-metering": "^1.4.26",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.13.28",
-    "@agoric/install-ses": "^0.5.26",
-    "@agoric/tame-metering": "^2.0.12"
+    "@agoric/eventual-send": "^0.13.29",
+    "@agoric/install-ses": "^0.5.27",
+    "@agoric/tame-metering": "^2.0.13"
   },
   "files": [
     "*.js"
