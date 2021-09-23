@@ -1,24 +1,25 @@
 # Constant Product AMM
 
-A simpler constant product automatic market maker based on our Ratio library and
-charges two kinds of fees. The pool fee remains in the pool to reward the
-liquidity providers. The protocol fee is extracted to fund community efforts.
+A constant product automatic market maker based on our Ratio library. It charges
+two kinds of fees: a pool fee remains in the pool to reward the liquidity
+providers and a protocol fee is extracted to fund the economy.
 
-This algorithm uses the x*y=k formula directly, without complicating it with
-fees. Briefly, there are two pools of assets, whose values are kept roughly in
-balance through the actions of arbitrageurs. At any time, a trader can come to
-the pool and offer to deposit one of the two assets. They will receive an amount
+This algorithm uses the x*y=k formula directly, without fees. Briefly, there are
+two kinds of assets, whose values are kept roughly in balance through the
+actions of arbitrageurs. At any time, a trader can come to the pool and offer to
+deposit one of the two assets. They will receive an amount
 of the complementary asset that will maintain the invariant that the product of
-the pool values doesn't change. (Except that rounding is done in favor of the
+the balances doesn't change. (Except that rounding is done in favor of the
 pool.) The liquidity providers are rewarded by charging a fee. 
 
 The user can specify a maximum amount they want to pay or a minimum amount they
 want to receive. Unlike Uniswap, this approach will charge less than the user
-offered or pay more than they asked for when appropriate. (By analogy, if a user
+offered or pay more than they asked for when appropriate. By analogy, if a user
 is willing to pay up to $20 when the price of soda is $3 per bottle, it would
 give 6 bottles and only charge $18. Uniswap doesn't adjust the provided price,
 so it charges $20. This matters whenever the values of the smallest unit of the
-currencies are significantly different, which is common in defi.)
+currencies are significantly different, which is common in DeFi. (We refer to
+these as "improved" prices.)
 
 The rules that drive the design include
 
@@ -26,7 +27,7 @@ The rules that drive the design include
   (or receive less) than they said.
 * The pool fee is charged against the computed side of the price.
 * The protocol fee is always charged in RUN.
-* The fees should be calculated based on the pool's prices before a transaction.
+* The fees should be calculated based on the pool balances before a transaction.
 * Computations are rounded in favor of the pool.
 
 We start by estimating the exchange rate, and calculate fees based on that. Once
@@ -35,33 +36,71 @@ extracted from the pools to adhere to those rules.
 
 ## Calculating fees
 
-In this table BLD represents any collateral. &Delta;X is always the amount contributed to the pool, and &Delta;Y is always
-the amount extracted from the pool. 
+In these tables BLD represents any collateral. The user can specify how much
+they want or how much they're willing to pay. We'll call the value they
+specified **sGive** or **sGet** and bold it. This table shows which brands the
+amounts each have, as well as what is computed vs. given. The PoolFee is
+computed based on the calculated amount (BLD in rows 1 and 2; RUN in rows 3 and
+4). The Protocol fee is always in RUN.
 
-|          | In (X) | Out (Y) | PoolFee | Protocol Fee | &Delta;X | &Delta;Y | pool Fee * |
-|---------|-----|-----|--------|-----|-----|-----|-----|
-| **RUN in** | RUN | BLD | BLD | RUN | sGive - PrFee | sGets | sGet - &Delta;Y
-| **RUN out** | BLD | RUN | RUN | BLD | sGive | sGets + PrFee | &Delta;X - sGive
-| **BLD in** | BLD | RUN | BLD | RUN | sGive | sGest + PrFee | &Delta;Y - sGet
-| **BLD out** | RUN | BLD | RUN | BLD | sGive - PrFee | sGets | sGive - &Delta;X
+|          | In (X) | Out (Y) | PoolFee | Protocol Fee | Specified | Computed |
+|---------|-----|-----|--------|-----|------|-----|
+| **RUN in** | RUN | BLD | BLD | RUN | **sGive** | sGet |
+| **RUN out** | BLD | RUN | BLD | RUN | **sGet** | sGive |
+| **BLD in** | BLD | RUN | RUN | RUN | **sGive** | sGet |
+| **BLD out** | RUN | BLD | RUN | RUN | **sGet** | sGive |
 
-(*) The Pool Fee remains in the pool, so its impact on the calculation is
-subtle. When amountIn is specified, we add the poolFee to any minimum amountOut
-from the user since the trade has to produce amoutOut plus the required fee in
-order to be satisfactory. When amountOut is specified, we subtract the fee from any
-amountIn max from the user since the fee has to come out of the user's deposit.
+We'll estimate how much the pool balances would change in the no-fee, improved
+price case using the constant product formulas. These estimates are &delta;X,
+and &delta;Y. The fees are based on &delta;X, and &delta;Y. &rho; is the poolFee
+(e.g. .003).
 
-* When the amount of RUN provided is specified, (**RUN in**) we subtract
-  the poolFee from the amount the user will give before using the reduced amount
-  in the derivation of &Delta;Y from &Delta;X.
-* When the amount of RUN being paid out is specified (**RUN out**), we add the
-  poolFee to &Delta;X, which was calculated from the requested payout.
-* When the amount of BLD to be paid in is specified (**BLD in**), the
-  amount the user gets is computed by subtracting the poolFee from &Delta;Y
-  which already had the protocolFee included.
-* When the amount of BLD to be paid out is specified (**BLD out**), &Delta;X is
-  computed from the required payout, and the poolFee is added to that to get the
-  amount the user must pay.
+The pool fee will be &rho; times whichever of &delta;X and &delta;Y was
+calculated. The protocol fee will be &rho; * &delta;X when RUN is paid in, and
+&rho; * &delta;Y when BLD is paid in.
+
+|          | &delta;X | &delta;Y | PoolFee | Protocol Fee |
+|---------|-----|-----|--------|-----|
+| **RUN in**  | **sGive** | calc | &rho; &times; &delta;Y | &rho; &times; **sGive** (= &rho; &times; &delta;X) |
+| **RUN out** | calc  | **sGet** | &rho; &times; &delta;X | &rho; &times; **sGet** (= &rho; &times; &delta;Y) |
+| **BLD in**  | **sGive**  | calc | &rho; &times; &delta;Y | &rho; &times; &delta;Y |
+| **BLD out** | calc | **sGet** | &rho; &times; &delta;X | &rho; &times; &delta;X |
+
+In rows 1 and 3, **sGive** was specified and sGet will be calculated. In rows 2
+and 4, **sGet** was specified and sGive will be calculated. Once we know the
+fees, we can add or subtract the fees and calculate the pool changes.
+
+&Delta;X is the incrementing side of the constant product calculation, and
+&Delta;Y is the decrementing side. If **sGive** is known, we subtract fees to
+get &Delta;X and calculate &Delta;Y. If **sGet** is known, we add fees to
+get &Delta;Y and calculate &Delta;X. &Delta;Y and &Delta;X are the values
+that maintain the constant product invariant.
+
+Notice that the ProtocolFee always affects the inputs to the constant product
+calculation (because it is collected outside the pool). The PoolFee is visible
+in the formulas in this table when the input to the calculation is in RUN.
+
+|          | &Delta;X | &Delta;Y |
+|---------|-----|-----|
+| **RUN in** | **sGive** - ProtocolFee | calc |
+| **RUN out** | calc | **sGet** + ProtocolFee + PoolFee |
+| **BLD in** | **sGive** - ProtocolFee - PoolFee | calc |
+| **BLD out** | calc | **sGet** + ProtocolFee |
+
+Now we can compute the change in the pool balances, and the amount the trader
+would pay and receive.
+
+|          | xIncr | yDecr | pay In | pay Out |
+|---------|-----|-----|-----|-----|
+| **RUN in**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + protocolFee | &Delta;Y - PoolFee |
+| **RUN out** | &Delta;X | &Delta;Y - PoolFee | &Delta;X | &Delta;Y - PoolFee - ProtocolFee |
+| **BLD in**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee | &Delta;Y - ProtocolFee |
+| **BLD out** | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee + ProtocolFee | &Delta;Y |
+
+In the two right columns the protocolFee is either added to the amount the
+trader pays, or subtracted from the proceeds. The poolFee does the same on the
+trader side, and it is either added to the amount deposited in the pool (xIncr)
+or deducted from the amout removed from the pool (yDecr).
 
 ## Example
 

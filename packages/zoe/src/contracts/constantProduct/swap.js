@@ -1,9 +1,19 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { calculateFees, amountGT, maximum } from './calcFees.js';
 
+const { details: X } = assert;
+
+/**
+ * The fee might not be in the same brand as the amount. If they are the same,
+ * subtract the fee from the amount (returning empty if the fee is larger).
+ * Otherwise return the unadjusted amount.
+ *
+ * @param {Amount} amount
+ * @param {Amount} fee
+ * @returns {Amount}
+ */
 const subtractRelevantFees = (amount, fee) => {
   if (amount.brand === fee.brand) {
     if (AmountMath.isGTE(fee, amount)) {
@@ -15,6 +25,14 @@ const subtractRelevantFees = (amount, fee) => {
   return amount;
 };
 
+/**
+ * PoolFee and ProtocolFee each identify their brand. If either (or both) match
+ * the brand of the Amount, subtract it/them from the amount.
+ *
+ * @param {Amount} amount
+ * @param {FeePair} fee
+ * @returns {Amount}
+ */
 const subtractFees = (amount, { poolFee, protocolFee }) => {
   return subtractRelevantFees(
     subtractRelevantFees(amount, protocolFee),
@@ -22,6 +40,14 @@ const subtractFees = (amount, { poolFee, protocolFee }) => {
   );
 };
 
+/**
+ * The fee might not be in the same brand as the amount. If they are the same,
+ * add the fee to the amount. Otherwise return the unadjusted amount.
+ *
+ * @param {Amount} amount
+ * @param {Amount} fee
+ * @returns {Amount}
+ */
 const addRelevantFees = (amount, fee) => {
   if (amount.brand === fee.brand) {
     return AmountMath.add(amount, fee);
@@ -29,10 +55,31 @@ const addRelevantFees = (amount, fee) => {
   return amount;
 };
 
+/**
+ * PoolFee and ProtocolFee each identify their brand. If either (or both) match
+ * the brand of the Amount, add it/them to the amount.
+ *
+ * @param {Amount} amount
+ * @param {FeePair} fee
+ * @returns {Amount}
+ */
 const addFees = (amount, { poolFee, protocolFee }) => {
   return addRelevantFees(addRelevantFees(amount, protocolFee), poolFee);
 };
 
+/**
+ * Increment or decrement a pool balance by an amount. The amount's brand might
+ * match the Central or Secondary balance of the pool. Return the adjusted
+ * balance. The caller knows which amount they provided, so they're expecting a
+ * single Amount whose brand matches the amount parameter.
+ *
+ * The first parameter specifies whether we're incrementing or decrementing from the pool
+ *
+ * @param {(amountLeft: Amount, amountRight: Amount, brand?: Brand) => Amount} addOrSub
+ * @param {PoolAllocation} poolAllocation
+ * @param {Amount} amount
+ * @returns {Amount}
+ */
 const addOrSubtractFromPool = (addOrSub, poolAllocation, amount) => {
   if (poolAllocation.Central.brand === amount.brand) {
     return addOrSub(poolAllocation.Central, amount);
@@ -41,7 +88,7 @@ const addOrSubtractFromPool = (addOrSub, poolAllocation, amount) => {
   }
 };
 
-const assertGreaterThanZeroHelper = (amount, name) => {
+const assertGreaterThanZero = (amount, name) => {
   assert(
     amount && !AmountMath.isGTE(AmountMath.makeEmptyFromAmount(amount), amount),
     X`${name} must be greater than 0: ${amount}`,
@@ -54,6 +101,17 @@ const isWantedAvailable = (poolAllocation, amountWanted) => {
     : !AmountMath.isGTE(amountWanted, poolAllocation.Secondary);
 };
 
+/**
+ * We've identified a violation of constraints that means we won't be able to
+ * satisfy the user's request. (Not enough funds in the pool, too much was
+ * requested, the proceeds would be empty, etc.) Return a result that says no
+ * trade will take place and the pool balances won't change.
+ *
+ * @param {Amount} amountGiven
+ * @param {Amount} amountWanted
+ * @param {PoolAllocation} poolAllocation
+ * @param {Ratio} poolFee
+ */
 function noTransaction(amountGiven, amountWanted, poolAllocation, poolFee) {
   const emptyGive = AmountMath.makeEmptyFromAmount(amountGiven);
   const emptyWant = AmountMath.makeEmptyFromAmount(amountWanted);
@@ -83,6 +141,7 @@ function noTransaction(amountGiven, amountWanted, poolAllocation, poolFee) {
   return result;
 }
 
+/** @type {InternalSwap} */
 export const swap = (
   amountGiven,
   poolAllocation,
@@ -91,11 +150,8 @@ export const swap = (
   poolFeeRatio,
   swapFn,
 ) => {
-  assertGreaterThanZeroHelper(poolAllocation.Central, 'poolAllocation.Central');
-  assertGreaterThanZeroHelper(
-    poolAllocation.Secondary,
-    'poolAllocation.Secondary',
-  );
+  assertGreaterThanZero(poolAllocation.Central, 'poolAllocation.Central');
+  assertGreaterThanZero(poolAllocation.Secondary, 'poolAllocation.Secondary');
   assert(
     (amountGiven &&
       !AmountMath.isGTE(
@@ -140,11 +196,13 @@ export const swap = (
     );
   }
 
-  // calculate no-fee amounts. swapFn will only pay attention to the specified
-  // value. The pool fee is always charged on the unspecified side, so it won't
-  // affect the calculation. When the specified value is in RUN, the protocol
-  // fee will be deducted from amountGiven before adding to the pool or from
-  // amountOut to calculate swapperGets.
+  // Calculate no-fee amounts. swapFn will only pay attention to the `specified`
+  // value. The pool fee is always charged on the unspecified side, so it is an
+  // output of the calculation. When the specified value is in RUN, the protocol
+  // fee will be deducted from amountGiven before adding to the pool. When BLD
+  // was specified, we add the protocol fee to amountWanted. When the specified
+  // value is in RUN, the protocol fee will be deducted from amountGiven before
+  // adding to the pool or added to amountWanted to calculate amoutOut.
   const { amountIn, amountOut, improvement } = swapFn({
     amountGiven: subtractFees(amountGiven, fees),
     poolAllocation,
@@ -182,7 +240,7 @@ export const swap = (
 
   // poolFee is the amount the pool will grow over the no-fee calculation.
   // protocolFee is to be separated and sent to an external purse.
-  // The swapper amounts are what will we paid and received.
+  // The swapper amounts are what will be paid and received.
   // xIncrement and yDecrement are what will be added and removed from the pools.
   //   Either xIncrement will be increased by the pool fee or yDecrement will be
   //   reduced by it in order to compensate the pool.

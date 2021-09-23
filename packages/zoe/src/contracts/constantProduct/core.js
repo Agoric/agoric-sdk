@@ -1,11 +1,12 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { assert, details as X, q } from '@agoric/assert';
 
 import { natSafeMath } from '../../contractSupport/index.js';
 import { makeRatioFromAmounts } from '../../contractSupport/ratio.js';
 import { getXY } from './getXY.js';
+
+const { details: X, quote: q } = assert;
 
 const assertSingleBrand = ratio => {
   assert(
@@ -116,11 +117,13 @@ const swapOutImproved = ({
   });
 };
 
+/** @type {NoFeeSwapFn} */
 export const swapInNoFees = ({ amountGiven, poolAllocation }) => {
   const XY = getXY({ amountGiven, poolAllocation });
   return swapInReduced(XY);
 };
 
+/** @type {NoFeeSwapFn} */
 export const swapOutNoFees = ({ poolAllocation, amountWanted }) => {
   const XY = getXY({ poolAllocation, amountWanted });
   return swapOutImproved(XY);
