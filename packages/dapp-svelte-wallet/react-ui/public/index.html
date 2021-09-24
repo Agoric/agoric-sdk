@@ -4,12 +4,22 @@
     <meta charset="utf-8" />
     <script src="lockdown.umd.js"></script>
     <script>
-      if ('%NODE_ENV%' === 'production') {
-        const { pow: mathPow } = Math;
-        Math.pow = (base, exp) => (typeof base === 'bigint' && typeof exp ==='bigint') ? base ** exp : mathPow(base, exp);
-        lockdown({ __allowUnsafeMonkeyPatching__: 'unsafe', errorTaming: 'unsafe', overrideTaming: 'severe' });
-        console.log('lockdown done.');
-      }
+      // Allow the React dev environment to extend the console for debugging
+      // features.
+      const consoleTaming = '%NODE_ENV%' === 'production' ? 'safe' : 'unsafe';
+      
+      const { pow: mathPow } = Math;
+      Math.pow = (base, exp) => 
+        (typeof base === 'bigint' && typeof exp ==='bigint') 
+        ? base ** exp : mathPow(base, exp);
+      
+      lockdown({ 
+        __allowUnsafeMonkeyPatching__: 'unsafe',
+        errorTaming: 'unsafe',
+        overrideTaming: 'severe',
+        consoleTaming: consoleTaming });
+
+      console.log('lockdown done.');
     </script>
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
