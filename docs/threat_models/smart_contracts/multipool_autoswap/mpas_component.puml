@@ -1,0 +1,83 @@
+@startuml
+'https://plantuml.com/component-diagram
+header Agoric Operating Systems
+footer v0.0.1
+title Multiswap Auto Pool Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+actor "Multipool Autoswap Contract creator" as cc1
+actor "Random Pool Creator" as cc2
+actor "Person wanting to swap" as cc3
+interface "startInstance()" as si0
+
+package "Multipool Autoswap" {
+    [creatorFacet] as cf0
+    node contractFacet <<zcf>> as conf1 {
+        package "poolSeatA" as pa1 {
+           interface "incrementBy" as pa1i1
+           interface "decrementBy" as pa1i2
+        }
+
+        package "poolSeatB" as pa2 {
+            interface "incrementBy" as pa2i1
+            interface "decrementBy" as pa2i2
+        }
+        package "UserSeat" as use {
+            interface "incrementBy" as usi1
+            interface "decrementBy" as usi2
+        }
+
+        interface "reallocate" as reall
+
+    }
+    package "publicFacet" as pf0 {
+        interface "addPool()" as ap
+        interface "otherMethods..." as om
+        interface "offer()" as offer
+    }
+    si0 -> cf0
+
+
+    node "Pool B" as poolb {
+        [Central Token] as ct2
+        database "Price Registry" <<Central/B>> as pr2
+        [Secondary Token B]
+        [Secondary Token B] --> ct2
+        interface "getPoolSeat()" as gps2
+    }
+
+    node "Pool A" as poola {
+        [Central Token] as ct1
+        database "Price Registry" <<Central/A>> as pr1
+        [Secondary Token A]
+        [Secondary Token A] --> ct1
+        interface "getPoolSeat()" as gps1
+    }
+
+    node "pool n" as pooln {
+    }
+
+    ap -d-> pooln
+
+    offer --> conf1: execute method
+
+    gps1 -d-> pa1
+    gps2 -d-> pa2
+    conf1 --> pa1i2
+    conf1 --> pa2i2
+    conf1 --> usi1
+    conf1 --> usi2
+    conf1 --> reall
+}
+
+cc1 --> si0
+cc2 --> ap
+cc3 -u-> offer
+offer -> offer: validate terms
+
+offer -> use
+cc3 --r-> use: reclaim funds
+cc3 --> om
+@enduml

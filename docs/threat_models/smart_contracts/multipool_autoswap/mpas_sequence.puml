@@ -1,0 +1,182 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Operating Systems
+footer Page %page% of %lastpage%
+title Multipool Auto Swap Sequence Diagram
+
+autonumber
+actor "MPAS Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+control "Zoe" as zoe
+database "MPAS Contract" as mpas
+
+== MPAS Creation ==
+masc -> mpas: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+create database "Pool SML:BUCK" as pool
+mpas -> pool: Create pool for SML -> BUCK
+mpas --> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+create database "Pool MOOL:BUCK" as pool2
+mpas -> pool2: Create pool for MOOL -> BUCK
+mpas --> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> mpas: ""addPool()""
+mpas -->x pa: pool for MOOL:BCK already exists
+newpage
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> mpas: ""getOutputPrice(UNK:BUCK)""
+mpas -->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> mpas: ""getOutputPrice(MOOL:BUCK)""
+mpas -> pool2: ""getPriceGivenRequiredOutput(MOOL:BUCK)""
+pool2 --> mpas: ""quote""
+mpas --> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting a SwapOut an invitation
+pu -> mpas: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+create control "userSeat" as usA
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat"" ref
+zoe -> pool: ""getPoolSeat()""
+create control "poolSeat" as psA
+pool -> psA: create ""poolSeat"" ref
+psA --> zoe: ""poolSeat"" ref
+zoe -> psA: add/remove funds
+zoe -> usA: add/remove funds
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat"" ref
+pu -> usA: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("in")""
+return ""payoutIn""
+pu -> pu: redeposit ""payoutIn"" into purse
+pu -> usA: ""getPayout("out")""
+return ""payoutOut""
+pu -> pu: redeposit ""payoutOut"" into purse
+end
+
+newpage
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat"" ref
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat"" ref
+psA --> zoe: ""poolSeat"" ref
+
+zoe -> psA: ""addLiquidity""
+zoe -> psA: add/remove funds
+zoe -> usA: add/remove funds
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat"" ref
+pu -> usA: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("in")""
+return ""payoutIn""
+pu -> pu: redeposit ""payoutIn"" into purse
+pu -> usA: ""getPayout("out")""
+return ""payoutOut""
+pu -> pu: redeposit ""payoutOut"" into purse
+end
+
+
+newpage
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA --> zoe: ""userSeat"" ref
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat"" ref
+psA --> zoe: ""poolSeat"" ref
+
+zoe -> psA: ""addLiquidity""
+zoe -> psA: add/remove funds
+zoe -> usA: add/remove funds
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA --> pu: ""userSeat"" ref
+pu -> usA: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("in")""
+return ""payoutIn""
+pu -> pu: redeposit ""payoutIn"" into purse
+pu -> usA: ""getPayout("out")""
+return ""payoutOut""
+pu -> pu: redeposit ""payoutOut"" into purse
+end
+
+@enduml
