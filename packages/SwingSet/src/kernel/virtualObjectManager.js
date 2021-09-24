@@ -231,7 +231,9 @@ export function makeVirtualObjectManager(
    *
    * @param {string} vobjID  The vref of the virtual object that's plausibly dead
    *
-   * @returns {boolean} true if the object should now be regarded as unrecognizable
+   * @returns {[boolean, boolean]} A pair of flags: the first is true if this
+   *    possibly created a new GC opportunity, the second is true if the object
+   *    should now be regarded as unrecognizable
    */
   function possibleVirtualObjectDeath(vobjID) {
     const refCount = getRefCount(vobjID);
@@ -244,10 +246,10 @@ export function makeVirtualObjectManager(
       syscall.vatstoreDelete(`vom.${vobjID}`);
       syscall.vatstoreDelete(`vom.rc.${vobjID}`);
       syscall.vatstoreDelete(`vom.es.${vobjID}`);
-      ceaseRecognition(vobjID);
-      return exportStatus !== 'none';
+      const possibleFree = ceaseRecognition(vobjID);
+      return [possibleFree, exportStatus !== 'none'];
     }
-    return false;
+    return [false, false];
   }
 
   function getRefCount(vobjID) {
@@ -521,14 +523,18 @@ export function makeVirtualObjectManager(
    * key.
    *
    * @param {string} vref  The vref that shall henceforth no longer be recognized
+   *
+   * @returns {boolean} true if this possibly creates a GC opportunity
    */
   function ceaseRecognition(vref) {
     const recognizerSet = vrefRecognizers.get(vref);
+    let possibleFree = false;
     if (recognizerSet) {
       vrefRecognizers.delete(vref);
       for (const recognizer of recognizerSet) {
         if (recognizer instanceof Map) {
           recognizer.delete(vref);
+          possibleFree = true;
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
         } else if (typeof recognizer === 'function') {
@@ -536,6 +542,7 @@ export function makeVirtualObjectManager(
         }
       }
     }
+    return possibleFree;
   }
 
   function isVrefRecognizable(vref) {
