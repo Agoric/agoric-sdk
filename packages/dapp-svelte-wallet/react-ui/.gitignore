@@ -10,6 +10,7 @@
 
 # production
 /build
+/public/lockdown.umd.js
 
 # misc
 .DS_Store
