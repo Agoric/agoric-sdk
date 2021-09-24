@@ -53,7 +53,13 @@ function build(
   gcTools,
   console,
 ) {
-  const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
+  const {
+    WeakRef,
+    FinalizationRegistry,
+    meterControl,
+    waitUntilQuiescent,
+    gcAndFinalize,
+  } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -106,8 +112,7 @@ function build(
   const exportedRemotables = new Set(); // objects
   const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
-  const deadSet = new Set(); // vrefs that are finalized but not yet reported
-  const possiblyDeadSet = new Set(); // vrefs that might need to be rechecked for being dead
+  const possiblyDeadSet = new Set(); // vrefs that need to be checked for being dead
   const possiblyRetiredSet = new Set(); // vrefs that might need to be rechecked for being retired
 
   function retainExportedVref(vref) {
@@ -189,16 +194,23 @@ function build(
 
     if (wr && !wr.deref()) {
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
-      deadSet.add(vref);
+      // eslint-disable-next-line no-use-before-define
+      addToPossiblyDeadSet(vref);
     }
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
-  function processDeadSet() {
-    const doMore = false;
+  async function scanForDeadObjects() {
     const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
-
+    let doMore;
     do {
+      const deadSet = new Set();
+      // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
+      // `do {} while` loop, which means there's no conditional bypass of the
+      // await.)
+      // eslint-disable-next-line no-await-in-loop
+      await gcAndFinalize();
+      doMore = false;
       for (const vref of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
         if (!getValForSlot(vref)) {
@@ -229,9 +241,11 @@ function build(
           // Representative: send nothing, but perform refcount checking
           if (slotToVal.get(vref)) {
             // eslint-disable-next-line no-use-before-define
-            if (vom.possibleVirtualObjectDeath(vref)) {
+            const [maybeFree, doRetire] = vom.possibleVirtualObjectDeath(vref);
+            if (doRetire) {
               exportsToRetire.push(vref);
             }
+            doMore = doMore || maybeFree;
           }
         } else if (allocatedByVat) {
           // Remotable: send retireExport
@@ -248,8 +262,7 @@ function build(
           }
         }
       }
-      deadSet.clear();
-    } while (possiblyDeadSet.size > 0 || possiblyRetiredSet.size > 0);
+    } while (possiblyDeadSet.size > 0 || possiblyRetiredSet.size > 0 || doMore);
 
     if (importsToDrop.length) {
       importsToDrop.sort();
@@ -263,10 +276,6 @@ function build(
       exportsToRetire.sort();
       syscall.retireExports(exportsToRetire);
     }
-
-    // TODO: possibly the doMore flag is never going to become relevant;
-    // investigate.
-    return doMore;
   }
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
@@ -523,7 +532,6 @@ function build(
         // doesn't matter anyway because deadSet.add only happens when
         // finializers run, and we wrote xsnap.c to ensure they only run
         // deterministically (during gcAndFinalize)
-        deadSet.delete(slot);
         droppedRegistry.register(val, slot, val);
       }
     }
@@ -546,7 +554,6 @@ function build(
     valToSlot.set(val, slot);
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
-      deadSet.delete(slot); // might have been FINALIZED before, no longer
       droppedRegistry.register(val, slot, val);
     }
   }
@@ -1114,17 +1121,6 @@ function build(
   // metered
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
-  const { waitUntilQuiescent, gcAndFinalize } = gcTools;
-
-  async function finish() {
-    await gcAndFinalize();
-    const doMore = processDeadSet();
-    if (doMore) {
-      return finish();
-    }
-    return undefined;
-  }
-
   /**
    * This low-level liveslots code is responsible for deciding when userspace
    * is done with a crank. Userspace code can use Promises, so it can add as
@@ -1153,18 +1149,18 @@ function build(
 
     // Now that userspace is idle, we can drive GC until we think we've
     // stopped.
-    return meterControl.runWithoutMeteringAsync(finish);
+    return meterControl.runWithoutMeteringAsync(scanForDeadObjects);
   }
   harden(dispatch);
 
-  // we return 'deadSet' for unit tests
+  // we return 'possiblyDeadSet' for unit tests
   return harden({
     vatGlobals,
     inescapableGlobalProperties,
     setBuildRootObject,
     dispatch,
     m,
-    deadSet,
+    possiblyDeadSet,
     testHooks,
   });
 }
@@ -1237,7 +1233,7 @@ export function makeLiveSlots(
     inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
-    deadSet,
+    possiblyDeadSet,
     testHooks,
   } = r; // omit 'm'
   return harden({
@@ -1245,7 +1241,7 @@ export function makeLiveSlots(
     inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
-    deadSet,
+    possiblyDeadSet,
     testHooks,
   });
 }

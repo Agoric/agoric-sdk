@@ -948,7 +948,7 @@ test('dropImports', async t => {
     false,
     gcTools,
   );
-  const { setBuildRootObject, dispatch, deadSet } = ls;
+  const { setBuildRootObject, dispatch, possiblyDeadSet } = ls;
   setBuildRootObject(build);
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
@@ -956,111 +956,111 @@ test('dropImports', async t => {
 
   const rootA = 'o+0';
 
-  // immediate drop should push import to deadSet after finalizer runs
+  // immediate drop should push import to possiblyDeadSet after finalizer runs
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-1')));
   // the immediate gcTools.kill() means that the import should now be in the
   // "COLLECTED" state
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
   FR.runOneCallback(); // moves to FINALIZED
-  t.deepEqual(deadSet, new Set(['o-1']));
-  deadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
+  t.deepEqual(possiblyDeadSet, new Set(['o-1']));
+  possiblyDeadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
 
   // separate hold and free should do the same
   await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-2')));
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
   await dispatch(makeMessage(rootA, 'free', capargs([])));
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
   FR.runOneCallback(); // moves to FINALIZED
-  t.deepEqual(deadSet, new Set(['o-2']));
-  deadSet.delete('o-2'); // pretend liveslots did syscall.dropImport
+  t.deepEqual(possiblyDeadSet, new Set(['o-2']));
+  possiblyDeadSet.delete('o-2'); // pretend liveslots did syscall.dropImport
 
   // re-introduction during COLLECTED should return to REACHABLE
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-3')));
   // now COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-3')));
   // back to REACHABLE
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   FR.runOneCallback(); // stays at REACHABLE
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
 
   await dispatch(makeMessage(rootA, 'free', capargs([])));
   // now COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   FR.runOneCallback(); // moves to FINALIZED
-  t.deepEqual(deadSet, new Set(['o-3']));
-  deadSet.delete('o-3'); // pretend liveslots did syscall.dropImport
+  t.deepEqual(possiblyDeadSet, new Set(['o-3']));
+  possiblyDeadSet.delete('o-3'); // pretend liveslots did syscall.dropImport
 
   // multiple queued finalizers are idempotent, remains REACHABLE
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
   // now COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
   // moves to REACHABLE and then back to COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
   await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-4')));
   // back to REACHABLE
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
   FR.runOneCallback(); // stays at REACHABLE
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   FR.runOneCallback(); // stays at REACHABLE
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
 
   // multiple queued finalizers are idempotent, remains FINALIZED
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
   // now COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
   // moves to REACHABLE and then back to COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
   FR.runOneCallback(); // moves to FINALIZED
-  t.deepEqual(deadSet, new Set(['o-5']));
+  t.deepEqual(possiblyDeadSet, new Set(['o-5']));
   t.is(FR.countCallbacks(), 1);
 
   FR.runOneCallback(); // stays at FINALIZED
-  t.deepEqual(deadSet, new Set(['o-5']));
+  t.deepEqual(possiblyDeadSet, new Set(['o-5']));
   t.is(FR.countCallbacks(), 0);
-  deadSet.delete('o-5'); // pretend liveslots did syscall.dropImport
+  possiblyDeadSet.delete('o-5'); // pretend liveslots did syscall.dropImport
 
   // re-introduction during FINALIZED moves back to REACHABLE
 
   await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-6')));
   // moves to REACHABLE and then back to COLLECTED
-  t.deepEqual(deadSet, new Set());
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
   FR.runOneCallback(); // moves to FINALIZED
-  t.deepEqual(deadSet, new Set(['o-6']));
+  t.deepEqual(possiblyDeadSet, new Set(['o-6']));
   t.is(FR.countCallbacks(), 0);
 
   await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
-  // back to REACHABLE, removed from deadSet
-  t.deepEqual(deadSet, new Set());
+  // back to REACHABLE, removed from possiblyDeadSet
+  t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
 });
 
