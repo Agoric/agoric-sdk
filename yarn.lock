@@ -9961,11 +9961,6 @@ plur@^4.0.0:
   dependencies:
     irregular-plurals "^3.2.0"
 
-polycrc@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/polycrc/-/polycrc-1.1.0.tgz#7ee75bd0b47d377d26d78ee7f5c529dde0c77af0"
-  integrity sha512-rEOTU2hpsys8CwOre1XptjEm1pGA8F2mCLI0Hxb1lc7HweXi0m9K70FX5uiGB63v1kklyZ0UfbWNo7pOXp/BHg==
-
 popper.js@1.16.1-lts:
   version "1.16.1-lts"
   resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.16.1-lts.tgz#cf6847b807da3799d80ee3d6d2f90df8a3f50b05"
