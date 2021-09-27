@@ -315,6 +315,7 @@ function build(
         // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
+      // FIXME: applyFunction(o, args, returnedP) { },
       get(o, prop) {
         lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
