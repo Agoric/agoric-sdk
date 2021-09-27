@@ -2,6 +2,7 @@
 
 import {
   assertChecker,
+  compareRank,
   getTag,
   isRankSorted,
   makeRankSorted,
@@ -27,7 +28,7 @@ export const checkCopySetKeys = (keys, check = x => x) => {
     );
   }
   const reverseKeys = harden([...keys].reverse());
-  if (!isRankSorted(reverseKeys)) {
+  if (!isRankSorted(reverseKeys, compareRank)) {
     return check(
       false,
       X`The keys of a copySet or copyMap must be sorted in reverse rank order: ${keys}`,
@@ -83,5 +84,5 @@ harden(everyCopySetKey);
  * @returns {CopySet}
  */
 export const makeCopySet = elements =>
-  makeTagged('copySet', [...makeRankSorted(elements)].reverse());
+  makeTagged('copySet', [...makeRankSorted(elements, compareRank)].reverse());
 harden(makeCopySet);

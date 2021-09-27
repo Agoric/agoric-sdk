@@ -2,6 +2,7 @@
 
 import {
   assertChecker,
+  compareRank,
   getTag,
   makeRankSorted,
   makeTagged,
@@ -105,7 +106,7 @@ export const makeCopyMap = entries => {
   // could solve the copyMap cover issue explained in patternMatchers.js.
   // But only if we include this criteria in our validation of copyMaps,
   // which we currently do not.
-  const sortedEntries = [...makeRankSorted(entries)].reverse();
+  const sortedEntries = [...makeRankSorted(entries, compareRank)].reverse();
   const keys = sortedEntries.map(([k, _v]) => k);
   const values = sortedEntries.map(([_k, v]) => v);
   return makeTagged('copyMap', { keys, values });

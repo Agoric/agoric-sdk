@@ -2,6 +2,7 @@
 
 import {
   assertChecker,
+  compareRank,
   everyPassableChild,
   Far,
   getPassStyleCover,
@@ -452,7 +453,7 @@ const matchAndHelper = Far('match:and helper', {
     return everyPassableChild(patts, checkIt);
   },
 
-  getRankCover: patts => unionRankCovers(patts.map(getRankCover)),
+  getRankCover: patts => unionRankCovers(compareRank, patts.map(getRankCover)),
 });
 
 /** @type {MatchHelper} */
@@ -469,7 +470,8 @@ const matchOrHelper = Far('match:or helper', {
     );
   },
 
-  getRankCover: patts => intersectRankCovers(patts.map(getRankCover)),
+  getRankCover: patts =>
+    intersectRankCovers(compareRank, patts.map(getRankCover)),
 });
 
 /** @type {MatchHelper} */

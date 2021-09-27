@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, assertPassable } from '@agoric/marshal';
+import { Far, assertPassable, compareRank } from '@agoric/marshal';
 import { assertScalarKey } from '../keys/checkKey.js';
 import { makeCopyMap } from '../keys/copyMap.js';
 import { assertMatches, assertPattern } from '../patterns/patternMatchers.js';
@@ -28,7 +28,12 @@ export const makeMapStoreMethods = (
     assertUpdateOnDelete,
     makeCursor,
     makeArray,
-  } = makeCursorKit(assertKVOkToWrite, assertKeyOkToDelete, keyName);
+  } = makeCursorKit(
+    compareRank,
+    assertKVOkToWrite,
+    assertKeyOkToDelete,
+    keyName,
+  );
 
   const methods = harden({
     ...makeWeakMapStoreMethods(
