@@ -5,13 +5,14 @@ import { mapIterable } from './helpers/iter-helpers.js';
 import { assertPassable } from './passStyleOf.js';
 import {
   assertRankSorted,
-  compareRank,
+  makeFullCompareRank,
   FullRankCover,
   coveredEntries,
   getIndexCover,
 } from './rankOrder.js';
 
 export const makeRankStore = (_elementName = 'element', _options = {}) => {
+  const compare = makeFullCompareRank();
   const backingArray = [];
   let sortedCache;
   /** @type {RankStore} */
@@ -23,15 +24,18 @@ export const makeRankStore = (_elementName = 'element', _options = {}) => {
     },
     snapshot: () => {
       if (sortedCache === undefined) {
-        backingArray.sort(compareRank);
+        backingArray.sort(compare);
         sortedCache = harden([...backingArray]);
-        assertRankSorted(sortedCache);
+        assertRankSorted(sortedCache, compare);
       }
       return sortedCache;
     },
     entries: (rankCover = FullRankCover) => {
       rankStore.snapshot();
-      return coveredEntries(sortedCache, getIndexCover(sortedCache, rankCover));
+      return coveredEntries(
+        sortedCache,
+        getIndexCover(sortedCache, compare, rankCover),
+      );
     },
     keys: (rankCover = FullRankCover) =>
       mapIterable(rankStore.entries(rankCover), ([index, _]) => index),

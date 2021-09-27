@@ -1,11 +1,12 @@
 // @ts-check
 
-import { compareRank, filterIterable } from '@agoric/marshal';
+import { assertRankSorted, filterIterable } from '@agoric/marshal';
 import { matches } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
 
 export const makeCursorKit = (
+  compare,
   assertOkToWrite,
   assertOkToDelete = undefined,
   keyName = 'key',
@@ -30,7 +31,9 @@ export const makeCursorKit = (
     makeArray: (baseIterable, pattern = undefined) => {
       const filter = pattern ? val => matches(harden(val), pattern) : harden;
       const filtered = filterIterable(baseIterable, filter);
-      return harden([...filtered].sort(compareRank));
+      const sorted = harden([...filtered].sort(compare));
+      assertRankSorted(sorted, compare);
+      return sorted;
     },
 
     makeCursor: (baseIterable, pattern = undefined) => {

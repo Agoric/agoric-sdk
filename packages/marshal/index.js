@@ -32,10 +32,11 @@ export { stringify, parse } from './src/marshal-stringify.js';
 
 export {
   compareRank,
+  makeFullCompareRank,
+  makeAntiCompareRank,
   isRankSorted,
   assertRankSorted,
   makeRankSorted,
-  FullRankCover,
   getPassStyleCover,
   getIndexCover,
   coveredEntries,

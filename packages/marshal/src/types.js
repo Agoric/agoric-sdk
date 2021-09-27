@@ -357,6 +357,7 @@
 /**
  * @callback GetIndexCover
  * @param {Passable[]} sorted
+ * @param {CompareRank} compare
  * @param {RankCover} rankCover
  * @returns {IndexCover}
  */
