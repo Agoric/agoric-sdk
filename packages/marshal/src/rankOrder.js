@@ -308,18 +308,19 @@ harden(assertRankSorted);
  * @returns {Passable[]}
  */
 export const makeRankSorted = (passables, compare) => {
-  const sortedSubMemo = getSortedSubMemo(compare);
-  // @ts-ignore The `has` method of WeakMap<K,V> and WeakSet<K>
-  // can actually be any JavaScript value, not just a K. We make
-  // use of that here. If passables is not an array, it won't be in
-  // there.
-  if (sortedSubMemo.has(passables)) {
-    assert(Array.isArray(passables));
-    return passables;
+  if (Array.isArray(passables)) {
+    harden(passables);
+    // Calling isRankSorted gives it a chance to get memoized for
+    // this comparator even it was already memoized for a different
+    // comparable comparator.
+    if (isRankSorted(passables, compare)) {
+      return passables;
+    }
   }
   const unsorted = [...passables];
   unsorted.forEach(harden);
   const sorted = harden(unsorted.sort(compare));
+  const sortedSubMemo = getSortedSubMemo(compare);
   sortedSubMemo.add(sorted);
   return sorted;
 };
