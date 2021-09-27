@@ -21,22 +21,38 @@ export const M = harden({
   bigint: () => M.kind('bigint'),
   string: () => M.kind('string'),
   symbol: () => M.kind('symbol'),
-  copyRecord: () => M.kind('copyRecord'),
-  copyArray: () => M.kind('copyArray'),
-  copySet: () => M.kind('copySet'),
-  copyMap: () => M.kind('copyMap'),
+  record: () => M.kind('copyRecord'),
+  array: () => M.kind('copyArray'),
+  set: () => M.kind('copySet'),
+  map: () => M.kind('copyMap'),
   remotable: () => M.kind('remotable'),
   error: () => M.kind('error'),
   promise: () => M.kind('promise'),
 
+  /**
+   * All keys including `undefined` are already valid patterns and
+   * so can validly represent themselves. But optional pattern arguments
+   * `(pattern = undefined) => ...`
+   * cannot distinguish between `undefined` passed as a pattern vs
+   * omission of the argument. It will interpret the first as the
+   * second. Thus, when a passed pattern does not also need to be a key,
+   * we recommend passing `M.undefined()` instead of `undefined`.
+   */
+  undefined: () => M.kind('undefined'),
+  null: () => null,
+
   lt: rightSide => patt(makeTagged('match:lt', rightSide)),
   lte: rightSide => patt(makeTagged('match:lte', rightSide)),
   eq: key => {
-    // Not needed because you can use `key` directly. But people may expect
-    // M.eq by symmetry and it doesn't hurt.
     assertKey(key);
-    return key;
+    return key === undefined ? M.undefined() : key;
   },
   gte: rightSide => patt(makeTagged('match:gte', rightSide)),
   gt: rightSide => patt(makeTagged('match:gt', rightSide)),
+
+  // TODO make more precise
+  arrayOf: _elementPatt => M.array(),
+  recordOf: _entryPatt => M.record(),
+  setOf: _elementPatt => M.set(),
+  mapOf: _entryPatt => M.map(),
 });
