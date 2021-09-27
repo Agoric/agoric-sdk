@@ -248,14 +248,22 @@ export const compareRank = makeCompareRank();
 export const makeFullCompareRank = () => makeCompareRank(makeTieBreaker());
 harden(makeFullCompareRank);
 
+/** @type {WeakMap<CompareRank,CompareRank>} */
+const oppositeCompareMemo = new WeakMap();
+
 /**
  * @param {CompareRank} compare
  * @returns {CompareRank}
  */
 export const makeAntiCompareRank = compare => {
+  if (oppositeCompareMemo.has(compare)) {
+    return /** @type {CompareRank} */ (oppositeCompareMemo.get(compare));
+  }
   getSortedSubMemo(compare); // asserts that it is well behaved
   const antiCompare = harden((x, y) => compare(y, x));
   sortedMemo.set(antiCompare, new WeakSet());
+  oppositeCompareMemo.set(compare, antiCompare);
+  oppositeCompareMemo.set(antiCompare, compare);
   return antiCompare;
 };
 harden(makeAntiCompareRank);
