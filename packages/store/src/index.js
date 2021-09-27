@@ -1,7 +1,16 @@
 // @ts-check
 
 export { isKey, assertKey } from './keys/checkKey.js';
-export { keyLT, keyLTE, keyEQ, keyGTE, keyGT } from './keys/compareKeys.js';
+export {
+  compareKeys,
+  keyLT,
+  keyLTE,
+  keyEQ,
+  keyGTE,
+  keyGT,
+} from './keys/compareKeys.js';
+
+export { makeCopySet } from './keys/copySet.js';
 
 export { isPattern, assertPattern } from './patterns/patternMatchers.js';
 export { M } from './patterns/M.js';

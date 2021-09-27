@@ -1,155 +1,94 @@
 // @ts-check
 
-import { passStyleOf } from '@agoric/marshal';
-import { assert, details as X } from '@agoric/assert';
-import { mustBeComparable, sameStructure } from '@agoric/same-structure';
+import { compareRank, makeRankSorted, passStyleOf } from '@agoric/marshal';
+import { makeCopySet, compareKeys, keyEQ, keyGTE } from '@agoric/store';
 
 import '../types.js';
+
+const { details: X } = assert;
+
+// TODO Eventually stop using sorted lists as the representation and
+// go directly to copySets. Move the relevant algorithms into
+// src/src/.
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
 /** @type {SetValue} */
 const empty = harden([]);
 
-/**
- * @param {Object} record
- * @returns {string}
- */
-const getKeyForRecord = record => {
-  const keys = Object.getOwnPropertyNames(record);
-  keys.sort();
-  const values = Object.values(record).filter(
-    value => typeof value === 'string',
-  );
-  values.sort();
-  return [...keys, ...values].join();
+const assertNoDuplicateKeys = _list => {
+  // TODO Move to store/src/checkKeys.js
+  // Have it check that the rank-sorted list has no duplicate keys.
+  // Also needed for copySets and copyMaps.
 };
-
-/**
- * Cut down the number of sameStructure comparisons to only the ones
- * that don't fail basic equality tests
- * TODO: better name?
- *
- * @param {SetValueElem} thing
- * @returns {SetValueElem}
- */
-const hashBadly = thing => {
-  // TODO Revisit before merging
-  const type = typeof thing;
-  const allowableNonObjectValues = ['string', 'number', 'bigint', 'boolean'];
-  if (allowableNonObjectValues.includes(type)) {
-    return thing;
-  }
-  if (passStyleOf(thing) === 'remotable') {
-    return thing;
-  }
-  if (passStyleOf(thing) === 'copyRecord') {
-    return getKeyForRecord(thing);
-  }
-  assert.fail(
-    X`typeof ${typeof thing} is not allowed in an amount of AssetKind.SET`,
-  );
-};
-
-/**
- * @typedef {Map<SetValueElem, SetValueElem[]>} Buckets
- */
-
-/**
- * @param {SetValueElem[]} list
- * @returns {Buckets}
- */
-const makeBuckets = list => {
-  const buckets = new Map();
-  list.forEach(elem => {
-    const badHash = hashBadly(elem);
-    if (!buckets.has(badHash)) {
-      buckets.set(badHash, []);
-    }
-    const soFar = buckets.get(badHash);
-    soFar.push(elem);
-  });
-  return buckets;
-};
-
-/**
- * Based on bucket sort
- *
- * @param {Buckets} buckets
- */
-const checkForDupes = buckets => {
-  for (const maybeMatches of buckets.values()) {
-    for (let i = 0; i < maybeMatches.length; i += 1) {
-      for (let j = i + 1; j < maybeMatches.length; j += 1) {
-        assert(
-          !sameStructure(maybeMatches[i], maybeMatches[j]),
-          X`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
-        );
-      }
-    }
-  }
-};
-
-/**
- *
- * @param {Buckets} buckets
- * @param {SetValueElem} elem
- * @returns {boolean}
- */
-const hasElement = (buckets, elem) => {
-  const badHash = hashBadly(elem);
-  if (!buckets.has(badHash)) {
-    return false;
-  }
-  const maybeMatches = buckets.get(badHash);
-  assert(maybeMatches);
-  return maybeMatches.some(maybeMatch => sameStructure(maybeMatch, elem));
-};
-
-// get a string of string keys and string values as a fuzzy hash for
-// bucketing.
-// only use sameStructure within that bucket.
 
 /**
  * @type {SetMathHelpers}
  */
 const setMathHelpers = harden({
   doCoerce: list => {
-    harden(list);
-    mustBeComparable(list);
-    assert(passStyleOf(list) === 'copyArray', 'list must be an array');
-    checkForDupes(makeBuckets(list));
+    list = makeRankSorted(list);
+    assertNoDuplicateKeys(list);
     return list;
   },
   doMakeEmpty: () => empty,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
   doIsGTE: (left, right) => {
-    const leftBuckets = makeBuckets(left);
-    return right.every(rightElem => hasElement(leftBuckets, rightElem));
+    const leftSet = makeCopySet(left);
+    const rightSet = makeCopySet(right);
+    return keyGTE(leftSet, rightSet);
   },
   doIsEqual: (left, right) => {
-    return left.length === right.length && setMathHelpers.doIsGTE(left, right);
+    const leftSet = makeCopySet(left);
+    const rightSet = makeCopySet(right);
+    return keyEQ(leftSet, rightSet);
   },
   doAdd: (left, right) => {
-    const combined = harden([...left, ...right]);
-    checkForDupes(makeBuckets(combined));
-    return combined;
+    // Rather than sorting from scratch, we can take advantage of the
+    // inputs being sorted already and merge them in linear time.
+    return setMathHelpers.doCoerce([...left, ...right]);
   },
   doSubtract: (left, right) => {
-    const leftBuckets = makeBuckets(left);
-    const rightBuckets = makeBuckets(right);
-    right.forEach(rightElem => {
-      assert(
-        hasElement(leftBuckets, rightElem),
-        X`right element ${rightElem} was not in left`,
-      );
-    });
-    /**
-     * @param {SetValueElem} leftElem
-     * @returns {boolean}
-     */
-    const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);
-    return harden(left.filter(leftElemNotInRight));
+    // TODO As with the algorithm in compareKeys, we start with the
+    // assumption that we do not have multiple distinct keys that are tied
+    // for the same rank in either list. This is obviously wrong, such as with
+    // multiple remotables.
+    const result = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+    while (leftIndex < left.length && rightIndex < right.length) {
+      const leftEl = left[leftIndex];
+      const rightEl = right[rightIndex];
+      const rankComp = compareRank(leftEl, rightEl);
+      const keyComp = compareKeys(leftEl, rightEl);
+      if (rankComp === 0) {
+        if (keyComp === 0) {
+          // skip past a match
+          leftIndex += 1;
+          rightIndex += 1;
+        } else {
+          assert.fail(
+            X`Distict keys tied for rank not yet implemented: ${leftEl}, ${rightEl}`,
+          );
+        }
+      } else if (rankComp < 0) {
+        assert(keyComp !== 0);
+        // leftEl not matched. Take it
+        result.push(leftEl);
+        leftIndex += 1;
+      } else {
+        assert(keyComp !== 0);
+        assert(rankComp > 0, X`right element ${rightEl} was not in left`);
+      }
+    }
+    assert(
+      rightIndex === right.length,
+      X`right element ${right[rightIndex]} was not in left`,
+    );
+    while (leftIndex < left.length) {
+      result.push(left[leftIndex]);
+    }
+    return harden(result);
   },
 });
 

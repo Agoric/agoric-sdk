@@ -24,6 +24,8 @@ const { ownKeys } = Reflect;
  * `compareKeys` is currently not exported directly, so its
  * bizarre but convenient return type is not exposed.
  *
+ * (TODO actually stop exporting it)
+ *
  * Key order (a partial order) and rank order (a full order) are
  * co-designed so that we store passables in rank order and index into them
  * with keys for key-based queries. To keep these distinct, when speaking
@@ -57,7 +59,7 @@ const { ownKeys } = Reflect;
  * @param {Key} right
  * @returns {-1 | 0 | 1 | NaN}
  */
-const compareKeys = (left, right) => {
+export const compareKeys = (left, right) => {
   assertKey(left);
   assertKey(right);
   const leftStyle = passStyleOf(left);
