@@ -10,9 +10,11 @@ import {
 
 /**
  * @typedef {Object} Context
+ * @property {string} [accessToken]
  * @property {any?} error
  * @property {string?} location
  * @property {string?} suggestedDappPetname
+ * @property {('admin' | 'bridge')} [destination]
  */
 
 /**
@@ -54,7 +56,9 @@ export const makeConnectionMachine = () =>
           'locating',
           reduce((ctx, ev) => ({
             ...ctx,
+            destination: ev.destination,
             suggestedDappPetname: ev.suggestedDappPetname,
+            accessToken: ev.accessToken,
           })),
         ),
         transition('connect', 'connecting'),
@@ -71,7 +75,20 @@ export const makeConnectionMachine = () =>
           reduce((ctx, ev) => ({ ...ctx, location: ev.href })),
         ),
       ),
-      connecting: state(...common, transition('connected', 'bridged')),
+      connecting: state(
+        ...common,
+        transition(
+          'connected',
+          'admin',
+          guard(({ destination }) => destination === 'admin'),
+        ),
+        transition(
+          'connected',
+          'bridged',
+          guard(({ destination }) => destination === 'bridge'),
+        ),
+      ),
+      admin: state(...common),
       bridged: state(
         ...common,
         transition(

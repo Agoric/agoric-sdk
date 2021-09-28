@@ -55,8 +55,26 @@ export class AgoricWalletConnection extends LitElement {
           'idle',
           X`Cannot get scoped bridge in state ${this.state}`,
         );
-        this.service.send({ type: 'locate', suggestedDappPetname, dappOrigin });
+        this.service.send({
+          type: 'locate',
+          destination: 'bridge',
+          suggestedDappPetname,
+          dappOrigin,
+        });
         return this._bridgePK.promise;
+      },
+      getAdminBootstrap: accessToken => {
+        assert.equal(
+          this.state,
+          'idle',
+          X`Cannot get admin bootstrap in state ${this.state}`,
+        );
+        this.service.send({
+          type: 'locate',
+          destination: 'admin',
+          accessToken,
+        });
+        return this._adminBootstrapPK.promise;
       },
       reset: () => {
         this.service.send({ type: 'reset' });
@@ -64,7 +82,10 @@ export class AgoricWalletConnection extends LitElement {
           this._captp.abort();
           this._captp = null;
         }
+        this._bridgePK.reject(Error('Connection reset'));
+        this._adminBootstrapPK.reject(Error('Connection reset'));
         this._bridgePK = makePromiseKit();
+        this._adminBootstrapPK = makePromiseKit();
       },
     });
 
@@ -97,6 +118,7 @@ export class AgoricWalletConnection extends LitElement {
 
     this._nextEpoch = 0;
     this._bridgePK = makePromiseKit();
+    this._adminBootstrapPK = makePromiseKit();
 
     this._walletCallbacks = Far('walletCallbacks', {
       needDappApproval: (dappOrigin, suggestedDappPetname) => {
@@ -127,6 +149,33 @@ export class AgoricWalletConnection extends LitElement {
     this.service.send({ type: 'located', href: data });
   }
 
+  onAdminOpen(event) {
+    console.log(this.state, 'admin received', event);
+
+    /** @type {WebSocket} */
+    const ws = this._adminWebsocket;
+
+    const send = obj => ws.send(JSON.stringify(obj));
+    this._startCapTP(send, 'walletAdmin');
+
+    assert(this._captp);
+    const { dispatch, abort, getBootstrap } = this._captp;
+
+    ws.addEventListener('message', ev => {
+      const obj = JSON.parse(ev.data);
+      dispatch(obj);
+    });
+
+    ws.addEventListener('close', () => {
+      abort();
+    });
+
+    this._adminBootstrapPK.resolve(getBootstrap());
+
+    // Mark the connection as admin.
+    this.service.send({ type: 'connected' });
+  }
+
   onConnectMessage(event) {
     console.log(this.state, 'connect received', event);
     const { data, send } = event.detail;
@@ -136,7 +185,11 @@ export class AgoricWalletConnection extends LitElement {
       X`Unexpected connect message type ${data.type}`,
     );
 
-    this._startCapTP(send);
+    this._startCapTP(
+      send,
+      this.service.context.suggestedDappPetname,
+      this._walletCallbacks,
+    );
 
     // Received bridge announcement, so mark the connection as bridged.
     this.service.send({ type: 'connected' });
@@ -153,26 +206,44 @@ export class AgoricWalletConnection extends LitElement {
 
   onError(event) {
     console.log(this.state, 'error', event);
-    this.service.send({ type: 'error', error: event.detail.error });
+    this.service.send({
+      type: 'error',
+      error: event.detail ? event.detail.error : 'Unknown error',
+    });
 
     // Allow retries to get a fresh bridge.
     this._captp = null;
   }
 
-  _startCapTP(send) {
+  _startCapTP(send, ourEndpoint, ourPublishedBootstrap = undefined) {
     // Start a new epoch of the bridge captp.
     const epoch = this._nextEpoch;
     this._nextEpoch += 1;
 
     this._captp = makeCapTP(
-      `${this.service.context.suggestedDappPetname}.${epoch}`,
+      `${ourEndpoint}.${epoch}`,
       obj => {
         // console.log('sending', obj);
         send(obj);
       },
-      this._walletCallbacks,
+      ourPublishedBootstrap,
       { epoch },
     );
+  }
+
+  _getAdminURL() {
+    const { location, accessToken } = this.service.context;
+    assert(location);
+
+    // Find the websocket protocol for this path.
+    const url = new URL('/private/captp', location);
+    url.protocol = url.protocol.replace(/^http/, 'ws');
+
+    if (accessToken) {
+      url.searchParams.set('accessToken', accessToken);
+    }
+
+    return url.href;
   }
 
   _getBridgeURL() {
@@ -195,8 +266,25 @@ export class AgoricWalletConnection extends LitElement {
         break;
       }
       case 'connecting': {
-        src = this._getBridgeURL();
-        onMessage = this.onConnectMessage;
+        const { destination } = this.service.context;
+        switch (destination) {
+          case 'admin': {
+            const ws = new WebSocket(this._getAdminURL());
+            ws.addEventListener('open', this.onAdminOpen);
+            ws.addEventListener('error', this.onError);
+
+            this._adminWebsocket = ws;
+            break;
+          }
+          case 'bridge': {
+            src = this._getBridgeURL();
+            onMessage = this.onConnectMessage;
+            break;
+          }
+          default: {
+            assert.fail(`Destination ${destination} must be set`);
+          }
+        }
         break;
       }
       case 'approving':
