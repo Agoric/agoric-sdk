@@ -149,12 +149,7 @@ export class AgoricWalletConnection extends LitElement {
     this.service.send({ type: 'located', href: data });
   }
 
-  onAdminOpen(event) {
-    console.log(this.state, 'admin received', event);
-
-    /** @type {WebSocket} */
-    const ws = this._adminWebsocket;
-
+  onAdminOpen(ws) {
     const send = obj => ws.send(JSON.stringify(obj));
     this._startCapTP(send, 'walletAdmin');
 
@@ -215,7 +210,17 @@ export class AgoricWalletConnection extends LitElement {
     this._captp = null;
   }
 
-  _startCapTP(send, ourEndpoint, ourPublishedBootstrap = undefined) {
+  _getBridgeURL() {
+    const { location, suggestedDappPetname } = this.service.context;
+    assert(location);
+    const url = new URL(location);
+    if (suggestedDappPetname) {
+      url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
+    }
+    return url.href;
+  }
+
+  _startCapTP(send, ourEndpoint, ourPublishedBootstrap) {
     // Start a new epoch of the bridge captp.
     const epoch = this._nextEpoch;
     this._nextEpoch += 1;
@@ -246,16 +251,6 @@ export class AgoricWalletConnection extends LitElement {
     return url.href;
   }
 
-  _getBridgeURL() {
-    const { location, suggestedDappPetname } = this.service.context;
-    assert(location);
-    const url = new URL(location);
-    if (suggestedDappPetname) {
-      url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
-    }
-    return url.href;
-  }
-
   render() {
     let src = '';
     let onMessage;
@@ -270,10 +265,8 @@ export class AgoricWalletConnection extends LitElement {
         switch (destination) {
           case 'admin': {
             const ws = new WebSocket(this._getAdminURL());
-            ws.addEventListener('open', this.onAdminOpen);
+            ws.addEventListener('open', () => this.onAdminOpen(ws));
             ws.addEventListener('error', this.onError);
-
-            this._adminWebsocket = ws;
             break;
           }
           case 'bridge': {
