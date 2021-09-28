@@ -3,10 +3,11 @@
 import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
-
-import { swapIn as swapInPrice } from '../constantProduct/swapIn.js';
-import { swapOut as swapOutPrice } from '../constantProduct/swapOut.js';
 import { makeFeeRatio } from '../constantProduct/calcFees';
+import {
+  calcSwapInPrices,
+  calcSwapOutPrices,
+} from '../constantProduct/calcSwapPrices.js';
 
 // Price calculations and swap using a pair of pools. Both pools map between RUN
 // and some collateral. We arrange the trades so collateralInPool will have
@@ -84,21 +85,21 @@ export const makeDoublePool = (
     //  less.
     // Notice that in the second call, the original amountOut is used, and in
     // the third call, the original amountIn is used.
-    const interimInpoolPrices = swapInPrice(
+    const interimInpoolPrices = calcSwapInPrices(
       amountIn,
       inAllocation,
       emptyCentralAmount,
       protocolFeeRatio,
       centralFeeRatio,
     );
-    const outPoolPrices = swapInPrice(
+    const outPoolPrices = calcSwapInPrices(
       interimInpoolPrices.swapperGets,
       outAllocation,
       amountOut,
       protocolFeeRatio,
       makeFeeRatio(poolFee, amountOut.brand),
     );
-    const finalInPoolPrices = swapOutPrice(
+    const finalInPoolPrices = calcSwapOutPrices(
       amountIn,
       inAllocation,
       outPoolPrices.swapperGives,
@@ -141,21 +142,21 @@ export const makeDoublePool = (
     // Notice that the amountIn parameter to the first call to swapOutPrice
     // specifies an empty amount. This is interpreted as "no limit", which is
     // necessary since we can't guess a reasonable maximum of the central token.
-    const interimOutpoolPrices = swapOutPrice(
+    const interimOutpoolPrices = calcSwapOutPrices(
       emptyCentralAmount,
       outAllocation,
       amountOut,
       protocolFeeRatio,
       centralFeeRatio,
     );
-    const inpoolPrices = swapOutPrice(
+    const inpoolPrices = calcSwapOutPrices(
       amountIn,
       inAllocation,
       interimOutpoolPrices.swapperGets,
       protocolFeeRatio,
       makeFeeRatio(poolFee, amountIn.brand),
     );
-    const finalOutpoolPrices = swapInPrice(
+    const finalOutpoolPrices = calcSwapInPrices(
       inpoolPrices.swapperGives,
       outAllocation,
       amountOut,
