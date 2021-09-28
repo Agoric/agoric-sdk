@@ -1,10 +1,11 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-
-import { swapIn as swapInPrice } from '../constantProduct/swapIn.js';
-import { swapOut as swapOutPrice } from '../constantProduct/swapOut.js';
 import { makeFeeRatio } from '../constantProduct/calcFees';
+import {
+  calcSwapInPrices,
+  calcSwapOutPrices,
+} from '../constantProduct/calcSwapPrices.js';
 
 /**
  * @param {ContractFacet} zcf
@@ -47,7 +48,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
   };
 
   const getPriceForInput = (amountIn, amountOut) => {
-    return swapInPrice(
+    return calcSwapInPrices(
       amountIn,
       getPools(),
       amountOut,
@@ -62,7 +63,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
   };
 
   const getPriceForOutput = (amountIn, amountOut) => {
-    return swapOutPrice(
+    return calcSwapOutPrices(
       amountIn,
       getPools(),
       amountOut,
