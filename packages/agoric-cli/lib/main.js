@@ -232,7 +232,7 @@ const main = async (progname, rawArgs, powers) => {
       /**
        * Git pull, install, and build.
        */
-      spawnSync('git', ['pull'], { stdio: 'inherit' });
+      spawnSync('git', ['pull', '--depth', '1'], { stdio: 'inherit' });
       spawnSync('yarn', ['install'], { stdio: 'inherit' });
       spawnSync('yarn', ['build'], { stdio: 'inherit' });
     });
