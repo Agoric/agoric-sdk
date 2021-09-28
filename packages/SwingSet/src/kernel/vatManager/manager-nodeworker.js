@@ -45,7 +45,6 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       compareSyscalls,
       useTranscript,
     } = managerOptions;
-    assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
 
     // We use workerCanBlock=false because we get syscalls via an async

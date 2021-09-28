@@ -1,5 +1,4 @@
 /* global WeakRef FinalizationRegistry */
-import { performance } from 'perf_hooks';
 import fs from 'fs';
 // import '@agoric/install-ses';
 import '../tools/install-ses-debug.js';
@@ -68,7 +67,7 @@ async function replay(transcriptFile) {
     FinalizationRegistry,
     waitUntilQuiescent,
     gcAndFinalize: makeGcAndFinalize(gcEveryCrank ? engineGC : false),
-    meterControl: makeDummyMeterControl(),
+    meterControl,
   });
   const allVatPowers = { testLog };
 
