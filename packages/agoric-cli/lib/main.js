@@ -1,7 +1,10 @@
 /* global process */
 import { Command } from 'commander';
-import path from 'path';
+import path, { resolve } from 'path';
 import { assert, details as X } from '@agoric/assert';
+import { homedir } from 'os';
+import { spawnSync } from 'child_process';
+import { chdir } from 'process';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
 import initMain from './init.js';
@@ -216,6 +219,22 @@ const main = async (progname, rawArgs, powers) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(startMain, ['start', profile, ...args], opts);
+    });
+
+  program
+    .command('update')
+    .description('Update the Agoric SDK.')
+    .action(async () => {
+      /**
+       * Change to Agoric SDK in user's home directory.
+       */
+      chdir(resolve(homedir(), 'agoric-sdk'));
+      /**
+       * Git pull, install, and build.
+       */
+      spawnSync('git', ['pull'], { stdio: 'inherit' });
+      spawnSync('yarn', ['install'], { stdio: 'inherit' });
+      spawnSync('yarn', ['build'], { stdio: 'inherit' });
     });
 
   // Throw an error instead of exiting directly.
