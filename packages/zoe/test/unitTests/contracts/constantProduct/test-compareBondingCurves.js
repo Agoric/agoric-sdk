@@ -2,11 +2,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
-
-import { swapIn } from '../../../../src/contracts/constantProduct/swapIn.js';
-import { swapOut } from '../../../../src/contracts/constantProduct/swapOut.js';
 import { setupMintKits } from './setupMints.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
+import {
+  calcSwapInPrices,
+  calcSwapOutPrices,
+} from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 
 // This assumes run is swapped in. The test should function the same
 // regardless of what brand is the amountIn, because no run fee is
@@ -38,7 +39,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
 
 const testGetPrice = (t, inputs, expectedOutput) => {
   const { args, bld } = prepareSwapInTest(inputs);
-  const result = swapIn(...args);
+  const result = calcSwapInPrices(...args);
   t.deepEqual(result.swapperGets, bld(expectedOutput));
 };
 
@@ -46,7 +47,7 @@ const getInputPriceThrows = (t, inputs, message) => {
   t.throws(
     _ => {
       const { args } = prepareSwapInTest(inputs);
-      return swapIn(...args);
+      return calcSwapInPrices(...args);
     },
     {
       message,
@@ -84,13 +85,13 @@ const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
 
 const testGetOutputPrice = (t, inputs, expectedInput) => {
   const { args, run } = prepareSwapOutTest(inputs);
-  const result = swapOut(...args);
+  const result = calcSwapOutPrices(...args);
   t.deepEqual(result.swapperGives, run(expectedInput));
 };
 
 const getOutputPriceThrows = (t, inputs, message) => {
   const { args } = prepareSwapOutTest(inputs);
-  t.throws(_ => swapOut(...args), {
+  t.throws(_ => calcSwapOutPrices(...args), {
     message,
   });
 };

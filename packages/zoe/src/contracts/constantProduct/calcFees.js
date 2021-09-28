@@ -5,6 +5,8 @@ import { ceilMultiplyBy, makeRatio } from '../../contractSupport/ratio.js';
 
 import { BASIS_POINTS } from './defaults.js';
 
+const { details: X } = assert;
+
 /**
  * Make a ratio given a nat representing basis points
  *
@@ -12,41 +14,67 @@ import { BASIS_POINTS } from './defaults.js';
  * @param {Brand} brandOfFee
  * @returns {Ratio}
  */
-export const makeFeeRatio = (feeBP, brandOfFee) => {
+const makeFeeRatio = (feeBP, brandOfFee) => {
   return makeRatio(feeBP, brandOfFee, BASIS_POINTS);
 };
 
-export const maximum = (left, right) => {
+/** @type {Maximum} */
+const maximum = (left, right) => {
   // If left is greater or equal, return left. Otherwise return right.
   return AmountMath.isGTE(left, right) ? left : right;
 };
 
-export const amountGT = (left, right) =>
+/** @type {AmountGT} */
+const amountGT = (left, right) =>
   AmountMath.isGTE(left, right) && !AmountMath.isEqual(left, right);
 
 /**
- * @param {{ amountIn: Amount, amountOut: Amount}} amounts - an array of two
- *   amounts in different brands. We must select the amount of the same brand as
- *   the feeRatio.
+ * Apply the feeRatio to the amount that has a matching brand. This used to
+ * calculate fees in the single pool case.
+ *
+ * @param {{ amountIn: Amount, amountOut: Amount}} amounts - a record with two
+ *   amounts in different brands.
  * @param {Ratio} feeRatio
  * @returns {Amount}
  */
 const calcFee = ({ amountIn, amountOut }, feeRatio) => {
-  const sameBrandAmount =
-    amountIn.brand === feeRatio.numerator.brand ? amountIn : amountOut;
+  assert(
+    feeRatio.numerator.brand === feeRatio.denominator.brand,
+    X`feeRatio numerator and denominator must use the same brand ${feeRatio}`,
+  );
+
+  let sameBrandAmount;
+  if (amountIn.brand === feeRatio.numerator.brand) {
+    sameBrandAmount = amountIn;
+  } else if (amountOut.brand === feeRatio.numerator.brand) {
+    sameBrandAmount = amountOut;
+  } else {
+    assert(
+      false,
+      X`feeRatio's brand (${feeRatio.numerator.brand}) must match one of the amounts [${amountIn}, ${amountOut}].`,
+    );
+  }
+
   // Always round fees up
   const fee = ceilMultiplyBy(sameBrandAmount, feeRatio);
 
   // Fee cannot exceed the amount on which it is levied
-  assert(AmountMath.isGTE(sameBrandAmount, fee));
+  assert(
+    AmountMath.isGTE(sameBrandAmount, fee),
+    X`The feeRatio can't be greater than 1 ${feeRatio}`,
+  );
 
   return fee;
 };
 
-// SwapIn uses calcDeltaYSellingX
-// SwapOut uses calcDeltaXSellingX
-
-export const calculateFees = (
+/**
+ * Estimate the swap values, then calculate fees. The swapFn provided by the
+ * caller will be calcDeltaYSellingX for SwapIn and calcDeltaXSellingX for
+ * SwapOut.
+ *
+ * @type {CalculateFees}
+ */
+const calculateFees = (
   amountGiven,
   poolAllocation,
   amountWanted,
@@ -62,3 +90,10 @@ export const calculateFees = (
 
   return harden({ protocolFee, poolFee, ...estimation });
 };
+
+harden(amountGT);
+harden(maximum);
+harden(makeFeeRatio);
+harden(calculateFees);
+
+export { amountGT, maximum, makeFeeRatio, calculateFees };

@@ -96,7 +96,6 @@ const swapInReduced = ({ x: inPool, y: outPool, deltaX: offeredAmountIn }) => {
   return harden({
     amountIn: reducedAmountIn,
     amountOut,
-    improvement: AmountMath.subtract(offeredAmountIn, reducedAmountIn),
   });
 };
 
@@ -113,7 +112,6 @@ const swapOutImproved = ({
   return harden({
     amountIn,
     amountOut: improvedAmountOut,
-    improvement: AmountMath.subtract(improvedAmountOut, wantedAmountOut),
   });
 };
 

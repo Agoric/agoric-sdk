@@ -1,13 +1,21 @@
+// @ts-check
+
 // This does not support secondary to secondary. That has to happen at
 // a higher abstraction
 
 /**
+ * The caller provides poolAllocation, which has balances for both Central and
+ * Secondary, and at least one of amountGiven and amountWanted. getXY treats
+ * the amountGiven as the X pool, and amountWanted as Y. It figures out which
+ * way to pair up X and Y with Central and Secondary, and returns the pool
+ * balances as X and Y and given and wanted as deltaX and deltaY
+ * { X, Y, deltaX, deltaY }.
  *
  * @param {Object} opt
  * @param {Amount=} opt.amountGiven
  * @param {{ Central: Amount, Secondary: Amount }} opt.poolAllocation
  * @param {Amount=} opt.amountWanted
- * @returns {{ x: Amount, y: Amount, deltaX: Amount, deltaY: Amount }}
+ * @returns {{ x: Amount, y: Amount, deltaX: Amount | undefined, deltaY: Amount | undefined }}
  */
 export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
   // Regardless of whether we are specifying the amountIn or the

@@ -3,14 +3,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-
-import { swapIn } from '../../../../src/contracts/constantProduct/swapIn.js';
 import {
   calcDeltaXSellingX,
   calcDeltaYSellingX,
   swapInNoFees,
 } from '../../../../src/contracts/constantProduct/core.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
+import { calcSwapInPrices } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 
 const BASIS_POINTS = 10000n;
 const POOL_FEE = 24n;
@@ -72,7 +71,7 @@ test('newSwap getPriceGivenAvailableInput specify central', async t => {
   );
   t.deepEqual(reduced, moola(9999n));
 
-  const result = swapIn(
+  const result = calcSwapInPrices(
     amountGiven,
     poolAllocation,
     amountWanted,
@@ -103,7 +102,7 @@ test('newSwap getPriceGivenAvailableInput secondary', async t => {
   );
   const poolFeeRatio = makeRatio(POOL_FEE, moolaKit.brand, BASIS_POINTS);
 
-  const result = swapIn(
+  const result = calcSwapInPrices(
     amountGiven,
     poolAllocation,
     amountWanted,

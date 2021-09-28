@@ -6,10 +6,14 @@ import {
   DEFAULT_PROTOCOL_FEE,
   DEFAULT_POOL_FEE,
 } from '../../../../src/contracts/constantProduct/defaults.js';
-
-import { swapIn } from '../../../../src/contracts/constantProduct/swapIn.js';
 import { setupMintKits } from './setupMints.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
+import {
+  makeRatio,
+  natSafeMath,
+} from '../../../../src/contractSupport/index.js';
+import { calcSwapInPrices } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
+
+const { multiply, ceilDivide } = natSafeMath;
 
 // This assumes run is swapped in. The test should function the same
 // regardless of what brand is the amountIn, because no run fee is
@@ -47,7 +51,7 @@ const prepareSwapInTest = ({
 
 const testGetPrice = (t, inputs, expectedOutput) => {
   const { args, run, bld } = prepareSwapInTest(inputs);
-  const result = swapIn(...args);
+  const result = calcSwapInPrices(...args);
   const expected = harden({
     protocolFee: run(expectedOutput.protocolFee),
     poolFee: bld(expectedOutput.poolFee),
@@ -57,7 +61,6 @@ const testGetPrice = (t, inputs, expectedOutput) => {
     yDecrement: bld(expectedOutput.yDecrement),
     newX: run(expectedOutput.newX),
     newY: bld(expectedOutput.newY),
-    improvement: run(expectedOutput.improvement),
   });
   t.deepEqual(result, expected);
 };
@@ -76,9 +79,14 @@ test('getInputPrice newSwap bug scenario', t => {
     (input.inputPool + input.inputValue);
   const firstImprovedDeltaX =
     (input.inputPool * firstDeltaY) / (input.outputPool - firstDeltaY);
-  const poolFee = 1n + (DEFAULT_POOL_FEE * firstDeltaY) / BASIS_POINTS;
-  const protocolFee =
-    1n + (DEFAULT_PROTOCOL_FEE * firstImprovedDeltaX) / BASIS_POINTS;
+  const poolFee = ceilDivide(
+    multiply(DEFAULT_POOL_FEE, firstDeltaY),
+    BASIS_POINTS,
+  );
+  const protocolFee = ceilDivide(
+    multiply(DEFAULT_PROTOCOL_FEE, firstImprovedDeltaX),
+    BASIS_POINTS,
+  );
 
   const secondDeltaY =
     (input.outputPool * (input.inputValue - protocolFee)) /
@@ -98,12 +106,11 @@ test('getInputPrice newSwap bug scenario', t => {
     yDecrement,
     newX: input.inputPool + xIncrement,
     newY: input.outputPool - yDecrement,
-    improvement: 18n,
   });
   testGetPrice(t, input, expectedOutput);
 });
 
-test.only('getInputPrice newSwap example', t => {
+test('getInputPrice xy=k example', t => {
   const input = {
     inputPool: 40000n,
     outputPool: 3000n,
@@ -132,7 +139,39 @@ test.only('getInputPrice newSwap example', t => {
     yDecrement,
     newX: input.inputPool + xIncrement,
     newY: input.outputPool - yDecrement,
-    improvement: 4n,
+  });
+  testGetPrice(t, input, expectedOutput);
+});
+
+test('getInputPrice xy=k bigger numbers', t => {
+  const input = {
+    inputPool: 40000000n,
+    outputPool: 3000000n,
+    inputValue: 30000n,
+    outputValue: 2000n,
+  };
+
+  const poolFee = 6n;
+  const protocolFee = 18n;
+
+  const secondDeltaY =
+    (input.outputPool * (input.inputValue - protocolFee)) /
+    (input.inputPool + (input.inputValue - protocolFee));
+  const secondImprovedDeltaX =
+    (input.inputPool * secondDeltaY) / (input.outputPool - secondDeltaY) + 1n;
+  const yDecrement = secondDeltaY - poolFee;
+  const improvement = 12n;
+  const xIncrement = input.inputValue - protocolFee - improvement;
+  t.is(secondImprovedDeltaX, xIncrement);
+  const expectedOutput = harden({
+    poolFee,
+    protocolFee,
+    swapperGives: input.inputValue - improvement,
+    swapperGets: yDecrement,
+    xIncrement,
+    yDecrement,
+    newX: input.inputPool + xIncrement,
+    newY: input.outputPool - yDecrement,
   });
   testGetPrice(t, input, expectedOutput);
 });
