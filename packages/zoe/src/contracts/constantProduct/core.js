@@ -6,18 +6,20 @@ import { natSafeMath } from '../../contractSupport/index.js';
 import { makeRatioFromAmounts } from '../../contractSupport/ratio.js';
 import { getXY } from './getXY.js';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 const assertSingleBrand = ratio => {
   assert(
     ratio.numerator.brand === ratio.denominator.brand,
-    X`Ratio was expected to have same brand in numerator and denominator ${q(
-      ratio,
-    )}`,
+    X`Ratio was expected to have same brand in numerator ${ratio.numerator.brand} and denominator ${ratio.denominator.brand}`,
   );
 };
 
 /**
+ * Multiply an amount by a ratio using floorDivide, ignoring the ratio's brands
+ * in favor of the amount brand. This is necessary because the ratio is produced
+ * by dividing assets of the opposite brand.
+ *
  * @param {Amount} amount
  * @param {Ratio} ratio
  * @returns {Amount}
@@ -32,6 +34,10 @@ const floorMultiplyKeepBrand = (amount, ratio) => {
 };
 
 /**
+ * Multiply an amount and a ratio using ceilDivide, ignoring the ratio's brands
+ * in favor of the amount brand. This is necessary because the ratio is produced
+ * by dividing assets of the opposite brand.
+ *
  * @param {Amount} amount
  * @param {Ratio} ratio
  * @returns {Amount}
@@ -46,17 +52,19 @@ const ceilMultiplyKeepBrand = (amount, ratio) => {
 };
 
 /**
- * Calculate the change to the shrinking pool when the user specifies how much
- * they're willing to add. Also used to improve a proposed trade when the amount
- * contributed would buy more than the user asked for.
+ * Calculate deltaY when the user is selling brand X. That is, whichever asset
+ * the user is selling, this function is used to calculate the change in the
+ * other asset, i.e. how much of brand Y to give the user in return.
+ * swapOutImproved calls this function with the calculated amountIn to find out
+ * if more than the wantedAmountOut can be gained for the necessary amountIn.
  *
  * deltaY = (deltaXOverX/(1 + deltaXOverX))*y
  * Equivalently: (deltaX / (deltaX + x)) * y
  *
- * @param {Amount} x - the amount of the growing brand in the pool
- * @param {Amount} y - the amount of the shrinking brand in the pool
- * @param {Amount} deltaX - the amount of the growing brand to be added
- * @returns {Amount} deltaY - the amount of the shrinking brand to be taken out
+ * @param {Amount} x - the amount of Brand X in pool
+ * @param {Amount} y - the amount of Brand Y the pool
+ * @param {Amount} deltaX - the amount of Brand X to be added
+ * @returns {Amount} deltaY - the amount of Brand Y to be taken out
  */
 export const calcDeltaYSellingX = (x, y, deltaX) => {
   const deltaXPlusX = AmountMath.add(deltaX, x);
@@ -67,17 +75,18 @@ export const calcDeltaYSellingX = (x, y, deltaX) => {
 };
 
 /**
- * Calculate the change to the growing pool when the user specifies how much
- * they want to receive. Also used to improve a proposed trade when the amount
- * requested can be purchased for a smaller input.
+ * Calculate deltaX when the user is selling brand X. That is, whichever asset
+ * the user is selling, this function is used to calculate the change to the
+ * pool for that asset. swapInReduced calls this with the calculated amountOut
+ * to find out if less than the offeredAmountIn would be sufficient.
  *
  * deltaX = (deltaYOverY/(1 - deltaYOverY))*x
  * Equivalently: (deltaY / (Y - deltaY )) * x
  *
- * @param {Amount} x - the amount of the growing brand in the pool
- * @param {Amount} y - the amount of the shrinking brand in the pool
- * @param {Amount} deltaY - the amount of the shrinking brand to take out
- * @returns {Amount} deltaX - the amount of the growingn brand to add
+ * @param {Amount} x - the amount of Brand X in the pool
+ * @param {Amount} y - the amount of Brand Y in the pool
+ * @param {Amount} deltaY - the amount of Brand Y to be taken out
+ * @returns {Amount} deltaX - the amount of Brand X to be added
  */
 export const calcDeltaXSellingX = (x, y, deltaY) => {
   const yMinusDeltaY = AmountMath.subtract(y, deltaY);
@@ -87,11 +96,22 @@ export const calcDeltaXSellingX = (x, y, deltaY) => {
   return ceilMultiplyKeepBrand(x, yRatio);
 };
 
-const swapInReduced = ({ x: inPool, y: outPool, deltaX: offeredAmountIn }) => {
-  const amountOut = calcDeltaYSellingX(inPool, outPool, offeredAmountIn);
-  const reducedAmountIn = calcDeltaXSellingX(inPool, outPool, amountOut);
+/**
+ * The input contains the amounts in the pool and a maximum amount offered.
+ * Calculate the most beneficial trade that satisfies the constant product
+ * invariant.
+ *
+ * @param {GetXYResultDeltaX} obj
+ * @returns {ImprovedNoFeeSwapResult}
+ */
+const swapInReduced = ({ x, y, deltaX: offeredAmountIn }) => {
+  const amountOut = calcDeltaYSellingX(x, y, offeredAmountIn);
+  const reducedAmountIn = calcDeltaXSellingX(x, y, amountOut);
 
-  assert(AmountMath.isGTE(offeredAmountIn, reducedAmountIn));
+  assert(
+    AmountMath.isGTE(offeredAmountIn, reducedAmountIn),
+    X`The trade would have required ${reducedAmountIn} more than was offered ${offeredAmountIn}`,
+  );
 
   return harden({
     amountIn: reducedAmountIn,
@@ -99,15 +119,22 @@ const swapInReduced = ({ x: inPool, y: outPool, deltaX: offeredAmountIn }) => {
   });
 };
 
-const swapOutImproved = ({
-  x: inPool,
-  y: outPool,
-  deltaY: wantedAmountOut,
-}) => {
-  const amountIn = calcDeltaXSellingX(inPool, outPool, wantedAmountOut);
-  const improvedAmountOut = calcDeltaYSellingX(inPool, outPool, amountIn);
+/**
+ * The input contains the amounts in the pool and the minimum amount requested.
+ * Calculate the most beneficial trade that satisfies the constant product
+ * invariant.
+ *
+ * @param {GetXYResultDeltaY} obj
+ * @returns {ImprovedNoFeeSwapResult}
+ */
+const swapOutImproved = ({ x, y, deltaY: wantedAmountOut }) => {
+  const amountIn = calcDeltaXSellingX(x, y, wantedAmountOut);
+  const improvedAmountOut = calcDeltaYSellingX(x, y, amountIn);
 
-  assert(AmountMath.isGTE(improvedAmountOut, wantedAmountOut));
+  assert(
+    AmountMath.isGTE(improvedAmountOut, wantedAmountOut),
+    X`The trade would have returned ${improvedAmountOut} less than was wanted ${wantedAmountOut}`,
+  );
 
   return harden({
     amountIn,

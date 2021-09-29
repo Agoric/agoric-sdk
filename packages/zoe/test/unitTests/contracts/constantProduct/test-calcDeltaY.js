@@ -7,8 +7,6 @@ import { AmountMath } from '@agoric/ertp';
 import { calcDeltaYSellingX } from '../../../../src/contracts/constantProduct/core.js';
 import { setupMintKits } from './setupMints.js';
 
-// the brands of x and y shouldn't matter (test this explicitly in a
-// separate test)
 const doTest = (t, x, y, deltaX, expectedDeltaY) => {
   const { run, bld } = setupMintKits();
   const result = calcDeltaYSellingX(run(x), bld(y), run(deltaX));
@@ -72,6 +70,6 @@ test('1000000, 5000, 209, 1', t => {
   doTest(t, 1000000, 5000, 209, 1);
 });
 
-test('5000, 1000000, 209, 1', t => {
+test('5000, 1000000, 209, 40122', t => {
   doTest(t, 5000, 1000000, 209, 40122);
 });

@@ -82,3 +82,36 @@
  * @param {Ratio} poolFeeRatio
  * @returns {SwapResult}
  */
+
+/**
+ * @typedef {Object} GetXYParam
+ * @property {Amount=} amountGiven
+ * @property {PoolAllocation} poolAllocation
+ * @property {Amount=} amountWanted
+ */
+
+/**
+ * @typedef {Object} GetXYResultDeltaX
+ * @property {Amount} x
+ * @property {Amount} y
+ * @property {Amount} deltaX
+ * @property {Amount|undefined} deltaY
+ */
+
+/**
+ * @typedef {Object} GetXYResultDeltaY
+ * @property {Amount} x
+ * @property {Amount} y
+ * @property {Amount} deltaY
+ * @property {Amount|undefined} deltaX
+ */
+
+/**
+ * @typedef {GetXYResultDeltaX & GetXYResultDeltaY} GetXYResult
+ */
+
+/**
+ * @callback GetXY
+ * @param {GetXYParam} obj
+ * @returns {GetXYResult}
+ */
