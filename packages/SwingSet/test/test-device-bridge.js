@@ -126,11 +126,11 @@ test('bridge device can return undefined', async t => {
   const hostStorage = provideHostStorage();
   const config = {
     bootstrap: 'bootstrap',
-    defaultManagerType: 'local',
     vats: {
       bootstrap: {
         sourceSpec: new URL('./device-bridge-bootstrap.js', import.meta.url)
           .pathname,
+        creationOptions: { managerType: 'local' },
       },
     },
     devices: {

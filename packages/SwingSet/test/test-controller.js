@@ -165,7 +165,9 @@ test('validate config.defaultManagerType', async t => {
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'XYZ';
-  await t.throwsAsync(buildVatController(config), { message: /XYZ/ });
+  await t.throwsAsync(buildVatController(config, undefined, { env: {} }), {
+    message: /XYZ/,
+  });
 });
 
 test.serial('bootstrap export', async t => {
