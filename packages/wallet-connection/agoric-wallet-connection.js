@@ -1,6 +1,6 @@
-import { AgoricWalletConnection } from './src/AgoricWalletConnection.js';
+import { makeAgoricWalletConnection } from './src/agoric-wallet-connection.js';
 
 window.customElements.define(
   'agoric-wallet-connection',
-  AgoricWalletConnection,
+  makeAgoricWalletConnection(),
 );
