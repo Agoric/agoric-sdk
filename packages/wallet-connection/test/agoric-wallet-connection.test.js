@@ -38,6 +38,25 @@ describe('AgoricWalletConnection', () => {
     expect(el.state).to.equal('locating');
   });
 
+  it('transitions on getAdminBootstrap', async () => {
+    const onState = ev => {
+      switch (ev.detail.state) {
+        case 'idle': {
+          E(ev.detail.walletConnection).getAdminBootstrap('accessToken123');
+          break;
+        }
+        default:
+      }
+    };
+
+    const el = await fixture(
+      html`
+        <agoric-wallet-connection @state=${onState}></agoric-wallet-connection>
+      `,
+    );
+    expect(el.state).to.equal('locating');
+  });
+
   it(`can't override the state`, async () => {
     const el = await fixture(
       html`
