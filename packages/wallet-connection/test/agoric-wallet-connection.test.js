@@ -51,7 +51,6 @@ customElements.define(
 );
 
 describe('AgoricWalletConnection', () => {
-  // eslint-disable-next-line no-unused-vars
   let mockServer;
   let socket;
   let lastMessage;
