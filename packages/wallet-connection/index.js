@@ -1,1 +1,1 @@
-export { makeAgoricWalletConnection } from './src/agoric-wallet-connection.js';
+export { AgoricWalletConnection } from './src/AgoricWalletConnection.js';

@@ -3,7 +3,7 @@
 import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeCapTP } from '@agoric/captp';
+import { makeCapTP as defaultMakeCapTP } from '@agoric/captp';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -11,19 +11,15 @@ import 'robot3/debug';
 import { interpret } from 'robot3';
 
 import { makeConnectionMachine } from './states.js';
-import { makeAgoricIframeMessenger } from './agoric-iframe-messenger.js';
 
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
   'https://local.agoric.com/?append=/wallet-bridge.html';
 
 export const makeAgoricWalletConnection = (
-  makeIframe = makeAgoricIframeMessenger,
-  capTP = makeCapTP,
-) => {
-  window.customElements.define('agoric-iframe-messenger', makeIframe());
-
-  return class AgoricWalletConnection extends LitElement {
+  makeCapTP = defaultMakeCapTP,
+) =>
+  class AgoricWalletConnection extends LitElement {
     static get styles() {
       return css`
         :host {
@@ -212,7 +208,7 @@ export const makeAgoricWalletConnection = (
       console.log(this.state, 'error', event);
       this.service.send({
         type: 'error',
-        error: event.detail ? event.detail.error : 'Unknown error',
+        error: event.detail && event.detail.error || 'Unknown error',
       });
 
       // Allow retries to get a fresh bridge.
@@ -234,7 +230,7 @@ export const makeAgoricWalletConnection = (
       const epoch = this._nextEpoch;
       this._nextEpoch += 1;
 
-      this._captp = capTP(
+      this._captp = makeCapTP(
         `${ourEndpoint}.${epoch}`,
         obj => {
           // console.log('sending', obj);
@@ -319,4 +315,5 @@ export const makeAgoricWalletConnection = (
       `;
     }
   };
-};
+
+export const AgoricWalletConnection = makeAgoricWalletConnection();
