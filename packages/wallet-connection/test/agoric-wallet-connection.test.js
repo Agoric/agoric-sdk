@@ -1,35 +1,53 @@
+/* eslint-disable no-underscore-dangle */
 import '../demo/install-ses-lockdown.js';
 import { E } from '@agoric/eventual-send';
 import { html } from 'lit';
 import { fixture, expect } from '@open-wc/testing';
 
 import { Server } from 'mock-socket/dist/mock-socket.es';
-import { makeAgoricWalletConnection } from '../src/agoric-wallet-connection.js';
-import { makeMockAgoricIframeMessenger } from './src/mock-agoric-iframe-messenger.js';
-import { MockCapTP } from './src/mock-cap-tp.js';
+import { makeAgoricWalletConnection } from '../src/AgoricWalletConnection.js';
+import { makeAgoricIframeMessenger } from '../src/AgoricIframeMessenger.js';
 
-/**
- * @type {import('./src/mock-agoric-iframe-messenger.js').MockIframeController}
- */
-const iframeController = {};
-window.iframeController = iframeController;
+let iframeMessenger;
+const iframeOnMessage = data => {
+  // Pretend we have a message from the iframe.
+  const ev = {
+    data,
+    source: iframeMessenger._contentWindow,
+    preventDefault: () => {},
+  };
+  return iframeMessenger._onMessage(ev);
+};
 
-let mockCapTP;
+const captpInnards = {
+  send: () => {},
+  lastDispatched: undefined,
+  isAborted: false,
+};
+
+// Expose the innards of the captp object for testing.
 const makeMockCapTP = (_, rawSend, __, ___) => {
-  mockCapTP = new MockCapTP(rawSend);
+  captpInnards.send = rawSend;
+  captpInnards.lastDispatched = undefined;
+  captpInnards.isAborted = false;
+
   return {
-    dispatch: data => mockCapTP.dispatch(data),
-    abort: () => mockCapTP.abort(),
-    getBootstrap: () => mockCapTP.getBootstrap(),
+    dispatch: data => (captpInnards.lastDispatched = data),
+    abort: () => (captpInnards.isAborted = true),
+    getBootstrap: () => ({ foo: 'bar' }),
   };
 };
 
+// Expose the iframe messenger instance used by the wallet connection.
+customElements.define(
+  'agoric-iframe-messenger',
+  makeAgoricIframeMessenger(that => (iframeMessenger = that)),
+);
+
+// Expose the captp innards for the wallet connection.
 customElements.define(
   'agoric-wallet-connection',
-  makeAgoricWalletConnection(
-    () => makeMockAgoricIframeMessenger('iframeController'),
-    makeMockCapTP,
-  ),
+  makeAgoricWalletConnection(makeMockCapTP),
 );
 
 describe('AgoricWalletConnection', () => {
@@ -113,13 +131,13 @@ describe('AgoricWalletConnection', () => {
     });
 
     it('starts connecting after locating completes', () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
 
       expect(el.state).to.equal('connecting');
     });
 
     it('goes to admin state once connected', async () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
 
       // Connecting happens instantly with the mock socket,
       // just need to let the event loop run once.
@@ -128,37 +146,37 @@ describe('AgoricWalletConnection', () => {
     });
 
     it('lets the websocket dispatch messages through capTP', async () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
       socket.send(JSON.stringify({ foo: 'bar' }));
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(mockCapTP.lastDispatched).to.deep.equal({ foo: 'bar' });
+      expect(captpInnards.lastDispatched).to.deep.equal({ foo: 'bar' });
     });
 
     it('lets capTP send messages through the websocket', async () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      mockCapTP.send({ foo: 'bar' });
+      captpInnards.send({ foo: 'bar' });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar' }));
     });
 
     it('aborts capTP when the socket disconnects', async () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
       socket.close();
 
       await new Promise(resolve => setTimeout(resolve, 10));
-      expect(mockCapTP.isAborted).to.equal(true);
+      expect(captpInnards.isAborted).to.equal(true);
     });
 
     it('returns the admin bootstrap', async () => {
-      iframeController.ref.onMessage('http://localhost:8000');
+      iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(await adminBootstrap).to.deep.equal({ foo: 'bar' });
