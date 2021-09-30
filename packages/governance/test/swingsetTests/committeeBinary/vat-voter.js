@@ -2,74 +2,84 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { observeNotifier } from '@agoric/notifier';
+import { observeIteration } from '@agoric/notifier';
+import { sameStructure } from '@agoric/same-structure';
 
-const verify = async (log, question, registrarPublicFacet, instances) => {
-  const ballotTemplate = E(registrarPublicFacet).getBallot(question);
-  const { positions, method, question: q, maxChoices, instance } = await E(
-    ballotTemplate,
-  ).getDetails();
-  log(`Verify ballot from instance: ${question}, ${positions}, ${method}`);
-  const c = await E(registrarPublicFacet).getName();
-  log(`Verify: q: ${q}, max: ${maxChoices}, committee: ${c}`);
-  const registrarInstance = await E(registrarPublicFacet).getInstance();
+const { quote: q } = assert;
+
+const verify = async (log, issue, electoratePublicFacet, instances) => {
+  const questionHandles = await E(electoratePublicFacet).getOpenQuestions();
+  const detailsP = questionHandles.map(h => {
+    const question = E(electoratePublicFacet).getQuestion(h);
+    return E(question).getDetails();
+  });
+  const detailsPlural = await Promise.all(detailsP);
+  const details = detailsPlural.find(d => sameStructure(d.issue, issue));
+
+  const { positions, method, issue: iss, maxChoices } = details;
+  log(`verify question from instance: ${q(issue)}, ${q(positions)}, ${method}`);
+  const c = await E(electoratePublicFacet).getName();
+  log(`Verify: q: ${q(iss)}, max: ${maxChoices}, committee: ${c}`);
+  const electorateInstance = await E(electoratePublicFacet).getInstance();
   log(
-    `Verify instances: registrar: ${registrarInstance ===
-      instances.registrarInstance}, counter: ${instance ===
-      instances.ballotInstance}`,
+    `Verify instances: electorate: ${electorateInstance ===
+      instances.electorateInstance}, counter: ${details.counterInstance ===
+      instances.counterInstance}`,
   );
 };
 
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
-      const registrarInstance = await E(zoe).getInstance(invitation);
-      const registrarPublicFacet = E(zoe).getPublicFacet(registrarInstance);
+      const electorateInstance = await E(zoe).getInstance(invitation);
+      const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
 
       const votingObserver = Far('voting observer', {
-        updateState: question => {
-          log(`${name} cast a ballot on ${question} for ${choice}`);
-          return E(voteFacet).castBallotFor(question, [choice]);
+        updateState: details => {
+          log(`${name} voted for ${q(choice)}`);
+          return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
         },
       });
-      const notifier = E(registrarPublicFacet).getQuestionNotifier();
-      observeNotifier(notifier, votingObserver);
+      const subscription = E(electoratePublicFacet).getQuestionSubscription();
+      observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
-          verify(log, question, registrarPublicFacet, instances),
+          verify(log, question, electoratePublicFacet, instances),
       });
     },
     createMultiVoter: async (name, invitation, choices) => {
-      const registrarInstance = await E(zoe).getInstance(invitation);
-      const registrarPublicFacet = E(zoe).getPublicFacet(registrarInstance);
+      const electorateInstance = await E(zoe).getInstance(invitation);
+      const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
 
-      const voteMap = new Map(choices);
+      const voteMap = new Map();
+      choices.forEach(entry => {
+        const [issue, position] = entry;
+        voteMap.set(issue.text, position);
+      });
       const votingObserver = Far('voting observer', {
-        updateState: question => {
-          const choice = voteMap.get(question);
-
-          log(`${name} cast a ballot on ${question} for ${choice}`);
-          return E(voteFacet).castBallotFor(question, [choice]);
+        updateState: details => {
+          const choice = voteMap.get(details.issue.text);
+          log(`${name} voted on ${q(details.issue)} for ${q(choice)}`);
+          return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
         },
       });
-      const notifier = E(registrarPublicFacet).getQuestionNotifier();
-      observeNotifier(notifier, votingObserver);
+      const subscription = E(electoratePublicFacet).getQuestionSubscription();
+      observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
-          verify(log, question, registrarPublicFacet, instances),
+          verify(log, question, electoratePublicFacet, instances),
       });
     },
   });
 };
 
-export function buildRootObject(vatPowers) {
-  return Far('root', {
+export const buildRootObject = vatPowers =>
+  Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),
   });
-}

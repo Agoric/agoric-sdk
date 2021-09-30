@@ -3,262 +3,313 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
-
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { makeBinaryBallotCounter } from '../../src/binaryBallotCounter.js';
 
-const QUESTION = 'Fish or cut bait?';
-const FISH = 'Fish';
-const BAIT = 'Cut Bait';
+import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
+import {
+  ChoiceMethod,
+  ElectionType,
+  QuorumRule,
+  looksLikeQuestionSpec,
+  makeParamChangePositions,
+} from '../../src/index.js';
 
-test('binary ballot', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
-    1n,
+const ISSUE = harden({ text: 'Fish or cut bait?' });
+const FISH = harden({ text: 'Fish' });
+const BAIT = harden({ text: 'Cut Bait' });
+
+const PARAM_CHANGE_SPEC = { parameterName: 'arbitrary', key: 'simple' };
+const { positive, negative } = makeParamChangePositions(PARAM_CHANGE_SPEC, 37);
+const PARAM_CHANGE_ISSUE = harden({
+  paramSpec: PARAM_CHANGE_SPEC,
+  contract: makeHandle('Instance'),
+  proposedValue: 37,
+});
+
+const FAKE_CLOSING_RULE = {
+  timer: buildManualTimer(console.log),
+  deadline: 3n,
+};
+
+const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
+
+test('binary question', async t => {
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
+    0n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
+  const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
 
   const alicePositions = aliceTemplate.getDetails().positions;
   t.deepEqual(alicePositions.length, 2);
   t.deepEqual(alicePositions[0], FISH);
-  await E(voterFacet).submitVote(
-    aliceSeat,
-    aliceTemplate.choose([alicePositions[0]]),
-  );
+  await E(creatorFacet).submitVote(aliceSeat, [alicePositions[0]]);
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, FISH);
 });
 
 test('binary spoiled', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
+  const { publicFacet, creatorFacet } = makeBinaryVoteCounter(
+    questionSpec,
     0n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
+  const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
 
   const alicePositions = aliceTemplate.getDetails().positions;
   t.deepEqual(alicePositions.length, 2);
   t.deepEqual(alicePositions[0], FISH);
+
   await t.throwsAsync(
-    () =>
-      E(voterFacet).submitVote(aliceSeat, {
-        question: QUESTION,
-        chosen: ['no'],
-      }),
+    () => E(creatorFacet).submitVote(aliceSeat, [harden({ text: 'no' })]),
     {
-      message: `The ballot's choice is not a legal position: "no".`,
+      message: `The specified choice is not a legal position: {"text":"no"}.`,
     },
   );
 });
 
 test('binary tied', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: PARAM_CHANGE_ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     2n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
+  const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
   const bobSeat = makeHandle('Voter');
 
   const positions = aliceTemplate.getDetails().positions;
-  E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose([positions[0]]));
-  await E(voterFacet).submitVote(bobSeat, aliceTemplate.choose([positions[1]]));
+  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  await E(creatorFacet).submitVote(bobSeat, [positions[1]]);
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, undefined);
-});
-
-test('binary tied w/fallback', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
-    2n,
-    BAIT,
-  );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
-  const aliceSeat = makeHandle('Voter');
-  const bobSeat = makeHandle('Voter');
-
-  const positions = aliceTemplate.getDetails().positions;
-  E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose([positions[0]]));
-  await E(voterFacet).submitVote(bobSeat, aliceTemplate.choose([positions[1]]));
-  closeFacet.closeVoting();
-  const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, BAIT);
+  t.deepEqual(outcome, negative);
 });
 
 test('binary bad vote', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
-    1n,
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: PARAM_CHANGE_ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { creatorFacet } = makeBinaryVoteCounter(
+    questionSpec,
+    0n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
   const aliceSeat = makeHandle('Voter');
 
-  t.throws(
-    () => E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose(['worms'])),
-    {
-      message:
-        'Some positions in ["worms"] are not valid in ["Fish","Cut Bait"]',
-    },
-  );
-});
-
-test('binary counter does not match ballot', async t => {
-  const { creatorFacet } = makeBinaryBallotCounter(QUESTION, [FISH, BAIT], 1n);
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceSeat = makeHandle('Voter');
-
-  await t.throwsAsync(
-    () =>
-      E(voterFacet).submitVote(aliceSeat, {
-        question: 'Hop, skip or jump?',
-        chosen: [FISH],
-      }),
-    {
-      message:
-        'Ballot not for this question "Hop, skip or jump?" should have been "Fish or cut bait?"',
-    },
-  );
-  await t.throwsAsync(
-    () =>
-      E(voterFacet).submitVote(aliceSeat, {
-        question: QUESTION,
-        chosen: ['jump'],
-      }),
-    {
-      message: `The ballot's choice is not a legal position: "jump".`,
-    },
-  );
+  await t.throwsAsync(() => E(creatorFacet).submitVote(aliceSeat, [BAIT]), {
+    message: `The specified choice is not a legal position: {"text":"Cut Bait"}.`,
+  });
 });
 
 test('binary no votes', async t => {
-  const { publicFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: PARAM_CHANGE_ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { publicFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     0n,
+    FAKE_COUNTER_INSTANCE,
   );
 
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, undefined);
+  t.deepEqual(outcome, negative);
 });
 
 test('binary varying share weights', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     1n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const template = publicFacet.getBallotTemplate();
   const aceSeat = makeHandle('Voter');
   const austinSeat = makeHandle('Voter');
   const saraSeat = makeHandle('Voter');
 
   await Promise.all([
-    E(voterFacet).submitVote(aceSeat, template.choose([FISH]), 37n),
-    E(voterFacet).submitVote(austinSeat, template.choose([BAIT]), 24n),
-    E(voterFacet).submitVote(saraSeat, template.choose([BAIT]), 11n),
+    E(creatorFacet).submitVote(aceSeat, [positive], 37n),
+    E(creatorFacet).submitVote(austinSeat, [negative], 24n),
+    E(creatorFacet).submitVote(saraSeat, [negative], 11n),
   ]);
 
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, 'Fish');
+  t.deepEqual(outcome, positive);
 });
 
 test('binary contested', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     3n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const template = publicFacet.getBallotTemplate();
+  const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
   const bobSeat = makeHandle('Voter');
 
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 2);
 
-  E(voterFacet).submitVote(aliceSeat, template.choose([positions[0]]), 23n);
-  await E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 47n);
+  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
+  await E(creatorFacet).submitVote(bobSeat, [positions[1]], 47n);
   closeFacet.closeVoting();
 
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, BAIT);
+  t.deepEqual(outcome, negative);
 });
 
 test('binary revote', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: PARAM_CHANGE_ISSUE,
+    positions: [positive, negative],
+    electionType: ElectionType.PARAM_CHANGE,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: negative,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     5n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const template = publicFacet.getBallotTemplate();
+  const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
   const bobSeat = makeHandle('Voter');
 
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 2);
 
-  E(voterFacet).submitVote(aliceSeat, template.choose([positions[0]]), 23n);
-  E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 47n);
-  await E(voterFacet).submitVote(bobSeat, template.choose([positions[1]]), 15n);
+  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
+  E(creatorFacet).submitVote(bobSeat, [positions[1]], 47n);
+  await E(creatorFacet).submitVote(bobSeat, [positions[1]], 15n);
   closeFacet.closeVoting();
 
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, FISH);
+  t.deepEqual(outcome, positive);
 });
 
-test('binary ballot too many', async t => {
-  const { publicFacet, creatorFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+test('binary question too many', async t => {
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
+  const { publicFacet, creatorFacet } = makeBinaryVoteCounter(
+    questionSpec,
     1n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
+  const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
 
   const alicePositions = aliceTemplate.getDetails().positions;
-  t.throws(
-    () =>
-      E(voterFacet).submitVote(aliceSeat, aliceTemplate.choose(alicePositions)),
+  await t.throwsAsync(
+    // @ts-ignore  illegal value for testing
+    () => E(creatorFacet).submitVote(aliceSeat, alicePositions),
     {
-      message: 'only 1 position(s) allowed',
+      message: 'only 1 position allowed',
     },
   );
 });
 
 test('binary no quorum', async t => {
-  const { publicFacet, creatorFacet, closeFacet } = makeBinaryBallotCounter(
-    QUESTION,
-    [FISH, BAIT],
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [FISH, BAIT],
+    electionType: ElectionType.ELECTION,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
+  });
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
+    questionSpec,
     2n,
+    FAKE_COUNTER_INSTANCE,
   );
-  const voterFacet = E(creatorFacet).getVoterFacet();
-  const aliceTemplate = publicFacet.getBallotTemplate();
+  const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
 
   const positions = aliceTemplate.getDetails().positions;
-  await E(voterFacet).submitVote(
-    aliceSeat,
-    aliceTemplate.choose([positions[0]]),
-  );
+  await E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
   closeFacet.closeVoting();
   await E(publicFacet)
     .getOutcome()
@@ -267,8 +318,21 @@ test('binary no quorum', async t => {
 });
 
 test('binary too many positions', async t => {
-  t.throws(() => makeBinaryBallotCounter(QUESTION, [FISH, BAIT, 'sleep'], 1n), {
-    message:
-      'Binary ballots must have exactly two positions. had 3: ["Fish","Cut Bait","sleep"]',
+  const questionSpec = looksLikeQuestionSpec({
+    method: ChoiceMethod.UNRANKED,
+    issue: ISSUE,
+    positions: [FISH, BAIT, harden({ text: 'sleep' })],
+    electionType: ElectionType.SURVEY,
+    maxChoices: 1,
+    closingRule: FAKE_CLOSING_RULE,
+    quorumRule: QuorumRule.NO_QUORUM,
+    tieOutcome: BAIT,
   });
+  t.throws(
+    () => makeBinaryVoteCounter(questionSpec, 0n, FAKE_COUNTER_INSTANCE),
+    {
+      message:
+        'Binary questions must have exactly two positions. had 3: [{"text":"Fish"},{"text":"Cut Bait"},{"text":"sleep"}]',
+    },
+  );
 });

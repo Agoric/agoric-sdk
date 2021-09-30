@@ -4,6 +4,8 @@ import './types.js';
 import { assert, details as X, q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
+import { passStyleOf } from '@agoric/marshal';
+
 import { natSafeMath } from './safeMath.js';
 
 const { multiply, floorDivide, ceilDivide, add, subtract } = natSafeMath;
@@ -38,6 +40,7 @@ const PERCENT = 100n;
 const ratioPropertyNames = ['numerator', 'denominator'];
 
 export const assertIsRatio = ratio => {
+  assert.equal(passStyleOf(ratio), 'copyRecord');
   const propertyNames = Object.getOwnPropertyNames(ratio);
   assert(
     propertyNames.length === 2,
