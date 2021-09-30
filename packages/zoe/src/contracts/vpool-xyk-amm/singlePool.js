@@ -3,8 +3,8 @@
 import { Far } from '@agoric/marshal';
 import { makeFeeRatio } from '../constantProduct/calcFees';
 import {
-  calcSwapInPrices,
-  calcSwapOutPrices,
+  pricesForStatedInput,
+  pricesForStatedOutput,
 } from '../constantProduct/calcSwapPrices.js';
 
 /**
@@ -48,7 +48,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
   };
 
   const getPriceForInput = (amountIn, amountOut) => {
-    return calcSwapInPrices(
+    return pricesForStatedInput(
       amountIn,
       getPools(),
       amountOut,
@@ -63,7 +63,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
   };
 
   const getPriceForOutput = (amountIn, amountOut) => {
-    return calcSwapOutPrices(
+    return pricesForStatedOutput(
       amountIn,
       getPools(),
       amountOut,
