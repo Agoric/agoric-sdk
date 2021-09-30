@@ -39,7 +39,9 @@ extracted from the pools to adhere to those rules.
 
 In these tables BLD represents any collateral. The user can specify how much
 they want or how much they're willing to pay. We'll call the value they
-specified **sGive** or **sGet** and bold it. This table shows which brands the
+specified **sGive** or **sGet** and bold it. We'll always refer to the currency
+being added as X (regardless of whether it's what they pay or what they receive)
+and the currency the user gets as Y. This table shows which brands the
 amounts each have, as well as what is computed vs. given. The PoolFee is
 computed based on the calculated amount (BLD in rows 1 and 2; RUN in rows 3 and
 4). The Protocol fee is always in RUN.
@@ -52,9 +54,9 @@ computed based on the calculated amount (BLD in rows 1 and 2; RUN in rows 3 and
 | **BLD out** | RUN | BLD | RUN | RUN | **sGet** | sGive |
 
 We'll estimate how much the pool balances would change in the no-fee, improved
-price case using the constant product formulas. These estimates are &delta;X,
-and &delta;Y. The fees are based on &delta;X, and &delta;Y. &rho; is the poolFee
-(e.g. .003).
+price case using the constant product formulas. We call these estimates
+&delta;X, and &delta;Y. The fees are based on &delta;X, and &delta;Y. &rho; is
+the poolFee (e.g. .003).
 
 The pool fee will be &rho; times whichever of &delta;X and &delta;Y was
 calculated. The protocol fee will be &rho; * &delta;X when RUN is paid in, and
@@ -63,19 +65,13 @@ calculated. The protocol fee will be &rho; * &delta;X when RUN is paid in, and
 |          | &delta;X | &delta;Y | PoolFee | Protocol Fee |
 |---------|-----|-----|--------|-----|
 | **RUN in**  | **sGive** | calc | &rho; &times; &delta;Y | &rho; &times; **sGive** (= &rho; &times; &delta;X) |
-| **RUN out** | calc  | **sGet** | &rho; &times; &delta;X | &rho; &times; **sGet** (= &rho; &times; &delta;Y) |
-| **BLD in**  | **sGive**  | calc | &rho; &times; &delta;Y | &rho; &times; &delta;Y |
+| **RUN out** | calc  | **sGet** | &rho; &times; &delta;Y | &rho; &times; **sGet** (= &rho; &times; &delta;Y) |
+| **BLD in**  | **sGive**  | calc | &rho; &times; &delta;X | &rho; &times; &delta;Y |
 | **BLD out** | calc | **sGet** | &rho; &times; &delta;X | &rho; &times; &delta;X |
 
 In rows 1 and 3, **sGive** was specified and sGet will be calculated. In rows 2
 and 4, **sGet** was specified and sGive will be calculated. Once we know the
 fees, we can add or subtract the fees and calculate the pool changes.
-
-&Delta;X is the incrementing side of the constant product calculation, and
-&Delta;Y is the decrementing side. If **sGive** is known, we subtract fees to
-get &Delta;X and calculate &Delta;Y. If **sGet** is known, we add fees to
-get &Delta;Y and calculate &Delta;X. &Delta;Y and &Delta;X are the values
-that maintain the constant product invariant.
 
 Notice that the ProtocolFee always affects the inputs to the constant product
 calculation (because it is collected outside the pool). The PoolFee is visible
@@ -88,16 +84,23 @@ in the formulas in this table when the input to the calculation is in RUN.
 | **BLD in** | **sGive** - ProtocolFee - PoolFee |  |
 | **BLD out** |  | **sGet** + ProtocolFee |
 
-We use the estimate of the amount in or out to calculate the improved &Delta;X
-and &Delta;Y, which tells us how much the trader will pay, the changes in pool
-balances, and what the trader will receive.
+We use the estimate of the amount in or out to calculate improved values of
+&Delta;X and &Delta;Y. These values tell us how much the trader will pay, the
+changes in pool balances, and what the trader will receive. As before, &Delta;X
+reflects a balance that will be growing, and &Delta;Y one that will be
+shrinking. If **sGive** is known, we subtract fees to get &Delta;X and calculate
+&Delta;Y. If **sGet** is known, we add fees to get &Delta;Y and calculate
+&Delta;X. &Delta;Y and &Delta;X are the values that maintain the constant
+product invariant. The amount paid and received by the trader and changes to the
+pool are calculated relative to &Delta;X and &Delta;Y so that the pool grows by
+the poolFee and the protocolFee can be paid from the proceeds.
 
 |          | xIncr | yDecr | pay In | pay Out |
 |---------|-----|-----|-----|-----|
 | **RUN in**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + protocolFee | &Delta;Y - PoolFee |
-| **RUN out** | &Delta;X | &Delta;Y - PoolFee | &Delta;X | &Delta;Y - PoolFee - ProtocolFee |
-| **BLD in**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee | &Delta;Y - ProtocolFee |
-| **BLD out** | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee + ProtocolFee | &Delta;Y |
+| **RUN out**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + protocolFee | &Delta;Y - PoolFee |
+| **BLD in**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee + ProtocolFee | &Delta;Y |
+| **BLD out**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee + ProtocolFee | &Delta;Y |
 
 In the two right columns the protocolFee is either added to the amount the
 trader pays, or subtracted from the proceeds. The poolFee does the same on the
