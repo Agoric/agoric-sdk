@@ -12,7 +12,7 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import path from 'path';
 
-const CONTRACT_FILES = ['committeeRegistrar', 'binaryBallotCounter'];
+const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -24,14 +24,8 @@ test.before(async t => {
   const contractBundles = {};
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
-      let bundleName;
-      let contractPath;
-      if (typeof settings === 'string') {
-        bundleName = settings;
-        contractPath = settings;
-      } else {
-        ({ bundleName, contractPath } = settings);
-      }
+      const bundleName = settings;
+      const contractPath = settings;
       const source = `${dirname}/../../../src/${contractPath}`;
       const bundle = await bundleSource(source);
       contractBundles[bundleName] = bundle;
@@ -77,19 +71,19 @@ const expectedCommitteeBinaryStartLog = [
   '=> voter vat is set up',
   '@@ schedule task for:3, currently: 0 @@',
   'invitation details check: true Voter2',
-  'Alice cast a ballot on Choose for Eeny',
-  'Bob cast a ballot on Choose for Meeny',
-  'Carol cast a ballot on Choose for Eeny',
-  'Dave cast a ballot on Choose for Eeny',
-  'Emma cast a ballot on Choose for Meeny',
-  'Verify ballot from instance: Choose, Eeny,Meeny, choose_n',
-  'Verify: q: Choose, max: 1, committee: TheCommittee',
-  'Verify instances: registrar: true, counter: true',
+  'Alice voted for {"text":"Eeny"}',
+  'Bob voted for {"text":"Meeny"}',
+  'Carol voted for {"text":"Eeny"}',
+  'Dave voted for {"text":"Eeny"}',
+  'Emma voted for {"text":"Meeny"}',
+  'verify question from instance: {"text":"Choose"}, [{"text":"Eeny"},{"text":"Meeny"}], unranked',
+  'Verify: q: {"text":"Choose"}, max: 1, committee: TheCommittee',
+  'Verify instances: electorate: true, counter: true',
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
   '&& running a task scheduled for 3. &&',
-  'vote outcome: Eeny',
+  'vote outcome: {"text":"Eeny"}',
 ];
 
 test.serial('zoe - committee binary vote - valid inputs', async t => {
@@ -102,31 +96,31 @@ const expectedCommitteeBinaryTwoQuestionsLog = [
   'starting TWO questions test',
   'invitation details check: true Voter2',
   '@@ schedule task for:3, currently: 0 @@',
-  'Alice cast a ballot on Choose for One Potato',
-  'Bob cast a ballot on Choose for One Potato',
-  'Carol cast a ballot on Choose for Two Potato',
-  'Dave cast a ballot on Choose for One Potato',
-  'Emma cast a ballot on Choose for One Potato',
-  '@@ schedule task for:3, currently: 0 @@',
-  'Alice cast a ballot on How high? for 1 foot',
-  'Bob cast a ballot on How high? for 2 feet',
-  'Carol cast a ballot on How high? for 1 foot',
-  'Dave cast a ballot on How high? for 1 foot',
-  'Emma cast a ballot on How high? for 2 feet',
-  'Verify ballot from instance: Choose, One Potato,Two Potato, choose_n',
-  'Verify: q: Choose, max: 1, committee: TheCommittee',
-  'Verify instances: registrar: true, counter: true',
-  'Verify ballot from instance: How high?, 1 foot,2 feet, choose_n',
-  'Verify: q: How high?, max: 1, committee: TheCommittee',
-  'Verify instances: registrar: true, counter: true',
+  'Alice voted on {"text":"Choose"} for {"text":"One Potato"}',
+  'Bob voted on {"text":"Choose"} for {"text":"One Potato"}',
+  'Carol voted on {"text":"Choose"} for {"text":"Two Potato"}',
+  'Dave voted on {"text":"Choose"} for {"text":"One Potato"}',
+  'Emma voted on {"text":"Choose"} for {"text":"One Potato"}',
+  '@@ schedule task for:4, currently: 0 @@',
+  'Alice voted on {"text":"How high?"} for {"text":"1 foot"}',
+  'Bob voted on {"text":"How high?"} for {"text":"2 feet"}',
+  'Carol voted on {"text":"How high?"} for {"text":"1 foot"}',
+  'Dave voted on {"text":"How high?"} for {"text":"1 foot"}',
+  'Emma voted on {"text":"How high?"} for {"text":"2 feet"}',
+  'verify question from instance: {"text":"Choose"}, [{"text":"One Potato"},{"text":"Two Potato"}], unranked',
+  'Verify: q: {"text":"Choose"}, max: 1, committee: TheCommittee',
+  'Verify instances: electorate: true, counter: true',
+  'verify question from instance: {"text":"How high?"}, [{"text":"1 foot"},{"text":"2 feet"}], unranked',
+  'Verify: q: {"text":"How high?"}, max: 1, committee: TheCommittee',
+  'Verify instances: electorate: true, counter: true',
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
   '&& running a task scheduled for 3. &&',
-  '&& running a task scheduled for 3. &&',
   '@@ tick:4 @@',
-  'vote outcome: One Potato',
-  'vote outcome: 1 foot',
+  '&& running a task scheduled for 4. &&',
+  'vote outcome: {"text":"One Potato"}',
+  'vote outcome: {"text":"1 foot"}',
 ];
 
 test.serial('zoe - committee binary vote - TwoQuestions', async t => {
