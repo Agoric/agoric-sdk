@@ -18,11 +18,11 @@ func maxCoins(a, b sdk.Coins) sdk.Coins {
 	indexA, indexB := 0, 0
 	for indexA < len(a) && indexB < len(b) {
 		coinA, coinB := a[indexA], b[indexB]
-		switch strings.Compare(coinA.Denom, coinB.Denom) {
-		case -1: // A < B
+		switch cmp := strings.Compare(coinA.Denom, coinB.Denom); {
+		case cmp < 0: // A < B
 			max = append(max, coinA)
 			indexA++
-		case 0: // A == B
+		case cmp == 0: // A == B
 			maxCoin := coinA
 			if coinB.IsGTE(maxCoin) {
 				maxCoin = coinB
@@ -32,7 +32,7 @@ func maxCoins(a, b sdk.Coins) sdk.Coins {
 			}
 			indexA++
 			indexB++
-		case 1: // A > B
+		case cmp > 0: // A > B
 			max = append(max, coinB)
 			indexB++
 		}
@@ -61,7 +61,7 @@ type LienAccount struct {
 var _ vestexported.VestingAccount = LienAccount{}
 
 // LockedCoins implements the method from the VestingAccount interface.
-// It takes the maximum of the coins locked for liens and the cons
+// It takes the maximum of the coins locked for liens and the coins
 // locked in the wrapped VestingAccount.
 func (la LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 	wrappedLocked := la.VestingAccount.LockedCoins(ctx)

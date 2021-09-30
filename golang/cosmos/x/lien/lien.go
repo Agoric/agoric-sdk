@@ -20,20 +20,20 @@ type portHandler struct {
 
 // portMessage is a struct that any lien bridge message can unmarshal into.
 type portMessage struct {
-	Type    string `json:"type"`
-	Address string `json:"address"`
-	Denom   string `json:"denom"`
-	Amount  string `json:"amount"`
+	Type    string  `json:"type"`
+	Address string  `json:"address"`
+	Denom   string  `json:"denom"`
+	Amount  sdk.Int `json:"amount"`
 }
 
 // msgAccountState marshals into the AccountState message for the lien bridge.
 type msgAccountState struct {
-	CurrentTime string `json:"currentTime"`
-	Total       string `json:"total"`
-	Bonded      string `json:"bonded"`
-	Unbonding   string `json:"unbonding"`
-	Locked      string `json:"locked"`
-	Liened      string `json:"liened"`
+	CurrentTime int64   `json:"currentTime"`
+	Total       sdk.Int `json:"total"`
+	Bonded      sdk.Int `json:"bonded"`
+	Unbonding   sdk.Int `json:"unbonding"`
+	Locked      sdk.Int `json:"locked"`
+	Liened      sdk.Int `json:"liened"`
 }
 
 // NewPortHandler returns a port handler for the Keeper.
@@ -79,12 +79,12 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	}
 	state := ch.keeper.GetAccountState(ctx, addr)
 	reply := msgAccountState{
-		CurrentTime: ctx.BlockTime().String(), // REVIEWER: what format?
-		Total:       state.Total.AmountOf(denom).String(),
-		Bonded:      state.Bonded.AmountOf(denom).String(),
-		Unbonding:   state.Unbonding.AmountOf(denom).String(),
-		Locked:      state.Locked.AmountOf(denom).String(),
-		Liened:      state.Liened.AmountOf(denom).String(),
+		CurrentTime: ctx.BlockTime().Unix(),
+		Total:       state.Total.AmountOf(denom),
+		Bonded:      state.Bonded.AmountOf(denom),
+		Unbonding:   state.Unbonding.AmountOf(denom),
+		Locked:      state.Locked.AmountOf(denom),
+		Liened:      state.Liened.AmountOf(denom),
 	}
 	bz, err := json.Marshal(&reply)
 	if err != nil {
@@ -104,19 +104,14 @@ func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, 
 	if err = sdk.ValidateDenom(denom); err != nil {
 		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
 	}
-	var amount sdk.Int
-	err = amount.UnmarshalJSON([]byte(msg.Amount))
-	if err != nil {
-		return "", fmt.Errorf("cannot decode lien amount %s: %w", msg.Amount, err)
-	}
 	lien := ch.keeper.GetLien(ctx, addr)
 	oldAmount := lien.GetCoins().AmountOf(denom)
-	if amount.Equal(oldAmount) {
+	if msg.Amount.Equal(oldAmount) {
 		// no-op, no need to do anything
 		return "true", nil
-	} else if amount.LT(oldAmount) {
+	} else if msg.Amount.LT(oldAmount) {
 		// always okay to reduce liened amount
-		diff := sdk.NewCoin(denom, oldAmount.Sub(amount))
+		diff := sdk.NewCoin(denom, oldAmount.Sub(msg.Amount))
 		lien.Coins = lien.GetCoins().Sub(sdk.NewCoins(diff))
 		ch.keeper.SetLien(ctx, addr, lien)
 		return "true", nil
@@ -129,10 +124,10 @@ func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, 
 		locked := state.Locked.AmountOf(denom)
 		unbonded := total.Sub(bonded).Sub(unbonding)
 		unlocked := total.Sub(locked)
-		if amount.GT(unbonded) || amount.GT(unlocked) {
+		if msg.Amount.GT(unbonded) || msg.Amount.GT(unlocked) {
 			return "false", nil
 		}
-		diff := sdk.NewCoin(denom, amount.Sub(oldAmount))
+		diff := sdk.NewCoin(denom, msg.Amount.Sub(oldAmount))
 		lien.Coins = lien.GetCoins().Add(diff)
 		ch.keeper.SetLien(ctx, addr, lien)
 		return "true", nil

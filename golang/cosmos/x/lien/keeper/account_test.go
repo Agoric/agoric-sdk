@@ -98,7 +98,7 @@ func TestWrap(t *testing.T) {
 		t.Fatalf("unwrapper did not produce a base account: %+v", unwrapped)
 	}
 	if baseAccount.AccountNumber != 17 {
-		t.Errorf("wong account number %d, want 17", baseAccount.AccountNumber)
+		t.Errorf("wrong account number %d, want 17", baseAccount.AccountNumber)
 	}
 	unwrap2 := wrapper.Unwrap(baseAccount)
 	_, ok = unwrap2.(*authtypes.BaseAccount)

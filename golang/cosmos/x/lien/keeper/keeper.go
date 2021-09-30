@@ -18,12 +18,6 @@ type Keeper interface {
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState
 }
 
-// stakingToken is the single denomination used for staking.
-// The lien API pays lip service to the idea that staking is done with
-// arbitrary sdk.Coins, but the UnboindingDelegation contains only a bare
-// sdk.Int, therefore the staking token must be a single implicit denom.
-const stakingToken = "ubld"
-
 // keeperImpl implements the lien keeper.
 // The accountKeeper field must be the same one that the bankKeeper and
 // stakingKeeper use.
@@ -143,17 +137,15 @@ func (lk keeperImpl) getBonded(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	for _, d := range delegations {
 		validatorAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
 		if err != nil {
-			// XXX ???
 			panic(err)
 		}
 		validator, found := lk.stakingKeeper.GetValidator(ctx, validatorAddr)
 		if !found {
-			// XXX ???
 			panic("validator not found")
 		}
 		shares := d.GetShares()
 		tokens := validator.TokensFromShares(shares)
-		bonded = bonded.Add(sdk.NewCoin(stakingToken, tokens.RoundInt())) // XXX rounding?
+		bonded = bonded.Add(sdk.NewCoin(lk.stakingKeeper.BondDenom(ctx), tokens.RoundInt())) // XXX rounding?
 	}
 	return bonded
 }
@@ -167,7 +159,7 @@ func (lk keeperImpl) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coin
 		for _, e := range u.Entries {
 			amt = amt.Add(e.Balance)
 		}
-		unbonding = unbonding.Add(sdk.NewCoin(stakingToken, amt))
+		unbonding = unbonding.Add(sdk.NewCoin(lk.stakingKeeper.BondDenom(ctx), amt))
 	}
 	return unbonding
 }

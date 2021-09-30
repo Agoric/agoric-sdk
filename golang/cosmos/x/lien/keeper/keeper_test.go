@@ -203,7 +203,7 @@ func TestAccountState(t *testing.T) {
 	state = keeper.GetAccountState(ctx, addr1)
 	wantState = AccountState{Liened: amt1}
 	if !state.IsEqual(wantState) {
-		t.Errorf("GetAccountState() of lein only got %v, want %v", state, wantState)
+		t.Errorf("GetAccountState() of lien only got %v, want %v", state, wantState)
 	}
 
 	// total and lien

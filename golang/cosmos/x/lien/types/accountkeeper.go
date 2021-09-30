@@ -24,8 +24,8 @@ var DefaultAccountWrapper = AccountWrapper{
 	Unwrap: identWrap,
 }
 
-// WrappedAccountKeeper wraps an account AccountKeeper insert an outer wrapper
-// to modify the behavior of stored accounts.
+// WrappedAccountKeeper wraps an account AccountKeeper transform accounts
+// when reading or writing accounts from/to storage.
 // Applies the Wrap function when reading accounts from the store and applies
 // the Unwrap function when writing them to the store.
 //
@@ -72,7 +72,7 @@ func (wak *WrappedAccountKeeper) SetAccount(ctx sdk.Context, acc authtypes.Accou
 	wak.AccountKeeper.SetAccount(ctx, unwrappedAcc)
 }
 
-// SetWrapper updates the AcountWrapper.
+// SetWrapper updates the AccountWrapper.
 // We need to modify the wrapper after it's created for the planned use,
 // since there is a circular dependency in the creation of the WrappedAccountKeeper
 // and the lien.Keeper.

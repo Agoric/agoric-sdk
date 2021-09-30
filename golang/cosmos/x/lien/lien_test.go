@@ -71,9 +71,15 @@ func TestGetAccountState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot unmarshal reply %s: %v", reply, err)
 	}
-	acctState.CurrentTime = "" // TODO: make predictable
+	acctState.CurrentTime = int64(123456789)
+	zero := sdk.NewInt(0)
 	want := msgAccountState{
-		CurrentTime: "", Total: "123", Bonded: "0", Unbonding: "0", Locked: "0", Liened: "0",
+		CurrentTime: acctState.CurrentTime,
+		Total:       sdk.NewInt(123),
+		Bonded:      zero,
+		Unbonding:   zero,
+		Locked:      zero,
+		Liened:      zero,
 	}
 	if acctState != want {
 		t.Errorf("got account state %v, want %v", acctState, want)

@@ -7,7 +7,7 @@ order: 1
 ## Notes on Terminology
 
 * "Bonded", "delegated", and "staked" are all synonyms.
-* "Unlocking" is a time-delayted process by which tokens become available for
+* "Unlocking" is a time-delayed process by which tokens become available for
   withdrawal. "Vesting" is a time-delayed process where tokens change
   ownership, and is subject to "clawback" which stops the process. The
   cosmos-sdk implements several kinds of "vesting account" which implement
@@ -73,7 +73,7 @@ we cannot force tokens to remain bonded, as they may be involuntarily
 unbonded when a validator retires. The best we can do is that when
 the higher layers wish to increase the total liened amount, the new
 total must be less than the bonded tokens and less than the unlocked
-tokens.  Liens can be lifted at any time, 
+tokens.  Liens can be lifted at any time.
 
 The liened amount is *not* reduced by slashing, and if slashing reduces
 the account balance below the liened amount, the account effectively has
@@ -113,7 +113,7 @@ which gives rise to the derived quantities:
 
 ## Implementing Lien Encumbrance
 
-Unliened tokens may not be transferred out of an account. Rather than
+Liened tokens may not be transferred out of an account. Rather than
 modifying the `x/bank` module to implement a new type of containment,
 we leverage the existing mechanism to prevent locked tokens from being
 transferred.

@@ -11,6 +11,7 @@ type BankKeeper interface {
 }
 
 type StakingKeeper interface {
+	BondDenom(ctx sdk.Context) string
 	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
 	GetUnbondingDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.UnbondingDelegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (stakingTypes.Validator, bool)
