@@ -9,7 +9,7 @@ import {
   swapInNoFees,
 } from '../../../../src/contracts/constantProduct/core.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
-import { calcSwapInPrices } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
+import { pricesForStatedInput } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 
 const BASIS_POINTS = 10000n;
 const POOL_FEE = 24n;
@@ -36,7 +36,7 @@ const setupMints = () => {
   };
 };
 
-test('newSwap getPriceGivenAvailableInput specify central', async t => {
+test('pricesForStatedInput specify central', async t => {
   const { moola, bucks, moolaKit, bucksKit } = setupMints();
   const poolAllocation = {
     Central: moola(800000n),
@@ -71,7 +71,7 @@ test('newSwap getPriceGivenAvailableInput specify central', async t => {
   );
   t.deepEqual(reduced, moola(9999n));
 
-  const result = calcSwapInPrices(
+  const result = pricesForStatedInput(
     amountGiven,
     poolAllocation,
     amountWanted,
@@ -86,7 +86,7 @@ test('newSwap getPriceGivenAvailableInput specify central', async t => {
   // t.deepEqual(result.protocolFee, moola(5n));
 });
 
-test('newSwap getPriceGivenAvailableInput secondary', async t => {
+test('pricesForStatedInput secondary', async t => {
   const { moola, bucks, moolaKit } = setupMints();
   const poolAllocation = {
     Central: moola(800000n),
@@ -102,7 +102,7 @@ test('newSwap getPriceGivenAvailableInput secondary', async t => {
   );
   const poolFeeRatio = makeRatio(POOL_FEE, moolaKit.brand, BASIS_POINTS);
 
-  const result = calcSwapInPrices(
+  const result = pricesForStatedInput(
     amountGiven,
     poolAllocation,
     amountWanted,
@@ -122,4 +122,47 @@ test('newSwap getPriceGivenAvailableInput secondary', async t => {
   // t.deepEqual(result.swapperGets, newSwapResult.amountOut);
   // Swapper pays one more: 10n
   // t.deepEqual(result.protocolFee, newSwapResult.protocolFee);
+});
+
+test('pricesForStatedInput  README example', async t => {
+  const { moola, bucks, moolaKit, bucksKit } = setupMints();
+  const poolAllocation = {
+    Central: moola(40_000_000n),
+    Secondary: bucks(3_000_000n),
+  };
+  const amountGiven = moola(30_000n);
+  const amountWanted = bucks(2_000n);
+
+  const protocolFeeRatio = makeRatio(5n, moolaKit.brand, BASIS_POINTS);
+  const poolFeeRatio = makeRatio(25n, bucksKit.brand, BASIS_POINTS);
+
+  const noFeesResult = swapInNoFees({ amountGiven, poolAllocation });
+  t.deepEqual(noFeesResult.amountIn, moola(29996n));
+  t.deepEqual(noFeesResult.amountOut, bucks(2248n));
+
+  const noReductionResult = calcDeltaYSellingX(
+    poolAllocation.Central,
+    poolAllocation.Secondary,
+    amountGiven,
+  );
+  t.deepEqual(noReductionResult, bucks(2248n));
+
+  const reduced = calcDeltaXSellingX(
+    poolAllocation.Central,
+    poolAllocation.Secondary,
+    noReductionResult,
+  );
+  t.deepEqual(reduced, moola(29996n));
+
+  const result = pricesForStatedInput(
+    amountGiven,
+    poolAllocation,
+    amountWanted,
+    protocolFeeRatio,
+    poolFeeRatio,
+  );
+  t.deepEqual(result.swapperGives, moola(29998n));
+  t.deepEqual(result.swapperGets, bucks(2241n));
+  t.deepEqual(result.protocolFee, moola(15n));
+  t.deepEqual(result.poolFee, bucks(6n));
 });

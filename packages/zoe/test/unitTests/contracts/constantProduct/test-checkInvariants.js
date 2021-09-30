@@ -6,8 +6,8 @@ import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults
 import { setupMintKits } from './setupMints.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import {
-  calcSwapInPrices,
-  calcSwapOutPrices,
+  pricesForStatedInput,
+  pricesForStatedOutput,
 } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 import { checkKInvariantSellingX } from '../../../../src/contracts/constantProduct/invariants.js';
 import { getXY } from '../../../../src/contracts/constantProduct/getXY.js';
@@ -66,6 +66,8 @@ function checkGetInput(t, args, result) {
   t.falsy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isGTE(args[0], result.swapperGives));
   t.truthy(AmountMath.isGTE(result.swapperGets, args[2]));
+  t.falsy(AmountMath.isEmpty(result.poolFee));
+  t.falsy(AmountMath.isEmpty(result.protocolFee));
 
   t.deepEqual(
     AmountMath.add(result.xIncrement, result.protocolFee),
@@ -88,6 +90,8 @@ function checkGetOutput(t, args, result) {
     t.truthy(AmountMath.isGTE(args[0], result.swapperGives));
   }
   t.truthy(AmountMath.isGTE(result.swapperGets, args[2]));
+  t.falsy(AmountMath.isEmpty(result.poolFee));
+  t.falsy(AmountMath.isEmpty(result.protocolFee));
 
   t.deepEqual(
     AmountMath.add(result.xIncrement, result.protocolFee),
@@ -106,7 +110,7 @@ function checkGetOutput(t, args, result) {
 
 const testGetInputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  const result = calcSwapInPrices(...args);
+  const result = pricesForStatedInput(...args);
   checkGetInput(t, args, result);
 };
 
@@ -114,7 +118,7 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-      return calcSwapInPrices(...args);
+      return pricesForStatedInput(...args);
     },
     {
       message,
@@ -124,14 +128,14 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetInputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  const result = calcSwapInPrices(...args);
+  const result = pricesForStatedInput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));
 };
 
 const testGetOutputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  const result = calcSwapOutPrices(...args);
+  const result = pricesForStatedOutput(...args);
   checkGetOutput(t, args, result);
 };
 
@@ -139,7 +143,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-      return calcSwapOutPrices(...args);
+      return pricesForStatedOutput(...args);
     },
     {
       message,
@@ -149,7 +153,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetOutputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  const result = calcSwapOutPrices(...args);
+  const result = pricesForStatedOutput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));
 };
@@ -304,6 +308,17 @@ test('getInputPrice big product', t => {
     outputReserve: 100_000_000n,
     inputValue: 1000n,
     outputValue: 50n,
+  };
+  testGetInputPrice(t, input, true);
+  testGetInputPrice(t, input, false);
+});
+
+test('getInputPrice README example', t => {
+  const input = {
+    inputReserve: 40_000_000n,
+    outputReserve: 3_000_000n,
+    inputValue: 30_000n,
+    outputValue: 2000n,
   };
   testGetInputPrice(t, input, true);
   testGetInputPrice(t, input, false);

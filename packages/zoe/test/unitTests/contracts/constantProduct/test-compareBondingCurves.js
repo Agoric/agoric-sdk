@@ -5,8 +5,8 @@ import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults
 import { setupMintKits } from './setupMints.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import {
-  calcSwapInPrices,
-  calcSwapOutPrices,
+  pricesForStatedInput,
+  pricesForStatedOutput,
 } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 
 // This assumes run is swapped in. The test should function the same
@@ -37,9 +37,9 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
   });
 };
 
-const testGetPrice = (t, inputs, expectedOutput) => {
+const testInputGetPrice = (t, inputs, expectedOutput) => {
   const { args, bld } = prepareSwapInTest(inputs);
-  const result = calcSwapInPrices(...args);
+  const result = pricesForStatedInput(...args);
   t.deepEqual(result.swapperGets, bld(expectedOutput));
 };
 
@@ -47,7 +47,7 @@ const getInputPriceThrows = (t, inputs, message) => {
   t.throws(
     _ => {
       const { args } = prepareSwapInTest(inputs);
-      return calcSwapInPrices(...args);
+      return pricesForStatedInput(...args);
     },
     {
       message,
@@ -85,13 +85,13 @@ const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
 
 const testGetOutputPrice = (t, inputs, expectedInput) => {
   const { args, run } = prepareSwapOutTest(inputs);
-  const result = calcSwapOutPrices(...args);
+  const result = pricesForStatedOutput(...args);
   t.deepEqual(result.swapperGives, run(expectedInput));
 };
 
 const getOutputPriceThrows = (t, inputs, message) => {
   const { args } = prepareSwapOutTest(inputs);
-  t.throws(_ => calcSwapOutPrices(...args), {
+  t.throws(_ => pricesForStatedOutput(...args), {
     message,
   });
 };
@@ -114,7 +114,7 @@ test('getInputPrice ok 2', t => {
     inputValue: 1398n,
   };
   const expectedOutput = 572n;
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 3', t => {
@@ -124,12 +124,7 @@ test('getInputPrice ok 3', t => {
     inputValue: 6635n,
   };
   const expectedOutput = 3470n;
-  // const expected = {
-  //   poolFee: 2n,
-  //   swapperGives: 6634n,
-  //   swapperGets: 3470n,
-  // };
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 4', t => {
@@ -139,12 +134,7 @@ test('getInputPrice ok 4', t => {
     inputValue: 1000n,
   };
   const expectedOutput = 8n;
-  // const expected = {
-  //   poolFee: 1n,
-  //   swapperGives: 90n,
-  //   swapperGets: 8n,
-  // };
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 5', t => {
@@ -154,12 +144,7 @@ test('getInputPrice ok 5', t => {
     inputValue: 17n,
   };
   const expectedOutput = 6n;
-  // const expected = {
-  //   poolFee: 1n,
-  //   swapperGives: 17,
-  //   swapperGets: 6,
-  // };
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice ok 6', t => {
@@ -168,13 +153,8 @@ test('getInputPrice ok 6', t => {
     outputReserve: 117n,
     inputValue: 7n,
   };
-  // const expected = {
-  //   poolFee: 1n,
-  //   swapperGives: 7,
-  //   swapperGets: 15,
-  // };
   const expectedOutput = 15n;
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getInputPrice negative', t => {
@@ -227,12 +207,7 @@ test('getInputPrice big product', t => {
     inputValue: 1000n,
   };
   const expectedOutput = 998n;
-  // const expected = {
-  //   poolFee: 1n,
-  //   swapperGives: 1000n,
-  //   swapperGets: 998n,
-  // };
-  testGetPrice(t, input, expectedOutput);
+  testInputGetPrice(t, input, expectedOutput);
 });
 
 test('getOutputPrice ok', t => {
@@ -301,11 +276,6 @@ test('getOutputPrice minimum price', t => {
     outputReserve: 10n,
     outputValue: 1n,
   };
-  // const expected = {
-  //   poolFee: 1n,
-  //   swapperGives: 2n,
-  //   swapperGets: 5n,
-  // };
   const expectedOutput = 2n;
   testGetOutputPrice(t, input, expectedOutput);
 });

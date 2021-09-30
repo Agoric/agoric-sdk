@@ -235,7 +235,7 @@ export const swap = (
   const swapperGets = subtractFees(amountOut, fees);
 
   // return noTransaction if fees would eat up all the trader's proceeds,
-  // the trader specified an amountGiven, and the trade would require mare, or
+  // the trader specified an amountGiven, and the trade would require more, or
   // the trade would require them to give more than they specified.
   if (
     AmountMath.isEmpty(swapperGets) ||
@@ -255,7 +255,6 @@ export const swap = (
   //   Either xIncrement will be increased by the pool fee or yDecrement will be
   //   reduced by it in order to compensate the pool.
   // newX and newY are the new pool balances, for comparison with start values.
-  // improvement is an estimate of how much the gains or losses were improved.
   const result = harden({
     protocolFee: fees.protocolFee,
     poolFee: fees.poolFee,

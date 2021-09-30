@@ -2,7 +2,8 @@
 
 A constant product automatic market maker based on our Ratio library. It charges
 two kinds of fees: a pool fee remains in the pool to reward the liquidity
-providers and a protocol fee is extracted to fund the economy.
+providers and a protocol fee is extracted to fund the economy. The external
+entry point is a call to `pricesForStatedInput()` or `pricesForStatedOutput()`.
 
 This algorithm uses the x*y=k formula directly, without fees. Briefly, there are
 two kinds of assets, whose values are kept roughly in balance through the
@@ -131,32 +132,33 @@ But we get an even tighter bound by reducing the amount Alice has to spend
     120000000568992    >    120000000000000     >   119999997571240
 ```
 
-The initial price estimate is that 29,996 RUN would get 2249 BLD in a no-fee
+The initial price estimate is that 29,996 RUN would get 2248 BLD in a no-fee
 pool. We base fees on this estimate, so the **protocol Fee will be 15 RUN**
-(always in RUN) and the **pool fee will be 2 BLD**.  The pool fee is calculated
+(always in RUN) and the **pool fee will be 6 BLD**.  The pool fee is calculated
 on the output for `swapIn` and the input for `swapOut`.
 
 Now we calculate the actual &Delta;X and &Delta;Y, since the fees affect the
 size of the changes to the pool. From the first row of the third table we see
 that the calculation starts from &Delta;X of
-`sGive - ProtocolFee (i.e. 29,996 - 15 = 29,981)`
+`sGive - ProtocolFee (i.e. 30,000 - 15 = 29,985)`
 
 ```
-40,029,981 * 2,997,754 > 40,000,000 * 3,000,000 > 40,029,981 * 2,997,753
+40,029,985 * 2,997,7752 > 40,000,000 * 3,000,000 > 40,029,985 * 2,997,753
 ```
 
-and re-checking how much is required to produce 2,997,754, we get
+and re-checking how much is required to produce 2,997,753, we get
 
 ```
-40,029,970 * 2,997,754 > 40,000,000 * 3,000,000 > 40,029,969 * 2,997,754
+40_029_982 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,983 * 2,997,753
 ```
 
-**&Delta;X is 29,970, and &Delta;Y is 2246**.
+**&Delta;X is 29,983, and &Delta;Y is 2247**.
 
- * Alice pays &Delta;X + protocolFee, which is 29970 + 15  (29985 RUN)
- * Alice will receive &Delta;Y - PoolFee which is 2246 - 2  (2244 BLD)
- * The RUN in the pool will increase by &Delta;X   (29970 RUN)
- * The BLD in the pool will decrease by &Delta;Y   (2246 BLD)
+ * Alice pays &Delta;X + protocolFee, which is 29,983 + 15  (29998 RUN)
+ * Alice will receive &Delta;Y - PoolFee which is 2247 - 6  (2241 BLD)
+ * The RUN in the pool will increase by &Delta;X   (29983 RUN)
+ * The BLD in the pool will decrease by &Delta;Y   (2247 BLD)
 
-The Pool grew by 2 BLD more than was required to maintain the constant product
+The Pool grew by 6 BLD more than was required to maintain the constant product
 invariant. 15 RUN were extracted for the protocol fee.
+

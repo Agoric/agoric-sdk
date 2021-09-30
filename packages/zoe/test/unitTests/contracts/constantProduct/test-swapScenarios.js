@@ -11,7 +11,7 @@ import {
   makeRatio,
   natSafeMath,
 } from '../../../../src/contractSupport/index.js';
-import { calcSwapInPrices } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
+import { pricesForStatedInput } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
 
 const { multiply, ceilDivide } = natSafeMath;
 
@@ -51,7 +51,7 @@ const prepareSwapInTest = ({
 
 const testGetPrice = (t, inputs, expectedOutput) => {
   const { args, run, bld } = prepareSwapInTest(inputs);
-  const result = calcSwapInPrices(...args);
+  const result = pricesForStatedInput(...args);
   const expected = harden({
     protocolFee: run(expectedOutput.protocolFee),
     poolFee: bld(expectedOutput.poolFee),

@@ -42,6 +42,9 @@
  */
 
 /**
+ * This is the type for swapInNoFees and swapOutNoFees. pricesForStatedInput()
+ * uses swapInNoFees, while pricesForStatedOutput() uses swapOutNoFees.
+ *
  * @callback NoFeeSwapFn
  * @param {NoFeeSwapFnInput} input
  * @returns {ImprovedNoFeeSwapResult}
@@ -74,8 +77,17 @@
  */
 
 /**
- * @callback CalcSwapPrices
+ * @callback CalcSwapInPrices
  * @param {Amount} amountGiven
+ * @param {PoolAllocation} poolAllocation
+ * @param {Amount=} amountWanted
+ * @param {Ratio} protocolFeeRatio
+ * @param {Ratio} poolFeeRatio
+ * @returns {SwapResult}
+ */
+/**
+ * @callback CalcSwapOutPrices
+ * @param {Amount=} amountGiven
  * @param {PoolAllocation} poolAllocation
  * @param {Amount} amountWanted
  * @param {Ratio} protocolFeeRatio
