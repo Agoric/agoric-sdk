@@ -15,6 +15,7 @@ import {
 // input price, that brand will be the inPool; when they specify the output
 // price that brand is the outPool.
 
+/** @param {{ swapperGets: Amount, swapperGives: Amount }} prices */
 const publicPrices = prices => {
   return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
 };
@@ -54,6 +55,10 @@ export const makeDoublePool = (
     X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
   );
 
+  /**
+   * @param {ZCFSeat} seat
+   * @param {ReturnType<typeof getPriceForInput>} prices
+   */
   const allocateGainsAndLosses = (seat, prices) => {
     const inPoolSeat = collateralInPool.getPoolSeat();
     const outPoolSeat = collateralOutPool.getPoolSeat();
@@ -73,6 +78,10 @@ export const makeDoublePool = (
     return `Swap successfully completed.`;
   };
 
+  /**
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const getPriceForInput = (amountIn, amountOut) => {
     // We must do two consecutive swapInPrice() calls,
     // followed by a call to swapOutPrice().
@@ -120,15 +129,28 @@ export const makeDoublePool = (
     });
   };
 
+  /**
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const getInputPrice = (amountIn, amountOut) => {
     return publicPrices(getPriceForInput(amountIn, amountOut));
   };
 
+  /**
+   * @param {ZCFSeat} seat
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const swapIn = (seat, amountIn, amountOut) => {
     const prices = getPriceForInput(amountIn, amountOut);
     return allocateGainsAndLosses(seat, prices);
   };
 
+  /**
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const getPriceForOutput = (amountIn, amountOut) => {
     // We must do two consecutive swapOutPrice() calls, followed by a call to
     // swapInPrice().

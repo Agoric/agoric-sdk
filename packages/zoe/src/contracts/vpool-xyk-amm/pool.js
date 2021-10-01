@@ -42,6 +42,12 @@ export const makeAddPool = (
   poolFee,
   protocolSeat,
 ) => {
+  /**
+   * @param {ZCFMint} liquidityZcfMint
+   * @param liquidityZcfMint
+   * @param {ZCFSeat} poolSeat
+   * @param {Brand} secondaryBrand
+   */
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     let liqTokenSupply = 0n;
 
@@ -49,8 +55,10 @@ export const makeAddPool = (
       brand: liquidityBrand,
       issuer: liquidityIssuer,
     } = liquidityZcfMint.getIssuerRecord();
+    /** @type { NotifierRecord<Record<string, Amount>> } */
     const { notifier, updater } = makeNotifierKit();
 
+    /** @param { XYKPool } pool */
     const updateState = pool =>
       // TODO: when governance can change the interest rate, include it here
       updater.updateState({
@@ -58,6 +66,11 @@ export const makeAddPool = (
         secondary: pool.getSecondaryAmount(),
       });
 
+    /**
+     * @param {XYKPool} pool
+     * @param {ZCFSeat} zcfSeat
+     * @param {Amount} secondaryAmount
+     */
     const addLiquidityActual = (pool, zcfSeat, secondaryAmount) => {
       const liquidityValueOut = calcLiqValueToMint(
         liqTokenSupply,

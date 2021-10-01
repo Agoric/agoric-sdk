@@ -59,16 +59,25 @@ import { makeDoublePool } from './doublePool';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  // This contract must have a "Central" keyword and issuer in the
-  // IssuerKeywordRecord.
-  // poolFee is the portion of the fees that go into the pool (in BP).
-  // protocolFee is the portion of the fees that are shared with validators
+  /**
+   * This contract must have a "Central" keyword and issuer in the
+   * IssuerKeywordRecord.
+   *
+   * @typedef {{
+   *   brands: { Central: Brand },
+   *   timer: TimerService,
+   *   poolFee: BasisPoints, // portion of the fees that go into the pool
+   *   protocolFee: BasisPoints, // portion of the fees that are shared with validators
+   * }} AMMTerms
+   *
+   * @typedef { bigint } BasisPoints -- hundredths of a percent
+   */
   const {
     brands: { Central: centralBrand },
     timer,
     poolFee,
     protocolFee,
-  } = zcf.getTerms();
+  } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
@@ -84,7 +93,9 @@ const start = zcf => {
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
+  /** @param { Brand } brand */
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
+  /** @param { Brand } brand */
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
   const addPool = makeAddPool(
     zcf,
@@ -97,12 +108,14 @@ const start = zcf => {
     poolFee,
     protocolSeat,
   );
+  /** @param { Brand } brand */
   const getPoolAllocation = brand => {
     return getPool(brand)
       .getPoolSeat()
       .getCurrentAllocation();
   };
 
+  /** @param { Brand } brand */
   const getPriceAuthorities = brand => {
     const pool = getPool(brand);
     return {
@@ -112,10 +125,9 @@ const start = zcf => {
   };
 
   /**
-   * @callback ProvideVPool
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @param {Ratio} poolFeeRatio
+   * @param {bigint} poolFeeRatio
    * @returns {VPool}
    */
   const provideVPool = (brandIn, brandOut, poolFeeRatio) => {
@@ -134,10 +146,18 @@ const start = zcf => {
     return pool.getVPool();
   };
 
+  /**
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const getInputPrice = (amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand, poolFee);
     return pool.getInputPrice(amountIn, amountOut);
   };
+  /**
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
   const getOutputPrice = (amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand, poolFee);
     return pool.getOutputPrice(amountIn, amountOut);
