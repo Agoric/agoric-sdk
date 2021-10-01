@@ -1,5 +1,5 @@
 @startuml
-header Agoric Operating Systems
+header Agoric Systems Operating Company.
 footer v0.0.1
 title Treasury
 
@@ -15,8 +15,8 @@ node AdjustBalancesInvitation
 node "CloseVaultInvitation"
 node LiquidationPromise
 node LiquidationSeat {
-    circle getPayoff
-    circle getPayoffs
+    circle getPayout
+    circle getPayouts
 }
 node "Vat" {
     node Treasury {
@@ -47,8 +47,8 @@ node "Vat" {
 }
 Borrower -> makeLoanInvitation: open vault and transfer collateral
 makeLoanInvitation -d-> Vault
-Borrower -u-> getPayoff: retrieve any proceeds
-Borrower -u-> getPayoffs: retrieve any proceeds
+Borrower -u-> getPayout: retrieve any proceeds
+Borrower -u-> getPayouts: retrieve any proceeds
 Borrower -d-> LiquidationPromise: did loan get liquidated?
 Borrower -> AdjustBalancesInvitation: add or remove collateral or \nincrease or decrease the loan balance
 Borrower -l-> CloseVaultInvitation: close loan and withdraw \nany remaining collateral

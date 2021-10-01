@@ -1,15 +1,19 @@
 @startuml
 'https://plantuml.com/sequence-diagram
-header Agoric Operating Systems
+header Agoric Systems Operating Company.
 footer Page %page% of %lastpage%
-title Multipool Auto Swap Sequence Diagram
+title Multipool Auto Swap Sequence Diagram Creation
 
 autonumber
 actor "MPAS Creator" as masc #lime
 actor "Pool Adder N" as pa #yellow
 actor "Pool User" as pu
-control "Zoe" as zoe
 database "MPAS Contract" as mpas
+box "Zoe"
+control "Zoe" as zoe
+control "userSeat" as usA
+
+end box
 
 == MPAS Creation ==
 masc -> mpas: Create instance
@@ -32,7 +36,8 @@ mpas --> pa: ""Issuer""
 autonumber 30
 pa -> mpas: ""addPool()""
 mpas -->x pa: pool for MOOL:BCK already exists
-newpage
+newpage Multipool Auto Swap Sequence Diagram Swap Request
+
 autonumber 50
 == Swap Request ==
 group asking for the current price UNK:BUCK
@@ -63,31 +68,32 @@ group making an offer
 pu -> pu: withdraw funds from purse of SML into ""payment""
 pu -> zoe: ""offer(invitation, proposal, payment))""
 zoe -> zoe: validate offer
-create control "userSeat" as usA
+
 zoe -> usA: create ""userSeat""
-usA --> zoe: ""userSeat"" ref
+usA --> zoe: ""userSeat""
 zoe -> pool: ""getPoolSeat()""
 create control "poolSeat" as psA
-pool -> psA: create ""poolSeat"" ref
-psA --> zoe: ""poolSeat"" ref
-zoe -> psA: add/remove funds
-zoe -> usA: add/remove funds
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
 zoe -> zoe: ""reallocate(seat, poolSeat)""
 
-usA --> pu: ""userSeat"" ref
-pu -> usA: ""getOfferResult()""
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
 return result of failure or success
 end
 group recovering funds
-pu -> usA: ""getPayout("in")""
-return ""payoutIn""
-pu -> pu: redeposit ""payoutIn"" into purse
-pu -> usA: ""getPayout("out")""
-return ""payoutOut""
-pu -> pu: redeposit ""payoutOut"" into purse
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
 end
 
-newpage
+newpage Multipool Auto Swap Sequence Diagram Adding Liquidity
+
 autonumber 100
 == Adding Liquidity ==
 group discover existing proportion of balances
@@ -110,31 +116,35 @@ pu -> zoe: ""offer(invitation, proposal, payments)""
 zoe -> zoe: validate offer
 
 zoe -> usA: create ""userSeat""
-usA --> zoe: ""userSeat"" ref
+usA --> zoe: ""userSeat""
 zoe -> pool: ""getPoolSeat()""
-pool -> psA: create ""poolSeat"" ref
-psA --> zoe: ""poolSeat"" ref
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
 
 zoe -> psA: ""addLiquidity""
-zoe -> psA: add/remove funds
-zoe -> usA: add/remove funds
+mpas -> psA: stage assets
+mpas -> usA: stage assets
 zoe -> zoe: ""reallocate(seat, poolSeat)""
 
-usA --> pu: ""userSeat"" ref
-pu -> usA: ""getOfferResult()""
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
 return result of failure or success
 end
 group recovering funds
-pu -> usA: ""getPayout("in")""
-return ""payoutIn""
-pu -> pu: redeposit ""payoutIn"" into purse
-pu -> usA: ""getPayout("out")""
-return ""payoutOut""
-pu -> pu: redeposit ""payoutOut"" into purse
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
 end
 
 
-newpage
+newpage Multipool Auto Swap Sequence Diagram Removing Liquidity
+
 autonumber 200
 == Removing Liquidity ==
 group discover existing proportion of balances
@@ -156,27 +166,30 @@ pu -> zoe: ""offer(invitation, proposal, payments)""
 zoe -> zoe: validate offer
 
 zoe -> usA: create ""userSeat""
-usA --> zoe: ""userSeat"" ref
+usA --> zoe: ""userSeat""
 zoe -> pool: ""getPoolSeat()""
-pool -> psA: create ""poolSeat"" ref
-psA --> zoe: ""poolSeat"" ref
+pool -> psA: create ""poolSeat""
+psA --> zoe: ""poolSeat""
 
 zoe -> psA: ""addLiquidity""
-zoe -> psA: add/remove funds
-zoe -> usA: add/remove funds
+mpas -> psA: stage assets
+mpas -> usA: stage assets
 zoe -> zoe: ""reallocate(seat, poolSeat)""
 
-usA --> pu: ""userSeat"" ref
-pu -> usA: ""getOfferResult()""
+usA --> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
 return result of failure or success
 end
 group recovering funds
-pu -> usA: ""getPayout("in")""
-return ""payoutIn""
-pu -> pu: redeposit ""payoutIn"" into purse
-pu -> usA: ""getPayout("out")""
-return ""payoutOut""
-pu -> pu: redeposit ""payoutOut"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
 end
 
 @enduml
