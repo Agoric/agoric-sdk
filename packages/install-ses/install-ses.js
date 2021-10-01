@@ -1,6 +1,11 @@
 /* global globalThis LOCKDOWN_OPTIONS process */
-// 'lockdown' appears on the global as a side-effect of importing 'ses'
-import 'ses';
+
+/**
+ * Export instead of import to ensure that types are available, i.e. `harden`
+ * and `lockdown`. This package does not have any exports besides types, so this
+ * has no runtime effect.
+ */
+export * from 'ses';
 
 // Install our HandledPromise global.
 import '@agoric/eventual-send/shim.js';
