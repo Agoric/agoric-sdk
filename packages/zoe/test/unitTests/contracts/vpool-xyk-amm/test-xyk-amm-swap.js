@@ -33,10 +33,20 @@ import {
 
 const { ceilDivide } = natSafeMath;
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const loadBundle = async () => {
+  const filename = new URL(import.meta.url).pathname;
+  const dirname = path.dirname(filename);
 
-const ammRoot = `${dirname}/../../../../src/contracts/vpool-xyk-amm/multipoolMarketMaker.js`;
+  const ammRoot = `${dirname}/../../../../src/contracts/vpool-xyk-amm/multipoolMarketMaker.js`;
+
+  const bundle = await bundleSource(ammRoot);
+  return bundle;
+};
+
+test.before(async t => {
+  const bundle = await loadBundle();
+  t.context = { bundle };
+});
 
 test('amm with valid offers', async t => {
   const { moolaR, simoleanR, moola, simoleans } = setup();
@@ -62,7 +72,7 @@ test('amm with valid offers', async t => {
   // Alice creates an autoswap instance
 
   // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
 
   const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
@@ -423,7 +433,7 @@ test('amm doubleSwap', async t => {
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000));
 
   // Alice creates an autoswap instance
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
 
   const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
@@ -644,7 +654,7 @@ test('amm with some invalid offers', async t => {
   // Alice creates an autoswap instance
 
   // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
 
   const fakeTimer = buildManualTimer(console.log);
   const installation = await E(zoe).install(bundle);
@@ -709,7 +719,7 @@ test('amm jig - swapOut uneven', async t => {
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
   const installation = await E(zoe).install(bundle);
 
   // Set up central token
@@ -952,7 +962,7 @@ test('amm jig - breaking scenario', async t => {
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
   const installation = await E(zoe).install(bundle);
 
   // Set up central token
@@ -1074,7 +1084,7 @@ test('zoe allow empty reallocations', async t => {
   const { issuer, brand } = makeIssuerKit('central');
 
   // Alice creates an autoswap instance
-  const bundle = await bundleSource(ammRoot);
+  const { bundle } = /** @type { any } */ (t.context);
 
   const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
