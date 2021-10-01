@@ -44,7 +44,8 @@
     "packages/xsnap",
     "packages/deploy-script-support",
     "packages/ui-components",
-    "packages/eslint-config"
+    "packages/eslint-config",
+    "packages/wallet-connection"
   ],
   "devDependencies": {
     "@endo/eslint-config": "^0.3.9",

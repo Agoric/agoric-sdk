@@ -1,75 +1,139 @@
 // @ts-check
 
 /**
- * @typedef { 'amount' | 'brand' | 'installation' | 'instance' | 'nat' | 'ratio' | 'string' | 'unknown' } ParamType
- */
-
-/**
- * @typedef { Amount | Brand | Installation | Instance | bigint | Ratio | string | unknown } ParamValue
- */
-
-/**
- * @typedef { 'choose_n' | 'order' | 'weight' } ChoiceMethod
- */
-
-/**
- * @typedef {Object} ParamDescription
- * @property {string} name
- * @property {ParamValue} value
- * @property {ParamType} type
- */
-
-/**
- * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword,ParamDescription>} getParams
+ * @typedef { 'unranked' | 'order' } ChoiceMethod
+ * * UNRANKED: "unranked voting" means that the voter specifies some number of
+ *    positions, and is endorsing them equally.
+ * * ORDER: The voter assigns ordinal numbers to some of the positions. The
+ *    positions will be treated as an ordered list with no gaps.
  *
- * @typedef {{ [updater: string]: (arg: ParamValue) => void }} ParamManagerUpdaters
- * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
+ * When voters are limited to choosing a single candidate, either UNRANKED or
+ * ORDER would work. UNRANKED has a simpler representation so we use that.
  */
 
 /**
- * @typedef {Array<ParamDescription>} ParamDescriptions
+ * @typedef { 'param_change' | 'election' | 'survey' } ElectionType
+ * param_change is very specific. Survey means multiple answers are possible,
+ * Election means some candidates are going to "win". It's not clear these are
+ * orthogonal. The important distinction is that param_change has a structured
+ * issue, while the others have a issue presented as a string.
  */
 
 /**
- * @callback BuildParamManager
- * @param {ParamDescriptions} paramDesc
- * @returns {ParamManagerFull}
+ * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'nat' |
+ * 'ratio' | 'string' | 'unknown' } ParamType
  */
 
 /**
- * @typedef {Object} QuestionTermsShort
- *   BallotDetails as provided to the Registrar
+ * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
+ */
+
+/**
+ * @typedef {Object} SimpleIssue
+ * @property {string} text
+ */
+
+/**
+ * @typedef { Amount | Brand | Installation | Instance | bigint |
+ *   Ratio | string | unknown } ParamValue
+ */
+
+/**
+ * @template T
+ * @typedef {{ type: T, name: string }} ParamRecord
+ */
+
+/**
+ * @typedef {ParamRecord<'amount'> & { value: Amount } |
+ *   ParamRecord<'brand'> & { value: Brand } |
+ *   ParamRecord<'installation'> & { value: Installation } |
+ *   ParamRecord<'instance'> & { value: Instance } |
+ *   ParamRecord<'nat'> & { value: bigint } |
+ *   ParamRecord<'ratio'> & { value: Ratio } |
+ *   ParamRecord<'string'> & { value: string } |
+ *   ParamRecord<'unknown'> & { value: unknown }
+ * } ParamDescription
+ */
+
+/**
+ * @typedef { SimpleIssue | ParamChangeIssue } Issue
+ */
+
+/**
+ * @typedef {Object} QuestionTerms - QuestionSpec plus the Electorate Instance and
+ *   a numerical threshold for the quorum. (The voteCounter doesn't know the
+ *   size of the electorate, so the Electorate has to say what limit to enforce.)
+ * @property {QuestionSpec} questionSpec
+ * @property {number} quorumThreshold
+ * @property {Instance} electorate
+ */
+
+/**
+ * @typedef {Object} TextPosition
+ * @property {string} text
+ */
+
+/**
+ * @typedef { TextPosition | ChangeParamPosition |
+ *   NoChangeParamPosition } Position
+ */
+
+/**
+ * @typedef {Object} QuestionSpec
+ *   Specification when requesting creation of a Question
  * @property {ChoiceMethod} method
- * @property {string} question
- * @property {string[]} positions
+ * @property {Issue} issue
+ * @property {Position[]} positions
+ * @property {ElectionType} electionType
  * @property {number} maxChoices
  * @property {ClosingRule} closingRule
+ * @property {QuorumRule} quorumRule
+ * @property {Position} tieOutcome
  */
 
 /**
- * @typedef {Object} QuestionTerms
- *   BallotDetails after the Registrar adds its Instance
- * @property {ChoiceMethod} method
- * @property {string} question
- * @property {string[]} positions
- * @property {number} maxChoices
- * @property {ClosingRule} closingRule
- * @property {Instance} registrar
- */
-/**
- * @typedef {Object} BallotDetails
- *   BallotDetails after the Registrar adds its Instance
- * @property {ChoiceMethod} method
- * @property {string} question
- * @property {string[]} positions
- * @property {number} maxChoices
+ * @typedef {Object} QuestionDetailsExtraProperties
+ * @property {Instance} counterInstance - instance of the VoteCounter
+ * @property {Handle<'Question'>} questionHandle
  */
 
 /**
- * @typedef {Object} Ballot
- * @property {(positions: string[]) => CompletedBallot} choose
- * @property {() => BallotDetails} getDetails
+ * @typedef {QuestionSpec & QuestionDetailsExtraProperties} QuestionDetails
+ *    complete question details: questionSpec plus counter and questionHandle
+ */
+
+/**
+ * @typedef {Object} GovernancePair
+ * @property {Instance} governor
+ * @property {Instance} governed
+ */
+
+/**
+ * @typedef {Object} Question
+ * @property {() => Instance} getVoteCounter
+ * @property {() => QuestionDetails} getDetails
+ */
+
+/**
+ * @typedef {Object} CompleteUnrankedQuestion
+ * @property {Handle<'Question'>} questionHandle
+ * @property {Position[]} chosen - a list of equal-weight preferred positions
+ */
+
+// not yet in use
+/**
+ * @typedef {Object} CompleteWeightedBallot
+ * @property {Handle<'Question'>} questionHandle
+ * @property {[Position,bigint][]} weighted - list of positions with
+ *   weights. VoteCounter may limit weights to a range or require uniqueness.
+ */
+
+// not yet in use
+/**
+ * @typedef {Object} CompleteOrderedBallot
+ * @property {Handle<'Question'>} questionHandle
+ * @property {Position[]} ordered - ordered list of position from most preferred
+ *   to least preferred
  */
 
 /**
@@ -87,79 +151,124 @@
 
 /**
  * @typedef {Object} QuorumCounter
- * @property {(VoteStatistics) => boolean} check
+ * @property {(stats: VoteStatistics) => boolean} check
  */
 
 /**
- * @callback BuildBallot
- * @param {ChoiceMethod} method
- * @param {string} question
- * @param {string[]} positions
- * @param {number} maxChoices
- * @param {Instance} instance - ballotCounter instance
- * @returns {Ballot}
+ * @callback BuildUnrankedQuestion
+ * @param {QuestionSpec} questionSpec
+ * @param {Instance} instance - voteCounter instance
+ * @returns {Question}
  */
 
 /**
- * @typedef {Object} BallotCounterCreatorFacet
+ * @typedef {Object} VoteCounterCreatorFacet - a facet that the Electorate should
+ *   hold tightly. submitVote() is the core capability that allows the holder to
+ *   specify the identity and choice of a voter. The voteCounter is making that
+ *   available to the Electorate, which should wrap and attenuate it so each
+ *   voter gets only the ability to cast their own vote at a weight specified by
+ *   the electorate.
+ * @property {SubmitVote} submitVote
+ */
+
+/**
+ * @typedef {Object} VoteCounterPublicFacet
  * @property {() => boolean} isOpen
- * @property {() => Ballot} getBallotTemplate
- * @property {() => VoterFacet} getVoterFacet
- */
-
-/**
- * @typedef {Object} BallotCounterPublicFacet
- * @property {() => boolean} isOpen
- * @property {() => Ballot} getBallotTemplate
- * @property {() => Promise<string>} getOutcome
+ * @property {() => Question} getQuestion
+ * @property {() => Promise<Position>} getOutcome
+ * @property {() => QuestionDetails} getDetails
  * @property {() => Promise<VoteStatistics>} getStats
  */
 
 /**
- * @typedef {Object} BallotCounterCloseFacet
+ * @typedef {Object} VoteCounterCloseFacet
  *   TEST ONLY: Should not be allowed to escape from contracts
  * @property {() => void} closeVoting
  */
 
 /**
- * @typedef {Object} CompleteEqualWeightBallot
- * @property {string} question
- * @property {string[]} chosen - a list of equal-weight preferred positions
+ * @typedef {Object} VoteCounterFacets
+ * @property {VoteCounterPublicFacet} publicFacet
+ * @property {VoteCounterCreatorFacet} creatorFacet
+ * @property {VoteCounterCloseFacet} closeFacet
  */
 
 /**
- * @typedef {Object} CompleteWeightedBallot
- * @property {string} question
- * @property {Record<string,bigint>[]} weighted - list of positions with weights.
- *   BallotCounter may limit weights to a range or require uniqueness.
+ * @callback BuildVoteCounter
+ * @param {QuestionSpec} questionSpec
+ * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
+ *    converts that to a number that the counter can enforce.
+ * @param {Instance} instance
+ * @returns {VoteCounterFacets}
  */
 
 /**
- * @typedef {Object} CompleteOrderedBallot
- * @property {string} question
- * @property {string[]} ordered - ordered list of position from most preferred to
- *   least preferred
+ * @callback LooksLikeQuestionSpec
+ * @param {unknown} allegedQuestionSpec
+ * @returns {QuestionSpec}
  */
 
 /**
- * @typedef { CompleteEqualWeightBallot | CompleteOrderedBallot | CompleteWeightedBallot } CompletedBallot
+ * @callback LooksLikeParamChangeIssue
+ * @param {unknown} issue
+ * @returns { asserts issue is ParamChangeIssue }
+ */
+
+/**
+ * @callback LooksLikeIssueForType
+ * @param {ElectionType} electionType
+ * @param {unknown} issue
+ * @returns { asserts issue is Issue }
+ */
+
+/**
+ * @callback LooksLikeSimpleIssue
+ * @param {unknown} issue
+ * @returns { asserts issue is SimpleIssue }
+ */
+
+/**
+ * @callback LooksLikeClosingRule
+ * @param {unknown} closingRule
+ * @returns { asserts closingRule is ClosingRule }
  */
 
 /**
  * @callback SubmitVote
- * @param {Handle<'Voter'>} seat
- * @param {ERef<CompletedBallot>} filledBallot
+ * @param {Handle<'Voter'>} voterHandle
+ * @param {Position[]} chosenPositions
  * @param {bigint=} weight
  */
 
 /**
- * @typedef {Object} VoterFacet
- * @property {SubmitVote} submitVote
+ * @typedef {Object} ElectoratePublic
+ * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
+ * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions,
+ * @property {() => string} getName
+ * @property {() => Instance} getInstance
+ * @property {(h: Handle<'Question'>) => Promise<Question>} getQuestion
+ */
+
+/**
+ * @typedef {Object} PoserFacet
+ * @property {AddQuestion} addQuestion
+ */
+
+/**
+ * @typedef {Object} ElectorateCreatorFacet
+ *  addQuestion() can be used directly when the creator doesn't need any
+ *  reassurance. When someone needs to connect addQuestion to the Electorate
+ *  instance, getPoserInvitation() lets them get addQuestion with assurance.
+ * @property {() => Promise<Invitation>} getPoserInvitation
+ * @property {AddQuestion} addQuestion
+ * @property {() => Promise<Invitation>[]} getVoterInvitations
+ * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
+ * @property {() => ElectoratePublic} getPublicFacet
  */
 
 /**
  * @typedef {Object} ClosingRule
- * @property {Timer} timer
+ * @property {ERef<Timer>} timer
  * @property {Timestamp} deadline
  */
 
@@ -171,14 +280,306 @@
 
 /**
  * @typedef {Object} AddQuestionReturn
- * @property {BallotCounterPublicFacet} publicFacet
- * @property {BallotCounterCreatorFacet} creatorFacet
+ * @property {VoteCounterPublicFacet} publicFacet
+ * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {Instance} instance
  */
 
 /**
  * @callback AddQuestion
  * @param {Installation} voteCounter
- * @param {QuestionTermsShort} questionDetailsShort
+ * @param {QuestionSpec} questionSpec
  * @returns {Promise<AddQuestionReturn>}
+ */
+
+/**
+ * @typedef QuestionCreator
+ * @property {AddQuestion} addQuestion
+ */
+
+/**
+ * @callback CreateQuestion
+ *
+ * @param {string} name - The name of the parameter to change
+ * @param {ParamValue} proposedValue - the proposed value for the named
+ *   parameter
+ * @param {Installation} voteCounterInstallation - the voteCounter to
+ *   instantiate to count votes. Expected to be a binaryVoteCounter. Other
+ *   voteCounters might be added here, or might require separate governors.
+ *   under management so users can trace it back and see that it would use
+ *   this electionManager to manage parameters
+ * @param {Instance} contractInstance - include the instance of the contract
+ * @param {ClosingRule} closingRule - deadline and timer for closing voting
+ * @returns {Promise<QuestionDetails>}
+ */
+
+/**
+ * @typedef {Object} ParamChangeIssue
+ * @property {ParamSpecification} paramSpec
+ * @property {Instance} contract
+ * @property {ParamValue} proposedValue
+ */
+
+/**
+ * @typedef {Object} ParamChangePositions
+ * @property {ChangeParamPosition} positive
+ * @property {NoChangeParamPosition} negative
+ */
+
+/**
+ * @callback MakeParamChangePositions
+ *
+ * Return a record containing the positive and negative positions for a
+ * question on changing the param to the proposedValue.
+ *
+ * @param {ParamSpecification} paramSpec
+ * @param {ParamValue} proposedValue
+ * @returns {ParamChangePositions}
+ */
+
+/**
+ * @typedef {Object} ParamChangeIssueDetails
+ *    details for a question that can change a contract parameter
+ * @property {ChoiceMethod} method
+ * @property {ParamChangeIssue} issue
+ * @property {ParamChangePositions} positions
+ * @property {ElectionType} electionType
+ * @property {number} maxChoices
+ * @property {ClosingRule} closingRule
+ * @property {QuorumRule} quorumRule
+ * @property {NoChangeParamPosition} tieOutcome
+ * @property {Instance} counterInstance - instance of the VoteCounter
+ * @property {Handle<'Question'>} questionHandle
+ */
+
+/**
+ * @typedef {Object} ParamManagerBase
+ * @property {() => Record<Keyword,ParamDescription>} getParams
+ * @property {(name: string) => ParamDescription} getParam
+ * @property {() => Subscription<ParamDescription>} getSubscription
+ */
+
+/**
+ * @typedef {{ [updater: string]: (arg: ParamValue) => void
+ *  }} ParamManagerUpdaters
+ * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
+ */
+
+/**
+ * @typedef {Array<ParamDescription>} ParamDescriptions
+ */
+
+/**
+ * @typedef {Record<string, string[]>} ParameterNameList
+ */
+
+/**
+ * @callback AssertParamManagerType
+ * @param {ParamType} type
+ * @param {ParamValue} value
+ * @param {string} name
+ */
+
+/**
+ * @callback BuildParamManager - ParamManager is a facility that governed
+ *   contracts can use to manage their visible state in a way that allows the
+ *   ContractGovernor to update values using governance. When paramManager is
+ *   instantiated inside the contract, the contract has synchronous access to
+ *   the values, and clients of the contract can verify that a ContractGovernor
+ *   can change the values in a legible way.
+ * @param {ParamDescriptions} paramDescriptions
+ * @returns {ParamManagerFull}
+ */
+
+/**
+ * @typedef {Object} ChangeParamPosition
+ * @property {ParamSpecification} changeParam
+ * @property {ParamValue} proposedValue
+ */
+
+/**
+ * @typedef {Object} NoChangeParamPosition
+ * @property {ParamSpecification} noChange
+ */
+
+/**
+ * @typedef {Object} Governor
+ * @property {CreateQuestion} createQuestion
+ */
+
+/**
+ * @typedef {Object} GovernorPublic
+ * @property {() => Instance} getElectorate
+ * @property {() => Instance} getGovernedContract
+ * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
+ * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
+ * @property {(details: QuestionDetails) => boolean} validateTimer
+ */
+
+/**
+ * @typedef {Object} ParamSpecification
+ * @property {string} key
+ * @property {string} parameterName
+ */
+
+/**
+ * @typedef {Object} ParamChangeVoteResult
+ * @property {Instance} instance - instance of the VoteCounter
+ * @property {ERef<QuestionDetails>} details
+ * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
+ *    of updating the parameter value. Primarily useful for its behavior on
+ *    rejection.
+ */
+
+/**
+ * @typedef {Object} LimitedCreatorFacet
+ *
+ * The creatorFacet for the governed contract that will be passed to the
+ * responsible party. It does not have access to the paramManager.
+ * @property {() => Instance} getContractGovernor
+ */
+
+/**
+ * @typedef {Object} ContractPowerfulCreatorFacet
+ *
+ *   A powerful facet that carries access to both the creatorFacet to be passed
+ *   to the caller and the paramManager, which will be used exclusively by the
+ *   ContractGovenor.
+ * @property {() => Promise<LimitedCreatorFacet>} getLimitedCreatorFacet
+ * @property {() => ParamManagerRetriever} getParamMgrRetriever
+ */
+
+/**
+ * @typedef {Object} GovernedContractFacetAccess
+ * @property {VoteOnParamChange} voteOnParamChange
+ * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
+ *   facet of the governed contract, without the tightly held ability to change
+ *   param values.
+ * @property {() => any} getPublicFacet - public facet of the governed contract
+ * @property {() => Promise<Instance>} getInstance - instance of the governed
+ *   contract
+ */
+
+/**
+ * @callback HandleParamGovernance
+ * @param {ContractFacet} zcf
+ * @param {ParamDescriptions} governedParamsTemplate
+ */
+
+/**
+ * @callback AssertBallotConcernsQuestion
+ * @param {string} paramName
+ * @param {QuestionDetails} questionDetails
+ */
+
+/**
+ * @typedef {Object} ParamManagerRetriever
+ * @property {(paramSpec: ParamSpecification) => ParamManagerFull} get
+ */
+
+/**
+ * @callback VoteOnParamChange
+ * @param {ParamSpecification} paramSpec
+ * @param {ParamValue} proposedValue
+ * @param {Installation} voteCounterInstallation
+ * @param {bigint} deadline
+ * @returns {ParamChangeVoteResult}
+ */
+
+/**
+ * @typedef {Object} ParamGovernor
+ * @property {VoteOnParamChange} voteOnParamChange
+ * @property {CreatedQuestion} createdQuestion
+ */
+
+/**
+ * @callback SetupGovernance
+ * @param {ERef<ParamManagerRetriever>} retriever
+ * @param {ERef<PoserFacet>} poserFacet
+ * @param {Instance} contractInstance
+ * @param {Timer} timer
+ * @returns {ParamGovernor}
+ */
+
+/**
+ * @callback CreatedQuestion
+ *   Was this question created by this ContractGovernor?
+ * @param {Instance} questionInstance
+ * @returns {boolean}
+ */
+
+/**
+ * @callback PositionIncluded
+ * @param {Position[]} positions
+ * @param {Position} position
+ * @returns {boolean}
+ */
+
+/**
+ * @typedef {Object} GovernedContractTerms
+ * @property {Timer} timer
+ * @property {IssuerKeywordRecord} issuerKeywordRecord
+ * @property {Object} privateArgs
+ */
+
+/**
+ * @typedef {Object} ContractGovernorTerms
+ * @property {VoteOnParamChange} timer
+ * @property {Instance} electorateInstance
+ * @property {Installation} governedContractInstallation
+ * @property {GovernedContractTerms} governed
+ */
+
+/**
+ * @callback AssertContractGovernance
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} allegedGoverned
+ * @param {Instance} allegedGovernor
+ * @param {Installation} contractGovernorInstallation
+ * @returns {Promise<GovernancePair>}
+ */
+
+/**
+ * @callback AssertContractElectorate - assert that the contract uses the
+ *   electorate
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} allegedGovernor
+ * @param {Instance} allegedElectorate
+ */
+
+/**
+ * @callback ValidateQuestionDetails
+ *
+ * Validate that the question details correspond to a parameter change question
+ * that the electorate hosts, and that the voteCounter and other details are
+ * consistent with it.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {ParamChangeIssueDetails} details
+ * @returns {Promise<*>}
+ */
+
+/**
+ * @callback ValidateQuestionFromCounter
+ *
+ * Validate that the questions counted by the voteCounter correspond to a
+ * parameter change question that the electorate hosts, and that the
+ * voteCounter and other details are consistent.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {Instance} voteCounter
+ * @returns {Promise<*>}
+ */
+
+/**
+ * @callback ValidateParamChangeQuestion
+ *
+ * Validate that the details are appropriate for an election concerning a
+ * parameter change for a governed contract.
+ *
+ * @param {ParamChangeIssueDetails} details
  */

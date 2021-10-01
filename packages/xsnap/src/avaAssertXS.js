@@ -4,7 +4,7 @@
 
 /** global print */
 
-const { freeze, keys } = Object;
+const { assign, freeze, keys } = Object;
 
 /**
  * deep equal value comparison
@@ -329,7 +329,7 @@ function makeTester(htest, out) {
  * @param {(t: Tester) => Promise<void>} run
  * @param {Harness?} htestOpt
  */
-function test(label, run, htestOpt) {
+const test = (label, run, htestOpt) => {
   const htest = htestOpt || theHarness;
   if (!htest) throw Error('no harness');
 
@@ -345,7 +345,7 @@ function test(label, run, htestOpt) {
       t.fail(`${label} threw: ${ex.message}`);
     }
   });
-}
+};
 
 test.createHarness = createHarness;
 
@@ -368,4 +368,4 @@ freeze(test);
 
 // export default test;
 // export { test };
-globalThis.test = test;
+assign(globalThis, { test });
