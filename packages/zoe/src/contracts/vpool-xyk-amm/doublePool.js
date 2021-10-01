@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import { makeFeeRatio } from '../constantProduct/calcFees';
@@ -23,8 +22,8 @@ const publicPrices = prices => {
  * @param {ContractFacet} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
- * @param {bigint} protocolFee
- * @param {bigint} poolFee
+ * @param {BASIS_POINTS} protocolFeeBP
+ * @param {BASIS_POINTS} poolFeeBP
  * @param {ZCFSeat} feeSeat
  * @returns {VPool}
  */
@@ -32,8 +31,8 @@ export const makeDoublePool = (
   zcf,
   collateralInPool,
   collateralOutPool,
-  protocolFee,
-  poolFee,
+  protocolFeeBP,
+  poolFeeBP,
   feeSeat,
 ) => {
   const inCentral = collateralInPool.getCentralAmount();
@@ -46,9 +45,9 @@ export const makeDoublePool = (
   const outAllocation = { Central: outCentral, Secondary: outSecondary };
 
   const centralBrand = inCentral.brand;
-  const centralFeeRatio = makeFeeRatio(poolFee, centralBrand);
+  const centralFeeRatio = makeFeeRatio(poolFeeBP, centralBrand);
   const emptyCentralAmount = AmountMath.makeEmpty(centralBrand);
-  const protocolFeeRatio = makeFeeRatio(protocolFee, centralBrand);
+  const protocolFeeRatio = makeFeeRatio(protocolFeeBP, centralBrand);
   assert(
     centralBrand === outCentral.brand,
     X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
@@ -97,7 +96,7 @@ export const makeDoublePool = (
       outAllocation,
       amountOut,
       protocolFeeRatio,
-      makeFeeRatio(poolFee, amountOut.brand),
+      makeFeeRatio(poolFeeBP, amountOut.brand),
     );
     const finalInPoolPrices = pricesForStatedOutput(
       amountIn,
@@ -154,7 +153,7 @@ export const makeDoublePool = (
       inAllocation,
       interimOutpoolPrices.swapperGets,
       protocolFeeRatio,
-      makeFeeRatio(poolFee, amountIn.brand),
+      makeFeeRatio(poolFeeBP, amountIn.brand),
     );
     const finalOutpoolPrices = pricesForStatedInput(
       inpoolPrices.swapperGives,
@@ -185,13 +184,10 @@ export const makeDoublePool = (
     return allocateGainsAndLosses(seat, prices);
   };
 
-  return Far(
-    `double pool: ${inSecondary.brand.getAllegedName()} to ${outSecondary.brand.getAllegedName()}`,
-    {
-      getInputPrice,
-      getOutputPrice,
-      swapIn,
-      swapOut,
-    },
-  );
+  return {
+    getInputPrice,
+    getOutputPrice,
+    swapIn,
+    swapOut,
+  };
 };

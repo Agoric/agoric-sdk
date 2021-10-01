@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
 import { makeFeeRatio } from '../constantProduct/calcFees';
 import {
   pricesForStatedInput,
@@ -10,15 +9,21 @@ import {
 /**
  * @param {ContractFacet} zcf
  * @param {XYKPool} pool
- * @param {bigint} protocolFee - Ratio, soon to be replaced with governed value
- * @param {bigint} poolFee - Ratio, soon to be replaced with governed value
+ * @param {BASIS_POINTS} protocolFeeBP - Ratio, soon to be replaced with governed value
+ * @param {BASIS_POINTS} poolFeeBP - Ratio, soon to be replaced with governed value
  * @param {ZCFSeat} feeSeat
  * @returns {VPool}
  */
-export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
+export const makeSinglePool = (
+  zcf,
+  pool,
+  protocolFeeBP,
+  poolFeeBP,
+  feeSeat,
+) => {
   const secondaryBrand = pool.getSecondaryAmount().brand;
   const centralBrand = pool.getCentralAmount().brand;
-  const protocolFeeRatio = makeFeeRatio(protocolFee, centralBrand);
+  const protocolFeeRatio = makeFeeRatio(protocolFeeBP, centralBrand);
   const getPools = () => ({
     Central: pool.getCentralAmount(),
     Secondary: pool.getSecondaryAmount(),
@@ -53,7 +58,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
       getPools(),
       amountOut,
       protocolFeeRatio,
-      makeFeeRatio(poolFee, amountOut.brand),
+      makeFeeRatio(poolFeeBP, amountOut.brand),
     );
   };
 
@@ -68,7 +73,7 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
       getPools(),
       amountOut,
       protocolFeeRatio,
-      makeFeeRatio(poolFee, amountIn.brand),
+      makeFeeRatio(poolFeeBP, amountIn.brand),
     );
   };
   const swapOut = (seat, amountIn, amountOut) => {
@@ -77,12 +82,12 @@ export const makeSinglePool = (zcf, pool, protocolFee, poolFee, feeSeat) => {
   };
 
   /** @type {VPool} */
-  return Far(`single pool: ${secondaryBrand.getAllegedName()}`, {
+  return {
     getInputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForInput(amountIn, amountOut)),
     getOutputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForOutput(amountIn, amountOut)),
     swapIn,
     swapOut,
-  });
+  };
 };

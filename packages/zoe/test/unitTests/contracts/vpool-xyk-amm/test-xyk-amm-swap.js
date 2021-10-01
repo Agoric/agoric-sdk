@@ -70,7 +70,7 @@ test('amm with valid offers', async t => {
   const { instance, publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
   );
   const aliceAddLiquidityInvitation = E(
     publicFacet,
@@ -433,8 +433,8 @@ test('amm doubleSwap', async t => {
     harden({ Central: centralR.issuer }),
     {
       timer: fakeTimer,
-      poolFee: 24n,
-      protocolFee: 6n,
+      poolFeeBP: 24n,
+      protocolFeeBP: 6n,
     },
   );
   const aliceAddLiquidityInvitation = E(
@@ -651,7 +651,7 @@ test('amm with some invalid offers', async t => {
   const { publicFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
   );
 
   await E(publicFacet).addPool(moolaR.issuer, 'Moola');
@@ -729,7 +729,7 @@ test('amm jig - swapOut uneven', async t => {
   const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
   );
 
   const {
@@ -972,7 +972,7 @@ test('amm jig - breaking scenario', async t => {
   const startRecord = await E(zoe).startInstance(
     installation,
     harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
   );
 
   const {
@@ -1082,7 +1082,7 @@ test('zoe allow empty reallocations', async t => {
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     harden({ Central: issuer }),
-    { timer: fakeTimer, poolFee: 24n, protocolFee: 6n },
+    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
   );
 
   const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();

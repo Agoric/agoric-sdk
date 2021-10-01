@@ -59,16 +59,25 @@ import { makeDoublePool } from './doublePool';
  * @type {ContractStartFn}
  */
 const start = zcf => {
-  // This contract must have a "Central" keyword and issuer in the
-  // IssuerKeywordRecord.
-  // poolFee is the portion of the fees that go into the pool (in BP).
-  // protocolFee is the portion of the fees that are shared with validators
+  /**
+   * This contract must have a "Central" keyword and issuer in the
+   * IssuerKeywordRecord.
+   *
+   * @typedef {{
+   *   brands: { Central: Brand },
+   *   timer: TimerService,
+   *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
+   *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
+   * }} AMMTerms
+   *
+   * @typedef { bigint } BasisPoints -- hundredths of a percent
+   */
   const {
     brands: { Central: centralBrand },
     timer,
-    poolFee,
-    protocolFee,
-  } = zcf.getTerms();
+    poolFeeBP,
+    protocolFeeBP,
+  } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
@@ -93,8 +102,8 @@ const start = zcf => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    protocolFee,
-    poolFee,
+    protocolFeeBP,
+    poolFeeBP,
     protocolSeat,
   );
   const getPoolAllocation = brand => {
@@ -112,20 +121,18 @@ const start = zcf => {
   };
 
   /**
-   * @callback ProvideVPool
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @param {Ratio} poolFeeRatio
    * @returns {VPool}
    */
-  const provideVPool = (brandIn, brandOut, poolFeeRatio) => {
+  const provideVPool = (brandIn, brandOut) => {
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       return makeDoublePool(
         zcf,
         getPool(brandIn),
         getPool(brandOut),
-        protocolFee,
-        poolFeeRatio,
+        protocolFeeBP,
+        poolFeeBP,
         protocolSeat,
       );
     }
@@ -135,18 +142,18 @@ const start = zcf => {
   };
 
   const getInputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand, poolFee);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     return pool.getInputPrice(amountIn, amountOut);
   };
   const getOutputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand, poolFee);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     return pool.getOutputPrice(amountIn, amountOut);
   };
 
   const {
     makeSwapInInvitation,
     makeSwapOutInvitation,
-  } = makeMakeSwapInvitation(zcf, provideVPool, poolFee);
+  } = makeMakeSwapInvitation(zcf, provideVPool, poolFeeBP);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,
@@ -162,7 +169,7 @@ const start = zcf => {
     protocolSeat,
     centralBrand,
   );
-  const creatorFacet = Far('Private Facet', {
+  const creatorFacet = Far('Creator Facet', {
     makeCollectFeesInvitation,
   });
 

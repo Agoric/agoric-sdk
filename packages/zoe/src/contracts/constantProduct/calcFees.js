@@ -8,11 +8,9 @@ import { BASIS_POINTS } from './defaults.js';
 const { details: X } = assert;
 
 /**
- * Make a ratio given a nat representing basis points
+ * Make a ratio given a nat representing basis points and a brand.
  *
- * @param {NatValue} feeBP
- * @param {Brand} brandOfFee
- * @returns {Ratio}
+ * @type {MakeFeeRatio}
  */
 const makeFeeRatio = (feeBP, brandOfFee) => {
   return makeRatio(feeBP, brandOfFee, BASIS_POINTS);

@@ -4,7 +4,6 @@ import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
 
 import {
   calcLiqValueToMint,
@@ -22,24 +21,24 @@ import { makeSinglePool } from './singlePool';
 
 /**
  * @param {ContractFacet} zcf
- * @param {(brand: Brand) => boolean} isSecondary
+ * @param {(brand: Brand) => boolean} isInSecondaries
  * @param {(brand: Brand, pool: XYKPool) => void} initPool
  * @param {Brand} centralBrand
- * @param {Timer} timer
+ * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {bigint} protocolFee - Ratio, soon to be replaced with governed value
- * @param {bigint} poolFee - Ratio, soon to be replaced with governed value
+ * @param {BASIS_POINTS} protocolFeeBP - soon to be replaced with governed value
+ * @param {BASIS_POINTS} poolFeeBP - soon to be replaced with governed value
  * @param {ZCFSeat} protocolSeat
  */
 export const makeAddPool = (
   zcf,
-  isSecondary,
+  isInSecondaries,
   initPool,
   centralBrand,
   timer,
   quoteIssuerKit,
-  protocolFee,
-  poolFee,
+  protocolFeeBP,
+  poolFeeBP,
   protocolSeat,
 ) => {
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
@@ -59,6 +58,9 @@ export const makeAddPool = (
       });
 
     const addLiquidityActual = (pool, zcfSeat, secondaryAmount) => {
+      // addLiquidity can't be called until the pool has been created. We verify
+      // that the asset is NAT before creating a pool.
+
       const liquidityValueOut = calcLiqValueToMint(
         liqTokenSupply,
         zcfSeat.getAmountAllocated('Central').value,
@@ -89,7 +91,7 @@ export const makeAddPool = (
     };
 
     /** @type {XYKPool} */
-    const pool = Far('pool', {
+    const pool = {
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
@@ -181,9 +183,15 @@ export const makeAddPool = (
       getFromCentralPriceAuthority: () => fromCentralPriceAuthority,
       // eslint-disable-next-line no-use-before-define
       getVPool: () => vPool,
-    });
+    };
 
-    const vPool = makeSinglePool(zcf, pool, protocolFee, poolFee, protocolSeat);
+    const vPool = makeSinglePool(
+      zcf,
+      pool,
+      protocolFeeBP,
+      poolFeeBP,
+      protocolSeat,
+    );
 
     const getInputPriceForPA = (amountIn, brandOut) =>
       vPool.getInputPrice(amountIn, AmountMath.makeEmpty(brandOut));
@@ -232,14 +240,15 @@ export const makeAddPool = (
     ]);
 
     assert(
-      !isSecondary(secondaryBrand),
+      !isInSecondaries(secondaryBrand),
       X`issuer ${secondaryIssuer} already has a pool`,
     );
     assert(
       secondaryAssetKind === AssetKind.NAT,
-      X`${keyword} issuer must use NAT math`,
+      X`${keyword} asset not fungible (must use NAT math)`,
     );
 
+    // COMMIT POINT
     // We've checked all the foreseeable exceptions (except
     // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
     // before proceeding), so we can do the work now.
