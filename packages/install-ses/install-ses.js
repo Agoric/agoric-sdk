@@ -1,14 +1,14 @@
 /* global globalThis LOCKDOWN_OPTIONS process */
 
+// Install our HandledPromise global.
+import '@agoric/eventual-send/shim.js';
+
 /**
  * Export instead of import to ensure that types are available, i.e. `harden`
  * and `lockdown`. This package does not have any exports besides types, so this
  * has no runtime effect.
  */
 export * from 'ses';
-
-// Install our HandledPromise global.
-import '@agoric/eventual-send/shim.js';
 
 // For testing under Ava, and also sometimes for testing and debugging in
 // general, when safety is not needed, you perhaps want to use
