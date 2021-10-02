@@ -3,6 +3,21 @@
     "@endo",
     "plugin:@jessie.js/recommended"
   ],
+  "rules": {
+    "jsdoc/no-multi-asterisks": "off",
+    "jsdoc/multiline-blocks": "off",
+    // Use these rules to warn about JSDoc type problems, such as after
+    // upgrading eslint-plugin-jsdoc.
+    // Bump the 1's to 2's to get errors.
+    // "jsdoc/valid-types": 1,
+    // "jsdoc/no-undefined-types": [1, {"definedTypes": ["never", "unknown"]}],
+    "jsdoc/tag-lines": "off"
+  },
+  "settings": {
+    "jsdoc": {
+      "mode": "typescript"
+    }
+  },
   "ignorePatterns": [
     "coverage/**",
     "**/output/**",
