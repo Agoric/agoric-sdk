@@ -80,9 +80,7 @@ describe('WalletConnection', () => {
         window.location = {
           hash: `#accessToken=${accessToken}`,
         };
-      });
 
-      test('calls getAdminBootstrap with the access token', () => {
         act(() =>
           component
             .find('wallet-connection')
@@ -96,42 +94,17 @@ describe('WalletConnection', () => {
               },
             }),
         );
+      });
 
+      test('calls getAdminBootstrap with the access token', () => {
         expect(getAdminBootstrap).toHaveBeenCalledWith(accessToken);
       });
 
       test('clears the accessToken from the url', () => {
-        act(() =>
-          component
-            .find('wallet-connection')
-            .props()
-            .onState({
-              detail: {
-                walletConnection: {
-                  getAdminBootstrap,
-                },
-                state: 'idle',
-              },
-            }),
-        );
         expect(window.location.hash).toEqual('');
       });
 
       test('stores the access token in local storage', () => {
-        act(() =>
-          component
-            .find('wallet-connection')
-            .props()
-            .onState({
-              detail: {
-                walletConnection: {
-                  getAdminBootstrap,
-                },
-                state: 'idle',
-              },
-            }),
-        );
-
         expect(setItem).toHaveBeenCalledWith(
           'accessTokenParams',
           `?accessToken=${accessToken}`,
