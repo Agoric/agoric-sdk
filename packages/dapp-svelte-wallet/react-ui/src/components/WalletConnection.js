@@ -19,10 +19,11 @@ const getAccessToken = () => {
   try {
     if (accessToken) {
       // Store the access token for later use.
-      localStorage.setItem('accessTokenParams', accessTokenParams);
+      window.localStorage.setItem('accessTokenParams', accessTokenParams);
     } else {
       // Try reviving it from localStorage.
-      accessTokenParams = localStorage.getItem('accessTokenParams') || '?';
+      accessTokenParams =
+        window.localStorage.getItem('accessTokenParams') || '?';
       accessToken = new URLSearchParams(accessTokenParams).get('accessToken');
     }
   } catch (e) {
@@ -31,6 +32,7 @@ const getAccessToken = () => {
 
   // Now that we've captured it, clear out the access token from the URL bar.
   window.location.hash = '';
+
   window.addEventListener('hashchange', (_ev) => {
     // See if we should update the access token params.
     const atp = `?${window.location.hash.slice(1)}`;
@@ -59,12 +61,10 @@ const WalletConnection = () => {
     dispatch(setConnectionState(state));
     switch (state) {
       case 'idle': {
-        console.log('idle', ev.detail);
-        const connection = E(walletConnection);
         // This is one of the only methods that the wallet connection facet allows.
         // It connects asynchronously, but you can use promise pipelining immediately.
         /** @type {ERef<WalletBridge>} */
-        const bridge = connection.getAdminBootStrap();
+        const bridge = E(walletConnection).getAdminBootstrap(getAccessToken());
         // You should reconstruct all state here.
         console.log('Got bridge', bridge);
         break;

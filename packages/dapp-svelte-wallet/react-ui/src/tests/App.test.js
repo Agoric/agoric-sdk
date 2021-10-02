@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
-import { ApplicationContext } from './contexts/Application';
+import App from '../App';
+import { ApplicationContext } from '../contexts/Application';
 
-jest.mock('./store.js', () => {});
-jest.mock('./components/WalletConnection', () => () => 'WalletConnection');
+jest.mock('../store.js', () => {});
+jest.mock('../components/WalletConnection', () => () => 'WalletConnection');
 
 test('renders the wallet connection status', () => {
   const state = { connectionState: 'connecting' };

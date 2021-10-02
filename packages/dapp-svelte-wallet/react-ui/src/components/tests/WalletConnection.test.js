@@ -3,13 +3,16 @@ import { mount } from 'enzyme';
 import { ApplicationContext } from '../../contexts/Application';
 import WalletConnection from '../WalletConnection';
 
-jest.mock('@agoric/eventual-send', () => {
-  return {
-    E: (obj) => {
-      return { ...obj };
-    },
-  };
-});
+jest.mock('@agoric/eventual-send', () => ({
+  E: (obj) =>
+    new Proxy(obj, {
+      get(target, propKey) {
+        const method = target[propKey];
+        return (...args) =>
+          new Promise((resolve) => resolve(method.apply(this, args)));
+      },
+    }),
+}));
 
 jest.mock('../../store.js', () => {
   return { reducer: jest.fn(), setConnectionState: (state) => state };
@@ -21,46 +24,149 @@ jest.mock('@agoric/wallet-connection/react.js', () => {
   };
 });
 
-test('WalletConnection dispatches current connection state', () => {
+describe('WalletConnection', () => {
+  let component;
   const dispatch = jest.fn();
-  const component = mount(
-    <ApplicationContext.Provider value={{ dispatch }}>
-      <WalletConnection />
-    </ApplicationContext.Provider>,
-  );
 
-  act(() =>
-    component
-      .find('wallet-connection')
-      .props()
-      .onState({ detail: { walletConnection: {}, state: 'connecting' } }),
-  );
+  beforeEach(() => {
+    component = mount(
+      <ApplicationContext.Provider value={{ dispatch }}>
+        <WalletConnection />
+      </ApplicationContext.Provider>,
+    );
+  });
 
-  expect(dispatch).toHaveBeenCalledWith('connecting');
-});
+  test('dispatches the current connection state', () => {
+    act(() =>
+      component
+        .find('wallet-connection')
+        .props()
+        .onState({ detail: { walletConnection: {}, state: 'connecting' } }),
+    );
 
-test('WalletConnection dispatches current connection state', () => {
-  const dispatch = jest.fn();
-  const mockGetAdminBootstrap = jest.fn();
-  const component = mount(
-    <ApplicationContext.Provider value={{ dispatch }}>
-      <WalletConnection />
-    </ApplicationContext.Provider>,
-  );
+    expect(dispatch).toHaveBeenCalledWith('connecting');
+  });
 
-  act(() =>
-    component
-      .find('wallet-connection')
-      .props()
-      .onState({
-        detail: {
-          walletConnection: {
-            getAdminBoostrap: (token) => mockGetAdminBootstrap(token),
-          },
-          state: 'idle',
-        },
-      }),
-  );
+  test('resets the connection on error state', () => {
+    const reset = jest.fn();
 
-  expect(mockGetAdminBootstrap).toHaveBeenCalledWith('');
+    act(() =>
+      component
+        .find('wallet-connection')
+        .props()
+        .onState({ detail: { walletConnection: { reset }, state: 'error' } }),
+    );
+
+    expect(reset).toHaveBeenCalled();
+  });
+
+  describe('on idle state', () => {
+    const accessToken = 'asdf';
+    const getAdminBootstrap = jest.fn();
+    const setItem = jest.fn();
+    const getItem = (_) => `?accessToken=${accessToken}`;
+
+    beforeEach(() => {
+      delete window.localStorage;
+      window.localStorage = {
+        setItem,
+        getItem,
+      };
+    });
+
+    describe('with an access token in the url', () => {
+      beforeEach(() => {
+        delete window.location;
+        window.location = {
+          hash: `#accessToken=${accessToken}`,
+        };
+      });
+
+      test('calls getAdminBootstrap with the access token', () => {
+        act(() =>
+          component
+            .find('wallet-connection')
+            .props()
+            .onState({
+              detail: {
+                walletConnection: {
+                  getAdminBootstrap,
+                },
+                state: 'idle',
+              },
+            }),
+        );
+
+        expect(getAdminBootstrap).toHaveBeenCalledWith(accessToken);
+      });
+
+      test('clears the accessToken from the url', () => {
+        act(() =>
+          component
+            .find('wallet-connection')
+            .props()
+            .onState({
+              detail: {
+                walletConnection: {
+                  getAdminBootstrap,
+                },
+                state: 'idle',
+              },
+            }),
+        );
+        expect(window.location.hash).toEqual('');
+      });
+
+      test('stores the access token in local storage', () => {
+        act(() =>
+          component
+            .find('wallet-connection')
+            .props()
+            .onState({
+              detail: {
+                walletConnection: {
+                  getAdminBootstrap,
+                },
+                state: 'idle',
+              },
+            }),
+        );
+
+        expect(setItem).toHaveBeenCalledWith(
+          'accessTokenParams',
+          `?accessToken=${accessToken}`,
+        );
+      });
+    });
+
+    describe('with no access token in the url', () => {
+      beforeEach(() => {
+        delete window.location;
+        window.location = {
+          hash: '',
+        };
+      });
+
+      test('calls getAdminBootstrap with the access token from local storage', () => {
+        const getItemSpy = jest.spyOn(window.localStorage, 'getItem');
+
+        act(() =>
+          component
+            .find('wallet-connection')
+            .props()
+            .onState({
+              detail: {
+                walletConnection: {
+                  getAdminBootstrap,
+                },
+                state: 'idle',
+              },
+            }),
+        );
+
+        expect(getItemSpy).toHaveBeenCalledWith('accessTokenParams');
+        expect(getAdminBootstrap).toHaveBeenCalledWith(accessToken);
+      });
+    });
+  });
 });
