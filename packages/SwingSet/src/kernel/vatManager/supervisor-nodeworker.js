@@ -58,7 +58,7 @@ parentPort.on('message', ([type, ...margs]) => {
       sendUplink(['testLog', ...args]);
     }
 
-    /** @type VatSyscaller */
+    /** @type {VatSyscaller} */
     function syscallToManager(vatSyscallObject) {
       sendUplink(['syscall', vatSyscallObject]);
       // we can't block for a result, so we always tell the vat that the
