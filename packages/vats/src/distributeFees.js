@@ -7,7 +7,7 @@ import { Far } from '@agoric/marshal';
 // wrapper to take the treasury's creatorFacet, and make a function that will
 // request an invitation and return a promise for a payment.
 export function makeTreasuryFeeCollector(zoe, treasuryCreatorFacet) {
-  /** @type FeeCollector */
+  /** @type {FeeCollector} */
   return Far('collectFees', {
     collectFees: () => {
       const invitation = E(treasuryCreatorFacet).makeCollectFeesInvitation();

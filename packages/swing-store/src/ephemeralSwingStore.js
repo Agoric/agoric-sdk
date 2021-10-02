@@ -149,7 +149,7 @@ export function initEphemeralSwingStore() {
    * @param {Object} startPosition  The position to start reading from
    * @param {Object} endPosition  The position of the end of the stream
    *
-   * @yields {string} an iterator for the items in the named stream
+   * @returns {Iterable<string>} an iterable for the items in the named stream
    */
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
