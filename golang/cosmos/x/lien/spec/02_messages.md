@@ -8,9 +8,9 @@ This documents the messages sent across the bridge to the Javascript swingset.
 
 ## From Javascript to Golang
 
-### LIEN_SET_TOTAL
+### LIEN_SET_LIENED
 
-* type: "LIEN_SET_TOTAL"
+* type: "LIEN_SET_LIENED"
 * address: string, bech32-encoded
 * denom: string
 * amount: string encoding nonnegative integer
@@ -20,7 +20,7 @@ successfully set to the new total. The following rules are used:
 
 * The total liened amount can always be decreased.
 * When increasing the total liened amount, the new total must be less than
-  or equal to the bonded amount and less than or equal to the unlocked amount.
+  or equal to the bonded amount.
 
 ### LIEN_GET_ACCOUNT_STATE
 

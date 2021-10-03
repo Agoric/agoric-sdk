@@ -43,7 +43,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 
 const (
 	LIEN_GET_ACCOUNT_STATE = "LIEN_GET_ACCOUNT_STATE"
-	LIEN_SET_TOTAL         = "LIEN_SET_TOTAL"
+	LIEN_SET_LIENED        = "LIEN_SET_LIENED"
 )
 
 // Receive implements the vm.PortHandler method.
@@ -60,8 +60,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	case LIEN_GET_ACCOUNT_STATE:
 		return ch.handleGetAccountState(ctx.Context, msg)
 
-	case LIEN_SET_TOTAL:
-		return ch.handleSetTotal(ctx.Context, msg)
+	case LIEN_SET_LIENED:
+		return ch.handleSetLiened(ctx.Context, msg)
 	}
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
 }
@@ -93,9 +93,9 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	return string(bz), nil
 }
 
-// handleSetTotal processes a LIEN_SET_TOTAL message.
+// handleSetLiened processes a LIEN_SET_LIENED message.
 // See spec/02_messages.md for the messages and responses.
-func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, error) {
+func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
@@ -118,13 +118,8 @@ func (ch portHandler) handleSetTotal(ctx sdk.Context, msg portMessage) (string, 
 	} else {
 		// check if it's okay to increase lein
 		state := ch.keeper.GetAccountState(ctx, addr)
-		total := state.Total.AmountOf(denom)
 		bonded := state.Bonded.AmountOf(denom)
-		unbonding := state.Unbonding.AmountOf(denom)
-		locked := state.Locked.AmountOf(denom)
-		unbonded := total.Sub(bonded).Sub(unbonding)
-		unlocked := total.Sub(locked)
-		if msg.Amount.GT(unbonded) || msg.Amount.GT(unlocked) {
+		if msg.Amount.GT(bonded) {
 			return "false", nil
 		}
 		diff := sdk.NewCoin(denom, msg.Amount.Sub(oldAmount))
