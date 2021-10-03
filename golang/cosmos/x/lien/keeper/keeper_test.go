@@ -185,6 +185,17 @@ func TestIterateLiens(t *testing.T) {
 	if !reflect.DeepEqual(liens, wantLiens) {
 		t.Errorf("multiple lien store has liens %v, want %v", liens, wantLiens)
 	}
+
+	// Early termination
+	reset()
+	keeper.IterateLiens(ctx, func(a sdk.AccAddress, l types.Lien) bool {
+		liens[a.String()] = l
+		return true
+	})
+	// map iteration is non-deterministic, so just check number of results
+	if len(liens) != 1 {
+		t.Errorf("early termination has liens %v, want just one", liens)
+	}
 }
 
 func TestAccountState(t *testing.T) {

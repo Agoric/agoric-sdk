@@ -64,6 +64,27 @@ func (m *mockLienKeeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) k
 	return state
 }
 
+func TestBadType(t *testing.T) {
+	ctx := sdk.Context{}
+	ctlCtx := &vm.ControllerContext{Context: ctx}
+	keeper := mockLienKeeper{
+		states: map[string]keeper.AccountState{},
+	}
+	ph := NewPortHandler(&keeper)
+
+	msg := portMessage{
+		Type: "LIEN_BAD_TYPE",
+	}
+	jsonMsg, err := json.Marshal(&msg)
+	if err != nil {
+		t.Fatalf("cannot marshal message: %v", err)
+	}
+	reply, err := ph.Receive(ctlCtx, string(jsonMsg))
+	if err == nil {
+		t.Errorf("bad type got %v, want error", reply)
+	}
+}
+
 func TestGetAccountState(t *testing.T) {
 	ctx := sdk.Context{}
 	ctlCtx := &vm.ControllerContext{Context: ctx}
@@ -103,6 +124,43 @@ func TestGetAccountState(t *testing.T) {
 	}
 	if !reflect.DeepEqual(acctState, want) {
 		t.Errorf("got account state %v, want %v", acctState, want)
+	}
+}
+
+func TestGetAccountState_badRequest(t *testing.T) {
+	ctx := sdk.Context{}
+	ctlCtx := &vm.ControllerContext{Context: ctx}
+	keeper := mockLienKeeper{
+		states: map[string]keeper.AccountState{},
+	}
+	ph := NewPortHandler(&keeper)
+
+	msg := portMessage{
+		Type:    "LIEN_GET_ACCOUNT_STATE",
+		Address: "foo",
+		Denom:   "ubld",
+	}
+	jsonMsg, err := json.Marshal(&msg)
+	if err != nil {
+		t.Fatalf("cannot marshal message: %v", err)
+	}
+	reply, err := ph.Receive(ctlCtx, string(jsonMsg))
+	if err == nil {
+		t.Errorf("bad address got %v, want error", reply)
+	}
+
+	msg = portMessage{
+		Type:    "LIEN_GET_ACCOUNT_STATE",
+		Address: addr1,
+		Denom:   "x",
+	}
+	jsonMsg, err = json.Marshal(&msg)
+	if err != nil {
+		t.Fatalf("cannot marshal message: %v", err)
+	}
+	reply, err = ph.Receive(ctlCtx, string(jsonMsg))
+	if err == nil {
+		t.Errorf("bad denom got %v, want error", reply)
 	}
 }
 

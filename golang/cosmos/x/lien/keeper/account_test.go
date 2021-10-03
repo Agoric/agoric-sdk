@@ -23,7 +23,7 @@ var (
 	b = testCoin("B")
 	c = testCoin("C")
 	d = testCoin("D")
-	// e = testCoin("E")
+	e = testCoin("E")
 )
 
 func TestMaxCoins(t *testing.T) {
@@ -40,9 +40,9 @@ func TestMaxCoins(t *testing.T) {
 		{"disjoint", coins(a(3)), coins(b(2)), coins(a(3), b(2))},
 		{
 			name: "mixed",
-			a:    coins(a(1), b(2), c(3)),
+			a:    coins(a(1), b(2), c(3), e(3)),
 			b:    coins(b(4), c(1), d(7)),
-			want: coins(a(1), b(4), c(3), d(7)),
+			want: coins(a(1), b(4), c(3), d(7), e(3)),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,5 +107,9 @@ func TestWrap(t *testing.T) {
 	}
 	if unwrap2.GetAccountNumber() != 17 {
 		t.Errorf("doubly unwrapped account has wrong account number %d, want 17", unwrap2.GetAccountNumber())
+	}
+	wrapped2 := wrapper.Wrap(nil)
+	if wrapped2 != nil {
+		t.Errorf("wrapped nil is %v, want nil", wrapped2)
 	}
 }
