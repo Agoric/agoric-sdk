@@ -12,7 +12,7 @@ yarn add @agoric/wallet-connection ses @agoric/eventual-send
 ## Usage
 
 This component works with modern browsers using any framework that supports
-standard Web Components.  The only popular framework that needs additional help
+standard Web Components. The only popular framework that needs additional help
 to use Web Components is ReactJS, for which we provide a [React-specific wrapper](#ReactJS).
 
 ### Setup
@@ -47,6 +47,27 @@ environment that `agoric-wallet-connection` uses:
 // Ensure this is imported before anything else in your project.
 import './install-ses-lockdown.js';
 ```
+
+Or, in your `index.html`:
+
+```html
+<script src="lockdown.umd.js"></script>
+<script>
+  lockdown({
+    __allowUnsafeMonkeyPatching__: 'unsafe',
+    errorTaming: 'unsafe',
+    overrideTaming: 'severe',
+  });
+</script>
+```
+
+Where `lockdown.umd.js` can be brought in with a script like:
+
+```js
+    "build:ses": "cp ./node_modules/ses/dist/lockdown.umd.js public/"
+```
+
+([example](https://github.com/Agoric/agoric-sdk/pull/3879/files))
 
 Somewhere else, you will need to define a custom state event handler:
 
@@ -119,11 +140,29 @@ import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react
 const AgoricWalletConnection = makeReactAgoricWalletConnection(React);
 
 const MyWalletConnection = ({ connecting }) => {
-  const onWalletState = useCallback(ev => { /* similar to above */ }, []);
-  return (
-    <AgoricWalletConnection onState={onWalletState} />
-  );
-}
+  const onWalletState = useCallback(ev => {
+    /* similar to above */
+  }, []);
+  return <AgoricWalletConnection onState={onWalletState} />;
+};
+```
+
+To use `ses` in React, it's best to load it in `index.html` as shown above, and `consoleTaming` should be set to `unsafe` to make dev-mode work:
+
+```html
+<script src="lockdown.umd.js"></script>
+<script>
+  // Allow the React dev environment to extend the console for debugging
+  // features.
+  const consoleTaming = '%NODE_ENV%' === 'production' ? 'safe' : 'unsafe';
+
+  lockdown({
+    __allowUnsafeMonkeyPatching__: 'unsafe',
+    errorTaming: 'unsafe',
+    overrideTaming: 'severe',
+    consoleTaming: consoleTaming,
+  });
+</script>
 ```
 
 ### Other frameworks
@@ -159,7 +198,6 @@ To run the tests in interactive watch mode run:
 ```bash
 yarn test:watch
 ```
-
 
 ## Tooling configs
 
