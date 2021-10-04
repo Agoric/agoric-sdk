@@ -1,0 +1,28 @@
+pull_request_rules:
+  - name: automerge to master with label automerge:merge and branch protection passing
+    conditions:
+      - base=master
+      - label=automerge:merge
+    actions:
+      merge:
+        method: merge
+        strict: true
+        commit_message: title+body
+  - name: automerge to master with label automerge:rebase and branch protection passing
+    conditions:
+      - base=master
+      - label=automerge:rebase
+    actions:
+      merge:
+        method: rebase
+        strict: true
+        commit_message: title+body
+  - name: automerge to master with label automerge:squash and branch protection passing
+    conditions:
+      - base=master
+      - label=automerge:squash
+    actions:
+      merge:
+        method: squash
+        strict: true
+        commit_message: title+body
