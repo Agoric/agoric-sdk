@@ -1,4 +1,4 @@
-@startuml governance example
+@startuml governanceExample
 
 package "Example with Vote Invitation" <<rectangle>> {
   class ContractGovernor {

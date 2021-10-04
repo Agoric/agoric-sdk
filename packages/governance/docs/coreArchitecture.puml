@@ -1,4 +1,4 @@
-@startuml governance invitation linkages
+@startuml coreArchitecture
 
 package Legend <<Rectangle>> #EEEEEE {
 
