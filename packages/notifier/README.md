@@ -199,7 +199,69 @@ appropriate when the iteration represents a changing quantity, like a purse bala
 updating a UI that doesn't care to hear about any older non-final values, as they are more stale. A 
 Notifier is appropriate even when this quantity changes quickly, as it only communicates non-final values
 at the rate they're being consumed, bounded by the network round-trip time. All other non-final values 
-are never communicated. The NotifierKit's lossy nature enables this optimization.
+are never communicated. The NotifierKit's lossy nature enables this
+optimization.
+
+#### Cold Notifiers
+
+The NotifierKit also contains a `registerOnObserved` property, as an
+experimental API to allow the creation of "cold notifiers".  A _cold notifier_
+is a notifier where the producer needs to hold some other resource in order to
+produce iteration values, but it would prefer to release that resource when
+iteration values aren't being consumed.
+
+The producer of a cold notifier can register an `onObserved` callback via the
+NotifierKit:
+
+```js
+const { notifier, updater, registerOnObserved } = makeNotifierKit();
+const cancelRegistration = registerOnObserved(observedUpdateCount => {
+  // Do logic to determine how to produce the observedUpdateCount...
+  updater.updateState(newValue);
+});
+return notifier;
+```
+
+The `onObserved` callback is only called once for the first time a consumer
+requests the next yet-to-be-produced iteration via
+`notifier.getUpdateSince(updateCount)`, where `updateCount >= lastUpdateCount`.
+Then `onObserved(lastUpdateCount + 1)` is called to inform the producer that
+`lastUpdateCount + 1` is observed.  It is up to the producer to determine how to
+produce that update.
+
+Ideally, the cold notifier producer would only need to hold other resources when
+it knows there is a consumer that requires them.  The notifier API suggests that
+consumers should not depend upon the actual `updateCount`, only the `value`
+returned by the notifier.  If the consumers actually follow this suggestion, it
+allows a cold notifier to default to an idle state without holding the resource.
+
+For example, let's suppose we want a timer notifier that produces events with
+values taken from the current clock's time.  A hot timer notifier would only be
+possible with a continuous clock resource subscription, and would work like:
+
+```
+clock subscription   >-------------------------------------------
+produce updates       `--1---2---3---4---5---6---7---8---9---10--
+notifier consumer                 ^^-|            ^ ^| ^-|
+consumer updateCount              3  4            7  8   9
+clock time value                  a  b            c  d   e
+```
+
+A cold timer notifier would subscribe to the clock resource only when
+observation demands it, and would work like:
+
+```
+clock subscription                 >-<              >< >-<
+onObserved                        XX              X X  X
+produce updates       `-----------1--2------------3--4---5-------
+notifier consumer                 ^^-|            ^ ^| ^-|
+consumer updateCount              1  2            3  4   5
+clock time value                  a  b            c  d   e
+```
+
+Again, this `registerOnObserved` API is experimental in that it may be changed
+in a future release, but the cold notifier functionality it enables will still
+be available in some form.
 
 ### SubscriptionKit
 
