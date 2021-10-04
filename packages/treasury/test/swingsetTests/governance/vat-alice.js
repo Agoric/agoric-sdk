@@ -2,8 +2,9 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+
+const { details: X, quote: q } = assert;
 
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;

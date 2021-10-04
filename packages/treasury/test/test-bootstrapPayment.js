@@ -33,6 +33,7 @@ async function makeBundle(sourceRoot) {
   return contractBundle;
 }
 
+// makeBundle is slow, so we bundle each contract once and reuse in all tests.
 const [
   autoswapBundle,
   stablecoinBundle,

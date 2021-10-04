@@ -17,7 +17,6 @@ export function buildRootObject(vatPowers) {
       const feePurse = E(zoeService).makeFeePurse();
       const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
-      console.log(`ZOE Vat  ${zoe}`);
       return { zoe, feeMintAccess };
     },
   });

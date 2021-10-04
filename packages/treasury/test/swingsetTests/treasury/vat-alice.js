@@ -12,15 +12,8 @@ const build = async (log, zoe, brands, payments, timer) => {
   const oneLoanWithInterest = async treasury => {
     log(`=> alice.oneLoanWithInterest called`);
 
-    console.log(`ALICE  ${treasury}`);
-
-    const t = await treasury;
-    console.log(`ALICE t: ${t}`);
-
     const runIssuer = await E(treasury).getRunIssuer();
     const runBrand = await E(runIssuer).getBrand();
-
-    console.log(`ALICE ${runIssuer}`);
 
     const loanSeat = await E(zoe).offer(
       E(treasury).makeLoanInvitation(),

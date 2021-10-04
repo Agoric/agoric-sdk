@@ -51,6 +51,7 @@ async function makeBundle(sourceRoot) {
   return contractBundle;
 }
 
+// makeBundle is a slow step, so we do it once for all the tests.
 const [
   autoswapBundle,
   stablecoinBundle,
@@ -162,6 +163,7 @@ function makeRates(runBrand, aethBrand) {
   });
 }
 
+// called separately by each test so AMM/zoe/priceAuthority don't interfere
 async function setupServices(
   loanParams,
   priceList,
