@@ -54,7 +54,6 @@ Or, in your `index.html`:
 <script src="lockdown.umd.js"></script>
 <script>
   lockdown({
-    __allowUnsafeMonkeyPatching__: 'unsafe',
     errorTaming: 'unsafe',
     overrideTaming: 'severe',
   });
@@ -147,7 +146,9 @@ const MyWalletConnection = ({ connecting }) => {
 };
 ```
 
-To use `ses` in React, it's best to load it in `index.html` as shown above, and `consoleTaming` should be set to `unsafe` to make dev-mode work:
+To use `ses` in React, it's best to load it in `index.html` as shown above. It
+requires `__allowUnsafeMonkeyPatching__`, and `consoleTaming` should be set to
+`unsafe` to make dev-mode work:
 
 ```html
 <script src="lockdown.umd.js"></script>
