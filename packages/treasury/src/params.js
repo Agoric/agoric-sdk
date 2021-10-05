@@ -31,24 +31,26 @@ export const ParamKey = {
   POOL: 'pool',
 };
 
-export const makeFeeParamManager = loanParams => {
-  /** @type {FeeParamManager} */
+/** @type {MakeFeeParamManager} */
+export const makeFeeParamManager = ammFees => {
+  // @ts-ignore buildParamManager doesn't describe all the update methods
   return buildParamManager([
     {
       name: POOL_FEE_KEY,
-      value: loanParams.poolFee,
+      value: ammFees.poolFee,
       type: ParamType.NAT,
     },
     {
       name: PROTOCOL_FEE_KEY,
-      value: loanParams.protocolFee,
+      value: ammFees.protocolFee,
       type: ParamType.NAT,
     },
   ]);
 };
 
+/** @type {MakePoolParamManager} */
 export const makePoolParamManager = (loanParams, rates) => {
-  /** @type {PoolParamManager} */
+  // @ts-ignore buildParamManager doesn't describe all the update methods
   return buildParamManager([
     {
       name: CHARGING_PERIOD_KEY,

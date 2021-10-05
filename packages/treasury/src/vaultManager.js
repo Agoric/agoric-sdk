@@ -53,26 +53,45 @@ export function makeVaultManager(
 
   const getLoanParamValue = key => getLoanParams()[key].value;
 
+  /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
-      return getLoanParamValue(LIQUIDATION_MARGIN_KEY);
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(LIQUIDATION_MARGIN_KEY))
+      );
     },
     // loans must initially have at least 1.2x collateralization
     getInitialMargin() {
-      return getLoanParamValue(INITIAL_MARGIN_KEY);
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(INITIAL_MARGIN_KEY))
+      );
     },
     getLoanFee() {
-      return getLoanParamValue(LOAN_FEE_KEY);
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(LOAN_FEE_KEY))
+      );
     },
     getInterestRate() {
-      return getLoanParamValue(INTEREST_RATE_KEY);
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(INTEREST_RATE_KEY))
+      );
     },
     getChargingPeriod() {
-      return getLoanParamValue(CHARGING_PERIOD_KEY);
+      return (
+        /** @type {RelativeTime} */
+        (getLoanParamValue(CHARGING_PERIOD_KEY))
+      );
     },
     getRecordingPeriod() {
-      return getLoanParamValue(RECORDING_PERIOD_KEY);
+      return (
+        /** @type {RelativeTime} */
+        (getLoanParamValue(RECORDING_PERIOD_KEY))
+      );
     },
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
@@ -83,7 +102,6 @@ export function makeVaultManager(
         runBrand,
       );
     },
-    reallocateReward,
   };
 
   // A Map from vaultKits to their most recent ratio of debt to
@@ -217,6 +235,7 @@ export function makeVaultManager(
   /** @type {InnerVaultManager} */
   const innerFacet = harden({
     ...shared,
+    reallocateReward,
     getCollateralBrand: () => collateralBrand,
   });
 

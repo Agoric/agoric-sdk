@@ -34,7 +34,7 @@
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
  * @property {() => ERef<Payment>} getBootstrapPayment
- * @property {(Brand) => Governor} getContractGovernor
+ * @property {() => Governor} getContractGovernor
  * @property {() => Invitation} makeCollectFeesInvitation
  */
 
@@ -62,8 +62,7 @@
  */
 
 /**
- * @typedef {Object} InnerVaultManager
- * @property {() => Brand} getCollateralBrand
+ * @typedef {Object} GetVaultParams
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
@@ -73,18 +72,26 @@
  *   which interest is charged to the loan.
  * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
  *   at which interest is recorded to the loan.
+ */
+
+/**
+ * @typedef {Object} InnerVaultManagerBase
+ * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  */
 
 /**
- * @typedef {Object} VaultManager
- * @property {(ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @typedef {InnerVaultManagerBase & GetVaultParams} InnerVaultManager
+ */
+
+/**
+ * @typedef {Object} VaultManagerBase
+ * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
  * @property {() => void} liquidateAll
- * @property {() => Ratio} getLiquidationMargin
- * @property {() => Ratio} getLoanFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInitialMargin
- * @property {() => Ratio} getInterestRate
+ */
+
+/**
+ * @typedef {VaultManagerBase & GetVaultParams} VaultManager
  */
 
 /**
@@ -112,8 +119,8 @@
 /**
  * @typedef {Object} VaultKit
  * @property {Vault} vault
- * @property {(ZCFSeat) => Promise<OpenLoanKit>} openLoan
- * @property {(Timestamp) => Amount} accrueInterestAndAddToPool
+ * @property {(seat: ZCFSeat) => Promise<OpenLoanKit>} openLoan
+ * @property {(timestamp: Timestamp) => Amount} accrueInterestAndAddToPool
  * @property {ZCFSeat} vaultSeat
  * @property {PromiseRecord<string>} liquidationPromiseKit
  * @property {ZCFSeat} liquidationZcfSeat
@@ -147,7 +154,7 @@
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {GetParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
- * @param {TimerService} timerService
+ * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @returns {VaultManager}
  */
@@ -199,19 +206,34 @@
 
 /**
  * @typedef {Object} FeeParamManager
- * @property {() => Record<Keyword,ParamDescription>} getParams
- * @property {(bigint) => void} updateProtocolFee
- * @property {(bigint) => void} updatePoolFee
+ * @property {GetParams} getParams
+ * @property {GetParam} getParam
+ * @property {(fee: bigint) => void} updateProtocolFee
+ * @property {(fee: bigint) => void} updatePoolFee
  */
 
 /**
  * @typedef {Object} PoolParamManager
- * @property {() => Record<Keyword,ParamDescription>} getParams
- * @property {(bigint) => void} updateChargingPeriod
- * @property {(bigint) => void} updateRecordingPeriod
- * @property {(Ratio) => void} updateInitialMargin
- * @property {(Ratio) => void} updateLiquidationMargin
- * @property {(Ratio) => void} updateInitialPrice
- * @property {(Ratio) => void} updateInterestRate
- * @property {(Ratio) => void} updateLoanFee
+ * @property {GetParams} getParams
+ * @property {GetParam} getParam
+ * @property {(period: bigint) => void} updateChargingPeriod
+ * @property {(period: bigint) => void} updateRecordingPeriod
+ * @property {(margin: Ratio) => void} updateInitialMargin
+ * @property {(margin: Ratio) => void} updateLiquidationMargin
+ * @property {(price: Ratio) => void} updateInitialPrice
+ * @property {(ratio: Ratio) => void} updateInterestRate
+ * @property {(ratio: Ratio) => void} updateLoanFee
+ */
+
+/**
+ * @callback MakePoolParamManager
+ * @param {LoanParams} loanParams
+ * @param {Rates} rates
+ * @returns {PoolParamManager}
+ */
+
+/**
+ * @callback MakeFeeParamManager
+ * @param {AMMFees} ammFees
+ * @returns {FeeParamManager}
  */

@@ -20,7 +20,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
 
-import makeStore from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   offerTo,
@@ -29,7 +29,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
 import {
-  multiplyBy,
+  ceilMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
@@ -65,7 +65,7 @@ const trace = makeTracer('ST');
 // pool.
 //
 // ownershipTokens for vaultManagers entitle holders to distributions, but you
-// can't redeem them outright, that would drain the utility from the economy.
+// can't redeem them outright; that would drain the utility from the economy.
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
@@ -133,7 +133,7 @@ export async function start(zcf, privateArgs) {
   }
 
   /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeStore('brand'); // Brand -> vaultManager
+  const collateralTypes = makeScalarMap('brand'); // Brand -> vaultManager
 
   const zoe = zcf.getZoeService();
 
@@ -151,14 +151,15 @@ export async function start(zcf, privateArgs) {
     { Central: runIssuer },
     {
       timer: timerService,
-      // TODO(hibbert): make the AMM use a paramManager. For now, the values
+      // TODO(#3862): make the AMM use a paramManager. For now, the values
       //  are fixed after creation of an autoswap instance.
       poolFee: feeParams.getParam(POOL_FEE_KEY).value,
       protocolFee: feeParams.getParam(PROTOCOL_FEE_KEY).value,
     },
   );
 
-  const poolParamManagers = makeStore('brand'); // Brand -> poolGovernor
+  /** @type { Store<Brand, PoolParamManager> } */
+  const poolParamManagers = makeScalarMap('brand');
 
   // We process only one offer per collateralType. They must tell us the
   // dollar value of their collateral, and we create that many RUN.
@@ -193,7 +194,7 @@ export async function start(zcf, privateArgs) {
       } = seat.getProposal();
       assert(!collateralTypes.has(collateralBrand));
       // initialPrice is in rates, but only used at creation, so not in governor
-      const runAmount = multiplyBy(collateralIn, rates.initialPrice);
+      const runAmount = ceilMultiplyBy(collateralIn, rates.initialPrice);
       // arbitrarily, give governance tokens equal to RUN tokens
       const govAmount = AmountMath.make(runAmount.value, govBrand);
 

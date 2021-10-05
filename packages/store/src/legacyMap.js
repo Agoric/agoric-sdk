@@ -4,7 +4,7 @@ import { assert, details as X, q } from '@agoric/assert';
 
 /**
  * This module and its fraternal sibling legacyWeakMap exist only to
- * each a transition to the modern `store` system, are deprecated,
+ * ease a transition to the modern `store` system, are deprecated,
  * and will eventually disappear. They are needed for now to support
  * some of the uses of the old behavior that are not compatible with
  * the new. The constraint imposed by the new is that only passables can
