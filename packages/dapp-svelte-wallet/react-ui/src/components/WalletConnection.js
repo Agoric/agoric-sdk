@@ -1,11 +1,10 @@
 /* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
 
 import React, { useCallback } from 'react';
 import { E } from '@agoric/eventual-send';
-import { useApplicationContext } from '../contexts/Application';
-
-import { setConnectionState } from '../store';
+import { withApplicationContext } from '../contexts/Application';
 
 // Create a wrapper for agoric-wallet-connection that is specific to
 // the app's instance of React.
@@ -52,13 +51,11 @@ const getAccessToken = () => {
   return accessToken;
 };
 
-const WalletConnection = () => {
-  const { dispatch } = useApplicationContext();
-
+const WalletConnection = ({ setConnectionState }) => {
   const onWalletState = useCallback((ev) => {
     const { walletConnection, state } = ev.detail;
     console.log('onWalletState', state);
-    dispatch(setConnectionState(state));
+    setConnectionState(state);
     switch (state) {
       case 'idle': {
         // This is one of the only methods that the wallet connection facet allows.
@@ -87,4 +84,6 @@ const WalletConnection = () => {
   );
 };
 
-export default WalletConnection;
+export default withApplicationContext(WalletConnection, (context) => ({
+  setConnectionState: context.setConnectionState,
+}));

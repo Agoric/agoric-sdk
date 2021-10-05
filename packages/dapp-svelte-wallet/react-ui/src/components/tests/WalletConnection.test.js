@@ -1,6 +1,5 @@
 import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
-import { ApplicationContext } from '../../contexts/Application';
 import WalletConnection from '../WalletConnection';
 
 jest.mock('@agoric/eventual-send', () => ({
@@ -14,26 +13,27 @@ jest.mock('@agoric/eventual-send', () => ({
     }),
 }));
 
-jest.mock('../../store.js', () => {
-  return { reducer: jest.fn(), setConnectionState: (state) => state };
-});
-
 jest.mock('@agoric/wallet-connection/react.js', () => {
   return {
     makeReactAgoricWalletConnection: jest.fn(() => 'wallet-connection'),
   };
 });
 
+const setConnectionState = jest.fn();
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return <Component setConnectionState={setConnectionState} {...props} />;
+  };
+jest.mock('../../contexts/Application', () => {
+  return { withApplicationContext };
+});
+
 describe('WalletConnection', () => {
   let component;
-  const dispatch = jest.fn();
 
   beforeEach(() => {
-    component = mount(
-      <ApplicationContext.Provider value={{ dispatch }}>
-        <WalletConnection />
-      </ApplicationContext.Provider>,
-    );
+    component = mount(<WalletConnection />);
   });
 
   test('dispatches the current connection state', () => {
@@ -44,7 +44,7 @@ describe('WalletConnection', () => {
         .onState({ detail: { walletConnection: {}, state: 'connecting' } }),
     );
 
-    expect(dispatch).toHaveBeenCalledWith('connecting');
+    expect(setConnectionState).toHaveBeenCalledWith('connecting');
   });
 
   test('resets the connection on error state', () => {

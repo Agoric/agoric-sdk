@@ -1,15 +1,12 @@
+/* eslint-disable react/display-name */
 import React from 'react';
 
 import WalletConnection from './components/WalletConnection';
 
 import './App.css';
-import { useApplicationContext } from './contexts/Application';
+import { withApplicationContext } from './contexts/Application';
 
-const App = () => {
-  const {
-    state: { connectionState },
-  } = useApplicationContext();
-
+const App = ({ connectionState }) => {
   return (
     <div className="App">
       <header className="App-header">
@@ -20,4 +17,6 @@ const App = () => {
   );
 };
 
-export default App;
+export default withApplicationContext(App, (context) => ({
+  connectionState: context.connectionState,
+}));
