@@ -6,13 +6,14 @@
   "license": "Apache-2.0",
   "homepage": ".",
   "type": "module",
-    "dependencies": {
+  "dependencies": {
     "@agoric/assert": "*",
     "@agoric/captp": "*",
     "@agoric/eventual-send": "*",
     "@agoric/notifier": "*",
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
+    "enzyme-adapter-react-16": "^1.15.6",
     "react": "^16.8.0",
     "react-dom": "^16.8.0",
     "react-scripts": "4.0.3",
@@ -23,6 +24,7 @@
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "agoric": "*",
+    "enzyme": "^3.11.0",
     "eslint": "^7.23.0",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-config-prettier": "^8.1.0",
@@ -33,9 +35,7 @@
     "eslint-plugin-react": "^7.23.1",
     "eslint-plugin-react-hooks": "^4.2.0",
     "prettier": "^2.2.1",
-    "rimraf": "^3.0.2",
-    "@babel/eslint-plugin": "^7.12.1",
-    "babel-eslint": "^10.1.0"
+    "rimraf": "^3.0.2"
   },
   "scripts": {
     "start": "yarn build:ses && react-scripts start",
@@ -45,7 +45,13 @@
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",
     "test": "react-scripts test",
+    "test:debug": "react-scripts --inspect-brk test --runInBand --no-cache",
     "eject": "react-scripts eject"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@lit-labs)/"
+    ]
   },
   "eslintConfig": {
     "ignorePatterns": [

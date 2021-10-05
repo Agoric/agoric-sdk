@@ -16,9 +16,7 @@ import { makeConnectionMachine } from './states.js';
 const DEFAULT_LOCATOR_URL =
   'https://local.agoric.com/?append=/wallet-bridge.html';
 
-export const makeAgoricWalletConnection = (
-  makeCapTP = defaultMakeCapTP,
-) =>
+export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
   class AgoricWalletConnection extends LitElement {
     static get styles() {
       return css`
@@ -208,7 +206,7 @@ export const makeAgoricWalletConnection = (
       console.log(this.state, 'error', event);
       this.service.send({
         type: 'error',
-        error: event.detail && event.detail.error || 'Unknown error',
+        error: (event.detail && event.detail.error) || 'Unknown error',
       });
 
       // Allow retries to get a fresh bridge.
@@ -271,7 +269,7 @@ export const makeAgoricWalletConnection = (
             case 'admin': {
               const ws = new WebSocket(this._getAdminURL());
               ws.addEventListener('open', () => this.onAdminOpen(ws));
-              ws.addEventListener('error', this.onError);
+              ws.addEventListener('error', () => this.onError);
               break;
             }
             case 'bridge': {

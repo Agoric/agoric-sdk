@@ -1,27 +1,22 @@
+/* eslint-disable react/display-name */
 import React from 'react';
 
-import logo from './logo.svg';
-import './App.css';
+import WalletConnection from './components/WalletConnection';
 
-function App() {
+import './App.css';
+import { withApplicationContext } from './contexts/Application';
+
+const App = ({ connectionState }) => {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        Connection Status: {connectionState}
       </header>
+      <WalletConnection></WalletConnection>
     </div>
   );
-}
+};
 
-export default App;
+export default withApplicationContext(App, (context) => ({
+  connectionState: context.connectionState,
+}));
