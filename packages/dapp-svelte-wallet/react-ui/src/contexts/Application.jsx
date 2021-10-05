@@ -20,7 +20,6 @@ export const withApplicationContext = (Component, mapContextToProps) => {
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
 
-  // Application-wide read-only states go here.
   const state = {
     connectionState,
     setConnectionState,
