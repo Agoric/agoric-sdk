@@ -1,4 +1,4 @@
-@startuml contract governance
+@startuml contractGovernance
 
 package "GovernedContract Vat" <<Rectangle>>  {
     Object ParamManager {
