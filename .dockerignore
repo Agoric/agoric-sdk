@@ -7,6 +7,8 @@ packages/cosmic-swingset/lib/lib*.h
 packages/cosmic-swingset/lib/lib*.so
 packages/swingset-runner
 packages/stat-logger
+**/deployment.json
+**/vars.tf
 **/*.log
 **/dist
 **/build
