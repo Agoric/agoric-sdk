@@ -138,13 +138,13 @@
 
 /**
  * @typedef {Object} PositionCount
- * @property {string} position
- * @property {number} tally
+ * @property {Position} position
+ * @property {bigint} total
  */
 
 /**
  * @typedef {Object} VoteStatistics
- * @property {number} spoiled
+ * @property {bigint} spoiled
  * @property {number} votes
  * @property {PositionCount[]} results
  */
