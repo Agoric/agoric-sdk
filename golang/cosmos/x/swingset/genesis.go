@@ -34,10 +34,8 @@ type bootstrapBlockAction struct {
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	// NONDETERMINISM: order of SetStorage is not deterministic
-	var storage types.Storage
 	for key, value := range data.Storage {
-		storage.Value = value
-		keeper.SetStorage(ctx, key, &storage)
+		keeper.SetStorage(ctx, key, value)
 	}
 
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
