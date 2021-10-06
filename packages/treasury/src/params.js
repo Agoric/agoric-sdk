@@ -1,5 +1,7 @@
 // @ts-check
 
+import './types.js';
+
 import { buildParamManager, ParamType } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';
