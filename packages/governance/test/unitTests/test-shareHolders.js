@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import path from 'path';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
