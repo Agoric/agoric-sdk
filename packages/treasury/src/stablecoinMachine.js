@@ -173,7 +173,6 @@ export async function start(zcf, privateArgs) {
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     assert(!collateralTypes.has(collateralBrand));
 
-    assert(!poolParamManagers.has(collateralBrand));
     const poolParamManager = makePoolParamManager(loanParams, rates);
     poolParamManagers.init(collateralBrand, poolParamManager);
 

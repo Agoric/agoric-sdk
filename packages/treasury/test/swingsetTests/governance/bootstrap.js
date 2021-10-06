@@ -95,6 +95,7 @@ const oneVoterValidate = async (
   governedInstanceP,
   electorateInstance,
   governorInstanceP,
+  installations,
 ) => {
   const [voters, governedInstance, governorInstance] = await Promise.all([
     votersP,
@@ -109,6 +110,7 @@ const oneVoterValidate = async (
     electorateInstance,
     governorInstance,
     issue,
+    installations,
   );
 };
 
@@ -133,6 +135,7 @@ const setUpVote = async (
     treasury.instance,
     electorateInstance,
     governor.instance,
+    installations,
   );
   return E.get(feeDetails).counterInstance;
 };

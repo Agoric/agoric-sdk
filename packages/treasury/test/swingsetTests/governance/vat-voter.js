@@ -8,6 +8,8 @@ import { validateQuestionFromCounter } from '@agoric/governance/src/contractGove
 import { assertContractElectorate } from '@agoric/governance/src/validators';
 import { assertBallotConcernsQuestion } from '@agoric/governance/src/governParam';
 
+const { details: X } = assert;
+
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation) => {
@@ -25,10 +27,8 @@ const build = async (log, zoe) => {
           electorateInstance,
           governorInstance,
           issue,
+          installations,
         ) => {
-          // I'd like to validate Installations, but there doesn't seem to be a
-          // way to get it from an Instance. I'd verify the Electorate,
-          // ballotCounter, and contractGovernor.
           const governedTermsP = E(zoe).getTerms(governedInstance);
           const electionManagerP = E.get(governedTermsP).electionManager;
 
@@ -72,6 +72,34 @@ const build = async (log, zoe) => {
             zoe,
             governorInstance,
             electorateInstance,
+          );
+
+          const [
+            counterInstallation,
+            governorInstallation,
+            electorateInstallation,
+            governedInstallation,
+          ] = await Promise.all([
+            E(zoe).getInstallationForInstance(counterInstance),
+            E(zoe).getInstallationForInstance(governorInstance),
+            E(zoe).getInstallationForInstance(electorateInstance),
+            E(zoe).getInstallationForInstance(governedInstance),
+          ]);
+          assert(
+            counterInstallation === installations.counter,
+            X`counterInstallation should match`,
+          );
+          assert(
+            governorInstallation === installations.governor,
+            X`governor Installation should match`,
+          );
+          assert(
+            electorateInstallation === installations.electorate,
+            X`electorate Installation should match`,
+          );
+          assert(
+            governedInstallation === installations.treasury,
+            X`treasury Installation should match`,
           );
         },
       });
