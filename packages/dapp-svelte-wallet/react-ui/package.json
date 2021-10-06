@@ -14,6 +14,7 @@
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
     "enzyme-adapter-react-16": "^1.15.6",
+    "eslint-plugin-jest": "^24.5.2",
     "react": "^16.8.0",
     "react-dom": "^16.8.0",
     "react-scripts": "4.0.3",
@@ -29,7 +30,7 @@
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsdoc": "^36.1.0",
+    "eslint-plugin-jest": "^24.5.2",
     "eslint-plugin-jsx-a11y": "^6.4.0",
     "eslint-plugin-prettier": "^3.2.0",
     "eslint-plugin-react": "^7.23.1",
@@ -67,13 +68,17 @@
       "sourceType": "module"
     },
     "plugins": [
-      "react"
+      "jest"
     ],
     "rules": {
-      "react/prop-types": "off"
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
+      "import/no-extraneous-dependencies": "off",
+      "react/display-name": "off"
     },
     "env": {
-      "browser": true
+      "browser": true,
+      "jest/globals": true
     },
     "settings": {
       "import/resolver": {

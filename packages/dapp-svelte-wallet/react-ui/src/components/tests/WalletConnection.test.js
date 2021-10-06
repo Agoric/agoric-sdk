@@ -3,12 +3,12 @@ import { mount } from 'enzyme';
 import WalletConnection from '../WalletConnection';
 
 jest.mock('@agoric/eventual-send', () => ({
-  E: (obj) =>
+  E: obj =>
     new Proxy(obj, {
       get(target, propKey) {
         const method = target[propKey];
         return (...args) =>
-          new Promise((resolve) => resolve(method.apply(this, args)));
+          new Promise(resolve => resolve(method.apply(this, args)));
       },
     }),
 }));
@@ -20,11 +20,9 @@ jest.mock('@agoric/wallet-connection/react.js', () => {
 });
 
 const setConnectionState = jest.fn();
-const withApplicationContext =
-  (Component, _) =>
-  ({ ...props }) => {
-    return <Component setConnectionState={setConnectionState} {...props} />;
-  };
+const withApplicationContext = (Component, _) => ({ ...props }) => {
+  return <Component setConnectionState={setConnectionState} {...props} />;
+};
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
 });
@@ -64,7 +62,7 @@ describe('WalletConnection', () => {
     const accessToken = 'asdf';
     const getAdminBootstrap = jest.fn();
     const setItem = jest.fn();
-    const getItem = (_) => `?accessToken=${accessToken}`;
+    const getItem = _ => `?accessToken=${accessToken}`;
 
     beforeEach(() => {
       delete window.localStorage;
