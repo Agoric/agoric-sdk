@@ -57,7 +57,7 @@ function makeAttestation(handle, amountLiened, addr, expiration) {
 const attest = (addr, amountLiened, expiration) => {
   Nat(amountLiened);
   Nat(expiration);
-  const handle = makeHandle('Attestation');
+  const handle = makeHandle('attestation');
   return makeAttestation(handle, amountLiened, addr, expiration);
 };
 
@@ -349,9 +349,9 @@ test('shareHolders bundle/split attestations', async t => {
   ).startInstance(electorateInstall, { Attestation: issuer });
 
   // deadline:  depose: 2
-  const handleShared = makeHandle('Attestation');
-  const handle4 = makeHandle('Attestation');
-  const handle7 = makeHandle('Attestation');
+  const handleShared = makeHandle('attestation');
+  const handle4 = makeHandle('attestation');
+  const handle7 = makeHandle('attestation');
   const claim2 = makeAttestation(handleShared, 2n, 'a', 3n)[0];
   const claim4 = makeAttestation(handle4, 4n, 'a', 7n)[0];
   const claim7 = makeAttestation(handle7, 7n, 'a', 3n)[0];
