@@ -32,7 +32,7 @@ const getAccessToken = () => {
   // Now that we've captured it, clear out the access token from the URL bar.
   window.location.hash = '';
 
-  window.addEventListener('hashchange', (_ev) => {
+  window.addEventListener('hashchange', _ev => {
     // See if we should update the access token params.
     const atp = `?${window.location.hash.slice(1)}`;
     const at = new URLSearchParams(atp).get('accessToken');
@@ -52,7 +52,7 @@ const getAccessToken = () => {
 };
 
 const WalletConnection = ({ setConnectionState }) => {
-  const onWalletState = useCallback((ev) => {
+  const onWalletState = useCallback(ev => {
     const { walletConnection, state } = ev.detail;
     console.log('onWalletState', state);
     setConnectionState(state);
@@ -84,6 +84,6 @@ const WalletConnection = ({ setConnectionState }) => {
   );
 };
 
-export default withApplicationContext(WalletConnection, (context) => ({
+export default withApplicationContext(WalletConnection, context => ({
   setConnectionState: context.setConnectionState,
 }));

@@ -17,6 +17,6 @@ const App = ({ connectionState }) => {
   );
 };
 
-export default withApplicationContext(App, (context) => ({
+export default withApplicationContext(App, context => ({
   connectionState: context.connectionState,
 }));
