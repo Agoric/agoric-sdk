@@ -71,7 +71,10 @@ const start = zcf => {
     return makeVoterInvitation((attestation.value));
   };
 
-  /** @type {AddQuestion} */
+  /**
+   * @param {Installation} voteCounter
+   * @param {QuestionSpec} questionSpec
+   */
   const addQuestion = async (voteCounter, questionSpec) => {
     return startCounter(
       zcf,
@@ -92,7 +95,7 @@ const start = zcf => {
     makeVoterInvitation: () => zcf.makeInvitation(vote, 'attestation vote'),
   });
 
-  /** @type {ElectorateCreatorFacet} */
+  /** @type {ShareholdersCreatorFacet} */
   const creatorFacet = Far('creatorFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,

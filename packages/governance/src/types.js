@@ -275,18 +275,27 @@
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
- * @property {AddQuestion} addQuestion
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {() => ElectoratePublic} getPublicFacet
  */
 
 /**
- * @typedef {Object} CommitteeElectorateMixin
- * @property {() => Promise<Invitation>[]} getVoterInvitations
+ * @typedef { ElectorateCreatorFacet & {
+ *  addQuestion: (voteCounter: ERef<Installation>,
+ *             questionSpec: QuestionSpec) => Promise<{
+ *   creatorFacet: VoteCounterCreatorFacet,
+ *   publicFacet: VoteCounterPublicFacet,
+ *   instance: Instance,
+ *   deadline: Timestamp,
+ *   questionHandle: Handle<'Question'>,
+ *   }>
+ * }} ShareholdersCreatorFacet
  */
 
 /**
- * @typedef { ElectorateCreatorFacet | CommitteeElectorateMixin } CommitteeElectorateCreatorFacet
+ * @typedef { ElectorateCreatorFacet & {
+ *   getVoterInvitations:() => Promise<Invitation>[]
+ * }} CommitteeElectorateCreatorFacet
  */
 
 /**
