@@ -12,12 +12,12 @@ import {
   getPoserInvitation,
 } from './electorateTools';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
-// shareHolders is an Electorate that relies on an attestation contract to validate ownership
-// of voting shares. The electorate provides voting facets corresponding to the
-// attestations to ensure that only valid holders of shares have the ability to
-// vote.
+// shareHolders is an Electorate that relies on an attestation contract to
+// validate ownership of voting shares. The electorate provides voting facets
+// corresponding to the attestations to ensure that only valid holders of shares
+// have the ability to vote.
 
 // The attestation contract is responsible for ensuring that each votable share
 // has a persistent handle that survives through extending the duration of the
@@ -36,7 +36,11 @@ const start = zcf => {
   const { subscription, publication } = makeSubscriptionKit();
 
   const makeVoterInvitation = attestations => {
-    const voterDescription = 'something based on addresses and amounts';
+    // TODO: The UI will probably want something better, but I don't know what.
+    const voterDescription = attestations.reduce((desc, amount) => {
+      const { address, amountLiened } = amount;
+      return `${desc} ${address}/${amountLiened}`;
+    }, 'Address/Amount:');
 
     // The electorate doesn't know the clock, but it believes the times are
     // comparable between the clock for voting deadlines and lien expirations.
@@ -83,7 +87,7 @@ const start = zcf => {
     getQuestionSubscription: () => subscription,
     getOpenQuestions: () => getOpenQuestions(allQuestions),
     getInstance: zcf.getInstance,
-    getQuestion: handleP => getQuestion(handleP, allQuestions),
+    getQuestion: handle => getQuestion(handle, allQuestions),
     makeVoterInvitation: () => zcf.makeInvitation(vote, 'attestation vote'),
   });
 

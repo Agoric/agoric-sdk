@@ -32,8 +32,8 @@ const makeInstall = (sourceRoot, zoe) => {
   return E.when(bundle, b => E(zoe).install(b));
 };
 
-function makeAttestation(handle, amountLiened, addr, expiration) {
-  return harden([{ handle, amountLiened, addr, expiration }]);
+function makeAttestation(handle, amountLiened, address, expiration) {
+  return harden([{ handle, amountLiened, address, expiration }]);
 }
 
 const attest = (addr, amountLiened, expiration) => {

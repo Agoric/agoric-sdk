@@ -249,19 +249,8 @@
  */
 
 /**
- * @typedef {Object} CommitteeElectoratePublicMixin
- * @property {() => string} getName
- */
-
-/**
- * @typedef {Object} ClaimsElectorateMixin
- * @property {() => ERef<Invitation>} makeVoterInvitation
- */
-
-/**
- * @typedef { ElectoratePublic & ClaimsElectorateMixin } ClaimsElectoratePublic
- * @typedef { ElectoratePublic & CommitteeElectoratePublicMixin } CommitteeElectoratePublic
- * @typedef { ClaimsElectoratePublic | CommitteeElectoratePublic } AnyElectoratePublic
+ * @typedef { ElectoratePublic & {makeVoterInvitation: () => ERef<Invitation>} } ClaimsElectoratePublic
+ * @typedef { ElectoratePublic & {getName: () => string} } CommitteeElectoratePublic
  */
 
 /**
