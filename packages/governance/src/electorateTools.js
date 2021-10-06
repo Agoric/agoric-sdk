@@ -47,10 +47,11 @@ const startCounter = async (
  * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
  */
 const getOpenQuestions = async questionStore => {
-  const isOpenPQuestions = questionStore.keys().map(key => {
-    const { publicFacet } = questionStore.get(key);
-    return [E(publicFacet).isOpen(), key];
-  });
+  const isOpenPQuestions = questionStore
+    .entries()
+    .map(([key, { publicFacet }]) => {
+      return [E(publicFacet).isOpen(), key];
+    });
 
   /** @type {[boolean, Handle<'Question'>][]} */
   const isOpenQuestions = await allComparable(harden(isOpenPQuestions));
