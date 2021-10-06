@@ -29,12 +29,6 @@ const { ceilDivide } = natSafeMath;
  *  @type {ContractStartFn}
  */
 const start = zcf => {
-  /**
-   * @typedef {Object} QuestionRecord
-   * @property {ERef<VoteCounterCreatorFacet>} voteCap
-   * @property {VoteCounterPublicFacet} publicFacet
-   */
-
   /** @type {Store<Handle<'Question'>, QuestionRecord>} */
   const allQuestions = makeStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
