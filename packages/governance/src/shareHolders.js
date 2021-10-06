@@ -68,6 +68,7 @@ const start = zcf => {
     // Give the user their attestation payment back
     seat.exit();
 
+    assert.typeof(attestation.value, 'object'); // entailed by isGTE on empty SET
     return makeVoterInvitation(attestation.value);
   };
 
