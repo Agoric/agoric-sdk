@@ -68,7 +68,7 @@ const start = zcf => {
     // Give the user their attestation payment back
     seat.exit();
 
-    return makeVoterInvitation((attestation.value));
+    return makeVoterInvitation(attestation.value);
   };
 
   /**
