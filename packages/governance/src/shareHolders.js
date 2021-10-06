@@ -35,6 +35,7 @@ const start = zcf => {
   const allQuestions = makeStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
 
+  /** @param { SetValue } attestations */
   const makeVoterInvitation = attestations => {
     const voterDescription = 'something based on addresses and amounts';
 
@@ -42,6 +43,10 @@ const start = zcf => {
     // comparable between the clock for voting deadlines and lien expirations.
 
     return Far(`a voter ${voterDescription}`, {
+      /**
+       * @param {Handle<'Question'>} questionHandle
+       * @param {Position[]} positions
+       */
       castBallotFor: (questionHandle, positions) => {
         const { voteCap, deadline } = allQuestions.get(questionHandle);
         return attestations
