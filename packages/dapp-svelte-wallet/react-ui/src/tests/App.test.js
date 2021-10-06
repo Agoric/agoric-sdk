@@ -3,12 +3,10 @@ import App from '../App';
 
 jest.mock('../components/WalletConnection', () => () => 'WalletConnection');
 
-let connectionState = 'connecting';
-const withApplicationContext =
-  (Component, _) =>
-  ({ ...props }) => {
-    return <Component connectionState={connectionState} {...props} />;
-  };
+const connectionState = 'connecting';
+const withApplicationContext = (Component, _) => ({ ...props }) => {
+  return <Component connectionState={connectionState} {...props} />;
+};
 jest.mock('../contexts/Application', () => {
   return { withApplicationContext };
 });
