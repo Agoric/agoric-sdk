@@ -7,7 +7,7 @@ import liquidateBundle from './bundle-liquidateMinimum.js';
 import autoswapBundle from './bundle-multipoolAutoswap.js';
 import stablecoinBundle from './bundle-stablecoinMachine.js';
 import contractGovernorBundle from './bundle-contractGovernor.js';
-import committeeBundle from './bundle-committee.js';
+import noActionElectorateBundle from './bundle-noActionElectorate.js';
 import binaryVoteCounterBundle from './bundle-binaryVoteCounter.js';
 import { governedParameterTerms } from '../src/params';
 import { Far } from '@agoric/marshal';
@@ -66,7 +66,7 @@ export async function installOnChain({
     ['autoswap', autoswapBundle],
     ['stablecoin', stablecoinBundle],
     ['contractGovernor', contractGovernorBundle],
-    ['committee', committeeBundle],
+    ['noActionElectorate', noActionElectorateBundle],
     ['binaryCounter', binaryVoteCounterBundle],
 
   ];
@@ -75,7 +75,7 @@ export async function installOnChain({
     autoswapInstall,
     stablecoinMachineInstall,
     contractGovernorInstall,
-    committeeInstall,
+    noActionElectorateInstall,
     binaryCounterInstall,
   ] = await Promise.all(
     nameBundles.map(async ([name, bundle]) => {
@@ -88,14 +88,12 @@ export async function installOnChain({
     }),
   );
 
-  const electorateTerms = { committeeName: 'TreasuryBoard', committeeSize: 5 };
-  // The electorateCreatorFacet has `getVoterInvitations()`, which returns
-  // invitations for the people who can vote on changes to the treasury. We
-  // don't currently hand those out to anyone, but that is not visible on chain.
+  // The Electorate is a no-action electorate, so the testNet runs without
+  // anyone having the ability to change the treasury's parameters.
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
-  } = await E(zoeWPurse).startInstance(committeeInstall, {}, electorateTerms);
+  } = await E(zoeWPurse).startInstance(noActionElectorateInstall);
 
   const loanParams = {
     chargingPeriod: SECONDS_PER_HOUR,
@@ -167,7 +165,7 @@ export async function installOnChain({
     ['AMM_INSTALLATION_BOARD_ID', autoswapInstall],
     ['LIQ_INSTALLATION_BOARD_ID', liquidationInstall],
     ['BINARY_COUNTER_INSTALLATION_BOARD_ID', binaryCounterInstall],
-    ['COMMITTEE_INSTALLATION_BOARD_ID', committeeInstall],
+    ['NO_ACTION_INSTALLATION_BOARD_ID', noActionElectorateInstall],
     ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', contractGovernorInstall],
     ['AMM_INSTANCE_BOARD_ID', ammInstance],
     ['INVITE_BRAND_BOARD_ID', E(invitationIssuer).getBrand()],

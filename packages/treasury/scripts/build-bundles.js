@@ -51,6 +51,10 @@ async function main() {
       `${dirname}/../bundles/bundle-committee.js`,
     ],
     [
+      '@agoric/governance/src/noActionElectorate.js',
+      `${dirname}/../bundles/bundle-noActionElectorate.js`,
+    ],
+    [
       '@agoric/governance/src/binaryVoteCounter.js',
       `${dirname}/../bundles/bundle-binaryVoteCounter.js`,
     ],
