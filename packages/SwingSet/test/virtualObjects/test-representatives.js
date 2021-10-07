@@ -150,7 +150,7 @@ test('virtual object representatives', async t => {
   t.deepEqual(c.kpResolution(rz2), capdata('"overflow"'));
 });
 
-test('exercise cache', async t => {
+test.serial('exercise cache', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {

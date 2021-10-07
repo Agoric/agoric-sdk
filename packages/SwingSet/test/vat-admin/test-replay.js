@@ -26,7 +26,7 @@ test.before(async t => {
   t.context.data = { kernelBundles, dynamicBundle };
 });
 
-test('replay bundleSource-based dynamic vat', async t => {
+test.serial('replay bundleSource-based dynamic vat', async t => {
   const config = {
     vats: {
       bootstrap: {
@@ -72,7 +72,7 @@ test('replay bundleSource-based dynamic vat', async t => {
   }
 });
 
-test('replay bundleName-based dynamic vat', async t => {
+test.serial('replay bundleName-based dynamic vat', async t => {
   const config = {
     vats: {
       bootstrap: {
