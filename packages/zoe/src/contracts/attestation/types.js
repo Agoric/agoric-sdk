@@ -89,7 +89,7 @@
  * @property {Address} address
  * @property {Amount} amountLiened
  * @property {Timestamp} expiration
- * @property {Handle<'attestation'>} handle
+ * @property {Handle<'Attestation'>} handle
  */
 
 /**
