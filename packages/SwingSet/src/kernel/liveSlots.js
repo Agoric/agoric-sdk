@@ -204,6 +204,17 @@ function build(
     const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
     let doMore;
     do {
+      // `possiblyDeadSet` has accumulated vrefs which were at one point dead
+      // from the perspective of the garbage collector, i.e., the in-memory
+      // object the vref referred to was garbage collected and finalized.
+      // However, the object might have been resurrected (i.e., given a new
+      // in-memory manifestation) in the meantime, so we can't take the GC's
+      // opinion as dispositive.  `deadSet` will be used to accumulate a set of
+      // those vrefs from `possiblyDeadSet` which *right now* have no in-memory
+      // manifestation.  These might then still be considered live because they
+      // are being sustained by references from virtual objects or other vats,
+      // which we will now have to check after having weeded out the
+      // resurrections.
       const deadSet = new Set();
       // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
       // `do {} while` loop, which means there's no conditional bypass of the
@@ -241,11 +252,11 @@ function build(
           // Representative: send nothing, but perform refcount checking
           if (slotToVal.get(vref)) {
             // eslint-disable-next-line no-use-before-define
-            const [maybeFree, doRetire] = vom.possibleVirtualObjectDeath(vref);
+            const [gcAgain, doRetire] = vom.possibleVirtualObjectDeath(vref);
             if (doRetire) {
               exportsToRetire.push(vref);
             }
-            doMore = doMore || maybeFree;
+            doMore = doMore || gcAgain;
           }
         } else if (allocatedByVat) {
           // Remotable: send retireExport

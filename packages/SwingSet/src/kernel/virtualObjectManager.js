@@ -240,14 +240,17 @@ export function makeVirtualObjectManager(
     const exportStatus = getExportStatus(vobjID);
     if (exportStatus !== 'reachable' && refCount === 0) {
       const rawState = fetch(vobjID);
+      let doMoreGC = false;
       for (const propValue of Object.values(rawState)) {
-        propValue.slots.map(removeReachableVref);
+        propValue.slots.map(
+          vref => (doMoreGC = doMoreGC || removeReachableVref(vref)),
+        );
       }
       syscall.vatstoreDelete(`vom.${vobjID}`);
       syscall.vatstoreDelete(`vom.rc.${vobjID}`);
       syscall.vatstoreDelete(`vom.es.${vobjID}`);
-      const possibleFree = ceaseRecognition(vobjID);
-      return [possibleFree, exportStatus !== 'none'];
+      doMoreGC = doMoreGC || ceaseRecognition(vobjID);
+      return [doMoreGC, exportStatus !== 'none'];
     }
     return [false, false];
   }
@@ -360,9 +363,8 @@ export function makeVirtualObjectManager(
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
           if (remotableRefCounts.has(remotable)) {
-            const oldRefCount = /** @type {number} */ (remotableRefCounts.get(
-              remotable,
-            ));
+            /** @type {number} */
+            const oldRefCount = (remotableRefCounts.get(remotable));
             remotableRefCounts.set(remotable, oldRefCount + 1);
           } else {
             remotableRefCounts.set(remotable, 1);
@@ -377,6 +379,7 @@ export function makeVirtualObjectManager(
   }
 
   function removeReachableVref(vref) {
+    let droppedMemoryReference = false;
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
@@ -385,12 +388,12 @@ export function makeVirtualObjectManager(
         } else {
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
-          const oldRefCount = /** @type {number} */ (remotableRefCounts.get(
-            remotable,
-          ));
+          /** @type {number} */
+          const oldRefCount = (remotableRefCounts.get(remotable));
           assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
           if (oldRefCount === 1) {
             remotableRefCounts.delete(remotable);
+            droppedMemoryReference = true;
           } else {
             remotableRefCounts.set(remotable, oldRefCount - 1);
           }
@@ -399,6 +402,7 @@ export function makeVirtualObjectManager(
         decRefCount(vref);
       }
     }
+    return droppedMemoryReference;
   }
 
   function updateReferenceCounts(beforeSlots, afterSlots) {
@@ -528,13 +532,13 @@ export function makeVirtualObjectManager(
    */
   function ceaseRecognition(vref) {
     const recognizerSet = vrefRecognizers.get(vref);
-    let possibleFree = false;
+    let doMoreGC = false;
     if (recognizerSet) {
       vrefRecognizers.delete(vref);
       for (const recognizer of recognizerSet) {
         if (recognizer instanceof Map) {
           recognizer.delete(vref);
-          possibleFree = true;
+          doMoreGC = true;
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
         } else if (typeof recognizer === 'function') {
@@ -542,7 +546,7 @@ export function makeVirtualObjectManager(
         }
       }
     }
-    return possibleFree;
+    return doMoreGC;
   }
 
   function isVrefRecognizable(vref) {
