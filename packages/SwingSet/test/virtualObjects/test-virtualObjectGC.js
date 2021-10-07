@@ -1095,10 +1095,6 @@ test.serial('remotable refcount management 2', async t => {
   validateDelete(v, 'o+2/3');
   validateStatusCheck(v, 'o+2/4');
   validateDelete(v, 'o+2/4');
-  validateDone(v);
-
-  rp = await dispatchMessage('noOp');
-  validateReturned(v, rp);
   validate(v, matchRetireExports('o+3'));
   validateDone(v);
 });
