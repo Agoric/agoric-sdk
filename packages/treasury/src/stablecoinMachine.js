@@ -233,7 +233,7 @@ export async function start(zcf, privateArgs) {
       );
       const { brand: liquidityBrand } = await zcf.saveIssuer(
         liquidityIssuer,
-        `${collateralKeyword}_Liquidity`,
+        `${collateralKeyword}Liquidity`,
       );
 
       // inject both the collateral and the RUN into the new autoswap, to
