@@ -10,9 +10,8 @@ actor "Pool Adder N" as pa #yellow
 actor "Pool User" as pu
 database "MPAS Contract" as mpas
 box "Zoe"
-control "Zoe" as zoe
-control "userSeat" as usA
-
+entity "Zoe" as zoe
+entity "userSeat" as usA
 end box
 
 == MPAS Creation ==
@@ -21,13 +20,15 @@ return ""creatorFacet""
 == Pool Addition SML:BCK==
 autonumber 10
 pa -> mpas: ""addPool()""
-create database "Pool SML:BUCK" as pool
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
 mpas -> pool: Create pool for SML -> BUCK
 mpas --> pa: ""Issuer""
 == Pool Addition MOOL:BCK==
 autonumber 10
 pa -> mpas: ""addPool()""
-create database "Pool MOOL:BUCK" as pool2
+database "Pool MOOL:BUCK" as pool2
 mpas -> pool2: Create pool for MOOL -> BUCK
 mpas --> pa: ""Issuer""
 
@@ -58,7 +59,7 @@ pu -> pu: create proposal for SML:BUCK as ""proposal""
 
 end
 
-group requesting a SwapOut an invitation
+group requesting an invitation for a SwapOut
 pu -> mpas: ""makeSwapOutInvitation()""
 return ""invitation""
 
@@ -72,7 +73,6 @@ zoe -> zoe: validate offer
 zoe -> usA: create ""userSeat""
 usA --> zoe: ""userSeat""
 zoe -> pool: ""getPoolSeat()""
-create control "poolSeat" as psA
 pool -> psA: create ""poolSeat""
 psA --> zoe: ""poolSeat""
 mpas -> psA: stage assets
