@@ -20,6 +20,13 @@ const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
   : 0;
 
+const parseParams = params => ({
+  maxComputronsPerBlock: BigInt(params.max_computrons_per_block),
+  estimatedComputronsPerVatCreation: BigInt(
+    params.estimated_computrons_per_vat_creation,
+  ),
+});
+
 export default function makeBlockManager({
   deliverInbound,
   doBridgeInbound,
@@ -49,7 +56,11 @@ export default function makeBlockManager({
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
-        p = beginBlock(action.blockHeight, action.blockTime);
+        p = beginBlock(
+          action.blockHeight,
+          action.blockTime,
+          parseParams(action.params),
+        );
         break;
 
       case DELIVER_INBOUND:
@@ -59,6 +70,7 @@ export default function makeBlockManager({
           action.ack,
           action.blockHeight,
           action.blockTime,
+          parseParams(action.params),
         );
         break;
 
@@ -78,7 +90,11 @@ export default function makeBlockManager({
       }
 
       case END_BLOCK: {
-        p = endBlock(action.blockHeight, action.blockTime);
+        p = endBlock(
+          action.blockHeight,
+          action.blockTime,
+          parseParams(action.params),
+        );
         if (END_BLOCK_SPIN_MS) {
           // Introduce a busy-wait to artificially put load on the chain.
           p = p.then(res => {
