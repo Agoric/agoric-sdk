@@ -1,0 +1,28 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Agoric Peg example
+
+autonumber
+
+box Agoric
+actor BobA
+entity SimpleEx
+actor AliceA
+end box
+
+entity Relay
+box Gaia
+actor AliceG
+actor BobG
+end box
+
+AliceG -> AliceA: 100 Atom
+AliceA -> SimpleEx: 75 Atom
+BobA -> SimpleEx: 200 Moola
+SimpleEx -> AliceA: 200 Moola
+SimpleEx -> BobA: 75 Atom
+BobA -> BobG: 20 Atom
+
+@enduml
