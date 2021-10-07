@@ -9,19 +9,15 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
-var (
-	// This is how many computrons we allow before starting a new block.
-	// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
-	// based on 5 sec voting time and up to 10 sec of computation.
-	DefaultMaxComputronsPerBlock = sdk.NewInt(8000000)
-	// observed: 0.385 sec
-	DefaultEstimatedComputronsPerVatCreation = sdk.NewInt(300000)
-)
-
 // Parameter keys
 var (
 	ParamStoreKeyMaxComputronsPerBlock             = []byte("max_computrons_per_block")
 	ParamStoreKeyEstimatedComputronsPerVatCreation = []byte("estimated_computrons_per_vat_creation")
+	ParamStoreKeyFeeDenom                          = []byte("fee_denom")
+	ParamStoreKeyFeePerInboundTx                   = []byte("fee_per_inbound_tx")
+	ParamStoreKeyFeePerMessage                     = []byte("fee_per_message")
+	ParamStoreKeyFeePerMessageByte                 = []byte("fee_per_message_byte")
+	ParamStoreKeyFeePerMessageSlot                 = []byte("fee_per_message_slot")
 )
 
 // ParamKeyTable returns the parameter key table.
@@ -34,6 +30,11 @@ func DefaultParams() Params {
 	return Params{
 		MaxComputronsPerBlock:             DefaultMaxComputronsPerBlock,
 		EstimatedComputronsPerVatCreation: DefaultEstimatedComputronsPerVatCreation,
+		FeeDenom:                          DefaultFeeDenom,
+		FeePerInboundTx:                   DefaultFeePerInboundTx,
+		FeePerMessage:                     DefaultFeePerMessage,
+		FeePerMessageByte:                 DefaultFeePerMessageByte,
+		FeePerMessageSlot:                 DefaultFeePerMessageSlot,
 	}
 }
 
@@ -47,6 +48,11 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyMaxComputronsPerBlock, &p.MaxComputronsPerBlock, validateMaxComputronsPerBlock),
 		paramtypes.NewParamSetPair(ParamStoreKeyEstimatedComputronsPerVatCreation, &p.EstimatedComputronsPerVatCreation, validateEstimatedComputronsPerVatCreation),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeeDenom, &p.FeeDenom, validateFeeDenom),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeePerInboundTx, &p.FeePerInboundTx, validateFeePerInboundTx),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessage, &p.FeePerMessage, validateFeePerMessage),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessageByte, &p.FeePerMessageByte, validateFeePerMessageByte),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessageSlot, &p.FeePerMessageSlot, validateFeePerMessageSlot),
 	}
 }
 
@@ -84,3 +90,38 @@ func validateEstimatedComputronsPerVatCreation(i interface{}) error {
 
 	return nil
 }
+
+func validateFeeDenom(i interface{}) error {
+	v, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid fee denom parameter type: %T", i)
+	}
+
+	if err := sdk.ValidateDenom(v); err != nil {
+		return fmt.Errorf("invalid fee denom %s: %w", v, err)
+	}
+
+	return nil
+}
+
+func makeFeeValidator(description string) func(interface{}) error {
+	return func(i interface{}) error {
+		v, ok := i.(sdk.Dec)
+		if !ok {
+			return fmt.Errorf("invalid %s parameter type: %T", description, i)
+		}
+
+		if v.IsNegative() {
+			return fmt.Errorf("%s amount must not be negative: %s", description, v)
+		}
+
+		return nil
+	}
+}
+
+var (
+	validateFeePerInboundTx   = makeFeeValidator("fee per inbound tx")
+	validateFeePerMessage     = makeFeeValidator("fee per message")
+	validateFeePerMessageByte = makeFeeValidator("fee per message byte")
+	validateFeePerMessageSlot = makeFeeValidator("fee per message slot")
+)
