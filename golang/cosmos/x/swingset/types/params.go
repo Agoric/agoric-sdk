@@ -20,8 +20,8 @@ var (
 
 // Parameter keys
 var (
-	ParamStoreKeyMaxComputronsPerBlock             = []byte("maxcomputronsperblock")
-	ParamStoreKeyEstimatedComputronsPerVatCreation = []byte("estimatedcomputronspervatcreation")
+	ParamStoreKeyMaxComputronsPerBlock             = []byte("max_computrons_per_block")
+	ParamStoreKeyEstimatedComputronsPerVatCreation = []byte("estimated_computrons_per_vat_creation")
 )
 
 // ParamKeyTable returns the parameter key table.

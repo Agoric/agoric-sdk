@@ -10,7 +10,7 @@ import (
 
 // Parameter keys
 var (
-	ParamStoreKeyFeeEpochDurationBlocks = []byte("feeepochdurationblocks")
+	ParamStoreKeyFeeEpochDurationBlocks = []byte("fee_epoch_duration_blocks")
 )
 
 // ParamKeyTable returns the parameter key table.
