@@ -138,13 +138,13 @@
 
 /**
  * @typedef {Object} PositionCount
- * @property {string} position
- * @property {number} tally
+ * @property {Position} position
+ * @property {bigint} total
  */
 
 /**
  * @typedef {Object} VoteStatistics
- * @property {number} spoiled
+ * @property {bigint} spoiled
  * @property {number} votes
  * @property {PositionCount[]} results
  */
@@ -241,11 +241,22 @@
  */
 
 /**
+ * @callback GetOpenQuestions
+ * @returns {Promise<Handle<'Question'>[]>}
+ */
+
+/**
+ * @callback GetQuestion
+ * @param {Handle<'Question'>} h
+ * @returns {Promise<Question>}
+ */
+
+/**
  * @typedef {Object} ElectoratePublic
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
- * @property {() => Promise<Handle<'Question'>[]>} getOpenQuestions,
+ * @property {GetOpenQuestions} getOpenQuestions,
  * @property {() => Instance} getInstance
- * @property {(h: Handle<'Question'>) => Promise<Question>} getQuestion
+ * @property {GetQuestion} getQuestion
  */
 
 /**
@@ -264,18 +275,18 @@
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
- * @property {AddQuestion} addQuestion
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {() => ElectoratePublic} getPublicFacet
  */
 
 /**
- * @typedef {Object} CommitteeElectorateMixin
- * @property {() => Promise<Invitation>[]} getVoterInvitations
+ * @typedef { ElectorateCreatorFacet & {
+ *   getVoterInvitations: () => Promise<Invitation>[]
+ * }} CommitteeElectorateCreatorFacet
  */
 
 /**
- * @typedef { ElectorateCreatorFacet | CommitteeElectorateMixin } CommitteeElectorateCreatorFacet
+ * @typedef { ElectorateCreatorFacet & {addQuestion: AddQuestion} } ShareholdersCreatorFacet
  */
 
 /**
@@ -307,18 +318,15 @@
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {Instance} instance
+ * @property {Timestamp} deadline
+ * @property {Handle<'Question'>} questionHandle
  */
 
 /**
  * @callback AddQuestion
- * @param {Installation} voteCounter
+ * @param {ERef<Installation>} voteCounter
  * @param {QuestionSpec} questionSpec
  * @returns {Promise<AddQuestionReturn>}
- */
-
-/**
- * @typedef QuestionCreator
- * @property {AddQuestion} addQuestion
  */
 
 /**

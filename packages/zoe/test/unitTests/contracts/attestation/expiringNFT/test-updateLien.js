@@ -36,7 +36,7 @@ test(`no old records`, async t => {
     address,
     amountLiened,
     1n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   t.throws(() => updateLien(store, newAttestationElem), {
@@ -49,7 +49,7 @@ test(`old records don't match`, async t => {
   const store = makeStore('address');
 
   const address = 'address';
-  const handle = makeHandle('attestation');
+  const handle = makeHandle('Attestation');
   const { brand: externalBrand } = makeIssuerKit('external');
   const amountLiened = AmountMath.make(externalBrand, 10n);
   const oldAttestation = makeAttestationElem(address, amountLiened, 1n, handle);
@@ -60,7 +60,7 @@ test(`old records don't match`, async t => {
     address,
     amountLiened,
     5n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   t.throws(() => updateLien(store, newAttestationElem), {
@@ -73,7 +73,7 @@ test(`happy path`, async t => {
   const store = makeStore('address');
 
   const address = 'address';
-  const handle = makeHandle('attestation');
+  const handle = makeHandle('Attestation');
   const { brand: externalBrand } = makeIssuerKit('external');
   const amountLiened = AmountMath.make(externalBrand, 10n);
 
@@ -87,7 +87,7 @@ test(`happy path`, async t => {
     address,
     amountLiened,
     1n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   store.init(address, [oldAttestation1, oldAttestation2]);

@@ -12,7 +12,7 @@ import {
   getPoserInvitation,
 } from './electorateTools';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 // shareHolders is an Electorate that relies on an attestation contract to
 // validate ownership of voting shares. The electorate provides voting facets
@@ -35,6 +35,7 @@ const start = zcf => {
   const allQuestions = makeStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
 
+  /** @param { SetValue } attestations */
   const makeVoterInvitation = attestations => {
     // TODO: The UI will probably want something better, but I don't know what.
     const voterDescription = attestations.reduce((desc, amount) => {
@@ -46,6 +47,10 @@ const start = zcf => {
     // comparable between the clock for voting deadlines and lien expirations.
 
     return Far(`a voter ${voterDescription}`, {
+      /**
+       * @param {Handle<'Question'>} questionHandle
+       * @param {Position[]} positions
+       */
       castBallotFor: (questionHandle, positions) => {
         const { voteCap, deadline } = allQuestions.get(questionHandle);
         return attestations
@@ -59,6 +64,7 @@ const start = zcf => {
 
   /** @type {OfferHandler} */
   const vote = seat => {
+    /** @type {Amount} */
     const attestation = seat.getAmountAllocated('Attestation');
     assert(
       AmountMath.isGTE(attestation, empty, attestationBrand),
@@ -67,7 +73,8 @@ const start = zcf => {
     // Give the user their attestation payment back
     seat.exit();
 
-    return makeVoterInvitation((attestation.value));
+    assert.typeof(attestation.value, 'object'); // entailed by isGTE on empty SET
+    return makeVoterInvitation(attestation.value);
   };
 
   /** @type {AddQuestion} */
@@ -91,7 +98,7 @@ const start = zcf => {
     makeVoterInvitation: () => zcf.makeInvitation(vote, 'attestation vote'),
   });
 
-  /** @type {ElectorateCreatorFacet} */
+  /** @type {ShareholdersCreatorFacet} */
   const creatorFacet = Far('creatorFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,

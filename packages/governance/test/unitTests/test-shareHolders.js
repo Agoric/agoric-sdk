@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import path from 'path';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
@@ -26,16 +27,24 @@ const dirname = path.dirname(filename);
 const shareHoldersRoot = `${dirname}/../../src/shareHolders.js`;
 const binaryCounterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
+/**
+ * @param {string} sourceRoot
+ * @param {ERef<ZoeService>} zoe
+ */
 const makeInstall = (sourceRoot, zoe) => {
   const bundle = bundleSource(sourceRoot);
   console.log(`installing ${sourceRoot}`);
   return E.when(bundle, b => E(zoe).install(b));
 };
 
-function makeAttestation(handle, amountLiened, address, expiration) {
-  return harden([{ handle, amountLiened, address, expiration }]);
-}
+const makeAttestation = (handle, amountLiened, address, expiration) =>
+  harden([{ handle, amountLiened, address, expiration }]);
 
+/**
+ * @param {Address} addr
+ * @param {NatValue} amountLiened
+ * @param {Timestamp} expiration
+ */
 const attest = (addr, amountLiened, expiration) => {
   Nat(amountLiened);
   Nat(expiration);
@@ -43,6 +52,12 @@ const attest = (addr, amountLiened, expiration) => {
   return makeAttestation(handle, amountLiened, addr, expiration);
 };
 
+/**
+ * @param {Issue} issue
+ * @param {Position[]} positions
+ * @param {ERef<Timer>} timer
+ * @param {Timestamp} deadline
+ */
 const makeDefaultBallotSpec = (issue, positions, timer, deadline) => {
   const questionSpec = looksLikeQuestionSpec({
     method: ChoiceMethod.UNRANKED,
@@ -68,6 +83,11 @@ const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 const electorateInstall = makeInstall(shareHoldersRoot, zoe);
 const counterInstall = makeInstall(binaryCounterRoot, zoe);
 
+/**
+ * @param {Mint} attestationMint
+ * @param {ClaimsElectoratePublic} publicElectorate
+ * @param {Amount} attestation
+ */
 const offerToVoteSeat = (attestationMint, publicElectorate, attestation) => {
   const attestation1 = attestationMint.mintPayment(attestation);
   const proposal = harden({
@@ -79,10 +99,19 @@ const offerToVoteSeat = (attestationMint, publicElectorate, attestation) => {
   });
 };
 
-const voterFacet = (mint, publicFacet, attest1) => {
-  return E(offerToVoteSeat(mint, publicFacet, attest1)).getOfferResult();
+/**
+ * @param {Mint} mint
+ * @param {ClaimsElectoratePublic} publicFacet
+ * @param {Amount} attestAmmount
+ */
+const voterFacet = (mint, publicFacet, attestAmmount) => {
+  return E(offerToVoteSeat(mint, publicFacet, attestAmmount)).getOfferResult();
 };
 
+/**
+ * @param {Timer} timer
+ * @param {ShareholdersCreatorFacet} creatorFacet
+ */
 const addDeposeQuestion = async (timer, creatorFacet) => {
   const depose = harden({ text: 'Replace the CEO?' });
   const deposePositions = [
