@@ -14,12 +14,14 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
-	cdc      codec.Codec
+	storeKey   sdk.StoreKey
+	cdc        codec.Codec
+	paramSpace paramtypes.Subspace
 
 	accountKeeper types.AccountKeeper
 	bankKeeper    bankkeeper.Keeper
@@ -45,18 +47,33 @@ func stringToKey(keyStr string) []byte {
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey,
+	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
 	return Keeper{
 		storeKey:         key,
 		cdc:              cdc,
+		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		CallToController: callToController,
 	}
+}
+
+func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+	k.paramSpace.GetParamSet(ctx, &params)
+	return params
+}
+
+func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {

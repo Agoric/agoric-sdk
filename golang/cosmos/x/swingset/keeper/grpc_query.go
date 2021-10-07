@@ -18,6 +18,19 @@ type Querier struct {
 
 var _ types.QueryServer = Querier{}
 
+func (k Querier) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	params := k.GetParams(ctx)
+
+	return &types.QueryParamsResponse{
+		Params: params,
+	}, nil
+}
+
 func (k Querier) Storage(c context.Context, req *types.QueryStorageRequest) (*types.QueryStorageResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")

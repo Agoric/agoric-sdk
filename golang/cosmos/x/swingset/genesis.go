@@ -3,6 +3,7 @@ package swingset
 import (
 	// "fmt"
 	"encoding/json"
+	"fmt"
 	stdlog "log"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -18,12 +19,20 @@ func NewGenesisState() *types.GenesisState {
 }
 
 func ValidateGenesis(data *types.GenesisState) error {
+	if data == nil {
+		return fmt.Errorf("swingset genesis data cannot be nil")
+	}
+	if err := data.Params.ValidateBasic(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func DefaultGenesisState() *types.GenesisState {
-	gs := NewGenesisState()
-	return gs
+	return &types.GenesisState{
+		Params:  types.DefaultParams(),
+		Storage: make(map[string]string),
+	}
 }
 
 type bootstrapBlockAction struct {
@@ -33,6 +42,8 @@ type bootstrapBlockAction struct {
 }
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+	keeper.SetParams(ctx, data.GetParams())
+
 	// NONDETERMINISM: order of SetStorage is not deterministic
 	for key, value := range data.Storage {
 		keeper.SetStorage(ctx, key, value)
@@ -64,6 +75,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 	gs := NewGenesisState()
+	gs.Params = k.GetParams(ctx)
 	gs.Storage = k.ExportStorage(ctx)
 	return gs
 }
