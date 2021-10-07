@@ -1,11 +1,13 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, looksLikeBrand } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
+import { makeSubscriptionKit } from '@agoric/notifier';
+
+const { details: X } = assert;
 
 /**
  * @type {{
@@ -18,6 +20,10 @@ import { Nat } from '@agoric/nat';
  *  STRING: 'string',
  *  UNKNOWN: 'unknown',
  * }}
+ *
+ * UNKNOWN is an escape hatch for types we haven't added yet. If you are
+ * developing a new contract and use UNKNOWN, please also file an issue to ask
+ * us to support the new type.
  */
 const ParamType = {
   AMOUNT: 'amount',
@@ -29,16 +35,18 @@ const ParamType = {
   STRING: 'string',
   UNKNOWN: 'unknown',
 };
-harden(ParamType);
 
+/** @type {AssertParamManagerType} */
 const assertType = (type, value, name) => {
   switch (type) {
     case ParamType.AMOUNT:
       // It would be nice to have a clean way to assert something is an amount.
+      // @ts-ignore value is undifferentiated to this point
       AmountMath.coerce(value.brand, value);
       break;
     case ParamType.BRAND:
       assert(
+        // @ts-ignore value is undifferentiated to this point
         looksLikeBrand(value),
         X`value for ${name} must be a brand, was ${value}`,
       );
@@ -46,7 +54,8 @@ const assertType = (type, value, name) => {
     case ParamType.INSTALLATION:
       // TODO(3344): add a better assertion once Zoe validates installations
       assert(
-        typeof value === 'object' && !Object.getOwnPropertyNames(value).length,
+        typeof value === 'object' &&
+          Object.getOwnPropertyNames(value).length === 1,
         X`value for ${name} must be an Installation, was ${value}`,
       );
       break;
@@ -67,8 +76,6 @@ const assertType = (type, value, name) => {
     case ParamType.STRING:
       assert.typeof(value, 'string');
       break;
-    // This is an escape hatch for types we haven't added yet. If you need to
-    // use it, please file an issue and ask us to support the new type.
     case ParamType.UNKNOWN:
       break;
     default:
@@ -76,12 +83,13 @@ const assertType = (type, value, name) => {
   }
 };
 
-const parse = paramDesc => {
+/** @type {BuildParamManager} */
+const buildParamManager = paramDescriptions => {
   const typesAndValues = {};
-  // manager has an updateFoo() for each Foo param. It will be returned.
-  const manager = {};
-
-  paramDesc.forEach(({ name, value, type }) => {
+  // updateFns will have updateFoo() for each Foo param.
+  const updateFns = {};
+  const { publication, subscription } = makeSubscriptionKit();
+  paramDescriptions.forEach(({ name, value, type }) => {
     // we want to create function names like updateFeeRatio(), so we insist that
     // the name has Keyword-nature.
     assertKeywordName(name);
@@ -93,37 +101,47 @@ const parse = paramDesc => {
     assertType(type, value, name);
 
     typesAndValues[name] = { type, value };
-    manager[`update${name}`] = newValue => {
+
+    // CRUCIAL: here we're creating the update functions that can change the
+    // values of the governed contract's parameters. We'll return the updateFns
+    // to our caller. They must handle them carefully to ensure that they end up
+    // in appropriate hands.
+    updateFns[`update${name}`] = newValue => {
       assertType(type, newValue, name);
       typesAndValues[name].value = newValue;
+
+      publication.updateState({ name, type, value });
+      return newValue;
     };
   });
 
+  const makeDescription = name => ({
+    name,
+    type: typesAndValues[name].type,
+    value: typesAndValues[name].value,
+  });
   const getParams = () => {
     /** @type {Record<Keyword,ParamDescription>} */
     const descriptions = {};
     Object.getOwnPropertyNames(typesAndValues).forEach(name => {
-      descriptions[name] = {
-        name,
-        type: typesAndValues[name].type,
-        value: typesAndValues[name].value,
-      };
+      descriptions[name] = makeDescription(name);
     });
     return harden(descriptions);
   };
+  const getParam = name => harden(makeDescription(name));
 
-  return { getParams, manager };
-};
-
-/** @type {BuildParamManager} */
-const buildParamManager = paramDesc => {
-  const { getParams, manager } = parse(paramDesc);
-
+  // CRUCIAL: Contracts that call buildParamManager should only export the
+  // resulting paramManager to their creatorFacet, where it will be picked up by
+  // contractGovernor. The getParams method can be shared widely.
   return Far('param manager', {
     getParams,
-    ...manager,
+    getSubscription: () => subscription,
+    getParam,
+    ...updateFns,
   });
 };
-harden(buildParamManager);
 
-export { ParamType, buildParamManager };
+harden(ParamType);
+harden(buildParamManager);
+harden(assertType);
+export { ParamType, buildParamManager, assertType };

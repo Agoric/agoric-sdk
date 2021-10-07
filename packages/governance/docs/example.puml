@@ -1,0 +1,53 @@
+@startuml governanceExample
+
+package "Example with Vote Invitation" <<rectangle>> {
+  class ContractGovernor {
+      has a committee that wlll vote on questions.
+      can create binary (and other) questions.
+  }
+
+  class BinaryVoteCounter {
+      quorumThreshold, issue
+      questionHandle, closingRule
+      --
+      doesn't know who's voting.
+      knows how to count binary questions
+  }
+
+  object "Question FeesTo2Percent" as FeesTo2Percent {
+      Contract
+      Issue: set fees at 2%?
+      Positions
+  }
+
+  object governedContract {
+    ContractGovernor
+  }
+
+  class TreasuryGovernanceElectorate1 {
+      Questions: FeesTo2Percent, ...
+      --
+      distributed voterInvitations to creator.
+      doesn't know how questions are created.
+  }
+
+  interface memberAVoterInvitation {
+    TreasuryGovernanceElectorate1
+  }
+
+  object memberAVoterFacet {
+    TreasuryGovernanceElectorate1
+    --
+    castBallotFor(questionHandle, [positions])
+  }
+}
+
+ContractGovernor --> BinaryVoteCounter : responds to\noutcome >
+ContractGovernor -.[#blue]-|> TreasuryGovernanceElectorate1 : verifiable
+memberAVoterInvitation --> memberAVoterFacet
+memberAVoterFacet --> FeesTo2Percent
+
+ContractGovernor ==> governedContract : creates >
+FeesTo2Percent => governedContract
+
+@enduml

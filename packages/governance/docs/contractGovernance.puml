@@ -1,0 +1,47 @@
+@startuml contractGovernance
+
+package "GovernedContract Vat" <<Rectangle>>  {
+    Object ParamManager {
+        paramDesc[] { name, type, value }
+        --
+        +getParams()
+        +getParam()
+        -updateFoo()
+    }
+
+    class GovernedContract {
+        <i>verifiable</i>: Governor, params
+        --
+        +terms: { electionManager, governedParams }
+        +getState()
+        +getContractGovernor()
+        -getParamManagerRetriever()
+    }
+    note  left : calls buildParamManager(paramDesc);\nmakes paramMgr state public\nreturns paramMgr in creatorFacet
+}
+
+class "ContractGovernor\n(an ElectionManager)" as ContractGovernor {
+    <i>verifiable</i>: governedInstance, electorateInstance
+    --
+    +getElectorate()
+    +getGovernedContract()
+    +validateVoteCounter()
+    +validateElectorate()
+    +validateTimer()
+    -startGovernedInstance(electorate, governed, ...)
+}
+note left : ContractGovernor starts GovernedContract\nstartGovernedInstance() returns a tightly held facet\n   with voteOnParamChange() for the creator.
+
+class Electorate {
+    Questions
+    ===
+    -addQuestion()
+}
+
+GovernedContract ..> ParamManager : creates >
+GovernedContract --> ParamManager : access\nto params
+ContractGovernor ..> GovernedContract : creates >
+ContractGovernor --> Electorate
+ContractGovernor ==> ParamManager : manages\nparams
+
+@enduml

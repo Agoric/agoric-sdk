@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -22,7 +21,7 @@ type Keeper struct {
 	storeKey sdk.StoreKey
 	cdc      codec.Codec
 
-	accountKeeper authkeeper.AccountKeeper
+	accountKeeper types.AccountKeeper
 	bankKeeper    bankkeeper.Keeper
 
 	// CallToController dispatches a message to the controlling process
@@ -47,7 +46,7 @@ func stringToKey(keyStr string) []byte {
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey,
-	accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper,
+	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 

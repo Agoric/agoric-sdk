@@ -1,0 +1,28 @@
+# Linear queue for the main branch.
+queue_rules:
+  - name: main
+    conditions:
+      - base=master
+
+pull_request_rules:
+  - name: automerge to master with label automerge:merge and branch protection passing
+    conditions:
+      - label=automerge:merge
+    actions:
+      queue:
+        name: main
+        method: merge
+  - name: automerge to master with label automerge:rebase and branch protection passing
+    conditions:
+      - label=automerge:rebase
+    actions:
+      queue:
+        name: main
+        method: rebase
+  - name: automerge to master with label automerge:squash and branch protection passing
+    conditions:
+      - label=automerge:squash
+    actions:
+      queue:
+        name: main
+        method: squash

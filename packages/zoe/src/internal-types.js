@@ -264,7 +264,7 @@
 
 /**
  * @callback MakeZCFSeat
- * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin,
+ * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * @param {SeatData} seatData
  * @returns {ZCFSeat}
  */

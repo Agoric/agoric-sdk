@@ -35,7 +35,6 @@ const relativeSize = (fn, fullSize) =>
 const snapSize = {
   raw: 417,
   SESboot: 858,
-  compression: 0.1,
 };
 
 /**
@@ -69,7 +68,7 @@ async function bootSESWorker(name, handleCommand) {
   return bootWorker(name, handleCommand, bootScript);
 }
 
-test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.compression}x`, async t => {
+test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
@@ -84,9 +83,8 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to ${snapSize.c
   });
 
   const zfile = path.resolve(pool.name, `${h}.gz`);
-  t.is(
-    relativeSize(zfile, snapSize.raw),
-    snapSize.compression,
+  t.true(
+    relativeSize(zfile, snapSize.raw) < 0.5,
     'compressed snapshots are smaller',
   );
 });
@@ -107,9 +105,8 @@ test('SES bootstrap, save, compress', async t => {
   });
 
   const zfile = path.resolve(pool.name, `${h}.gz`);
-  t.is(
-    relativeSize(zfile, snapSize.SESboot),
-    0.2,
+  t.true(
+    relativeSize(zfile, snapSize.SESboot) < 0.5,
     'compressed snapshots are smaller',
   );
 });
@@ -140,8 +137,9 @@ test('create SES worker, save, restore, resume', async t => {
  * sensitive to any changes in bundle-ses-boot.umd.js;
  * that is: any changes to the SES shim or to the
  * xsnap-worker supervisor.
+ * They are also sensitive to the XS code itself.
  */
-test('XS + SES snapshots are deterministic', async t => {
+test('XS + SES snapshots are long-term deterministic', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
@@ -155,7 +153,7 @@ test('XS + SES snapshots are deterministic', async t => {
 
   t.is(
     h1,
-    '817ce29f1f0f460a0066ec257b9941803b3f9fea4ad87a8a7a76f458d9f8a65b',
+    '9b90f329ae31e65bfb9b3f8436ceb581e160b3ec9984e9ac1dcef23ae78338fb',
     'initial snapshot',
   );
 
@@ -167,7 +165,7 @@ test('XS + SES snapshots are deterministic', async t => {
   const h2 = await store.save(vat.snapshot);
   t.is(
     h2,
-    'f62c6fce5accbbfbb5f08bb25f9414e9ba611359af1fb3a889d6171e25e58d6a',
+    'b3bd291a9b42abb6acbe488a4da0c0eacee417a9f0ca94b88f7fbe4191bc43a0',
     'after SES boot',
   );
 
@@ -175,7 +173,30 @@ test('XS + SES snapshots are deterministic', async t => {
   const h3 = await store.save(vat.snapshot);
   t.is(
     h3,
-    '911f4ea5fa42b5245d7024f269c59bdf382dc0521146ecc03e017136023f9435',
+    '125612bce84c13e18dafc7805d7041094ea4251d62de57590aa6cea9a803775f',
     'after use of harden()',
   );
+});
+
+async function makeTestSnapshot(t) {
+  const pool = tmp.dirSync({ unsafeCleanup: true });
+  t.teardown(() => pool.removeCallback());
+  // t.log({ pool: pool.name });
+  await fs.promises.mkdir(pool.name, { recursive: true });
+  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const vat = await bootWorker('xs1', async m => m, '1 + 1');
+  const bootScript = await ld.asset(
+    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
+  );
+  await vat.evaluate(bootScript);
+  await vat.evaluate('globalThis.x = harden({a: 1})');
+  const hash = await store.save(vat.snapshot);
+  await vat.close();
+  return hash;
+}
+
+test('XS + SES snapshots are short-term deterministic', async t => {
+  const h1 = await makeTestSnapshot(t);
+  const h2 = await makeTestSnapshot(t);
+  t.is(h1, h2);
 });
