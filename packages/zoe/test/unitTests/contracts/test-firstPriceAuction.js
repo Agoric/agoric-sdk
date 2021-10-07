@@ -18,9 +18,9 @@ import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const secondPriceAuctionRoot = `${dirname}/../../../src/contracts/auction/secondPriceAuction.js`;
+const firstPriceAuctionRoot = `${dirname}/../../../src/contracts/auction/firstPriceAuction.js`;
 
-test('zoe - secondPriceAuction w/ 3 bids', async t => {
+test('zoe - firstPriceAuction w/ 3 bids', async t => {
   t.plan(15);
   const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
 
