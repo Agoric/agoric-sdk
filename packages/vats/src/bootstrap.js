@@ -198,7 +198,11 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
-    const treasuryCreator = await installEconomy(bootstrapPaymentValue);
+    // NOTE: no use of the voteCreator. We'll need it to initiate votes on
+    // changing Treasury parameters.
+    const { treasuryCreator, _voteCreator } = await installEconomy(
+      bootstrapPaymentValue,
+    );
 
     const [
       centralIssuer,

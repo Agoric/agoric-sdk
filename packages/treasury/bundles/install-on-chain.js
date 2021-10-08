@@ -1,9 +1,16 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
 
+import '@agoric/governance/exported.js';
+
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import autoswapBundle from './bundle-multipoolAutoswap.js';
 import stablecoinBundle from './bundle-stablecoinMachine.js';
+import contractGovernorBundle from './bundle-contractGovernor.js';
+import noActionElectorateBundle from './bundle-noActionElectorate.js';
+import binaryVoteCounterBundle from './bundle-binaryVoteCounter.js';
+import { governedParameterTerms } from '../src/params';
+import { Far } from '@agoric/marshal';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -58,11 +65,18 @@ export async function installOnChain({
     ['liquidate', liquidateBundle],
     ['autoswap', autoswapBundle],
     ['stablecoin', stablecoinBundle],
+    ['contractGovernor', contractGovernorBundle],
+    ['noActionElectorate', noActionElectorateBundle],
+    ['binaryCounter', binaryVoteCounterBundle],
+
   ];
   const [
     liquidationInstall,
     autoswapInstall,
     stablecoinMachineInstall,
+    contractGovernorInstall,
+    noActionElectorateInstall,
+    binaryCounterInstall,
   ] = await Promise.all(
     nameBundles.map(async ([name, bundle]) => {
       // Install the bundle in Zoe.
@@ -74,6 +88,13 @@ export async function installOnChain({
     }),
   );
 
+  // The Electorate is a no-action electorate, so the testNet runs without
+  // anyone having the ability to change the treasury's parameters.
+  const {
+    creatorFacet: electorateCreatorFacet,
+    instance: electorateInstance,
+  } = await E(zoeWPurse).startInstance(noActionElectorateInstall);
+
   const loanParams = {
     chargingPeriod: SECONDS_PER_HOUR,
     recordingPeriod: SECONDS_PER_DAY,
@@ -81,24 +102,36 @@ export async function installOnChain({
     protocolFee,
   };
 
-  const terms = harden({
+  const treasuryTerms = harden({
     autoswapInstall,
     liquidationInstall,
     priceAuthority,
     loanParams,
     timerService: chainTimerService,
+    governedParams: governedParameterTerms,
     bootstrapPaymentValue,
   });
+  const governorTerms = harden({
+    timer: chainTimerService,
+    electorateInstance,
+    governedContractInstallation: stablecoinMachineInstall,
+    governed: {
+      terms: treasuryTerms,
+      issuerKeywordRecord: {},
+      privateArgs: harden({ feeMintAccess }),
+    },
+  });
 
-  const privateArgs = harden({ feeMintAccess });
-
-  const { instance, creatorFacet } = await E(zoeWPurse).startInstance(
-    stablecoinMachineInstall,
+  const {
+    creatorFacet: governorCreatorFacet,
+  } = await E(zoeWPurse).startInstance(
+    contractGovernorInstall,
     undefined,
-    terms,
-    privateArgs,
+    governorTerms,
+    harden({ electorateCreatorFacet }),
   );
 
+  const treasuryInstance = await E(governorCreatorFacet).getInstance();
   const [
     ammInstance,
     invitationIssuer,
@@ -106,10 +139,12 @@ export async function installOnChain({
       issuers: { Governance: govIssuer, RUN: centralIssuer },
       brands: { Governance: govBrand, RUN: centralBrand },
     },
+    treasuryCreator,
   ] = await Promise.all([
-    E(creatorFacet).getAMM(),
+    E(E(governorCreatorFacet).getCreatorFacet()).getAMM(),
     E(zoeWPurse).getInvitationIssuer(),
-    E(zoeWPurse).getTerms(instance),
+    E(zoeWPurse).getTerms(treasuryInstance),
+    E(governorCreatorFacet).getCreatorFacet()
   ]);
 
   const treasuryUiDefaults = {
@@ -123,12 +158,15 @@ export async function installOnChain({
 
   // Look up all the board IDs.
   const boardIdValue = [
-    ['INSTANCE_BOARD_ID', instance],
+    ['INSTANCE_BOARD_ID', treasuryInstance],
     ['INSTALLATION_BOARD_ID', stablecoinMachineInstall],
     ['RUN_ISSUER_BOARD_ID', centralIssuer],
     ['RUN_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', autoswapInstall],
     ['LIQ_INSTALLATION_BOARD_ID', liquidationInstall],
+    ['BINARY_COUNTER_INSTALLATION_BOARD_ID', binaryCounterInstall],
+    ['NO_ACTION_INSTALLATION_BOARD_ID', noActionElectorateInstall],
+    ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', contractGovernorInstall],
     ['AMM_INSTANCE_BOARD_ID', ammInstance],
     ['INVITE_BRAND_BOARD_ID', E(invitationIssuer).getBrand()],
   ];
@@ -146,7 +184,7 @@ export async function installOnChain({
   // Install the names in agoricNames.
   const nameAdminUpdates = [
     [uiConfigAdmin, treasuryUiDefaults.CONTRACT_NAME, treasuryUiDefaults],
-    [instanceAdmin, treasuryUiDefaults.CONTRACT_NAME, instance],
+    [instanceAdmin, treasuryUiDefaults.CONTRACT_NAME, treasuryInstance],
     [instanceAdmin, treasuryUiDefaults.AMM_NAME, ammInstance],
     [brandAdmin, 'TreasuryGovernance', govBrand],
     [issuerAdmin, 'TreasuryGovernance', govIssuer],
@@ -159,5 +197,9 @@ export async function installOnChain({
     ),
   );
 
-  return creatorFacet;
+  const voteCreator = Far('treasury vote creator', {
+    voteOnParamChange: E(governorCreatorFacet).voteOnParamChange,
+  });
+
+  return { treasuryCreator, voteCreator };
 }

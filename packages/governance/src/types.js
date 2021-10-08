@@ -353,9 +353,22 @@
  */
 
 /**
+ * @callback GetParams - getParams() retrieves a Record containing
+ *   keyword pairs with descriptions of parameters under governance.
+ * @returns {Record<Keyword,ParamDescription>}
+ */
+
+/**
+ * @callback GetParam - getParam() retrieves a description of a parameter under
+ *    governance.
+ * @param {string} name
+ * @returns {ParamDescription}
+ */
+
+/**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword,ParamDescription>} getParams
- * @property {(name: string) => ParamDescription} getParam
+ * @property {GetParams} getParams
+ * @property {GetParam} getParam
  * @property {() => Subscription<ParamDescription>} getSubscription
  */
 
@@ -444,7 +457,7 @@
  *
  *   A powerful facet that carries access to both the creatorFacet to be passed
  *   to the caller and the paramManager, which will be used exclusively by the
- *   ContractGovenor.
+ *   ContractGovernor.
  * @property {() => Promise<LimitedCreatorFacet>} getLimitedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever
  */
@@ -494,7 +507,7 @@
 
 /**
  * @callback SetupGovernance
- * @param {ERef<ParamManagerRetriever>} retriever
+ * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {ERef<PoserFacet>} poserFacet
  * @param {Instance} contractInstance
  * @param {Timer} timer
