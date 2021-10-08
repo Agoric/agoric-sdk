@@ -62,7 +62,9 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 
   let isOpen = true;
   const positions = questionSpec.positions;
+  /** @type { PromiseRecord<Position> } */
   const outcomePromise = makePromiseKit();
+  /** @type { PromiseRecord<VoteStatistics> } */
   const tallyPromise = makePromiseKit();
   // The Electorate is responsible for creating a unique seat for each voter.
   // This voteCounter allows voters to re-vote, and replaces their previous
@@ -110,6 +112,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
       }
     });
 
+    /** @type { VoteStatistics } */
     const stats = {
       spoiled,
       votes: allBallots.entries().length,
@@ -169,6 +172,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 // It schedules the closing of the vote, finally inserting the contract
 // instance in the publicFacet before returning public and creator facets.
 
+/** @param { ContractFacet } zcf */
 const start = zcf => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to

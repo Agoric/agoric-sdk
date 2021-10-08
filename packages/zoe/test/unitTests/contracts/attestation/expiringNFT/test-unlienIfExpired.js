@@ -53,21 +53,21 @@ test(`store has address with all non-expired values`, async t => {
     address,
     bld10,
     10n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   const elem2 = makeAttestationElem(
     address,
     bld20,
     10n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   const elem3 = makeAttestationElem(
     address,
     bld40,
     10n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   store.init(address, [elem1, elem2, elem3]);
@@ -98,21 +98,21 @@ test(`store has address with one expired`, async t => {
     address,
     bld10,
     1n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   const elem2 = makeAttestationElem(
     address,
     bld20,
     10n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   const elem3 = makeAttestationElem(
     address,
     bld40,
     10n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   store.init(address, [elem1, elem2, elem3]);

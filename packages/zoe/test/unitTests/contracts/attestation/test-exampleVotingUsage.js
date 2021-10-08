@@ -57,13 +57,13 @@ test('exampleVotingUsage', async t => {
   };
 
   // A normal vote which is weighted at 40 tokens and expires at 5n
-  const firstHandle = makeHandle('attestation');
+  const firstHandle = makeHandle('Attestation');
   const bld40 = AmountMath.make(bldIssuerKit.brand, 40n);
   const elem1 = makeAttestationElem('myaddress', bld40, 5n, firstHandle);
   await doVote(AmountMath.make(issuerKit.brand, [elem1]), 'Yes');
 
   // Another vote, but which expires at 1n
-  const secondHandle = makeHandle('attestation');
+  const secondHandle = makeHandle('Attestation');
   const bld3 = AmountMath.make(bldIssuerKit.brand, 3n);
   const elem2 = makeAttestationElem('myaddress', bld3, 1n, secondHandle);
   await doVote(AmountMath.make(issuerKit.brand, [elem2]), 'No');
@@ -74,7 +74,7 @@ test('exampleVotingUsage', async t => {
   await doVote(AmountMath.make(issuerKit.brand, [elem3]), 'Maybe');
 
   // This vote should not be counted as it is expired.
-  const thirdHandle = makeHandle('attestation');
+  const thirdHandle = makeHandle('Attestation');
   const bld5 = AmountMath.make(bldIssuerKit.brand, 5n);
   const elem4 = makeAttestationElem('myaddress', bld5, 1n, thirdHandle);
   await doVote(AmountMath.make(issuerKit.brand, [elem4]), 'Should not count');

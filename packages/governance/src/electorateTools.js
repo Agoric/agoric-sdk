@@ -4,6 +4,11 @@ import { E } from '@agoric/eventual-send';
 import { allComparable } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
 
+/**
+ * Start up a new Counter for a question
+ *
+ * @type {StartCounter}
+ */
 const startCounter = async (
   zcf,
   questionSpec,
@@ -12,16 +17,17 @@ const startCounter = async (
   questionStore,
   publication,
 ) => {
-  const ballotCounterTerms = {
+  const voteCounterTerms = {
     questionSpec,
     electorate: zcf.getInstance(),
     quorumThreshold,
   };
 
   // facets of the voteCounter. creatorInvitation and adminFacet not used
+  /** @type {{ creatorFacet: VoteCounterCreatorFacet, publicFacet: VoteCounterPublicFacet, instance: Instance }} */
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, ballotCounterTerms);
+  ).startInstance(voteCounter, {}, voteCounterTerms);
   const details = await E(publicFacet).getDetails();
   const { deadline } = questionSpec.closingRule;
   publication.updateState(details);
@@ -34,11 +40,13 @@ const startCounter = async (
   return { creatorFacet, publicFacet, instance, deadline, questionHandle };
 };
 
+/** @param {Store<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
-  const isOpenPQuestions = questionStore.keys().map(key => {
-    const { publicFacet } = questionStore.get(key);
-    return [E(publicFacet).isOpen(), key];
-  });
+  const isOpenPQuestions = questionStore
+    .entries()
+    .map(([key, { publicFacet }]) => {
+      return [E(publicFacet).isOpen(), key];
+    });
 
   const isOpenQuestions = await allComparable(harden(isOpenPQuestions));
   return isOpenQuestions
@@ -46,11 +54,19 @@ const getOpenQuestions = async questionStore => {
     .map(([_open, key]) => key);
 };
 
+/**
+ * @param {ERef<Handle<'Question'>>} questionHandleP
+ * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ */
 const getQuestion = (questionHandleP, questionStore) =>
   E.when(questionHandleP, questionHandle =>
     E(questionStore.get(questionHandle).publicFacet).getQuestion(),
   );
 
+/**
+ * @param {ContractFacet} zcf
+ * @param {AddQuestion} addQuestion
+ */
 const getPoserInvitation = (zcf, addQuestion) => {
   const questionPoserHandler = () => Far(`questionPoser`, { addQuestion });
   return zcf.makeInvitation(questionPoserHandler, `questionPoser`);

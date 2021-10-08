@@ -38,7 +38,7 @@ const hasExpired = (expiration, currentTime) => expiration < currentTime;
  * @param {Amount} amountLiened - the amount of the underlying asset to put
  * a lien on
  * @param {Timestamp} expiration
- * @param {Handle<'attestation'>} handle - the unique handle
+ * @param {Handle<'Attestation'>} handle - the unique handle
  * @returns {ExpiringAttElem}
  */
 const makeAttestationElem = (address, amountLiened, expiration, handle) => {
