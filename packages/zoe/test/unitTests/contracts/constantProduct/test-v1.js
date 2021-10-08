@@ -155,14 +155,27 @@ test('getInputPrice ok 2', t => {
   testGetPrice(t, input, expectedOutput);
 });
 
-test('getInputPrice ok 3', t => {
+test.only('getInputPrice ok 3', t => {
   const input = {
     inputReserve: 8160n,
     outputReserve: 7743n,
     inputValue: 6635n,
   };
   const expectedOutput = 3466n;
-  testGetPrice(t, input, expectedOutput);
+
+  // inputValue = deltaX
+  // outputReserve = y
+  // inputReserve = x
+  // (997 * deltaX * y) / (1000 * x + 997 * deltaX) where / is
+  // floorDivide
+
+  const v1 =
+    (997n * input.inputValue * input.outputReserve) /
+    (1000n * input.inputReserve + 997n * input.inputValue);
+  t.is(v1, expectedOutput, `expected output didn't match v1`);
+
+  // This produces 3470n, not the v1 answer which is 3466n.
+  testGetPrice(t, input, v1);
 });
 
 test('getInputPrice ok 4', t => {
