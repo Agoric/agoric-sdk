@@ -142,6 +142,32 @@ const swapOutImproved = ({ x, y, deltaY: wantedAmountOut }) => {
   });
 };
 
+export const swapInNotImprovedNoFees = ({ amountGiven, poolAllocation }) => {
+  const { x, y, deltaX: amountIn } = getXY({
+    amountGiven,
+    poolAllocation,
+  });
+  const amountOut = calcDeltaYSellingX(x, y, amountIn);
+
+  return harden({
+    amountIn,
+    amountOut,
+  });
+};
+
+export const swapOutNotImprovedNoFees = ({ poolAllocation, amountWanted }) => {
+  const { x, y, deltaY: amountOut } = getXY({
+    poolAllocation,
+    amountWanted,
+  });
+  const amountIn = calcDeltaXSellingX(x, y, amountOut);
+
+  return harden({
+    amountIn,
+    amountOut,
+  });
+};
+
 /** @type {NoFeeSwapFn} */
 export const swapInNoFees = ({ amountGiven, poolAllocation }) => {
   const XY = getXY({ amountGiven, poolAllocation });
