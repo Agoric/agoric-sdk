@@ -80,8 +80,8 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(7),
-              `Alice got the second price bid, Carol's bid, even though Bob won`,
+              simoleans(11),
+              `Alice got the first price bid, Bob's bid, because Bob won`,
             ),
           );
       },
