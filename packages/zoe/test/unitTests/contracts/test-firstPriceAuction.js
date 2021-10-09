@@ -394,7 +394,7 @@ test('zoe - firstPriceAuction - alice tries to exit', async t => {
 });
 
 // Three bidders with (fungible) moola bid for a CryptoCat
-test('zoe - secondPriceAuction non-fungible asset', async t => {
+test('zoe - firstPriceAuction non-fungible asset', async t => {
   t.plan(30);
   const {
     ccIssuer,
@@ -430,7 +430,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice creates a secondPriceAuction instance
 
   // Pack the contract.
-  const bundle = await bundleSource(secondPriceAuctionRoot);
+  const bundle = await bundleSource(firstPriceAuctionRoot);
 
   const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
