@@ -4,8 +4,6 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { sameStructure } from '@agoric/same-structure';
-
-import { q } from '@agoric/assert';
 import {
   ChoiceMethod,
   QuorumRule,
@@ -13,49 +11,13 @@ import {
   looksLikeQuestionSpec,
 } from './question.js';
 import { assertType } from './paramManager.js';
+import {
+  assertBallotConcernsQuestion,
+  validateParamChangeQuestion,
+  makeParamChangePositions,
+} from './validators.js';
 
 const { details: X } = assert;
-
-/** @type {MakeParamChangePositions} */
-const makeParamChangePositions = (paramSpec, proposedValue) => {
-  const positive = harden({ changeParam: paramSpec, proposedValue });
-  const negative = harden({ noChange: paramSpec });
-  return { positive, negative };
-};
-
-/** @type {ValidateParamChangeQuestion} */
-const validateParamChangeQuestion = details => {
-  assert(
-    details.method === ChoiceMethod.UNRANKED,
-    X`ChoiceMethod must be UNRANKED, not ${details.method}`,
-  );
-  assert(
-    details.electionType === ElectionType.PARAM_CHANGE,
-    X`ElectionType must be PARAM_CHANGE, not ${details.electionType}`,
-  );
-  assert(
-    details.maxChoices === 1,
-    X`maxChoices must be 1, not ${details.maxChoices}`,
-  );
-  assert(
-    details.quorumRule === QuorumRule.MAJORITY,
-    X`QuorumRule must be MAJORITY, not ${details.quorumRule}`,
-  );
-  assert(
-    details.tieOutcome.noChange,
-    X`tieOutcome must be noChange, not ${details.tieOutcome}`,
-  );
-};
-
-/** @type {AssertBallotConcernsQuestion} */
-const assertBallotConcernsQuestion = (paramName, questionDetails) => {
-  assert(
-    // @ts-ignore typescript isn't sure the question is a paramChangeIssue
-    // if it isn't, the assertion will fail.
-    questionDetails.issue.paramSpec.parameterName === paramName,
-    X`expected ${q(paramName)} to be included`,
-  );
-};
 
 /** @type {SetupGovernance} */
 const setupGovernance = async (

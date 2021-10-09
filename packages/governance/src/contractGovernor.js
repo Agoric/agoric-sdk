@@ -3,36 +3,16 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setupGovernance, validateParamChangeQuestion } from './governParam.js';
+import { setupGovernance } from './governParam.js';
+import {
+  validateQuestionFromCounter,
+  validateQuestionDetails,
+  makeValidateVoteCounter,
+  makeValidateTimer,
+  makeValidateElectorate,
+} from './validators.js';
 
 const { details: X } = assert;
-
-/** @type {ValidateQuestionDetails} */
-const validateQuestionDetails = async (zoe, electorate, details) => {
-  const {
-    counterInstance,
-    issue: { contract: governedInstance },
-  } = details;
-  validateParamChangeQuestion(details);
-
-  const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
-    .electionManager;
-  const governorPublic = E(zoe).getPublicFacet(governorInstance);
-
-  return Promise.all([
-    E(governorPublic).validateVoteCounter(counterInstance),
-    E(governorPublic).validateElectorate(electorate),
-    E(governorPublic).validateTimer(details),
-  ]);
-};
-
-/** @type {ValidateQuestionFromCounter} */
-const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
-  const counterPublicP = E(zoe).getPublicFacet(voteCounter);
-  const questionDetails = await E(counterPublicP).getDetails();
-
-  return validateQuestionDetails(zoe, electorate, questionDetails);
-};
 
 /*
  * ContractManager is an ElectionManager that starts up a contract and hands its
@@ -127,30 +107,6 @@ const start = async (zcf, privateArgs) => {
     timer,
   );
 
-  const validateVoteCounter = async voteCounter => {
-    const created = await E(createdQuestion)(voteCounter);
-    assert(created, X`VoteCounter was not created by this contractGovernor`);
-    return true;
-  };
-
-  const validateTimer = details => {
-    assert(
-      details.closingRule.timer === timer,
-      X`closing rule must use my timer`,
-    );
-    return true;
-  };
-
-  const validateElectorate = async regP => {
-    return E.when(regP, reg => {
-      assert(
-        reg === electorateInstance,
-        X`Electorate doesn't match my Electorate`,
-      );
-      return true;
-    });
-  };
-
   /** @type {GovernedContractFacetAccess} */
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
@@ -163,15 +119,13 @@ const start = async (zcf, privateArgs) => {
   const publicFacet = Far('contract governor public', {
     getElectorate: () => electorateInstance,
     getGovernedContract: () => governedInstance,
-    validateVoteCounter,
-    validateElectorate,
-    validateTimer,
+    validateVoteCounter: makeValidateVoteCounter(createdQuestion),
+    validateElectorate: makeValidateElectorate(electorateInstance),
+    validateTimer: makeValidateTimer(timer),
   });
 
   return { creatorFacet, publicFacet };
 };
 
 harden(start);
-harden(validateQuestionDetails);
-harden(validateQuestionFromCounter);
-export { start, validateQuestionDetails, validateQuestionFromCounter };
+export { start, validateQuestionFromCounter, validateQuestionDetails };
