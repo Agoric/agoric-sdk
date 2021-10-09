@@ -30,7 +30,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
     return {
       installCode: async () => {
         // pack the contract
-        const bundle = await bundleSource(secondPriceAuctionRoot);
+        const bundle = await bundleSource(firstPriceAuctionRoot);
         // install the contract
         const installationP = E(zoe).install(bundle);
         return installationP;
@@ -152,8 +152,8 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(4),
-              `Bob gets the difference between the second-price bid (Carol's 7 simoleans) and his bid back`,
+              simoleans(0),
+              `Bob gets nothing of his bid simoleans back, only the bid on asset.`,
             ),
           );
       },
@@ -265,7 +265,7 @@ test('zoe - firstPriceAuction - alice tries to exit', async t => {
   // Alice creates a secondPriceAuction instance
 
   // Pack the contract.
-  const bundle = await bundleSource(secondPriceAuctionRoot);
+  const bundle = await bundleSource(firstPriceAuctionRoot);
 
   const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
