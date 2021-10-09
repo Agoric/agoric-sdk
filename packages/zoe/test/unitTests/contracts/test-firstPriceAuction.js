@@ -242,7 +242,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   ]);
 });
 
-test('zoe - secondPriceAuction - alice tries to exit', async t => {
+test('zoe - firstPriceAuction - alice tries to exit', async t => {
   t.plan(12);
   const { moolaR, simoleanR, moola, simoleans } = setup();
   const { zoeService } = makeZoeKit(fakeVatAdmin);
