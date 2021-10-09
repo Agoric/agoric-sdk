@@ -48,7 +48,7 @@
  * update count, return the current record.
  * Otherwise, after the next state change, the promise will resolve to the
  * then-current value of the record.
- * @returns {Promise<UpdateRecord<T>>} resolves to the corresponding
+ * @returns {ERef<UpdateRecord<T>>} resolves to the corresponding
  * update
  */
 
