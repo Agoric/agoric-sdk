@@ -18,7 +18,7 @@
     "react": "^16.8.0",
     "react-dom": "^16.8.0",
     "react-scripts": "4.0.3",
-    "ses": "^0.12.6"
+    "ses": "^0.14.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.11.4",
@@ -41,7 +41,7 @@
   "scripts": {
     "start": "yarn build:ses && react-scripts start",
     "build": "yarn build:ses && yarn build:react",
-    "build:ses": "cp ./node_modules/ses/dist/lockdown.umd.js public/",
+    "build:ses": "cp ../../../node_modules/ses/dist/lockdown.umd.js public/",
     "build:react": "react-scripts build",
     "lint-check": "eslint '**/*.{js,jsx}'",
     "lint-fix": "eslint --fix '**/*.{js,jsx}'",

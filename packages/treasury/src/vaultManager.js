@@ -19,6 +19,14 @@ import { makeVaultKit } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from './makeTracer.js';
+import {
+  RECORDING_PERIOD_KEY,
+  LIQUIDATION_MARGIN_KEY,
+  INITIAL_MARGIN_KEY,
+  LOAN_FEE_KEY,
+  INTEREST_RATE_KEY,
+  CHARGING_PERIOD_KEY,
+} from './params.js';
 
 const { details: X } = assert;
 
@@ -36,28 +44,54 @@ export function makeVaultManager(
   runMint,
   collateralBrand,
   priceAuthority,
-  rates,
+  getLoanParams,
   reallocateReward,
   timerService,
-  loanParams,
   liquidationStrategy,
 ) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
+  const getLoanParamValue = key => getLoanParams()[key].value;
+
+  /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
-      return rates.liquidationMargin;
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(LIQUIDATION_MARGIN_KEY))
+      );
     },
     // loans must initially have at least 1.2x collateralization
     getInitialMargin() {
-      return rates.initialMargin;
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(INITIAL_MARGIN_KEY))
+      );
     },
     getLoanFee() {
-      return rates.loanFee;
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(LOAN_FEE_KEY))
+      );
     },
     getInterestRate() {
-      return rates.interestRate;
+      return (
+        /** @type {Ratio} */
+        (getLoanParamValue(INTEREST_RATE_KEY))
+      );
+    },
+    getChargingPeriod() {
+      return (
+        /** @type {RelativeTime} */
+        (getLoanParamValue(CHARGING_PERIOD_KEY))
+      );
+    },
+    getRecordingPeriod() {
+      return (
+        /** @type {RelativeTime} */
+        (getLoanParamValue(RECORDING_PERIOD_KEY))
+      );
     },
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
@@ -68,7 +102,6 @@ export function makeVaultManager(
         runBrand,
       );
     },
-    reallocateReward,
   };
 
   // A Map from vaultKits to their most recent ratio of debt to
@@ -178,7 +211,7 @@ export function makeVaultManager(
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    loanParams.recordingPeriod,
+    /** @type {bigint} */ (getLoanParamValue(RECORDING_PERIOD_KEY)),
   );
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
@@ -202,6 +235,7 @@ export function makeVaultManager(
   /** @type {InnerVaultManager} */
   const innerFacet = harden({
     ...shared,
+    reallocateReward,
     getCollateralBrand: () => collateralBrand,
   });
 
@@ -219,7 +253,7 @@ export function makeVaultManager(
       runMint,
       autoswap,
       priceAuthority,
-      loanParams,
+      getLoanParams,
       startTimeStamp,
     );
 

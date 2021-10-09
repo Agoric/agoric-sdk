@@ -29,7 +29,7 @@ const trace = makeTracer('TestVault');
  * @property {TimerService} timer
  */
 
-/* @type {TestContext} */
+/** @type {TestContext} */
 let testJig;
 const setJig = jig => {
   testJig = jig;
@@ -215,7 +215,6 @@ test('bad collateral', async t => {
     await p;
     t.fail('not rejected when it should have been');
   } catch (e) {
-    console.log(`yup, it was rejected`);
     t.truthy(true, 'yay rejection');
   }
   // p.then(_ => console.log('oops passed'),
