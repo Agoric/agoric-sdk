@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -8,6 +9,7 @@ import (
 const RouterKey = ModuleName // this was defined in your key.go file
 
 var _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}
+var _ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
 	return &MsgDeliverInbound{
@@ -16,6 +18,18 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 		Ack:       msgs.Ack,
 		Submitter: submitter,
 	}
+}
+
+func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, callToController func(sdk.Context, string) (string, error)) error {
+	// TODO: This is where we would consult the controller for deterministic
+	// advice on whether we are overwhelmed.
+	/*
+		// The nondeterministic torture test.  Mark every third message as not inadmissible.
+		if rand.Intn(3) == 0 {
+			return fmt.Errorf("FIGME: MsgDeliverInbound is randomly not admissible")
+		}
+	*/
+	return nil
 }
 
 // Route should return the name of the module
