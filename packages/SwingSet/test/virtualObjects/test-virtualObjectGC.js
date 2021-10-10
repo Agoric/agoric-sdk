@@ -1065,7 +1065,6 @@ test.serial('remotable refcount management 1', async t => {
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue(null)));
   validate(v, matchVatstoreGet('vom.o+1/1'));
   validateReturned(v, rp);
-  validate(v, matchRetireExports('o+3'));
   validateDone(v);
 });
 
@@ -1095,7 +1094,6 @@ test.serial('remotable refcount management 2', async t => {
   validateDelete(v, 'o+2/3');
   validateStatusCheck(v, 'o+2/4');
   validateDelete(v, 'o+2/4');
-  validate(v, matchRetireExports('o+3'));
   validateDone(v);
 });
 

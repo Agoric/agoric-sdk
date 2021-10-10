@@ -110,6 +110,7 @@ function build(
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
+  const unretiredKernelRecognizableRemotables = new Set(); // vrefs
   const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
   const possiblyDeadSet = new Set(); // vrefs that need to be checked for being dead
@@ -127,6 +128,7 @@ function build(
         // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
         exportedRemotables.add(remotable);
+        unretiredKernelRecognizableRemotables.add(vref);
       }
     }
   }
@@ -196,6 +198,7 @@ function build(
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
       // eslint-disable-next-line no-use-before-define
       addToPossiblyDeadSet(vref);
+      slotToVal.delete(vref);
     }
   }
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
@@ -224,7 +227,7 @@ function build(
       doMore = false;
       for (const vref of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
-        if (!getValForSlot(vref)) {
+        if (!slotToVal.has(vref)) {
           deadSet.add(vref);
         }
       }
@@ -250,17 +253,18 @@ function build(
         assert(type === 'object', `unprepared to track ${type}`);
         if (virtual) {
           // Representative: send nothing, but perform refcount checking
-          if (slotToVal.get(vref)) {
-            // eslint-disable-next-line no-use-before-define
-            const [gcAgain, doRetire] = vom.possibleVirtualObjectDeath(vref);
-            if (doRetire) {
-              exportsToRetire.push(vref);
-            }
-            doMore = doMore || gcAgain;
+          // eslint-disable-next-line no-use-before-define
+          const [gcAgain, doRetire] = vom.possibleVirtualObjectDeath(vref);
+          if (doRetire) {
+            exportsToRetire.push(vref);
           }
+          doMore = doMore || gcAgain;
         } else if (allocatedByVat) {
           // Remotable: send retireExport
-          exportsToRetire.push(vref);
+          if (unretiredKernelRecognizableRemotables.has(vref)) {
+            unretiredKernelRecognizableRemotables.delete(vref);
+            exportsToRetire.push(vref);
+          }
         } else {
           // Presence: send dropImport unless reachable by VOM
           // eslint-disable-next-line no-lonely-if, no-use-before-define
@@ -975,6 +979,7 @@ function build(
           valToSlot.delete(val);
           droppedRegistry.unregister(val);
         }
+        unretiredKernelRecognizableRemotables.delete(vref);
         slotToVal.delete(vref);
       }
     }
