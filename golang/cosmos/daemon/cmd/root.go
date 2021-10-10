@@ -40,6 +40,7 @@ import (
 type Sender func(needReply bool, str string) (string, error)
 
 var AppName = "ag-chain-cosmos"
+var OnStartHook func(log.Logger)
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -190,6 +191,10 @@ func txCommand() *cobra.Command {
 
 func makeNewApp(sender Sender) func(log.Logger, dbm.DB, io.Writer, servertypes.AppOptions) servertypes.Application {
 	return func(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+		if OnStartHook != nil {
+			OnStartHook(logger)
+		}
+
 		var cache sdk.MultiStorePersistentCache
 
 		if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {

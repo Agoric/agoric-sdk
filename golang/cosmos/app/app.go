@@ -365,7 +365,7 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
-		if sendToController == nil || vm.IsSimulation(ctx) {
+		if vm.IsSimulation(ctx) {
 			// Just return empty, since the message is being simulated.
 			return "", nil
 		}
