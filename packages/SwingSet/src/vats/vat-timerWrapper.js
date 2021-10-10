@@ -3,8 +3,9 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { makeTimedIterable } from './timed-iteration.js';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -54,22 +55,17 @@ export function buildRootObject(vatPowers) {
           X`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
-        const index = D(timerNode).makeRepeater(delay, interval);
-        const { notifier, updater } = makeNotifierKit();
-        const updateHandler = Far('updateHandler', {
-          wake: updater.updateState,
-        });
-        D(timerNode).schedule(index, updateHandler);
+        // Find when the first notification will fire.
+        const baseTime = timerService.getCurrentTimestamp() + delay + interval;
 
-        // FIXME: The fact that we never delete the repeater (for the `index`)
-        // means that there is a resource leak and no way the repeater ever
-        // stops.
-        //
-        // This happens even if every recipient of the notifier permanently
-        // stops asking for updates, or equivalently, they drop all references
-        // to the notifier.
-        //
-        // To solve this problem, we could elegantly use something like #3854.
+        const iterable = makeTimedIterable(
+          timerService.delay,
+          timerService.getCurrentTimestamp,
+          baseTime,
+          interval,
+        );
+
+        const notifier = makeNotifierFromAsyncIterable(iterable);
 
         return notifier;
       },
