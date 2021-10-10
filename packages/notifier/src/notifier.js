@@ -14,7 +14,7 @@ import './types.js';
 
 /**
  * @template T
- * @param {BaseNotifier<T>} baseNotifierP
+ * @param {ERef<BaseNotifier<T>>} baseNotifierP
  * @returns {AsyncIterable<T> & SharableNotifier}
  */
 export const makeNotifier = baseNotifierP => {
@@ -54,7 +54,7 @@ export const makeNotifier = baseNotifierP => {
  */
 export const makeNotifierKit = (...args) => {
   /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
-  let nextPromiseKit = makePromiseKit();
+  let optNextPromiseKit;
   /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
   /** @type {UpdateRecord<T>|undefined} */
@@ -78,8 +78,10 @@ export const makeNotifierKit = (...args) => {
         return Promise.resolve(currentResponse);
       }
       // otherwise return a promise for the next state.
-      assert(nextPromiseKit);
-      return nextPromiseKit.promise;
+      if (!optNextPromiseKit) {
+        optNextPromiseKit = makePromiseKit();
+      }
+      return optNextPromiseKit.promise;
     },
   });
 
@@ -96,15 +98,16 @@ export const makeNotifierKit = (...args) => {
       }
 
       // become hasState() && !final()
-      assert(nextPromiseKit && currentUpdateCount);
+      assert(currentUpdateCount);
       currentUpdateCount += 1;
       currentResponse = harden({
         value: state,
         updateCount: currentUpdateCount,
       });
-      assert(currentResponse);
-      nextPromiseKit.resolve(currentResponse);
-      nextPromiseKit = makePromiseKit();
+      if (optNextPromiseKit) {
+        optNextPromiseKit.resolve(currentResponse);
+        optNextPromiseKit = undefined;
+      }
     },
 
     finish(finalState) {
@@ -113,15 +116,15 @@ export const makeNotifierKit = (...args) => {
       }
 
       // become hasState() && final()
-      assert(nextPromiseKit);
       currentUpdateCount = undefined;
       currentResponse = harden({
         value: finalState,
         updateCount: currentUpdateCount,
       });
-      assert(currentResponse);
-      nextPromiseKit.resolve(currentResponse);
-      nextPromiseKit = undefined;
+      if (optNextPromiseKit) {
+        optNextPromiseKit.resolve(currentResponse);
+        optNextPromiseKit = undefined;
+      }
     },
 
     fail(reason) {
@@ -130,12 +133,14 @@ export const makeNotifierKit = (...args) => {
       }
 
       // become !hasState() && final()
-      assert(nextPromiseKit);
       currentUpdateCount = undefined;
       currentResponse = undefined;
+      if (!optNextPromiseKit) {
+        optNextPromiseKit = makePromiseKit();
+      }
       // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      nextPromiseKit.promise.catch(_ => {});
-      nextPromiseKit.reject(reason);
+      optNextPromiseKit.promise.catch(_ => {});
+      optNextPromiseKit.reject(reason);
     },
   });
 
