@@ -75,7 +75,7 @@ export const makeNotifierKit = (...args) => {
         // If hasState() and either it is final() or it is
         // not the state of updateCount, return the current state.
         assert(currentResponse !== undefined);
-        return currentResponse;
+        return Promise.resolve(currentResponse);
       }
       // otherwise return a promise for the next state.
       if (!optNextPromiseKit) {
