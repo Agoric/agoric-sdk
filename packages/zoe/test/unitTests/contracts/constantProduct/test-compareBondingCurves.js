@@ -21,7 +21,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
   });
   const amountWanted = bld(0n);
   const protocolFeeRatio = makeRatio(0n, runKit.brand, BASIS_POINTS);
-  const poolFeeRatio = makeRatio(3n, bldKit.brand, BASIS_POINTS);
+  const poolFeeRatio = makeRatio(30n, bldKit.brand, BASIS_POINTS);
 
   const args = [
     amountGiven,

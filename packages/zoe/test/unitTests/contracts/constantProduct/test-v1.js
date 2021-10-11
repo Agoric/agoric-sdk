@@ -5,6 +5,7 @@ import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults
 import {
   swapOutNotImprovedNoFees,
   swapInNotImprovedNoFees,
+  calcDeltaYSellingX,
 } from '../../../../src/contracts/constantProduct/core.js';
 import { setupMintKits } from './setupMints.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
@@ -44,11 +45,16 @@ export const swapOut = (
   );
 };
 
+const { run, bld, runKit, bldKit } = setupMintKits();
+
+const getInputPriceV1 = input =>
+  (997n * input.inputValue * input.outputReserve) /
+  (1000n * input.inputReserve + 997n * input.inputValue);
+
 // This assumes RUN is swapped in. The test should function the same
 // regardless of what brand is the amountIn, because no RUN-specific fee is
 // charged.
 const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
-  const { run, bld, runKit, bldKit } = setupMintKits();
   const amountGiven = run(inputValue);
   const poolAllocation = harden({
     Central: run(inputReserve),
@@ -57,7 +63,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
   const amountWanted = bld(3n);
   // Protocol fee set to 0 to emulate Uniswap V1
   const protocolFeeRatio = makeRatio(0n, runKit.brand, BASIS_POINTS);
-  const poolFeeRatio = makeRatio(3n, bldKit.brand, BASIS_POINTS);
+  const poolFeeRatio = makeRatio(30n, runKit.brand, BASIS_POINTS);
 
   const args = [
     amountGiven,
@@ -74,9 +80,10 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
 };
 
 const testGetPrice = (t, inputs, expectedOutput) => {
-  const { args, bld } = prepareSwapInTest(inputs);
+  const { args } = prepareSwapInTest(inputs);
   const result = swapIn(...args);
   t.deepEqual(result.swapperGets, bld(expectedOutput));
+  return result.swapperGets;
 };
 
 const getInputPriceThrows = (t, inputs, message) => {
@@ -95,7 +102,6 @@ const getInputPriceThrows = (t, inputs, message) => {
 // regardless of what brand is the amountIn, because no run fee is
 // charged.
 const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
-  const { run, bld, runKit } = setupMintKits();
   const amountGiven = run(10000n); // hard-coded
   const poolAllocation = harden({
     Central: run(inputReserve),
@@ -120,7 +126,7 @@ const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
 };
 
 const testGetOutputPrice = (t, inputs, expectedInput) => {
-  const { args, run } = prepareSwapOutTest(inputs);
+  const { args } = prepareSwapOutTest(inputs);
   const result = swapOut(...args);
   t.deepEqual(result.swapperGives, run(expectedInput));
 };
@@ -155,7 +161,7 @@ test('getInputPrice ok 2', t => {
   testGetPrice(t, input, expectedOutput);
 });
 
-test.only('getInputPrice ok 3', t => {
+test('getInputPrice ok 3', t => {
   const input = {
     inputReserve: 8160n,
     outputReserve: 7743n,
@@ -163,19 +169,35 @@ test.only('getInputPrice ok 3', t => {
   };
   const expectedOutput = 3466n;
 
+  const bldOutNoFees = calcDeltaYSellingX(
+    run(input.inputReserve),
+    bld(input.outputReserve),
+    run(input.inputValue),
+  );
+  console.log('bldOutNoFees', bldOutNoFees);
+
   // inputValue = deltaX
   // outputReserve = y
   // inputReserve = x
   // (997 * deltaX * y) / (1000 * x + 997 * deltaX) where / is
   // floorDivide
 
-  const v1 =
-    (997n * input.inputValue * input.outputReserve) /
-    (1000n * input.inputReserve + 997n * input.inputValue);
+  const v1 = getInputPriceV1(input);
   t.is(v1, expectedOutput, `expected output didn't match v1`);
+  console.log('v1 fee', bldOutNoFees.value - v1);
+
+  // Take fee off first
+  const feeOffFirst = calcDeltaYSellingX(
+    run(input.inputReserve),
+    bld(input.outputReserve),
+    run(6615),
+  );
+  console.log('feeOffFirst', feeOffFirst);
 
   // This produces 3470n, not the v1 answer which is 3466n.
-  testGetPrice(t, input, v1);
+  const output = testGetPrice(t, input, v1);
+  console.log('constant product output', output);
+  console.log('constant product fee', bldOutNoFees.value - output.value);
 });
 
 test('getInputPrice ok 4', t => {
@@ -240,17 +262,6 @@ test('getInputPrice bad reserve 2', t => {
   getInputPriceThrows(t, input, message);
 });
 
-test('getInputPrice zero input', t => {
-  const input = {
-    outputReserve: 50n,
-    inputReserve: 320n,
-    inputValue: 0n,
-  };
-  const message =
-    '"allocation.In" was not greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
-  getInputPriceThrows(t, input, message);
-});
-
 test('getInputPrice big product', t => {
   const input = {
     outputReserve: 100000000n,
@@ -290,28 +301,6 @@ test('getOutputPrice zero input reserve', t => {
   };
   const message =
     '"poolAllocation.Central" must be greater than 0: {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
-  getOutputPriceThrows(t, input, message);
-});
-
-test('getOutputPrice too much output', t => {
-  const input = {
-    outputReserve: 1024n,
-    inputReserve: 1132n,
-    outputValue: 20923n,
-  };
-  const message =
-    'The poolAllocation {"brand":"[Alleged: BLD brand]","value":"[1024n]"} did not have enough to satisfy the wanted amountOut {"brand":"[Alleged: BLD brand]","value":"[20923n]"}';
-  getOutputPriceThrows(t, input, message);
-});
-
-test('getOutputPrice too much output 2', t => {
-  const input = {
-    outputReserve: 345n,
-    inputReserve: 1132n,
-    outputValue: 345n,
-  };
-  const message =
-    'The poolAllocation {"brand":"[Alleged: BLD brand]","value":"[345n]"} did not have enough to satisfy the wanted amountOut {"brand":"[Alleged: BLD brand]","value":"[345n]"}';
   getOutputPriceThrows(t, input, message);
 });
 
