@@ -46,17 +46,19 @@ const makeConverter = (mirrorConverter = undefined) => {
         });
         E.when(
           mine,
-          myFulfillment => {
-            yourResolve(pass(myFulfillment));
-          },
-          myReason => {
-            yourReject(pass(myReason));
-          },
-        ).catch(metaReason => {
-          // This can happen if myFulfillment or myReason is not passable.
-          // TODO verify that metaReason must be your-side-safe
-          yourReject(metaReason);
-        });
+          myFulfillment => yourResolve(pass(myFulfillment)),
+          myReason => yourReject(pass(myReason)),
+        )
+          .catch(metaReason =>
+            // This can happen if myFulfillment or myReason is not passable.
+            // TODO verify that metaReason must be my-side-safe, or rather,
+            // that the passing of it is your-side-safe.
+            yourReject(pass(metaReason)),
+          )
+          .catch(metaMetaReason =>
+            // In case metaReason itself doesn't pass
+            yourReject(metaMetaReason),
+          );
         break;
       }
       case 'remotable': {
