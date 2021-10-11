@@ -1,5 +1,7 @@
 // @ts-check
 
+import './types.js';
+
 export {
   ChoiceMethod,
   ElectionType,
@@ -23,7 +25,7 @@ export {
   assertBallotConcernsQuestion,
 } from './governParam.js';
 
-export { ParamType, assertType } from './paramManager.js';
+export { ParamType, buildParamManager, assertType } from './paramManager.js';
 
 export {
   assertContractGovernance,
