@@ -35,8 +35,8 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
- * @property {GetInvitationDetails} getInvitationDetails - return an
- * object with the instance, installation, description, invitation
+ * @property {GetInvitationDetails} getInvitationDetails
+ * Return an object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {MakeFeePurse} makeFeePurse
@@ -181,7 +181,8 @@
  * @param {ERef<Installation>} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
- * @param {Object=} privateArgs - an optional configuration object
+ * @param {Object=} privateArgs
+ * An optional configuration object
  * that can be used to pass in arguments that should not be in the
  * public terms
  * @param {ERef<FeePurse>=} feePurse
@@ -337,7 +338,8 @@
  */
 
 /**
- * @typedef {Record<string, any>} SourceBundle Opaque type for a JSONable source bundle
+ * @typedef {Record<string, any>} SourceBundle
+ * Opaque type for a JSONable source bundle
  */
 
 /**
@@ -408,12 +410,14 @@
 
 /**
  * @typedef {Object} MeteringConfig
- * @property {Computrons} initial - the amount of computrons a meter
- * starts with
- * @property {Computrons} incrementBy - when a meter is refilled, this
- * amount will be added
- * @property {Computrons} threshold - Zoe will be notified when the meter
- * drops below this amount
- * @property {{ feeNumerator: bigint, computronDenominator: bigint }}
- * price - the price of computrons in RUN
+ * @property {Computrons} initial
+ * The amount of computrons a meter starts with
+ * @property {Computrons} incrementBy
+ * When a meter is refilled, this amount will be added
+ * @property {Computrons} threshold
+ * Zoe will be notified when the meter drops below this amount
+ * @property {{ feeNumerator: bigint,
+ *              computronDenominator: bigint
+ * }} price
+ * The price of computrons in RUN
  */
