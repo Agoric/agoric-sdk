@@ -13,7 +13,6 @@ const useStyles = makeStyles(_ => ({
     display: 'none',
   },
   connector: {
-    marginRight: '16px',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',

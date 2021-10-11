@@ -21,6 +21,9 @@ const navMenuWidth = '240px';
 
 const appTheme = createTheme({
   palette: {
+    primary: {
+      main: '#cb2328',
+    },
     background: {
       default: '#ffffff',
     },

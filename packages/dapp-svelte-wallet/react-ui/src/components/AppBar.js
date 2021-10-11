@@ -1,5 +1,7 @@
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
+import IconButton from '@material-ui/core/IconButton';
+import Menu from '@material-ui/icons/Menu';
 import WalletConnection from './WalletConnection';
 
 const useStyles = makeStyles(theme => ({
@@ -30,7 +32,9 @@ const useStyles = makeStyles(theme => ({
   appBarSection: {
     display: 'flex',
     flexDirection: 'row',
+    alignItems: 'center',
     padding: '4px',
+    margin: '16px',
     height: '100%',
   },
 }));
@@ -40,6 +44,15 @@ const AppBar = () => {
   return (
     <header className={classes.header}>
       <div className={classes.appBarSection}>
+        <div>
+          <IconButton
+            aria-label="navigation menu"
+            size="large"
+            color="secondary"
+          >
+            <Menu fontSize="inherit"></Menu>
+          </IconButton>
+        </div>
         <a href="https://agoric.com" className={classes.productLink}>
           <img
             src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
