@@ -602,11 +602,11 @@ test('zoe - firstPriceAuction non-fungible asset', async t => {
   const daveCcPayout = await daveSeat.getPayout('Asset');
   const daveMoolaPayout = await daveSeat.getPayout('Bid');
 
-  // Alice (the creator of the auction) gets back the second highest bid
+  // Alice (the creator of the auction) gets back the highest bid
   t.deepEqual(
     await moolaIssuer.getAmountOf(aliceMoolaPayout),
-    carolProposal.give.Bid,
-    `alice gets carol's bid`,
+    bobProposal.give.Bid,
+    `alice gets bob's bid`,
   );
 
   // Alice didn't get any of what she put in
@@ -629,8 +629,8 @@ test('zoe - firstPriceAuction non-fungible asset', async t => {
   );
   t.deepEqual(
     await moolaIssuer.getAmountOf(bobMoolaPayout),
-    moola(4),
-    `bob gets difference back`,
+    moola(0),
+    `bob gets difference back, which is none`,
   );
 
   // Bob deposits his payout to ensure he can
@@ -671,14 +671,14 @@ test('zoe - firstPriceAuction non-fungible asset', async t => {
   // Dave had an empty CryptoCat purse and 5 moola.
 
   // Now, they should have:
-  // Alice: an empty CryptoCat purse and 7 moola
-  // Bob: the CryptoCat and 4 moola
+  // Alice: an empty CryptoCat purse and 11 moola
+  // Bob: the CryptoCat and 0 moola
   // Carol: an empty CryptoCat purse and 7 moola
   // Dave: an empty CryptoCat purse and 5 moola
   t.deepEqual(aliceCcPurse.getCurrentAmount().value, []);
-  t.is(aliceMoolaPurse.getCurrentAmount().value, 7n);
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 11n);
   t.deepEqual(bobCcPurse.getCurrentAmount().value, ['Felix']);
-  t.is(bobMoolaPurse.getCurrentAmount().value, 4n);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
   t.deepEqual(carolCcPurse.getCurrentAmount().value, []);
   t.is(carolMoolaPurse.getCurrentAmount().value, 7n);
   t.deepEqual(daveCcPurse.getCurrentAmount().value, []);
