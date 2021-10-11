@@ -2,8 +2,9 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport';
 import { AmountMath } from '@agoric/ertp';
+import { governedParameterTerms } from '../../../src/params';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -21,6 +22,8 @@ const build = async (
   timer,
   priceAuthorityVat,
   feeMintAccess,
+  electorateInstance,
+  electorateCreatorFacet,
 ) => {
   const [moolaBrand] = brands;
   const [moolaPayment] = payments;
@@ -40,19 +43,34 @@ const build = async (
     loanParams,
     liquidationInstall: installations.liquidateMinimum,
     timerService: timer,
+    governedParams: governedParameterTerms,
   });
+  const privateArgs = harden({ electorateCreatorFacet });
+  const privateTreasuryArgs = { feeMintAccess };
 
-  const { publicFacet, creatorFacet, instance } = await E(zoe).startInstance(
-    installations.treasury,
-    undefined,
-    terms,
-    harden({ feeMintAccess }),
+  const governorFacets = await E(zoe).startInstance(
+    installations.governor,
+    {},
+    {
+      timer,
+      electorateInstance,
+      governedContractInstallation: installations.treasury,
+      governed: {
+        terms,
+        issuerKeywordRecord: {},
+        privateArgs: privateTreasuryArgs,
+      },
+    },
+    privateArgs,
   );
+
+  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
+  const governedPublicFacet = E(zoe).getPublicFacet(governedInstance);
 
   const {
     issuers: { RUN: runIssuer },
     brands: { Governance: govBrand, RUN: runBrand },
-  } = await E(zoe).getTerms(instance);
+  } = await E(zoe).getTerms(governedInstance);
 
   const rates = {
     initialPrice: makeRatio(10000n, runBrand, 5n, moolaBrand),
@@ -62,11 +80,10 @@ const build = async (
     loanFee: makeRatio(200n, runBrand, BASIS_POINTS),
   };
 
-  const addTypeInvitation = await E(creatorFacet).makeAddTypeInvitation(
-    moolaIssuer,
-    'Moola',
-    rates,
-  );
+  const addTypeInvitation = await E(
+    // get the governed creatorFacet from the governor
+    E(governorFacets.creatorFacet).getCreatorFacet(),
+  ).makeAddTypeInvitation(moolaIssuer, 'Moola', rates);
   const proposal = harden({
     give: {
       Collateral: AmountMath.make(moolaBrand, 1000n),
@@ -100,7 +117,18 @@ const build = async (
     runBrand,
   );
 
-  return publicFacet;
+  const voteCreator = Far('treasury vote creator', {
+    voteOnParamChange: E(governorFacets.creatorFacet).voteOnParamChange,
+  });
+
+  const governed = {
+    instance: governedInstance,
+    creatorFacet: E(governorFacets.creatorFacet).getCreatorFacet(),
+    publicFacet: governedPublicFacet,
+    voteCreator,
+  };
+
+  return { governor: governorFacets, governed, runBrand };
 };
 
 export function buildRootObject(vatPowers) {

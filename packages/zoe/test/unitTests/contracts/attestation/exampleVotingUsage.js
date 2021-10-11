@@ -18,7 +18,7 @@ const start = zcf => {
     brands: { Attestation: attestationBrand },
   } = zcf.getTerms();
 
-  /** @type {Store<Handle<'attestation'>, { seat: ZCFSeat,
+  /** @type {Store<Handle<'Attestation'>, { seat: ZCFSeat,
    * expiration: Timestamp, amountLiened: Amount}>} */
   const storedAttestations = makeStore();
 

@@ -42,6 +42,22 @@ async function main() {
       `@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js`,
       `${dirname}/../bundles/bundle-multipoolAutoswap.js`,
     ],
+    [
+      '@agoric/governance/src/contractGovernor.js',
+      `${dirname}/../bundles/bundle-contractGovernor.js`,
+    ],
+    [
+      '@agoric/governance/src/committee.js',
+      `${dirname}/../bundles/bundle-committee.js`,
+    ],
+    [
+      '@agoric/governance/src/noActionElectorate.js',
+      `${dirname}/../bundles/bundle-noActionElectorate.js`,
+    ],
+    [
+      '@agoric/governance/src/binaryVoteCounter.js',
+      `${dirname}/../bundles/bundle-binaryVoteCounter.js`,
+    ],
   ];
   for (const [contractFilename, outputPath] of contractOutputs) {
     // eslint-disable-next-line no-await-in-loop

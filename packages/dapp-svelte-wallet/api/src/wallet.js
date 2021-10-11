@@ -337,13 +337,14 @@ export function buildRootObject(_vatPowers) {
   function getBridgeURLHandler() {
     return Far('bridgeURLHandler', {
       /**
-       * @typedef {Object} WalletOtherSide the callbacks from a CapTP wallet
-       * client.
-       * @property {(dappOrigin: string, suggestedDappPetname: Petname) => void}
-       * needDappApproval let the other side know that this dapp is still
-       * unapproved
-       * @property {(dappOrigin: string) => void} dappApproved let the other
-       * side know that the dapp has been approved
+       * @typedef {Object} WalletOtherSide
+       * The callbacks from a CapTP wallet client.
+       * @property {(dappOrigin: string,
+       *             suggestedDappPetname: Petname
+       * ) => void} needDappApproval
+       * Let the other side know that this dapp is still unapproved
+       * @property {(dappOrigin: string) => void} dappApproved
+       * Let the other side know that the dapp has been approved
        */
 
       /**

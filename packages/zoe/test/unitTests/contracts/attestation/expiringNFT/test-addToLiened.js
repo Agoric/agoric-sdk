@@ -14,8 +14,8 @@ test('add for same address', async t => {
   const store = makeLegacyMap('address');
 
   const address = 'address1';
-  const handle1 = makeHandle('attestation');
-  const handle2 = makeHandle('attestation');
+  const handle1 = makeHandle('Attestation');
+  const handle2 = makeHandle('Attestation');
 
   const { brand } = makeIssuerKit('external');
   const amountLiened = AmountMath.make(brand, 0n);
@@ -45,8 +45,8 @@ test('add for multiple addresses', async t => {
   const expiration = 0n;
   const address1 = 'address1';
   const address2 = 'address2';
-  const handle1 = makeHandle('attestation');
-  const handle2 = makeHandle('attestation');
+  const handle1 = makeHandle('Attestation');
+  const handle2 = makeHandle('Attestation');
   const elem1 = {
     address: address1,
     handle: handle1,

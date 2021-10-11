@@ -26,13 +26,13 @@ const doTest = (
     'address',
     amountLiened,
     4n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
   const elem2 = makeAttestationElem(
     'address',
     amountLiened,
     5n,
-    makeHandle('attestation'),
+    makeHandle('Attestation'),
   );
 
   let currentAllocation;

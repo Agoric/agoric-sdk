@@ -1,9 +1,5 @@
 package main
 
-// #cgo CPPFLAGS: -I/usr/local/include/node
-// #cgo LDFLAGS: -L/usr/local/lib
-import "C"
-
 import (
 	"os"
 	"path/filepath"

@@ -32,6 +32,10 @@
  * @property {(collateralIssuer: Issuer, collateralKeyword: Keyword, rates: Rates) => Promise<Invitation>} makeAddTypeInvitation
  * @property {() => Instance} getAMM
  * @property {() => Promise<Array<Collateral>>} getCollaterals
+ * @property {() => Allocation} getRewardAllocation,
+ * @property {() => ERef<Payment>} getBootstrapPayment
+ * @property {() => Governor} getContractGovernor
+ * @property {() => Invitation} makeCollectFeesInvitation
  */
 
 /**
@@ -58,25 +62,36 @@
  */
 
 /**
- * @typedef {Object} InnerVaultManager
- * @property {() => Brand} getCollateralBrand
+ * @typedef {Object} GetVaultParams
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
+ * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
+ *   which interest is charged to the loan.
+ * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
+ *   at which interest is recorded to the loan.
+ */
+
+/**
+ * @typedef {Object} InnerVaultManagerBase
+ * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  */
 
 /**
- * @typedef {Object} VaultManager
- * @property {(ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @typedef {InnerVaultManagerBase & GetVaultParams} InnerVaultManager
+ */
+
+/**
+ * @typedef {Object} VaultManagerBase
+ * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
  * @property {() => void} liquidateAll
- * @property {() => Ratio} getLiquidationMargin
- * @property {() => Ratio} getLoanFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInitialMargin
- * @property {() => Ratio} getInterestRate
+ */
+
+/**
+ * @typedef {VaultManagerBase & GetVaultParams} VaultManager
  */
 
 /**
@@ -104,8 +119,8 @@
 /**
  * @typedef {Object} VaultKit
  * @property {Vault} vault
- * @property {(ZCFSeat) => Promise<OpenLoanKit>} openLoan
- * @property {(Timestamp) => Amount} accrueInterestAndAddToPool
+ * @property {(seat: ZCFSeat) => Promise<OpenLoanKit>} openLoan
+ * @property {(timestamp: Timestamp) => Amount} accrueInterestAndAddToPool
  * @property {ZCFSeat} vaultSeat
  * @property {PromiseRecord<string>} liquidationPromiseKit
  * @property {ZCFSeat} liquidationZcfSeat
@@ -115,6 +130,12 @@
  * @typedef {Object} LoanParams
  * @property {RelativeTime} chargingPeriod
  * @property {RelativeTime} recordingPeriod
+ */
+
+/**
+ * @typedef {Object} AMMFees
+ * @property {bigint} poolFee
+ * @property {bigint} protocolFee
  */
 
 /**
@@ -131,10 +152,9 @@
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Rates} rates
- * @param {StageReward} rewardPoolStaging
- * @param {TimerService} timerService
- * @param {LoanParams} loanParams
+ * @param {GetParams} getLoanParams
+ * @param {ReallocateReward} reallocateReward
+ * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @returns {VaultManager}
  */
@@ -146,7 +166,7 @@
  * @param {ZCFMint} runMint
  * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanParams} loanParams
+ * @param {GetParams} paramManager
  * @param {Timestamp} startTimeStamp
  * @returns {VaultKit}
  */
@@ -182,4 +202,38 @@
  * @param {RelativeTime} chargingPeriod
  * @param {RelativeTime} recordingPeriod
  * @returns {CalculatorKit}
+ */
+
+/**
+ * @typedef {Object} FeeParamManager
+ * @property {GetParams} getParams
+ * @property {GetParam} getParam
+ * @property {(fee: bigint) => void} updateProtocolFee
+ * @property {(fee: bigint) => void} updatePoolFee
+ */
+
+/**
+ * @typedef {Object} PoolParamManager
+ * @property {GetParams} getParams
+ * @property {GetParam} getParam
+ * @property {(period: bigint) => void} updateChargingPeriod
+ * @property {(period: bigint) => void} updateRecordingPeriod
+ * @property {(margin: Ratio) => void} updateInitialMargin
+ * @property {(margin: Ratio) => void} updateLiquidationMargin
+ * @property {(price: Ratio) => void} updateInitialPrice
+ * @property {(ratio: Ratio) => void} updateInterestRate
+ * @property {(ratio: Ratio) => void} updateLoanFee
+ */
+
+/**
+ * @callback MakePoolParamManager
+ * @param {LoanParams} loanParams
+ * @param {Rates} rates
+ * @returns {PoolParamManager}
+ */
+
+/**
+ * @callback MakeFeeParamManager
+ * @param {AMMFees} ammFees
+ * @returns {FeeParamManager}
  */
