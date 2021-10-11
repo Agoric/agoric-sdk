@@ -200,7 +200,7 @@ docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 build-chain:
-	$(MAKE) -C $(GOSRC) all
+	$(MAKE) -C $(GOSRC) compile-chain
 
 build-helper:
 	$(MAKE) -C $(GOSRC) compile-helper

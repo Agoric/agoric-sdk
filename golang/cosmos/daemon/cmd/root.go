@@ -39,6 +39,9 @@ import (
 // Sender is a function that sends a request to the controller.
 type Sender func(needReply bool, str string) (string, error)
 
+var AppName = "ag-chain-cosmos"
+var OnStartHook func(log.Logger)
+
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
@@ -54,7 +57,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 		WithViper("AG_COSMOS_")
 
 	rootCmd := &cobra.Command{
-		Use:   "ag-chain-cosmos",
+		Use:   AppName,
 		Short: "Stargate Agoric App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
@@ -188,6 +191,10 @@ func txCommand() *cobra.Command {
 
 func makeNewApp(sender Sender) func(log.Logger, dbm.DB, io.Writer, servertypes.AppOptions) servertypes.Application {
 	return func(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+		if OnStartHook != nil {
+			OnStartHook(logger)
+		}
+
 		var cache sdk.MultiStorePersistentCache
 
 		if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
