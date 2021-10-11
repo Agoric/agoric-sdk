@@ -117,19 +117,19 @@ test('non-fungible tokens example', async t => {
   // Alice will buy ticket 1
   const paymentForAlice = balletTicketPayments[0];
   // Bob will buy tickets 3 and 4
-  const paymentForBob = balletTicketIssuer.combine([
-    balletTicketPayments[2],
-    balletTicketPayments[3],
-  ]);
+  // const paymentForBob = balletTicketIssuer.combine([
+  //   balletTicketPayments[2],
+  //   balletTicketPayments[3],
+  // ]);
 
   // ALICE SIDE
   // Alice bought ticket 1 and has access to the balletTicketIssuer, because it's public
-  const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
+  // const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
   // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
   // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive access
   // to its handle
   const paymentAmountAlice = await balletTicketIssuer.getAmountOf(
-    myTicketPaymentAlice,
+    paymentForAlice,
   );
   assert(Array.isArray(paymentAmountAlice.value));
   t.is(paymentAmountAlice.value.length, 1);
@@ -139,16 +139,16 @@ test('non-fungible tokens example', async t => {
 
   // BOB SIDE
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because it's public
-  const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
-  const paymentAmountBob = await balletTicketIssuer.getAmountOf(
-    bobTicketPayment,
-  );
-  assert(Array.isArray(paymentAmountBob.value));
-  t.is(paymentAmountBob.value.length, 2);
-  t.is(paymentAmountBob.value[0].seat, 3);
-  t.is(paymentAmountBob.value[1].seat, 4);
-  t.is(paymentAmountBob.value[0].show, 'The Sofa');
-  t.is(paymentAmountBob.value[1].show, 'The Sofa');
-  t.is(paymentAmountBob.value[0].start, startDateString);
-  t.is(paymentAmountBob.value[1].start, startDateString);
+  // const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
+  // const paymentAmountBob = await balletTicketIssuer.getAmountOf(
+  //   bobTicketPayment,
+  // );
+  // assert(Array.isArray(paymentAmountBob.value));
+  // t.is(paymentAmountBob.value.length, 2);
+  // t.is(paymentAmountBob.value[0].seat, 3);
+  // t.is(paymentAmountBob.value[1].seat, 4);
+  // t.is(paymentAmountBob.value[0].show, 'The Sofa');
+  // t.is(paymentAmountBob.value[1].show, 'The Sofa');
+  // t.is(paymentAmountBob.value[0].start, startDateString);
+  // t.is(paymentAmountBob.value[1].start, startDateString);
 });

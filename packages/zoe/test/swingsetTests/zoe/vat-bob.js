@@ -22,7 +22,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doAutomaticRefund: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
 
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
@@ -51,11 +51,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const bobPayments = { Contribution2: simoleanPayment };
 
       // 2. Bob makes an offer
-      const bobSeatP = await E(zoe).offer(
-        exclInvitation,
-        bobProposal,
-        bobPayments,
-      );
+      const bobSeatP = await E(zoe).offer(invitation, bobProposal, bobPayments);
       log(await E(bobSeatP).getOfferResult());
 
       const moolaPayout = await E(bobSeatP).getPayout('Contribution1');
@@ -73,7 +69,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob claims all with the Zoe invitationIssuer
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       const bobIntendedProposal = harden({
@@ -83,7 +79,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob checks that the invitation is for the right covered call
       const { value: optionValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
+        invitation,
       );
       assert(installation === installations.coveredCall, X`wrong installation`);
       assert(
@@ -118,7 +114,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const bobPayments = { StrikePrice: simoleanPayment };
       // Bob escrows
       const seatP = await E(zoe).offer(
-        exclInvitation,
+        invitation,
         bobIntendedProposal,
         bobPayments,
       );
@@ -139,16 +135,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Bob claims all with the Zoe invitationIssuer
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
 
       const { UnderlyingAsset, StrikePrice } = await E(zoe).getIssuers(
         instance,
       );
 
       // Bob checks that the invitation is for the right covered call
-      const optionAmounts = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
-      );
+      const optionAmounts = await E(invitationIssuer).getAmountOf(invitation);
       const optionValue = optionAmounts.value;
 
       assert(installation === installations.coveredCall, X`wrong installation`);
@@ -199,7 +193,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         want: { Price: bucks(1) },
       });
 
-      const bobSwapPayments = harden({ Asset: exclInvitation });
+      const bobSwapPayments = harden({ Asset: invitation });
 
       // Bob escrows his option in the swap
       const bobSeatP = await E(zoe).offer(
@@ -225,9 +219,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
+        invitation,
       );
 
       assert(
@@ -251,7 +245,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
       secondPriceAuctionSeatP = E(zoe).offer(
-        exclInvitation,
+        invitation,
         proposal,
         paymentKeywordRecord,
       );
@@ -271,9 +265,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
+        invitation,
       );
 
       assert(installation === installations.atomicSwap, X`wrong installation`);
@@ -301,7 +295,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const paymentKeywordRecord = { Price: simoleanPayment };
 
       const seatP = await E(zoe).offer(
-        exclInvitation,
+        invitation,
         proposal,
         paymentKeywordRecord,
       );
@@ -321,7 +315,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doSimpleExchange: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       assert(
@@ -345,7 +339,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const paymentKeywordRecord = { Price: simoleanPayment };
 
       const seatP = await E(zoe).offer(
-        exclInvitation,
+        invitation,
         bobBuyOrderProposal,
         paymentKeywordRecord,
       );
@@ -362,7 +356,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await showPurseBalance(simoleanPurseP, 'bobSimoleanPurse', log);
     },
     doSimpleExchangeUpdates: async (invitationP, m, s) => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await invitationP;
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
@@ -533,8 +527,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
 
     doOTCDesk: async untrustedInvitation => {
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
-      const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitationValue = await E(zoe).getInvitationDetails(
+        untrustedInvitation,
+      );
       assert(invitationValue.installation === installations.coveredCall);
 
       // Bob can use whatever keywords he wants
@@ -546,7 +542,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayment);
       const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4));
 
-      const seat = await E(zoe).offer(invitation, proposal, {
+      const seat = await E(zoe).offer(untrustedInvitation, proposal, {
         Whatever1: simoleanPayment1,
       });
 

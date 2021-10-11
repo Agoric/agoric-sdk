@@ -17,7 +17,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   return Far('build', {
     doSecondPriceAuctionBid: async invitationP => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await invitationP;
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);

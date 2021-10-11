@@ -274,15 +274,15 @@ test('vpurse.deposit', async t => {
 
 test('vpurse.deposit promise', async t => {
   t.plan(2);
-  const { issuer, mint, brand, vpurse } = setup(t);
+  const { mint, brand, vpurse } = setup(t);
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  // const exclusivePaymentP = E(issuer).claim(payment);
 
   await t.throwsAsync(
     // @ts-ignore deliberate invalid arguments for testing
-    () => E(vpurse).deposit(exclusivePaymentP, fungible25),
+    () => E(vpurse).deposit(payment, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',
   );

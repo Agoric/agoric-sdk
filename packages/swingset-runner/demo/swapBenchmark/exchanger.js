@@ -28,7 +28,7 @@ async function build(name, zoe, issuers, payments, installations) {
     Price: simoleanIssuer,
     Asset: moolaIssuer,
   });
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  // const invitationIssuer = await E(zoe).getInvitationIssuer();
   const { atomicSwap } = installations;
 
   async function preReport() {
@@ -78,7 +78,7 @@ async function build(name, zoe, issuers, payments, installations) {
   async function respondToSwap(invitation) {
     await preReport();
 
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    // const exclInvitation = await E(invitationIssuer).claim(invitation);
 
     const buyProposal = harden({
       want: { Asset: moola(1) },
@@ -90,7 +90,7 @@ async function build(name, zoe, issuers, payments, installations) {
     };
 
     const seatP = await E(zoe).offer(
-      exclInvitation,
+      invitation,
       buyProposal,
       paymentKeywordRecord,
     );

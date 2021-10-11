@@ -12,6 +12,7 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
+// @ts-ignore TODO why is it unhappy with import.meta ?
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -86,13 +87,15 @@ test('zoe - atomicSwap', async t => {
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+        // const invitationIssuer = await E(zoe).getInvitationIssuer();
 
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+        // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitationValue = await E(zoe).getInvitationDetails(
+          untrustedInvitation,
+        );
         t.is(
           invitationValue.installation,
           installation,
@@ -116,7 +119,11 @@ test('zoe - atomicSwap', async t => {
         });
         const payments = { Price: simoleanPayment };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(
+          untrustedInvitation,
+          proposal,
+          payments,
+        );
 
         t.is(
           await E(seat).getOfferResult(),
@@ -218,6 +225,7 @@ test('zoe - non-fungible atomicSwap', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
+              // @ts-ignore TODO it things amountDeposited is a payment
               cryptoCats(harden([])),
               `Alice didn't get any of what she put in`,
             ),
@@ -248,13 +256,15 @@ test('zoe - non-fungible atomicSwap', async t => {
         const ccPurse = ccIssuer.makeEmptyPurse();
         const rpgPurse = rpgIssuer.makeEmptyPurse();
 
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+        // const invitationIssuer = await E(zoe).getInvitationIssuer();
 
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+        // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitationValue = await E(zoe).getInvitationDetails(
+          untrustedInvitation,
+        );
 
         t.is(
           invitationValue.installation,
@@ -279,7 +289,11 @@ test('zoe - non-fungible atomicSwap', async t => {
         });
         const payments = { Price: rpgPayment };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(
+          untrustedInvitation,
+          proposal,
+          payments,
+        );
 
         t.is(
           await E(seat).getOfferResult(),
@@ -303,6 +317,7 @@ test('zoe - non-fungible atomicSwap', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
+              // @ts-ignore TODO it thinks amountDeposited is a payment
               rpgItems(harden([])),
               `Bob didn't get anything back`,
             ),
@@ -340,7 +355,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
   const { moolaIssuer, moolaMint, moola, zoe } = setup();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  // const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
@@ -374,6 +389,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const alicePayments = { Asset: aliceMoolaPayment };
 
   // 3: Alice makes the first offer in the swap.
+  assert(aliceInvitation !== undefined);
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceProposal,
@@ -385,12 +401,11 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(
-    bobInvitationP,
-  );
-  const bobInvitationValue = await E(zoe).getInvitationDetails(
-    bobExclusiveInvitation,
-  );
+  // const bobExclusiveInvitation = await E(invitationIssuer).claim(
+  //   bobInvitationP,
+  // );
+  const bobInvitation = await bobInvitationP;
+  const bobInvitationValue = await E(zoe).getInvitationDetails(bobInvitation);
 
   const bobIssuers = await E(zoe).getIssuers(bobInvitationValue.instance);
 
@@ -407,11 +422,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   const bobPayments = { Price: bobMoolaPayment };
 
   // 5: Bob makes an offer
-  const bobSeat = await E(zoe).offer(
-    bobExclusiveInvitation,
-    bobProposal,
-    bobPayments,
-  );
+  const bobSeat = await E(zoe).offer(bobInvitation, bobProposal, bobPayments);
 
   t.is(
     await E(bobSeat).getOfferResult(),

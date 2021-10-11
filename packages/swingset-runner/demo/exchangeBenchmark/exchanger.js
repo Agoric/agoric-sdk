@@ -24,7 +24,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
   );
   const [moolaPurseP, simoleanPurseP] = purses;
 
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  // const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   async function preReport(quiet) {
     const useLog = quiet ? () => {} : log;
@@ -78,7 +78,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await preReport(quiet);
 
     const invitation = await invitationP;
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    // const exclInvitation = await E(invitationIssuer).claim(invitation);
 
     const myBuyOrderProposal = harden({
       want: { Asset: moola(1) },
@@ -90,7 +90,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     };
 
     const seatP = await E(zoe).offer(
-      exclInvitation,
+      invitation,
       myBuyOrderProposal,
       paymentKeywordRecord,
     );

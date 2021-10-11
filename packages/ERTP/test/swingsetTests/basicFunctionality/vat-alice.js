@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { AmountMath } from '../../../src/index.js';
+// import { AmountMath } from '../../../src/index.js';
 
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
@@ -29,32 +29,33 @@ function makeAliceMaker(log) {
           const newAmount = await E(issuer).getAmountOf(newPayment);
           log('newPayment amount: ', newAmount);
 
-          // splitMany
-          const moola200 = AmountMath.make(brand, 200n);
-          const [paymentToBurn, paymentToClaim, ...payments] = await E(
-            issuer,
-          ).splitMany(
-            newPayment,
-            harden([moola200, moola200, moola200, moola200, moola200]),
-          );
+          // // splitMany
+          // const moola200 = AmountMath.make(brand, 200n);
+          // const [paymentToBurn, paymentToClaim, ...payments] = await E(
+          //   issuer,
+          // ).splitMany(
+          //   newPayment,
+          //   harden([moola200, moola200, moola200, moola200, moola200]),
+          // );
 
           // burn
-          const burnedAmount = await E(issuer).burn(paymentToBurn);
+          // const burnedAmount = await E(issuer).burn(paymentToBurn);
+          const burnedAmount = await E(issuer).burn(newPayment);
           log('burned amount: ', burnedAmount);
 
-          // claim
-          const claimedPayment = await E(issuer).claim(paymentToClaim);
-          const claimedPaymentAmount = await E(issuer).getAmountOf(
-            claimedPayment,
-          );
-          log('claimedPayment amount: ', claimedPaymentAmount);
+          // // claim
+          // const claimedPayment = await E(issuer).claim(paymentToClaim);
+          // const claimedPaymentAmount = await E(issuer).getAmountOf(
+          //   claimedPayment,
+          // );
+          // log('claimedPayment amount: ', claimedPaymentAmount);
 
-          // combine
-          const combinedPayment = E(issuer).combine(payments);
-          const combinedPaymentAmount = await E(issuer).getAmountOf(
-            combinedPayment,
-          );
-          log('combinedPayment amount: ', combinedPaymentAmount);
+          // // combine
+          // const combinedPayment = E(issuer).combine(payments);
+          // const combinedPaymentAmount = await E(issuer).getAmountOf(
+          //   combinedPayment,
+          // );
+          // log('combinedPayment amount: ', combinedPaymentAmount);
         },
       });
       return alice;

@@ -7,6 +7,7 @@ import '../src/types.js';
 
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@agoric/bundle-source';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
@@ -1265,7 +1266,7 @@ test('overdeposit', async t => {
 
   // overpay debt ///////////////////////////////////// (give RUN)
 
-  const combinedRun = await E(runIssuer).combine([borrowedRun, bobRun]);
+  // const combinedRun = await E(runIssuer).combine([borrowedRun, bobRun]);
   const depositRun2 = AmountMath.make(6000n, runBrand);
 
   const aliceOverpaySeat = await E(zoe).offer(
@@ -1774,7 +1775,7 @@ test('close loan', async t => {
 
   // close loan, using Bob's RUN /////////////////////////////////////
 
-  const runRepayment = await E(runIssuer).combine([bobRun, runLent]);
+  // const runRepayment = await E(runIssuer).combine([bobRun, runLent]);
 
   const aliceCloseSeat = await E(zoe).offer(
     E(aliceVault).makeCloseInvitation(),

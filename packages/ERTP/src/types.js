@@ -215,23 +215,6 @@
  */
 
 /**
- * @callback IssuerClaim
- *
- * Transfer all digital assets from the payment to a new payment and
- * delete the original. `optAmount` is optional. If `optAmount` is
- * present, the code will insist that the amount of digital assets in
- * the payment is equal to `optAmount`, to prevent sending the wrong
- * payment and other confusion.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @param {ERef<Payment>} payment
- * @param {Amount=} optAmount
- * @returns {Promise<Payment>}
- */
-
-/**
  * @callback IssuerIsLive
  *
  * Return true if the payment continues to exist.
@@ -255,48 +238,6 @@
  *
  * @param {ERef<Payment>} payment
  * @returns {Promise<Amount>}
- *
- */
-
-/**
- * @callback IssuerCombine
- *
- * Combine multiple payments into one payment.
- *
- * If any of the payments is a promise, the operation will proceed
- * upon resolution.
- *
- * @param {ERef<Payment>[]} paymentsArray
- * @param {Amount=} optTotalAmount
- * @returns {Promise<Payment>}
- */
-
-/**
- * @callback IssuerSplit
- *
- * Split a single payment into two payments,
- * A and B, according to the paymentAmountA passed in.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @param {ERef<Payment>} payment
- * @param {Amount} paymentAmountA
- * @returns {Promise<Payment[]>}
- */
-
-/**
- * @callback IssuerSplitMany
- *
- * Split a single payment into many payments, according to the amounts
- * passed in.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @param {ERef<Payment>} payment
- * @param {Amount[]} amounts
- * @returns {Promise<Payment[]>}
  *
  */
 
@@ -328,10 +269,6 @@
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf} getAmountOf
  * @property {IssuerBurn} burn
- * @property {IssuerClaim} claim
- * @property {IssuerCombine} combine
- * @property {IssuerSplit} split
- * @property {IssuerSplitMany} splitMany
  */
 
 /**
