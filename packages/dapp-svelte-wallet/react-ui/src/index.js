@@ -3,8 +3,7 @@ import '@agoric/eventual-send/shim';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-
-import './index.css';
+import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App.js';
 import ApplicationContextProvider from './contexts/Application';
 
@@ -12,7 +11,9 @@ Error.stackTraceLimit = Infinity;
 
 ReactDOM.render(
   <ApplicationContextProvider>
-    <App />
+    <Router>
+      <App />
+    </Router>
   </ApplicationContextProvider>,
   document.getElementById('root'),
 );

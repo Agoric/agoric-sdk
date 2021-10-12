@@ -20,8 +20,15 @@ jest.mock('@agoric/wallet-connection/react.js', () => {
 });
 
 const setConnectionState = jest.fn();
+let connectionStatus = 'idle';
 const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return <Component setConnectionState={setConnectionState} {...props} />;
+  return (
+    <Component
+      setConnectionState={setConnectionState}
+      connectionState={connectionStatus}
+      {...props}
+    />
+  );
 };
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
@@ -43,6 +50,22 @@ describe('WalletConnection', () => {
     );
 
     expect(setConnectionState).toHaveBeenCalledWith('connecting');
+  });
+
+  test('displays the current connection status', () => {
+    let currentConnectionStatus = component.findWhere(
+      node =>
+        node.type() === 'p' && node.text().startsWith('Connection Status:'),
+    );
+    expect(currentConnectionStatus.text()).toContain('Disconnected');
+
+    connectionStatus = 'admin';
+    component.setProps({ connectionStatus });
+    currentConnectionStatus = component.findWhere(
+      node =>
+        node.type() === 'p' && node.text().startsWith('Connection Status:'),
+    );
+    expect(currentConnectionStatus.text()).toContain('Connected');
   });
 
   test('resets the connection on error state', () => {
