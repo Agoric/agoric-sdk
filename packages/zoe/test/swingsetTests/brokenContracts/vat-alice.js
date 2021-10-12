@@ -81,10 +81,10 @@ const build = async (log, zoe, issuers, payments, installations) => {
   const doMeterExceptionInSecondInvitation = async () => {
     log(`=> alice.doMeterExceptionInHook called`);
     const installId = installations.crashAutoRefund;
-    const [refundPayment, swapPayment] = await E(moolaIssuer).split(
-      moolaPayment,
-      moola(3),
-    );
+    // const [refundPayment, swapPayment] = await E(moolaIssuer).split(
+    //   moolaPayment,
+    //   moola(3),
+    // );
 
     const issuerKeywordRecord = harden({
       Asset: moolaIssuer,
@@ -101,7 +101,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       want: { Price: simoleans(12) },
       exit: { onDemand: null },
     });
-    const aliceSwapPayments = { Asset: swapPayment };
+    const aliceSwapPayments = { Asset: moolaPayment };
     const swapInvitation = await E(publicFacet).makeSwapInvitation();
     const seat = await E(zoe).offer(
       swapInvitation,
@@ -138,7 +138,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       want: { Price: simoleans(7) },
       exit: { onDemand: null },
     });
-    const refundPayments = { Asset: refundPayment };
+    const refundPayments = { Asset: moolaPayment };
 
     const refundSeat = await E(zoe).offer(
       refundInvitation,
@@ -670,6 +670,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
 export function buildRootObject(vatPowers) {
   return Far('root', {
+    // @ts-ignore TODO likely correct but need to check
     build: (...args) => build(vatPowers.testLog, ...args),
   });
 }

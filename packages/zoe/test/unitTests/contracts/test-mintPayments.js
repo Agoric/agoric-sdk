@@ -43,11 +43,12 @@ test('zoe - mint payments', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        // const invitation = E(invitationIssuer).claim(untrustedInvitation);
 
         const {
+          // @ts-ignore Why does it think value is an iterable?
           value: [invitationValue],
-        } = await E(invitationIssuer).getAmountOf(invitation);
+        } = await E(invitationIssuer).getAmountOf(untrustedInvitation);
 
         t.is(
           invitationValue.installation,
@@ -57,7 +58,7 @@ test('zoe - mint payments', async t => {
 
         const { instance } = invitationValue;
 
-        const seat = await E(zoe).offer(invitation);
+        const seat = await E(zoe).offer(untrustedInvitation);
 
         const paymentP = E(seat).getPayout('Token');
 
@@ -122,11 +123,11 @@ test('zoe - mint payments with unrelated give and want', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        // const invitation = E(invitationIssuer).claim(untrustedInvitation);
 
         const {
           value: [invitationValue],
-        } = await E(invitationIssuer).getAmountOf(invitation);
+        } = await E(invitationIssuer).getAmountOf(untrustedInvitation);
 
         t.is(
           invitationValue.installation,
@@ -144,7 +145,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
           Asset: moolaPayment,
         });
         const seat = await E(zoe).offer(
-          invitation,
+          untrustedInvitation,
           proposal,
           paymentKeywordRecord,
         );

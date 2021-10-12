@@ -524,8 +524,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     },
 
     doOTCDesk: async untrustedInvitation => {
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
-      const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitationValue = await E(zoe).getInvitationDetails(
+        untrustedInvitation,
+      );
       assert(invitationValue.installation === installations.coveredCall);
 
       // Bob can use whatever keywords he wants
@@ -537,7 +539,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       await E(simoleanPurseP).deposit(simoleanPayment);
       const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4));
 
-      const seat = await E(zoe).offer(invitation, proposal, {
+      const seat = await E(zoe).offer(untrustedInvitation, proposal, {
         Whatever1: simoleanPayment1,
       });
 

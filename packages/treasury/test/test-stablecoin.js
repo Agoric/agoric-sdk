@@ -297,7 +297,7 @@ test('first', async t => {
     aethBrand,
     { committeeName: 'TheCabal', committeeSize: 5 },
   );
-  const { issuer: runIssuer, brand: runBrand } = services.issuers.run;
+  const { brand: runBrand } = services.issuers.run;
   const { brand: govBrand } = services.issuers.gov;
   const zoe = services.zoe;
   const { stablecoinMachine, lender } = services.stablecoin;
@@ -359,10 +359,10 @@ test('first', async t => {
   // partially payback
   const collateralWanted = AmountMath.make(100n, aethBrand);
   const paybackAmount = AmountMath.make(200n, runBrand);
-  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
-    runLent,
-    paybackAmount,
-  );
+  // const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+  //   runLent,
+  //   paybackAmount,
+  // );
 
   const seat = await E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
@@ -371,7 +371,7 @@ test('first', async t => {
       want: { Collateral: collateralWanted },
     }),
     harden({
-      RUN: paybackPayment,
+      RUN: runLent,
     }),
   );
   await E(seat).getOfferResult();
@@ -979,10 +979,10 @@ test('adjust balances', async t => {
   runDebtLevel = AmountMath.subtract(runDebtLevel, depositRunAmount);
   collateralLevel = AmountMath.add(collateralLevel, collateralIncrement);
 
-  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
-    runLent,
-    depositRunAmount,
-  );
+  // const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+  //   runLent,
+  //   depositRunAmount,
+  // );
 
   const aliceAddCollateralSeat1 = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
@@ -991,7 +991,7 @@ test('adjust balances', async t => {
     }),
     harden({
       Collateral: aethMint.mintPayment(collateralIncrement),
-      RUN: paybackPayment,
+      RUN: runLent,
     }),
   );
 
@@ -1274,7 +1274,7 @@ test('overdeposit', async t => {
     harden({
       give: { RUN: depositRun2 },
     }),
-    harden({ RUN: combinedRun }),
+    harden({ RUN: borrowedRun }),
   );
 
   await E(aliceOverpaySeat).getOfferResult();
@@ -1783,7 +1783,7 @@ test('close loan', async t => {
       give: { RUN: AmountMath.make(6000n, runBrand) },
       want: { Collateral: AmountMath.makeEmpty(aethBrand) },
     }),
-    harden({ RUN: runRepayment }),
+    harden({ RUN: bobRun }),
   );
 
   const closeOfferResult = await E(aliceCloseSeat).getOfferResult();

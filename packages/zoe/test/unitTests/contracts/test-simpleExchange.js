@@ -15,6 +15,7 @@ import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
+// @ts-ignore Why import.meta unhappy?
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -31,7 +32,6 @@ test('simpleExchange with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -117,7 +117,7 @@ test('simpleExchange with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 5: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  // const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   const bobIssuers = await E(zoe).getIssuers(instance);
 
@@ -144,7 +144,7 @@ test('simpleExchange with valid offers', async t => {
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
   const bobSeat = await E(zoe).offer(
-    bobExclusiveInvitation,
+    bobInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );
@@ -207,7 +207,6 @@ test('simpleExchange with multiple sell offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -245,9 +244,7 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds another sell order to the exchange
-  const aliceInvitation2 = await E(invitationIssuer).claim(
-    await E(publicFacet).makeInvitation(),
-  );
+  const aliceInvitation2 = await E(publicFacet).makeInvitation();
   const aliceSale2OrderProposal = harden({
     give: { Asset: moola(5) },
     want: { Price: simoleans(8) },
@@ -263,9 +260,7 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds a buy order to the exchange
-  const aliceInvitation3 = await E(invitationIssuer).claim(
-    await E(publicFacet).makeInvitation(),
-  );
+  const aliceInvitation3 = await E(publicFacet).makeInvitation();
   const aliceBuyOrderProposal = harden({
     give: { Price: simoleans(18) },
     want: { Asset: moola(29) },
@@ -310,7 +305,6 @@ test('simpleExchange with non-fungible assets', async t => {
     zoe,
     brands,
   } = setupNonFungible();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
@@ -348,7 +342,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // 5: Bob decides to join.
   const bobInstance = await E(zoe).getInstance(bobInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  // const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   t.is(bobInstallation, installation);
 
@@ -374,7 +368,7 @@ test('simpleExchange with non-fungible assets', async t => {
   // 6: Bob escrows with zoe
   // 8: Bob submits the buy order to the exchange
   const bobSeat = await E(zoe).offer(
-    bobExclusiveInvitation,
+    bobInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );

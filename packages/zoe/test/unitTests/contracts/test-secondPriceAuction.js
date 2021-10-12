@@ -15,6 +15,7 @@ import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
+// @ts-ignore Why import.meta unhappy?
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -93,14 +94,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
 
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+        const invitationValue = await E(zoe).getInvitationDetails(
+          untrustedInvitation,
+        );
 
         t.is(
           invitationValue.installation,
@@ -130,7 +131,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         });
         const payments = { Bid: simoleanPayment };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(
+          untrustedInvitation,
+          proposal,
+          payments,
+        );
 
         t.is(
           await E(seat).getOfferResult(),
@@ -165,8 +170,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     return Far('losing bidder', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
 
         const proposal = harden({
           give: { Bid: bidAmount },
@@ -174,7 +178,11 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         });
         const payments = { Bid: simoleanPayment };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(
+          untrustedInvitation,
+          proposal,
+          payments,
+        );
 
         t.is(
           await E(seat).getOfferResult(),
@@ -287,6 +295,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     exit: { waived: null },
   });
   const alicePayments = harden({ Asset: aliceMoolaPayment });
+  assert(aliceInvitation !== undefined);
   // Alice initializes the auction
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -405,7 +414,6 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     moola,
     zoe,
   } = setupMixed();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Alice
   const aliceCcPayment = ccMint.mintPayment(cryptoCats(harden(['Felix'])));
@@ -452,6 +460,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     exit: { waived: null },
   });
   const alicePayments = { Asset: aliceCcPayment };
+  assert(aliceInvitation !== undefined);
   // Alice initializes the auction
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -465,10 +474,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Alice spreads the invitations far and wide and Bob decides he
   // wants to participate in the auction.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
-  const bobInvitationValue = await E(zoe).getInvitationDetails(
-    bobExclusiveInvitation,
-  );
+  // const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobInvitationValue = await E(zoe).getInvitationDetails(bobInvitation);
 
   const bobIssuers = await E(zoe).getIssuers(bobInvitationValue.instance);
 
@@ -489,11 +496,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Bob escrows with zoe
   // Bob bids
-  const bobSeat = await E(zoe).offer(
-    bobExclusiveInvitation,
-    bobProposal,
-    bobPayments,
-  );
+  const bobSeat = await E(zoe).offer(bobInvitation, bobProposal, bobPayments);
 
   t.is(
     await E(bobSeat).getOfferResult(),
@@ -503,11 +506,11 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Carol decides to bid for the one cc
 
-  const carolExclusiveInvitation = await E(invitationIssuer).claim(
-    carolInvitation,
-  );
+  // const carolExclusiveInvitation = await E(invitationIssuer).claim(
+  //   carolInvitation,
+  // );
   const carolInvitationValue = await E(zoe).getInvitationDetails(
-    carolExclusiveInvitation,
+    carolInvitation,
   );
 
   const carolIssuers = await E(zoe).getIssuers(carolInvitationValue.instance);
@@ -534,7 +537,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Carol escrows with zoe
   // Carol bids
   const carolSeat = await E(zoe).offer(
-    carolExclusiveInvitation,
+    carolInvitation,
     carolProposal,
     carolPayments,
   );
@@ -546,12 +549,10 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   // Dave decides to bid for the one moola
-  const daveExclusiveInvitation = await E(invitationIssuer).claim(
-    daveInvitation,
-  );
-  const daveInvitationValue = await E(zoe).getInvitationDetails(
-    daveExclusiveInvitation,
-  );
+  // const daveExclusiveInvitation = await E(invitationIssuer).claim(
+  //   daveInvitation,
+  // );
+  const daveInvitationValue = await E(zoe).getInvitationDetails(daveInvitation);
 
   const daveIssuers = await E(zoe).getIssuers(daveInvitationValue.instance);
 
@@ -577,7 +578,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Dave escrows with zoe
   // Dave bids
   const daveSeat = await E(zoe).offer(
-    daveExclusiveInvitation,
+    daveInvitation,
     daveProposal,
     davePayments,
   );

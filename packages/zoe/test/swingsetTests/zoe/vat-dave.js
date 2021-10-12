@@ -21,9 +21,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      // const exclInvitation = await E(invitationIssuer).claim(invitation);
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
-        exclInvitation,
+        invitation,
       );
 
       assert(
@@ -48,7 +48,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
       secondPriceAuctionSeatP = await E(zoe).offer(
-        exclInvitation,
+        invitation,
         proposal,
         paymentKeywordRecord,
       );
@@ -130,7 +130,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
       const seatP = await E(zoe).offer(
-        exclInvitation,
+        invitation,
         daveSwapProposal,
         daveSwapPayments,
       );

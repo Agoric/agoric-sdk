@@ -19,6 +19,7 @@ import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
+// @ts-ignore Why import.meta unhappy?
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -35,7 +36,6 @@ test('autoSwap API interactions, no jig', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, autoswap);
 
   // Setup Alice
@@ -97,9 +97,9 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
   // Bob claims it
-  const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
-  const bobInstance = await E(zoe).getInstance(bobExclInvitation);
-  const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
+  // const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobInstance = await E(zoe).getInstance(bobInvitation);
+  const bobInstallation = await E(zoe).getInstallation(bobInvitation);
   t.is(bobInstallation, installation, `installation`);
   const bobAutoswap = E(zoe).getPublicFacet(bobInstance);
 
@@ -118,7 +118,7 @@ test('autoSwap API interactions, no jig', async t => {
   const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
   const bobSeat = await E(zoe).offer(
-    bobExclInvitation,
+    bobInvitation,
     bobMoolaForSimProposal,
     bobMoolaForSimPayments,
   );

@@ -201,12 +201,11 @@ test('purse.deposit promise', async t => {
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
-  // const exclusivePaymentP = E(issuer).claim(payment);
+  const paymentP = Promise.resolve(payment);
 
   await t.throwsAsync(
     // @ts-ignore deliberate invalid arguments for testing
-    // () => E(purse).deposit(exclusivePaymentP, fungible25),
-    () => E(purse).deposit(payment, fungible25),
+    () => E(purse).deposit(paymentP, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',
   );

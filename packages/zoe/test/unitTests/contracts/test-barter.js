@@ -11,6 +11,7 @@ import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
+// @ts-ignore import.meta makes it unhappy
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -27,7 +28,6 @@ test('barter with valid offers', async t => {
     simoleans,
     zoe,
   } = setup();
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
   const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
@@ -72,7 +72,7 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  // const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);
@@ -88,7 +88,7 @@ test('barter with valid offers', async t => {
 
   // 5: Bob escrows with zoe
   const bobSeat = await E(zoe).offer(
-    bobExclusiveInvitation,
+    bobInvitation,
     bobBuyOrderProposal,
     bobPayments,
   );

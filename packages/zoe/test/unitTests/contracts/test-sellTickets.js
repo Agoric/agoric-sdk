@@ -283,10 +283,10 @@ test(`mint and sell opera tickets`, async t => {
   // Joker attempts to buy ticket 1 (and should fail)
   const jokerBuysTicket1 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
     const {
       value: [{ instance: ticketSalesInstance }],
-    } = await E(invitationIssuer).getAmountOf(invitation);
+    } = await E(invitationIssuer).getAmountOf(untrustedInvitation);
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
       ticketSalesInstance,
     );
@@ -319,7 +319,7 @@ test(`mint and sell opera tickets`, async t => {
     const jokerPaymentForTicket = jokerPurse.withdraw(pricePerItem);
 
     const seat = await E(zoe).offer(
-      invitation,
+      untrustedInvitation,
       jokerProposal,
       harden({
         Money: jokerPaymentForTicket,
@@ -356,10 +356,10 @@ test(`mint and sell opera tickets`, async t => {
     moola100Payment,
   ) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
     const {
       value: [{ instance: ticketSalesInstance }],
-    } = await E(invitationIssuer).getAmountOf(invitation);
+    } = await E(invitationIssuer).getAmountOf(untrustedInvitation);
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
       ticketSalesInstance,
     );
@@ -391,7 +391,7 @@ test(`mint and sell opera tickets`, async t => {
     );
 
     const seat = await E(zoe).offer(
-      invitation,
+      untrustedInvitation,
       jokerProposal,
       harden({
         Money: jokerInsufficientPaymentForTicket,
@@ -424,10 +424,10 @@ test(`mint and sell opera tickets`, async t => {
 
   const bobBuysTicket2And3 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
     const {
       value: [{ instance: ticketSalesInstance }],
-    } = await E(invitationIssuer).getAmountOf(invitation);
+    } = await E(invitationIssuer).getAmountOf(untrustedInvitation);
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
       ticketSalesInstance,
     );
@@ -484,7 +484,7 @@ test(`mint and sell opera tickets`, async t => {
     });
 
     const seat = await E(zoe).offer(
-      invitation,
+      untrustedInvitation,
       bobProposal,
       paymentKeywordRecord,
     );

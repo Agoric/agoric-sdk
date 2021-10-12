@@ -4,7 +4,7 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 /**
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {string} path
  * @returns {Promise<Installation>}
  */

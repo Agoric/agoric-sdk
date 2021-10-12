@@ -89,7 +89,7 @@ test('mint.mintPayment set AssetKind with invites', async t => {
 // Tests related to non-fungible tokens
 // This test models ballet tickets
 test('non-fungible tokens example', async t => {
-  t.plan(11);
+  t.plan(4);
   const {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,

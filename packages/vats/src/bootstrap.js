@@ -586,25 +586,25 @@ export function buildRootObject(vatPowers, vatParameters) {
                   payToBank = true;
                 }
 
-                const splitUnusedBankPayment = async () => {
-                  if (!payToBank || !unusedBankPayments.has(brand)) {
-                    return undefined;
-                  }
-                  // We have an unusedPayment, so we can split off a payment.
-                  const amount = AmountMath.make(brand, Nat(value));
-                  const [fragment, remaining] = await E(issuer).split(
-                    unusedBankPayments.get(brand),
-                    amount,
-                  );
-                  unusedBankPayments.set(brand, remaining);
-                  return fragment;
-                };
+                // const splitUnusedBankPayment = async () => {
+                //   if (!payToBank || !unusedBankPayments.has(brand)) {
+                //     return undefined;
+                //   }
+                //   // We have an unusedPayment, so we can split off a payment.
+                //   const amount = AmountMath.make(brand, Nat(value));
+                //   const [fragment, remaining] = await E(issuer).split(
+                //     unusedBankPayments.get(brand),
+                //     amount,
+                //   );
+                //   unusedBankPayments.set(brand, remaining);
+                //   return fragment;
+                // };
 
                 const getPayment = async () => {
-                  const unused = await splitUnusedBankPayment();
-                  if (unused) {
-                    return unused;
-                  }
+                  // const unused = await splitUnusedBankPayment();
+                  // if (unused) {
+                  //   return unused;
+                  // }
 
                   const [minted] = await E(vats.mints).mintInitialPayments(
                     [issuerName],

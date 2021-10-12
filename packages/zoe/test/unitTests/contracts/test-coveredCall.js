@@ -15,6 +15,7 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
+// @ts-ignore
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
@@ -117,13 +118,13 @@ test('zoe - coveredCall', async t => {
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        // const invitation = await E(invitationIssuer).claim(untrustedInvitation);
 
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+        const invitationValue = await E(zoe).getInvitationDetails(
+          untrustedInvitation,
+        );
 
         t.is(
           invitationValue.installation,
@@ -156,7 +157,11 @@ test('zoe - coveredCall', async t => {
           StrikePrice2: bucksPayment,
         };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+        const seat = await E(zoe).offer(
+          untrustedInvitation,
+          proposal,
+          payments,
+        );
 
         t.is(
           await E(seat).getOfferResult(),
@@ -263,6 +268,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     },
   });
   const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
+  assert(aliceInvitation !== undefined);
   // Alice makes an option
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -280,9 +286,8 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // contract instance that he expects as well as that Alice has
   // already escrowed.
 
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
-  const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const bobOption = await optionP;
+  const optionValue = await E(zoe).getInvitationDetails(bobOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
@@ -298,7 +303,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   });
 
   // Bob escrows
-  const bobSeat = await E(zoe).offer(bobExclOption, bobProposal, bobPayments);
+  const bobSeat = await E(zoe).offer(bobOption, bobProposal, bobPayments);
 
   // TODO is this await safe?
   await t.throwsAsync(
@@ -403,6 +408,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     },
   });
   const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
+  assert(aliceInvitation !== undefined);
   // Alice makes an option.
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -422,8 +428,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
-  const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
+  // const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const optionAmount = await E(invitationIssuer).getAmountOf(optionP);
   const optionDesc = optionAmount.value[0];
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
@@ -446,12 +452,12 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Bob wants to swap an invitation with the same amount as his
   // current invitation from Alice. He wants 1 buck in return.
   const bobProposalSwap = harden({
-    give: { Asset: await E(invitationIssuer).getAmountOf(bobExclOption) },
+    give: { Asset: await E(invitationIssuer).getAmountOf(optionP) },
     want: { Price: bucks(1) },
   });
 
-  const bobPayments = harden({ Asset: bobExclOption });
-
+  const bobPayments = harden({ Asset: optionP });
+  assert(bobSwapInvitation !== undefined);
   // Bob escrows his option in the swap
   // Bob makes an offer to the swap with his "higher order" invitation
   const bobSwapSeat = await E(zoe).offer(
@@ -466,6 +472,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // optionAmounts (basically, the description of the option)
 
   const {
+    // @ts-ignore Why does it think `value` is an iterable?
     value: [{ instance: swapInstance, installation: daveSwapInstallId }],
   } = await E(invitationIssuer).getAmountOf(daveSwapInvitationP);
 
@@ -652,6 +659,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     },
   });
   const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
+  assert(aliceCoveredCallInvitation !== undefined);
   // Alice makes a call option, which is an invitation to join the
   // covered call contract
   const aliceSeat = await E(zoe).offer(
@@ -671,8 +679,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
-  const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  // const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const optionValue = await E(zoe).getInvitationDetails(optionP);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3) });
@@ -694,7 +702,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // current invitation from Alice. He wants 1 buck in return.
   const bobProposalSecondCoveredCall = harden({
     give: {
-      UnderlyingAsset: await E(invitationIssuer).getAmountOf(bobExclOption),
+      UnderlyingAsset: await E(invitationIssuer).getAmountOf(optionP),
     },
     want: { StrikePrice: bucks(1) },
     exit: {
@@ -705,8 +713,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     },
   });
 
-  const bobPayments = { UnderlyingAsset: bobExclOption };
-
+  const bobPayments = { UnderlyingAsset: optionP };
+  assert(bobInvitationForSecondCoveredCall !== undefined);
   // Bob escrows his invitation
   // Bob makes an offer to the swap with his "higher order" option
   const bobSeat = await E(zoe).offer(
@@ -722,8 +730,8 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
   // checks that this invitation matches what he wants
-  const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
-  const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
+  // const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
+  const daveOptionValue = await E(zoe).getInvitationDetails(invitationForDaveP);
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
   assertAmountsEqual(t, daveOptionValue.strikePrice.StrikePrice, bucks(1));
@@ -760,7 +768,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   const daveSecondCoveredCallPayments = { StrikePrice: daveBucksPayment };
   const daveSecondCoveredCallSeat = await E(zoe).offer(
-    daveExclOption,
+    invitationForDaveP,
     daveProposalCoveredCall,
     daveSecondCoveredCallPayments,
   );
@@ -914,6 +922,7 @@ test('zoe - coveredCall non-fungible', async t => {
     exit: { afterDeadline: { deadline: 1n, timer } },
   });
   const alicePayments = { UnderlyingAsset: aliceCcPayment };
+  assert(aliceInvitation !== undefined);
   // Alice creates a call option
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -929,9 +938,8 @@ test('zoe - coveredCall non-fungible', async t => {
   // contract instance that he expects as well as that Alice has
   // already escrowed.
 
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
-  const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  // const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const optionValue = await E(zoe).getInvitationDetails(optionP);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
   assertAmountsEqual(
@@ -957,7 +965,7 @@ test('zoe - coveredCall non-fungible', async t => {
 
   // Bob redeems his invitation and escrows with Zoe
   // Bob exercises the option
-  const bobSeat = await E(zoe).offer(bobExclOption, bobProposal, bobPayments);
+  const bobSeat = await E(zoe).offer(optionP, bobProposal, bobPayments);
 
   t.is(
     await E(bobSeat).getOfferResult(),
