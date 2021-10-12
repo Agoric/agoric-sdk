@@ -6,6 +6,7 @@ import {
   swapOutNotImprovedNoFees,
   swapInNotImprovedNoFees,
   calcDeltaYSellingX,
+  calcDeltaXSellingX,
 } from '../../../../src/contracts/constantProduct/core.js';
 import { setupMintKits } from './setupMints.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
@@ -63,7 +64,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
   const amountWanted = bld(3n);
   // Protocol fee set to 0 to emulate Uniswap V1
   const protocolFeeRatio = makeRatio(0n, runKit.brand, BASIS_POINTS);
-  const poolFeeRatio = makeRatio(30n, runKit.brand, BASIS_POINTS);
+  const poolFeeRatio = makeRatio(30n, amountGiven.brand, BASIS_POINTS);
 
   const args = [
     amountGiven,
@@ -109,7 +110,7 @@ const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
   });
   const amountWanted = bld(outputValue);
   const protocolFeeRatio = makeRatio(0n, runKit.brand, BASIS_POINTS);
-  const poolFeeRatio = makeRatio(30n, runKit.brand, BASIS_POINTS);
+  const poolFeeRatio = makeRatio(30n, amountGiven.brand, BASIS_POINTS);
 
   const args = [
     amountGiven,
@@ -129,6 +130,7 @@ const testGetOutputPrice = (t, inputs, expectedInput) => {
   const { args } = prepareSwapOutTest(inputs);
   const result = swapOut(...args);
   t.deepEqual(result.swapperGives, run(expectedInput));
+  return result.swapperGives;
 };
 
 const getOutputPriceThrows = (t, inputs, message) => {
@@ -194,7 +196,6 @@ test('getInputPrice ok 3', t => {
   );
   console.log('feeOffFirst', feeOffFirst);
 
-  // This produces 3470n, not the v1 answer which is 3466n.
   const output = testGetPrice(t, input, v1);
   console.log('constant product output', output);
   console.log('constant product fee', bldOutNoFees.value - output.value);
@@ -322,4 +323,37 @@ test('getOutputPrice minimum price', t => {
   };
   const expectedOutput = 1n;
   testGetOutputPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice - mostly a reverse of getInputPrice ok 3', t => {
+  const input = {
+    inputReserve: 8160n,
+    outputReserve: 7743n,
+    outputValue: 3472n,
+  };
+
+  const bldOutNoFees = calcDeltaXSellingX(
+    run(input.inputReserve),
+    bld(input.outputReserve),
+    bld(input.outputValue),
+  );
+  // 6634n
+  console.log('bldOutNoFees', bldOutNoFees);
+
+  // x = input.inputReserve
+  // y = input.outputReserve
+  // deltaY = input.outputValue
+  // ((1000 * x * deltaY) / (997 * (y - deltaY))) + 1
+
+  const v1 =
+    (1000n * input.inputReserve * input.outputValue) /
+      (997n * (input.outputReserve - input.outputValue)) +
+    1n;
+
+  console.log('v1', v1);
+
+  const expectedOutput = 6654n;
+  t.is(v1, expectedOutput);
+  const output = testGetOutputPrice(t, input, expectedOutput);
+  console.log('swapper.gives', output);
 });
