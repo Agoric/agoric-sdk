@@ -4,8 +4,9 @@ import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react
 import React, { useCallback } from 'react';
 import { E } from '@agoric/eventual-send';
 import { makeStyles } from '@material-ui/core/styles';
-import { Typography } from '@material-ui/core';
-
+import IconButton from '@material-ui/core/IconButton';
+import Public from '@material-ui/icons/Public';
+import Tooltip from '@material-ui/core/Tooltip';
 import { withApplicationContext } from '../contexts/Application';
 
 const useStyles = makeStyles(_ => ({
@@ -93,11 +94,17 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
   }, []);
 
   return (
-    <div className={classes.connector}>
-      <Typography variant="body1">
-        Connection Status:{' '}
-        {connectionState === 'admin' ? 'Connected' : 'Disconnected'}
-      </Typography>
+    <div className={`connector ${classes.connector}`}>
+      <Tooltip
+        title={connectionState === 'admin' ? 'Connected' : 'Disconnected'}
+      >
+        <IconButton
+          size="medium"
+          color={connectionState === 'admin' ? 'primary' : 'secondary'}
+        >
+          <Public fontSize="inherit">{connectionState}</Public>
+        </IconButton>
+      </Tooltip>
       <AgoricWalletConnection
         onState={onWalletState}
         className={classes.hidden}

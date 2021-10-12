@@ -1,13 +1,7 @@
 /* eslint-disable react/display-name */
 import React from 'react';
 import { Switch, Route } from 'react-router-dom';
-import { CssBaseline } from '@material-ui/core';
-import {
-  createTheme,
-  makeStyles,
-  ThemeProvider,
-} from '@material-ui/core/styles';
-
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import AppBar from './components/AppBar';
 import NavMenu from './components/NavMenu';
 import Contacts from './views/Contacts.js';
@@ -16,51 +10,33 @@ import Dashboard from './views/Dashboard.js';
 import Purses from './views/Purses.js';
 import Issuers from './views/Issuers.js';
 
-const appBarHeight = '64px';
-const navMenuWidth = '240px';
-
-const appTheme = createTheme({
-  palette: {
-    primary: {
-      main: '#cb2328',
-    },
-    background: {
-      default: '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: ['Roboto', 'Helvetica', 'Arial', 'sans-serif'].join(','),
-    fontWeightRegular: 500,
-    h1: {
-      fontFamily: ['Montserrat', 'Arial', 'sans-serif'].join(','),
-      fontSize: '32px',
-      fontWeight: '700',
-      letterSpacing: '-1.5px',
-      lineHeight: '48px',
-      margin: 0,
-    },
-  },
-  appBarHeight,
-  navMenuWidth,
-});
-
-const useStyles = makeStyles(_ => ({
+const useStyles = makeStyles(theme => ({
   main: {
     boxSizing: 'border-box',
     padding: '32px',
-    marginLeft: navMenuWidth,
+    marginLeft: theme.navMenuWidth,
     position: 'absolute',
-    width: `calc(100vw - ${navMenuWidth})`,
-    top: appBarHeight,
+    width: `calc(100vw - ${theme.navMenuWidth})`,
+    top: theme.appBarHeight,
+    [theme.breakpoints.down('sm')]: {
+      marginLeft: '0',
+      width: '100vw',
+    },
+  },
+  navMenu: {
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
+    },
   },
 }));
 
 const App = () => {
-  const classes = useStyles();
+  const classes = useStyles(useTheme());
   return (
-    <ThemeProvider theme={appTheme}>
-      <CssBaseline />
-      <NavMenu />
+    <>
+      <span className={classes.navMenu}>
+        <NavMenu />
+      </span>
       <main className={classes.main}>
         <Switch>
           <Route path="/purses">
@@ -81,7 +57,7 @@ const App = () => {
         </Switch>
       </main>
       <AppBar />
-    </ThemeProvider>
+    </>
   );
 };
 
