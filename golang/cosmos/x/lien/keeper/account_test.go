@@ -85,7 +85,7 @@ func TestWrap(t *testing.T) {
 	keeper := keeperImpl{accountKeeper: &wak}
 	wrapper := NewAccountWrapper(keeper)
 	wrapped := wrapper.Wrap(acc)
-	lienAcc, ok := wrapped.(LienAccount)
+	lienAcc, ok := wrapped.(*LienAccount)
 	if !ok {
 		t.Fatalf("wrapper did not create a lien account: %+v", wrapped)
 	}
