@@ -172,13 +172,11 @@ func (lk keeperImpl) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	if account == nil {
 		return sdk.NewCoins()
 	}
-	lienAccount, ok := account.(LienAccount)
-	if ok {
-		account = lienAccount.VestingAccount
+	if lienAccount, ok := account.(LienAccount); ok {
+		return lienAccount.omniVestingAccount.GetVestingCoins(ctx.BlockTime())
 	}
-	vestingAccount, ok := account.(vestexported.VestingAccount)
-	if !ok {
-		return sdk.NewCoins()
+	if vestingAccount, ok := account.(vestexported.VestingAccount); ok {
+		return vestingAccount.GetVestingCoins(ctx.BlockTime())
 	}
-	return vestingAccount.GetVestingCoins(ctx.BlockTime())
+	return sdk.NewCoins()
 }
