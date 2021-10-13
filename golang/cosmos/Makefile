@@ -23,7 +23,7 @@ VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
 
 # process linker flags
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
-		-X github.com/cosmos/cosmos-sdk/version.AppName=agoricd \
+		-X github.com/cosmos/cosmos-sdk/version.AppName=agd \
 		-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
@@ -42,8 +42,8 @@ BUILD_FLAGS_HELPER :=  -buildmode=exe -tags "$(build_tags)" -gcflags '$(gcflags)
 
 all: compile-chain
 
-compile-chain: compile-agoricd compile-helper compile-daemon
-compile-go: compile-agoricd compile-helper compile-libdaemon
+compile-chain: compile-agd compile-helper compile-daemon
+compile-go: compile-agd compile-helper compile-libdaemon
 compile-node: node-compile-gyp
 
 compile-daemon: compile-libdaemon node-compile-gyp
@@ -56,11 +56,11 @@ node-compile-gyp:
 		npm run build:gyp; \
 	fi
 
-compile-agoricd: go-mod-cache
-	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/agoricd ./cmd/agoricd
+compile-agd: go-mod-cache
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/agd ./cmd/agd
 
-install-agoricd: go-mod-cache
-	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/agoricd
+install-agd: go-mod-cache
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/agd
 
 # Only run from the package.json build:gyp script.
 compile-gyp:

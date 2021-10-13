@@ -39,7 +39,7 @@ import (
 // Sender is a function that sends a request to the controller.
 type Sender func(needReply bool, str string) (string, error)
 
-var AppName = "ag-chain-cosmos"
+var AppName = "agd"
 var OnStartHook func(log.Logger)
 
 // NewRootCmd creates a new root command for simd. It is called once in the
