@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.30...@agoric/sharing-service@0.1.31) (2021-10-13)
+
+**Note:** Version bump only for package @agoric/sharing-service
+
+
+
+
+
 ### [0.1.30](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.1.29...@agoric/sharing-service@0.1.30) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/sharing-service

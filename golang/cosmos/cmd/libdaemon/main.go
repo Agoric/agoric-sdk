@@ -13,8 +13,11 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
+	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
@@ -30,6 +33,14 @@ var lastReply = 0
 
 //export RunAgCosmosDaemon
 func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	gaia.DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
+	daemoncmd.AppName = "ag-chain-cosmos"
+
 	// FIXME: Decouple the sending logic from the Cosmos app.
 	sendToNode := func(needReply bool, str string) (string, error) {
 		var rPort int

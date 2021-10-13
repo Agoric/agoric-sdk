@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.30...@agoric/notifier@0.3.31) (2021-10-13)
+
+
+### Bug Fixes
+
+* adapt timers to async iterables ([#3949](https://github.com/Agoric/agoric-sdk/issues/3949)) ([9739127](https://github.com/Agoric/agoric-sdk/commit/9739127262e9fac48757094a4d2d9f3f35f4bfc5))
+
+
+
 ### [0.3.30](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.29...@agoric/notifier@0.3.30) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/notifier

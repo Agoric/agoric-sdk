@@ -3,6 +3,64 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [10.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.1.0...@agoric/sdk@10.0.0) (2021-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** compile agd binary to supercede ag-chain-cosmos
+* add a claimsRegistrar based on attestations (#3622)
+* **xsnap:** upgrade XS to fix memory leak
+* Switch default bundle type to endoZipBase64
+
+### Features
+
+* **agoricd:** add new Golang binary without any SwingSet ([26c9994](https://github.com/Agoric/agoric-sdk/commit/26c99948edf4579aab124c3e74f350747e54b840))
+* **agoricd:** have `agoricd start` delegate to `ag-chain-cosmos` ([1740795](https://github.com/Agoric/agoric-sdk/commit/174079552e1557dd13318d35435d401dfd51e05f))
+* **cosmos:** compile agd binary to supercede ag-chain-cosmos ([6880646](https://github.com/Agoric/agoric-sdk/commit/6880646e6c26a2df2c2c6b95ac2ac5e230f41e76))
+* **react-wallet:** Create app layout with left nav and app bar ([#3941](https://github.com/Agoric/agoric-sdk/issues/3941)) ([18807af](https://github.com/Agoric/agoric-sdk/commit/18807afea158f64eb0241b89cdafde3ec1847f4a))
+* add a claimsRegistrar based on attestations ([#3622](https://github.com/Agoric/agoric-sdk/issues/3622)) ([3acf78d](https://github.com/Agoric/agoric-sdk/commit/3acf78d786fedbc2fe02792383ebcc2cadaa8db2)), closes [#3189](https://github.com/Agoric/agoric-sdk/issues/3189) [#3473](https://github.com/Agoric/agoric-sdk/issues/3473) [#3932](https://github.com/Agoric/agoric-sdk/issues/3932)
+* **react-wallet:** Integrate wallet connection component ([#3922](https://github.com/Agoric/agoric-sdk/issues/3922)) ([01a9118](https://github.com/Agoric/agoric-sdk/commit/01a91181e36f4e2dc49dcbb1327c50e3b268d2f9))
+* ContractGovernor manages parameter updating for a contract ([#3448](https://github.com/Agoric/agoric-sdk/issues/3448)) ([59ebde2](https://github.com/Agoric/agoric-sdk/commit/59ebde27708c0b3988f62a3626f9b092e148671f))
+* revise x/lien to hold total liened amount ([842c9b0](https://github.com/Agoric/agoric-sdk/commit/842c9b0d98a8655b286c9f91c70bb6fddc3e0ba3))
+* stateless lien module that upcalls to kernel ([603c0cf](https://github.com/Agoric/agoric-sdk/commit/603c0cfc8d2b4706dbbaa42d2ae057fa9dea65dc))
+* **wallet:** Create react ui scaffold with ses ([#3879](https://github.com/Agoric/agoric-sdk/issues/3879)) ([089c876](https://github.com/Agoric/agoric-sdk/commit/089c876d801efc1ede76b3011a1301384aace77f))
+* **wallet-backend:** add `walletAdmin.getClockNotifier()` ([2902ec3](https://github.com/Agoric/agoric-sdk/commit/2902ec38f6110a5582f6906695b77911f4d43180))
+* **wallet-backend:** attach timestamp and sequence metadata ([9e02962](https://github.com/Agoric/agoric-sdk/commit/9e02962b7c08d56ea1fe72970f3309998b734767))
+* **wallet-connection:** Add getAdminBootstrap functionality to wallet connection ([#3909](https://github.com/Agoric/agoric-sdk/issues/3909)) ([4c56367](https://github.com/Agoric/agoric-sdk/commit/4c563672836edaf92a65fb7829b0a189f7e4ce53))
+* **wallet-connection:** create new cross-framework UI ([905bf6c](https://github.com/Agoric/agoric-sdk/commit/905bf6ccef614b2b8b8d782810b252df9df1abcc))
+* **wallet-connection:** handle dapp approval states ([32b7772](https://github.com/Agoric/agoric-sdk/commit/32b7772ed33ed512ed598bbfc5dcea16ed36a705))
+* Thread URL and Base64 endowments ([b52269d](https://github.com/Agoric/agoric-sdk/commit/b52269d58be665baf45bbb38ace57ca741e5ae4c))
+
+
+### Bug Fixes
+
+* "yarn lint" should not fix ([#3943](https://github.com/Agoric/agoric-sdk/issues/3943)) ([0aca432](https://github.com/Agoric/agoric-sdk/commit/0aca432ed7a3f33eed4575b36dc3fa9e023b445f))
+* adapt timers to async iterables ([#3949](https://github.com/Agoric/agoric-sdk/issues/3949)) ([9739127](https://github.com/Agoric/agoric-sdk/commit/9739127262e9fac48757094a4d2d9f3f35f4bfc5))
+* address review comments ([8af3e15](https://github.com/Agoric/agoric-sdk/commit/8af3e1547b4df32c604f6b628a62bff230666166))
+* bugfixes, comments ([30dbeaa](https://github.com/Agoric/agoric-sdk/commit/30dbeaa7ef64f2c2dee9ddeb0a8c3929a611c21e))
+* document copyRecord guarantees ([#3955](https://github.com/Agoric/agoric-sdk/issues/3955)) ([f4a0ba1](https://github.com/Agoric/agoric-sdk/commit/f4a0ba113dba913c33c37043e700825f3512cf73))
+* lien accounts must proxy all account methods ([db79c42](https://github.com/Agoric/agoric-sdk/commit/db79c42398195a09e8b3953dad35224f0943752b))
+* **eslint-config:** adapt new JSDoc rules ([91fd093](https://github.com/Agoric/agoric-sdk/commit/91fd093bf95f80e19cde520c920b89c50dbf9782))
+* **governance:** export buildParamManager from index.js ([#3952](https://github.com/Agoric/agoric-sdk/issues/3952)) ([868964e](https://github.com/Agoric/agoric-sdk/commit/868964e09cac570cceda4617fd0723a0a64d1841))
+* don't use manual key prefix ([50a881b](https://github.com/Agoric/agoric-sdk/commit/50a881be4971cd5c006867daca66eb6138276492))
+* **SwingSet:** Adjust SES change detectors ([3efb36e](https://github.com/Agoric/agoric-sdk/commit/3efb36eb48521aeb9479f27bd691be485ecda234))
+* **transform-meter:** Accommodate SES module proxies in meter ([9f7d456](https://github.com/Agoric/agoric-sdk/commit/9f7d45602c9d3c0a25729f97c2be8004230cb028))
+* **vats:** Fork polycrc for ESM compat with Endo/Zip ([6d9df0e](https://github.com/Agoric/agoric-sdk/commit/6d9df0e482c2cae3fd52a06fa166f78e0b44b90d))
+* **wallet-backend:** get tests passing ([1b4a22b](https://github.com/Agoric/agoric-sdk/commit/1b4a22b3b494203b924850e7d36fb65c2e339abb))
+* **wallet-connection:** add install-ses-lockdown.js ([d03c138](https://github.com/Agoric/agoric-sdk/commit/d03c13821d97818fe8b4fceada9fe3d127bcf643))
+* **wallet-connection:** more typing and package updates ([623c5e4](https://github.com/Agoric/agoric-sdk/commit/623c5e4a3dd6ec0e06edfb5fda813c58f56ed382))
+* **xsnap:** upgrade XS to fix memory leak ([9a70831](https://github.com/Agoric/agoric-sdk/commit/9a70831cbc02edea7721b9a521492c030b097f2c)), closes [#3839](https://github.com/Agoric/agoric-sdk/issues/3839) [#3877](https://github.com/Agoric/agoric-sdk/issues/3877) [#3889](https://github.com/Agoric/agoric-sdk/issues/3889)
+* **xsnap:** work around stricter TS checking of globalThis ([942ae90](https://github.com/Agoric/agoric-sdk/commit/942ae905454a87a1739b14b49609eaeddebffcde))
+* Increase default initial computrons for Zoe contracts for zip archive support ([01c833e](https://github.com/Agoric/agoric-sdk/commit/01c833e5a6373fdcf17088a9747b6cef8ad178bb))
+
+
+### Code Refactoring
+
+* Switch default bundle type to endoZipBase64 ([53cc1e5](https://github.com/Agoric/agoric-sdk/commit/53cc1e5a5af9861e96cff3b841e4269db8a302c0)), closes [#3859](https://github.com/Agoric/agoric-sdk/issues/3859)
+
+
+
 ## [9.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.0.0...@agoric/sdk@9.1.0) (2021-09-23)
 
 

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.34.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.1...@agoric/cosmic-swingset@0.34.2) (2021-10-13)
+
+
+### Features
+
+* **agoricd:** add new Golang binary without any SwingSet ([26c9994](https://github.com/Agoric/agoric-sdk/commit/26c99948edf4579aab124c3e74f350747e54b840))
+* stateless lien module that upcalls to kernel ([603c0cf](https://github.com/Agoric/agoric-sdk/commit/603c0cfc8d2b4706dbbaa42d2ae057fa9dea65dc))
+
+
+### Bug Fixes
+
+* address review comments ([8af3e15](https://github.com/Agoric/agoric-sdk/commit/8af3e1547b4df32c604f6b628a62bff230666166))
+* lien accounts must proxy all account methods ([db79c42](https://github.com/Agoric/agoric-sdk/commit/db79c42398195a09e8b3953dad35224f0943752b))
+
+
+
 ### [0.34.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.0...@agoric/cosmic-swingset@0.34.1) (2021-09-23)
 
 

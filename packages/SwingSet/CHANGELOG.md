@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.22.1...@agoric/swingset-vat@0.23.0) (2021-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** upgrade XS to fix memory leak
+
+### Features
+
+* Thread URL and Base64 endowments ([b52269d](https://github.com/Agoric/agoric-sdk/commit/b52269d58be665baf45bbb38ace57ca741e5ae4c))
+
+
+### Bug Fixes
+
+* adapt timers to async iterables ([#3949](https://github.com/Agoric/agoric-sdk/issues/3949)) ([9739127](https://github.com/Agoric/agoric-sdk/commit/9739127262e9fac48757094a4d2d9f3f35f4bfc5))
+* **SwingSet:** Adjust SES change detectors ([3efb36e](https://github.com/Agoric/agoric-sdk/commit/3efb36eb48521aeb9479f27bd691be485ecda234))
+* **xsnap:** upgrade XS to fix memory leak ([9a70831](https://github.com/Agoric/agoric-sdk/commit/9a70831cbc02edea7721b9a521492c030b097f2c)), closes [#3839](https://github.com/Agoric/agoric-sdk/issues/3839) [#3877](https://github.com/Agoric/agoric-sdk/issues/3877) [#3889](https://github.com/Agoric/agoric-sdk/issues/3889)
+
+
+
 ### [0.22.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.22.0...@agoric/swingset-vat@0.22.1) (2021-09-23)
 
 

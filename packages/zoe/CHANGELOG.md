@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.19.1...@agoric/zoe@0.20.0) (2021-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* add a claimsRegistrar based on attestations (#3622)
+
+### Features
+
+* add a claimsRegistrar based on attestations ([#3622](https://github.com/Agoric/agoric-sdk/issues/3622)) ([3acf78d](https://github.com/Agoric/agoric-sdk/commit/3acf78d786fedbc2fe02792383ebcc2cadaa8db2)), closes [#3189](https://github.com/Agoric/agoric-sdk/issues/3189) [#3473](https://github.com/Agoric/agoric-sdk/issues/3473) [#3932](https://github.com/Agoric/agoric-sdk/issues/3932)
+* ContractGovernor manages parameter updating for a contract ([#3448](https://github.com/Agoric/agoric-sdk/issues/3448)) ([59ebde2](https://github.com/Agoric/agoric-sdk/commit/59ebde27708c0b3988f62a3626f9b092e148671f))
+
+
+### Bug Fixes
+
+* Increase default initial computrons for Zoe contracts for zip archive support ([01c833e](https://github.com/Agoric/agoric-sdk/commit/01c833e5a6373fdcf17088a9747b6cef8ad178bb))
+
+
+
 ### [0.19.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.19.0...@agoric/zoe@0.19.1) (2021-09-23)
 
 

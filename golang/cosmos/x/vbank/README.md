@@ -56,7 +56,7 @@ not be bank purses by default.
 To use Cosmos governance to change the `fee_epoch_duration_blocks` value:
 
 ```sh
-$ ag-cosmos-helper query vbank params
+$ agd query vbank params
 {"fee_epoch_duration_blocks":"720"}
 $ cat <<EOF > epoch-duration-proposal.json
 {
@@ -72,11 +72,11 @@ $ cat <<EOF > epoch-duration-proposal.json
   "deposit": "1000000ubld"
 }
 EOF
-$ ag-cosmos-helper tx gov submit-proposal param-change epochdur.json --from=mykey --chain-id=agoric
+$ agd tx gov submit-proposal param-change epochdur.json --from=mykey --chain-id=agoric
 # Then vote on the proposal.
-$ ag-cosmos-helper tx vote ...
+$ agd tx vote ...
 # After passing,
-$ ag-cosmos-helper query vbank params
+$ agd query vbank params
 {"fee_epoch_duration_blocks":"30"}
 $
 ```

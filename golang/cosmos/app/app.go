@@ -225,7 +225,7 @@ func init() {
 		stdlog.Println("Failed to get home dir %2", err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".ag-chain-cosmos")
+	DefaultNodeHome = filepath.Join(userHomeDir, ".agoric")
 }
 
 // NewGaiaApp returns a reference to an initialized Gaia.
