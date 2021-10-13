@@ -53,13 +53,7 @@ function build(
   gcTools,
   console,
 ) {
-  const {
-    WeakRef,
-    FinalizationRegistry,
-    meterControl,
-    waitUntilQuiescent,
-    gcAndFinalize,
-  } = gcTools;
+  const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -110,7 +104,7 @@ function build(
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // vref -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
-  const unretiredKernelRecognizableRemotables = new Set(); // vrefs
+  const kernelRecognizableRemotables = new Set(); // vrefs
   const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
   const possiblyDeadSet = new Set(); // vrefs that need to be checked for being dead
@@ -128,7 +122,7 @@ function build(
         // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
         exportedRemotables.add(remotable);
-        unretiredKernelRecognizableRemotables.add(vref);
+        kernelRecognizableRemotables.add(vref);
       }
     }
   }
@@ -204,27 +198,27 @@ function build(
   const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
   async function scanForDeadObjects() {
+    // `possiblyDeadSet` accumulates vrefs which have lost a supporting
+    // pillar (in-memory, export, or virtualized data refcount) since the
+    // last call to scanForDeadObjects. The vref might still be supported
+    // by a remaining pillar, or the pillar which was dropped might be back
+    // (e.g., given a new in-memory manifestation).
+
     const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
     let doMore;
     do {
-      // `possiblyDeadSet` has accumulated vrefs which were at one point dead
-      // from the perspective of the garbage collector, i.e., the in-memory
-      // object the vref referred to was garbage collected and finalized.
-      // However, the object might have been resurrected (i.e., given a new
-      // in-memory manifestation) in the meantime, so we can't take the GC's
-      // opinion as dispositive.  `deadSet` will be used to accumulate a set of
-      // those vrefs from `possiblyDeadSet` which *right now* have no in-memory
-      // manifestation.  These might then still be considered live because they
-      // are being sustained by references from virtual objects or other vats,
-      // which we will now have to check after having weeded out the
-      // resurrections.
-      const deadSet = new Set();
+      doMore = false;
+
       // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
       // `do {} while` loop, which means there's no conditional bypass of the
       // await.)
       // eslint-disable-next-line no-await-in-loop
-      await gcAndFinalize();
-      doMore = false;
+      await gcTools.gcAndFinalize();
+
+      // `deadSet` is the subset of those vrefs which lack an in-memory
+      // manifestation *right now* (i.e. the non-resurrected ones), for which
+      // we must check the remaining pillars.
+      const deadSet = new Set();
       for (const vref of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
         if (!slotToVal.has(vref)) {
@@ -261,8 +255,8 @@ function build(
           doMore = doMore || gcAgain;
         } else if (allocatedByVat) {
           // Remotable: send retireExport
-          if (unretiredKernelRecognizableRemotables.has(vref)) {
-            unretiredKernelRecognizableRemotables.delete(vref);
+          if (kernelRecognizableRemotables.has(vref)) {
+            kernelRecognizableRemotables.delete(vref);
             exportsToRetire.push(vref);
           }
         } else {
@@ -955,6 +949,7 @@ function build(
     } else {
       // Remotable
       // console.log(`-- liveslots acting on retireExports ${vref}`);
+      kernelRecognizableRemotables.delete(vref);
       meterControl.assertNotMetered();
       const wr = slotToVal.get(vref);
       if (wr) {
@@ -979,7 +974,6 @@ function build(
           valToSlot.delete(val);
           droppedRegistry.unregister(val);
         }
-        unretiredKernelRecognizableRemotables.delete(vref);
         slotToVal.delete(vref);
       }
     }
@@ -1046,7 +1040,11 @@ function build(
     assert(!didRoot);
     didRoot = true;
 
-    // vats which use D are: (bootstrap, bridge, vat-http), swingset
+    // Build the `vatPowers` provided to `buildRootObject`. We include
+    // vatGlobals and inescapableGlobalProperties to make it easier to write
+    // unit tests that share their vatPowers with the test program, for
+    // direct manipulation). 'D' is used by only a few vats: (bootstrap,
+    // bridge, vat-http).
     const vpow = {
       D,
       exitVat,
@@ -1160,7 +1158,7 @@ function build(
 
     // Instead, we wait for userspace to become idle by draining the promise
     // queue.
-    await waitUntilQuiescent();
+    await gcTools.waitUntilQuiescent();
     // Userspace will not get control again within this crank.
 
     // Now that userspace is idle, we can drive GC until we think we've

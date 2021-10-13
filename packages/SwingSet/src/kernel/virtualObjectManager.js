@@ -220,8 +220,9 @@ export function makeVirtualObjectManager(
    *  - any virtual references to it (if so, it will have a refcount > 0)
    *  - being exported (if so, its export flag will be set)
    *
-   * This function is called by code that removes one of these three legs, to see
-   * if the other two legs are now gone also.
+   * This function is called after a leg has been reported missing, and only
+   * if the memory (Representative) leg is currently missing, to see if the
+   * other two legs are now gone also.
    *
    * Deletion consists of removing the vatstore entries that describe its state
    * and track its refcount status.  In addition, when a virtual object is
