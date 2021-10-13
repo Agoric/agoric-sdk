@@ -12,9 +12,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/tendermint v0.34.12
+	github.com/tendermint/tendermint v0.34.13
 	github.com/tendermint/tm-db v0.6.4
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.40.0
@@ -32,10 +32,10 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 // At least until post-v0.34.12 is released with
 // https://github.com/tendermint/tendermint/issue/6899 resolved.
-replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.12-alpha.agoric.8
- 
+replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.13-alpha.agoric.5
+
 // We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.0-alpha.agoric.5
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.1-alpha.agoric.1
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk

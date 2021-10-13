@@ -1,10 +1,25 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
-
 import React, { useCallback } from 'react';
 import { E } from '@agoric/eventual-send';
+import { makeStyles } from '@material-ui/core/styles';
+import { Typography } from '@material-ui/core';
+
 import { withApplicationContext } from '../contexts/Application';
+
+const useStyles = makeStyles(_ => ({
+  hidden: {
+    display: 'none',
+  },
+  connector: {
+    marginRight: '16px',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
+}));
 
 // Create a wrapper for agoric-wallet-connection that is specific to
 // the app's instance of React.
@@ -51,7 +66,8 @@ const getAccessToken = () => {
   return accessToken;
 };
 
-const WalletConnection = ({ setConnectionState }) => {
+const WalletConnection = ({ setConnectionState, connectionState }) => {
+  const classes = useStyles();
   const onWalletState = useCallback(ev => {
     const { walletConnection, state } = ev.detail;
     console.log('onWalletState', state);
@@ -78,12 +94,20 @@ const WalletConnection = ({ setConnectionState }) => {
   }, []);
 
   return (
-    <span className="hidden">
-      <AgoricWalletConnection onState={onWalletState} />
-    </span>
+    <div className={classes.connector}>
+      <Typography variant="body1">
+        Connection Status:{' '}
+        {connectionState === 'admin' ? 'Connected' : 'Disconnected'}
+      </Typography>
+      <AgoricWalletConnection
+        onState={onWalletState}
+        className={classes.hidden}
+      />
+    </div>
   );
 };
 
 export default withApplicationContext(WalletConnection, context => ({
   setConnectionState: context.setConnectionState,
+  connectionState: context.connectionState,
 }));

@@ -6,7 +6,7 @@ COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$ha
 
 default: all
 
-MOD_READONLY = # -mod=readonly
+MOD_READONLY = -mod=readonly
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
@@ -23,7 +23,7 @@ VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
 
 # process linker flags
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
-		-X github.com/cosmos/cosmos-sdk/version.AppName=ag-cosmos-server \
+		-X github.com/cosmos/cosmos-sdk/version.AppName=agoricd \
 		-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
@@ -40,10 +40,11 @@ ldflags_helper = $(ldflags) \
 BUILD_FLAGS := -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags)'
 BUILD_FLAGS_HELPER :=  -buildmode=exe -tags "$(build_tags)" -gcflags '$(gcflags)' -ldflags '$(ldflags_helper)'
 
-all: compile-helper compile-daemon
-compile-go: compile-helper compile-libdaemon
-compile-node: node-compile-gyp
+all: compile-chain
 
+compile-chain: compile-agoricd compile-helper compile-daemon
+compile-go: compile-agoricd compile-helper compile-libdaemon
+compile-node: node-compile-gyp
 
 compile-daemon: compile-libdaemon node-compile-gyp
 
@@ -54,6 +55,12 @@ node-compile-gyp:
 	else \
 		npm run build:gyp; \
 	fi
+
+compile-agoricd: go-mod-cache
+	go build -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) -o build/agoricd ./cmd/agoricd
+
+install-agoricd: go-mod-cache
+	go install -v $(MOD_READONLY) $(BUILD_FLAGS_HELPER) ./cmd/agoricd
 
 # Only run from the package.json build:gyp script.
 compile-gyp:

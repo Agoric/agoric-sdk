@@ -60,7 +60,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     const amountToLien = validateInputs(externalBrand, address, amount);
     assert.typeof(expiration, 'bigint');
 
-    const handle = makeHandle('attestation');
+    const handle = makeHandle('Attestation');
 
     const attestationElem = makeAttestationElem(
       address,

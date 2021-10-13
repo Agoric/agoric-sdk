@@ -1,7 +1,6 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 
-import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
@@ -17,6 +16,8 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeInterestCalculator } from './interest.js';
+
+const { details: X, quote: q } = assert;
 
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower
@@ -41,7 +42,7 @@ export function makeVaultKit(
   runMint,
   autoswap,
   priceAuthority,
-  loanParams,
+  loanParamManager,
   startTimeStamp,
 ) {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
@@ -55,7 +56,7 @@ export function makeVaultKit(
   let vaultState = VaultState.ACTIVE;
 
   function assertVaultIsOpen() {
-    assert(vaultState === VaultState.ACTIVE, 'vault must still be active');
+    assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
   }
 
   const collateralBrand = manager.getCollateralBrand();
@@ -74,8 +75,8 @@ export function makeVaultKit(
   const interestCalculator = makeInterestCalculator(
     runBrand,
     manager.getInterestRate(),
-    loanParams.chargingPeriod,
-    loanParams.recordingPeriod,
+    manager.getChargingPeriod(),
+    manager.getRecordingPeriod(),
   );
 
   function getCollateralAllocated(seat) {
@@ -192,7 +193,10 @@ export function makeVaultKit(
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
-    assert(AmountMath.isGTE(runReturned, runDebt));
+    assert(
+      AmountMath.isGTE(runReturned, runDebt),
+      X`You must pay off the entire debt ${runReturned} > ${runDebt}`,
+    );
 
     // Return any overpayment
 

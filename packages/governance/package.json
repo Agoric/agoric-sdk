@@ -1,9 +1,9 @@
 {
   "name": "@agoric/governance",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Core governance support",
   "type": "module",
-  "main": "src/paramManager.js",
+  "main": "src/index.js",
   "engines": {
     "node": ">=14.15.0"
   },
@@ -52,6 +52,7 @@
   },
   "files": [
     "src/",
+    "exported.js",
     "NEWS.md"
   ],
   "ava": {

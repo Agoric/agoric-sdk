@@ -42,7 +42,9 @@
     "@agoric/promise-kit": "^0.2.27",
     "@agoric/store": "^0.6.5",
     "@agoric/swingset-vat": "^0.22.1",
-    "@agoric/zoe": "^0.19.1"
+    "@agoric/zoe": "^0.19.1",
+    "@agoric/governance": "^0.2.0",
+    "@agoric/same-structure": "^0.1.20"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
