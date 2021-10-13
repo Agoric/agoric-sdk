@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.9.1...@agoric/xsnap@0.10.0) (2021-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** upgrade XS to fix memory leak
+
+### Bug Fixes
+
+* **xsnap:** upgrade XS to fix memory leak ([9a70831](https://github.com/Agoric/agoric-sdk/commit/9a70831cbc02edea7721b9a521492c030b097f2c)), closes [#3839](https://github.com/Agoric/agoric-sdk/issues/3839) [#3877](https://github.com/Agoric/agoric-sdk/issues/3877) [#3889](https://github.com/Agoric/agoric-sdk/issues/3889)
+* **xsnap:** work around stricter TS checking of globalThis ([942ae90](https://github.com/Agoric/agoric-sdk/commit/942ae905454a87a1739b14b49609eaeddebffcde))
+
+
+
 ### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.9.0...@agoric/xsnap@0.9.1) (2021-09-23)
 
 
