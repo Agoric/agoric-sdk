@@ -58,7 +58,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           `--volume=${process.cwd()}:/usr/src/dapp`,
           `--rm`,
           // `-it`,
-          `--entrypoint=ag-cosmos-helper`,
+          `--entrypoint=agd`,
           SDK_IMAGE,
           `--home=/usr/src/dapp/_agstate/keys`,
           ...args,

@@ -32,10 +32,10 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
       'docker',
       [
         'run',
-        `--volume=ag-chain-cosmos-state:/root/.ag-chain-cosmos`,
+        `--volume=agoric-state:/root/.agoric`,
         '--rm',
         ttyFlag,
-        '--entrypoint=ag-cosmos-helper',
+        '--entrypoint=agd',
         IMAGE,
         ...args,
       ],

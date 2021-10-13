@@ -7,7 +7,7 @@
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/ag-cosmos-helper"
+    - HELPER_BINARY: "{{lookup('env', 'GOPATH') or '/usr/local'}}/bin/agd"
     - APPDIR: "{{lookup('pipe', 'pwd')}}/../.."
   roles:
     - stop

@@ -9,10 +9,7 @@ export const getSDKBinaries = () => {
     agSolo: new URL('../../solo/src/entrypoint.js', myUrl).pathname,
     cosmosChain: new URL('../../cosmic-swingset/bin/ag-chain-cosmos', myUrl)
       .pathname,
-    cosmosHelper: new URL(
-      '../../../golang/cosmos/build/ag-cosmos-helper',
-      myUrl,
-    ).pathname,
+    cosmosHelper: new URL('../../../golang/cosmos/build/agd', myUrl).pathname,
   };
 };
 
