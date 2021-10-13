@@ -63,10 +63,10 @@ func maxCoins(a, b sdk.Coins) sdk.Coins {
 //
 //	- MarshalYAML() is used for String rendering;
 //
-//	- protubuf Messages are expected to implement a number of "XXX"-prefixed
+//	- protobuf Messages are expected to implement a number of "XXX"-prefixed
 //	methods not visible in the Message interface.
 //
-// Declaring the expected methods here allows them to implicitly fall trhough
+// Declaring the expected methods here allows them to implicitly fall through
 // to an embedded omniAccount.
 //
 // Note that this interface will have to adapt to updated expectations in
@@ -132,8 +132,7 @@ func computeLienLocked(liened, bonded, unbonding sdk.Coins) sdk.Coins {
 // XXX_MessageName provides the message name for JSON serialization.
 // See proto.MessageName().
 func (la *LienAccount) XXX_MessageName() string {
-	// Find the embedded account's message name for JSON
-	// serialization and record it for impersonation.
+	// Use the embedded account's message name for JSON serialization.
 	return proto.MessageName(la.omniVestingAccount)
 }
 
