@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.12.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.12.1...@agoric/ertp@0.12.2) (2021-10-13)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
 ### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.12.0...@agoric/ertp@0.12.1) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/ertp
