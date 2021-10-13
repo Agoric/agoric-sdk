@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.4.1...@agoric/vats@0.4.2) (2021-10-13)
+
+
+### Bug Fixes
+
+* **vats:** Fork polycrc for ESM compat with Endo/Zip ([6d9df0e](https://github.com/Agoric/agoric-sdk/commit/6d9df0e482c2cae3fd52a06fa166f78e0b44b90d))
+
+
+
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.4.0...@agoric/vats@0.4.1) (2021-09-23)
 
 

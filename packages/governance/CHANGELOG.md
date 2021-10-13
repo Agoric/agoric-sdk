@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.2.3...@agoric/governance@0.3.0) (2021-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* add a claimsRegistrar based on attestations (#3622)
+
+### Features
+
+* add a claimsRegistrar based on attestations ([#3622](https://github.com/Agoric/agoric-sdk/issues/3622)) ([3acf78d](https://github.com/Agoric/agoric-sdk/commit/3acf78d786fedbc2fe02792383ebcc2cadaa8db2)), closes [#3189](https://github.com/Agoric/agoric-sdk/issues/3189) [#3473](https://github.com/Agoric/agoric-sdk/issues/3473) [#3932](https://github.com/Agoric/agoric-sdk/issues/3932)
+* ContractGovernor manages parameter updating for a contract ([#3448](https://github.com/Agoric/agoric-sdk/issues/3448)) ([59ebde2](https://github.com/Agoric/agoric-sdk/commit/59ebde27708c0b3988f62a3626f9b092e148671f))
+
+
+### Bug Fixes
+
+* **governance:** export buildParamManager from index.js ([#3952](https://github.com/Agoric/agoric-sdk/issues/3952)) ([868964e](https://github.com/Agoric/agoric-sdk/commit/868964e09cac570cceda4617fd0723a0a64d1841))
+
+
+
 ### [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.2.2...@agoric/governance@0.2.3) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/governance

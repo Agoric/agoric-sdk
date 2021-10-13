@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [1.4.27](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.26...@agoric/transform-metering@1.4.27) (2021-10-13)
+
+
+### Bug Fixes
+
+* **transform-meter:** Accommodate SES module proxies in meter ([9f7d456](https://github.com/Agoric/agoric-sdk/commit/9f7d45602c9d3c0a25729f97c2be8004230cb028))
+
+
+
 ### [1.4.26](https://github.com/Agoric/agoric-sdk/compare/@agoric/transform-metering@1.4.25...@agoric/transform-metering@1.4.26) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/transform-metering

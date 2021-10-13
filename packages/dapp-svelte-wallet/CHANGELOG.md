@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.4...@agoric/dapp-svelte-wallet@0.11.5) (2021-10-13)
+
+
+### Features
+
+* **react-wallet:** Create app layout with left nav and app bar ([#3941](https://github.com/Agoric/agoric-sdk/issues/3941)) ([18807af](https://github.com/Agoric/agoric-sdk/commit/18807afea158f64eb0241b89cdafde3ec1847f4a))
+* **react-wallet:** Integrate wallet connection component ([#3922](https://github.com/Agoric/agoric-sdk/issues/3922)) ([01a9118](https://github.com/Agoric/agoric-sdk/commit/01a91181e36f4e2dc49dcbb1327c50e3b268d2f9))
+* **wallet:** Create react ui scaffold with ses ([#3879](https://github.com/Agoric/agoric-sdk/issues/3879)) ([089c876](https://github.com/Agoric/agoric-sdk/commit/089c876d801efc1ede76b3011a1301384aace77f))
+* **wallet-backend:** add `walletAdmin.getClockNotifier()` ([2902ec3](https://github.com/Agoric/agoric-sdk/commit/2902ec38f6110a5582f6906695b77911f4d43180))
+* **wallet-backend:** attach timestamp and sequence metadata ([9e02962](https://github.com/Agoric/agoric-sdk/commit/9e02962b7c08d56ea1fe72970f3309998b734767))
+* **wallet-connection:** handle dapp approval states ([32b7772](https://github.com/Agoric/agoric-sdk/commit/32b7772ed33ed512ed598bbfc5dcea16ed36a705))
+
+
+### Bug Fixes
+
+* **wallet-backend:** get tests passing ([1b4a22b](https://github.com/Agoric/agoric-sdk/commit/1b4a22b3b494203b924850e7d36fb65c2e339abb))
+
+
+
 ### [0.11.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.3...@agoric/dapp-svelte-wallet@0.11.4) (2021-09-23)
 
 
