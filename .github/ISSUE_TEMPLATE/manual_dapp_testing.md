@@ -1,7 +1,9 @@
 ---
 name: Manual Dapp Testing
-about: A checklist of dapps to test
-title: 'Dapp Testing for #X'
+about: A checklist of dapps to test manually every week, until we have
+automated testing. Use this issue template once per week to record
+that manual testing was done.
+title: 'Weekly Manual Dapp Testing'
 labels: 'Dapp & UI Support'
 assignees: ''
 
