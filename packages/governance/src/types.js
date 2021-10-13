@@ -12,7 +12,7 @@
  */
 
 /**
- * @typedef { 'param_change' | 'election' | 'survey' } ElectionType
+ * @typedef { 'param_change' | 'election' | 'survey' | 'update' } ElectionType
  * param_change is very specific. Survey means multiple answers are possible,
  * Election means some candidates are going to "win". It's not clear these are
  * orthogonal. The important distinction is that param_change has a structured
@@ -215,6 +215,12 @@
  */
 
 /**
+ * @callback LooksLikeUpdate
+ * @param {unknown} issue
+ * @returns { asserts issue is ContractUpdateIssue }
+ */
+
+/**
  * @callback LooksLikeIssueForType
  * @param {ElectionType} electionType
  * @param {unknown} issue
@@ -359,6 +365,11 @@
  */
 
 /**
+ * @typedef {Object} ContractUpdateIssue
+ * @property {Object} update
+ */
+
+/**
  * @callback MakeParamChangePositions
  *
  * Return a record containing the positive and negative positions for a
@@ -375,6 +386,21 @@
  * @property {ChoiceMethod} method
  * @property {ParamChangeIssue} issue
  * @property {ParamChangePositions} positions
+ * @property {ElectionType} electionType
+ * @property {number} maxChoices
+ * @property {ClosingRule} closingRule
+ * @property {QuorumRule} quorumRule
+ * @property {NoChangeParamPosition} tieOutcome
+ * @property {Instance} counterInstance - instance of the VoteCounter
+ * @property {Handle<'Question'>} questionHandle
+ */
+
+/**
+ * @typedef {Object} ContractUpdateIssueDetails
+ *    details for a question that can change a contract parameter
+ * @property {ChoiceMethod} method
+ * @property {ContractUpdateIssue} issue
+ * @property {Position[]} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
  * @property {ClosingRule} closingRule
@@ -453,12 +479,72 @@
  */
 
 /**
+ * @callback ValidateVoteCounter
+ * @param {Instance} voteCounter
+ * @returns {Promise<boolean>}
+ */
+
+/**
+ * @callback MakeValidateVoteCounter
+ * @param {ERef<CreatedQuestion>} createdQuestion
+ * @returns {ValidateVoteCounter}
+ */
+
+/**
+ * @callback ValidateElectorate
+ * @param {ERef<Instance>} electorate
+ * @returns {Promise<boolean>}
+ */
+
+/**
+ * @callback MakeValidateElectorate
+ * @param {Instance} electorate
+ * @returns {ValidateElectorate}
+ */
+
+/**
+ * @callback ValidateTimer
+ * @param {QuestionDetails} details
+ * @returns {Promise<boolean>}
+ */
+
+/**
+ * @callback MakeValidateTimer
+ * @param {Timer} timer
+ * @returns {ValidateTimer}
+ */
+
+/**
+ * @typedef {Object} VoteOnContractUpdateResult
+ * @property {Instance} instance
+ * @property {VoteCounterPublicFacet} publicFacet
+ * @property {Promise<QuestionDetails>} details
+ */
+
+/**
+ * @callback VoteOnContractUpdate
+ * @param {Object} update
+ * @param {Installation} voteCounterInstallation
+ * @param {Timestamp} deadline
+ * @returns {Promise<VoteOnContractUpdateResult>}
+ */
+
+/**
+ * @callback MakeVoteOnContractUpdate
+ * @param {IterationObserver<Object>} publication
+ * @param {Timer} timer
+ * @param {ERef<PoserFacet>} questionPoser
+ * @param {(counter: Instance) => void} addVoteCounter
+ * @returns {VoteOnContractUpdate}
+ */
+
+/**
  * @typedef {Object} GovernorPublic
  * @property {() => Instance} getElectorate
  * @property {() => Instance} getGovernedContract
- * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
- * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
- * @property {(details: QuestionDetails) => boolean} validateTimer
+ * @property {ValidateVoteCounter} validateVoteCounter
+ * @property {ValidateElectorate} validateElectorate
+ * @property {ValidateTimer} validateTimer
  */
 
 /**
@@ -534,7 +620,6 @@
 /**
  * @typedef {Object} ParamGovernor
  * @property {VoteOnParamChange} voteOnParamChange
- * @property {CreatedQuestion} createdQuestion
  */
 
 /**
@@ -543,6 +628,7 @@
  * @param {ERef<PoserFacet>} poserFacet
  * @param {Instance} contractInstance
  * @param {Timer} timer
+ * @param {(Instance) => void} addVoteCounter
  * @returns {ParamGovernor}
  */
 

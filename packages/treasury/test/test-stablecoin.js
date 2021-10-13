@@ -251,7 +251,6 @@ async function setupServices(
   const s = { stablecoinMachine, lender };
   const { runIssuerRecord, govIssuerRecord, autoswap: autoswapAPI } = testJig;
   const issuers = { run: runIssuerRecord, gov: govIssuerRecord };
-
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
 
   // priceAuthority needs the RUN brand, which isn't available until the
@@ -271,6 +270,7 @@ async function setupServices(
     zoe,
     installs,
     electorate,
+    committeeCreator,
     governor: g,
     stablecoin: s,
     issuers,
@@ -1809,4 +1809,142 @@ test('close loan', async t => {
     await E(aliceVault.getLiquidationSeat()).getCurrentAllocation(),
     {},
   );
+});
+
+test('stablecoin add collateral no new AMM pool', async t => {
+  const loanParams = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
+  };
+  const {
+    aethKit: { brand: aethBrand, mint: aethMint, issuer: aethIssuer },
+  } = setupAssets();
+
+  const services = await setupServices(
+    loanParams,
+    [500n, 1500n],
+    AmountMath.make(90n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+  );
+  const { brand: runBrand, issuer: runIssuer } = services.issuers.run;
+  const { stablecoinMachine, lender } = services.stablecoin;
+
+  const rates = harden({
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
+  });
+
+  // Once under governance, this should no longer be available to call directly
+  await E(stablecoinMachine).makeAddTypeNoAmm(aethIssuer, 'Doubloon', rates);
+
+  const collateralAmount = AmountMath.make(aethBrand, 1500n);
+  const loanAmount = AmountMath.make(500n, runBrand);
+  const loanSeat = await E(services.zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: await E(aethMint).mintPayment(collateralAmount),
+    }),
+  );
+
+  const loanProceeds = await E.get(E(loanSeat).getPayouts()).RUN;
+
+  t.deepEqual(await E(runIssuer).getAmountOf(loanProceeds), loanAmount);
+  // The AMM pool hasn't been initialized, but now we have some RUN that we
+  // could use to add liquidity to the pool. The AMM is only needed for
+  // liquidation
+});
+
+function voteFor(zoe, question, invitations, choices) {
+  const votes = [];
+  for (let i = 0; i < choices.length; i += 1) {
+    const seat = E(zoe).offer(invitations[i]);
+    const voteFacet = E(seat).getOfferResult();
+    votes.push(E(voteFacet).castBallotFor(question, [choices[i]]));
+  }
+  return votes;
+}
+
+test('stablecoin add collateral via governance', async t => {
+  const loanParams = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+    poolFee: 24n,
+    protocolFee: 6n,
+  };
+  const {
+    aethKit: { brand: aethBrand, mint: aethMint, issuer: aethIssuer },
+  } = setupAssets();
+
+  const timer = buildManualTimer(console.log);
+
+  const services = await setupServices(
+    loanParams,
+    [500n, 1500n],
+    AmountMath.make(90n, aethBrand),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 3 },
+    timer,
+  );
+  const { brand: runBrand, issuer: runIssuer } = services.issuers.run;
+  const { lender } = services.stablecoin;
+
+  const rates = harden({
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
+  });
+
+  const governance = services.governor.governorCreatorFacet;
+  const update = {
+    keyword: 'Collateral',
+    collateralIssuer: aethIssuer,
+    rates,
+  };
+  const updateResults = E(governance).voteOnContractUpdate(
+    update,
+    services.installs.counter,
+    3n,
+  );
+  const counter = E.get(updateResults).publicFacet;
+  const question = await E.get(E(E(counter).getQuestion()).getDetails())
+    .questionHandle;
+  const invitations = await E(services.committeeCreator).getVoterInvitations();
+  await Promise.all(
+    voteFor(services.zoe, question, invitations, [update, update]),
+  );
+  await Promise.all([E(timer).tick(), E(timer).tick(), E(timer).tick()]);
+
+  const voteOutcome = await E(counter).getOutcome();
+  t.deepEqual(voteOutcome, update);
+  await waitForPromisesToSettle();
+
+  const collateralAmount = AmountMath.make(aethBrand, 1500n);
+  const loanAmount = AmountMath.make(500n, runBrand);
+  const loanSeat = await E(services.zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: await E(aethMint).mintPayment(collateralAmount),
+    }),
+  );
+
+  const loanProceeds = await E.get(E(loanSeat).getPayouts()).RUN;
+
+  t.deepEqual(await E(runIssuer).getAmountOf(loanProceeds), loanAmount);
+  // The AMM pool hasn't been initialized, but now we have some RUN that we
+  // could use to add liquidity to the pool. The AMM is only needed for
+  // liquidation
 });

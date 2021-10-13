@@ -33,6 +33,7 @@ const ChoiceMethod = {
  *   PARAM_CHANGE: 'param_change',
  *   ELECTION: 'election',
  *   SURVEY: 'survey',
+ *   UPDATE: 'update',
  * }}
  */
 const ElectionType = {
@@ -41,6 +42,8 @@ const ElectionType = {
   // choose one or multiple winners, depending on ChoiceMethod
   ELECTION: 'election',
   SURVEY: 'survey',
+  // an update will be published to a subscription
+  UPDATE: 'update',
 };
 
 /** @type {{
@@ -75,8 +78,14 @@ const looksLikeParamChangeIssue = issue => {
     'object',
     X`Issue ("${issue}") must be a record with paramSpec: anObject`,
   );
-  assert(issue && issue.proposedValue);
+  assert(issue && issue.proposedValue, X`proposedValue must be provided.`);
   assertType(ParamType.INSTANCE, issue.contract, 'contract');
+};
+
+/** @type {LooksLikeUpdate} */
+const looksLikeUpdate = issue => {
+  assert(issue, X`argument to looksLikeUpdate cannot be null`);
+  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
 };
 
 /** @type {LooksLikeIssueForType} */
@@ -94,6 +103,9 @@ const looksLikeIssueForType = (electionType, issue) => {
     case ElectionType.PARAM_CHANGE:
       looksLikeParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
       break;
+    case ElectionType.UPDATE:
+      looksLikeUpdate(issue);
+      break;
     default:
       throw Error(`Election type unrecognized`);
   }
@@ -105,7 +117,7 @@ const positionIncluded = (positions, p) =>
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
 /** @type {LooksLikeClosingRule} */
-function looksLikeClosingRule(closingRule) {
+const looksLikeClosingRule = closingRule => {
   assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
   assert.typeof(
     closingRule,
@@ -115,7 +127,7 @@ function looksLikeClosingRule(closingRule) {
   Nat(closingRule && closingRule.deadline);
   const timer = closingRule && closingRule.timer;
   assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
-}
+};
 
 const assertEnumIncludes = (enumeration, value, name) => {
   assert(

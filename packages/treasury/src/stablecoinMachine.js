@@ -16,7 +16,6 @@ import '@agoric/zoe/src/contracts/exported.js';
 //
 // ownershipTokens for vaultManagers entitle holders to distributions, but you
 // can't redeem them outright, that would drain the utility from the economy.
-
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
 
@@ -31,7 +30,9 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
+import { observeIteration } from '@agoric/notifier';
 
+import { makeUpdateObserver } from '@agoric/governance/src/contractUpdate';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 import {
   makeFeeParamManager,
@@ -40,7 +41,7 @@ import {
   governedParameterTerms as governedParameterLocal,
   ParamKey,
 } from './params.js';
-import { makeAddTypeNoAmm, makeMakeAddTypeInvitation } from './addType';
+import { makeMakeAddTypeNoAmm, makeMakeAddTypeInvitation } from './addType';
 
 const { quote: q, details: X } = assert;
 
@@ -68,6 +69,7 @@ export async function start(zcf, privateArgs) {
     bootstrapPaymentValue = 0n,
     electionManager,
     governedParams,
+    updatesSubscription,
   } = zcf.getTerms();
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
@@ -240,7 +242,7 @@ export async function start(zcf, privateArgs) {
   };
 
   const getParamState = paramDesc => {
-    switch (paramDesc.keyl) {
+    switch (paramDesc.key) {
       case ParamKey.FEE:
         return feeParams.getParam(paramDesc.parameterName);
       case ParamKey.POOL:
@@ -291,18 +293,44 @@ export async function start(zcf, privateArgs) {
       },
     });
 
+  const runKit = { brand: runBrand, mint: runMint, issuer: runIssuer };
   const makeAddTypeInvitation = makeMakeAddTypeInvitation(
     zcf,
     poolParamManagers,
     rewardPoolSeat,
     autoswapAPI,
     collateralTypes,
-    { brand: runBrand, mint: runMint, issuer: runIssuer },
+    runKit,
     { brand: govBrand, mint: govMint },
   );
+  const makeAddTypeNoAmm = makeMakeAddTypeNoAmm(
+    zcf,
+    poolParamManagers,
+    rewardPoolSeat,
+    autoswapAPI,
+    collateralTypes,
+    runKit,
+  );
+
+  const addCollateralType = update => {
+    makeAddTypeNoAmm(update.collateralIssuer, update.keyword, update.rates);
+  };
+
+  const addsCollateral = update => {
+    const collateralKeyword = update.keyword === 'Collateral';
+    const ratesOk = sameStructure(
+      harden(Object.getOwnPropertyNames(update.rates)),
+      harden(['initialMargin', 'interestRate', 'liquidationMargin', 'loanFee']),
+    );
+    return update.collateralIssuer && ratesOk && collateralKeyword;
+  };
+
+  const updateObserver = makeUpdateObserver(addsCollateral, addCollateralType);
+  observeIteration(updatesSubscription, updateObserver);
 
   /** @type {StablecoinMachine} */
   const stablecoinMachine = Far('stablecoin machine', {
+    makeAddTypeNoAmm,
     makeAddTypeInvitation,
     getAMM() {
       return autoswapInstance;

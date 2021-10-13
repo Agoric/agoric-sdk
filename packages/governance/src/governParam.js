@@ -17,18 +17,14 @@ import {
   makeParamChangePositions,
 } from './validators.js';
 
-const { details: X } = assert;
-
 /** @type {SetupGovernance} */
-const setupGovernance = async (
+const setupParamGovernance = async (
   paramManagerRetriever,
   poserFacet,
   contractInstance,
   timer,
+  addCounter,
 ) => {
-  /** @type {WeakSet<Instance>} */
-  const voteCounters = new WeakSet();
-
   /** @type {VoteOnParamChange} */
   const voteOnParamChange = async (
     paramSpec,
@@ -65,8 +61,7 @@ const setupGovernance = async (
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
       poserFacet,
     ).addQuestion(voteCounterInstallation, questionSpec);
-
-    voteCounters.add(voteCounter);
+    addCounter(voteCounter);
 
     // CRUCIAL: Here we wait for the voteCounter to declare an outcome, and then
     // attempt to update the value of the parameter if that's what the vote
@@ -103,16 +98,15 @@ const setupGovernance = async (
 
   return Far('paramGovernor', {
     voteOnParamChange,
-    createdQuestion: b => voteCounters.has(b),
   });
 };
 
-harden(setupGovernance);
+harden(setupParamGovernance);
 harden(makeParamChangePositions);
 harden(validateParamChangeQuestion);
 harden(assertBallotConcernsQuestion);
 export {
-  setupGovernance,
+  setupParamGovernance,
   makeParamChangePositions,
   validateParamChangeQuestion,
   assertBallotConcernsQuestion,

@@ -138,6 +138,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
   return validateQuestionDetails(zoe, electorate, questionDetails);
 };
 
+/** @type {MakeValidateVoteCounter} */
 const makeValidateVoteCounter = createdQuestion => {
   return async voteCounter => {
     const created = await E(createdQuestion)(voteCounter);
@@ -146,16 +147,20 @@ const makeValidateVoteCounter = createdQuestion => {
   };
 };
 
+/** @type {MakeValidateTimer} */
 const makeValidateTimer = timer => {
-  return details => {
-    assert(
-      details.closingRule.timer === timer,
-      X`closing rule must use my timer`,
-    );
-    return true;
+  return async detailsP => {
+    return E.when(detailsP, details => {
+      assert(
+        details.closingRule.timer === timer,
+        X`closing rule must use my timer`,
+      );
+      return true;
+    });
   };
 };
 
+/** @type {MakeValidateElectorate} */
 const makeValidateElectorate = electorateInstance => {
   return async regP => {
     return E.when(regP, reg => {

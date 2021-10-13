@@ -3,7 +3,9 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setupGovernance } from './governParam.js';
+import { makeSubscriptionKit } from '@agoric/notifier';
+import { setupParamGovernance } from './governParam.js';
+import { makeVoteOnContractUpdate } from './contractUpdate.js';
 import {
   validateQuestionFromCounter,
   validateQuestionDetails,
@@ -65,11 +67,18 @@ const start = async (zcf, privateArgs) => {
       privateArgs: privateContractArgs,
     },
   } = /** @type {ContractGovernorTerms} */ zcf.getTerms();
+  const {
+    subscription: updatesSubscription,
+    publication,
+  } = makeSubscriptionKit();
+  /** @type {WeakSet<Instance>} */
+  const voteCounters = new WeakSet();
 
   const { electorateCreatorFacet } = privateArgs;
 
   const augmentedTerms = harden({
     ...governedTerms,
+    updatesSubscription,
     electionManager: zcf.getInstance(),
   });
   const poserInvitation = E(electorateCreatorFacet).getPoserInvitation();
@@ -90,6 +99,7 @@ const start = async (zcf, privateArgs) => {
     ),
     E(zoe).getInvitationDetails(poserInvitation),
   ]);
+  const poserFacet = E(E(zoe).offer(poserInvitation)).getOfferResult();
 
   assert(
     invitationDetails.instance === electorateInstance,
@@ -100,16 +110,29 @@ const start = async (zcf, privateArgs) => {
   /** @type {Promise<LimitedCreatorFacet>} */
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
-  const { voteOnParamChange, createdQuestion } = await setupGovernance(
+  // TODO(hibbert) this could plausibly be conditional on the presence of
+  //  something in the terms. We may want only one of
+  //  [voteOnParamChange, (voteOnContractUpdate, subscription)].  Or maybe these
+  // are in different contractGovernors to keep each simple?
+  const voteOnContractUpdate = makeVoteOnContractUpdate(
+    publication,
+    timer,
+    poserFacet,
+    c => voteCounters.add(c),
+  );
+
+  const { voteOnParamChange } = await setupParamGovernance(
     E(governedCF).getParamMgrRetriever(),
-    E(E(zoe).offer(poserInvitation)).getOfferResult(),
+    poserFacet,
     governedInstance,
     timer,
+    c => voteCounters.add(c),
   );
 
   /** @type {GovernedContractFacetAccess} */
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
+    voteOnContractUpdate,
     getCreatorFacet: () => limitedCreatorFacet,
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,
@@ -119,7 +142,7 @@ const start = async (zcf, privateArgs) => {
   const publicFacet = Far('contract governor public', {
     getElectorate: () => electorateInstance,
     getGovernedContract: () => governedInstance,
-    validateVoteCounter: makeValidateVoteCounter(createdQuestion),
+    validateVoteCounter: makeValidateVoteCounter(c => voteCounters.has(c)),
     validateElectorate: makeValidateElectorate(electorateInstance),
     validateTimer: makeValidateTimer(timer),
   });

@@ -29,3 +29,8 @@ export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
+
+export {
+  makeVoteOnContractUpdate,
+  makeUpdateObserver,
+} from './contractUpdate.js';

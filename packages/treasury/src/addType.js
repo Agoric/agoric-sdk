@@ -10,7 +10,9 @@ import { AmountMath } from '@agoric/ertp';
 import { makeLiquidationStrategy } from './liquidateMinimum';
 import { makeVaultManager } from './vaultManager';
 import { makePoolParamManager } from './params';
-import { makeTracer } from './makeTracer';
+import { makeTracer } from './makeTracer.js';
+
+const { details: X } = assert;
 
 const trace = makeTracer('ST');
 
@@ -42,7 +44,7 @@ const makeMakeAddTypeInvitation = (
      *
      * @type {ReallocateReward}
      */
-    function reallocateReward(amount, fromSeat, otherSeat = undefined) {
+    const reallocateReward = (amount, fromSeat, otherSeat = undefined) => {
       rewardPoolSeat.incrementBy(
         fromSeat.decrementBy({
           RUN: amount,
@@ -53,10 +55,13 @@ const makeMakeAddTypeInvitation = (
       } else {
         zcf.reallocate(rewardPoolSeat, fromSeat);
       }
-    }
+    };
 
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
-    assert(!collateralTypes.has(collateralBrand));
+    assert(
+      !collateralTypes.has(collateralBrand),
+      X`Each type of collateral may only be added to Treasury once: ${collateralBrand}`,
+    );
 
     const poolParamManager = makePoolParamManager(loanParams, rates);
     poolParamManagers.init(collateralBrand, poolParamManager);
@@ -69,7 +74,7 @@ const makeMakeAddTypeInvitation = (
       { autoswap: autoswapAPI },
     );
 
-    async function addTypeHook(seat) {
+    const addTypeHook = async seat => {
       assertProposalShape(seat, {
         give: { Collateral: null },
         want: { Governance: null },
@@ -78,7 +83,11 @@ const makeMakeAddTypeInvitation = (
         give: { Collateral: collateralIn },
         want: { Governance: _govOut }, // ownership of the whole stablecoin machine
       } = seat.getProposal();
-      assert(!collateralTypes.has(collateralBrand));
+      assert(
+        !collateralTypes.has(collateralBrand),
+        X`Each type of collateral may only be added to Treasury once: ${collateralBrand}`,
+      );
+
       // initialPrice is in rates, but only used at creation, so not in governor
       const runAmount = ceilMultiplyBy(collateralIn, rates.initialPrice);
       // arbitrarily, give governance tokens equal to RUN tokens
@@ -163,21 +172,22 @@ const makeMakeAddTypeInvitation = (
       );
       collateralTypes.init(collateralBrand, vm);
       return vm;
-    }
+    };
 
     return zcf.makeInvitation(addTypeHook, 'AddCollateralType');
   };
 };
 
-const makeAddTypeNoAmm = (
+const makeMakeAddTypeNoAmm = (
   zcf,
   poolParamManagers,
   rewardPoolSeat,
-  issuers,
   autoswapAPI,
   collateralTypes,
   runKit,
 ) => {
+  // TODO(hibbert) check that there's a corresponding AMM pool
+
   // We process only one offer per collateralType. They must tell us the
   // dollar value of their collateral, and we create that many RUN.
   // collateralKeyword = 'aEth'
@@ -197,7 +207,7 @@ const makeAddTypeNoAmm = (
      *
      * @type {ReallocateReward}
      */
-    function reallocateReward(amount, fromSeat, otherSeat = undefined) {
+    const reallocateReward = (amount, fromSeat, otherSeat = undefined) => {
       rewardPoolSeat.incrementBy(
         fromSeat.decrementBy({
           RUN: amount,
@@ -208,10 +218,13 @@ const makeAddTypeNoAmm = (
       } else {
         zcf.reallocate(rewardPoolSeat, fromSeat);
       }
-    }
+    };
 
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
-    assert(!collateralTypes.has(collateralBrand));
+    assert(
+      !collateralTypes.has(collateralBrand),
+      X`Each type of collateral may only be added to Treasury once: ${collateralBrand}`,
+    );
 
     const poolParamManager = makePoolParamManager(loanParams, rates);
     poolParamManagers.init(collateralBrand, poolParamManager);
@@ -220,7 +233,7 @@ const makeAddTypeNoAmm = (
       zcf.getZoeService(),
     ).startInstance(
       liquidationInstall,
-      { RUN: issuers.run },
+      { RUN: runKit.issuer },
       { autoswap: autoswapAPI },
     );
 
@@ -238,12 +251,13 @@ const makeAddTypeNoAmm = (
       timerService,
       liquidationStrategy,
     );
+
     collateralTypes.init(collateralBrand, vm);
     return vm;
   };
 };
 
 harden(makeMakeAddTypeInvitation);
-harden(makeAddTypeNoAmm);
+harden(makeMakeAddTypeNoAmm);
 
-export { makeMakeAddTypeInvitation, makeAddTypeNoAmm };
+export { makeMakeAddTypeInvitation, makeMakeAddTypeNoAmm };

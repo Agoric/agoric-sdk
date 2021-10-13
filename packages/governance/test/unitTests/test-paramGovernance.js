@@ -15,7 +15,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import path from 'path';
 
 import {
-  setupGovernance,
+  setupParamGovernance,
   makeParamChangePositions,
 } from '../../src/governParam.js';
 import {
@@ -67,12 +67,13 @@ test('governParam happy path with fakes', async t => {
     },
   });
 
-  const paramGovernor = setupGovernance(
+  const paramGovernor = setupParamGovernance(
     Retriever,
     // @ts-ignore questionPoser is a fake
     questionPoser,
     governedFacets.instance,
     timer,
+    () => {},
   );
 
   const { outcomeOfUpdate } = await E(paramGovernor).voteOnParamChange(
@@ -135,12 +136,13 @@ test('governParam no votes', async t => {
     },
   });
 
-  const paramGovernor = setupGovernance(
+  const paramGovernor = setupParamGovernance(
     Retriever,
     // @ts-ignore questionPoser is a fake
     questionPoser,
     governedFacets.instance,
     timer,
+    () => {},
   );
 
   const { outcomeOfUpdate } = await E(paramGovernor).voteOnParamChange(
@@ -204,12 +206,13 @@ test('governParam bad update', async t => {
     },
   });
 
-  const paramGovernor = setupGovernance(
+  const paramGovernor = setupParamGovernance(
     // @ts-ignore retriever is a fake
     retriever,
     questionPoser,
     governedFacets.instance,
     timer,
+    () => {},
   );
 
   const { details, outcomeOfUpdate } = await E(paramGovernor).voteOnParamChange(

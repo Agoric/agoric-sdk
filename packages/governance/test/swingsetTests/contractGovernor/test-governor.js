@@ -101,7 +101,7 @@ const expectedcontractGovernorStartLog = [
   'Voter Alice validated all the things',
 ];
 
-test('zoe - contract governance', async t => {
+test('contract governance', async t => {
   const dump = await main(t, ['contractGovernorStart']);
   t.deepEqual(dump.log, expectedcontractGovernorStartLog);
 });
