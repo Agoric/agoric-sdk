@@ -33,4 +33,13 @@ test('make and exec', async t => {
       resolve();
     }),
   );
+  await new Promise(resolve =>
+    spawn('bin/ag-chain-cosmos', ['export', '--home=t1/n0'], {
+      cwd: `${dirname}/..`,
+      stdio: ['ignore', 'ignore', 'inherit'],
+    }).addListener('exit', code => {
+      t.is(code, 0, 'export exits successfully');
+      resolve();
+    }),
+  );
 });
