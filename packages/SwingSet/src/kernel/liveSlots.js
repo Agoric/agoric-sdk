@@ -949,7 +949,6 @@ function build(
     } else {
       // Remotable
       // console.log(`-- liveslots acting on retireExports ${vref}`);
-      kernelRecognizableRemotables.delete(vref);
       meterControl.assertNotMetered();
       const wr = slotToVal.get(vref);
       if (wr) {
@@ -974,6 +973,7 @@ function build(
           valToSlot.delete(val);
           droppedRegistry.unregister(val);
         }
+        kernelRecognizableRemotables.delete(vref);
         slotToVal.delete(vref);
       }
     }
