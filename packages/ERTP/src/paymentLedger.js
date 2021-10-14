@@ -8,7 +8,7 @@ import { makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';
 import { makePayment } from './payment.js';
-import { makePurse } from './purse.js';
+import { makeEmptyPurseMaker } from './purse.js';
 
 import '@agoric/store/exported.js';
 
@@ -316,6 +316,13 @@ export const makePaymentLedger = (
     withdraw,
   };
 
+  const makeEmptyPurse = makeEmptyPurseMaker(
+    allegedName,
+    assetKind,
+    brand,
+    purseMethods,
+  );
+
   /** @type {Issuer} */
   const issuer = Far(`${allegedName} issuer`, {
     isLive,
@@ -329,8 +336,7 @@ export const makePaymentLedger = (
     getAllegedName: () => allegedName,
     getAssetKind: () => assetKind,
     getDisplayInfo: () => displayInfo,
-    makeEmptyPurse: () =>
-      makePurse(allegedName, assetKind, brand, purseMethods),
+    makeEmptyPurse,
   });
 
   /** @type {Mint} */

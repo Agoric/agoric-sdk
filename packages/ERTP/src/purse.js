@@ -1,8 +1,13 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { makeFarMaker } from '@agoric/marshal';
 import { AmountMath } from './amountMath.js';
 
-export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
+export const makeEmptyPurseMaker = (
+  allegedName,
+  assetKind,
+  brand,
+  purseMethods,
+) => {
   let currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
   /** @type {NotifierRecord<Amount>} */
@@ -16,30 +21,37 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
     balanceUpdater.updateState(currentBalance);
   };
 
-  /** @type {Purse} */
-  const purse = Far(`${allegedName} purse`, {
-    deposit: (srcPayment, optAmount = undefined) => {
-      // Note COMMIT POINT within deposit.
-      return purseMethods.deposit(
-        currentBalance,
-        updatePurseBalance,
-        srcPayment,
-        optAmount,
-      );
-    },
-    withdraw: amount =>
-      // Note COMMIT POINT within withdraw.
-      purseMethods.withdraw(currentBalance, updatePurseBalance, amount),
-    getCurrentAmount: () => currentBalance,
-    getCurrentAmountNotifier: () => balanceNotifier,
-    getAllegedBrand: () => brand,
-    // eslint-disable-next-line no-use-before-define
-    getDepositFacet: () => depositFacet,
-  });
+  const makePurseImpl = makeFarMaker(`${allegedName} purse`);
 
-  const depositFacet = Far(`${allegedName} depositFacet`, {
-    receive: purse.deposit,
-  });
+  const makeDepositFacetImpl = makeFarMaker(`${allegedName} depositFacet`);
 
-  return purse;
+  const makeEmptyPurse = () => {
+    /** @type {Purse} */
+    const purse = makePurseImpl({
+      deposit: (srcPayment, optAmount = undefined) => {
+        // Note COMMIT POINT within deposit.
+        return purseMethods.deposit(
+          currentBalance,
+          updatePurseBalance,
+          srcPayment,
+          optAmount,
+        );
+      },
+      withdraw: amount =>
+        // Note COMMIT POINT within withdraw.
+        purseMethods.withdraw(currentBalance, updatePurseBalance, amount),
+      getCurrentAmount: () => currentBalance,
+      getCurrentAmountNotifier: () => balanceNotifier,
+      getAllegedBrand: () => brand,
+      // eslint-disable-next-line no-use-before-define
+      getDepositFacet: () => depositFacet,
+    });
+
+    const depositFacet = makeDepositFacetImpl({
+      receive: purse.deposit,
+    });
+
+    return purse;
+  };
+  return makeEmptyPurse;
 };
