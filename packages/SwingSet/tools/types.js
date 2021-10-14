@@ -47,12 +47,12 @@
  * @typedef { SlogTimedEntry & {
  *   type: 'create-vat',
  *   vatID: string,
- *   dynamic: boolean,
- *   description: string,
+ *   dynamic?: boolean,
+ *   description?: string,
  *   name?: string,
- *   managerType: unknown,
- *   vatParameters: Record<string, unknown>,
- *   vatSourceBundle: unknown,
+ *   managerType?: string,
+ *   vatParameters?: Record<string, unknown>,
+ *   vatSourceBundle?: unknown,
  * }} SlogCreateVatEntry
  * @typedef { SlogTimedEntry & {
  *   type: 'import-kernel-start' | 'import-kernel-finish'
