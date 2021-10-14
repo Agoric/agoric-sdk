@@ -21,9 +21,9 @@ AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
-all: build-chain install install-helper
+all: build-chain install install-agd install-helper
 
-client: build-helper install install-helper
+client: build-helper install install-agd install-helper
 
 scenario0-setup:
 	mkdir -p t9
@@ -43,8 +43,8 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = DEBUG=SwingSet:ls,SwingSet:vat ./bin/ag-chain-cosmos
-AGCH = $(GOSRC)/build/ag-cosmos-helper
+AGC = DEBUG=SwingSet:ls,SwingSet:vat PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
+AGCH = $(GOSRC)/build/agd
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -204,6 +204,9 @@ build-chain:
 
 build-helper:
 	$(MAKE) -C $(GOSRC) compile-helper
+
+install-agd:
+	install -c $(GOSRC)/build/agd "$(BIN)/agd"
 
 install-helper:
 	install -c $(GOSRC)/build/ag-cosmos-helper "$(BIN)/ag-cosmos-helper"

@@ -18,11 +18,11 @@ import {
 
 const console = anylogger('chain-cosmos-sdk');
 
-// the `ag-cosmos-helper` tool in our repo is built by 'cd golang/cosmos &&
+// the `agd` tool in our repo is built by 'cd golang/cosmos &&
 // make'. It lives in the build tree along with `bin/ag-solo`, in case there are
 // multiple checkouts of `agoric-sdk`.
 export const HELPER = new URL(
-  '../../../golang/cosmos/build/ag-cosmos-helper',
+  '../../../golang/cosmos/build/agd',
   import.meta.url,
 ).pathname;
 
@@ -100,7 +100,7 @@ export async function connectToChain(
 ) {
   // Each time we read our mailbox from the chain's state, and each time we
   // send an outbound message to the chain, we shell out to a one-shot copy
-  // of 'ag-cosmos-helper', the swingset-flavored cosmos-sdk CLI tool.
+  // of 'agd', the swingset-flavored cosmos-sdk CLI tool.
 
   // We originally thought we could use the tool's "rest-server" mode, leave
   // it running for the duration of our process, but it turns out that the
@@ -108,7 +108,7 @@ export async function connectToChain(
   // security concern in https://github.com/cosmos/cosmos-sdk/issues/3641)
 
   // A better approach I'm hopeful we can achieve is an FFI binding to the
-  // same golang code that powers ag-cosmos-helper, so we can call the
+  // same golang code that powers agd, so we can call the
   // query/tx functions directly without the overhead of spawning a
   // subprocess and encoding everything as strings over stdio.
 
@@ -148,7 +148,7 @@ export async function connectToChain(
   // The helper account may only have the authority to send messages on behalf
   // of the client, which has been set up by the client with something like:
   //
-  // ag-cosmos-helper tx authz grant $(cat ag-cosmos-helper-address) \
+  // agd tx authz grant $(cat ag-cosmos-helper-address) \
   // generic --msg-type=/agoric.swingset.MsgDeliverInbound \
   // --from=$(cat cosmos-client-account)
   const clientAddr = await readOrDefault(
@@ -159,7 +159,7 @@ export async function connectToChain(
   // The helper address may not have a token balance, and instead uses a
   // separate fee account, set up with something like:
   //
-  // ag-cosmos-helper tx feegrant grant --period=5 --period-limit=200000urun \
+  // agd tx feegrant grant --period=5 --period-limit=200000urun \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
   const feeAccountAddr = await readOrDefault(
     path.join(basedir, 'cosmos-fee-account'),

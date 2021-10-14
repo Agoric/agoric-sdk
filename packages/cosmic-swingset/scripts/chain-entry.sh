@@ -11,7 +11,7 @@ single-node)
   shift
   cd
   export DAEMON=ag-chain-cosmos
-  export CLI=ag-cosmos-helper
+  export CLI=agd
   export STAKE=10000000000ubld
   exec "$DIR/single-node.sh" ${1+"$@"}
   ;;

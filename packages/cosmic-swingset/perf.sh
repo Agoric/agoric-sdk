@@ -5,7 +5,7 @@ set -ex
 height=${1-0}
 
 addr=$(cat t1/8000/ag-cosmos-helper-address)
-hex=$(ag-cosmos-helper keys parse $addr --output=json | jq -r '.bytes')
+hex=$(agd keys parse $addr --output=json | jq -r '.bytes')
 b64=$(echo $hex | xxd -r -p | base64 | tr '+/' '-_')
 # echo $b64
 
