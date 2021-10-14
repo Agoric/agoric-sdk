@@ -29,12 +29,18 @@ async function* slogToDiagram(entries) {
   const vatInfo = new Map();
   const arrival = new Map();
   const departure = new Map();
+  // track end-of-delivery for deactivating actors
+  const deliverResults = [];
 
   let tBlock;
   let blockHeight;
   let dInfo;
 
   for await (const entry of entries) {
+    // handle off-chain use, such as in unit tests
+    if (!tBlock) {
+      tBlock = entry.time;
+    }
     switch (entry.type) {
       case 'create-vat':
         // TODO label participants with vat names
@@ -63,6 +69,7 @@ async function* slogToDiagram(entries) {
               },
             ] = kd;
             dInfo = {
+              type: entry.type,
               time: entry.time,
               elapsed: entry.time - tBlock,
               crankNum: entry.crankNum,
@@ -79,10 +86,11 @@ async function* slogToDiagram(entries) {
             const [_tag, resolutions] = kd;
             for (const [kp, { state }] of resolutions) {
               dInfo = {
+                type: entry.type,
                 time: entry.time,
                 elapsed: entry.time - tBlock,
                 vatID: entry.vatID,
-                method: state,
+                state,
                 target: kp,
               };
               arrival.set(`R${kp}`, dInfo);
@@ -95,6 +103,12 @@ async function* slogToDiagram(entries) {
         break;
       }
       case 'deliver-result': {
+        // track end-of-delivery for deactivating actors
+        deliverResults.push([
+          entry.type,
+          { time: entry.time, type: entry.type, vatID: entry.vatID },
+        ]);
+        // supplement deliver entry with compute meter
         const { dr } = entry;
         if (dr[2] && 'compute' in dr[2]) {
           const { compute } = dr[2];
@@ -109,6 +123,7 @@ async function* slogToDiagram(entries) {
               ksc: [_, target, { method, result }],
             } = entry;
             departure.set(result, {
+              type: entry.type,
               time: entry.time,
               vatID: entry.vatID,
               target,
@@ -121,7 +136,11 @@ async function* slogToDiagram(entries) {
               ksc: [_, _thatVat, parts],
             } = entry;
             for (const [kp, _rejected, _args] of parts) {
-              departure.set(`R${kp}`, { time: entry.time, vatID: entry.vatID });
+              departure.set(`R${kp}`, {
+                type: entry.type,
+                time: entry.time,
+                vatID: entry.vatID,
+              });
             }
             break;
           }
@@ -143,12 +162,32 @@ async function* slogToDiagram(entries) {
     yield `control ${vatID}\n`;
   }
 
-  const byTime = [...arrival].sort((a, b) => a[1].time - b[1].time);
+  const byTime = [...arrival, ...deliverResults].sort(
+    (a, b) => a[1].time - b[1].time,
+  );
 
+  let active;
   for (const [
     ref,
-    { elapsed, vatID: dest, target, method, argSize, compute, blockTime },
+    {
+      type,
+      elapsed,
+      vatID: dest,
+      target,
+      method,
+      state,
+      argSize,
+      compute,
+      blockTime,
+    },
   ] of byTime) {
+    if (type === 'deliver-result') {
+      if (active) {
+        yield `deactivate ${active}\n`;
+        active = undefined;
+      }
+      continue;
+    }
     if (typeof ref === 'number') {
       blockHeight = ref;
       const dt = new Date(blockTime * 1000).toISOString().slice(0, -5);
@@ -159,7 +198,7 @@ async function* slogToDiagram(entries) {
     // yield `autonumber ${blockHeight}.${t}\n`;
     yield `autonumber ${t}\n`;
     if (typeof ref === 'object') {
-      yield `[-> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+      yield `[-> ${dest} : ${target}.${method || state}(${argSize || ''})\n`;
       if (compute && compute > 50000) {
         yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
       }
@@ -170,7 +209,21 @@ async function* slogToDiagram(entries) {
       continue;
     }
     const { vatID: src } = departure.get(ref);
-    yield `${src} -> ${dest} : ${target}.${method}(${argSize || ''})\n`;
+    const label = method
+      ? `${ref} <- ${target}.${method}(${argSize || ''})`
+      : `${target}.${state}()`;
+    // label return values (resolutions) with dotted lines
+    const arrow = method ? '->' : '-->';
+
+    yield `${src} ${arrow} ${dest} : ${label}\n`;
+
+    // show active vat
+    if (type === 'deliver' && active !== dest) {
+      yield `activate ${dest}\n`;
+      active = dest;
+    }
+
+    // add note to compute-intensive deliveries
     if (compute && compute > 50000) {
       yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
     }
