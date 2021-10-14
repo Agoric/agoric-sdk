@@ -73,7 +73,7 @@ def perc(n):
     return "%3d%%" % (n * 100)
 
 # Activating do_count_signatures causes the tool to query the chain for each
-# block (by running ag-cosmos-helper, which must be in your $PATH), to
+# block (by running agd, which must be in your $PATH), to
 # retrieve the number of rounds required, the number and types of signatures,
 # and the address of the block proposer. If we were given a suitable keys.txt
 # in sys.argv, use it to translate addresses to monikers. keys.txt can be
@@ -98,7 +98,7 @@ def load_genesis_keys(fn):
 
 def wait_for_block(height):
     while True:
-        out = subprocess.check_output(["ag-cosmos-helper", "status"]).decode()
+        out = subprocess.check_output(["agd", "status"]).decode()
         now = int(json.loads(out)["SyncInfo"]["latest_block_height"])
         if now >= height:
             return
@@ -108,7 +108,7 @@ def count_signatures(height):
     if not do_count_signatures:
         return (0, 0, 0, "")
     wait_for_block(height)
-    out = subprocess.check_output(["ag-cosmos-helper", "query", "block", str(height)]).decode()
+    out = subprocess.check_output(["agd", "query", "block", str(height)]).decode()
     block = json.loads(out)["block"]
     sigs = block["last_commit"]["signatures"]
     twos = len([s for s in sigs if s["block_id_flag"] == 2])
