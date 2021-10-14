@@ -3,6 +3,7 @@ module github.com/Agoric/agoric-sdk
 go 1.15
 
 require (
+	github.com/armon/go-metrics v0.3.9
 	github.com/cosmos/cosmos-sdk v0.44.0
 	github.com/cosmos/ibc-go v1.1.0
 	github.com/gogo/protobuf v1.3.3

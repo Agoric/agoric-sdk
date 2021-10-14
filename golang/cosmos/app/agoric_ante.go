@@ -1,6 +1,9 @@
 package gaia
 
 import (
+	"github.com/armon/go-metrics"
+
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -26,15 +29,34 @@ func NewAdmissionDecorator(callToController func(sdk.Context, string) (string, e
 // vm.ControllerAdmissionMsg interface.  If it returns an error, refuse the
 // entire transaction.
 func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+	msgs := tx.GetMsgs()
+	errors := make([]error, 0, len(msgs))
+
 	if !simulate {
 		// Ask the controller if we are rejecting messages.
 		for _, msg := range tx.GetMsgs() {
 			if camsg, ok := msg.(vm.ControllerAdmissionMsg); ok {
 				if err := camsg.CheckAdmissibility(ctx, ad.CallToController); err != nil {
-					return ctx, sdkerrors.Wrapf(ErrAdmissionRefused, "controller refused message admission: %s", err.Error())
+					errors = append(errors, err)
+					defer func() {
+						telemetry.IncrCounterWithLabels(
+							[]string{"tx", "ante", "admission_refused"},
+							1,
+							[]metrics.Label{
+								telemetry.NewLabel("msg", sdk.MsgTypeURL(msg)),
+							},
+						)
+					}()
 				}
 			}
 		}
+	}
+
+	numErrors := len(errors)
+	if numErrors > 0 {
+		// Add to instrumentation.
+
+		return ctx, sdkerrors.Wrapf(ErrAdmissionRefused, "controller refused message admission: %s", errors[0].Error())
 	}
 
 	return next(ctx, tx, simulate)
