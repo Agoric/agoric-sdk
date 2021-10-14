@@ -43,7 +43,6 @@ async function* slogToDiagram(entries) {
     }
     switch (entry.type) {
       case 'create-vat':
-        // TODO label participants with vat names
         vatInfo.set(entry.vatID, entry);
         break;
       case 'cosmic-swingset-end-block-start':
@@ -56,7 +55,12 @@ async function* slogToDiagram(entries) {
         break;
       case 'deliver': {
         const { kd } = entry;
-        vatInfo.set(entry.vatID, null);
+        if (!vatInfo.has(entry.vatID))
+          vatInfo.set(entry.vatID, {
+            type: 'create-vat',
+            time: entry.time,
+            vatID: entry.vatID,
+          });
         switch (kd[0]) {
           case 'message': {
             const [
@@ -158,8 +162,10 @@ async function* slogToDiagram(entries) {
 
   yield '@startuml slog\n';
 
-  for (const [vatID, _info] of vatInfo) {
-    yield `control ${vatID}\n`;
+  for (const [vatID, info] of vatInfo) {
+    const { name = '???' } = info || {};
+    const label = JSON.stringify(`${vatID}:${name}`); // stringify to add ""s
+    yield `control ${label} as ${vatID}\n`;
   }
 
   const byTime = [...arrival, ...deliverResults].sort(
@@ -183,7 +189,7 @@ async function* slogToDiagram(entries) {
   ] of byTime) {
     if (type === 'deliver-result') {
       if (active) {
-        yield `deactivate ${active}\n`;
+        // yield `deactivate ${active}\n`;
         active = undefined;
       }
       continue;
@@ -195,17 +201,25 @@ async function* slogToDiagram(entries) {
       continue;
     }
     const t = Math.round(elapsed * 1000) / 1000;
+
+    // add note to compute-intensive deliveries
+    const computeNote =
+      compute && compute > 50000
+        ? `note right\n${compute.toLocaleString()} compute\nend note\n`
+        : undefined;
+
     // yield `autonumber ${blockHeight}.${t}\n`;
     yield `autonumber ${t}\n`;
     if (typeof ref === 'object') {
       yield `[-> ${dest} : ${target}.${method || state}(${argSize || ''})\n`;
-      if (compute && compute > 50000) {
-        yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
-      }
+      if (computeNote) yield computeNote;
       continue;
     }
     if (!departure.has(ref)) {
-      console.warn({ ref });
+      console.warn('no source for', { ref });
+      yield `[o-> ${dest} : ${ref} <- ${target}.${method || state}(${argSize ||
+        ''})\n`;
+      if (computeNote) yield computeNote;
       continue;
     }
     const { vatID: src } = departure.get(ref);
@@ -219,14 +233,11 @@ async function* slogToDiagram(entries) {
 
     // show active vat
     if (type === 'deliver' && active !== dest) {
-      yield `activate ${dest}\n`;
+      // yield `activate ${dest}\n`;
       active = dest;
     }
 
-    // add note to compute-intensive deliveries
-    if (compute && compute > 50000) {
-      yield `note right\n${compute.toLocaleString()} compute\nend note\n`;
-    }
+    if (computeNote) yield computeNote;
   }
 
   yield '@enduml\n';
