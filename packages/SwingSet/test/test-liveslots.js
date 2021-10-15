@@ -1063,6 +1063,7 @@ test('dropImports', async t => {
   t.is(FR.countCallbacks(), 0);
 
   await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
+  await dispatch(makeBringOutYourDead());
   // back to REACHABLE, removed from possiblyDeadSet
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
