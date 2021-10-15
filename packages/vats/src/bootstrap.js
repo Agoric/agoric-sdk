@@ -370,7 +370,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           };
 
           const addTypeInvitation = E(treasuryCreator).makeAddTypeInvitation(
-            record.issuer,
+            record.issuer || assert.fail(X`missing issuer: ${record}`),
             config.keyword,
             rates,
           );
