@@ -33,7 +33,7 @@
  * @property {() => Instance} getAMM
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
- * @property {() => ERef<Payment>} getBootstrapPayment
+ * @property {(a: Amount) => ERef<Payment>} getBootstrapPayment
  * @property {() => Governor} getContractGovernor
  * @property {() => Invitation} makeCollectFeesInvitation
  */
