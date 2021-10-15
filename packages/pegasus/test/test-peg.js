@@ -13,6 +13,10 @@ import { makeZoeKit } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { Far } from '@endo/marshal';
+import { makeSubscription } from '@agoric/notifier';
+
+import '@agoric/ertp/exported.js';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -23,12 +27,15 @@ const contractPath = `${dirname}/../src/pegasus.js`;
  * @param {import('tape-promise/tape').Test} t
  */
 async function testRemotePeg(t) {
-  t.plan(13);
+  t.plan(16);
 
   /**
-   * @type {import('@agoric/ertp').DepositFacet?}
+   * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
    */
-  let localDepositFacet;
+  const {
+    promise: localDepositFacet,
+    resolve: resolveLocalDepositFacet,
+  } = makePromiseKit();
   const fakeBoard = Far('fakeBoard', {
     getValue(id) {
       if (id === '0x1234') {
@@ -103,13 +110,6 @@ async function testRemotePeg(t) {
   const chandler = E(pegasus).makePegConnectionHandler();
   const connP = E(portP).connect(portName, chandler);
 
-  const pegP = await E(pegasus).pegRemote('Gaia', connP, 'uatom');
-  const localBrand = await E(pegP).getLocalBrand();
-  const localIssuer = await E(pegasus).getLocalIssuer(localBrand);
-
-  const localPurseP = E(localIssuer).makeEmptyPurse();
-  localDepositFacet = await E(localPurseP).getDepositFacet();
-
   // Get some local Atoms.
   const sendPacket = {
     amount: '100000000000000000001',
@@ -117,8 +117,26 @@ async function testRemotePeg(t) {
     receiver: '0x1234',
     sender: 'FIXME:sender',
   };
+  await connP;
+  const sendAckDataP = E(gaiaConnection).send(JSON.stringify(sendPacket));
 
-  const sendAckData = await E(gaiaConnection).send(JSON.stringify(sendPacket));
+  // Note that we can create the peg after the fact.
+  const remoteDenomSub = makeSubscription(
+    E(
+      E(pegasus).getRemoteDenomSubscription(connP),
+    ).getSharableSubscriptionInternals(),
+  );
+  const remoteDenomAit = remoteDenomSub[Symbol.asyncIterator]();
+  t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'uatom' });
+
+  const pegP = await E(pegasus).pegRemote('Gaia', connP, 'uatom');
+  const localBrand = await E(pegP).getLocalBrand();
+  const localIssuer = await E(pegasus).getLocalIssuer(localBrand);
+
+  const localPurseP = E(localIssuer).makeEmptyPurse();
+  resolveLocalDepositFacet(E(localPurseP).getDepositFacet());
+
+  const sendAckData = await sendAckDataP;
   const sendAck = JSON.parse(sendAckData);
   t.deepEqual(sendAck, { success: true }, 'Gaia sent the atoms');
   if (!sendAck.success) {
@@ -153,6 +171,26 @@ async function testRemotePeg(t) {
     localAtomsAmount2,
     { brand: localBrand, value: 100000000000000000171n },
     'we received more shadow atoms',
+  );
+
+  const sendPacket3 = {
+    amount: '13',
+    denom: 'umuon',
+    receiver: 'agoric1234567',
+    sender: 'FIXME:sender4',
+  };
+  const sendAckData3P = E(gaiaConnection).send(JSON.stringify(sendPacket3));
+
+  // Wait for the packet to go through.
+  t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
+  E(pegasus).rejectStuckTransfers(connP, 'umuon');
+
+  const sendAckData3 = await sendAckData3P;
+  const sendAck3 = JSON.parse(sendAckData3);
+  t.deepEqual(
+    sendAck3,
+    { success: false, error: 'Error: "umuon" is temporarily unavailable' },
+    'rejecting transfers works',
   );
 
   const localAtoms = await E(localPurseP).withdraw(localAtomsAmount);

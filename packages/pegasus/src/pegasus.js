@@ -138,43 +138,39 @@ const makeCourier = ({
 
   /** @type {Receiver} */
   const receive = async ({ value, depositAddress }) => {
-    const tryToDeposit = async () => {
-      const localAmount = AmountMath.make(localBrand, value);
+    const localAmount = AmountMath.make(localBrand, value);
 
-      // Look up the deposit facet for this board address, if there is one.
-      /** @type {DepositFacet} */
-      const depositFacet = await E(board)
-        .getValue(depositAddress)
-        .catch(_ => E(namesByAddress).lookup(depositAddress, 'depositFacet'));
+    // Look up the deposit facet for this board address, if there is one.
+    /** @type {DepositFacet} */
+    const depositFacet = await E(board)
+      .getValue(depositAddress)
+      .catch(_ => E(namesByAddress).lookup(depositAddress, 'depositFacet'));
 
-      const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
+    const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
 
-      // Redeem the backing payment.
-      try {
-        redeem(zcfSeat, { Transfer: localAmount });
-        zcfSeat.exit();
-      } catch (e) {
-        zcfSeat.fail(e);
-        throw e;
-      }
+    // Redeem the backing payment.
+    try {
+      redeem(zcfSeat, { Transfer: localAmount });
+      zcfSeat.exit();
+    } catch (e) {
+      zcfSeat.fail(e);
+      throw e;
+    }
 
-      // Once we've gotten to this point, their payment is committed and
-      // won't be refunded on a failed receive.
-      const payout = await E(userSeat).getPayout('Transfer');
+    // Once we've gotten to this point, their payment is committed and
+    // won't be refunded on a failed receive.
+    const payout = await E(userSeat).getPayout('Transfer');
 
-      // Send the payout promise to the deposit facet.
-      E(depositFacet)
-        .receive(payout)
-        .catch(_ => {});
+    // Send the payout promise to the deposit facet.
+    //
+    // We don't want to wait for the depositFacet to return, so that
+    // it can't hang up (i.e. DoS) an ordered channel, which relies on
+    // us returning promptly.
+    E(depositFacet)
+      .receive(payout)
+      .catch(_ => {});
 
-      // We don't want to wait for the depositFacet to return, so that
-      // it can't hang up (i.e. DoS) an ordered channel, which relies on
-      // us returning promptly.
-    };
-
-    return tryToDeposit()
-      .then(_ => E(transferProtocol).makeTransferPacketAck(true))
-      .catch(error => E(transferProtocol).makeTransferPacketAck(false, error));
+    return E(transferProtocol).makeTransferPacketAck(true);
   };
 
   return Far('courier', { send, receive });
@@ -280,23 +276,29 @@ const makePegasus = (zcf, board, namesByAddress) => {
           });
         },
         async onReceive(_c, packetBytes) {
-          // Dispatch the packet to the appropriate Peg for this connection.
-          const parts = await E(transferProtocol).parseTransferPacket(
-            packetBytes,
+          const doReceive = async () => {
+            // Dispatch the packet to the appropriate Peg for this connection.
+            const parts = await E(transferProtocol).parseTransferPacket(
+              packetBytes,
+            );
+
+            const { remoteDenom } = parts;
+            assert.typeof(remoteDenom, 'string');
+
+            if (!remoteDenomToCourierPK.has(remoteDenom)) {
+              // This is the first time we've heard of this denomination.
+              remoteDenomPublication.updateState(remoteDenom);
+            }
+
+            // Wait for the courier to be instantiated.
+            const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+            const { receive } = await courierPK.promise;
+            return receive(parts);
+          };
+
+          return doReceive().catch(error =>
+            E(transferProtocol).makeTransferPacketAck(false, error),
           );
-
-          const { remoteDenom } = parts;
-          assert.typeof(remoteDenom, 'string');
-
-          if (!remoteDenomToCourierPK.has(remoteDenom)) {
-            // This is the first time we've heard of this denomination.
-            remoteDenomPublication.updateState(remoteDenom);
-          }
-
-          // Wait for the courier to be instantiated.
-          const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
-          const { receive } = await courierPK.promise;
-          return receive(parts);
         },
         async onClose(c) {
           // Unregister C.  Pending transfers will be rejected by the Network API.
@@ -339,7 +341,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
         connection,
       );
 
-      const { reject } = remoteDenomToCourierPK.get(remoteDenom);
+      const { reject, promise } = remoteDenomToCourierPK.get(remoteDenom);
+      promise.catch(() => {});
       reject(assert.error(X`${remoteDenom} is temporarily unavailable`));
 
       // Allow new transfers to be initiated.
