@@ -213,7 +213,7 @@ export async function installOnChain({
   });
 
   await Promise.all([
-    E(demoAdmin).update('voteCreator', voteCreator),
+    E(demoAdmin).update('governorCreatorFacet', governorCreatorFacet),
     E(demoAdmin).update('electorateCreatorFacet', electorateCreatorFacet),
   ]);
   return { treasuryCreator, voteCreator };
