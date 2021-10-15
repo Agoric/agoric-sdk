@@ -41,9 +41,11 @@ import {
   governedParameterTerms as governedParameterLocal,
   ParamKey,
 } from './params.js';
-import { makeMakeAddTypeNoAmm, makeMakeAddTypeInvitation } from './addType';
+import { makeAddTypeNoAmm, makeMakeAddTypeInvitation } from './addType.js';
+import { makeTracer } from './makeTracer.js';
 
 const { quote: q, details: X } = assert;
+const trace = makeTracer('ST');
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
 // "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
@@ -303,7 +305,7 @@ export async function start(zcf, privateArgs) {
     runKit,
     { brand: govBrand, mint: govMint },
   );
-  const makeAddTypeNoAmm = makeMakeAddTypeNoAmm(
+  const addTypeNoAmm = makeAddTypeNoAmm(
     zcf,
     poolParamManagers,
     rewardPoolSeat,
@@ -313,7 +315,8 @@ export async function start(zcf, privateArgs) {
   );
 
   const addCollateralType = update => {
-    makeAddTypeNoAmm(update.collateralIssuer, update.keyword, update.rates);
+    trace('addingCollateral', update);
+    addTypeNoAmm(update.collateralIssuer, update.keyword, update.rates);
   };
 
   const addsCollateral = update => {
@@ -322,6 +325,9 @@ export async function start(zcf, privateArgs) {
       harden(Object.getOwnPropertyNames(update.rates)),
       harden(['initialMargin', 'interestRate', 'liquidationMargin', 'loanFee']),
     );
+
+    trace('addsCollateralP', ratesOk);
+
     return update.collateralIssuer && ratesOk && collateralKeyword;
   };
 
@@ -330,7 +336,7 @@ export async function start(zcf, privateArgs) {
 
   /** @type {StablecoinMachine} */
   const stablecoinMachine = Far('stablecoin machine', {
-    makeAddTypeNoAmm,
+    addTypeNoAmm,
     makeAddTypeInvitation,
     getAMM() {
       return autoswapInstance;

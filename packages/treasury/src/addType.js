@@ -14,7 +14,7 @@ import { makeTracer } from './makeTracer.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('ST');
+const trace = makeTracer('TYPE');
 
 const makeMakeAddTypeInvitation = (
   zcf,
@@ -178,7 +178,7 @@ const makeMakeAddTypeInvitation = (
   };
 };
 
-const makeMakeAddTypeNoAmm = (
+const makeAddTypeNoAmm = (
   zcf,
   poolParamManagers,
   rewardPoolSeat,
@@ -258,6 +258,6 @@ const makeMakeAddTypeNoAmm = (
 };
 
 harden(makeMakeAddTypeInvitation);
-harden(makeMakeAddTypeNoAmm);
+harden(makeAddTypeNoAmm);
 
-export { makeMakeAddTypeInvitation, makeMakeAddTypeNoAmm };
+export { makeMakeAddTypeInvitation, makeAddTypeNoAmm };

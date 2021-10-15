@@ -1896,6 +1896,7 @@ test('stablecoin add collateral via governance', async t => {
   );
   const { brand: runBrand, issuer: runIssuer } = services.issuers.run;
   const { lender } = services.stablecoin;
+  t.deepEqual(await E(lender).getCollaterals(), []);
 
   const rates = harden({
     initialMargin: makeRatio(120n, runBrand),
@@ -1940,6 +1941,9 @@ test('stablecoin add collateral via governance', async t => {
       Collateral: await E(aethMint).mintPayment(collateralAmount),
     }),
   );
+
+  const collateralsAfter = await E(lender).getCollaterals();
+  t.deepEqual(collateralsAfter[0].brand, aethBrand);
 
   const loanProceeds = await E.get(E(loanSeat).getPayouts()).RUN;
 

@@ -80,6 +80,9 @@ const makeUpdateObserver = (checkUpdate, task) => {
   const updateState = update => {
     if (checkUpdate(update)) {
       task(update);
+      console.log(`updateObserver ${update} succeeded!`);
+    } else {
+      console.log(`updateObserver checkUpdate returned false`);
     }
   };
 
