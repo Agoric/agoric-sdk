@@ -103,12 +103,14 @@ const makeCausewayFormatter = () => {
       self.makeSent(anchor, message, text, [LogClass.Returned]),
     /**
      * @param {Anchor} anchor
+     * @param { string } message
      * @param { string } condition
      */
-    makeSentIf: (anchor, condition) =>
+    makeSentIf: (anchor, message, condition) =>
       freeze({
         class: [LogClass.SentIf, LogClass.Sent, LogClass.Event],
         anchor,
+        message,
         condition,
       }),
     /**
@@ -302,7 +304,7 @@ async function* slogToCauseway(entries) {
     // deliver / returned
     if (notified.has(rkp)) {
       const target = notified.get(rkp);
-      yield dest.makeSentIf(anchor(target), rkp);
+      yield dest.makeSentIf(anchor(target), rkp, rkp);
     } else {
       console.warn('no notified for', rkp);
       // TODO: check for missing data in the other direction?
