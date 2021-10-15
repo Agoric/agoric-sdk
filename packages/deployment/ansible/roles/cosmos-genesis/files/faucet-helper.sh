@@ -101,7 +101,8 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         bank send \
         --broadcast-mode=block \
         -- faucet "$ADDR" "$STAKE"; then
-        # Record the information before exiting.
+        # Record the information before exiting, if the file exists.
+        test -f $thisdir/cosmos-delegates || exit 0
         sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
         echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0
