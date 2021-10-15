@@ -523,7 +523,7 @@
 
 /**
  * @callback VoteOnContractUpdate
- * @param {Object} update
+ * @param {unknown} update
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
  * @returns {Promise<VoteOnContractUpdateResult>}
@@ -583,6 +583,7 @@
 /**
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
+ * @property {VoteOnContractUpdate} voteOnContractUpdate
  * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
