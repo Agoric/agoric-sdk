@@ -168,7 +168,7 @@ test('validate config.defaultManagerType', async t => {
   await t.throwsAsync(buildVatController(config), { message: /XYZ/ });
 });
 
-test('bootstrap export', async t => {
+test.serial('bootstrap export', async t => {
   const config = await loadBasedir(
     new URL('basedir-controller-3', import.meta.url).pathname,
   );

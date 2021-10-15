@@ -2,7 +2,7 @@
 # just to compile the Golang pieces under Docker.
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
-COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
+GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
 
 default: all
 
@@ -25,7 +25,7 @@ VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
 		-X github.com/cosmos/cosmos-sdk/version.AppName=agd \
 		-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-		-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+		-X github.com/cosmos/cosmos-sdk/version.Commit=$(GIT_COMMIT) \
 		-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 gcflags =
