@@ -1,15 +1,30 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {string} DenomUri
  * @typedef {string} Denom
  * @typedef {string} DepositAddress
- * @typedef {string} TransferProtocol
- *
+ */
+
+/**
+ * @typedef {Object} PacketParts
+ * @property {Value} value
+ * @property {Denom} remoteDenom
+ * @property {DepositAddress} depositAddress
+ */
+
+/**
+ * @typedef {Object} TransferProtocol
+ * @property {(parts: PacketParts) => Promise<Bytes>} makeTransferPacket
+ * @property {(packet: Bytes) => Promise<PacketParts>} parseTransferPacket
+ * @property {(success: boolean, error?: any) => Promise<Bytes>} makeTransferPacketAck
+ * @property {(ack: Bytes) => Promise<void>} assertTransferPacketAck
+ */
+
+/**
  * @typedef {Object} Peg
  * @property {() => string} getAllegedName get the debug name
  * @property {() => Brand} getLocalBrand get the brand associated with the peg
- * @property {() => DenomUri} getDenomUri get the denomination identifier
+ * @property {() => Denom} getRemoteDenom get the denomination identifier
  */
 
 /**
@@ -18,17 +33,9 @@
  */
 
 /**
- * @typedef {Object} FungibleTransferPacket
- * @property {string} amount The extent of the amount
- * @property {Denom} denom The denomination of the amount
- * @property {string} [sender] The sender address
- * @property {DepositAddress} receiver The receiver deposit address
- */
-
-/**
  * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress) => Promise<void>} Sender
  * Successive transfers are not guaranteed to be processed in the order in which they were sent.
- * @typedef {(packet: FungibleTransferPacket) => Promise<void>} Receiver
+ * @typedef {(parts: PacketParts) => Promise<Bytes>} Receiver
  * @typedef {Object} Courier
  * @property {Sender} send
  * @property {Receiver} receive

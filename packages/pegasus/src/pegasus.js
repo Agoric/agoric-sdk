@@ -1,22 +1,23 @@
 // @ts-check
 
-import { assert, details, q } from '@agoric/assert';
-import { makeNotifierKit } from '@agoric/notifier';
+import { assert, details as X, q } from '@agoric/assert';
 import { makeLegacyWeakMap, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { Nat } from '@agoric/nat';
-import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 
-import '@agoric/notifier/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
 import '@agoric/zoe/exported.js';
+
 import '../exported.js';
+import { makePromiseKit } from '@agoric/promise-kit';
+import { AmountMath } from '@agoric/ertp';
+import { ICS20TransferProtocol } from './ics20.js';
+
+const DEFAULT_TRANSFER_PROTOCOL = ICS20TransferProtocol;
 
 const DEFAULT_AMOUNT_MATH_KIND = 'nat';
-const DEFAULT_PROTOCOL = 'ics20-1';
 
 const TRANSFER_PROPOSAL_SHAPE = {
   give: {
@@ -25,117 +26,53 @@ const TRANSFER_PROPOSAL_SHAPE = {
 };
 
 /**
- * Get the denomination combined with the network address.
+ * Create a promise kit that will throw an exception if it is resolved or
+ * rejected more than once.
  *
- * @param {ERef<Endpoint | undefined>} endpointP network connection address
- * @param {Denom} denom denomination
- * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL] the protocol to use
- * @returns {Promise<string>} denomination URI scoped to endpoint
+ * @param {() => Details} makeReinitDetails
  */
-async function makeDenomUri(endpointP, denom, protocol = DEFAULT_PROTOCOL) {
-  switch (protocol) {
-    case 'ics20-1': {
-      return E.when(endpointP, endpoint => {
-        if (!endpoint) {
-          // Unqualified remote denomination.
-          return `${protocol}:${denom}`;
-        }
+const makeOncePromiseKit = makeReinitDetails => {
+  const { promise, resolve, reject } = makePromiseKit();
 
-        // Deconstruct IBC endpoints to use ICS-20 conventions.
-        // IBC endpoint: `/ibc-hop/gaia/ibc-port/transfer/ordered/ics20-1/ibc-channel/chtedite`
-        const pairs = parseMultiaddr(endpoint);
+  let initialized = false;
+  /**
+   * @template {any[]} A
+   * @template R
+   * @param {(...args: A) => R} fn
+   * @returns {(...args: A) => R}
+   */
+  const onceOnly = fn => (...args) => {
+    assert(!initialized, makeReinitDetails());
+    initialized = true;
+    return fn(...args);
+  };
 
-        const protoPort = pairs.find(([proto]) => proto === 'ibc-port');
-        assert(protoPort, details`Cannot find IBC port in ${endpoint}`);
-
-        const protoChannel = pairs.find(([proto]) => proto === 'ibc-channel');
-        assert(protoChannel, details`Cannot find IBC channel in ${endpoint}`);
-
-        const port = protoPort[1];
-        const channel = protoChannel[1];
-        return `${protocol}:${port}/${channel}/${denom}`;
-      });
-    }
-
-    default:
-      throw assert.fail(details`Invalid denomination protocol ${protocol}`);
-  }
-}
+  /** @type {PromiseRecord<any>} */
+  const oncePK = harden({
+    promise,
+    resolve: onceOnly(resolve),
+    reject: onceOnly(reject),
+  });
+  return oncePK;
+};
 
 /**
- * Translate to and from local tokens.
+ * Create or return an existing courier promise kit.
  *
- * @param {Brand} localBrand
- * @param {string} prefixedDenom
+ * @param {Denom} remoteDenom
+ * @param {Store<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
  */
-function makeICS20Converter(localBrand, prefixedDenom) {
-  /**
-   * Convert an inbound packet to a local amount.
-   *
-   * @param {FungibleTransferPacket} packet
-   * @returns {Amount}
-   */
-  function packetToLocalAmount(packet) {
-    // packet.amount is a string in JSON.
-    const bigValue = BigInt(packet.amount);
-
-    // If we overflow, or don't have a non-negative integer, throw an exception!
-    const value = Nat(bigValue);
-
-    return harden({
-      brand: localBrand,
-      value,
-    });
+const getCourierPK = (remoteDenom, remoteDenomToCourierPK) => {
+  if (remoteDenomToCourierPK.has(remoteDenom)) {
+    return remoteDenomToCourierPK.get(remoteDenom);
   }
 
-  /**
-   * Convert the amount to a packet to send.
-   *
-   * @param {Amount} amount
-   * @param {DepositAddress} depositAddress
-   * @returns {FungibleTransferPacket}
-   */
-  function localAmountToPacket(amount, depositAddress) {
-    const { brand, value } = amount;
-    assert(
-      brand === localBrand,
-      details`Brand must our local issuer's, not ${q(brand)}`,
-    );
-    // We're using Nat as a dynamic check in a way that tsc doesn't grok.
-    // Should Nat's parameter type be `unknown`?
-    // @ts-ignore
-    const stringValue = String(Nat(value));
+  // This is the first packet for this denomination.
+  // Create a new Courier promise kit for it.
+  const courierPK = makeOncePromiseKit(() => X`${remoteDenom} already pegged`);
 
-    // Generate the ics20-1 packet.
-    return harden({
-      amount: stringValue,
-      denom: prefixedDenom,
-      receiver: depositAddress,
-    });
-  }
-
-  return { localAmountToPacket, packetToLocalAmount };
-}
-
-/**
- * Send the transfer packet and return a status.
- *
- * @param {Connection} c
- * @param {FungibleTransferPacket} packet
- * @returns {Promise<void>}
- */
-const sendTransferPacket = async (c, packet) => {
-  const packetBytes = JSON.stringify(packet);
-  return E(c)
-    .send(packetBytes)
-    .then(ack => {
-      // We got a response, so possible success.
-      const { success, error } = JSON.parse(ack);
-      if (!success) {
-        // Let the next catch handle this error.
-        throw error;
-      }
-    });
+  remoteDenomToCourierPK.init(remoteDenom, courierPK);
+  return courierPK;
 };
 
 /**
@@ -143,13 +80,14 @@ const sendTransferPacket = async (c, packet) => {
  *
  * @typedef {Object} CourierArgs
  * @property {ContractFacet} zcf
- * @property {Connection} connection
- * @property {BoardDepositFacet} board
- * @property {NameHub} namesByAddress
- * @property {DenomUri} denomUri
+ * @property {ERef<Connection>} connection
+ * @property {ERef<BoardDepositFacet>} board
+ * @property {ERef<NameHub>} namesByAddress
+ * @property {Denom} remoteDenom
  * @property {Brand} localBrand
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
+ * @property {ERef<TransferProtocol>} transferProtocol
  * @param {CourierArgs} arg0
  * @returns {Courier}
  */
@@ -158,38 +96,37 @@ const makeCourier = ({
   connection,
   board,
   namesByAddress,
-  denomUri,
+  remoteDenom,
   localBrand,
   retain,
   redeem,
+  transferProtocol,
 }) => {
-  const uriMatch = denomUri.match(/^[^:]+:(.*)$/);
-  assert(uriMatch, details`denomUri ${q(denomUri)} does not look like a URI`);
-  const prefixedDenom = uriMatch[1];
-
-  const { localAmountToPacket, packetToLocalAmount } = makeICS20Converter(
-    localBrand,
-    prefixedDenom,
-  );
-
   /** @type {Sender} */
   const send = async (zcfSeat, depositAddress) => {
     const tryToSend = async () => {
       const amount = zcfSeat.getAmountAllocated('Transfer', localBrand);
-      const packet = localAmountToPacket(amount, depositAddress);
+      const transferPacket = await E(transferProtocol).makeTransferPacket({
+        value: amount.value,
+        remoteDenom,
+        depositAddress,
+      });
 
       // Retain the payment.  We must not proceed on failure.
       retain(zcfSeat, { Transfer: amount });
 
       // The payment is already escrowed, and proposed to retain, so try sending.
-      return sendTransferPacket(connection, packet).then(
-        _ => zcfSeat.exit(),
-        reason => {
-          // Return the payment to the seat, if possible.
-          redeem(zcfSeat, { Transfer: amount });
-          throw reason;
-        },
-      );
+      return E(connection)
+        .send(transferPacket)
+        .then(ack => E(transferProtocol).assertTransferPacketAck(ack))
+        .then(
+          _ => zcfSeat.exit(),
+          reason => {
+            // Return the payment to the seat, if possible.
+            redeem(zcfSeat, { Transfer: amount });
+            throw reason;
+          },
+        );
     };
 
     // Reflect any error back to the seat.
@@ -199,39 +136,44 @@ const makeCourier = ({
   };
 
   /** @type {Receiver} */
-  const receive = async packet => {
-    // Look up the deposit facet for this board address, if there is one.
-    const depositAddress = packet.receiver;
-    /** @type {DepositFacet} */
-    const depositFacet = await E(board)
-      .getValue(depositAddress)
-      .catch(_ => E(namesByAddress).lookup(depositAddress, 'depositFacet'));
-    const localAmount = packetToLocalAmount(packet);
+  const receive = async ({ value, depositAddress }) => {
+    const tryToDeposit = async () => {
+      const localAmount = AmountMath.make(localBrand, value);
 
-    const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
+      // Look up the deposit facet for this board address, if there is one.
+      /** @type {DepositFacet} */
+      const depositFacet = await E(board)
+        .getValue(depositAddress)
+        .catch(_ => E(namesByAddress).lookup(depositAddress, 'depositFacet'));
 
-    // Redeem the backing payment.
-    try {
-      redeem(zcfSeat, { Transfer: localAmount });
-      zcfSeat.exit();
-    } catch (e) {
-      zcfSeat.fail(e);
-      throw e;
-    }
+      const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
 
-    // Once we've gotten to this point, their payment is committed and
-    // won't be refunded on a failed receive.
-    const payout = await E(userSeat).getPayout('Transfer');
+      // Redeem the backing payment.
+      try {
+        redeem(zcfSeat, { Transfer: localAmount });
+        zcfSeat.exit();
+      } catch (e) {
+        zcfSeat.fail(e);
+        throw e;
+      }
 
-    // Send the payout promise to the deposit facet.
-    E(depositFacet)
-      .receive(payout)
-      .catch(_ => {});
+      // Once we've gotten to this point, their payment is committed and
+      // won't be refunded on a failed receive.
+      const payout = await E(userSeat).getPayout('Transfer');
 
-    // We don't want to wait for the depositFacet to return, so that
-    // it can't hang up (i.e. DoS) an ordered channel, which relies on
-    // us returning promptly.
-    return undefined;
+      // Send the payout promise to the deposit facet.
+      E(depositFacet)
+        .receive(payout)
+        .catch(_ => {});
+
+      // We don't want to wait for the depositFacet to return, so that
+      // it can't hang up (i.e. DoS) an ordered channel, which relies on
+      // us returning promptly.
+    };
+
+    return tryToDeposit()
+      .then(_ => E(transferProtocol).makeTransferPacketAck(true))
+      .catch(error => E(transferProtocol).makeTransferPacketAck(false, error));
   };
 
   return Far('courier', { send, receive });
@@ -241,18 +183,15 @@ const makeCourier = ({
  * Make a Pegasus public API.
  *
  * @param {ContractFacet} zcf the Zoe Contract Facet
- * @param {BoardDepositFacet} board where to find depositFacets by boardID
- * @param {NameHub} namesByAddress where to find depositFacets by bech32
+ * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
+ * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
  */
 const makePegasus = (zcf, board, namesByAddress) => {
-  /** @type {NotifierRecord<Peg[]>} */
-  const { notifier, updater } = makeNotifierKit([]);
-
   /**
    * @typedef {Object} LocalDenomState
-   * @property {Store<DenomUri, Courier>} denomUriToCourier
-   * @property {Set<Peg>} pegs
+   * @property {Store<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
    * @property {number} lastDenomNonce
+   * @property {ERef<TransferProtocol>} transferProtocol
    */
 
   /**
@@ -282,15 +221,14 @@ const makePegasus = (zcf, board, namesByAddress) => {
    *
    * @typedef {Object} PegDescriptor
    * @property {Brand} localBrand
-   * @property {DenomUri} denomUri
+   * @property {Denom} remoteDenom
    * @property {string} allegedName
    *
    * @param {Connection} c
    * @param {PegDescriptor} desc
-   * @param {Set<Peg>} pegs
    * @returns {Peg}
    */
-  const makePeg = (c, desc, pegs) => {
+  const makePeg = (c, desc) => {
     /** @type {Peg} */
     const peg = Far('peg', {
       getAllegedName() {
@@ -299,68 +237,53 @@ const makePegasus = (zcf, board, namesByAddress) => {
       getLocalBrand() {
         return desc.localBrand;
       },
-      getDenomUri() {
-        return desc.denomUri;
+      getRemoteDenom() {
+        return desc.remoteDenom;
       },
     });
 
-    pegs.add(peg);
     pegToConnection.init(peg, c);
-    updater.updateState([...pegToConnection.keys()]);
     return peg;
   };
 
   return Far('pegasus', {
-    makeDenomUri,
     /**
      * Return a handler that can be used with the Network API.
      *
+     * @param {ERef<TransferProtocol>} [transferProtocol=DEFAULT_TRANSFER_PROTOCOL]
      * @returns {ConnectionHandler}
      */
-    makePegConnectionHandler() {
+    makePegConnectionHandler(transferProtocol = DEFAULT_TRANSFER_PROTOCOL) {
       /**
-       * @type {Store<DenomUri, Courier>}
+       * @type {Store<Denom, PromiseRecord<Courier>>}
        */
-      const denomUriToCourier = makeStore('Denomination');
-      /**
-       * @type {Set<Peg>}
-       */
-      const pegs = new Set();
+      const remoteDenomToCourierPK = makeStore('Denomination');
       return Far('pegConnectionHandler', {
         async onOpen(c) {
           // Register C with the table of Peg receivers.
           connectionToLocalDenomState.init(c, {
-            denomUriToCourier,
-            pegs,
+            remoteDenomToCourierPK,
             lastDenomNonce: 0,
+            transferProtocol,
           });
         },
         async onReceive(c, packetBytes) {
           // Dispatch the packet to the appropriate Peg for this connection.
-          /**
-           * @type {FungibleTransferPacket}
-           */
-          const packet = JSON.parse(packetBytes);
-          const denomUri = `ics20-1:${packet.denom}`;
-          const { receive } = denomUriToCourier.get(denomUri);
-          return receive(packet)
-            .then(_ => {
-              const ack = { success: true };
-              return JSON.stringify(ack);
-            })
-            .catch(error => {
-              // On failure, just return the stringified error.
-              const nack = { success: false, error: `${error}` };
-              return JSON.stringify(nack);
-            });
+          const parts = await E(transferProtocol).parseTransferPacket(
+            packetBytes,
+          );
+
+          const { remoteDenom } = parts;
+          assert.typeof(remoteDenom, 'string');
+
+          // Wait for the courier to be instantiated.
+          const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+          const { receive } = await courierPK.promise;
+          return receive(parts);
         },
         async onClose(c) {
           // Unregister C.  Pending transfers will be rejected by the Network API.
           connectionToLocalDenomState.delete(c);
-          for (const peg of pegs.keys()) {
-            pegToConnection.delete(peg);
-          }
-          updater.updateState([...pegToConnection.keys()]);
         },
       });
     },
@@ -374,7 +297,6 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {string} [assetKind=DEFAULT_AMOUNT_MATH_KIND] The kind of
      * amount math for the pegged values
      * @param {DisplayInfo} [displayInfo]
-     * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL]
      * @returns {Promise<Peg>}
      */
     async pegRemote(
@@ -383,26 +305,20 @@ const makePegasus = (zcf, board, namesByAddress) => {
       remoteDenom,
       assetKind = DEFAULT_AMOUNT_MATH_KIND,
       displayInfo = undefined,
-      protocol = DEFAULT_PROTOCOL,
     ) {
       // Assertions
       assert(
         assetKind === 'nat',
-        details`Unimplemented assetKind ${q(assetKind)}; need "nat"`,
-      );
-      assert(
-        protocol === 'ics20-1',
-        details`Unimplemented protocol ${q(protocol)}; need "ics20-1"`,
+        X`Unimplemented assetKind ${q(assetKind)}; need "nat"`,
       );
 
       const c = await connectionP;
       assert(
         connectionToLocalDenomState.has(c),
-        details`The connection must use .makePegConnectionHandler()`,
+        X`The connection must use .makePegConnectionHandler()`,
       );
 
-      // Find our data elements.
-      const denomUri = await makeDenomUri(undefined, remoteDenom, protocol);
+      const { transferProtocol } = connectionToLocalDenomState.get(c);
 
       // Create the issuer for the local erights corresponding to the remote values.
       const localKeyword = createLocalIssuerKeyword();
@@ -420,18 +336,21 @@ const makePegasus = (zcf, board, namesByAddress) => {
         localBrand,
         board,
         namesByAddress,
-        denomUri,
+        remoteDenom,
         retain: (zcfSeat, amounts) =>
           zcfMint.burnLosses(harden(amounts), zcfSeat),
         redeem: (zcfSeat, amounts) => {
           zcfMint.mintGains(harden(amounts), zcfSeat);
         },
+        transferProtocol,
       });
 
-      const { denomUriToCourier, pegs } = connectionToLocalDenomState.get(c);
-      denomUriToCourier.init(denomUri, courier);
+      const { remoteDenomToCourierPK } = connectionToLocalDenomState.get(c);
 
-      return makePeg(c, { localBrand, denomUri, allegedName }, pegs);
+      const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+      courierPK.resolve(courier);
+
+      return makePeg(c, { localBrand, remoteDenom, allegedName });
     },
 
     /**
@@ -442,36 +361,20 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * channel) to communicate over
      * @param {Issuer} localIssuer Local ERTP issuer whose assets should be
      * pegged to the connection
-     * @param {TransferProtocol} [protocol=DEFAULT_PROTOCOL] Protocol to speak
-     * on the connection
      * @returns {Promise<Peg>}
      */
-    async pegLocal(
-      allegedName,
-      connectionP,
-      localIssuer,
-      protocol = DEFAULT_PROTOCOL,
-    ) {
-      // Assertions
-      assert(
-        protocol === 'ics20-1',
-        details`Unimplemented protocol ${q(protocol)}; need "ics20-1"`,
-      );
-
+    async pegLocal(allegedName, connectionP, localIssuer) {
       const c = await connectionP;
       assert(
         connectionToLocalDenomState.has(c),
-        details`The connection must use .makePegConnectionHandler()`,
+        X`The connection must use .makePegConnectionHandler()`,
       );
 
       // We need the last nonce for our denom name.
       const localDenomState = connectionToLocalDenomState.get(c);
+      const { transferProtocol } = localDenomState;
       localDenomState.lastDenomNonce += 1;
-      const denom = `pegasus${localDenomState.lastDenomNonce}`;
-
-      // Find our data elements.
-      const allegedLocalAddress = await E(c).getLocalAddress();
-      const denomUri = await makeDenomUri(allegedLocalAddress, denom, protocol);
+      const remoteDenom = `pegasus${localDenomState.lastDenomNonce}`;
 
       // Create a seat in which to keep our denomination.
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
@@ -511,7 +414,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         connection: c,
         board,
         namesByAddress,
-        denomUri,
+        remoteDenom,
         localBrand,
         retain: (transferSeat, amounts) =>
           transferAmountFrom(
@@ -529,12 +432,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
             'Transfer',
             transferSeat,
           ),
+        transferProtocol,
       });
 
-      const { denomUriToCourier, pegs } = localDenomState;
-      denomUriToCourier.init(denomUri, courier);
+      const { remoteDenomToCourierPK } = localDenomState;
 
-      return makePeg(c, { localBrand, denomUri, allegedName }, pegs);
+      const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+      courierPK.resolve(courier);
+
+      return makePeg(c, { localBrand, remoteDenom, allegedName });
     },
 
     /**
@@ -545,13 +451,6 @@ const makePegasus = (zcf, board, namesByAddress) => {
      */
     async getLocalIssuer(localBrand) {
       return zcf.getIssuerForBrand(localBrand);
-    },
-
-    /**
-     * Get all the created pegs.
-     */
-    async getNotifier() {
-      return notifier;
     },
 
     /**
@@ -567,9 +466,11 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const c = pegToConnection.get(peg);
 
       // Get details from the peg.
-      const denomUri = await E(peg).getDenomUri();
-      const { denomUriToCourier } = connectionToLocalDenomState.get(c);
-      const { send } = denomUriToCourier.get(denomUri);
+      const remoteDenom = await E(peg).getRemoteDenom();
+      const { remoteDenomToCourierPK } = connectionToLocalDenomState.get(c);
+
+      const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+      const { send } = await courierPK.promise;
 
       /**
        * Attempt the transfer, returning a refund if failed.
@@ -581,7 +482,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
         send(zcfSeat, depositAddress);
       };
 
-      return zcf.makeInvitation(offerHandler, 'pegasus transfer');
+      return zcf.makeInvitation(
+        offerHandler,
+        `pegasus ${remoteDenom} transfer`,
+      );
     },
   });
 };
@@ -601,7 +505,6 @@ const start = zcf => {
   };
 };
 
-harden(makeDenomUri);
 harden(start);
 harden(makePegasus);
-export { start, makePegasus, makeDenomUri };
+export { start, makePegasus };
