@@ -89,8 +89,8 @@ async function dropPresence(t, dropExport) {
   }
 }
 
-test('drop presence (export retains)', t => dropPresence(t, false));
-test('drop presence (export drops)', t => dropPresence(t, true));
+test.serial('drop presence (export retains)', t => dropPresence(t, false));
+test.serial('drop presence (export drops)', t => dropPresence(t, true));
 
 test('forward to fake zoe', async t => {
   const config = {

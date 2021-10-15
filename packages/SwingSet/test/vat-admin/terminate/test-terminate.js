@@ -114,7 +114,7 @@ test('exit with presence', async t => {
   ]);
 });
 
-test('dispatches to the dead do not harm kernel', async t => {
+test.serial('dispatches to the dead do not harm kernel', async t => {
   const configPath = new URL('swingset-speak-to-dead.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -162,7 +162,7 @@ test('dispatches to the dead do not harm kernel', async t => {
   }
 });
 
-test('replay does not resurrect dead vat', async t => {
+test.serial('replay does not resurrect dead vat', async t => {
   const configPath = new URL('swingset-no-zombies.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);

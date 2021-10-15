@@ -455,7 +455,7 @@ export function buildRootObject(_vatPowers) {
               }
               case 'walletAddOffer': {
                 let handled = false;
-                const actions = harden({
+                const actions = Far('actions', {
                   handled(offer) {
                     if (handled) {
                       return;

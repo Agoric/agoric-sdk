@@ -21,6 +21,7 @@ test('bridge device', async t => {
   const hostStorage = provideHostStorage();
   const config = {
     bootstrap: 'bootstrap',
+    defaultManagerType: 'xs-worker',
     vats: {
       bootstrap: {
         sourceSpec: new URL('device-bridge-bootstrap.js', import.meta.url)

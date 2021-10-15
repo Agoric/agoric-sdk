@@ -525,7 +525,13 @@ func NewAgoricApp(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 
-	anteHandler, err := ante.NewAnteHandler(
+	callToControllerDuringAnte := func(ctx sdk.Context, str string) (string, error) {
+		// We use SwingSet-level metering to charge the user for the call.
+		app.MustInitController(ctx)
+		defer vm.SetControllerContext(ctx)()
+		return sendToController(true, str)
+	}
+	anteHandler, err := NewAgoricAnteHandler(
 		ante.HandlerOptions{
 			AccountKeeper:   app.AccountKeeper,
 			BankKeeper:      app.BankKeeper,
@@ -533,6 +539,7 @@ func NewAgoricApp(
 			FeegrantKeeper:  app.FeeGrantKeeper,
 			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 		},
+		callToControllerDuringAnte,
 	)
 
 	if err != nil {

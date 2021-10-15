@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { makeFeeRatio } from '../constantProduct/calcFees';
 import {
   pricesForStatedInput,
@@ -184,10 +185,10 @@ export const makeDoublePool = (
     return allocateGainsAndLosses(seat, prices);
   };
 
-  return {
+  return Far('double pool', {
     getInputPrice,
     getOutputPrice,
     swapIn,
     swapOut,
-  };
+  });
 };
