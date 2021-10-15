@@ -10,7 +10,7 @@
 
 - name: "Create faucet account"
   delegate_to: localhost
-  shell: "ag-cosmos-helper --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys add faucet < /dev/null"
+  shell: "agd --home={{ SETUP_HOME + '/../faucet' }} --keyring-backend=test keys add faucet < /dev/null"
   when: not faucet
 
 - name: "Extract faucet address"
@@ -25,14 +25,14 @@
 - name: "Check {{ STAKER }}-{{ STAKER_NODE }} exists"
   become: yes
   become_user: "{{ service }}"
-  shell: "ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
+  shell: "agd keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
   ignore_errors: true
   register: staker_exists
 
 - name: "Create {{ STAKER_NODE }} account for {{ service }}"
   become: yes
   become_user: "{{ service }}"
-  shell: "ag-cosmos-helper keys add --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
+  shell: "agd keys add --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }}"
   when: staker_exists.rc != 0
 
 - name: "Remove transaction directories"
@@ -56,7 +56,7 @@
   become: yes
   become_user: "{{ service }}"
   shell: "{{ service }} add-genesis-account \
-    $(ag-cosmos-helper keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
+    $(agd keys show --keyring-backend=test {{ STAKER }}-{{ STAKER_NODE }} -a) \
     {{ STAKER_INIT_COINS }}"
 
 - set_fact:
@@ -87,7 +87,7 @@
   become: yes
   become_user: "{{ service }}"
   shell: "\
-    {{ service }} gentx --keyring-dir=/home/{{ service }}/.ag-cosmos-helper \
+    {{ service }} gentx --keyring-dir=/home/{{ service }}/.agoric \
       --keyring-backend=test \
       {{ (website | default(None)) and '--website=' ~ website }} \
       {{ (identity | default(None)) and '--identity=' ~ identity }} \

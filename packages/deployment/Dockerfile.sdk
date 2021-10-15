@@ -31,8 +31,8 @@ RUN yarn install --frozen-lockfile --ignore-scripts --network-timeout 100000
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
 RUN cd golang/cosmos && yarn build:gyp
 
-# Install the entry points in the path.
-RUN cd packages/cosmic-swingset && make install install-helper
+# Install the entry points in GOBIN.
+RUN cd packages/cosmic-swingset && make install install-helper install-agd
 
 # Check out the specified submodule versions.
 # When changing/adding entries here, make sure to search the whole project for
@@ -58,6 +58,7 @@ RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less 
 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
+COPY --from=build-js /root/go/bin/agd /usr/local/bin/
 COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/

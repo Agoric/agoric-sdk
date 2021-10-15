@@ -18,16 +18,19 @@ import {
 
 const console = anylogger('chain-cosmos-sdk');
 
-// the `ag-cosmos-helper` tool in our repo is built by 'cd golang/cosmos &&
+// the `agd` tool in our repo is built by 'cd golang/cosmos &&
 // make'. It lives in the build tree along with `bin/ag-solo`, in case there are
 // multiple checkouts of `agoric-sdk`.
 export const HELPER = new URL(
-  '../../../golang/cosmos/build/ag-cosmos-helper',
+  '../../../golang/cosmos/build/agd',
   import.meta.url,
 ).pathname;
 
 const FAUCET_ADDRESS =
   'the appropriate faucet channel on Discord (https://agoric.com/discord)';
+
+// Transaction simulation should be an accurate measure of gas.
+const GAS_ADJUSTMENT = '1.2';
 
 const adviseEgress = egressAddr =>
   `\
@@ -40,7 +43,10 @@ Send:
 to ${FAUCET_ADDRESS}`;
 
 // Retry if our latest message failed.
-const SEND_RETRY_DELAY_MS = 1_000;
+const INITIAL_SEND_RETRY_DELAY_MS = 1_000;
+const MAXIMUM_SEND_RETRY_DELAY_MS = 15_000;
+
+const exponentialBackoff = backoff => backoff * 2;
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -100,7 +106,7 @@ export async function connectToChain(
 ) {
   // Each time we read our mailbox from the chain's state, and each time we
   // send an outbound message to the chain, we shell out to a one-shot copy
-  // of 'ag-cosmos-helper', the swingset-flavored cosmos-sdk CLI tool.
+  // of 'agd', the swingset-flavored cosmos-sdk CLI tool.
 
   // We originally thought we could use the tool's "rest-server" mode, leave
   // it running for the duration of our process, but it turns out that the
@@ -108,7 +114,7 @@ export async function connectToChain(
   // security concern in https://github.com/cosmos/cosmos-sdk/issues/3641)
 
   // A better approach I'm hopeful we can achieve is an FFI binding to the
-  // same golang code that powers ag-cosmos-helper, so we can call the
+  // same golang code that powers agd, so we can call the
   // query/tx functions directly without the overhead of spawning a
   // subprocess and encoding everything as strings over stdio.
 
@@ -148,7 +154,7 @@ export async function connectToChain(
   // The helper account may only have the authority to send messages on behalf
   // of the client, which has been set up by the client with something like:
   //
-  // ag-cosmos-helper tx authz grant $(cat ag-cosmos-helper-address) \
+  // agd tx authz grant $(cat ag-cosmos-helper-address) \
   // generic --msg-type=/agoric.swingset.MsgDeliverInbound \
   // --from=$(cat cosmos-client-account)
   const clientAddr = await readOrDefault(
@@ -159,7 +165,7 @@ export async function connectToChain(
   // The helper address may not have a token balance, and instead uses a
   // separate fee account, set up with something like:
   //
-  // ag-cosmos-helper tx feegrant grant --period=5 --period-limit=200000urun \
+  // agd tx feegrant grant --period=5 --period-limit=200000urun \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
   const feeAccountAddr = await readOrDefault(
     path.join(basedir, 'cosmos-fee-account'),
@@ -240,6 +246,14 @@ export async function connectToChain(
   // client + transaction needs.  For now, it's simple enough to notice when
   // blocks happen an just to issue mailbox queries.
 
+  let currentTxHashPK = makePromiseKit();
+  let postponedTxHash;
+  const postponedWaitForTxHash = txHash => {
+    postponedTxHash = txHash;
+    return currentTxHashPK.promise;
+  };
+  let waitForTxHash = postponedWaitForTxHash;
+
   /**
    * Get a notifier that announces every time a block lands.
    *
@@ -271,6 +285,8 @@ export async function connectToChain(
       // We have a new instance of the map and id per connection.
       let lastId = 0;
       const idToCallback = new Map();
+      const clearCallback = id => idToCallback.delete(id);
+      const setCallback = (id, cb) => idToCallback.set(id, cb);
 
       const sendRPC = (method, params) => {
         lastId += 1;
@@ -283,6 +299,50 @@ export async function connectToChain(
         };
         ws.send(JSON.stringify(fullObj));
         return id;
+      };
+
+      const subscribeToTxHash = (txHash, cb) => {
+        const txQuery = `tm.event = 'Tx' and tx.hash = '${txHash}'`;
+
+        const b64Hash = Buffer.from(txHash, 'hex').toString('base64');
+        const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
+        const queryId = sendRPC('tx', { hash: b64Hash });
+        const cleanup = () => {
+          clearCallback(txSubscriptionId);
+          clearCallback(queryId);
+          sendRPC('unsubscribe', { query: txQuery });
+        };
+
+        const handleResult = obj => {
+          // console.log('got', txHash, obj);
+          if (obj.error) {
+            if (obj.error.code === -32603) {
+              // This is the error we expect when the transaction is not found.
+              return;
+            }
+            cleanup();
+            cb(obj.error);
+            return;
+          }
+          if (!obj.result) {
+            return;
+          }
+          let txResult;
+          const { data, tx_result: rawTxResult } = obj.result;
+          if (data) {
+            txResult = data.value.TxResult.result;
+          } else {
+            txResult = rawTxResult;
+          }
+          if (!txResult) {
+            return;
+          }
+          cleanup();
+          cb(null, txResult);
+        };
+        setCallback(txSubscriptionId, handleResult);
+        setCallback(queryId, handleResult);
+        return cleanup;
       };
 
       const subscribeToStorage = (storagePath, cb) => {
@@ -302,9 +362,9 @@ export async function connectToChain(
 
         const cleanup = () => {
           // console.info('Unsubscribing from', blockSubscriptionId);
-          idToCallback.delete(blockSubscriptionId);
-          idToCallback.delete(txSubscriptionId);
-          idToCallback.delete(queryId);
+          clearCallback(blockSubscriptionId);
+          clearCallback(txSubscriptionId);
+          clearCallback(queryId);
           sendRPC('unsubscribe', { query: blockQuery });
           sendRPC('unsubscribe', { query: txQuery });
         };
@@ -318,7 +378,7 @@ export async function connectToChain(
         };
 
         // Query for our initial value.
-        idToCallback.set(queryId, obj => {
+        setCallback(queryId, obj => {
           // console.info(`got ${storagePath} query`, obj);
           if (obj.result && obj.result.response && obj.result.response.value) {
             // Decode the layers up to the actual storage value.
@@ -344,7 +404,7 @@ export async function connectToChain(
             // Unexpected error.
             cb(obj, null);
           }
-          idToCallback.delete(queryId);
+          clearCallback(queryId);
         });
 
         const handleSubscription = obj => {
@@ -401,8 +461,8 @@ export async function connectToChain(
           guardedCb(height, storageValue);
         };
 
-        idToCallback.set(blockSubscriptionId, handleSubscription);
-        idToCallback.set(txSubscriptionId, handleSubscription);
+        setCallback(blockSubscriptionId, handleSubscription);
+        setCallback(txSubscriptionId, handleSubscription);
 
         return cleanup;
       };
@@ -410,6 +470,30 @@ export async function connectToChain(
       const followMailbox = () => {
         // Tell the sender to go.
         updater.updateState(undefined);
+
+        // Initialize the txHash subscription.
+        const subscribeAndWaitForTxHash = txHash => {
+          const thisPK = currentTxHashPK;
+          postponedTxHash = undefined;
+          currentTxHashPK = makePromiseKit();
+          const unsubscribe = subscribeToTxHash(txHash, (err, txResult) => {
+            // console.info('received subscription for', txHash, err, txEvent);
+            unsubscribe();
+            if (err) {
+              thisPK.reject(err);
+            } else {
+              thisPK.resolve(txResult);
+            }
+            postponedTxHash = undefined;
+          });
+          return thisPK.promise;
+        };
+
+        waitForTxHash = subscribeAndWaitForTxHash;
+        if (postponedTxHash) {
+          subscribeAndWaitForTxHash(postponedTxHash);
+        }
+
         subscribeToStorage(`mailbox.${clientAddr}`, (err, storageValue) => {
           if (err) {
             console.error(`Error subscribing to mailbox`, err);
@@ -472,6 +556,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
         // The value `undefined` as the resolution of this retry
         // tells the caller to retry again with a different RPC server.
         retryPK.resolve(undefined);
+        waitForTxHash = postponedWaitForTxHash;
       });
       // Return an unresolved promise that resolves to `undefined`
       // when the WebSocket is closed.
@@ -564,7 +649,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       txArgs.push(
         '--keyring-backend=test',
         '--gas=auto',
-        '--gas-adjustment=1.3',
+        `--gas-adjustment=${GAS_ADJUSTMENT}`,
         '--from=ag-solo',
         '--yes',
         '-ojson',
@@ -607,10 +692,23 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           const out = JSON.parse(stdout);
 
           assert.equal(
-            parseInt(out.code, 10),
+            out.code,
             0,
-            X`Unexpected output: ${stdout.trimRight()}`,
+            X`Unexpected output: ${out.raw_log || stdout.trimRight()}`,
           );
+
+          // Wait for the transaction to be included in a block.
+          const txHash = out.txhash;
+
+          waitForTxHash(txHash).then(txResult => {
+            // The result had an error code (not 0 or undefined for success).
+            if (txResult.code) {
+              // eslint-disable-next-line no-use-before-define
+              failedSend(
+                assert.error(X`Error in tx processing: ${txResult.log}`),
+              );
+            }
+          });
 
           // We submitted the transaction to the mempool successfully.
           // Preemptively increment our sequence number to avoid needing to
@@ -657,7 +755,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   // Retry sending, but no more than one pending retry at a time.
   let retryPending;
-  const retrySend = (e = undefined) => {
+  let retryBackoff;
+  const successfulSend = () => {
+    // Reset the backoff period.
+    retryBackoff = randomizeDelay(INITIAL_SEND_RETRY_DELAY_MS);
+  };
+  const failedSend = (e = undefined) => {
     if (e) {
       console.error(`Error sending`, e);
     }
@@ -668,7 +771,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     retryPending = setTimeout(() => {
       retryPending = undefined;
       sendUpdater.updateState(true);
-    }, randomizeDelay(SEND_RETRY_DELAY_MS));
+    }, retryBackoff);
+
+    // This is where we naively implement exponential backoff with a maximum.
+    retryBackoff = randomizeDelay(
+      Math.min(exponentialBackoff(retryBackoff), MAXIMUM_SEND_RETRY_DELAY_MS),
+    );
   };
 
   // This function ensures we only have one outgoing send operation at a time.
@@ -677,7 +785,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     const { updateCount } = await sendNotifier.getUpdateSince(lastSendUpdate);
     assert(updateCount, X`Sending unexpectedly finished!`);
 
-    await sendFromMessagePool().catch(retrySend);
+    await sendFromMessagePool().then(successfulSend, failedSend);
     recurseEachSend(updateCount);
   };
 

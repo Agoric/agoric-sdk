@@ -15,7 +15,7 @@ SOLO_COINS=220000000000urun,75000000ubld
 OP=$1
 shift
 
-ACH="ag-cosmos-helper --home=$FAUCET_HOME --log_level=info"
+ACH="agd --home=$FAUCET_HOME --log_level=info"
 FAUCET_ADDR=$($ACH keys show -a faucet)
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")

@@ -16,14 +16,15 @@ NUM_SOLOS?=1
 BASE_PORT?=8000
 
 OTEL_EXPORTER_PROMETHEUS_PORT = 9461
+GAS_ADJUSTMENT = 1.2
 
 AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
-all: build-chain install install-helper
+all: build-chain install install-agd install-helper
 
-client: build-helper install install-helper
+client: build-helper install install-agd install-helper
 
 scenario0-setup:
 	mkdir -p t9
@@ -43,8 +44,8 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = DEBUG=SwingSet:ls,SwingSet:vat ./bin/ag-chain-cosmos
-AGCH = $(GOSRC)/build/ag-cosmos-helper
+AGC = DEBUG=SwingSet:ls,SwingSet:vat PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
+AGCH = $(GOSRC)/build/agd
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -125,10 +126,10 @@ t1-provision-one-with-powers: wait-for-cosmos
 		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
-		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
-		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 	
 
@@ -138,23 +139,23 @@ t1-provision-one: wait-for-cosmos
 		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
-		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 			bootstrap $$addr $(SOLO_COINS) && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
-		  --gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
 t1/$(BASE_PORT)/cosmos-client-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-client-account || \
 	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx authz grant \
-		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
 		$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address) generic --msg-type=/agoric.swingset.MsgDeliverInbound
 	date > $@
 
 t1/$(BASE_PORT)/cosmos-fee-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-fee-account || \
 	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx feegrant grant \
-		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
 		--period=5 --period-limit=200urun $$(cat t1/$(BASE_PORT)/cosmos-fee-account) $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address)
 	date > $@
 
@@ -163,7 +164,7 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 	addr=$$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address); \
 	$(AGCH) query auth account $$addr >/dev/null 2>&1 || \
 		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
-		--gas=auto --gas-adjustment=1.2 --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		bootstrap $$addr 1urun
 	cd t1/$(BASE_PORT) && $(AG_SOLO) start
 
@@ -204,6 +205,9 @@ build-chain:
 
 build-helper:
 	$(MAKE) -C $(GOSRC) compile-helper
+
+install-agd:
+	install -c $(GOSRC)/build/agd "$(BIN)/agd"
 
 install-helper:
 	install -c $(GOSRC)/build/ag-cosmos-helper "$(BIN)/ag-cosmos-helper"

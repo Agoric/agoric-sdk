@@ -1,5 +1,6 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
 import { makeFeeRatio } from '../constantProduct/calcFees';
 import {
   pricesForStatedInput,
@@ -82,12 +83,12 @@ export const makeSinglePool = (
   };
 
   /** @type {VPool} */
-  return {
+  return Far('single pool', {
     getInputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForInput(amountIn, amountOut)),
     getOutputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForOutput(amountIn, amountOut)),
     swapIn,
     swapOut,
-  };
+  });
 };
