@@ -92,6 +92,7 @@ export async function installOnChain({
   // invitations for the people who can vote on changes to the treasury. Those
   // should be stored somewhere safe, and pickup verified before anyone else is
   // allowed to access the chain.
+  /** @type {{ creatorFacet: CommitteeElectorateCreatorFacet, instance: Instance }} */
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
@@ -124,6 +125,7 @@ export async function installOnChain({
     },
   });
 
+  /** @type {{ creatorFacet: GovernedContractFacetAccess }} */
   const { creatorFacet: governorCreatorFacet } = await E(
     zoeWPurse,
   ).startInstance(
@@ -132,6 +134,11 @@ export async function installOnChain({
     governorTerms,
     harden({ electorateCreatorFacet }),
   );
+
+  // ISSUE: LimitedCreatorFacet conflicts with StablecoinMachine type. should be parameterized?
+  const stablecoinMachine = /** @type { StablecoinMachine } */ (/** @type { unknown } */ (E(
+    governorCreatorFacet,
+  ).getCreatorFacet()));
 
   const treasuryInstance = await E(governorCreatorFacet).getInstance();
   const [
@@ -143,10 +150,10 @@ export async function installOnChain({
     },
     treasuryCreator,
   ] = await Promise.all([
-    E(E(governorCreatorFacet).getCreatorFacet()).getAMM(),
+    E(stablecoinMachine).getAMM(),
     E(zoeWPurse).getInvitationIssuer(),
     E(zoeWPurse).getTerms(treasuryInstance),
-    E(governorCreatorFacet).getCreatorFacet()
+    stablecoinMachine,
   ]);
 
   const treasuryUiDefaults = {
