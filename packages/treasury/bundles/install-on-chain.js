@@ -3,6 +3,7 @@ import { E } from '@agoric/eventual-send';
 
 import '@agoric/governance/exported.js';
 
+import { Far } from '@agoric/marshal';
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import autoswapBundle from './bundle-multipoolAutoswap.js';
 import stablecoinBundle from './bundle-stablecoinMachine.js';
@@ -10,7 +11,6 @@ import contractGovernorBundle from './bundle-contractGovernor.js';
 import committeeBundle from './bundle-committee.js';
 import binaryVoteCounterBundle from './bundle-binaryVoteCounter.js';
 import { governedParameterTerms } from '../src/params';
-import { Far } from '@agoric/marshal';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -68,7 +68,6 @@ export async function installOnChain({
     ['contractGovernor', contractGovernorBundle],
     ['committee', committeeBundle],
     ['binaryCounter', binaryVoteCounterBundle],
-
   ];
   const [
     liquidationInstall,
@@ -125,9 +124,9 @@ export async function installOnChain({
     },
   });
 
-  const {
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoeWPurse).startInstance(
+  const { creatorFacet: governorCreatorFacet } = await E(
+    zoeWPurse,
+  ).startInstance(
     contractGovernorInstall,
     undefined,
     governorTerms,
