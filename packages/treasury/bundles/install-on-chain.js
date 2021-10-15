@@ -51,8 +51,9 @@ export async function installOnChain({
     instanceAdmin,
     issuerAdmin,
     uiConfigAdmin,
+    demoAdmin,
   ] = await Promise.all(
-    ['brand', 'installation', 'instance', 'issuer', 'uiConfig'].map(
+    ['brand', 'installation', 'instance', 'issuer', 'uiConfig', 'demo'].map(
       async edge => {
         const hub = /** @type {NameHub} */ (await E(agoricNames).lookup(edge));
         return nameAdmins.get(hub);
@@ -191,6 +192,7 @@ export async function installOnChain({
   harden(treasuryUiDefaults);
 
   // Install the names in agoricNames.
+  /** @type { Array<[NameAdmin, string, unknown]> } */
   const nameAdminUpdates = [
     [uiConfigAdmin, treasuryUiDefaults.CONTRACT_NAME, treasuryUiDefaults],
     [instanceAdmin, treasuryUiDefaults.CONTRACT_NAME, treasuryInstance],
@@ -210,5 +212,9 @@ export async function installOnChain({
     voteOnParamChange: E(governorCreatorFacet).voteOnParamChange,
   });
 
+  await Promise.all([
+    E(demoAdmin).update('voteCreator', voteCreator),
+    E(demoAdmin).update('electorateCreatorFacet', electorateCreatorFacet),
+  ]);
   return { treasuryCreator, voteCreator };
 }

@@ -138,7 +138,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       /** @type {Store<NameHub, NameAdmin>} */
       const nameAdmins = makeStore('nameHub');
       await Promise.all(
-        ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
+        ['brand', 'installation', 'issuer', 'instance', 'uiConfig', 'demo'].map(
           async nm => {
             const { nameHub, nameAdmin } = makeNameHubKit();
             await E(agoricNamesAdmin).update(nm, nameHub);
