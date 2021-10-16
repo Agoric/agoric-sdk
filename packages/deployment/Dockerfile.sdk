@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY golang/cosmos ./
 
-ARG GIT_REVISION
-RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
+ARG GIT_COMMIT
+RUN make GIT_COMMIT="$GIT_COMMIT" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
