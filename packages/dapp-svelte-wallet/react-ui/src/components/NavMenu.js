@@ -17,6 +17,10 @@ const useStyles = makeStyles(theme => ({
     width: theme.navMenuWidth,
     height: `calc(100vh - ${theme.appBarHeight})`,
     overflowY: 'auto',
+    [theme.breakpoints.down('sm')]: {
+      position: 'relative',
+      top: '0',
+    },
   },
   sectionHeader: {
     padding: '16px',

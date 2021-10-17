@@ -145,5 +145,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "clsx": "^1.1.1"
   }
 }
