@@ -2,6 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
+import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -13,7 +14,7 @@ import {
 
 import '../../../exported.js';
 import { makePriceAuthority } from '../multipoolAutoswap/priceAuthority.js';
-import { makeSinglePool } from './singlePool';
+import { makeSinglePool } from './singlePool.js';
 
 // Pools represent a single pool of liquidity. Price calculations and trading
 // happen in a wrapper class that knows whether the proposed trade involves a
@@ -91,7 +92,7 @@ export const makeAddPool = (
     };
 
     /** @type {XYKPool} */
-    const pool = {
+    const pool = Far('pool', {
       getLiquiditySupply: () => liqTokenSupply,
       getLiquidityIssuer: () => liquidityIssuer,
       getPoolSeat: () => poolSeat,
@@ -183,7 +184,7 @@ export const makeAddPool = (
       getFromCentralPriceAuthority: () => fromCentralPriceAuthority,
       // eslint-disable-next-line no-use-before-define
       getVPool: () => vPool,
-    };
+    });
 
     const vPool = makeSinglePool(
       zcf,

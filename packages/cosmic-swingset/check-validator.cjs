@@ -7,7 +7,7 @@ const oper = process.argv[2];
 const { spawnSync } = require('child_process');
 
 console.log('Fetching current validators matching', oper || 'ALL');
-const ret = spawnSync('ag-cosmos-helper', [
+const ret = spawnSync('agd', [
   'query',
   'staking',
   'validators',
@@ -48,7 +48,7 @@ const opKeys = narrow.map(({ operator_address: op, consensus_pubkey: pk }) => {
 });
 
 console.log('Fetching current node pubkey...');
-const ret2 = spawnSync('ag-chain-cosmos', ['tendermint', 'show-validator']);
+const ret2 = spawnSync('agd', ['tendermint', 'show-validator']);
 const selfPub = ret2.stdout.toString('utf-8').trim();
 console.log(selfPub);
 
@@ -57,12 +57,7 @@ try {
   selfObj.pk = JSON.parse(selfPub);
 } catch (e) {
   console.log('Fetching current node hex...');
-  const ret3 = spawnSync('ag-cosmos-helper', [
-    'keys',
-    'parse',
-    '--output=json',
-    selfPub,
-  ]);
+  const ret3 = spawnSync('agd', ['keys', 'parse', '--output=json', selfPub]);
   const selfParse = ret3.stdout.toString('utf-8');
   let selfParseObj;
   try {

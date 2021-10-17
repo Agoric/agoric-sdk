@@ -26,6 +26,8 @@ const HOST_PORT = process.env.HOST_PORT || PORT;
 const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 const DEFAULT_NETCONFIG = 'https://testnet.agoric.net/network-config';
 
+const GAS_ADJUSTMENT = '1.2';
+
 /**
  * Resolve after a delay in milliseconds.
  *
@@ -58,7 +60,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           `--volume=${process.cwd()}:/usr/src/dapp`,
           `--rm`,
           // `-it`,
-          `--entrypoint=ag-cosmos-helper`,
+          `--entrypoint=agd`,
           SDK_IMAGE,
           `--home=/usr/src/dapp/_agstate/keys`,
           ...args,
@@ -485,7 +487,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
               '--keyring-backend=test',
               '--from=provision',
               '--gas=auto',
-              '--gas-adjustment=1.2',
+              `--gas-adjustment=${GAS_ADJUSTMENT}`,
               '--broadcast-mode=block',
               '--yes',
               `--chain-id=${CHAIN_ID}`,
@@ -502,7 +504,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
               '-ojson',
               '--keyring-backend=test',
               '--gas=auto',
-              '--gas-adjustment=1.2',
+              `--gas-adjustment=${GAS_ADJUSTMENT}`,
               '--broadcast-mode=block',
               '--yes',
               `--chain-id=${CHAIN_ID}`,

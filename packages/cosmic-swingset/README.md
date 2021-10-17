@@ -45,7 +45,7 @@ Test that the utilities work with:
 
 ```sh
 ag-chain-cosmos --help
-ag-cosmos-helper --help
+agd --help
 ```
 
 (each should display help on the console for each tool)

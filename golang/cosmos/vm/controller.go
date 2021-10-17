@@ -13,6 +13,11 @@ type ControllerContext struct {
 	IBCChannelHandlerPort int
 }
 
+type ControllerAdmissionMsg interface {
+	sdk.Msg
+	CheckAdmissibility(sdk.Context, func(sdk.Context, string) (string, error)) error
+}
+
 var controllerContext ControllerContext
 
 type PortHandler interface {
