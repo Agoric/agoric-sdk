@@ -80,6 +80,7 @@ const makeCausewayFormatter = () => {
         anchor,
         message,
         text,
+        trace: { calls: [{ name: text, source: '@@' }] },
       }),
     /**
      * @param {Anchor} anchor
@@ -93,6 +94,7 @@ const makeCausewayFormatter = () => {
         anchor,
         message,
         text,
+        trace: { calls: [{ name: text, source: '@@' }] },
       }),
     /**
      * @param {Anchor} anchor
@@ -112,6 +114,7 @@ const makeCausewayFormatter = () => {
         anchor,
         message,
         condition,
+        trace: { calls: [{ name: '???@@', source: '@@' }] },
       }),
     /**
      * @param {Anchor} anchor
@@ -123,6 +126,7 @@ const makeCausewayFormatter = () => {
         class: [...status, LogClass.Resolved, LogClass.Event],
         anchor,
         condition,
+        trace: { calls: [{ name: '???@@', source: '@@' }] },
       }),
     /**
      * @param {Anchor} anchor
