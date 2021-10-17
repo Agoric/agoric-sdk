@@ -6,8 +6,8 @@
   "main": "install-metering-and-ses.js",
   "scripts": {
     "build": "exit 0",
-    "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test": "exit 0",
+    "test:c8": "exit 0",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",

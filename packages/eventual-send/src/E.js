@@ -1,3 +1,4 @@
+// @ts-check
 import { trackTurns } from './track-turns.js';
 
 // eslint-disable-next-line spaced-comment
@@ -49,7 +50,7 @@ function EProxyHandler(x, HandledPromise) {
 
 /**
  * A Proxy handler for E.sendOnly(x)
- * For now it is just a variant on the E(x) Proxy handler.
+ * It is a variant on the E(x) Proxy handler.
  *
  * @param {*} x Any value passed to E.sendOnly(x)
  * @param {*} HandledPromise
@@ -60,16 +61,16 @@ function EsendOnlyProxyHandler(x, HandledPromise) {
     ...baseFreezableProxyHandler,
     get(_target, p, _receiver) {
       return (...args) => {
-        HandledPromise.applyMethod(x, p, args);
+        HandledPromise.applyMethodSendOnly(x, p, args);
         return undefined;
       };
     },
     apply(_target, _thisArg, argsArray = []) {
-      HandledPromise.applyFunction(x, argsArray);
+      HandledPromise.applyFunctionSendOnly(x, argsArray);
       return undefined;
     },
     has(_target, _p) {
-      // We just pretend that every thing exists.
+      // We just pretend that everything exists.
       return true;
     },
   });
@@ -92,7 +93,6 @@ export default function makeE(HandledPromise) {
       },
     });
 
-  E.G = makeEGetterProxy;
   E.get = makeEGetterProxy;
   E.resolve = HandledPromise.resolve;
   E.sendOnly = x => {

@@ -1,5 +1,4 @@
 // @ts-nocheck
-import 'ses';
 
 // see install-ses-debug.js
 const debugOptions = {
