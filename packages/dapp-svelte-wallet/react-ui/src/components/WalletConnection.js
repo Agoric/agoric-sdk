@@ -2,11 +2,13 @@
 /* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
 import React, { useCallback } from 'react';
+import clsx from 'clsx';
 import { E } from '@agoric/eventual-send';
 import { makeStyles } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import Public from '@material-ui/icons/Public';
 import Tooltip from '@material-ui/core/Tooltip';
+
 import { withApplicationContext } from '../contexts/Application';
 
 const useStyles = makeStyles(_ => ({
@@ -94,7 +96,7 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
   }, []);
 
   return (
-    <div className={`connector ${classes.connector}`}>
+    <div className={clsx('connector', classes.connector)}>
       <Tooltip
         title={connectionState === 'admin' ? 'Connected' : 'Disconnected'}
       >

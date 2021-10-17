@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useMediaQuery } from '@material-ui/core';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
-import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/icons/Menu';
-import Drawer from '@material-ui/core/Drawer';
+
 import WalletConnection from './WalletConnection';
-import NavMenu from './NavMenu';
+import NavDrawer from './NavDrawer';
 
 const useStyles = makeStyles(theme => ({
   header: {
@@ -39,57 +35,16 @@ const useStyles = makeStyles(theme => ({
     margin: '8px',
     height: '100%',
   },
-  navMenuButton: {
-    display: 'none',
-    [theme.breakpoints.down('sm')]: {
-      display: 'block',
-    },
-  },
 }));
 
 const AppBar = () => {
   const theme = useTheme();
-  const classes = useStyles(useTheme());
-  const [drawerOpened, setDrawerOpened] = useState(false);
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const toggleDrawer = open => event => {
-    if (
-      event.type === 'keydown' &&
-      (event.key === 'Tab' || event.key === 'Shift')
-    ) {
-      return;
-    }
-
-    setDrawerOpened(open);
-  };
-
-  useEffect(() => {
-    if (!isMobile) setDrawerOpened(false);
-  }, [isMobile]);
-
-  const navMenuButton = isMobile ? (
-    <div className={`navMenuButton ${classes.navMenuButton}`}>
-      <IconButton
-        aria-label="navigation drawer"
-        size="medium"
-        color="primary"
-        onClick={toggleDrawer(true)}
-      >
-        <Menu fontSize="inherit"></Menu>
-      </IconButton>
-      <Drawer anchor="left" open={drawerOpened} onClose={toggleDrawer(false)}>
-        <NavMenu />
-      </Drawer>
-    </div>
-  ) : (
-    ''
-  );
+  const classes = useStyles(theme);
 
   return (
     <header className={classes.header}>
       <div className={classes.appBarSection}>
-        {navMenuButton}
+        <NavDrawer />
         <a href="https://agoric.com" className={classes.productLink}>
           <img
             src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
