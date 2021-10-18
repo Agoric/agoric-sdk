@@ -53,7 +53,7 @@ export function makeLocalVatManagerFactory(tools) {
 
   function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
     assert(!managerOptions.metered, `metering unsupported on 'local' workers`);
-    assert(setup instanceof Function, 'setup is not an in-realm function');
+    assert.typeof(setup, 'function', 'setup is not an in-realm function');
 
     const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
     const { syscall, finish } = prepare(

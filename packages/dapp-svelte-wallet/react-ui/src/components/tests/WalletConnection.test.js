@@ -53,19 +53,13 @@ describe('WalletConnection', () => {
   });
 
   test('displays the current connection status', () => {
-    let currentConnectionStatus = component.findWhere(
-      node =>
-        node.type() === 'p' && node.text().startsWith('Connection Status:'),
-    );
-    expect(currentConnectionStatus.text()).toContain('Disconnected');
+    let connectionIndicator = component.find(`.connector button`);
+    expect(connectionIndicator.props().title).toEqual('Disconnected');
 
     connectionStatus = 'admin';
     component.setProps({ connectionStatus });
-    currentConnectionStatus = component.findWhere(
-      node =>
-        node.type() === 'p' && node.text().startsWith('Connection Status:'),
-    );
-    expect(currentConnectionStatus.text()).toContain('Connected');
+    connectionIndicator = component.find('.connector button');
+    expect(connectionIndicator.props().title).toEqual('Connected');
   });
 
   test('resets the connection on error state', () => {

@@ -315,6 +315,17 @@ function build(
         // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
+      // FIXME: applyFunction(o, args, returnedP) { },
+      get(o, prop) {
+        lsdebug(`makeImportedPresence handler.get (${slot})`);
+        if (disavowedPresences.has(o)) {
+          // eslint-disable-next-line no-use-before-define
+          exitVatWithFailure(disavowalError);
+          throw disavowalError;
+        }
+        // FIXME: Actually use remote property lookup
+        return o[prop];
+      },
     };
 
     let remotePresence;
@@ -373,8 +384,8 @@ function build(
     // this handler being used after it was supposed to be resolved
     let handlerActive = true;
     const unfulfilledHandler = {
-      applyMethod(_o, prop, args, returnedP) {
-        // Support: o~.[prop](...args) remote method invocation
+      applyMethod(_p, prop, args, returnedP) {
+        // Support: p~.[prop](...args) remote method invocation
         lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
@@ -382,6 +393,16 @@ function build(
         }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
+      },
+      get(p, prop) {
+        // Support: p~.[prop]
+        lsdebug(`makePipelinablePromise handler.get (${vpid})`);
+        if (!handlerActive) {
+          console.error(`mIPromise handler called after resolution`);
+          assert.fail(X`mIPromise handler called after resolution`);
+        }
+        // FIXME: Actually pipeline.
+        return p.then(o => o[prop]);
       },
     };
 
