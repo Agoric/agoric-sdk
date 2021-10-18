@@ -7,6 +7,7 @@ package lien
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 
@@ -20,10 +21,12 @@ type portHandler struct {
 
 // portMessage is a struct that any lien bridge message can unmarshal into.
 type portMessage struct {
-	Type    string  `json:"type"`
-	Address string  `json:"address"`
-	Denom   string  `json:"denom"`
-	Amount  sdk.Int `json:"amount"`
+	Type       string   `json:"type"`
+	Address    string   `json:"address"`
+	Denom      string   `json:"denom"`
+	Amount     sdk.Int  `json:"amount"`
+	Validators []string `json:"validators"`
+	Delegators []string `json:"delegators"`
 }
 
 // msgAccountState marshals into the AccountState message for the lien bridge.
@@ -36,6 +39,19 @@ type msgAccountState struct {
 	Liened      sdk.Int `json:"liened"`
 }
 
+type delegatorState struct {
+	ValidatorIdx []int     `json:"val_idx"`
+	Values       []sdk.Int `json:"values"`
+	Other        sdk.Int   `json:"other"`
+}
+
+type msgStaking struct {
+	EpochTag        string           `json:"epoch_tag"`
+	Denom           string           `json:"denom"`
+	ValidatorValues []sdk.Int        `json:"validator_values"`
+	DelegatorStates []delegatorState `json:"delegator_states"`
+}
+
 // NewPortHandler returns a port handler for the Keeper.
 func NewPortHandler(k Keeper) vm.PortHandler {
 	return portHandler{keeper: k}
@@ -43,6 +59,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 
 const (
 	LIEN_GET_ACCOUNT_STATE = "LIEN_GET_ACCOUNT_STATE"
+	LIEN_GET_STAKING       = "LIEN_GET_STAKING"
 	LIEN_SET_LIENED        = "LIEN_SET_LIENED"
 )
 
@@ -60,10 +77,75 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	case LIEN_GET_ACCOUNT_STATE:
 		return ch.handleGetAccountState(ctx.Context, msg)
 
+	case LIEN_GET_STAKING:
+		return ch.handleGetStaking(ctx.Context, msg)
+
 	case LIEN_SET_LIENED:
 		return ch.handleSetLiened(ctx.Context, msg)
 	}
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
+}
+
+func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string, error) {
+	reply := msgStaking{
+		EpochTag:        fmt.Sprint(ctx.BlockHeight()),
+		Denom:           ch.keeper.BondDenom(ctx),
+		ValidatorValues: make([]sdk.Int, 0),
+		DelegatorStates: make([]delegatorState, 0),
+	}
+	validatorIndex := map[string]int{}
+	for i, v := range msg.Validators {
+		validatorIndex[v] = i
+		var value sdk.Int
+		valAddr, err := sdk.ValAddressFromBech32(v)
+		if err != nil {
+			value = sdk.NewInt(-1)
+		} else {
+			value = sdk.NewInt(0)
+			validator, found := ch.keeper.GetValidator(ctx, valAddr)
+			if found {
+				value = validator.Tokens
+			}
+		}
+		reply.ValidatorValues = append(reply.ValidatorValues, value)
+	}
+	for _, d := range msg.Delegators {
+		state := delegatorState{
+			ValidatorIdx: make([]int, 0),
+			Values:       make([]sdk.Int, 0),
+			Other:        sdk.NewInt(0),
+		}
+		addr, err := sdk.AccAddressFromBech32(d)
+		if err != nil {
+			state.Other = sdk.NewInt(-1)
+		} else {
+			for _, d := range ch.keeper.GetDelegatorDelegations(ctx, addr, math.MaxUint16) {
+				valAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
+				if err != nil {
+					panic(err)
+				}
+				validator, found := ch.keeper.GetValidator(ctx, valAddr)
+				if !found {
+					panic("validator not found")
+				}
+				shares := d.GetShares()
+				tokens := validator.TokensFromShares(shares).RoundInt()
+				valIndex, found := validatorIndex[valAddr.String()]
+				if found {
+					state.ValidatorIdx = append(state.ValidatorIdx, valIndex)
+					state.Values = append(state.Values, tokens)
+				} else {
+					state.Other = state.Other.Add(tokens)
+				}
+			}
+		}
+		reply.DelegatorStates = append(reply.DelegatorStates, state)
+	}
+	bz, err := json.Marshal(&reply)
+	if err != nil {
+		return "", fmt.Errorf("cannot marshal %v: %w", reply, err)
+	}
+	return string(bz), nil
 }
 
 // handleGetAccountState processes a LIEN_GET_ACCOUNT_STATE message.
