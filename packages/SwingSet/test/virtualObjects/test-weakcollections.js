@@ -18,7 +18,6 @@ function capargs(args, slots = []) {
 test('weakMap in vat', async t => {
   const config = {
     bootstrap: 'bootstrap',
-    defaultManagerType: 'local',
     vats: {
       bootstrap: {
         sourceSpec: new URL('vat-weakcollections-bootstrap.js', import.meta.url)
@@ -27,6 +26,7 @@ test('weakMap in vat', async t => {
       alice: {
         sourceSpec: new URL('vat-weakcollections-alice.js', import.meta.url)
           .pathname,
+        creationOptions: { managerType: 'local' },
       },
     },
   };

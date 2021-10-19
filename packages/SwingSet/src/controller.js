@@ -391,6 +391,7 @@ export async function makeSwingsetController(
  * @param {string[]} argv
  * @param {{
  *   hostStorage?: HostStore,
+ *   env?: Record<string, string>,
  *   verbose?: boolean,
  *   kernelBundles?: Record<string, string>,
  *   debugPrefix?: string,
@@ -409,6 +410,7 @@ export async function buildVatController(
 ) {
   const {
     hostStorage = provideHostStorage(),
+    env,
     verbose,
     kernelBundles,
     debugPrefix,
@@ -417,6 +419,7 @@ export async function buildVatController(
     slogFile,
   } = runtimeOptions;
   const actualRuntimeOptions = {
+    env,
     verbose,
     debugPrefix,
     slogCallbacks,
@@ -431,6 +434,7 @@ export async function buildVatController(
       argv,
       hostStorage,
       initializationOptions,
+      runtimeOptions,
     );
   }
   const controller = await makeSwingsetController(
