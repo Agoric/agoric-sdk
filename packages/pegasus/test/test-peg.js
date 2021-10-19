@@ -24,10 +24,20 @@ const dirname = path.dirname(filename);
 const contractPath = `${dirname}/../src/pegasus.js`;
 
 /**
- * @param {import('tape-promise/tape').Test} t
+ * @template T
+ * @param {ERef<Subscription<T>>} sub
+ * @returns {AsyncIterator<T, T>}
+ */
+const makeAsyncIteratorFromSubscription = sub =>
+  makeSubscription(E(sub).getSharableSubscriptionInternals())[
+    Symbol.asyncIterator
+  ]();
+
+/**
+ * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
-  t.plan(16);
+  t.plan(20);
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -107,7 +117,9 @@ async function testRemotePeg(t) {
   );
 
   // Pretend we're Agoric.
-  const chandler = E(pegasus).makePegConnectionHandler();
+  const { handler: chandler, subscription: connectionSubscription } = await E(
+    pegasus,
+  ).makePegasusConnectionKit();
   const connP = E(portP).connect(portName, chandler);
 
   // Get some local Atoms.
@@ -117,23 +129,41 @@ async function testRemotePeg(t) {
     receiver: '0x1234',
     sender: 'FIXME:sender',
   };
-  await connP;
+  t.assert(await connP);
   const sendAckDataP = E(gaiaConnection).send(JSON.stringify(sendPacket));
 
   // Note that we can create the peg after the fact.
-  const remoteDenomSub = makeSubscription(
-    E(
-      E(pegasus).getRemoteDenomSubscription(connP),
-    ).getSharableSubscriptionInternals(),
+  const connectionAit = makeAsyncIteratorFromSubscription(
+    connectionSubscription,
   );
-  const remoteDenomAit = remoteDenomSub[Symbol.asyncIterator]();
+  const {
+    value: {
+      actions: pegConnActions,
+      localAddr,
+      remoteAddr,
+      remoteDenomSubscription,
+    },
+  } = await connectionAit.next();
+
+  // Check the connection metadata.
+  t.is(localAddr, '/ibc-channel/chanabc/ibc-port/portdef/nonce/1', 'localAddr');
+  t.is(
+    remoteAddr,
+    '/ibc-channel/chanabc/ibc-port/portdef/nonce/2',
+    'remoteAddr',
+  );
+
+  // Find the first remoteDenom.
+  const remoteDenomAit = makeAsyncIteratorFromSubscription(
+    remoteDenomSubscription,
+  );
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'uatom' });
 
-  const pegP = await E(pegasus).pegRemote('Gaia', connP, 'uatom');
+  const pegP = E(pegConnActions).pegRemote('Gaia', 'uatom');
   const localBrand = await E(pegP).getLocalBrand();
-  const localIssuer = await E(pegasus).getLocalIssuer(localBrand);
+  const localIssuerP = E(pegasus).getLocalIssuer(localBrand);
 
-  const localPurseP = E(localIssuer).makeEmptyPurse();
+  const localPurseP = E(localIssuerP).makeEmptyPurse();
   resolveLocalDepositFacet(E(localPurseP).getDepositFacet());
 
   const sendAckData = await sendAckDataP;
@@ -183,7 +213,7 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegasus).rejectStuckTransfers(connP, 'umuon');
+  E(pegConnActions).rejectStuckTransfers('umuon');
 
   const sendAckData3 = await sendAckData3P;
   const sendAck3 = JSON.parse(sendAckData3);
@@ -212,13 +242,18 @@ async function testRemotePeg(t) {
   t.is(outcome, undefined, 'transfer is successful');
 
   const paymentPs = await seat.getPayouts();
-  const refundAmount = await E(localIssuer).getAmountOf(paymentPs.Transfer);
+  const refundAmount = await E(localIssuerP).getAmountOf(paymentPs.Transfer);
 
   const isEmptyRefund = AmountMath.isEmpty(refundAmount, localBrand);
   t.assert(isEmptyRefund, 'no refund from success');
 
-  const stillIsLive = await E(localIssuer).isLive(localAtoms);
+  const stillIsLive = await E(localIssuerP).isLive(localAtoms);
   t.assert(!stillIsLive, 'payment is consumed');
+
+  await E(connP).close();
+  await t.throwsAsync(() => remoteDenomAit.next(), {
+    message: 'pegasusConnectionHandler closed',
+  });
 }
 
 test('remote peg', t => testRemotePeg(t));

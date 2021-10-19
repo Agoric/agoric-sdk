@@ -40,3 +40,59 @@
  * @property {Sender} send
  * @property {Receiver} receive
  */
+
+/**
+ * @callback RejectStuckTransfers
+ * Abort any in-progress remoteDenom transfers if there has not yet been a
+ * pegRemote or pegLocal for it.
+ *
+ * This races against any attempts to obtain metadata and establish a given
+ * peg.
+ *
+ * It's alright to expose to the holder of the connection.
+ *
+ * @param {Denom} remoteDenom
+ * @returns {Promise<void>}
+ */
+
+/**
+ * @callback PegRemote
+ * Peg a remote asset over a network connection.
+ *
+ * @param {string} allegedName
+ * @param {Denom} remoteDenom
+ * @param {AssetKind} [assetKind] The kind of the pegged values
+ * @param {DisplayInfo} [displayInfo]
+ * @returns {Promise<Peg>}
+ */
+
+/**
+ * @callback PegLocal
+ * Peg a local asset over a network connection.
+ *
+ * @param {string} allegedName
+ * @param {Issuer} localIssuer Local ERTP issuer whose assets should be
+ * pegged to the connection
+ * @returns {Promise<Peg>}
+ */
+
+/**
+ * @typedef {Object} PegasusConnectionActions
+ * @property {PegLocal} pegLocal
+ * @property {PegRemote} pegRemote
+ * @property {RejectStuckTransfers} rejectStuckTransfers
+ */
+
+/**
+ * @typedef {Object} PegasusConnectionSubscription
+ * @property {PegasusConnectionActions} actions
+ * @property {Address} localAddr
+ * @property {Address} remoteAddr
+ * @property {Subscription<Denom>} remoteDenomSubscription
+ */
+
+/**
+ * @typedef {Object} PegasusConnectionKit
+ * @property {ConnectionHandler} handler
+ * @property {Subscription<PegasusConnectionSubscription>} subscription
+ */
