@@ -33,10 +33,13 @@ const TRANSFER_PROPOSAL_SHAPE = {
 const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @typedef {Object} LocalDenomState
+   * @property {Address} localAddr
+   * @property {Address} remoteAddr
    * @property {Store<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
    * @property {IterationObserver<Denom>} remoteDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription
    * @property {number} lastDenomNonce
+   * @property {(reason?: any) => void} abort
    */
 
   let lastLocalIssuerNonce = 0;
@@ -97,9 +100,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
     localDenomState,
     transferProtocol,
   }) => {
+    let checkAbort = () => {};
+
+    /** @type {Set<Peg>} */
+    const pegs = new Set();
+
     /** @type {PegasusConnectionActions} */
     const pegasusConnectionActions = {
       async rejectStuckTransfers(remoteDenom) {
+        checkAbort();
         const { remoteDenomToCourierPK } = localDenomState;
 
         const { reject, promise } = remoteDenomToCourierPK.get(remoteDenom);
@@ -115,6 +124,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         assetKind = undefined,
         displayInfo = undefined,
       ) {
+        checkAbort();
         const { remoteDenomToCourierPK } = localDenomState;
 
         // Create the issuer for the local erights corresponding to the remote values.
@@ -124,6 +134,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           assetKind,
           displayInfo,
         );
+        checkAbort();
         const { brand: localBrand } = zcfMint.getIssuerRecord();
 
         // Describe how to retain/redeem pegged shadow erights.
@@ -144,14 +155,19 @@ const makePegasus = (zcf, board, namesByAddress) => {
         const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
         courierPK.resolve(courier);
 
-        return makePeg(localDenomState, {
+        checkAbort();
+        const peg = makePeg(localDenomState, {
           localBrand,
           remoteDenom,
           allegedName,
         });
+        pegs.add(peg);
+        return peg;
       },
 
       async pegLocal(allegedName, localIssuer) {
+        checkAbort();
+
         // We need the last nonce for our denom name.
         localDenomState.lastDenomNonce += 1;
         const remoteDenom = `pegasus${localDenomState.lastDenomNonce}`;
@@ -165,6 +181,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           localIssuer,
           localKeyword,
         );
+        checkAbort();
 
         /**
          * Transfer amount (of localBrand) from loser to winner seats.
@@ -219,10 +236,21 @@ const makePegasus = (zcf, board, namesByAddress) => {
         const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
         courierPK.resolve(courier);
 
-        return makePeg(localDenomState, {
+        const peg = makePeg(localDenomState, {
           localBrand,
           remoteDenom,
           allegedName,
+        });
+        pegs.add(peg);
+        return peg;
+      },
+      abort: reason => {
+        checkAbort();
+        checkAbort = () => {
+          throw reason;
+        };
+        pegs.forEach(peg => {
+          pegToDenomState.delete(peg);
         });
       },
     };
@@ -244,7 +272,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
 
       /**
-       * @type {SubscriptionRecord<PegasusConnectionSubscription>}
+       * @type {SubscriptionRecord<PegasusConnectionState>}
        */
       const {
         subscription: connectionSubscription,
@@ -263,10 +291,16 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
           /** @type {LocalDenomState} */
           const localDenomState = {
+            localAddr,
+            remoteAddr,
             remoteDenomToCourierPK,
             lastDenomNonce: 0,
             remoteDenomPublication,
             remoteDenomSubscription,
+            abort: reason => {
+              // eslint-disable-next-line no-use-before-define
+              actions.abort(reason);
+            },
           };
 
           // The courier is the only thing that we use to send messages to C.
@@ -279,14 +313,14 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
           connectionToLocalDenomState.init(c, localDenomState);
 
-          /** @type {PegasusConnectionSubscription} */
-          const subData = harden({
+          /** @type {PegasusConnectionState} */
+          const state = harden({
             localAddr,
             remoteAddr,
             actions,
             remoteDenomSubscription,
           });
-          connectionPublication.updateState(subData);
+          connectionPublication.updateState(state);
         },
         async onReceive(c, packetBytes) {
           const doReceive = async () => {
@@ -320,11 +354,30 @@ const makePegasus = (zcf, board, namesByAddress) => {
         },
         async onClose(c) {
           // Unregister C.  Pending transfers will be rejected by the Network API.
-          const { remoteDenomPublication } = connectionToLocalDenomState.get(c);
+          const {
+            remoteDenomPublication,
+            remoteDenomToCourierPK,
+            localAddr,
+            remoteAddr,
+            abort,
+          } = connectionToLocalDenomState.get(c);
           connectionToLocalDenomState.delete(c);
-          remoteDenomPublication.fail(
-            assert.error(X`pegasusConnectionHandler closed`),
-          );
+          const err = assert.error(X`pegasusConnectionHandler closed`);
+          remoteDenomPublication.fail(err);
+          /** @type {PegasusConnectionState} */
+          const state = harden({
+            localAddr,
+            remoteAddr,
+          });
+          connectionPublication.updateState(state);
+          remoteDenomToCourierPK.values().forEach(courierPK => {
+            try {
+              courierPK.reject(err);
+            } catch (e) {
+              // Already resolved/rejected, so ignore.
+            }
+          });
+          abort(err);
         },
       };
 

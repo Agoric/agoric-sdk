@@ -81,18 +81,19 @@
  * @property {PegLocal} pegLocal
  * @property {PegRemote} pegRemote
  * @property {RejectStuckTransfers} rejectStuckTransfers
+ * @property {(reason?: any) => void} abort
  */
 
 /**
- * @typedef {Object} PegasusConnectionSubscription
- * @property {PegasusConnectionActions} actions
+ * @typedef {Object} PegasusConnectionState
+ * @property {PegasusConnectionActions} [actions]
  * @property {Address} localAddr
  * @property {Address} remoteAddr
- * @property {Subscription<Denom>} remoteDenomSubscription
+ * @property {Subscription<Denom>} [remoteDenomSubscription]
  */
 
 /**
  * @typedef {Object} PegasusConnectionKit
  * @property {ConnectionHandler} handler
- * @property {Subscription<PegasusConnectionSubscription>} subscription
+ * @property {Subscription<PegasusConnectionState>} subscription
  */

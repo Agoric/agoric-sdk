@@ -18,6 +18,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
+import { observeIteration } from '@agoric/notifier';
 import { makeBridgeManager } from './bridge.js';
 import { makeNameHubKit } from './nameHub.js';
 import {
@@ -94,19 +95,26 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.board).getBoard(),
       chainTimerServiceP,
       /** @type {Promise<{ zoeService: ZoeService, feeMintAccess:
-       * FeeMintAccess }>} */ (
-        E(vats.zoe).buildZoe(vatAdminSvc, feeIssuerConfig)
-      ),
+       * FeeMintAccess }>} */ (E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        feeIssuerConfig,
+      )),
       E(vats.priceAuthority).makePriceAuthority(),
       E(vats.walletManager).buildWalletManager(vatAdminSvc),
     ]);
 
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-      makeNameHubKit();
-    const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
-      makeNameHubKit();
-    const { nameHub: pegasusConnections, nameAdmin: pegasusConnectionsAdmin } =
-      makeNameHubKit();
+    const {
+      nameHub: agoricNames,
+      nameAdmin: agoricNamesAdmin,
+    } = makeNameHubKit();
+    const {
+      nameHub: namesByAddress,
+      nameAdmin: namesByAddressAdmin,
+    } = makeNameHubKit();
+    const {
+      nameHub: pegasusConnections,
+      nameAdmin: pegasusConnectionsAdmin,
+    } = makeNameHubKit();
 
     async function installEconomy(bootstrapPaymentValue) {
       // Create a mapping from all the nameHubs we create to their corresponding
@@ -222,16 +230,23 @@ export function buildRootObject(vatPowers, vatParameters) {
     const bootstrapPaymentValue = bankBootstrapSupply + ammDepositValue;
     // NOTE: no use of the voteCreator. We'll need it to initiate votes on
     // changing VaultFactory parameters.
-    const { vaultFactoryCreator, _voteCreator, ammFacets } =
-      await installEconomy(bootstrapPaymentValue);
+    const {
+      vaultFactoryCreator,
+      _voteCreator,
+      ammFacets,
+    } = await installEconomy(bootstrapPaymentValue);
 
-    const [centralIssuer, centralBrand, ammInstance, pegasusInstance] =
-      await Promise.all([
-        E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
-        E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
-        E(agoricNames).lookup('instance', 'amm'),
-        E(agoricNames).lookup('instance', 'Pegasus'),
-      ]);
+    const [
+      centralIssuer,
+      centralBrand,
+      ammInstance,
+      pegasusInstance,
+    ] = await Promise.all([
+      E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
+      E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
+      E(agoricNames).lookup('instance', 'amm'),
+      E(agoricNames).lookup('instance', 'Pegasus'),
+    ]);
 
     // Start the reward distributor.
     const epochTimerService = chainTimerService;
@@ -579,11 +594,10 @@ export function buildRootObject(vatPowers, vatParameters) {
       async createUserBundle(_nickname, address, powerFlags = []) {
         // Bind to some fresh ports (unspecified name) on the IBC implementation
         // and provide them for the user to have.
-        const ibcport = [];
+        const ibcportP = [];
         for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
-          // eslint-disable-next-line no-await-in-loop
-          const port = await E(network).bind('/ibc-port/');
-          ibcport.push(port);
+          const port = E(network).bind('/ibc-port/');
+          ibcportP.push(port);
         }
 
         /** @type {{ issuerName: string, purseName: string, issuer: Issuer,
@@ -656,14 +670,23 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
-        const bank = await E(bankManager).getBankForAddress(address);
+        const [bank, ibcport] = await Promise.all([
+          E(bankManager).getBankForAddress(address),
+          Promise.all(ibcportP),
+        ]);
 
         // Separate out the purse-creating payments from the bank payments.
         const faucetPaymentInfo = [];
         await Promise.all(
           userPaymentRecords.map(async precord => {
-            const { payToBank, issuer, issuerName, payment, brand, purseName } =
-              precord;
+            const {
+              payToBank,
+              issuer,
+              issuerName,
+              payment,
+              brand,
+              purseName,
+            } = precord;
             if (!payToBank) {
               // Just a faucet payment to be claimed by a wallet.
               faucetPaymentInfo.push({
@@ -696,8 +719,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         });
 
         // Create a name hub for this address.
-        const { nameHub: myAddressNameHub, nameAdmin: rawMyAddressNameAdmin } =
-          makeNameHubKit();
+        const {
+          nameHub: myAddressNameHub,
+          nameAdmin: rawMyAddressNameAdmin,
+        } = makeNameHubKit();
         // Register it with the namesByAddress hub.
         namesByAddressAdmin.update(address, myAddressNameHub);
 
@@ -826,37 +851,26 @@ export function buildRootObject(vatPowers, vatParameters) {
     if (pegasus) {
       // Add the Pegasus transfer port.
       const port = await E(network).bind('/ibc-port/pegasus');
+
+      const { handler, subscription } = await E(
+        pegasus,
+      ).makePegasusConnectionKit();
+      observeIteration(subscription, {
+        updateState(connectionState) {
+          const { localAddr, actions } = connectionState;
+          if (actions) {
+            // We're open and ready for business.
+            pegasusConnectionsAdmin.update(localAddr, connectionState);
+          } else {
+            // We're closed.
+            pegasusConnectionsAdmin.delete(localAddr);
+          }
+        },
+      });
       E(port).addListener(
         Far('listener', {
           async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-            const chandlerP = E(pegasus).makePegConnectionHandler();
-            const proxyMethod =
-              name =>
-              (...args) =>
-                E(chandlerP)[name](...args);
-            const onOpen = proxyMethod('onOpen');
-            const onClose = proxyMethod('onClose');
-
-            let localAddr;
-            return Far('pegasusConnectionHandler', {
-              onOpen(c, actualLocalAddr, ...args) {
-                localAddr = actualLocalAddr;
-                if (pegasusConnectionsAdmin) {
-                  pegasusConnectionsAdmin.update(localAddr, c);
-                }
-                return onOpen(c, ...args);
-              },
-              onReceive: proxyMethod('onReceive'),
-              onClose(c, ...args) {
-                try {
-                  return onClose(c, ...args);
-                } finally {
-                  if (pegasusConnectionsAdmin) {
-                    pegasusConnectionsAdmin.delete(localAddr, c);
-                  }
-                }
-              },
-            });
+            return handler;
           },
           async onListen(p, _listenHandler) {
             console.debug(`Listening on Pegasus transfer port: ${p}`);
