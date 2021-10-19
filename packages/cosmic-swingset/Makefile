@@ -1,3 +1,8 @@
+# This Makefile is designed to be used with `NODE_OPTIONS=--inspect-brk` to
+# debug the main program you're running.  It clears `$NODE_OPTIONS` while
+# running incidental Node.js programs to avoid starting debuggers you probably
+# don't want.
+
 REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_HEIGHT = 17
@@ -54,7 +59,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos.
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
-		$(AG_SOLO) init t1/$$port --webport=$$port; \
+		NODE_OPTIONS= $(AG_SOLO) init t1/$$port --webport=$$port; \
 	done
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
@@ -64,7 +69,7 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 73000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
 	$(AGCH) --home=t1/n0 validate-genesis
-	../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
+	NODE_OPTIONS= ../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
 	jq '. + { genesis_time: "$(GENESIS_TIME)", initial_height: "$(INITIAL_HEIGHT)" }' t1/n0/config/genesis.json > t1/n0/config/genesis2.json
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
@@ -179,7 +184,7 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 VATWORKER=local
 scenario3-setup:
 	rm -rf t3
-	$(AG_SOLO) init t3 --egresses=fake --webport=$(BASE_PORT) --defaultManagerType=$(VATWORKER)
+	NODE_OPTIONS= $(AG_SOLO) init t3 --egresses=fake --webport=$(BASE_PORT) --defaultManagerType=$(VATWORKER)
 	@echo 'Execute `make scenario3-run` to run the client and simulated chain'
 
 # This runs both the client and the fake chain.
@@ -187,7 +192,7 @@ scenario3-run-client: scenario3-run
 # Set the fake chain here in case the delay has changed.
 scenario3-run:
 	cd t3 && \
-			$(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
+		NODE_OPTIONS= $(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
 	cd t3 && \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
@@ -230,5 +235,5 @@ set-local-gci-ingress:
 	rpcport=`./calc-rpcport.js t1/n0/config/config.toml`; \
 	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
 		(cd t1/$$port && \
-			$(AG_SOLO) set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
+			NODE_OPTIONS= $(AG_SOLO) set-gci-ingress --chainID=$(CHAIN_ID) $$gci $$rpcport); \
 	done

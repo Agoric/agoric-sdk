@@ -453,9 +453,9 @@ export default function buildKernel(
           used = BigInt(consumed);
           policyInput = ['crank', { computrons: used }];
         }
-        if (useMeter && meterID) {
-          // if we have a Meter, the result must include metering
-          assert(metering);
+        if (useMeter && metering !== null && meterID) {
+          // If we have a Meter, and the manager reported a non-null value, use it.
+          assert(used !== undefined);
           const underflow = deductMeter(meterID, used, true);
           if (underflow) {
             console.log(`meter ${meterID} underflow, terminating vat ${vatID}`);
