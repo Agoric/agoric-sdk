@@ -11,7 +11,8 @@
   import Purses from './Purses.svelte';
   import Config from './Config.svelte';
   import Transactions from './Transactions.svelte';
-  import { connected, ready } from './store';
+  import { connected, ready } from './store.js';
+  import { setWalletConnection } from './wallet-admin.js';
 
   import ListItems from '../lib/ListItems.svelte';
   import MenuButton from '../lib/MenuButton.svelte';
@@ -178,6 +179,10 @@
 <svelte:head>
   <title>Agoric Wallet</title>
 </svelte:head>
+
+<agoric-wallet-connection style="display: none" on:state={ev => {
+  setWalletConnection(ev.detail.walletConnection);
+}}></agoric-wallet-connection>
 
 <ThemeWrapper>
   <div class="header-wrapper">
