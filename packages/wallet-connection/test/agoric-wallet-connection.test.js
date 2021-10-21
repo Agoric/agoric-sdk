@@ -34,7 +34,15 @@ const makeMockCapTP = (_, rawSend, __, ___) => {
   return {
     dispatch: data => (captpInnards.lastDispatched = data),
     abort: () => (captpInnards.isAborted = true),
-    getBootstrap: () => ({ foo: 'bar' }),
+    getBootstrap: () => ({
+      bridge: true,
+      loadingNotifier: {
+        getUpdateSince: () => ({ updateCount: 3, value: [] }),
+      },
+      wallet: {
+        getAdminFacet: () => ({ isAdmin: true }),
+      },
+    }),
   };
 };
 
@@ -158,10 +166,10 @@ describe('AgoricWalletConnection', () => {
       iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      captpInnards.send({ foo: 'bar' });
+      captpInnards.send({ foo: 'bar2' });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar' }));
+      expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar2' }));
     });
 
     it('aborts capTP when the socket disconnects', async () => {
@@ -178,7 +186,7 @@ describe('AgoricWalletConnection', () => {
       iframeOnMessage('http://localhost:8000');
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(await adminBootstrap).to.deep.equal({ foo: 'bar' });
+      expect(await adminBootstrap).to.deep.equal({ isAdmin: true });
     });
   });
 
@@ -189,7 +197,7 @@ describe('AgoricWalletConnection', () => {
       `,
     );
     expect(el.state).to.equal('idle');
-    expect(() => (el.state = 'foo')).to.throw(/Cannot set/);
+    expect(() => (el.state = 'notset')).to.throw(/Cannot set/);
   });
 
   it('passes the a11y audit', async () => {

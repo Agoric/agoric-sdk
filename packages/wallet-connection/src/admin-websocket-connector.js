@@ -1,4 +1,19 @@
 /* eslint-disable no-underscore-dangle */
+import { E } from '@agoric/eventual-send';
+
+// Wait for the wallet to finish loading.
+export const waitForBootstrap = async getBootstrap => {
+  const getLoadingUpdate = (...args) =>
+    E(E.get(getBootstrap()).loadingNotifier).getUpdateSince(...args);
+  let update = await getLoadingUpdate();
+  while (update.value.includes('wallet')) {
+    console.log('waiting for wallet');
+    // eslint-disable-next-line no-await-in-loop
+    update = await getLoadingUpdate(update.updateCount);
+  }
+
+  return getBootstrap();
+};
 
 export const makeAdminWebSocketConnector = component => {
   let ws;
@@ -19,10 +34,11 @@ export const makeAdminWebSocketConnector = component => {
       abort();
     });
 
-    component._bridgePK.resolve(getBootstrap());
-
-    // Mark the connection as admin.
-    component.service.send({ type: 'connected' });
+    const adminFacet = E(
+      E.get(waitForBootstrap(getBootstrap)).wallet,
+    ).getAdminFacet();
+    adminFacet.then(component.service.send({ type: 'connected' }));
+    component._bridgePK.resolve(adminFacet);
   };
 
   return {
