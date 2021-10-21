@@ -52,7 +52,10 @@
     "extends": [
       "@open-wc",
       "@endo"
-    ]
+    ],
+    "rules": {
+      "import/no-extraneous-dependencies": "off"
+    }
   },
   "prettier": {
     "trailingComma": "all",

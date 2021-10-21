@@ -1,4 +1,4 @@
-/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-underscore-dangle,import/no-extraneous-dependencies */
 import '../demo/install-ses-lockdown.js';
 import { E } from '@agoric/eventual-send';
 import { html } from 'lit';
@@ -141,7 +141,7 @@ describe('AgoricWalletConnection', () => {
       // Connecting happens instantly with the mock socket,
       // just need to let the event loop run once.
       await new Promise(resolve => setTimeout(resolve, 10));
-      expect(el.state).to.equal('admin');
+      expect(el.state).to.equal('bridged');
     });
 
     it('lets the websocket dispatch messages through capTP', async () => {
