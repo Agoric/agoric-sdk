@@ -12,6 +12,9 @@ import { interpret } from 'robot3';
 
 import { makeConnectionMachine } from './states.js';
 
+import { makeAdminWebSocketConnector } from './admin-websocket-connector.js';
+import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
+
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
   'https://local.agoric.com/?append=/wallet-bridge.html';
@@ -48,6 +51,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         getScopedBridge: (
           suggestedDappPetname,
           dappOrigin = window.location.origin,
+          makeConnector = makeBridgeIframeConnector,
         ) => {
           assert.equal(
             this.state,
@@ -56,13 +60,19 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           );
           this.service.send({
             type: 'locate',
-            destination: 'bridge',
-            suggestedDappPetname,
-            dappOrigin,
+            connectionParams: {
+              caller: 'getScopedBridge',
+              suggestedDappPetname,
+              dappOrigin,
+              makeConnector,
+            },
           });
           return this._bridgePK.promise;
         },
-        getAdminBootstrap: accessToken => {
+        getAdminBootstrap: (
+          accessToken,
+          makeConnector = makeAdminWebSocketConnector,
+        ) => {
           assert.equal(
             this.state,
             'idle',
@@ -70,10 +80,13 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           );
           this.service.send({
             type: 'locate',
-            destination: 'admin',
-            accessToken,
+            connectionParams: {
+              caller: 'getAdminBootstrap',
+              accessToken,
+              makeConnector,
+            },
           });
-          return this._adminBootstrapPK.promise;
+          return this._bridgePK.promise;
         },
         reset: () => {
           this.service.send({ type: 'reset' });
@@ -81,10 +94,12 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
             this._captp.abort();
             this._captp = null;
           }
+          if (this._connector) {
+            this._connector.hostDisconnected();
+            this._connector = null;
+          }
           this._bridgePK.reject(Error('Connection reset'));
-          this._adminBootstrapPK.reject(Error('Connection reset'));
           this._bridgePK = makePromiseKit();
-          this._adminBootstrapPK = makePromiseKit();
         },
       });
 
@@ -117,7 +132,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
       this._nextEpoch = 0;
       this._bridgePK = makePromiseKit();
-      this._adminBootstrapPK = makePromiseKit();
 
       this._walletCallbacks = Far('walletCallbacks', {
         needDappApproval: (dappOrigin, suggestedDappPetname) => {
@@ -148,60 +162,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       this.service.send({ type: 'located', href: data });
     }
 
-    onAdminOpen(ws) {
-      const send = obj => ws.send(JSON.stringify(obj));
-      this._startCapTP(send, 'walletAdmin');
-
-      assert(this._captp);
-      const { dispatch, abort, getBootstrap } = this._captp;
-
-      ws.addEventListener('message', ev => {
-        const obj = JSON.parse(ev.data);
-        dispatch(obj);
-      });
-
-      ws.addEventListener('close', () => {
-        abort();
-      });
-
-      this._adminBootstrapPK.resolve(getBootstrap());
-
-      // Mark the connection as admin.
-      this.service.send({ type: 'connected' });
-    }
-
-    onConnectMessage(event) {
-      console.log(this.state, 'connect received', event);
-      const { data, send } = event.detail;
-      assert.equal(
-        data.type,
-        'walletBridgeLoaded',
-        X`Unexpected connect message type ${data.type}`,
-      );
-
-      this._startCapTP(
-        send,
-        this.service.context.suggestedDappPetname,
-        this._walletCallbacks,
-      );
-
-      // Received bridge announcement, so mark the connection as bridged.
-      this.service.send({ type: 'connected' });
-    }
-
-    onBridgeMessage(ev) {
-      console.log(this.state, 'bridge received', ev);
-      const { data } = ev.detail;
-      if (
-        data &&
-        typeof data.type === 'string' &&
-        data.type.startsWith('CTP_')
-      ) {
-        assert(this._captp);
-        this._captp.dispatch(data);
-      }
-    }
-
     onError(event) {
       console.log(this.state, 'error', event);
       this.service.send({
@@ -211,16 +171,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
       // Allow retries to get a fresh bridge.
       this._captp = null;
-    }
-
-    _getBridgeURL() {
-      const { location, suggestedDappPetname } = this.service.context;
-      assert(location);
-      const url = new URL(location);
-      if (suggestedDappPetname) {
-        url.searchParams.append('suggestedDappPetname', suggestedDappPetname);
-      }
-      return url.href;
     }
 
     _startCapTP(send, ourEndpoint, ourPublishedBootstrap) {
@@ -239,72 +189,46 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       );
     }
 
-    _getAdminURL() {
-      const { location, accessToken } = this.service.context;
-      assert(location);
-
-      // Find the websocket protocol for this path.
-      const url = new URL('/private/captp', location);
-      url.protocol = url.protocol.replace(/^http/, 'ws');
-
-      if (accessToken) {
-        url.searchParams.set('accessToken', accessToken);
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      if (this._captp) {
+        this._captp.abort();
+        this._captp = null;
       }
-
-      return url.href;
+      if (this._connector) {
+        this._connector.hostDisconnected();
+        this._connector = null;
+      }
     }
 
     render() {
-      let src = '';
-      let onMessage;
+      /** @type {import('lit-html').TemplateResult<1> | undefined} */
+      let backend;
       switch (this.state) {
         case 'locating': {
-          src = DEFAULT_LOCATOR_URL;
-          onMessage = this.onLocateMessage;
-          break;
-        }
-        case 'connecting': {
-          const { destination } = this.service.context;
-          switch (destination) {
-            case 'admin': {
-              const ws = new WebSocket(this._getAdminURL());
-              ws.addEventListener('open', () => this.onAdminOpen(ws));
-              ws.addEventListener('error', () => this.onError);
-              break;
-            }
-            case 'bridge': {
-              src = this._getBridgeURL();
-              onMessage = this.onConnectMessage;
-              break;
-            }
-            default: {
-              assert.fail(`Destination ${destination} must be set`);
-            }
-          }
+          backend = html`
+            <agoric-iframe-messenger
+              src=${DEFAULT_LOCATOR_URL}
+              @open=${this.onOpen}
+              @message=${this.onLocateMessage}
+              @error=${this.onError}
+            ></agoric-iframe-messenger>
+          `;
           break;
         }
         case 'approving':
-        case 'bridged': {
-          src = this._getBridgeURL();
-          onMessage = this.onBridgeMessage;
+        case 'bridged':
+        case 'connecting': {
+          if (!this._connector) {
+            this._connector = this.service.context.connectionParams.makeConnector(
+              this,
+            );
+            this._connector.hostConnected();
+          }
+          backend = this._connector.render();
           break;
         }
         default:
-      }
-
-      /** @type {import('lit-html').TemplateResult<1>} */
-      let backend;
-      if (src) {
-        backend = html`
-          <agoric-iframe-messenger
-            src=${src}
-            @open=${this.onOpen}
-            @message=${onMessage}
-            @error=${this.onError}
-          ></agoric-iframe-messenger>
-        `;
-      } else {
-        backend = html``;
       }
 
       return html`

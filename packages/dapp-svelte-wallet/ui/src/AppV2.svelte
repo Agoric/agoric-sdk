@@ -18,6 +18,7 @@
   import Config from './Config.svelte';
   import NavMenu from './NavMenu.svelte';
   import { connected, ready } from './store';
+  import { setWalletConnection } from './wallet-admin.js';
 
   const menu = [
     { id: 'dashboard', text: 'Dashboard', icon: 'dashboard' },
@@ -209,6 +210,10 @@
 <svelte:head>
   <title>Agoric Wallet</title>
 </svelte:head>
+
+<agoric-wallet-connection style="display: none" on:state={ev => {
+  setWalletConnection(ev.detail.walletConnection);
+}}></agoric-wallet-connection>
 
 <ThemeWrapper>
   <header>

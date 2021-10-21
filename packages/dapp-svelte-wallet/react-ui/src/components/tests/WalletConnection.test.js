@@ -56,7 +56,7 @@ describe('WalletConnection', () => {
     let connectionIndicator = component.find(`.connector button`);
     expect(connectionIndicator.props().title).toEqual('Disconnected');
 
-    connectionStatus = 'admin';
+    connectionStatus = 'bridged';
     component.setProps({ connectionStatus });
     connectionIndicator = component.find('.connector button');
     expect(connectionIndicator.props().title).toEqual('Connected');

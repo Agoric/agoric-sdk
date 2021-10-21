@@ -1,0 +1,14 @@
+diff --git a/node_modules/lit/package.json b/node_modules/lit/package.json
+index 13aee19..fb3ce58 100644
+--- a/node_modules/lit/package.json
++++ b/node_modules/lit/package.json
+@@ -16,6 +16,9 @@
+   "module": "index.js",
+   "type": "module",
+   "exports": {
++    "./package.json": {
++      "default": "./package.json"
++    },
+     ".": {
+       "default": "./index.js"
+     },
