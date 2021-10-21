@@ -1,0 +1,14 @@
+diff --git a/node_modules/lit-html/package.json b/node_modules/lit-html/package.json
+index f465687..a80c184 100644
+--- a/node_modules/lit-html/package.json
++++ b/node_modules/lit-html/package.json
+@@ -13,6 +13,9 @@
+   "main": "lit-html.js",
+   "type": "module",
+   "exports": {
++    "./package.json": {
++      "default": "./package.json"
++    },
+     ".": {
+       "development": "./development/lit-html.js",
+       "default": "./lit-html.js"

@@ -1,0 +1,14 @@
+diff --git a/node_modules/@lit/reactive-element/package.json b/node_modules/@lit/reactive-element/package.json
+index 8acd819..214ac60 100644
+--- a/node_modules/@lit/reactive-element/package.json
++++ b/node_modules/@lit/reactive-element/package.json
+@@ -17,6 +17,9 @@
+   "module": "reactive-element.js",
+   "type": "module",
+   "exports": {
++    "./package.json": {
++      "default": "./package.json"
++    },
+     ".": {
+       "development": "./development/reactive-element.js",
+       "default": "./reactive-element.js"
