@@ -10,11 +10,9 @@ import {
 
 /**
  * @typedef {Object} Context
- * @property {string} [accessToken]
  * @property {any?} error
  * @property {string?} location
- * @property {string?} suggestedDappPetname
- * @property {('admin' | 'bridge')} [destination]
+ * @property {Record<string,any>} connectionParams
  */
 
 /**
@@ -29,7 +27,7 @@ const reduce = rawReduce;
 const initialContext = () => ({
   error: null,
   location: null,
-  suggestedDappPetname: null,
+  connectionParams: {},
 });
 
 const common = [
@@ -56,9 +54,7 @@ export const makeConnectionMachine = () =>
           'locating',
           reduce((ctx, ev) => ({
             ...ctx,
-            destination: ev.destination,
-            suggestedDappPetname: ev.suggestedDappPetname,
-            accessToken: ev.accessToken,
+            connectionParams: ev.connectionParams,
           })),
         ),
         transition('connect', 'connecting'),
@@ -75,40 +71,12 @@ export const makeConnectionMachine = () =>
           reduce((ctx, ev) => ({ ...ctx, location: ev.href })),
         ),
       ),
-      connecting: state(
-        ...common,
-        transition(
-          'connected',
-          'admin',
-          guard(({ destination }) => destination === 'admin'),
-        ),
-        transition(
-          'connected',
-          'bridged',
-          guard(({ destination }) => destination === 'bridge'),
-        ),
-      ),
-      admin: state(...common),
-      bridged: state(
-        ...common,
-        transition(
-          'needDappApproval',
-          'approving',
-          reduce((ctx, ev) => ({
-            ...ctx,
-            dappOrigin: ev.dappOrigin,
-            suggestedDappPetname: ev.suggestedDappPetname,
-          })),
-        ),
-      ),
+      connecting: state(...common, transition('connected', 'bridged')),
+      bridged: state(...common, transition('needDappApproval', 'approving')),
       approving: state(
         ...common,
         transition('needDappApproval', 'approving'),
-        transition(
-          'dappApproved',
-          'bridged',
-          reduce((ctx, ev) => ({ ...ctx, dappOrigin: ev.dappOrigin })),
-        ),
+        transition('dappApproved', 'bridged'),
       ),
       error: state(...common),
     },

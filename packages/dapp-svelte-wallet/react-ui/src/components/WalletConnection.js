@@ -98,11 +98,11 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
   return (
     <div className={clsx('connector', classes.connector)}>
       <Tooltip
-        title={connectionState === 'admin' ? 'Connected' : 'Disconnected'}
+        title={connectionState === 'bridged' ? 'Connected' : 'Disconnected'}
       >
         <IconButton
           size="medium"
-          color={connectionState === 'admin' ? 'primary' : 'secondary'}
+          color={connectionState === 'bridged' ? 'primary' : 'secondary'}
         >
           <Public fontSize="inherit">{connectionState}</Public>
         </IconButton>

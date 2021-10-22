@@ -3,8 +3,7 @@ import { writable } from 'svelte/store';
 import { E } from '@agoric/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
 
-import { makeWebSocket } from './websocket.js';
-import { makeCapTPConnection } from './captp.js';
+import { makeWalletConnection } from './wallet-admin.js';
 
 import '../../api/src/internal-types.js';
 import '../../api/src/types.js';
@@ -20,7 +19,7 @@ const resetAlls = [];
  * @template T
  * @param {T} value
  * @param {T} [reset=value]
- * @returns {[any, (value: T) => void]}
+ * @returns {[import('svelte/store').Readable, (value: T) => void]}
  */
 function makeReadable(value, reset = value) {
   const store = writable(value);
@@ -87,8 +86,8 @@ See the documentation?`,
 }
 
 // Create a connection so that we can derive presences from it.
-const { connected, makeStableForwarder } = makeCapTPConnection(
-  handler => makeWebSocket(`/private/captp${accessTokenParams}`, handler),
+const { connected, makeStableForwarder } = makeWalletConnection(
+  hasAccessToken,
   // eslint-disable-next-line no-use-before-define
   { onReset },
 );
@@ -97,15 +96,13 @@ export { connected };
 
 // Get some properties of the bootstrap object as stable identites.
 /** @type {WalletAdminFacet} */
-export const walletP = makeStableForwarder(bootP =>
-  E(E.get(bootP).wallet).getAdminFacet(),
-);
-export const boardP = makeStableForwarder(bootP => E.get(bootP).board);
+export const walletP = makeStableForwarder(bootP => bootP);
+export const boardP = makeStableForwarder(bootP => E(bootP).getBoard());
 
 // We initialize as false, but reset to true on disconnects.
 const [ready, setReady] = makeReadable(false, true);
 const [inbox, setInbox] = makeReadable([]);
-const [purses, setPurses] = makeReadable(null);
+const [purses, setPurses] = makeReadable([]);
 const [dapps, setDapps] = makeReadable([]);
 const [payments, setPayments] = makeReadable([]);
 const [contacts, setContacts] = makeReadable([]);
