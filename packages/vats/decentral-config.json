@@ -34,6 +34,9 @@
     "sharing": {
       "sourceSpec": "./src/vat-sharing.js"
     },
+    "walletManager": {
+      "sourceSpec": "./src/vat-walletManager.js"
+    },
     "zoe": {
       "sourceSpec": "./src/vat-zoe.js",
       "parameters": {
