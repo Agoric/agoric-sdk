@@ -90,10 +90,10 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 	reply := msgStaking{
 		EpochTag:        fmt.Sprint(ctx.BlockHeight()),
 		Denom:           ch.keeper.BondDenom(ctx),
-		ValidatorValues: make([]sdk.Int, 0),
-		DelegatorStates: make([]delegatorState, 0),
+		ValidatorValues: make([]sdk.Int, len(msg.Validators)),
+		DelegatorStates: make([]delegatorState, len(msg.Delegators)),
 	}
-	validatorIndex := map[string]int{}
+	validatorIndex := map[string]int{} // map of validators addresses to indexes
 	for i, v := range msg.Validators {
 		validatorIndex[v] = i
 		var value sdk.Int
@@ -107,19 +107,25 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 				value = validator.Tokens
 			}
 		}
-		reply.ValidatorValues = append(reply.ValidatorValues, value)
+		reply.ValidatorValues[i] = value
 	}
-	for _, d := range msg.Delegators {
-		state := delegatorState{
-			ValidatorIdx: make([]int, 0),
-			Values:       make([]sdk.Int, 0),
-			Other:        sdk.NewInt(0),
-		}
+	for i, d := range msg.Delegators {
 		addr, err := sdk.AccAddressFromBech32(d)
 		if err != nil {
-			state.Other = sdk.NewInt(-1)
+			reply.DelegatorStates[i] = delegatorState{
+				ValidatorIdx: make([]int, 0),
+				Values:       make([]sdk.Int, 0),
+				Other:        sdk.NewInt(-1),
+			}
 		} else {
-			for _, d := range ch.keeper.GetDelegatorDelegations(ctx, addr, math.MaxUint16) {
+			delegations := ch.keeper.GetDelegatorDelegations(ctx, addr, math.MaxUint16)
+			// Note that the delegations were returned in a specific order - no nodeterminism
+			state := delegatorState{
+				ValidatorIdx: make([]int, 0, len(delegations)),
+				Values:       make([]sdk.Int, 0, len(delegations)),
+				Other:        sdk.NewInt(0),
+			}
+			for _, d := range delegations {
 				valAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
 				if err != nil {
 					panic(err)
@@ -138,8 +144,8 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 					state.Other = state.Other.Add(tokens)
 				}
 			}
+			reply.DelegatorStates[i] = state
 		}
-		reply.DelegatorStates = append(reply.DelegatorStates, state)
 	}
 	bz, err := json.Marshal(&reply)
 	if err != nil {

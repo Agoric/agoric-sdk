@@ -67,7 +67,7 @@ in the request, where the object contains:
     or `"-1"` for a malformed delegator address.
 
 This call obtains a partial snapshot of staking data in a compact
-represetnation. It is intended for use in tallying votes of delegated tokens,
+representation. It is intended for use in tallying votes of delegated tokens,
 with proxying of votes based on delegation. It has nothing to do with liens
 per se, but the lien module has the necessary connectivity to implement it.
 This call may be moved to another module in the future if appropriate.
