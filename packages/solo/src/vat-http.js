@@ -23,9 +23,6 @@ export function buildRootObject(vatPowers) {
     local: {},
   };
 
-  let exportedToCapTP = {
-    loadingNotifier,
-  };
   function doneLoading(subsystems) {
     LOADING = LOADING.filter(subsys => !subsystems.includes(subsys));
     loadingUpdater.updateState(LOADING);
@@ -83,7 +80,17 @@ export function buildRootObject(vatPowers) {
       const captpHandler = Far('captpHandler', {
         getBootstrap(_otherSide, _meta) {
           // Harden only our exported objects, and fetch them afresh each time.
-          return harden(exportedToCapTP);
+          const exported = {
+            loadingNotifier,
+            ...replObjects.home,
+          };
+          if (replObjects.agoric) {
+            exported.agoric = { ...replObjects.agoric };
+          }
+          if (replObjects.local) {
+            exported.local = { ...replObjects.local };
+          }
+          return harden(exported);
         },
       });
       registerURLHandler(captpHandler, '/private/captp');
@@ -95,11 +102,6 @@ export function buildRootObject(vatPowers) {
     doneLoading,
 
     setWallet(wallet) {
-      exportedToCapTP = {
-        ...exportedToCapTP,
-        local: { ...exportedToCapTP.local, wallet },
-        wallet,
-      };
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
     },
@@ -109,15 +111,6 @@ export function buildRootObject(vatPowers) {
       decentralObjects = undefined,
       deprecatedObjects = undefined,
     ) {
-      exportedToCapTP = {
-        ...exportedToCapTP,
-        ...decentralObjects, // TODO: Remove; replaced by .agoric
-        ...privateObjects, // TODO: Remove; replaced by .local
-        ...deprecatedObjects,
-        agoric: { ...decentralObjects },
-        local: { ...privateObjects },
-      };
-
       // We need to mutate the repl subobjects instead of replacing them.
       if (privateObjects) {
         Object.assign(replObjects.local, privateObjects);
