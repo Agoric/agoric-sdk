@@ -421,33 +421,40 @@ func TestGetStaking(t *testing.T) {
 	ctx := sdk.Context{}
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
+	pi := func(x int64) *sdk.Int {
+		n := i(x)
+		return &n
+	}
+
+	null := (*sdk.Int)(nil)
+
 	for _, tt := range []struct {
 		name       string
 		validators []string
 		delegators []string
-		wantVals   []sdk.Int
-		wantStates []delegatorState
+		wantVals   []*sdk.Int
+		wantStates []*delegatorState
 	}{
 		{
 			name:       "empty",
 			validators: []string{},
 			delegators: []string{},
-			wantVals:   []sdk.Int{},
-			wantStates: []delegatorState{},
+			wantVals:   []*sdk.Int{},
+			wantStates: []*delegatorState{},
 		},
 		{
 			name:       "one_val",
 			validators: []string{val1.OperatorAddress},
 			delegators: []string{},
-			wantVals:   []sdk.Int{i(12300)},
-			wantStates: []delegatorState{},
+			wantVals:   []*sdk.Int{pi(12300)},
+			wantStates: []*delegatorState{},
 		},
 		{
 			name:       "one_del",
 			validators: []string{},
 			delegators: []string{addr1.String()},
-			wantVals:   []sdk.Int{},
-			wantStates: []delegatorState{
+			wantVals:   []*sdk.Int{},
+			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{},
 					Values:       []sdk.Int{},
@@ -459,8 +466,8 @@ func TestGetStaking(t *testing.T) {
 			name:       "one_each",
 			validators: []string{val1.OperatorAddress},
 			delegators: []string{addr1.String()},
-			wantVals:   []sdk.Int{i(12300)},
-			wantStates: []delegatorState{
+			wantVals:   []*sdk.Int{pi(12300)},
+			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{0},
 					Values:       []sdk.Int{i(456)},
@@ -472,8 +479,8 @@ func TestGetStaking(t *testing.T) {
 			name:       "full",
 			validators: []string{val1.OperatorAddress, val2.OperatorAddress, val3.OperatorAddress},
 			delegators: []string{addr1.String(), addr2.String(), addr3.String(), addr4.String()},
-			wantVals:   []sdk.Int{i(12300), i(2345), i(34567)},
-			wantStates: []delegatorState{
+			wantVals:   []*sdk.Int{pi(12300), pi(2345), pi(34567)},
+			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{0, 1},
 					Values:       []sdk.Int{i(456), i(54)},
@@ -500,8 +507,8 @@ func TestGetStaking(t *testing.T) {
 			name:       "dup",
 			validators: []string{val1.OperatorAddress, val1.OperatorAddress},
 			delegators: []string{addr1.String(), addr1.String()},
-			wantVals:   []sdk.Int{i(12300), i(12300)},
-			wantStates: []delegatorState{
+			wantVals:   []*sdk.Int{pi(12300), pi(12300)},
+			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{1}, // selects last index
 					Values:       []sdk.Int{i(456)},
@@ -518,13 +525,9 @@ func TestGetStaking(t *testing.T) {
 			name:       "bad_addr",
 			validators: []string{"foo", val1.OperatorAddress},
 			delegators: []string{"bar", addr1.String()},
-			wantVals:   []sdk.Int{i(-1), i(12300)},
-			wantStates: []delegatorState{
-				{
-					ValidatorIdx: []int{},
-					Values:       []sdk.Int{},
-					Other:        i(-1),
-				},
+			wantVals:   []*sdk.Int{null, pi(12300)},
+			wantStates: []*delegatorState{
+				nil,
 				{
 					ValidatorIdx: []int{1},
 					Values:       []sdk.Int{i(456)},
@@ -558,9 +561,16 @@ func TestGetStaking(t *testing.T) {
 			if len(result.ValidatorValues) != len(tt.wantVals) {
 				t.Errorf("wrong # of vals returned - got %v, want %v", result.ValidatorValues, tt.wantVals)
 			} else {
-				for i, x := range result.ValidatorValues {
-					if !x.Equal(tt.wantVals[i]) {
-						t.Errorf("validator %d got %v, want %v", i, x, tt.wantVals[i])
+				for j, got := range result.ValidatorValues {
+					want := tt.wantVals[j]
+					if got == nil {
+						if want != nil {
+							t.Errorf("validator %d got null, want %v", j, want)
+						}
+					} else if want == nil {
+						t.Errorf("validator %d got %v, want nil", j, *got)
+					} else if !got.Equal(*want) {
+						t.Errorf("validator %d got %v, want %v", j, got, want)
 					}
 				}
 			}
@@ -569,6 +579,16 @@ func TestGetStaking(t *testing.T) {
 			} else {
 				for s, got := range result.DelegatorStates {
 					want := tt.wantStates[s]
+					if got == nil {
+						if want != nil {
+							t.Errorf("delegator %d got nil, want %v", s, want)
+						}
+						continue
+					}
+					if want == nil {
+						t.Errorf("delegator %d got %v, want nil", s, got)
+						continue
+					}
 					if !reflect.DeepEqual(got.ValidatorIdx, want.ValidatorIdx) {
 						t.Errorf("state %d bad validator indexes - got %v, want %v", s, got.ValidatorIdx, want.ValidatorIdx)
 					}
@@ -587,6 +607,5 @@ func TestGetStaking(t *testing.T) {
 				}
 			}
 		})
-
 	}
 }
