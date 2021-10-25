@@ -41,7 +41,8 @@ const cmp = (a, b) => {
 const kv = (keyObj, val) => {
   const key = Object.values(keyObj)[0];
   const text = Array.isArray(key) ? key.join('.') : key;
-  return { ...val, ...keyObj, id: text, text, value: val };
+  const id = val.meta?.sequence;
+  return { ...val, ...keyObj, id: id ?? text, text, value: val };
 };
 
 const inboxReducer = (_, newInbox) =>
@@ -49,7 +50,7 @@ const inboxReducer = (_, newInbox) =>
     .map(tx => ({
       ...tx,
       offerId: tx.id,
-      id: `${tx.requestContext.date}-${tx.requestContext.dappOrigin}-${tx.id}`,
+      id: tx.meta.sequence,
     }))
     .sort((a, b) => cmp(b.id, a.id));
 
@@ -64,7 +65,7 @@ const pursesReducer = (_, newPurses) =>
 
 const dappsReducer = (_, newDapps) =>
   newDapps
-    .map(dapp => ({ ...dapp, id: dapp.origin }))
+    .map(dapp => ({ ...dapp, id: dapp.meta.sequence }))
     .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id));
 
 const contactsReducer = (_, newContacts) =>
@@ -77,13 +78,18 @@ const issuersReducer = (_, newIssuers) =>
     .map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
     .sort((a, b) => cmp(a.id, b.id));
 
+const paymentsReducer = (_, newPayments) =>
+  newPayments
+    .map(payment => ({ ...payment, id: payment.meta.sequence }))
+    .sort((a, b) => cmp(a.id, b.id));
+
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
   const [inbox, setInbox] = useReducer(inboxReducer, null);
   const [purses, setPurses] = useReducer(pursesReducer, null);
   const [dapps, setDapps] = useReducer(dappsReducer, null);
   const [contacts, setContacts] = useReducer(contactsReducer, null);
-  const [payments, setPayments] = useState(null);
+  const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
 
   const state = {
