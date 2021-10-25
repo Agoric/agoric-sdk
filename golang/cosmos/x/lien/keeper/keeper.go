@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
+	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type Keeper interface {
@@ -16,6 +17,9 @@ type Keeper interface {
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState
+	BondDenom(ctx sdk.Context) string
+	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
+	GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool)
 }
 
 // keeperImpl implements the lien keeper.
@@ -179,4 +183,22 @@ func (lk keeperImpl) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 		return vestingAccount.GetVestingCoins(ctx.BlockTime())
 	}
 	return sdk.NewCoins()
+}
+
+// The following methods simply proxy the eponymous staking keeper queries.
+
+// BondDenom returns the denom used for staking.
+func (lk keeperImpl) BondDenom(ctx sdk.Context) string {
+	return lk.stakingKeeper.BondDenom(ctx)
+}
+
+// GetDelegatorDelegations returns the delegator's delegations.
+// Returns up to the specified number of delegations.
+func (lk keeperImpl) GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation {
+	return lk.stakingKeeper.GetDelegatorDelegations(ctx, delegator, maxRetrieve)
+}
+
+// GetValidator returns the named validator, if found.
+func (lk keeperImpl) GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool) {
+	return lk.stakingKeeper.GetValidator(ctx, valAddr)
 }
