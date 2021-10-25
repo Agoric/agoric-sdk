@@ -4,6 +4,7 @@ import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
 import { E } from '@agoric/eventual-send';
+import { observeNotifier } from '@agoric/notifier';
 import { makeStyles } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import Public from '@material-ui/icons/Public';
@@ -68,7 +69,16 @@ const getAccessToken = () => {
   return accessToken;
 };
 
-const WalletConnection = ({ setConnectionState, connectionState }) => {
+const WalletConnection = ({
+  setConnectionState,
+  connectionState,
+  setInbox,
+  setPurses,
+  setDapps,
+  setContacts,
+  setPayments,
+  setIssuers,
+}) => {
   const classes = useStyles();
   const onWalletState = useCallback(ev => {
     const { walletConnection, state } = ev.detail;
@@ -82,6 +92,24 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
         const bridge = E(walletConnection).getAdminBootstrap(getAccessToken());
         // You should reconstruct all state here.
         console.log('Got bridge', bridge);
+        observeNotifier(E(bridge).getOffersNotifier(), {
+          updateState: setInbox,
+        });
+        observeNotifier(E(bridge).getPursesNotifier(), {
+          updateState: setPurses,
+        });
+        observeNotifier(E(bridge).getDappsNotifier(), {
+          updateState: setDapps,
+        });
+        observeNotifier(E(bridge).getContactsNotifier(), {
+          updateState: setContacts,
+        });
+        observeNotifier(E(bridge).getPaymentsNotifier(), {
+          updateState: setPayments,
+        });
+        observeNotifier(E(bridge).getIssuersNotifier(), {
+          updateState: setIssuers,
+        });
         break;
       }
       case 'error': {
@@ -118,4 +146,10 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
 export default withApplicationContext(WalletConnection, context => ({
   setConnectionState: context.setConnectionState,
   connectionState: context.connectionState,
+  setInbox: context.setInbox,
+  setPurses: context.setPurses,
+  setDapps: context.setDapps,
+  setContacts: context.setContacts,
+  setPayments: context.setPayments,
+  setIssuers: context.setIssuers,
 }));

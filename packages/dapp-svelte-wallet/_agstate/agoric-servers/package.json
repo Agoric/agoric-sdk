@@ -12,6 +12,6 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/vats": "^0.1.0"
+    "@agoric/vats": "*"
   }
 }

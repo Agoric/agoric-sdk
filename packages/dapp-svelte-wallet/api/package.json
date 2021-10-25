@@ -15,20 +15,20 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.0",
-    "@agoric/install-ses": "^0.5.28",
-    "@agoric/vats": "^0.4.2",
+    "@agoric/bundle-source": "*",
+    "@agoric/install-ses": "*",
+    "@agoric/vats": "*",
     "ava": "^3.12.1"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.14",
-    "@agoric/ertp": "^0.12.2",
-    "@agoric/eventual-send": "^0.13.30",
-    "@agoric/marshal": "^0.4.28",
-    "@agoric/notifier": "^0.3.31",
-    "@agoric/promise-kit": "^0.2.28",
-    "@agoric/store": "^0.6.6",
-    "@agoric/zoe": "^0.20.0",
+    "@agoric/assert": "*",
+    "@agoric/ertp": "*",
+    "@agoric/eventual-send": "*",
+    "@agoric/marshal": "*",
+    "@agoric/notifier": "*",
+    "@agoric/promise-kit": "*",
+    "@agoric/store": "*",
+    "@agoric/zoe": "*",
     "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
