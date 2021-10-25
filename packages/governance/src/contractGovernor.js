@@ -61,7 +61,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * only one) and the parameterName. The interpretation of ParamSpecification is
  * up to the contract.
  *
- * The contractGovenor creatorFacet includes voteOnParamChange(),
+ * The contractGovernor creatorFacet includes voteOnParamChange(),
  * which is used to create questions that will automatically update
  * contract parameters if passed. This facet will usually be closely held. The
  * creatorFacet can also be used to retrieve the governed instance, publicFacet,
@@ -155,6 +155,7 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
     getCreatorFacet: () => limitedCreatorFacet,
+    getInternalCreatorFacet: () => E(governedCF).getInternalCreatorFacet(),
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,
   });

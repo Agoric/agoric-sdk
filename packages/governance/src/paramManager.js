@@ -128,7 +128,9 @@ const buildParamManager = paramDescriptions => {
     });
     return harden(descriptions);
   };
-  const getParam = name => harden(makeDescription(name));
+  const getParam = name => {
+    return harden(makeDescription(name));
+  };
 
   // CRUCIAL: Contracts that call buildParamManager should only export the
   // resulting paramManager to their creatorFacet, where it will be picked up by

@@ -10,28 +10,28 @@ import {
 /**
  * @param {ContractFacet} zcf
  * @param {XYKPool} pool
- * @param {BASIS_POINTS} protocolFeeBP - Ratio, soon to be replaced with governed value
- * @param {BASIS_POINTS} poolFeeBP - Ratio, soon to be replaced with governed value
+ * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
+ * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
  * @returns {VPool}
  */
 export const makeSinglePool = (
   zcf,
   pool,
-  protocolFeeBP,
-  poolFeeBP,
+  getProtocolFeeBP,
+  getPoolFeeBP,
   feeSeat,
 ) => {
   const secondaryBrand = pool.getSecondaryAmount().brand;
   const centralBrand = pool.getCentralAmount().brand;
-  const protocolFeeRatio = makeFeeRatio(protocolFeeBP, centralBrand);
   const getPools = () => ({
     Central: pool.getCentralAmount(),
     Secondary: pool.getSecondaryAmount(),
   });
-  const publicPrices = prices => {
-    return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
-  };
+  const publicPrices = prices => ({
+    amountIn: prices.swapperGives,
+    amountOut: prices.swapperGets,
+  });
 
   const allocateGainsAndLosses = (inBrand, prices, seat) => {
     const poolSeat = pool.getPoolSeat();
@@ -58,8 +58,8 @@ export const makeSinglePool = (
       amountIn,
       getPools(),
       amountOut,
-      protocolFeeRatio,
-      makeFeeRatio(poolFeeBP, amountOut.brand),
+      makeFeeRatio(getProtocolFeeBP(), centralBrand),
+      makeFeeRatio(getPoolFeeBP(), amountOut.brand),
     );
   };
 
@@ -73,8 +73,8 @@ export const makeSinglePool = (
       amountIn,
       getPools(),
       amountOut,
-      protocolFeeRatio,
-      makeFeeRatio(poolFeeBP, amountIn.brand),
+      makeFeeRatio(getProtocolFeeBP(), centralBrand),
+      makeFeeRatio(getPoolFeeBP(), amountIn.brand),
     );
   };
   const swapOut = (seat, amountIn, amountOut) => {

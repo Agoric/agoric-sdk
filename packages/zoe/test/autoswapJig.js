@@ -108,12 +108,13 @@ export const updatePoolState = (oldState, newState) => ({
 
 export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
   const purseMap = new Map();
-  for (const p of purses) {
-    purseMap.set(p.getAllegedBrand(), p);
+  const brands = await Promise.all(purses.map(p => E(p).getAllegedBrand()));
+  for (let i = 0; i < purses.length; i += 1) {
+    purseMap.set(brands[i], purses[i]);
   }
 
   const withdrawPayment = amount => {
-    return purseMap.get(amount.brand).withdraw(amount);
+    return E(purseMap.get(amount.brand)).withdraw(amount);
   };
 
   // autoswap ignores issuer, multipoolAutoswap needs to know which pool
@@ -183,7 +184,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         inAmount.brand === centralIssuer.getBrand()
           ? [centralIssuer, central, secondaryIssuer, secondary]
           : [secondaryIssuer, secondary, centralIssuer, central];
-      const { In: refund, Out: payout } = await seat.getPayouts();
+      const { In: refund, Out: payout } = await E(seat).getPayouts();
       assertPayoutAmount(t, outIssuer, payout, out(outExpected), 'trade out');
       assertPayoutAmount(t, inIssuer, refund, inMath(inExpected), 'trade in');
 
@@ -192,7 +193,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       t.deepEqual(poolPost.Secondary, secondary(sPost), `s after swap`);
       t.is(kPost, sPost * cPost);
 
-      await seat.getOfferResult();
+      await E(seat).getOfferResult();
       t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity after');
     },
 
@@ -406,7 +407,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         Central: cPayout,
         Secondary: sPayout,
         Liquidity: lPayout,
-      } = await seat.getPayouts();
+      } = await E(seat).getPayouts();
       assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC), 'init c');
       const secondaryAmt = secondary(payoutS);
       assertPayoutAmount(t, secondaryIssuer, sPayout, secondaryAmt, 'init s');

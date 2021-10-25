@@ -38,6 +38,7 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
       getGovernedParamsValues: () => {
         return { main: paramManager.getParams() };
       },
+      getParamValue: paramManager.getParam,
     });
   };
 
@@ -59,6 +60,7 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
   return harden({
     makePublicFacet,
     makeCreatorFacet,
+    getParamValue: paramManager.getParam,
   });
 };
 harden(handleParamGovernance);

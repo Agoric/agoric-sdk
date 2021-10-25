@@ -40,7 +40,7 @@ export const assertPayoutAmount = async (
   expectedAmount,
   label = '',
 ) => {
-  const amount = await issuer.getAmountOf(payout);
+  const amount = await E(issuer).getAmountOf(payout);
   assertAmountsEqual(t, amount, expectedAmount, label);
 };
 

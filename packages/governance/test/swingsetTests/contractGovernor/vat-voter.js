@@ -6,12 +6,10 @@ import { Far } from '@agoric/marshal';
 import {
   assertContractElectorate,
   assertContractGovernance,
-} from '../../../src/validators.js';
-import {
   validateQuestionFromCounter,
   validateQuestionDetails,
-} from '../../../src/contractGovernor.js';
-import { assertBallotConcernsQuestion } from '../../../src/governParam.js';
+  assertBallotConcernsQuestion,
+} from '../../../src/index.js';
 
 const { details: X, quote: q } = assert;
 
