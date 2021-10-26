@@ -4,11 +4,11 @@ import { Switch, Route } from 'react-router-dom';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import AppBar from './components/AppBar';
 import NavMenu from './components/NavMenu';
-import Contacts from './views/Contacts.js';
-import Dapps from './views/Dapps.js';
-import Dashboard from './views/Dashboard.js';
-import Purses from './views/Purses.js';
-import Issuers from './views/Issuers.js';
+import Contacts from './views/Contacts';
+import Dapps from './views/Dapps';
+import Dashboard from './views/Dashboard';
+import Purses from './views/Purses';
+import Issuers from './views/Issuers';
 
 const useStyles = makeStyles(theme => ({
   main: {
