@@ -15,7 +15,7 @@ SOLO_COINS=220000000000urun,75000000ubld
 OP=$1
 shift
 
-ACH="ag-cosmos-helper --home=$FAUCET_HOME --log_level=info"
+ACH="agd --home=$FAUCET_HOME --log_level=info"
 FAUCET_ADDR=$($ACH keys show -a faucet)
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
@@ -101,7 +101,8 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         bank send \
         --broadcast-mode=block \
         -- faucet "$ADDR" "$STAKE"; then
-        # Record the information before exiting.
+        # Record the information before exiting, if the file exists.
+        test -f $thisdir/cosmos-delegates || exit 0
         sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
         echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
         exit 0

@@ -20,9 +20,11 @@ real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" && pwd -P)
 
 PATHCONFIG=nchainz/config/paths
-CLI=ag-cosmos-helper
-DAEMON=ag-chain-cosmos
-SOLO=$thisdir/../solo/bin/ag-solo
+DAEMON=agd
+DAEMON_CMD="$thisdir/../../golang/cosmos/build/$DAEMON"
+CLI="$DAEMON_CMD"
+NODE_HOME=agd
+SOLO="$thisdir/../solo/bin/ag-solo"
 SKIP=no
 COMMAND=
 
@@ -49,7 +51,7 @@ case $COMMAND in
 testnet)
   chainid="$1"
   shift
-  echo | $DAEMON testnet ${1+"$@"}
+  echo | "$DAEMON_CMD" testnet ${1+"$@"} --node-daemon-home="$DAEMON"
   n0d=$chainid/n0/$DAEMON
   i=$(echo $chainid | sed -e 's/^[^0-9]*//')
   portstart=$(( $BASE_PORT + $i * $NUM_SOLOS ))
@@ -64,7 +66,7 @@ testnet)
 		$SOLO init $solo --webport=$port
     addr=$(cat $solo/ag-cosmos-helper-address)
     SOLO_ADDRS+=( "$addr" )
-		$DAEMON add-genesis-account --home=$n0d \
+		"$DAEMON_CMD" add-genesis-account --home=$n0d \
       $($CLI --home=$solo/$CLI-statedir --keyring-backend=test keys show -a ag-solo) \
       1000urun,1provisionpass
     # Generate powerful SwingSet egresses.
@@ -93,11 +95,11 @@ start-daemon)
     cp -r "$BASEDIR/n0/$DAEMON/config" "$solo/$CLI-statedir/"
   done
   # "$($CLI --home "$BASEDIR/n0/$DAEMON" keys show n0 --keyring-backend=test | jq -r .address)"
-  echo "Starting $DAEMON ${1+"$@"}"
+  echo "Starting $DAEMON_CMD ${1+"$@"}"
   if [[ $debug == yes ]]; then
-    DEBUG=agoric ROLE=two_chain node --inspect-brk $(which $DAEMON) ${1+"$@"}
+    NODE_OPTIONS=--inspect-brk DEBUG=agoric ROLE=two_chain "$DAEMON_CMD" ${1+"$@"}
   else
-    DEBUG=agoric ROLE=two_chain $DAEMON ${1+"$@"}
+    DEBUG=agoric ROLE=two_chain "$DAEMON_CMD" ${1+"$@"}
   fi
   exit 0
   ;;

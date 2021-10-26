@@ -10,7 +10,7 @@ def load_genesis_keys(fn):
         monikers[hexaddr] = moniker
 load_genesis_keys("/home/warner/.ag-chain-cosmos/config/genesis.json")
 
-cmd = ["ag-cosmos-helper", "query", "tendermint-validator-set"]
+cmd = ["agd", "query", "tendermint-validator-set"]
 if len(sys.argv) > 1:
     block = int(sys.argv[1])
     cmd.append(str(block))

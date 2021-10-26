@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY golang/cosmos ./
 
-ARG GIT_REVISION
-RUN make GIT_REVISION="$GIT_REVISION" MOD_READONLY= compile-go
+ARG GIT_COMMIT
+RUN make GIT_COMMIT="$GIT_COMMIT" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
@@ -25,14 +25,14 @@ ARG XSNAP_NATIVE_URL
 WORKDIR /usr/src/agoric-sdk
 COPY . .
 
-RUN yarn install --frozen-lockfile --ignore-scripts --network-timeout 100000
+RUN yarn install --network-timeout 100000
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
 RUN cd golang/cosmos && yarn build:gyp
 
-# Install the entry points in the path.
-RUN cd packages/cosmic-swingset && make install install-helper
+# Install the entry points in GOBIN.
+RUN cd packages/cosmic-swingset && make install install-helper install-agd
 
 # Check out the specified submodule versions.
 # When changing/adding entries here, make sure to search the whole project for
@@ -46,8 +46,8 @@ RUN \
 
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable
-RUN find . -name node_modules -prune -print0 | xargs -0 rm -rf
-RUN yarn install --frozen-lockfile --production --network-timeout 100000
+# FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
+# RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
 ###############################
 # The install container.
@@ -58,6 +58,7 @@ RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less 
 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
+COPY --from=build-js /root/go/bin/agd /usr/local/bin/
 COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/

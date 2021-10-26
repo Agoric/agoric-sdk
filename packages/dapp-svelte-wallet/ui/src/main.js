@@ -3,6 +3,8 @@ import './tailwind.css';
 import App from './App.svelte';
 import AppV2 from './AppV2.svelte';
 
+import '@agoric/wallet-connection/agoric-wallet-connection.js';
+
 const urlParams = new URLSearchParams(window.location.search);
 const isV2 = urlParams.get('ui') === 'v2';
 

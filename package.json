@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sdk",
-  "version": "10.0.0",
+  "version": "10.0.2",
   "private": true,
   "useWorkspaces": true,
   "workspaces": [

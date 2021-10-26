@@ -25,7 +25,6 @@ export function makeNodeSubprocessFactory(tools) {
       compareSyscalls,
       useTranscript,
     } = managerOptions;
-    assert(!managerOptions.metered, 'not supported yet');
     assert(!managerOptions.enableSetup, 'not supported at all');
 
     const mk = makeManagerKit(

@@ -1,6 +1,7 @@
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import WalletConnection from './WalletConnection';
+import NavDrawer from './NavDrawer';
 
 const useStyles = makeStyles(theme => ({
   header: {
@@ -20,7 +21,6 @@ const useStyles = makeStyles(theme => ({
     flexWrap: 'nowrap',
   },
   productLink: {
-    marginLeft: '16px',
     alignItems: 'center',
     display: 'flex',
   },
@@ -30,16 +30,21 @@ const useStyles = makeStyles(theme => ({
   appBarSection: {
     display: 'flex',
     flexDirection: 'row',
+    alignItems: 'center',
     padding: '4px',
+    margin: '8px',
     height: '100%',
   },
 }));
 
 const AppBar = () => {
-  const classes = useStyles(useTheme());
+  const theme = useTheme();
+  const classes = useStyles(theme);
+
   return (
     <header className={classes.header}>
       <div className={classes.appBarSection}>
+        <NavDrawer />
         <a href="https://agoric.com" className={classes.productLink}>
           <img
             src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"

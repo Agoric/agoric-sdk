@@ -8,6 +8,7 @@ import { makeLiveSlots } from '../src/kernel/liveSlots.js';
 
 export function buildSyscall() {
   const log = [];
+  const fakestore = new Map();
 
   const syscall = {
     send(targetSlot, method, args, resultSlot) {
@@ -31,6 +32,18 @@ export function buildSyscall() {
     exit(isFailure, info) {
       log.push({ type: 'exit', isFailure, info });
     },
+    vatstoreGet(key) {
+      log.push({ type: 'vatstoreGet', key });
+      return fakestore.get(key);
+    },
+    vatstoreSet(key, value) {
+      log.push({ type: 'vatstoreSet', key, value });
+      fakestore.set(key, value);
+    },
+    vatstoreDelete(key) {
+      log.push({ type: 'vatstoreDelete', key });
+      fakestore.delete(key);
+    },
   };
 
   return { log, syscall };
@@ -41,6 +54,8 @@ export function makeDispatch(
   build,
   vatID = 'vatA',
   enableDisavow = false,
+  cacheSize = undefined,
+  returnTestHooks = undefined,
 ) {
   const gcTools = harden({
     WeakRef,
@@ -49,16 +64,19 @@ export function makeDispatch(
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl: makeDummyMeterControl(),
   });
-  const { setBuildRootObject, dispatch } = makeLiveSlots(
+  const { setBuildRootObject, dispatch, testHooks } = makeLiveSlots(
     syscall,
     vatID,
     {},
     {},
-    undefined,
+    cacheSize,
     enableDisavow,
     false,
     gcTools,
   );
+  if (returnTestHooks) {
+    returnTestHooks[0] = testHooks;
+  }
   setBuildRootObject(build);
   return dispatch;
 }

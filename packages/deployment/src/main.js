@@ -710,7 +710,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       const stdin = passwd
         ? streamFromString(`${passwd}\n${passwd}\n`)
         : 'inherit';
-      await needDoRun(['ag-cosmos-helper', 'keys', 'add', user], stdin);
+      await needDoRun(['agd', 'keys', 'add', user], stdin);
       break;
     }
 

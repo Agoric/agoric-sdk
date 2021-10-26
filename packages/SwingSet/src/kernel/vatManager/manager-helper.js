@@ -103,6 +103,8 @@ import { makeTranscriptManager } from './transcript.js';
  * @param { KernelSlog } kernelSlog
  * @param { (vso: VatSyscallObject) => VatSyscallResult } vatSyscallHandler
  * @param { boolean } workerCanBlock
+ * @param { (vatID: any, originalSyscall: any, newSyscall: any) => Error | undefined } [compareSyscalls]
+ * @param { boolean } [useTranscript]
  * @returns { ManagerKit }
  */
 

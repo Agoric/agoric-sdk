@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X, quote as q } from '@agoric/assert';
@@ -130,13 +131,19 @@ export function makeCache(size, fetch, store) {
  *   export ID for the enclosing vat.
  * @param { (val: Object) => string} getSlotForVal  A function that returns the object ID (vref) for a given object, if any.
  *   their corresponding export IDs
- * @param { (slot: string) => Object} getValForSlot  A function that converts an object ID (vref) to an
- *   object, if any, else undefined.
+ * @param { (slot: string) => Object} requiredValForSlot  A function that converts an object ID (vref) to an
+ *   object.
  * @param {*} registerEntry  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {*} m The vat's marshaler.
+ * @param {*} serialize  Serializer for this vat
+ * @param {*} unserialize  Unserializer for this vat
  * @param {number} cacheSize How many virtual objects this manager should cache
  *   in memory.
+ * @param {*} FinalizationRegistry  Powerful JavaScript intrinsic normally denied by SES
+ * @param {*} addToPossiblyDeadSet  Function to record objects whose deaths should be reinvestigated
+ * @param {*} addToPossiblyRetiredSet Function to record dead objects whose retirement should be
+ *   reinvestigated
+ *
  * @returns {Object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
@@ -168,11 +175,19 @@ export function makeVirtualObjectManager(
   syscall,
   allocateExportID,
   getSlotForVal,
-  getValForSlot,
+  requiredValForSlot,
   registerEntry,
-  m,
+  serialize,
+  unserialize,
   cacheSize,
+  FinalizationRegistry,
+  addToPossiblyDeadSet,
+  addToPossiblyRetiredSet,
 ) {
+  const droppedCollectionRegistry = new FinalizationRegistry(
+    finalizeDroppedCollection,
+  );
+
   /**
    * Fetch an object's state from secondary storage.
    *
@@ -195,64 +210,122 @@ export function makeVirtualObjectManager(
     syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
   }
 
+  /**
+   * Check if a virtual object is truly dead - i.e., unreachable - and truly
+   * delete it if so.
+   *
+   * A virtual object is kept alive by being reachable by any of three legs:
+   *  - any in-memory references to it (if so, it will have a representative and
+   *    thus a non-null slot-to-val entry)
+   *  - any virtual references to it (if so, it will have a refcount > 0)
+   *  - being exported (if so, its export flag will be set)
+   *
+   * This function is called after a leg has been reported missing, and only
+   * if the memory (Representative) leg is currently missing, to see if the
+   * other two legs are now gone also.
+   *
+   * Deletion consists of removing the vatstore entries that describe its state
+   * and track its refcount status.  In addition, when a virtual object is
+   * deleted, we delete any weak collection entries for which it was a key. If
+   * it had been exported, we also inform the kernel that the vref has been
+   * retired, so other vats can delete their weak collection entries too.
+   *
+   * @param {string} vobjID  The vref of the virtual object that's plausibly dead
+   *
+   * @returns {[boolean, boolean]} A pair of flags: the first is true if this
+   *    possibly created a new GC opportunity, the second is true if the object
+   *    should now be regarded as unrecognizable
+   */
   function possibleVirtualObjectDeath(vobjID) {
-    if (!isVrefReachable(vobjID) && !getValForSlot(vobjID)) {
-      const [exported, refCount] = getRefCounts(vobjID);
-      if (exported === 0 && refCount === 0) {
-        // TODO: decrement refcounts on vrefs in the virtualized data being deleted
-        syscall.vatstoreDelete(`vom.${vobjID}`);
-        syscall.vatstoreDelete(`vom.${vobjID}.refCount`);
+    const refCount = getRefCount(vobjID);
+    const exportStatus = getExportStatus(vobjID);
+    if (exportStatus !== 'reachable' && refCount === 0) {
+      const rawState = fetch(vobjID);
+      let doMoreGC = false;
+      for (const propValue of Object.values(rawState)) {
+        propValue.slots.map(
+          vref => (doMoreGC = doMoreGC || removeReachableVref(vref)),
+        );
       }
+      syscall.vatstoreDelete(`vom.${vobjID}`);
+      syscall.vatstoreDelete(`vom.rc.${vobjID}`);
+      syscall.vatstoreDelete(`vom.es.${vobjID}`);
+      doMoreGC = doMoreGC || ceaseRecognition(vobjID);
+      return [doMoreGC, exportStatus !== 'none'];
     }
+    return [false, false];
   }
 
-  function getRefCounts(vobjID) {
-    const rawCounts = syscall.vatstoreGet(`vom.${vobjID}.refCount`);
-    if (rawCounts) {
-      return rawCounts.split(' ').map(Number);
+  function getRefCount(vobjID) {
+    const raw = syscall.vatstoreGet(`vom.rc.${vobjID}`);
+    if (raw) {
+      return Number(raw);
     } else {
-      return [0, 0];
+      return 0;
     }
   }
 
-  function setRefCounts(vobjID, exported, count) {
-    syscall.vatstoreSet(
-      `vom.${vobjID}.refCount`,
-      `${Nat(exported)} ${Nat(count)}`,
-    );
-    if (exported === 0 && count === 0) {
-      possibleVirtualObjectDeath(vobjID);
+  function getExportStatus(vobjID) {
+    const raw = syscall.vatstoreGet(`vom.es.${vobjID}`);
+    switch (raw) {
+      case '0':
+        return 'recognizable';
+      case '1':
+        return 'reachable';
+      default:
+        return 'none';
     }
   }
 
-  function setExported(vobjID, newSetting) {
-    const [wasExported, refCount] = getRefCounts(vobjID);
-    const isNowExported = Number(newSetting);
-    if (wasExported !== isNowExported) {
-      setRefCounts(vobjID, isNowExported, refCount);
+  function setRefCount(vobjID, refCount) {
+    const { virtual } = parseVatSlot(vobjID);
+    syscall.vatstoreSet(`vom.rc.${vobjID}`, `${Nat(refCount)}`);
+    if (refCount === 0) {
+      if (!virtual) {
+        syscall.vatstoreDelete(`vom.rc.${vobjID}`);
+      }
+      addToPossiblyDeadSet(vobjID);
+    }
+  }
+
+  function setExportStatus(vobjID, exportStatus) {
+    const key = `vom.es.${vobjID}`;
+    switch (exportStatus) {
+      // POSSIBLE TODO: An anticipated refactoring may merge
+      // dispatch.dropExports with dispatch.retireExports. If this happens, and
+      // the export status can drop from 'reachable' to 'none' in a single step, we
+      // must perform this "the export pillar has dropped" check in both the
+      // reachable and the none cases (possibly reading the old status first, if
+      // we must ensure addToPossiblyDeadSet only happens once).
+      case 'recognizable': {
+        syscall.vatstoreSet(key, '0');
+        const refCount = getRefCount(vobjID);
+        if (refCount === 0) {
+          addToPossiblyDeadSet(vobjID);
+        }
+        break;
+      }
+      case 'reachable':
+        syscall.vatstoreSet(key, '1');
+        break;
+      case 'none':
+        syscall.vatstoreDelete(key);
+        break;
+      default:
+        assert.fail(`invalid set export status ${exportStatus}`);
     }
   }
 
   function incRefCount(vobjID) {
-    const [exported, oldCount] = getRefCounts(vobjID);
-    if (oldCount === 0) {
-      // TODO: right now we are not tracking actual refcounts, so for now a
-      // refcount of 0 means never referenced and a refcount of 1 means
-      // referenced at least once in the past.  Once actual refcounts are
-      // working (notably including calling decref at the appropriate times),
-      // take out the above if.
-      setRefCounts(vobjID, exported, oldCount + 1);
-    }
+    const oldRefCount = getRefCount(vobjID);
+    setRefCount(vobjID, oldRefCount + 1);
   }
 
-  // TODO: reenable once used; it's commented out just to make eslint shut up
-  /*
   function decRefCount(vobjID) {
-    const [exported, oldCount] = getRefCounts(vobjID);
-    assert(oldCount > 0, `attempt to decref ${vobjID} below 0`);
-    setRefCounts(vobjID, exported, oldCount - 1);
+    const oldRefCount = getRefCount(vobjID);
+    assert(oldRefCount > 0, `attempt to decref ${vobjID} below 0`);
+    setRefCount(vobjID, oldRefCount - 1);
   }
-  */
 
   const cache = makeCache(cacheSize, fetch, store);
 
@@ -263,85 +336,222 @@ export function makeVirtualObjectManager(
   const kindTable = new Map();
 
   /**
-   * Set of all import vrefs which are reachable from our virtualized data.
-   * These were Presences at one point. We add to this set whenever we store
-   * a Presence into the state of a virtual object, or the value of a
-   * makeVirtualScalarWeakMap() instance. We currently never remove anything from the
-   * set, but eventually we'll use refcounts within virtual data to figure
-   * out when the vref becomes unreachable, allowing the vat to send a
-   * dropImport into the kernel and release the object.
-   *
+   * Map of all Remotables which are reachable by our virtualized data, e.g.
+   * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
+   * remotable`. The serialization process stores the Remotable's vref to disk,
+   * but doesn't actually retain the Remotable. To correctly unserialize that
+   * offline data later, we must ensure the Remotable remains alive. This Map
+   * keeps a strong reference to the Remotable along with its (virtual) refcount.
    */
-  /** @type {Set<string>} of vrefs */
-  const reachableVrefs = new Set();
+  /** @type {Map<Object, number>} Remotable->refcount */
+  const remotableRefCounts = new Map();
 
-  // We track imports, to preserve their vrefs against syscall.dropImport
-  // when the Presence goes away.
-  function addReachablePresenceRef(vref) {
-    // XXX TODO including virtual objects gives lie to the name, but this hack should go away with VO refcounts
-    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
-    if (type === 'object' && (!allocatedByVat || virtual)) {
-      reachableVrefs.add(vref);
+  // Note that since presence refCounts are keyed by vref, `processDeadSet` must
+  // query the refCount directly in order to determine if a presence that found
+  // its way into the dead set is live or not, whereas it never needs to query
+  // the `remotableRefCounts` map because that map holds actual live references
+  // as keys and so Remotable references will only find their way into the dead
+  // set if they are actually unreferenced (including, notably, their absence
+  // from the `remotableRefCounts` map).
+
+  function addReachableVref(vref) {
+    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    if (type === 'object') {
+      if (allocatedByVat) {
+        if (virtual) {
+          incRefCount(vref);
+        } else {
+          // exported non-virtual object: Remotable
+          const remotable = requiredValForSlot(vref);
+          if (remotableRefCounts.has(remotable)) {
+            /** @type {number} */
+            const oldRefCount = (remotableRefCounts.get(remotable));
+            remotableRefCounts.set(remotable, oldRefCount + 1);
+          } else {
+            remotableRefCounts.set(remotable, 1);
+          }
+        }
+      } else {
+        // We refcount imports, to preserve their vrefs against
+        // syscall.dropImport when the Presence itself goes away.
+        incRefCount(vref);
+      }
     }
   }
 
-  function isVrefReachable(vref) {
-    return reachableVrefs.has(vref);
+  function removeReachableVref(vref) {
+    let droppedMemoryReference = false;
+    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    if (type === 'object') {
+      if (allocatedByVat) {
+        if (virtual) {
+          decRefCount(vref);
+        } else {
+          // exported non-virtual object: Remotable
+          const remotable = requiredValForSlot(vref);
+          /** @type {number} */
+          const oldRefCount = (remotableRefCounts.get(remotable));
+          assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+          if (oldRefCount === 1) {
+            remotableRefCounts.delete(remotable);
+            droppedMemoryReference = true;
+          } else {
+            remotableRefCounts.set(remotable, oldRefCount - 1);
+          }
+        }
+      } else {
+        decRefCount(vref);
+      }
+    }
+    return droppedMemoryReference;
+  }
+
+  function updateReferenceCounts(beforeSlots, afterSlots) {
+    // Note that the slots of a capdata object are not required to be
+    // deduplicated nor are they expected to be presented in any particular
+    // order, so the comparison of which references appear in the before state
+    // to which appear in the after state must look only at the presence or
+    // absence of individual elements from the slots arrays and pay no attention
+    // to the organization of the slots arrays themselves.
+    const vrefStatus = {};
+    for (const vref of beforeSlots) {
+      vrefStatus[vref] = 'drop';
+    }
+    for (const vref of afterSlots) {
+      if (vrefStatus[vref] === 'drop') {
+        vrefStatus[vref] = 'keep';
+      } else if (!vrefStatus[vref]) {
+        vrefStatus[vref] = 'add';
+      }
+    }
+    for (const [vref, status] of Object.entries(vrefStatus)) {
+      switch (status) {
+        case 'add':
+          addReachableVref(vref);
+          break;
+        case 'drop':
+          removeReachableVref(vref);
+          break;
+        default:
+          break;
+      }
+    }
   }
 
   /**
-   * Set of all import vrefs which are recognizable by our virtualized data.
-   * These were Presences at one point. We add to this set whenever we use a
-   * Presence as a key into a makeVirtualScalarWeakMap() instance or an instance of
-   * VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet. We currently never
-   * remove anything from the set, but eventually we'll use refcounts to figure
-   * out when the vref becomes unrecognizable, allowing the vat to send a
-   * retireImport into the kernel.
+   * Check if a given vref points to a reachable presence.
    *
+   * @param {string} vref  The vref of the presence being enquired about
+   *
+   * @returns {boolean} true if the indicated presence remains reachable.
    */
-  /** @type {Set<string>} of vrefs */
-  const recognizableVrefs = new Set();
+  function isPresenceReachable(vref) {
+    return !!getRefCount(vref);
+  }
 
-  function addRecognizablePresenceValue(value) {
+  /**
+   * A map from vrefs (those which are recognizable by (i.e., used as keys in)
+   * VOM aware collections) to sets of recognizers (the collections for which
+   * they are respectively used as keys).  These vrefs correspond to either
+   * imported Presences or virtual objects (Remotables do not participate in
+   * this as they are not keyed by vref but by the actual Remotable objects
+   * themselves). We add to a vref's recognizer set whenever we use a Presence
+   * or virtual object as a key into a makeVirtualScalarWeakMap() instance or an
+   * instance of VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet.  We
+   * remove it whenever that key (or the whole collection containing it) is
+   * deleted.
+   *
+   * A recognizer is one of:
+   *   Map - the map contained within a VirtualObjectAwareWeakMap to point to its vref-keyed entries.
+   *   Set - the set contained within a VirtualObjectAwareWeakSet to point to its vref-keyed entries.
+   *   deleter - a function within a WeakStore that can be called to remove an entry from that store.
+   *
+   * It is critical that each collection have exactly one recognizer that is
+   * unique to that collection, because the recognizers themselves will be
+   * tracked by their object identities, but the recognizer cannot be the
+   * collection itself else it would prevent the collection from being garbage
+   * collected.
+   *
+   * TODO: all the "recognizers" in principle could be, and probably should be,
+   * reduced to deleter functions.  However, since the VirtualObjectAware
+   * collections are actual JavaScript classes I need to take some care to
+   * ensure that I've got the exactly-one-per-collection invariant handled
+   * correctly.
+   *
+   * TODO: concoct a better type def than Set<any>
+   */
+  /**
+   * @typedef { Map<string, *> | Set<string> | ((string) => void) } Recognizer
+   */
+  /** @type {Map<string, Set<Recognizer>>} */
+  const vrefRecognizers = new Map();
+
+  function addRecognizableValue(value, recognizer) {
     const vref = getSlotForVal(value);
     if (vref) {
-      const { type, allocatedByVat } = parseVatSlot(vref);
-      if (type === 'object' && !allocatedByVat) {
-        recognizableVrefs.add(vref);
+      const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+      if (type === 'object' && (!allocatedByVat || virtual)) {
+        let recognizerSet = vrefRecognizers.get(vref);
+        if (!recognizerSet) {
+          recognizerSet = new Set();
+          vrefRecognizers.set(vref, recognizerSet);
+        }
+        recognizerSet.add(recognizer);
       }
     }
+  }
+
+  function removeRecognizableVref(vref, recognizer) {
+    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+    if (type === 'object' && (!allocatedByVat || virtual)) {
+      const recognizerSet = vrefRecognizers.get(vref);
+      assert(recognizerSet && recognizerSet.has(recognizer));
+      recognizerSet.delete(recognizer);
+      if (recognizerSet.size === 0) {
+        vrefRecognizers.delete(vref);
+        if (!allocatedByVat) {
+          addToPossiblyRetiredSet(vref);
+        }
+      }
+    }
+  }
+
+  function removeRecognizableValue(value, recognizer) {
+    const vref = getSlotForVal(value);
+    if (vref) {
+      removeRecognizableVref(vref, recognizer);
+    }
+  }
+
+  /**
+   * Remove a given vref from all weak collections in which it was used as a
+   * key.
+   *
+   * @param {string} vref  The vref that shall henceforth no longer be recognized
+   *
+   * @returns {boolean} true if this possibly creates a GC opportunity
+   */
+  function ceaseRecognition(vref) {
+    const recognizerSet = vrefRecognizers.get(vref);
+    let doMoreGC = false;
+    if (recognizerSet) {
+      vrefRecognizers.delete(vref);
+      for (const recognizer of recognizerSet) {
+        if (recognizer instanceof Map) {
+          recognizer.delete(vref);
+          doMoreGC = true;
+        } else if (recognizer instanceof Set) {
+          recognizer.delete(vref);
+        } else if (typeof recognizer === 'function') {
+          recognizer(vref);
+        }
+      }
+    }
+    return doMoreGC;
   }
 
   function isVrefRecognizable(vref) {
-    return recognizableVrefs.has(vref);
-  }
-
-  /**
-   * Set of all Remotables which are reachable by our virtualized data, e.g.
-   * `makeVirtualScalarWeakMap().set(key, remotable)` or `virtualObject.state.foo =
-   * remotable`. The serialization process stores the Remotable's vref to
-   * disk, but doesn't actually retain the Remotable. To correctly
-   * unserialize that offline data later, we must ensure the Remotable
-   * remains alive. This Set keeps a strong reference to the Remotable. We
-   * currently never remove anything from the set, but eventually refcounts
-   * will let us discover when it is no longer reachable, and we'll drop the
-   * strong reference.
-   */
-  /** @type {Set<Object>} of Remotables */
-  const reachableRemotables = new Set();
-  function addReachableRemotableRef(vref) {
-    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
-    if (type === 'object' && allocatedByVat) {
-      if (virtual) {
-        incRefCount(vref);
-      } else {
-        // exported non-virtual object: Remotable
-        const remotable = getValForSlot(vref);
-        assert(remotable, X`no remotable for ${vref}`);
-        // console.log(`adding ${vref} to reachableRemotables`);
-        reachableRemotables.add(remotable);
-      }
-    }
+    return vrefRecognizers.has(vref);
   }
 
   /**
@@ -412,7 +622,11 @@ export function makeVirtualObjectManager(
       return undefined;
     }
 
-    return harden({
+    function deleter(vobjID) {
+      syscall.vatstoreDelete(`vom.ws${storeID}.${vobjID}`);
+    }
+
+    const result = harden({
       has(key) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
@@ -428,10 +642,9 @@ export function makeVirtualObjectManager(
             !syscall.vatstoreGet(vkey),
             X`${q(keyName)} already registered: ${key}`,
           );
-          addRecognizablePresenceValue(key);
-          const data = m.serialize(value);
-          data.slots.map(addReachablePresenceRef);
-          data.slots.map(addReachableRemotableRef);
+          addRecognizableValue(key, deleter);
+          const data = serialize(value);
+          data.slots.map(addReachableVref);
           syscall.vatstoreSet(vkey, JSON.stringify(data));
         } else {
           assertKeyDoesNotExist(key);
@@ -443,7 +656,7 @@ export function makeVirtualObjectManager(
         if (vkey) {
           const rawValue = syscall.vatstoreGet(vkey);
           assert(rawValue, X`${q(keyName)} not found: ${key}`);
-          return m.unserialize(JSON.parse(rawValue));
+          return unserialize(JSON.parse(rawValue));
         } else {
           assertKeyExists(key);
           return backingMap.get(key);
@@ -452,12 +665,12 @@ export function makeVirtualObjectManager(
       set(key, value) {
         const vkey = virtualObjectKey(key);
         if (vkey) {
-          assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
-          addRecognizablePresenceValue(key);
-          const data = m.serialize(harden(value));
-          data.slots.map(addReachablePresenceRef);
-          data.slots.map(addReachableRemotableRef);
-          syscall.vatstoreSet(vkey, JSON.stringify(data));
+          const rawBefore = syscall.vatstoreGet(vkey);
+          assert(rawBefore, X`${q(keyName)} not found: ${key}`);
+          const before = JSON.parse(rawBefore);
+          const after = serialize(harden(value));
+          updateReferenceCounts(before.slots, after.slots);
+          syscall.vatstoreSet(vkey, JSON.stringify(after));
         } else {
           assertKeyExists(key);
           backingMap.set(key, value);
@@ -468,12 +681,37 @@ export function makeVirtualObjectManager(
         if (vkey) {
           assert(syscall.vatstoreGet(vkey), X`${q(keyName)} not found: ${key}`);
           syscall.vatstoreDelete(vkey);
+          removeRecognizableValue(key, deleter);
         } else {
           assertKeyExists(key);
           backingMap.delete(key);
         }
       },
     });
+    droppedCollectionRegistry.register(
+      result,
+      {
+        storeKey: `vom.ws${storeID}`,
+        deleter,
+      },
+      result,
+    );
+    return result;
+  }
+
+  function finalizeDroppedCollection(body) {
+    if (body instanceof Map) {
+      for (const vref of body.keys()) {
+        removeRecognizableVref(vref, body);
+      }
+    } else if (body instanceof Set) {
+      for (const vref of body.values()) {
+        removeRecognizableVref(vref, body);
+      }
+    } else if (typeof body === 'object') {
+      // XXX oops, need to iterate vatstore keys and the API doesn't support that
+      console.log(`can't finalize WeakStore ${body} yet`);
+    }
   }
 
   function vrefKey(value) {
@@ -495,7 +733,9 @@ export function makeVirtualObjectManager(
   class VirtualObjectAwareWeakMap {
     constructor() {
       actualWeakMaps.set(this, new WeakMap());
-      virtualObjectMaps.set(this, new Map());
+      const vmap = new Map();
+      virtualObjectMaps.set(this, vmap);
+      droppedCollectionRegistry.register(this, vmap, this);
     }
 
     has(key) {
@@ -519,8 +759,11 @@ export function makeVirtualObjectManager(
     set(key, value) {
       const vkey = vrefKey(key);
       if (vkey) {
-        addRecognizablePresenceValue(key);
-        virtualObjectMaps.get(this).set(vkey, value);
+        const vmap = virtualObjectMaps.get(this);
+        if (!vmap.has(vkey)) {
+          addRecognizableValue(key, vmap);
+        }
+        vmap.set(vkey, value);
       } else {
         actualWeakMaps.get(this).set(key, value);
       }
@@ -530,7 +773,13 @@ export function makeVirtualObjectManager(
     delete(key) {
       const vkey = vrefKey(key);
       if (vkey) {
-        return virtualObjectMaps.get(this).delete(vkey);
+        const vmap = virtualObjectMaps.get(this);
+        if (vmap.has(vkey)) {
+          removeRecognizableValue(key, vmap);
+          return vmap.delete(vkey);
+        } else {
+          return false;
+        }
       } else {
         return actualWeakMaps.get(this).delete(key);
       }
@@ -550,7 +799,9 @@ export function makeVirtualObjectManager(
   class VirtualObjectAwareWeakSet {
     constructor() {
       actualWeakSets.set(this, new WeakSet());
-      virtualObjectSets.set(this, new Set());
+      const vset = new Set();
+      virtualObjectSets.set(this, vset);
+      droppedCollectionRegistry.register(this, vset, this);
     }
 
     has(value) {
@@ -565,8 +816,11 @@ export function makeVirtualObjectManager(
     add(value) {
       const vkey = vrefKey(value);
       if (vkey) {
-        addRecognizablePresenceValue(value);
-        virtualObjectSets.get(this).add(vkey);
+        const vset = virtualObjectSets.get(this);
+        if (!vset.has(value)) {
+          addRecognizableValue(value, vset);
+          vset.add(vkey);
+        }
       } else {
         actualWeakSets.get(this).add(value);
       }
@@ -576,7 +830,13 @@ export function makeVirtualObjectManager(
     delete(value) {
       const vkey = vrefKey(value);
       if (vkey) {
-        return virtualObjectSets.get(this).delete(vkey);
+        const vset = virtualObjectSets.get(this);
+        if (vset.has(vkey)) {
+          removeRecognizableValue(value, vset);
+          return vset.delete(vkey);
+        } else {
+          return false;
+        }
       } else {
         return actualWeakSets.get(this).delete(value);
       }
@@ -698,14 +958,14 @@ export function makeVirtualObjectManager(
           Object.defineProperty(target, prop, {
             get: () => {
               ensureState();
-              return m.unserialize(innerSelf.rawData[prop]);
+              return unserialize(innerSelf.rawData[prop]);
             },
             set: value => {
-              const serializedValue = m.serialize(value);
-              serializedValue.slots.map(addReachablePresenceRef);
-              serializedValue.slots.map(addReachableRemotableRef);
               ensureState();
-              innerSelf.rawData[prop] = serializedValue;
+              const before = innerSelf.rawData[prop];
+              const after = serialize(value);
+              updateReferenceCounts(before.slots, after.slots);
+              innerSelf.rawData[prop] = after;
               innerSelf.dirty = true;
             },
           });
@@ -765,9 +1025,8 @@ export function makeVirtualObjectManager(
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         try {
-          const data = m.serialize(initialData[prop]);
-          data.slots.map(addReachablePresenceRef);
-          data.slots.map(addReachableRemotableRef);
+          const data = serialize(initialData[prop]);
+          data.slots.map(addReachableVref);
           rawData[prop] = data;
         } catch (e) {
           console.error(`state property ${String(prop)} is not serializable`);
@@ -786,16 +1045,40 @@ export function makeVirtualObjectManager(
     return makeNewInstance;
   }
 
+  function countCollectionsForWeakKey(vref) {
+    const recognizerSet = vrefRecognizers.get(vref);
+    return recognizerSet ? recognizerSet.size : 0;
+  }
+
+  function countWeakKeysForCollection(collection) {
+    const virtualObjectMap = virtualObjectMaps.get(collection);
+    if (virtualObjectMap) {
+      return virtualObjectMap.size;
+    }
+    const virtualObjectSet = virtualObjectSets.get(collection);
+    if (virtualObjectSet) {
+      return virtualObjectSet.size;
+    }
+    return 0;
+  }
+
+  const testHooks = {
+    countCollectionsForWeakKey,
+    countWeakKeysForCollection,
+  };
+
   return harden({
     makeVirtualScalarWeakMap,
     makeKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    isVrefReachable,
+    isPresenceReachable,
     isVrefRecognizable,
-    setExported,
+    setExportStatus,
     flushCache: cache.flush,
     makeVirtualObjectRepresentative,
     possibleVirtualObjectDeath,
+    ceaseRecognition,
+    testHooks,
   });
 }

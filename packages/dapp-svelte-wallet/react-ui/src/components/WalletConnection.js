@@ -2,9 +2,12 @@
 /* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
 import React, { useCallback } from 'react';
+import clsx from 'clsx';
 import { E } from '@agoric/eventual-send';
 import { makeStyles } from '@material-ui/core/styles';
-import { Typography } from '@material-ui/core';
+import IconButton from '@material-ui/core/IconButton';
+import Public from '@material-ui/icons/Public';
+import Tooltip from '@material-ui/core/Tooltip';
 
 import { withApplicationContext } from '../contexts/Application';
 
@@ -13,7 +16,6 @@ const useStyles = makeStyles(_ => ({
     display: 'none',
   },
   connector: {
-    marginRight: '16px',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
@@ -94,11 +96,17 @@ const WalletConnection = ({ setConnectionState, connectionState }) => {
   }, []);
 
   return (
-    <div className={classes.connector}>
-      <Typography variant="body1">
-        Connection Status:{' '}
-        {connectionState === 'admin' ? 'Connected' : 'Disconnected'}
-      </Typography>
+    <div className={clsx('connector', classes.connector)}>
+      <Tooltip
+        title={connectionState === 'bridged' ? 'Connected' : 'Disconnected'}
+      >
+        <IconButton
+          size="medium"
+          color={connectionState === 'bridged' ? 'primary' : 'secondary'}
+        >
+          <Public fontSize="inherit">{connectionState}</Public>
+        </IconButton>
+      </Tooltip>
       <AgoricWalletConnection
         onState={onWalletState}
         className={classes.hidden}

@@ -196,14 +196,16 @@ export function makeDeviceSlots(
         )}`,
       );
     }
-    if (!(t[method] instanceof Function)) {
+    const fn = t[method];
+    const ftype = typeof fn;
+    if (ftype !== 'function') {
       throw new TypeError(
-        `target[${method}] is not a function, typeof is ${typeof t[
-          method
-        ]}, has ${Object.getOwnPropertyNames(t)}`,
+        `target[${method}] is not a function, typeof is ${ftype}, has ${Object.getOwnPropertyNames(
+          t,
+        )}`,
       );
     }
-    const res = t[method](...m.unserialize(args));
+    const res = fn.apply(t, m.unserialize(args));
     const vres = harden(['ok', m.serialize(res)]);
     lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
     return vres;
