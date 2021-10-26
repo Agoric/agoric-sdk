@@ -1,4 +1,5 @@
 // @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -11,13 +12,13 @@ test('cleanProposal test', t => {
   const { moola, simoleans } = setup();
 
   const proposal = harden({
-    give: { Asset: simoleans(1) },
-    want: { Price: moola(3) },
+    give: { Asset: simoleans(1n) },
+    want: { Price: moola(3n) },
   });
 
   const expected = harden({
-    give: { Asset: simoleans(1) },
-    want: { Price: moola(3) },
+    give: { Asset: simoleans(1n) },
+    want: { Price: moola(3n) },
     exit: { onDemand: null },
   });
 
@@ -53,16 +54,16 @@ test('cleanProposal - repeated brands', t => {
   const timer = buildManualTimer(console.log);
 
   const proposal = harden({
-    want: { Asset2: simoleans(1) },
-    give: { Price2: moola(3) },
+    want: { Asset2: simoleans(1n) },
+    give: { Price2: moola(3n) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
   const expected = harden({
     want: {
-      Asset2: simoleans(1),
+      Asset2: simoleans(1n),
     },
-    give: { Price2: moola(3) },
+    give: { Price2: moola(3n) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 
@@ -80,8 +81,8 @@ test('cleanProposal - wrong assetKind', t => {
   const timer = buildManualTimer(console.log);
 
   const proposal = harden({
-    want: { Asset2: simoleans(1) },
-    give: { Price2: moola(3) },
+    want: { Asset2: simoleans(1n) },
+    give: { Price2: moola(3n) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
 

@@ -37,12 +37,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`issuerKeywordRecord were not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3n)));
+      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1n)));
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(5) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(5n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
@@ -98,7 +98,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`asset is the option`,
       );
       assert(
-        sameStructure(invitationValue[0].price, bucks(1)),
+        sameStructure(invitationValue[0].price, bucks(1n)),
         X`price is 1 buck`,
       );
       const optionValue = optionAmounts.value;
@@ -109,14 +109,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
-          moola(3),
+          moola(3n),
         ),
         X`wrong underlying asset`,
       );
       assert(
         AmountMath.isEqual(
           optionValue[0].strikePrice.StrikePrice,
-          simoleans(7),
+          simoleans(7n),
         ),
         X`wrong strike price`,
       );
@@ -126,7 +126,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({
         want: { Asset: optionAmounts },
-        give: { Price: bucks(1) },
+        give: { Price: bucks(1n) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
       const seatP = await E(zoe).offer(
@@ -144,8 +144,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // call. First, he escrows with Zoe.
 
       const daveCoveredCallProposal = harden({
-        want: { UnderlyingAsset: moola(3) },
-        give: { StrikePrice: simoleans(7) },
+        want: { UnderlyingAsset: moola(3n) },
+        give: { StrikePrice: simoleans(7n) },
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const optionSeatP = await E(zoe).offer(

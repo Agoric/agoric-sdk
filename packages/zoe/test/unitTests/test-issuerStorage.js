@@ -120,10 +120,14 @@ test(`storeIssuerRecord`, async t => {
   instantiate();
   const { currencyKit } = setupIssuersForTest();
 
-  const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
-    decimalPlaces: 18,
-    assetKind: AssetKind.NAT,
-  });
+  const issuerRecord = makeIssuerRecord(
+    currencyKit.brand,
+    currencyKit.issuer,
+    harden({
+      decimalPlaces: 18,
+      assetKind: AssetKind.NAT,
+    }),
+  );
 
   const returnedIssuerRecord = await storeIssuerRecord(issuerRecord);
 
@@ -141,10 +145,14 @@ test(`storeIssuerRecord twice`, async t => {
   instantiate();
   const { currencyKit } = setupIssuersForTest();
 
-  const issuerRecord = makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
-    decimalPlaces: 18,
-    assetKind: AssetKind.NAT,
-  });
+  const issuerRecord = makeIssuerRecord(
+    currencyKit.brand,
+    currencyKit.issuer,
+    harden({
+      decimalPlaces: 18,
+      assetKind: AssetKind.NAT,
+    }),
+  );
 
   const returnedIssuerRecord = await storeIssuerRecord(issuerRecord);
 

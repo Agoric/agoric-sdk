@@ -68,7 +68,7 @@ const extendExpiration = (
 
   const valueToMint = attestationValue.map(makeNewAttestationElem);
 
-  const amountToMint = AmountMath.make(attestationBrand, valueToMint);
+  const amountToMint = AmountMath.make(attestationBrand, harden(valueToMint));
 
   // commit point within updateLienedAmount
   valueToMint.forEach(updateLienedAmount);

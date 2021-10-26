@@ -4,12 +4,10 @@ import { Nat } from '@agoric/nat';
 
 export const CENTRAL_ISSUER_NAME = 'RUN';
 
-/** @typedef {number | bigint} Bigish */
-
 /**
  * @typedef {Object} CollateralConfig
  * @property {string} keyword
- * @property {Bigish} collateralValue the initial price of this collateral is
+ * @property {NatValue} collateralValue the initial price of this collateral is
  * provided by tradesGivenCentral[0]
  * @property {bigint} initialMarginPercent
  * @property {bigint} liquidationMarginPercent
@@ -26,14 +24,15 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  * @property {string} [bankDenom]
  * @property {string} [bankPurse]
  * @property {Payment} [bankPayment]
- * @property {Array<[string, Bigish]>} [defaultPurses]
- * @property {Array<[Bigish, Bigish]>} [tradesGivenCentral]
+ * @property {Array<[string, bigint | number]>} [defaultPurses]
+ * @property {Array<[bigint | number, bigint | number]>} [tradesGivenCentral]
  */
 
 /**
  * @callback Scaler Scale a number from a (potentially fractional) input to a
  * fixed-precision bigint
- * @param {Bigish} n the input number to scale
+ * @param {bigint | number} n the input number to scale, must be a
+ * natural number
  * @param {number} [fromDecimalPlaces=0] number of decimal places to keep from the input
  * @returns {bigint} the scaled integer
  */

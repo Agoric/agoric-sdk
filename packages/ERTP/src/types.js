@@ -51,51 +51,22 @@
  * @param {Value} allegedValue
  * @returns {Amount}
  *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountMakeValueBrand
- * Please use the brand-first overload. The value-first overload
- * is deprecated and will go way.
- * @param {Value} brand
- * @param {Brand} allegedValue
- * @returns {Amount}
- *
- * @typedef {AmountMakeBrandValue & AmountMakeValueBrand} AmountMake
+ * @typedef {AmountMakeBrandValue} AmountMake
  *
  * @callback AmountCoerceBrandAmount
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Amount}
  *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountCoerceAmountBrand
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
- * @param {Amount} brand
- * @param {Brand} allegedAmount
- * @returns {Amount}
- *
- * @typedef {AmountCoerceBrandAmount & AmountCoerceAmountBrand} AmountCoerce
+ * @typedef {AmountCoerceBrandAmount} AmountCoerce
  *
  * @callback AmountGetValueBrandAmount
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Value}
  *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountGetValueAmountBrand
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
- * @param {Amount} brand
- * @param {Brand} allegedAmount
- * @returns {Value}
  *
- * @typedef {AmountGetValueBrandAmount & AmountGetValueAmountBrand} AmountGetValue
+ * @typedef {AmountGetValueBrandAmount} AmountGetValue
  */
 
 /**
@@ -110,19 +81,13 @@
  *
  * @property {AmountMake} make
  * Make an amount from a value by adding the brand.
- * Please use the brand-first overload. The value-first overload
- * is deprecated and will go way.
  *
  * @property {AmountCoerce} coerce
  * Make sure this amount is valid enough, and return a corresponding
  * valid amount if so.
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
  *
  * @property {AmountGetValue} getValue
  * Extract and return the value.
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
  *
  * @property {MakeEmpty} makeEmpty
  * Return the amount representing an empty amount. This is the
@@ -552,4 +517,10 @@
 
 /**
  * @typedef {MathHelpers<SetValue>} SetMathHelpers
+ */
+
+/**
+ * @callback AssertAssetKind
+ * @param {AssetKind} allegedAK
+ * @returns {void}
  */

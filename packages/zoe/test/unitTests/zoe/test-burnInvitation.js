@@ -15,9 +15,10 @@ test('burnInvitation', async t => {
   const invitationHandle = Far('handle', {});
 
   const invitation = mockInvitationKit.mint.mintPayment(
-    AmountMath.make(mockInvitationKit.brand, [
-      { instance: instanceHandle, handle: invitationHandle },
-    ]),
+    AmountMath.make(
+      mockInvitationKit.brand,
+      harden([{ instance: instanceHandle, handle: invitationHandle }]),
+    ),
   );
 
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
@@ -45,9 +46,10 @@ test('burnInvitation - invitation already used', async t => {
   const invitationHandle = Far('handle', {});
 
   const invitation = mockInvitationKit.mint.mintPayment(
-    AmountMath.make(mockInvitationKit.brand, [
-      { instance: instanceHandle, handle: invitationHandle },
-    ]),
+    AmountMath.make(
+      mockInvitationKit.brand,
+      harden([{ instance: instanceHandle, handle: invitationHandle }]),
+    ),
   );
 
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
@@ -74,10 +76,13 @@ test('burnInvitation - multiple invitations', async t => {
   const invitationHandle2 = Far('handle', {});
 
   const invitations = mockInvitationKit.mint.mintPayment(
-    AmountMath.make(mockInvitationKit.brand, [
-      { instance: instanceHandle, handle: invitationHandle1 },
-      { instance: instanceHandle, handle: invitationHandle2 },
-    ]),
+    AmountMath.make(
+      mockInvitationKit.brand,
+      harden([
+        { instance: instanceHandle, handle: invitationHandle1 },
+        { instance: instanceHandle, handle: invitationHandle2 },
+      ]),
+    ),
   );
 
   await t.throwsAsync(

@@ -77,7 +77,7 @@ test('loan - lend - exit before borrow', async t => {
     zoe,
   ).startInstance(installation, issuerKeywordRecord, terms);
 
-  const maxLoan = AmountMath.make(1000n, loanKit.brand);
+  const maxLoan = AmountMath.make(loanKit.brand, 1000n);
 
   // Alice is willing to lend Loan tokens
   const proposal = harden({

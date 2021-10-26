@@ -26,7 +26,8 @@ const setup = () => {
   const feePurse = E(zoeService).makeFeePurse();
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
-  const makeSimpleMake = brand => value => AmountMath.make(value, brand);
+  /** @type {(brand: Brand) => (value: Value) => Amount} */
+  const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   /**
    * @typedef {Object} BasicMints
@@ -43,9 +44,9 @@ const setup = () => {
    * @property {IssuerKit} bucksR
    * @property {IssuerKit} bucksKit
    * @property {Store<string, Brand>} brands
-   * @property {(value: any) => Amount} moola
-   * @property {(value: any) => Amount} simoleans
-   * @property {(value: any) => Amount} bucks
+   * @property {(value: Value) => Amount} moola
+   * @property {(value: Value) => Amount} simoleans
+   * @property {(value: Value) => Amount} bucks
    * @property {ERef<ZoeService>} zoe
    */
 

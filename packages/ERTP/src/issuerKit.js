@@ -1,9 +1,9 @@
 // @ts-check
 // @jessie-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 
-import { AssetKind } from './amountMath.js';
+import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { makeBrand } from './brand.js';
 import { makePaymentLedger } from './paymentLedger.js';
@@ -20,13 +20,13 @@ const makeIssuerKit = (
   optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(allegedName, 'string');
-  assert(
-    Object.values(AssetKind).includes(assetKind),
-    X`The assetKind ${assetKind} must be either AssetKind.NAT or AssetKind.SET`,
-  );
+  assertAssetKind(assetKind);
 
   // Add assetKind to displayInfo, or override if present
   const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
+  if (optShutdownWithFailure !== undefined) {
+    assert.typeof(optShutdownWithFailure, 'function');
+  }
 
   /**
    * We can define this function to use the in-scope `issuer` variable

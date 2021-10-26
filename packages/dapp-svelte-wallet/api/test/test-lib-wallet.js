@@ -699,7 +699,7 @@ test('lib-wallet offer methods', async t => {
           Contribution: {
             // The pursePetname identifies which purse we want to use
             pursePetname: 'Fun budget',
-            value: 1,
+            value: 1n,
           },
         },
         exit: { onDemand: null },
@@ -734,7 +734,7 @@ test('lib-wallet offer methods', async t => {
           id: 6,
         },
         proposalTemplate: {
-          give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
+          give: { Contribution: { pursePetname: 'Fun budget', value: 1n } },
           exit: { onDemand: null },
         },
         requestContext: { dappOrigin: 'unknown' },
@@ -1025,13 +1025,13 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       give: {
         In: {
           pursePetname: 'Fun budget',
-          value: 30,
+          value: 30n,
         },
       },
       want: {
         Out: {
           pursePetname: 'Nest egg',
-          value: 1,
+          value: 1n,
         },
       },
       exit: {
@@ -1148,13 +1148,13 @@ test('addOffer invitationQuery', async t => {
       give: {
         In: {
           pursePetname: 'Fun budget',
-          value: 30,
+          value: 30n,
         },
       },
       want: {
         Out: {
           pursePetname: 'Nest egg',
-          value: 1,
+          value: 1n,
         },
       },
       exit: {
@@ -1264,13 +1264,13 @@ test('addOffer offer.invitation', async t => {
       give: {
         In: {
           pursePetname: 'Fun budget',
-          value: 30,
+          value: 30n,
         },
       },
       want: {
         Out: {
           pursePetname: 'Nest egg',
-          value: 1,
+          value: 1n,
         },
       },
       exit: {

@@ -18,21 +18,21 @@ const setupBrands = () => {
 
 const makeAmountMatrix = (brands, valueMatrix) =>
   valueMatrix.map(row =>
-    row.map((value, i) => AmountMath.make(value, brands[i])),
+    row.map((value, i) => AmountMath.make(brands[i], value)),
   );
 
 // rights are conserved for amount with Nat values
 test(`assertRightsConserved - true for amount with nat values`, t => {
   const brands = setupBrands();
   const previousValues = [
-    [0, 1, 0],
-    [4, 1, 0],
-    [6, 3, 0],
+    [0n, 1n, 0n],
+    [4n, 1n, 0n],
+    [6n, 3n, 0n],
   ];
   const newValues = [
-    [1, 2, 0],
-    [3, 1, 0],
-    [6, 2, 0],
+    [1n, 2n, 0n],
+    [3n, 1n, 0n],
+    [6n, 2n, 0n],
   ];
 
   const previousAmounts = makeAmountMatrix(brands, previousValues).flat();
@@ -45,14 +45,14 @@ test(`assertRightsConserved - true for amount with nat values`, t => {
 test(`assertRightsConserved - false for amount with Nat values`, t => {
   const brands = setupBrands();
   const oldValues = [
-    [0, 1, 4],
-    [4, 1, 0],
-    [6, 3, 0],
+    [0n, 1n, 4n],
+    [4n, 1n, 0n],
+    [6n, 3n, 0n],
   ];
   const newValues = [
-    [1, 2, 0],
-    [3, 1, 0],
-    [6, 2, 0],
+    [1n, 2n, 0n],
+    [3n, 1n, 0n],
+    [6n, 2n, 0n],
   ];
 
   const oldAmounts = makeAmountMatrix(brands, oldValues).flat();

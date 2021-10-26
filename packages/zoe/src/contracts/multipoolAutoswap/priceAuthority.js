@@ -21,7 +21,7 @@ export const makePriceAuthority = (
 
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
-    const quoteAmount = AmountMath.make(quote, brand);
+    const quoteAmount = AmountMath.make(brand, harden(quote));
     const quotePayment = quoteIssuerKit.mint.mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };

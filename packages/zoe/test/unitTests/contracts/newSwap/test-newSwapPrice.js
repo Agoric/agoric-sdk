@@ -44,8 +44,8 @@ function makeFakePool(initCentral, initSecondary) {
         feeBP,
       );
       return {
-        amountOut: AmountMath.make(valueOut, outputBrand),
-        amountIn: AmountMath.make(valueIn, inputAmount.brand),
+        amountOut: AmountMath.make(outputBrand, valueOut),
+        amountIn: AmountMath.make(inputAmount.brand, valueIn),
       };
     },
 
@@ -67,8 +67,8 @@ function makeFakePool(initCentral, initSecondary) {
         feeBP,
       );
       return {
-        amountOut: AmountMath.make(valueOut, outputAmount.brand),
-        amountIn: AmountMath.make(valueIn, inputBrand),
+        amountOut: AmountMath.make(outputAmount.brand, valueOut),
+        amountIn: AmountMath.make(inputBrand, valueIn),
       };
     },
   };

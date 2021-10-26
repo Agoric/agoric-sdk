@@ -142,7 +142,7 @@ const start = async zcf => {
       getPoolAmount(amountIn.brand).value,
       getPoolAmount(wantedAmountOut.brand).value,
     );
-    const tradeAmountOut = AmountMath.make(outputValue, wantedAmountOut.brand);
+    const tradeAmountOut = AmountMath.make(wantedAmountOut.brand, outputValue);
     return consummate(amountIn, tradeAmountOut, swapSeat);
   };
 
@@ -173,7 +173,7 @@ const start = async zcf => {
       getPoolAmount(wantedAmountOut.brand).value,
     );
     assert(tradePrice <= amountIn.value, 'amountIn insufficient');
-    const tradeAmountIn = AmountMath.make(tradePrice, amountIn.brand);
+    const tradeAmountIn = AmountMath.make(amountIn.brand, tradePrice);
 
     return consummate(tradeAmountIn, wantedAmountOut, swapSeat);
   };
@@ -185,17 +185,17 @@ const start = async zcf => {
     const liquidityValueOut = calcLiqValueToMint(
       liqTokenSupply,
       centralIn,
-      centralPool,
+      /** @type {bigint} */ (centralPool),
     );
     const liquidityAmountOut = AmountMath.make(
-      liquidityValueOut,
       liquidityBrand,
+      liquidityValueOut,
     );
     liquidityMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
     liqTokenSupply += liquidityValueOut;
 
     const liquidityDeposited = {
-      Central: AmountMath.make(centralIn, brands.Central),
+      Central: AmountMath.make(brands.Central, centralIn),
       Secondary: secondaryAmount,
     };
     poolSeat.incrementBy(seat.decrementBy(liquidityDeposited));
@@ -242,13 +242,13 @@ const start = async zcf => {
     // To calculate liquidity, we'll need to calculate alpha from the primary
     // token's value before, and the value that will be added to the pool
     const secondaryOut = AmountMath.make(
+      secondaryIn.brand,
       calcSecondaryRequired(
         userAllocation.Central.value,
         getPoolAmount(brands.Central).value,
         getPoolAmount(brands.Secondary).value,
         secondaryIn.value,
       ),
-      secondaryIn.brand,
     );
 
     // Central was specified precisely so offer must provide enough secondary.
@@ -272,20 +272,20 @@ const start = async zcf => {
     assert(isNatValue(liquidityValueIn));
 
     const newUserCentralAmount = AmountMath.make(
+      brands.Central,
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Central).value,
         liquidityValueIn,
       ),
-      brands.Central,
     );
     const newUserSecondaryAmount = AmountMath.make(
+      brands.Secondary,
       calcValueToRemove(
         liqTokenSupply,
         getPoolAmount(brands.Secondary).value,
         liquidityValueIn,
       ),
-      brands.Secondary,
     );
 
     liqTokenSupply -= liquidityValueIn;
@@ -339,7 +339,7 @@ const start = async zcf => {
       inputReserve,
       outputReserve,
     );
-    return AmountMath.make(outputValue, brandOut);
+    return AmountMath.make(brandOut, outputValue);
   };
 
   /**
@@ -361,7 +361,7 @@ const start = async zcf => {
       inputReserve,
       outputReserve,
     );
-    return AmountMath.make(outputValue, brandIn);
+    return AmountMath.make(brandIn, outputValue);
   };
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;

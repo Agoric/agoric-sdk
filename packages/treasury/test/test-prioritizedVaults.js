@@ -138,7 +138,7 @@ test('update changes ratio', async t => {
   const ratio180 = makeRatio(180n, brand, 100n);
   t.deepEqual(vaults.highestRatio(), ratio180);
 
-  fakeVault1.vault.setDebt(AmountMath.make(200n, brand));
+  fakeVault1.vault.setDebt(AmountMath.make(brand, 200n));
   updater1.updateState({ locked: AmountMath.make(brand, 300n) });
   await waitForPromisesToSettle();
   t.deepEqual(vaults.highestRatio(), makeRatio(200n, brand, 100n));

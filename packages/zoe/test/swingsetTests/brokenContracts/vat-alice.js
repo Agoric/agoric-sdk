@@ -37,8 +37,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
       issuerKeywordRecord,
     );
     const proposal = harden({
-      give: { Asset: moola(3) },
-      want: { Price: simoleans(7) },
+      give: { Asset: moola(3n) },
+      want: { Price: simoleans(7n) },
       exit: { onDemand: null },
     });
     const alicePayments = { Asset: moolaPayment };
@@ -83,7 +83,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     const installId = installations.crashAutoRefund;
     const [refundPayment, swapPayment] = await E(moolaIssuer).split(
       moolaPayment,
-      moola(3),
+      moola(3n),
     );
 
     const issuerKeywordRecord = harden({
@@ -97,8 +97,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     );
 
     const swapProposal = harden({
-      give: { Asset: moola(5) },
-      want: { Price: simoleans(12) },
+      give: { Asset: moola(5n) },
+      want: { Price: simoleans(12n) },
       exit: { onDemand: null },
     });
     const aliceSwapPayments = { Asset: swapPayment };
@@ -134,8 +134,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     // This invitation throws a metering exception
     const refundInvitation = await E(publicFacet).makeExcessiveInvitation();
     const refundProposal = harden({
-      give: { Asset: moola(3) },
-      want: { Price: simoleans(7) },
+      give: { Asset: moola(3n) },
+      want: { Price: simoleans(7n) },
       exit: { onDemand: null },
     });
     const refundPayments = { Asset: refundPayment };
@@ -201,8 +201,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
       issuerKeywordRecord,
     );
     const proposal = harden({
-      give: { Asset: moola(3) },
-      want: { Price: simoleans(7) },
+      give: { Asset: moola(3n) },
+      want: { Price: simoleans(7n) },
       exit: { onDemand: null },
     });
     const alicePayments = { Asset: moolaPayment };
@@ -235,7 +235,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
 
     const newInvitation = await E(publicFacet).makeSafeInvitation();
-    const newMoolaPayment = await E(moolaPurseP).withdraw(moola(3));
+    const newMoolaPayment = await E(moolaPurseP).withdraw(moola(3n));
     const newPayments = { Asset: newMoolaPayment };
 
     const secondSeat = await E(zoe).offer(newInvitation, proposal, newPayments);
@@ -271,8 +271,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     );
 
     const swapProposal = harden({
-      give: { Asset: moola(5) },
-      want: { Price: simoleans(8) },
+      give: { Asset: moola(5n) },
+      want: { Price: simoleans(8n) },
       exit: { onDemand: null },
     });
     const aliceSwapPayments = { Asset: moolaPayment };
@@ -332,8 +332,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     log(`newCounter: ${await E(publicFacet2).getOffersCount()}`);
 
     const swapTwoProposal = harden({
-      give: { Price: simoleans(12) },
-      want: { Asset: moola(2) },
+      give: { Price: simoleans(12n) },
+      want: { Asset: moola(2n) },
       exit: { onDemand: null },
     });
     assert(swapInvitationTwo);
@@ -376,8 +376,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
     );
     logCounter(log, publicFacet);
     const proposal = harden({
-      give: { Asset: moola(3) },
-      want: { Price: simoleans(7) },
+      give: { Asset: moola(3n) },
+      want: { Price: simoleans(7n) },
       exit: { onDemand: null },
     });
     const alicePayments = { Asset: moolaPayment };
@@ -520,8 +520,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
     // Alice submits an offer. The contract will be terminated before resolution
     const swapProposal = harden({
-      give: { Asset: moola(5) },
-      want: { Price: simoleans(12) },
+      give: { Asset: moola(5n) },
+      want: { Price: simoleans(12n) },
       exit: { onDemand: null },
     });
     const aliceSwapPayments = { Asset: moolaPayment };
@@ -578,8 +578,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
     // Alice submits an offer. The contract will be terminated before resolution
     const swapProposal = harden({
-      give: { Asset: moola(5) },
-      want: { Price: simoleans(12) },
+      give: { Asset: moola(5n) },
+      want: { Price: simoleans(12n) },
       exit: { onDemand: null },
     });
     const aliceSwapPayments = { Asset: moolaPayment };

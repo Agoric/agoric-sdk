@@ -23,8 +23,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   }
 
   const priceAuthority = makePriceAuthority(
-    () => ersatzQuote(3, 25),
-    () => ersatzQuote(18, 5),
+    () => ersatzQuote(3n, 25n),
+    () => ersatzQuote(18n, 5n),
     moolaR.brand,
     simoleanR.brand,
     timer,
@@ -34,8 +34,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   );
 
   const triggerDoesNot = priceAuthority.quoteWhenLT(
-    AmountMath.make(moolaR.brand, 10),
-    AmountMath.make(simoleanR.brand, 20),
+    AmountMath.make(moolaR.brand, 10n),
+    AmountMath.make(simoleanR.brand, 20n),
   );
 
   triggerDoesNot.then(
@@ -44,8 +44,8 @@ test('multipoolAutoSwap PriceAuthority exception path', async t => {
   );
 
   const trigger = priceAuthority.quoteWhenLT(
-    AmountMath.make(moolaR.brand, 10),
-    AmountMath.make(simoleanR.brand, 30),
+    AmountMath.make(moolaR.brand, 10n),
+    AmountMath.make(simoleanR.brand, 30n),
   );
 
   trigger.then(

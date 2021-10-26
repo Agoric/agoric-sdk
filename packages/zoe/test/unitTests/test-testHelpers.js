@@ -19,7 +19,7 @@ test('assertAmountsEqual - Nat dup', t => {
   const { moola } = setup();
 
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), moola(0));
+  assertAmountsEqual(fakeT, moola(0n), moola(0n));
   t.falsy(fakeT.getError());
 });
 
@@ -30,7 +30,11 @@ test('assertAmountsEqual - Nat manual', t => {
   } = setup();
 
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), { value: 0n, brand: moolaBrand });
+  assertAmountsEqual(
+    fakeT,
+    moola(0n),
+    harden({ value: 0n, brand: moolaBrand }),
+  );
   t.falsy(fakeT.getError());
 });
 
@@ -38,7 +42,7 @@ test('assertAmountsEqual - false Nat', t => {
   const { moola } = setup();
   const fakeT = makeFakeT();
 
-  assertAmountsEqual(fakeT, moola(0), moola(1));
+  assertAmountsEqual(fakeT, moola(0n), moola(1n));
   t.is(fakeT.getError(), 'value ("[0n]") expected to equal "[1n]"');
 });
 
@@ -99,7 +103,7 @@ test('assertAmountsEqual - false StrSet', t => {
 test('assertAmountsEqual - brand mismatch', t => {
   const { moola, bucks } = setup();
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), bucks(0));
+  assertAmountsEqual(fakeT, moola(0n), bucks(0n));
   t.is(
     fakeT.getError(),
     'brand ([object Alleged: moola brand]) expected to equal [object Alleged: bucks brand]',
@@ -111,7 +115,7 @@ test('assertAmountsEqual - both mismatch', t => {
   const { cryptoCats } = setupNonFungible();
 
   const fakeT = makeFakeT();
-  assertAmountsEqual(fakeT, moola(0), cryptoCats(harden(['Garfield'])));
+  assertAmountsEqual(fakeT, moola(0n), cryptoCats(harden(['Garfield'])));
   t.is(
     fakeT.getError(),
     'Neither brand nor value matched: {"brand":"[Alleged: moola brand]","value":"[0n]"}, {"brand":"[Alleged: CryptoCats brand]","value":["Garfield"]}',

@@ -7,6 +7,7 @@ import { makeInstallationStorage } from '../../../src/zoeService/installationSto
 
 test('install, unwrap installations', async t => {
   const chargeZoeFee = () => true;
+  // @ts-ignore No amount passed because no fees charged
   const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle = {};
   const feePurse = /** @type {FeePurse} */ ({});
@@ -19,6 +20,7 @@ test('install, unwrap installations', async t => {
 
 test('unwrap promise for installation', async t => {
   const chargeZoeFee = () => true;
+  // @ts-ignore No amount passed because no fees charged
   const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle = {};
   const feePurse = /** @type {FeePurse} */ ({});
@@ -31,6 +33,7 @@ test('unwrap promise for installation', async t => {
 
 test('install several', async t => {
   const chargeZoeFee = () => true;
+  // @ts-ignore No amount passed because no fees charged
   const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle1 = {};
   const fakeBundle2 = {};
@@ -49,6 +52,7 @@ test('install several', async t => {
 
 test('install same twice', async t => {
   const chargeZoeFee = () => true;
+  // @ts-ignore No amount passed because no fees charged
   const { install, unwrapInstallation } = makeInstallationStorage(chargeZoeFee);
   const fakeBundle1 = {};
   const feePurse = /** @type {FeePurse} */ ({});

@@ -28,9 +28,13 @@ test('exampleVotingUsage', async t => {
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const installation = await E(zoe).install(bundle);
 
-  const bldIssuerKit = makeIssuerKit('BLD', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const bldIssuerKit = makeIssuerKit(
+    'BLD',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
 
   const issuerKit = makeIssuerKit('BldAttGov', AssetKind.SET);
 
@@ -60,24 +64,27 @@ test('exampleVotingUsage', async t => {
   const firstHandle = makeHandle('Attestation');
   const bld40 = AmountMath.make(bldIssuerKit.brand, 40n);
   const elem1 = makeAttestationElem('myaddress', bld40, 5n, firstHandle);
-  await doVote(AmountMath.make(issuerKit.brand, [elem1]), 'Yes');
+  await doVote(AmountMath.make(issuerKit.brand, harden([elem1])), 'Yes');
 
   // Another vote, but which expires at 1n
   const secondHandle = makeHandle('Attestation');
   const bld3 = AmountMath.make(bldIssuerKit.brand, 3n);
   const elem2 = makeAttestationElem('myaddress', bld3, 1n, secondHandle);
-  await doVote(AmountMath.make(issuerKit.brand, [elem2]), 'No');
+  await doVote(AmountMath.make(issuerKit.brand, harden([elem2])), 'No');
 
   // Let's decide to trade that attestation in for one with a longer
   // expiration. Note that the handle and the value are the same.
   const elem3 = makeAttestationElem('myaddress', bld3, 4n, secondHandle);
-  await doVote(AmountMath.make(issuerKit.brand, [elem3]), 'Maybe');
+  await doVote(AmountMath.make(issuerKit.brand, harden([elem3])), 'Maybe');
 
   // This vote should not be counted as it is expired.
   const thirdHandle = makeHandle('Attestation');
   const bld5 = AmountMath.make(bldIssuerKit.brand, 5n);
   const elem4 = makeAttestationElem('myaddress', bld5, 1n, thirdHandle);
-  await doVote(AmountMath.make(issuerKit.brand, [elem4]), 'Should not count');
+  await doVote(
+    AmountMath.make(issuerKit.brand, harden([elem4])),
+    'Should not count',
+  );
 
   const result = await E(creatorFacet).closeVote(3n);
 

@@ -108,6 +108,13 @@ export const getOutputPrice = (
 // liquidity multiplied by the ratio of new central tokens to central tokens
 // already held. If the current supply is zero, return the inputValue as the
 // initial liquidity to mint is arbitrary.
+/**
+ *
+ * @param {bigint} liqTokenSupply
+ * @param {bigint} inputValue
+ * @param {bigint} inputReserve
+ * @returns {NatValue}
+ */
 export const calcLiqValueToMint = (
   liqTokenSupply,
   inputValue,

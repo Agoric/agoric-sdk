@@ -129,9 +129,9 @@ test('pool getPrice amountIn != available', async t => {
     secondary(valueIn),
     centralBrand,
   );
-  t.deepEqual(amountOut, central(3));
+  t.deepEqual(amountOut, central(3n));
   // 40 would get you 3, but you can get 3 for 32 if that's better.
-  t.deepEqual(amountIn, secondary(32));
+  t.deepEqual(amountIn, secondary(32n));
 });
 
 test('pool getOutputPrice cenToSec', async t => {
@@ -174,10 +174,10 @@ test('pool getOutputPrice amountOut != requested', async t => {
     secondaryBrand,
     central(valueOut),
   );
-  // central(4) requires spending secondary(1), but you can get central(9) for
-  // secondary(1)
-  t.deepEqual(amountOut, central(9));
-  t.deepEqual(amountIn, secondary(1));
+  // central(4n) requires spending secondary(1n), but you can get central(9n) for
+  // secondary(1n)
+  t.deepEqual(amountOut, central(9n));
+  t.deepEqual(amountIn, secondary(1n));
 });
 
 test('pool getOutputPrice secToSec', async t => {

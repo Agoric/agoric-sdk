@@ -15,7 +15,7 @@ export function makeScriptedPriceAuthority(options) {
     actualBrandOut,
     priceList,
     timer,
-    unitAmountIn = AmountMath.make(1n, actualBrandIn),
+    unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
     quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
   } = options;
@@ -24,7 +24,7 @@ export function makeScriptedPriceAuthority(options) {
 
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
-    const quoteAmount = AmountMath.make(quote, brand);
+    const quoteAmount = AmountMath.make(brand, harden(quote));
     const quotePayment = quoteMint.mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
@@ -33,21 +33,21 @@ export function makeScriptedPriceAuthority(options) {
     AmountMath.coerce(actualBrandIn, amountIn);
 
     return AmountMath.make(
+      actualBrandOut,
       natSafeMath.floorDivide(
         natSafeMath.multiply(currentPrice, amountIn.value),
         unitAmountIn.value,
       ),
-      actualBrandOut,
     );
   };
   const calcAmountIn = amountOut => {
     AmountMath.coerce(actualBrandOut, amountOut);
     return AmountMath.make(
+      actualBrandOut,
       natSafeMath.floorDivide(
         natSafeMath.multiply(unitAmountIn.value, amountOut.value),
         currentPrice,
       ),
-      actualBrandOut,
     );
   };
 
