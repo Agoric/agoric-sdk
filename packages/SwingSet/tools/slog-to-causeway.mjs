@@ -168,7 +168,7 @@ async function* slogToCauseway(entries) {
   const anchor = entry => {
     const { crankNum, vatID, deliveryNum } = entry;
     const { name } = vatInfo.get(vatID);
-    const loop = `${vatID}_${name || '???'}`;
+    const loop = `${vatID}:${name || '???'}`;
     return freeze({
       number: crankNum,
       turn: { loop, number: deliveryNum },
