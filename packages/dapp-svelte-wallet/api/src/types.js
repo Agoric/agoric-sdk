@@ -99,7 +99,9 @@
 /**
  * @typedef {Object} RecordMetadata
  * @property {number} id
- * A monotonically increasing number to allow total ordering between records.
+ * Identifies a particular record in the context of the wallet backend. This id
+ * is stable and unique for a wallet backend (even across different record
+ * types).
  * @property {number} [creationStamp]
  * The approximate time at which the record
  * was created in milliseconds since the epoch; `undefined` if there is no
