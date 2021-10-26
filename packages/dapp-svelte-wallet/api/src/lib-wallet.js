@@ -36,10 +36,6 @@ import '@agoric/zoe/exported.js';
 import './internal-types.js';
 import './types.js';
 
-// The localTimerService uses a resolution of 1 millisecond.
-const LOCAL_TIMER_NO_DELAY = 0n;
-const LOCAL_TIMER_ONE_SECOND = 1000n;
-
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
@@ -54,45 +50,6 @@ const cmp = (a, b) => {
 };
 
 /**
- * @param {ERef<TimerService> | undefined} timerService
- * @param {(stamp: bigint) => void} updateClock
- * @param {bigint} timerDelay
- * @param {bigint} timerInterval
- * @returns {Promise<void>}
- */
-const initializeClock = async (
-  timerService,
-  updateClock,
-  timerDelay,
-  timerInterval,
-) => {
-  if (!timerService) {
-    return;
-  }
-
-  // Get a baseline.
-  const time0 = await E(timerService).getCurrentTimestamp();
-  updateClock(time0);
-
-  const notifier = await E(timerService).makeNotifier(
-    timerDelay,
-    timerInterval,
-  );
-
-  // Subscribe to future updates.
-  observeNotifier(notifier, {
-    updateState: updateClock,
-  }).catch(e => {
-    console.error(
-      `Observing localTimerService`,
-      timerService,
-      'failed with:',
-      e,
-    );
-  });
-};
-
-/**
  * @typedef {Object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
  * @property {Board} board
@@ -101,7 +58,7 @@ const initializeClock = async (
  * @property {MyAddressNameAdmin} myAddressNameAdmin
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
- * @property {ERef<TimerService>} [localTimerService]
+ * @property {() => number} [dateNow]
  * @param {MakeWalletParams} param0
  */
 export function makeWallet({
@@ -112,14 +69,8 @@ export function makeWallet({
   myAddressNameAdmin,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
-  localTimerService,
+  dateNow = undefined,
 }) {
-  /**
-   * The current timestamp, in milliseconds (if it is known).
-   *
-   * @type {number | undefined}
-   */
-  let nowStamp;
   let lastId = 0;
 
   /**
@@ -143,7 +94,8 @@ export function makeWallet({
       lastId += 1;
       meta.id = lastId;
     }
-    if (nowStamp !== undefined) {
+    if (dateNow) {
+      const nowStamp = dateNow();
       if (!meta.creationStamp) {
         // Set the creationStamp to be right now.
         meta.creationStamp = nowStamp;
@@ -1281,7 +1233,7 @@ export function makeWallet({
       payment,
       brand,
     });
-    const id = basePaymentRecord.meta.id;
+    const { id } = basePaymentRecord.meta;
 
     /** @type {PaymentRecord} */
     const paymentRecord = {
@@ -1541,8 +1493,6 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
-  const { notifier: clockNotifier, updater: clockUpdater } = makeNotifierKit();
-
   const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
@@ -1638,32 +1588,9 @@ export function makeWallet({
       );
       return E(namesByAddress).lookup(...path);
     },
-    getClockNotifier: () => clockNotifier,
   });
 
-  const updateNowStamp = bigStamp => {
-    // We convert the milliseconds from a bigint to a number (for easy
-    // Javascript date math).
-    const nextStamp = parseInt(`${bigStamp}`, 10);
-
-    if (nowStamp && nowStamp >= nextStamp) {
-      // Don't make an unnecessary update.
-      return;
-    }
-
-    nowStamp = nextStamp;
-    clockUpdater.updateState(nowStamp);
-  };
-
   const initialize = async () => {
-    // Subscribe to the timer service to update our stamp.
-    await initializeClock(
-      localTimerService,
-      updateNowStamp,
-      LOCAL_TIMER_NO_DELAY,
-      LOCAL_TIMER_ONE_SECOND,
-    );
-
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
