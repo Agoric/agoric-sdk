@@ -4,7 +4,8 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
-import { governedParameterInitialValues } from './governedContract.js';
+import { makeGovernedNat } from '../../../src/paramMakers.js';
+import { MALLEABLE_NUMBER } from './governedContract';
 
 const { quote: q } = assert;
 
@@ -170,7 +171,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governedContractInstallation: installations.governedContract,
     governed: {
       issuerKeywordRecord: {},
-      terms: { main: governedParameterInitialValues },
+      terms: {
+        main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)],
+      },
     },
   };
   const privateArgs = { electorateCreatorFacet };
