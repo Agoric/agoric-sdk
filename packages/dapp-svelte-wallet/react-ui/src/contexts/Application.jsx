@@ -41,7 +41,7 @@ const cmp = (a, b) => {
 const kv = (keyObj, val) => {
   const key = Object.values(keyObj)[0];
   const text = Array.isArray(key) ? key.join('.') : key;
-  const id = val.meta?.sequence;
+  const id = val.meta?.id;
   return { ...val, ...keyObj, id: id ?? text, text, value: val };
 };
 
@@ -50,7 +50,7 @@ const inboxReducer = (_, newInbox) =>
     .map(tx => ({
       ...tx,
       offerId: tx.id,
-      id: tx.meta.sequence,
+      id: tx.meta.id,
     }))
     .sort((a, b) => cmp(b.id, a.id));
 
@@ -65,7 +65,7 @@ const pursesReducer = (_, newPurses) =>
 
 const dappsReducer = (_, newDapps) =>
   newDapps
-    .map(dapp => ({ ...dapp, id: dapp.meta.sequence }))
+    .map(dapp => ({ ...dapp, id: dapp.meta.id }))
     .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id));
 
 const contactsReducer = (_, newContacts) =>
@@ -80,7 +80,7 @@ const issuersReducer = (_, newIssuers) =>
 
 const paymentsReducer = (_, newPayments) =>
   newPayments
-    .map(payment => ({ ...payment, id: payment.meta.sequence }))
+    .map(payment => ({ ...payment, id: payment.meta.id }))
     .sort((a, b) => cmp(a.id, b.id));
 
 const Provider = ({ children }) => {

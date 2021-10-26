@@ -119,7 +119,7 @@ export function makeWallet({
    * @type {number | undefined}
    */
   let nowStamp;
-  let lastSequence = 0;
+  let lastId = 0;
 
   /**
    * Add or update a record's `meta` property.  Note that the Stamps are in
@@ -138,10 +138,10 @@ export function makeWallet({
     const { meta: oldMeta = {} } = record;
     /** @type {Record<string, any> & T['meta']} */
     const meta = { ...oldMeta };
-    if (!meta.sequence) {
+    if (!meta.id) {
       // Add a sequence number to the record.
-      lastSequence += 1;
-      meta.sequence = lastSequence;
+      lastId += 1;
+      meta.id = lastId;
     }
     if (nowStamp !== undefined) {
       if (!meta.creationStamp) {
@@ -358,7 +358,8 @@ export function makeWallet({
     /**
      * @type {PursesJSONState}
      */
-    const jstate = {
+    const jstate = addMeta({
+      ...pursesState.get(purseKey),
       brand,
       brandBoardId,
       ...(depositBoardId && { depositBoardId }),
@@ -368,7 +369,7 @@ export function makeWallet({
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
-    };
+    });
     pursesState.set(purseKey, jstate);
 
     pursesFullState.set(
@@ -1585,7 +1586,7 @@ export function makeWallet({
       });
     },
     add: async (petname, issuerP) => {
-      const { brand, issuer } = await brandTable.initIssuer(issuerP);
+      const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
       await initIssuerToBoardId(issuer);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();

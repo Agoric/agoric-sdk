@@ -98,7 +98,7 @@
 
 /**
  * @typedef {Object} RecordMetadata
- * @property {number} sequence
+ * @property {number} id
  * A monotonically increasing number to allow total ordering between records.
  * @property {number} [creationStamp]
  * The approximate time at which the record
