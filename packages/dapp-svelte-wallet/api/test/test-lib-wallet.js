@@ -1437,17 +1437,21 @@ test('stamps from localTimerService', async t => {
   await E(wallet).addIssuer('simolean', simoleanIssuer);
   await E(wallet).makeEmptyPurse('simolean', 'Tester', true);
 
+  const { mint: nonameMint, brand: nonameBrand } = makeIssuerKit('noname');
+
   const [pmt1, pmt2, pmt3] = await Promise.all(
     [30n, 50n, 71n].map(async n =>
       E(simoleanMint).mintPayment(AmountMath.make(simoleanBrand, n)),
     ),
   );
+  const pmt4 = E(nonameMint).mintPayment(AmountMath.make(nonameBrand, 103n));
 
   const clockNotifier = E(wallet).getClockNotifier();
   const paymentNotifier = E(wallet).getPaymentsNotifier();
 
   const { updateCount: count0 } = await E(paymentNotifier).getUpdateSince();
   await E(wallet).addPayment(pmt1);
+  E(wallet).addPayment(pmt4);
   const { updateCount: count1 } = await E(paymentNotifier).getUpdateSince(
     count0,
   );
@@ -1466,22 +1470,31 @@ test('stamps from localTimerService', async t => {
   await E(wallet).addPayment(pmt3);
   const { value: payments } = await E(paymentNotifier).getUpdateSince(count1);
 
-  const paymentMeta = payments.map(p => p.meta);
+  const paymentMeta = payments.map(p => ({ ...p.meta, status: p.status }));
   t.deepEqual(paymentMeta, [
     {
       creationStamp: 19199000,
       updatedStamp: 19199000,
       id: 6,
+      status: 'deposited',
     },
     {
-      creationStamp: 19200000,
-      updatedStamp: 19200000,
+      creationStamp: 19199000,
+      updatedStamp: 19199000,
       id: 7,
+      status: undefined,
     },
     {
       creationStamp: 19200000,
       updatedStamp: 19200000,
       id: 8,
+      status: 'deposited',
+    },
+    {
+      creationStamp: 19200000,
+      updatedStamp: 19200000,
+      id: 9,
+      status: 'deposited',
     },
   ]);
 });

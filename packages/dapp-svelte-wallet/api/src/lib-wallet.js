@@ -28,6 +28,7 @@ import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
+import { makePaymentActions } from './actions.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
@@ -126,9 +127,8 @@ export function makeWallet({
    * milliseconds since the epoch, and they are only added if this backend has
    * been supplied a `localTimerService`.
    *
-   * The `sequence` is guaranteed to be monotonically increasing, even if this
-   * backend doesn't have a `localTimerService`, or the stamp has not yet
-   * increased.
+   * The `id` is guaranteed to be unique for all records, even if this backend
+   * doesn't have a `localTimerService`, or the stamp has not yet increased.
    *
    * @template {Record<string, any>} T
    * @param {T} record what to add metadata to
@@ -139,7 +139,7 @@ export function makeWallet({
     /** @type {Record<string, any> & T['meta']} */
     const meta = { ...oldMeta };
     if (!meta.id) {
-      // Add a sequence number to the record.
+      // Add a unique id to the record.
       lastId += 1;
       meta.id = lastId;
     }
@@ -1227,8 +1227,8 @@ export function makeWallet({
     return ret;
   }
 
-  /** @type {Store<Payment, PaymentRecord>} */
-  const payments = makeScalarMap('payment');
+  /** @type {Store<number, PaymentRecord>} */
+  const idToPaymentRecord = makeScalarMap('paymentId');
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
@@ -1243,13 +1243,28 @@ export function makeWallet({
       actions,
       displayPayment,
     });
-    if (payments.has(paymentRecord.payment)) {
-      payments.set(paymentRecord.payment, harden(paymentRecord));
-    } else {
-      payments.init(paymentRecord.payment, harden(paymentRecord));
-    }
-    paymentsUpdater.updateState([...payments.values()]);
+    const { id } = paymentRecord.meta;
+    idToPaymentRecord.set(id, harden(paymentRecord));
+    paymentsUpdater.updateState([...idToPaymentRecord.values()]);
   };
+
+  const makePaymentActionsForId = id =>
+    makePaymentActions({
+      getRecord: () => idToPaymentRecord.get(id),
+      updateRecord: (record, withoutMeta = undefined) => {
+        // This order is important, so that the `withoutMeta.meta` gets
+        // overridden by `record.meta`.
+        updatePaymentRecord({ ...withoutMeta, ...addMeta(record) });
+      },
+      getBrandRecord: brand =>
+        brandTable.hasByBrand(brand) && brandTable.getByBrand(brand),
+      getPurseByPetname: petname => purseMapping.petnameToVal.get(petname),
+      getAutoDepositPurse: b =>
+        brandToAutoDepositPurse.has(b)
+          ? brandToAutoDepositPurse.get(b)
+          : undefined,
+      getIssuerBoardId: issuerToBoardId.get,
+    });
 
   /**
    * @param {ERef<Payment>} paymentP
@@ -1262,116 +1277,18 @@ export function makeWallet({
       E(paymentP).getAllegedBrand(),
     ]);
 
-    const depositedPK = makePromiseKit();
-
-    /** @type {PaymentRecord} */
-    let paymentRecord = addMeta({
+    const basePaymentRecord = addMeta({
       payment,
       brand,
-      actions: Far('payment actions', {
-        async deposit(purseOrPetname = undefined) {
-          /** @type {Purse} */
-          let purse;
-          if (purseOrPetname === undefined) {
-            if (!brandToAutoDepositPurse.has(brand)) {
-              // No automatic purse right now.
-              return depositedPK.promise;
-            }
-            // Plop into the current autodeposit purse.
-            purse = brandToAutoDepositPurse.get(brand);
-          } else if (
-            Array.isArray(purseOrPetname) ||
-            typeof purseOrPetname === 'string'
-          ) {
-            purse = purseMapping.petnameToVal.get(purseOrPetname);
-          } else {
-            purse = purseOrPetname;
-          }
-          const brandRecord =
-            brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
-          paymentRecord = {
-            ...brandRecord,
-            ...addMeta({
-              ...paymentRecord,
-              status: 'pending',
-            }),
-          };
-          updatePaymentRecord(paymentRecord);
-          // Now try depositing.
-          E(purse)
-            .deposit(payment)
-            .then(
-              depositedAmount => {
-                paymentRecord = {
-                  ...brandRecord,
-                  ...addMeta({
-                    ...paymentRecord,
-                    status: 'deposited',
-                    depositedAmount,
-                  }),
-                };
-                updatePaymentRecord(paymentRecord);
-                depositedPK.resolve(depositedAmount);
-              },
-              e => {
-                console.error(
-                  'Error depositing payment in',
-                  purseOrPetname || 'default purse',
-                  e,
-                );
-                if (purseOrPetname === undefined) {
-                  // Error in auto-deposit purse, just fail.  They can try
-                  // again.
-                  paymentRecord = addMeta({
-                    ...paymentRecord,
-                    status: undefined,
-                  });
-                  depositedPK.reject(e);
-                } else {
-                  // Error in designated deposit, so retry automatically without
-                  // a designated purse.
-                  depositedPK.resolve(paymentRecord.actions.deposit(undefined));
-                }
-              },
-            );
-          return depositedPK.promise;
-        },
-        async refresh() {
-          if (!brandTable.hasByBrand(brand)) {
-            return false;
-          }
-
-          const { issuer } = paymentRecord;
-          if (!issuer) {
-            const brandRecord = brandTable.getByBrand(brand);
-            paymentRecord = {
-              ...brandRecord,
-              ...addMeta({
-                ...paymentRecord,
-                issuerBoardId: issuerToBoardId.get(brandRecord.issuer),
-              }),
-            };
-            updatePaymentRecord(paymentRecord);
-          }
-
-          return paymentRecord.actions.getAmountOf();
-        },
-        async getAmountOf() {
-          const { issuer } = paymentRecord;
-          assert(issuer);
-
-          // Fetch the current amount of the payment.
-          const lastAmount = await E(issuer).getAmountOf(payment);
-
-          paymentRecord = addMeta({
-            ...paymentRecord,
-            lastAmount,
-          });
-          updatePaymentRecord(paymentRecord);
-          return true;
-        },
-      }),
     });
+    const id = basePaymentRecord.meta.id;
+
+    /** @type {PaymentRecord} */
+    const paymentRecord = {
+      ...basePaymentRecord,
+      actions: makePaymentActionsForId(id),
+    };
+    idToPaymentRecord.init(id, harden(paymentRecord));
 
     const refreshed = await paymentRecord.actions.refresh();
     if (!refreshed) {
