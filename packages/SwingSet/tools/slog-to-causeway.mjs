@@ -55,6 +55,8 @@ const LogClass = freeze({
  *   }
  * }} TraceRecord
  *
+ * @typedef { TraceRecord & { class: LogClassT[] }} TraceEvent
+ *
  * @typedef { [start: Loc] | [start: Loc, end: Loc] } Span
  * @typedef { [line: number] | [line: number, column: number] } Loc
  */
@@ -146,6 +148,7 @@ const makeCausewayFormatter = () => {
 
 /**
  * @param {AsyncIterable<SlogEntry>} entries
+ * @yields { TraceEvent }
  */
 async function* slogToCauseway(entries) {
   const dest = makeCausewayFormatter();
@@ -320,6 +323,7 @@ async function* slogToCauseway(entries) {
  * TODO: refactor as readLines, map JSON.parse
  *
  * @param {AsyncIterable<Buffer>} data
+ * @yields { unknown }
  */
 async function* readJSONLines(data) {
   let buf = '';
@@ -333,7 +337,10 @@ async function* readJSONLines(data) {
   }
 }
 
-/** @param { AsyncIterable<unknown> } items */
+/**
+ * @param { AsyncIterable<unknown> } items
+ * @yields { string }
+ */
 async function* writeJSONArray(items) {
   yield '[';
   let sep = false;
