@@ -81,7 +81,6 @@ const makeCausewayFormatter = () => {
         class: [LogClass.Got, LogClass.Event],
         anchor,
         message,
-        text,
         trace: { calls: [{ name: text, source: '@@' }] },
       }),
     /**
@@ -182,7 +181,7 @@ async function* slogToCauseway(entries) {
   const got = new Map();
   /** @type { Map<string, SlogVatEntry & { rejected: boolean }> } */
   const resolved = new Map();
-  /** @type { Map<string, SlogVatEntry> } */
+  /** @type { Map<string, SlogDeliveryEntry> } */
   const notified = new Map();
 
   for await (const entry of entries) {
@@ -282,22 +281,23 @@ async function* slogToCauseway(entries) {
     // send / sent
     const { ksc } = src;
     if (ksc[0] !== 'send') throw TypeError();
-    const [_, _t, { method }] = ksc;
-    yield dest.makeSent(anchor(src), kp, method);
+    const [
+      _,
+      ko,
+      {
+        method,
+        args: { body },
+      },
+    ] = ksc;
+    const label = `${kp} <- ${ko}.${method}(${body.length})`;
+    yield dest.makeSent(anchor(src), kp, label);
 
     // message / got
     if (got.has(kp)) {
       const target = got.get(kp);
       if (target.kd[0] !== 'message') throw TypeError();
-      const [
-        _0,
-        _1,
-        {
-          args: { body },
-          method: m,
-        },
-      ] = target.kd;
-      yield dest.makeGot(anchor(target), kp, `${m}(${body.length})`);
+      const [_0, t, { method: m }] = target.kd;
+      yield dest.makeGot(anchor(target), kp, `${t}.${m}(${body.length})`);
     } else {
       console.warn('no Got for', kp);
       // TODO: check for missing data in the other direction?
@@ -306,13 +306,12 @@ async function* slogToCauseway(entries) {
 
   for (const [rkp, src] of resolved) {
     // resolve / resolved
-    yield src.rejected
-      ? dest.makeRejected(anchor(src), rkp)
-      : dest.makeFulfilled(anchor(src), rkp);
+    const status = src.rejected ? 'rejected' : 'resolved';
+    yield dest.makeSent(anchor(src), rkp, `${status} ${rkp}`);
     // deliver / returned
     if (notified.has(rkp)) {
       const target = notified.get(rkp);
-      yield dest.makeSentIf(anchor(target), rkp, rkp);
+      yield dest.makeGot(anchor(target), rkp, rkp);
     } else {
       console.warn('no notified for', rkp);
       // TODO: check for missing data in the other direction?
