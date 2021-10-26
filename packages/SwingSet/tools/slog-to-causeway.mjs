@@ -270,8 +270,9 @@ async function* slogToCauseway(entries) {
       case 'clist':
       case 'crank-start':
       case 'crank-finish':
-      case 'console':
         break; // irrelevant. ignore.
+      case 'console':
+        break; // TODO: log comment
       default:
         throw notImpl(entry.type, entry);
     }

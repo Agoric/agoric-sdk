@@ -64,6 +64,8 @@
  *       | 'cosmic-swingset-deliver-inbound'
  *       | 'deliver-result' | 'syscall-result'
  *       | 'clist'
+ *       | 'crank-start' | 'crank-finish'
+ *       | 'console'
  *       | '@@more TODO'
  * }} SlogToDoEntry
  * @typedef { SlogDeliveryEntry | SlogSyscallEntry | SlogCreateVatEntry| SlogToDoEntry } SlogEntry
