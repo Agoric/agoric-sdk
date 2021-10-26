@@ -212,6 +212,9 @@ test('lib-wallet issuer and purse methods', async t => {
         displayInfo: {
           assetKind: 'set',
         },
+        meta: {
+          id: 3,
+        },
         brandPetname: 'zoe invite',
         pursePetname: 'Default Zoe invite purse',
         value: [],
@@ -231,6 +234,9 @@ test('lib-wallet issuer and purse methods', async t => {
         brandPetname: 'moola',
         displayInfo: {
           assetKind: 'nat',
+        },
+        meta: {
+          id: 6,
         },
         pursePetname: 'fun money',
         value: 100,
@@ -349,7 +355,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       displayInfo: {
         assetKind: 'set',
       },
-
+      meta: {
+        id: 3,
+      },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
       value: [
@@ -433,6 +441,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       displayInfo: {
         assetKind: 'set',
       },
+      meta: {
+        id: 3,
+      },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
       value: [
@@ -496,7 +507,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       },
       inviteHandleBoardId: '727995140',
       meta: {
-        sequence: 3,
+        id: 6,
       },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -562,6 +573,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       depositBoardId: '604346717',
       displayInfo: {
         assetKind: 'set',
+      },
+      meta: {
+        id: 3,
       },
       brandPetname: 'zoe invite',
       pursePetname: 'Default Zoe invite purse',
@@ -630,7 +644,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       },
       inviteHandleBoardId: '727995140',
       meta: {
-        sequence: 3,
+        id: 6,
       },
       proposalTemplate: {},
       requestContext: { dappOrigin: 'unknown' },
@@ -718,7 +732,7 @@ test('lib-wallet offer methods', async t => {
         instance,
         installation,
         meta: {
-          sequence: 2,
+          id: 6,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -774,6 +788,9 @@ test('lib-wallet offer methods', async t => {
       displayInfo: {
         assetKind: 'set',
       },
+      meta: {
+        id: 3,
+      },
       pursePetname: 'Default Zoe invite purse',
       value: [],
       currentAmountSlots: {
@@ -803,6 +820,9 @@ test('lib-wallet offer methods', async t => {
         body:
           '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
         slots: [{ kind: 'brand', petname: 'moola' }],
+      },
+      meta: {
+        id: 5,
       },
       currentAmount: {
         brand: { kind: 'brand', petname: 'moola' },
@@ -835,7 +855,7 @@ test('lib-wallet offer methods', async t => {
         },
         inviteHandleBoardId: '727995140',
         meta: {
-          sequence: 2,
+          id: 6,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -885,7 +905,7 @@ test('lib-wallet offer methods', async t => {
         },
         inviteHandleBoardId: '371571443',
         meta: {
-          sequence: 5,
+          id: 9,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -1451,17 +1471,17 @@ test('stamps from localTimerService', async t => {
     {
       creationStamp: 19199000,
       updatedStamp: 19199000,
-      sequence: 2,
+      id: 6,
     },
     {
       creationStamp: 19200000,
       updatedStamp: 19200000,
-      sequence: 3,
+      id: 7,
     },
     {
       creationStamp: 19200000,
       updatedStamp: 19200000,
-      sequence: 4,
+      id: 8,
     },
   ]);
 });
