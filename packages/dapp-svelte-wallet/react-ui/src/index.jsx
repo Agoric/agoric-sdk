@@ -5,7 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { CssBaseline, createTheme, ThemeProvider } from '@material-ui/core';
-import App from './App.js';
+import App from './App';
 import ApplicationContextProvider from './contexts/Application';
 
 Error.stackTraceLimit = Infinity;

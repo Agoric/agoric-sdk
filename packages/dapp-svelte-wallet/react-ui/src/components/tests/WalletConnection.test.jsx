@@ -1,5 +1,6 @@
 import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
+import { observeNotifier } from '@agoric/notifier';
 import WalletConnection from '../WalletConnection';
 
 jest.mock('@agoric/eventual-send', () => ({
@@ -7,8 +8,7 @@ jest.mock('@agoric/eventual-send', () => ({
     new Proxy(obj, {
       get(target, propKey) {
         const method = target[propKey];
-        return (...args) =>
-          new Promise(resolve => resolve(method.apply(this, args)));
+        return (...args) => method.apply(this, args);
       },
     }),
 }));
@@ -19,13 +19,31 @@ jest.mock('@agoric/wallet-connection/react.js', () => {
   };
 });
 
+jest.mock('@agoric/notifier', () => {
+  return {
+    observeNotifier: jest.fn(),
+  };
+});
+
 const setConnectionState = jest.fn();
+const setInbox = jest.fn();
+const setPurses = jest.fn();
+const setDapps = jest.fn();
+const setContacts = jest.fn();
+const setPayments = jest.fn();
+const setIssuers = jest.fn();
 let connectionStatus = 'idle';
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
     <Component
       setConnectionState={setConnectionState}
       connectionState={connectionStatus}
+      setInbox={setInbox}
+      setPurses={setPurses}
+      setDapps={setDapps}
+      setContacts={setContacts}
+      setPayments={setPayments}
+      setIssuers={setIssuers}
       {...props}
     />
   );
@@ -77,11 +95,32 @@ describe('WalletConnection', () => {
 
   describe('on idle state', () => {
     const accessToken = 'asdf';
-    const getAdminBootstrap = jest.fn();
     const setItem = jest.fn();
     const getItem = _ => `?accessToken=${accessToken}`;
+    let getOffersNotifier;
+    let getPursesNotifier;
+    let getDappsNotifier;
+    let getContactsNotifier;
+    let getPaymentsNotifier;
+    let getIssuersNotifier;
+    let getAdminBootstrap;
 
     beforeEach(() => {
+      getOffersNotifier = jest.fn(() => 'mockOffersNotifier');
+      getPursesNotifier = jest.fn(() => 'mockPursesNotifier');
+      getDappsNotifier = jest.fn(() => 'mockDappsNotifier');
+      getContactsNotifier = jest.fn(() => 'mockContactsNotifier');
+      getPaymentsNotifier = jest.fn(() => 'mockPaymentsNotifier');
+      getIssuersNotifier = jest.fn(() => 'mockIssuersNotifier');
+      getAdminBootstrap = jest.fn(_ => ({
+        getOffersNotifier,
+        getPursesNotifier,
+        getDappsNotifier,
+        getContactsNotifier,
+        getPaymentsNotifier,
+        getIssuersNotifier,
+      }));
+
       delete window.localStorage;
       window.localStorage = {
         setItem,
@@ -124,6 +163,27 @@ describe('WalletConnection', () => {
           'accessTokenParams',
           `?accessToken=${accessToken}`,
         );
+      });
+
+      test('updates the store with the notifier data', () => {
+        expect(observeNotifier).toHaveBeenCalledWith('mockOffersNotifier', {
+          updateState: setInbox,
+        });
+        expect(observeNotifier).toHaveBeenCalledWith('mockDappsNotifier', {
+          updateState: setDapps,
+        });
+        expect(observeNotifier).toHaveBeenCalledWith('mockPursesNotifier', {
+          updateState: setPurses,
+        });
+        expect(observeNotifier).toHaveBeenCalledWith('mockPaymentsNotifier', {
+          updateState: setPayments,
+        });
+        expect(observeNotifier).toHaveBeenCalledWith('mockContactsNotifier', {
+          updateState: setContacts,
+        });
+        expect(observeNotifier).toHaveBeenCalledWith('mockIssuersNotifier', {
+          updateState: setIssuers,
+        });
       });
     });
 
