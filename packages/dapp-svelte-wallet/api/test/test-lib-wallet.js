@@ -7,7 +7,6 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import makeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@agoric/eventual-send';
 
 import { assert } from '@agoric/assert';
@@ -1413,18 +1412,21 @@ test('getZoe, getBoard', async t => {
   t.is(await E(wallet).getBoard(), board);
 });
 
-test('stamps from localTimerService', async t => {
+test('stamps from dateNow', async t => {
   const { zoeService } = makeZoeKit(fakeVatAdmin);
   const feePurse = E(zoeService).makeFeePurse();
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const board = makeBoard();
-  const manualTimer = makeManualTimer(t.log, 19199000n, 1000n);
+
+  const startDateMS = new Date(2020, 0, 1).valueOf();
+  let currentDateMS = startDateMS;
+  const dateNow = () => currentDateMS;
 
   const { admin: wallet, initialized } = makeWallet({
     zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
-    localTimerService: manualTimer,
+    dateNow,
   });
   await initialized;
 
@@ -1437,51 +1439,59 @@ test('stamps from localTimerService', async t => {
   await E(wallet).addIssuer('simolean', simoleanIssuer);
   await E(wallet).makeEmptyPurse('simolean', 'Tester', true);
 
+  const { mint: nonameMint, brand: nonameBrand } = makeIssuerKit('noname');
+
   const [pmt1, pmt2, pmt3] = await Promise.all(
     [30n, 50n, 71n].map(async n =>
       E(simoleanMint).mintPayment(AmountMath.make(simoleanBrand, n)),
     ),
   );
+  const pmt4 = E(nonameMint).mintPayment(AmountMath.make(nonameBrand, 103n));
 
-  const clockNotifier = E(wallet).getClockNotifier();
   const paymentNotifier = E(wallet).getPaymentsNotifier();
 
+  const date0 = currentDateMS;
   const { updateCount: count0 } = await E(paymentNotifier).getUpdateSince();
   await E(wallet).addPayment(pmt1);
+  E(wallet).addPayment(pmt4);
   const { updateCount: count1 } = await E(paymentNotifier).getUpdateSince(
     count0,
   );
 
   // Wait for tick to take effect.
-  const { updateCount: clock0, value: clockValue0 } = await E(
-    clockNotifier,
-  ).getUpdateSince();
-  t.is(clockValue0, 19199000);
-  await manualTimer.tick();
-
-  const { value: clockValue1 } = await E(clockNotifier).getUpdateSince(clock0);
-  t.is(clockValue1, 19199000 + 1000);
+  currentDateMS += 1234;
+  const date1 = currentDateMS;
+  t.is(dateNow(), startDateMS + 1234);
 
   await E(wallet).addPayment(pmt2);
   await E(wallet).addPayment(pmt3);
   const { value: payments } = await E(paymentNotifier).getUpdateSince(count1);
 
-  const paymentMeta = payments.map(p => p.meta);
+  const paymentMeta = payments.map(p => ({ ...p.meta, status: p.status }));
   t.deepEqual(paymentMeta, [
     {
-      creationStamp: 19199000,
-      updatedStamp: 19199000,
+      creationStamp: date0,
+      updatedStamp: date0,
       id: 6,
+      status: 'deposited',
     },
     {
-      creationStamp: 19200000,
-      updatedStamp: 19200000,
+      creationStamp: date0,
+      updatedStamp: date1,
       id: 7,
+      status: undefined,
     },
     {
-      creationStamp: 19200000,
-      updatedStamp: 19200000,
+      creationStamp: date1,
+      updatedStamp: date1,
       id: 8,
+      status: 'deposited',
+    },
+    {
+      creationStamp: date1,
+      updatedStamp: date1,
+      id: 9,
+      status: 'deposited',
     },
   ]);
 });

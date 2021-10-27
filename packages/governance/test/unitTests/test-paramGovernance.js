@@ -18,10 +18,8 @@ import {
   setupGovernance,
   makeParamChangePositions,
 } from '../../src/governParam.js';
-import {
-  governedParameterInitialValues,
-  MALLEABLE_NUMBER,
-} from '../swingsetTests/contractGovernor/governedContract.js';
+import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
+import { makeGovernedNat } from '../../src/paramMakers.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -47,7 +45,7 @@ test('governParam happy path with fakes', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: governedParameterInitialValues },
+    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
   );
   const Retriever = governedFacets.creatorFacet.getParamMgrRetriever();
 
@@ -109,7 +107,7 @@ test('governParam no votes', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: governedParameterInitialValues },
+    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
   );
   const Retriever = governedFacets.creatorFacet.getParamMgrRetriever();
 
@@ -177,7 +175,7 @@ test('governParam bad update', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: governedParameterInitialValues },
+    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
   );
   const brokenParamMgr = Far('broken ParamMgr', {
     getParam: () => {
