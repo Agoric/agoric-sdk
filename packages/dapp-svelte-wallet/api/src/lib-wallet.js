@@ -28,16 +28,13 @@ import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
+import { makePaymentActions } from './actions.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
 
 import './internal-types.js';
 import './types.js';
-
-// The localTimerService uses a resolution of 1 millisecond.
-const LOCAL_TIMER_NO_DELAY = 0n;
-const LOCAL_TIMER_ONE_SECOND = 1000n;
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -53,45 +50,6 @@ const cmp = (a, b) => {
 };
 
 /**
- * @param {ERef<TimerService> | undefined} timerService
- * @param {(stamp: bigint) => void} updateClock
- * @param {bigint} timerDelay
- * @param {bigint} timerInterval
- * @returns {Promise<void>}
- */
-const initializeClock = async (
-  timerService,
-  updateClock,
-  timerDelay,
-  timerInterval,
-) => {
-  if (!timerService) {
-    return;
-  }
-
-  // Get a baseline.
-  const time0 = await E(timerService).getCurrentTimestamp();
-  updateClock(time0);
-
-  const notifier = await E(timerService).makeNotifier(
-    timerDelay,
-    timerInterval,
-  );
-
-  // Subscribe to future updates.
-  observeNotifier(notifier, {
-    updateState: updateClock,
-  }).catch(e => {
-    console.error(
-      `Observing localTimerService`,
-      timerService,
-      'failed with:',
-      e,
-    );
-  });
-};
-
-/**
  * @typedef {Object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
  * @property {Board} board
@@ -100,7 +58,7 @@ const initializeClock = async (
  * @property {MyAddressNameAdmin} myAddressNameAdmin
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
- * @property {ERef<TimerService>} [localTimerService]
+ * @property {() => number} [dateNow]
  * @param {MakeWalletParams} param0
  */
 export function makeWallet({
@@ -111,14 +69,8 @@ export function makeWallet({
   myAddressNameAdmin,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
-  localTimerService,
+  dateNow = undefined,
 }) {
-  /**
-   * The current timestamp, in milliseconds (if it is known).
-   *
-   * @type {number | undefined}
-   */
-  let nowStamp;
   let lastId = 0;
 
   /**
@@ -126,9 +78,8 @@ export function makeWallet({
    * milliseconds since the epoch, and they are only added if this backend has
    * been supplied a `localTimerService`.
    *
-   * The `sequence` is guaranteed to be monotonically increasing, even if this
-   * backend doesn't have a `localTimerService`, or the stamp has not yet
-   * increased.
+   * The `id` is guaranteed to be unique for all records, even if this backend
+   * doesn't have a `localTimerService`, or the stamp has not yet increased.
    *
    * @template {Record<string, any>} T
    * @param {T} record what to add metadata to
@@ -139,11 +90,12 @@ export function makeWallet({
     /** @type {Record<string, any> & T['meta']} */
     const meta = { ...oldMeta };
     if (!meta.id) {
-      // Add a sequence number to the record.
+      // Add a unique id to the record.
       lastId += 1;
       meta.id = lastId;
     }
-    if (nowStamp !== undefined) {
+    if (dateNow) {
+      const nowStamp = dateNow();
       if (!meta.creationStamp) {
         // Set the creationStamp to be right now.
         meta.creationStamp = nowStamp;
@@ -1227,8 +1179,8 @@ export function makeWallet({
     return ret;
   }
 
-  /** @type {Store<Payment, PaymentRecord>} */
-  const payments = makeScalarMap('payment');
+  /** @type {Store<number, PaymentRecord>} */
+  const idToPaymentRecord = makeScalarMap('paymentId');
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
@@ -1243,13 +1195,28 @@ export function makeWallet({
       actions,
       displayPayment,
     });
-    if (payments.has(paymentRecord.payment)) {
-      payments.set(paymentRecord.payment, harden(paymentRecord));
-    } else {
-      payments.init(paymentRecord.payment, harden(paymentRecord));
-    }
-    paymentsUpdater.updateState([...payments.values()]);
+    const { id } = paymentRecord.meta;
+    idToPaymentRecord.set(id, harden(paymentRecord));
+    paymentsUpdater.updateState([...idToPaymentRecord.values()]);
   };
+
+  const makePaymentActionsForId = id =>
+    makePaymentActions({
+      getRecord: () => idToPaymentRecord.get(id),
+      updateRecord: (record, withoutMeta = undefined) => {
+        // This order is important, so that the `withoutMeta.meta` gets
+        // overridden by `record.meta`.
+        updatePaymentRecord({ ...withoutMeta, ...addMeta(record) });
+      },
+      getBrandRecord: brand =>
+        brandTable.hasByBrand(brand) && brandTable.getByBrand(brand),
+      getPurseByPetname: petname => purseMapping.petnameToVal.get(petname),
+      getAutoDepositPurse: b =>
+        brandToAutoDepositPurse.has(b)
+          ? brandToAutoDepositPurse.get(b)
+          : undefined,
+      getIssuerBoardId: issuerToBoardId.get,
+    });
 
   /**
    * @param {ERef<Payment>} paymentP
@@ -1262,116 +1229,18 @@ export function makeWallet({
       E(paymentP).getAllegedBrand(),
     ]);
 
-    const depositedPK = makePromiseKit();
-
-    /** @type {PaymentRecord} */
-    let paymentRecord = addMeta({
+    const basePaymentRecord = addMeta({
       payment,
       brand,
-      actions: Far('payment actions', {
-        async deposit(purseOrPetname = undefined) {
-          /** @type {Purse} */
-          let purse;
-          if (purseOrPetname === undefined) {
-            if (!brandToAutoDepositPurse.has(brand)) {
-              // No automatic purse right now.
-              return depositedPK.promise;
-            }
-            // Plop into the current autodeposit purse.
-            purse = brandToAutoDepositPurse.get(brand);
-          } else if (
-            Array.isArray(purseOrPetname) ||
-            typeof purseOrPetname === 'string'
-          ) {
-            purse = purseMapping.petnameToVal.get(purseOrPetname);
-          } else {
-            purse = purseOrPetname;
-          }
-          const brandRecord =
-            brandTable.hasByBrand(brand) && brandTable.getByBrand(brand);
-          paymentRecord = {
-            ...brandRecord,
-            ...addMeta({
-              ...paymentRecord,
-              status: 'pending',
-            }),
-          };
-          updatePaymentRecord(paymentRecord);
-          // Now try depositing.
-          E(purse)
-            .deposit(payment)
-            .then(
-              depositedAmount => {
-                paymentRecord = {
-                  ...brandRecord,
-                  ...addMeta({
-                    ...paymentRecord,
-                    status: 'deposited',
-                    depositedAmount,
-                  }),
-                };
-                updatePaymentRecord(paymentRecord);
-                depositedPK.resolve(depositedAmount);
-              },
-              e => {
-                console.error(
-                  'Error depositing payment in',
-                  purseOrPetname || 'default purse',
-                  e,
-                );
-                if (purseOrPetname === undefined) {
-                  // Error in auto-deposit purse, just fail.  They can try
-                  // again.
-                  paymentRecord = addMeta({
-                    ...paymentRecord,
-                    status: undefined,
-                  });
-                  depositedPK.reject(e);
-                } else {
-                  // Error in designated deposit, so retry automatically without
-                  // a designated purse.
-                  depositedPK.resolve(paymentRecord.actions.deposit(undefined));
-                }
-              },
-            );
-          return depositedPK.promise;
-        },
-        async refresh() {
-          if (!brandTable.hasByBrand(brand)) {
-            return false;
-          }
-
-          const { issuer } = paymentRecord;
-          if (!issuer) {
-            const brandRecord = brandTable.getByBrand(brand);
-            paymentRecord = {
-              ...brandRecord,
-              ...addMeta({
-                ...paymentRecord,
-                issuerBoardId: issuerToBoardId.get(brandRecord.issuer),
-              }),
-            };
-            updatePaymentRecord(paymentRecord);
-          }
-
-          return paymentRecord.actions.getAmountOf();
-        },
-        async getAmountOf() {
-          const { issuer } = paymentRecord;
-          assert(issuer);
-
-          // Fetch the current amount of the payment.
-          const lastAmount = await E(issuer).getAmountOf(payment);
-
-          paymentRecord = addMeta({
-            ...paymentRecord,
-            lastAmount,
-          });
-          updatePaymentRecord(paymentRecord);
-          return true;
-        },
-      }),
     });
+    const { id } = basePaymentRecord.meta;
+
+    /** @type {PaymentRecord} */
+    const paymentRecord = {
+      ...basePaymentRecord,
+      actions: makePaymentActionsForId(id),
+    };
+    idToPaymentRecord.init(id, harden(paymentRecord));
 
     const refreshed = await paymentRecord.actions.refresh();
     if (!refreshed) {
@@ -1624,8 +1493,6 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
-  const { notifier: clockNotifier, updater: clockUpdater } = makeNotifierKit();
-
   const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
@@ -1721,32 +1588,9 @@ export function makeWallet({
       );
       return E(namesByAddress).lookup(...path);
     },
-    getClockNotifier: () => clockNotifier,
   });
 
-  const updateNowStamp = bigStamp => {
-    // We convert the milliseconds from a bigint to a number (for easy
-    // Javascript date math).
-    const nextStamp = parseInt(`${bigStamp}`, 10);
-
-    if (nowStamp && nowStamp >= nextStamp) {
-      // Don't make an unnecessary update.
-      return;
-    }
-
-    nowStamp = nextStamp;
-    clockUpdater.updateState(nowStamp);
-  };
-
   const initialize = async () => {
-    // Subscribe to the timer service to update our stamp.
-    await initializeClock(
-      localTimerService,
-      updateNowStamp,
-      LOCAL_TIMER_NO_DELAY,
-      LOCAL_TIMER_ONE_SECOND,
-    );
-
     // Allow people to send us payments.
     const selfDepositFacet = Far('contact', {
       receive(payment) {
