@@ -67,9 +67,9 @@
  * @typedef {Object} PaymentRecord
  * @property {RecordMetadata} meta
  * @property {Issuer} [issuer]
- * @property {Payment} payment
+ * @property {Payment} [payment]
  * @property {Brand} brand
- * @property {'pending'|'deposited'} [status]
+ * @property {'pending'|'deposited'|'expired'} [status]
  * @property {PaymentActions} actions
  * @property {Amount} [lastAmount]
  * @property {Amount} [depositedAmount]

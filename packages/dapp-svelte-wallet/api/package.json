@@ -1,11 +1,11 @@
 {
-  "name": "@agoric/dapp-svelte-wallet-api",
-  "private": true,
+  "name": "@agoric/wallet-backend",
   "version": "0.10.5",
-  "description": "Wallet web server handler",
+  "description": "Wallet backend",
   "type": "module",
   "scripts": {
-    "build": "exit 0",
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "yarn lint:types && yarn lint:eslint",

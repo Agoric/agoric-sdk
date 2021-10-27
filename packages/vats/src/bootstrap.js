@@ -29,6 +29,10 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
+const CENTRAL_DENOM_NAME = 'urun';
+// On-chain timer device is in seconds, so scale to milliseconds.
+const CHAIN_TIMER_DEVICE_SCALE = 1000;
+
 console.debug(`loading bootstrap.js`);
 
 // Used for coordinating on an index in comms for the provisioning service
@@ -43,7 +47,6 @@ function makeVattpFrom(vats) {
   });
 }
 
-const CENTRAL_DENOM_NAME = 'urun';
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
@@ -105,6 +108,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       chainTimerService,
       { zoeService: zoe, feeMintAccess, feeCollectionPurse },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
+      walletManager,
     ] = await Promise.all([
       E(bankVat).makeBankManager(bankBridgeManager),
       E(vats.sharing).getSharingService(),
@@ -115,6 +119,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         vats.zoe,
       ).buildZoe(vatAdminSvc, feeIssuerConfig, zoeFeesConfig, meteringConfig)),
       E(vats.priceAuthority).makePriceAuthority(),
+      E(vats.walletManager).buildWalletManager(vatAdminSvc),
     ]);
 
     const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
@@ -539,26 +544,6 @@ export function buildRootObject(vatPowers, vatParameters) {
           ibcport.push(port);
         }
 
-        const additionalPowers = {};
-        const powerFlagConfig = [
-          ['agoricNamesAdmin', agoricNamesAdmin],
-          ['bankManager', bankManager],
-          ['pegasusConnections', pegasusConnections],
-          ['priceAuthorityAdmin', priceAuthorityAdmin],
-          ['treasuryCreator', treasuryCreator],
-          ['vattp', () => makeVattpFrom(vats)],
-        ];
-        for (const [flag, value] of powerFlagConfig) {
-          if (
-            powerFlags &&
-            (powerFlags.includes(`agoric.${flag}`) ||
-              powerFlags.includes('agoric.ALL_THE_POWERS'))
-          ) {
-            const power = typeof value === 'function' ? value() : value;
-            additionalPowers[flag] = power;
-          }
-        }
-
         /** @type {{ issuerName: string, purseName: string, issuer: Issuer,
          * brand: Brand, payment: Payment, payToBank: boolean }[]} */
         const userPaymentRecords = [];
@@ -688,6 +673,43 @@ export function buildRootObject(vatPowers, vatParameters) {
             return address;
           },
         });
+
+        const makeChainWallet = () =>
+          E(walletManager).makeWallet({
+            bank,
+            feePurse: userFeePurse,
+            agoricNames,
+            namesByAddress,
+            myAddressNameAdmin,
+            zoe: zoeWUserFeePurse,
+            board,
+            timerDevice,
+            timerDeviceScale: CHAIN_TIMER_DEVICE_SCALE,
+          });
+
+        const additionalPowers = {};
+        const powerFlagConfig = [
+          ['agoricNamesAdmin', agoricNamesAdmin],
+          ['bankManager', bankManager],
+          ['chainWallet', () => makeChainWallet()],
+          ['pegasusConnections', pegasusConnections],
+          ['priceAuthorityAdmin', priceAuthorityAdmin],
+          ['treasuryCreator', treasuryCreator],
+          ['vattp', () => makeVattpFrom(vats)],
+        ];
+        await Promise.all(
+          powerFlagConfig.map(async ([flag, value]) => {
+            if (
+              !powerFlags ||
+              (!powerFlags.includes(`agoric.${flag}`) &&
+                !powerFlags.includes('agoric.ALL_THE_POWERS'))
+            ) {
+              return;
+            }
+            const powerP = typeof value === 'function' ? value() : value;
+            additionalPowers[flag] = await powerP;
+          }),
+        );
 
         const bundle = harden({
           ...additionalPowers,
