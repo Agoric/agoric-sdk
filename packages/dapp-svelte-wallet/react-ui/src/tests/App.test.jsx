@@ -2,14 +2,12 @@ import { mount } from 'enzyme';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
 import Dashboard from '../views/Dashboard';
-import Purses from '../views/Purses';
 import Dapps from '../views/Dapps';
 import Contacts from '../views/Contacts';
 import Issuers from '../views/Issuers';
 
 jest.mock('../components/WalletConnection', () => () => 'WalletConnection');
 jest.mock('../views/Dashboard', () => () => 'Dashboard');
-jest.mock('../views/Purses', () => () => 'Purses');
 jest.mock('../views/Dapps', () => () => 'Dapps');
 jest.mock('../views/Contacts', () => () => 'Contacts');
 jest.mock('../views/Issuers', () => () => 'Issuers');
@@ -30,16 +28,6 @@ test('renders the dashboard view', () => {
   );
 
   expect(component.find(Dashboard)).toHaveLength(1);
-});
-
-test('renders the purses view', () => {
-  const component = mount(
-    <MemoryRouter initialEntries={['/purses']}>
-      <App />
-    </MemoryRouter>,
-  );
-
-  expect(component.find(Purses)).toHaveLength(1);
 });
 
 test('renders the dapps view', () => {

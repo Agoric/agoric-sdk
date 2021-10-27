@@ -7,8 +7,9 @@ import NavMenu from './components/NavMenu';
 import Contacts from './views/Contacts';
 import Dapps from './views/Dapps';
 import Dashboard from './views/Dashboard';
-import Purses from './views/Purses';
 import Issuers from './views/Issuers';
+
+import './App.scss';
 
 const useStyles = makeStyles(theme => ({
   main: {
@@ -33,15 +34,12 @@ const useStyles = makeStyles(theme => ({
 const App = () => {
   const classes = useStyles(useTheme());
   return (
-    <>
+    <span className="App">
       <span className={classes.navMenu}>
         <NavMenu />
       </span>
       <main className={classes.main}>
         <Switch>
-          <Route path="/purses">
-            <Purses />
-          </Route>
           <Route path="/dapps">
             <Dapps />
           </Route>
@@ -57,7 +55,7 @@ const App = () => {
         </Switch>
       </main>
       <AppBar />
-    </>
+    </span>
   );
 };
 
