@@ -622,7 +622,7 @@ test('autoSwap jig - swap varying amounts', async t => {
 
   const { In: moolaReturn, Out: noSimoleans } = await failedSeat.getPayouts();
   assertPayoutAmount(t, moolaIssuer, moolaReturn, moola(3));
-  assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0));
+  await assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0));
 
   // attempt a trade with bad numbers
 });

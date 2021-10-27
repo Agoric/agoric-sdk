@@ -78,7 +78,7 @@ test('fee distribution', async t => {
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  assertPaymentArray(t, getPayments(), 1, 500, issuer, brand);
+  await assertPaymentArray(t, getPayments(), 1, 500, issuer, brand);
 });
 
 test('fee distribution, leftovers', async t => {
@@ -107,5 +107,5 @@ test('fee distribution, leftovers', async t => {
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  assertPaymentArray(t, getPayments().slice(1), 1, 13, issuer, brand);
+  await assertPaymentArray(t, getPayments().slice(1), 1, 13, issuer, brand);
 });
