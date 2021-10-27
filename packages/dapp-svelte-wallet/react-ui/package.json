@@ -147,6 +147,8 @@
     "access": "public"
   },
   "dependencies": {
-    "clsx": "^1.1.1"
+    "@agoric/ui-components": "^0.2.25",
+    "clsx": "^1.1.1",
+    "node-sass": "^6.0.1"
   }
 }

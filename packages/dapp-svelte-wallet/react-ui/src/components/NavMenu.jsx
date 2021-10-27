@@ -5,7 +5,6 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import { ListItemText, ListItemIcon } from '@material-ui/core';
 import DashboardIcon from '@material-ui/icons/Dashboard';
-import AccountBalanceWallet from '@material-ui/icons/AccountBalanceWallet';
 import Apps from '@material-ui/icons/Apps';
 import People from '@material-ui/icons/People';
 import AddCircle from '@material-ui/icons/AddCircle';
@@ -68,11 +67,6 @@ const NavMenu = () => {
       <div className={styles.sectionHeader}>Wallet</div>
       <List>
         <ListItemLink to="/" primary="Dashboard" icon={<DashboardIcon />} />
-        <ListItemLink
-          to="/purses"
-          primary="Purses"
-          icon={<AccountBalanceWallet />}
-        />
         <ListItemLink to="/dapps" primary="Dapps" icon={<Apps />} />
         <ListItemLink to="/contacts" primary="Contacts" icon={<People />} />
         <ListItemLink to="/issuers" primary="Issuers" icon={<AddCircle />} />

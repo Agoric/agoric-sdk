@@ -1,0 +1,15 @@
+.Amount {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 16px;
+}
+
+.Amount > img {
+  margin-right: 16px;
+}
+
+.Value {
+  font-weight: 800;
+}
