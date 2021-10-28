@@ -1,3 +1,4 @@
+// @ts-check
 import { AssetKind } from '@agoric/ertp';
 import clsx from 'clsx';
 import { stringifyValue } from '../display/index.js';
@@ -7,9 +8,12 @@ import { stringifyValue } from '../display/index.js';
  * supplied brand. The `purses` argument should be provided but may be falsy because UI
  * components represent inital state as null/undefined.
  *
- * @param {Array<Purse> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
+ * @param {Array<PursesJSONState> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
  * @param {Brand} [optBrand] - optional brand to filter for
- * @returns {Purse[]}
+ * @returns {PursesJSONState[] | null}
+ *
+ * @typedef {{ brand: Brand, displayInfo: any }} PursesJSONState
+ * see dapp-svelte-wallet/api/src/types.js
  */
 export const filterPurses = (purses, optBrand) => {
   if (!purses) {
@@ -39,7 +43,7 @@ const makeNatPurseSelector = ({
 }) => ({
   label = 'Purse',
   purseSelected = null,
-  onChange = () => {},
+  onChange = _p => {},
   disabled = false,
   error = false,
   purses = [],
