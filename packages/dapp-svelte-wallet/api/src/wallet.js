@@ -15,10 +15,14 @@ import { Far } from '@agoric/marshal';
 import { makeWallet } from './lib-wallet.js';
 import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
+import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
 
 import './internal-types.js';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
+  // See if we have the device vat power.
+  const { D } = vatPowers || {};
+
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -84,8 +88,24 @@ export function buildRootObject(_vatPowers) {
     agoricNames,
     namesByAddress,
     myAddressNameAdmin,
+    timerDevice,
+    timerDeviceScale,
     localTimerService,
+    localTimerPollInterval,
   }) {
+    /** @type {ERef<() => number> | undefined} */
+    let dateNowP;
+    if (timerDevice) {
+      dateNowP = makeTimerDeviceDateNow(D, timerDevice, timerDeviceScale);
+    }
+    if (localTimerService) {
+      dateNowP = makeTimerServiceDateNow(
+        localTimerService,
+        localTimerPollInterval,
+      );
+    }
+
+    const dateNow = await dateNowP;
     const w = makeWallet({
       agoricNames,
       namesByAddress,
@@ -94,7 +114,7 @@ export function buildRootObject(_vatPowers) {
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
-      localTimerService,
+      dateNow,
     });
     console.error('waiting for wallet to initialize');
     await w.initialized;

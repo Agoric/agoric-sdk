@@ -29,6 +29,10 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
+const CENTRAL_DENOM_NAME = 'urun';
+// On-chain timer device is in seconds, so scale to milliseconds.
+const CHAIN_TIMER_DEVICE_SCALE = 1000;
+
 console.debug(`loading bootstrap.js`);
 
 // Used for coordinating on an index in comms for the provisioning service
@@ -43,7 +47,6 @@ function makeVattpFrom(vats) {
   });
 }
 
-const CENTRAL_DENOM_NAME = 'urun';
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   async function setupCommandDevice(httpVat, cmdDevice, roles) {
@@ -680,7 +683,8 @@ export function buildRootObject(vatPowers, vatParameters) {
             myAddressNameAdmin,
             zoe: zoeWUserFeePurse,
             board,
-            localTimerService: chainTimerService,
+            timerDevice,
+            timerDeviceScale: CHAIN_TIMER_DEVICE_SCALE,
           });
 
         const additionalPowers = {};
