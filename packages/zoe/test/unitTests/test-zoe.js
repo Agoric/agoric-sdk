@@ -403,6 +403,27 @@ test(`zoe.makeFeePurse`, async t => {
   t.true(AmountMath.isEmpty(await E(feePurse).getCurrentAmount()));
 });
 
+test(`zcf.registerFeeMint twice`, async t => {
+  const { zoe, zcf: zcf1, zcf2, feeMintAccess } = await setupZCFTest();
+  const feeIssuer = E(zoe).getFeeIssuer();
+  const feeBrand = await E(feeIssuer).getBrand();
+
+  const fee1000 = AmountMath.make(feeBrand, 1000n);
+
+  const zcfMint1 = await zcf1.registerFeeMint('RUN', feeMintAccess);
+  const zcfMint2 = await zcf2.registerFeeMint('RUN', feeMintAccess);
+
+  const zcfSeat1 = zcfMint1.mintGains({ Fee: fee1000 });
+  const zcfSeat2 = zcfMint2.mintGains({ Fee: fee1000 });
+
+  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
+    Fee: fee1000,
+  });
+  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
+    Fee: fee1000,
+  });
+});
+
 test(`zoe.getConfiguration`, async t => {
   const { zoe } = await setupZCFTest();
   const config = await E(zoe).getConfiguration();

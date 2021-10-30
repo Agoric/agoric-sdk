@@ -18,8 +18,14 @@ const contractRoot = `${dirname}/zcfTesterContract.js`;
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   /** @type {ContractFacet} */
   let zcf;
+  /** @type {ContractFacet} */
+  let zcf2;
   const setZCF = jig => {
-    zcf = jig.zcf;
+    if (zcf === undefined) {
+      zcf = jig.zcf;
+    } else {
+      zcf2 = jig.zcf;
+    }
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
@@ -33,6 +39,10 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     issuerKeywordRecord,
     terms,
   );
+  // In case a second zcf is needed
+  const { creatorFacet: creatorFacet2, instance: instance2 } = await E(
+    zoe,
+  ).startInstance(installation, issuerKeywordRecord, terms);
   const { vatAdminState } = fakeVatAdmin;
   // @ts-ignore fix types to understand that zcf is always defined
   assert(zcf !== undefined);
@@ -44,5 +54,10 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     creatorFacet,
     vatAdminState,
     feeMintAccess,
+
+    // Additional ZCF
+    zcf2,
+    creatorFacet2,
+    instance2,
   };
 };
