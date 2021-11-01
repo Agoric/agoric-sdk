@@ -20,6 +20,11 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   let zcf;
   /** @type {ContractFacet} */
   let zcf2;
+
+  // We would like to start two contract instances in order to get two
+  // different `zcfs`. However, we only pass in one `setTestJig`, so
+  // here, we set the first `zcf` if it has not been set before, and
+  // if it has, we set the second `zcf`.
   const setZCF = jig => {
     if (zcf === undefined) {
       zcf = jig.zcf;
