@@ -17,15 +17,9 @@ import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getMeterProvider } from './kernel-stats.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
 const console = anylogger('fake-chain');
-
-// This is how many computrons we allow before starting a new block.
-// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
-// based on 5 sec voting time and up to 10 sec of computation.
-const MAX_COMPUTRONS_PER_BLOCK = 8_000_000n;
-// observed: 0.385 sec
-const ESTIMATED_COMPUTRONS_PER_VAT_CREATION = 300_000n;
 
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
@@ -118,10 +112,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
-      const params = {
-        max_computrons_per_block: `${MAX_COMPUTRONS_PER_BLOCK}`,
-        estimated_computrons_per_vat_creation: `${ESTIMATED_COMPUTRONS_PER_VAT_CREATION}`,
-      };
+      const params = DEFAULT_SIM_SWINGSET_PARAMS;
       await blockManager(
         { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
         savedChainSends,

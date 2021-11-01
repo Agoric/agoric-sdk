@@ -19,6 +19,12 @@ import {
   makeSlogCallbacks,
 } from './kernel-stats.js';
 
+import {
+  BeansPerBlockComputeLimit,
+  BeansPerVatCreation,
+  BeansPerXsnapComputron,
+} from './sim-params.js';
+
 const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
@@ -82,29 +88,35 @@ async function buildSwingset(
 }
 
 function computronCounter({
-  maxComputronsPerBlock,
-  estimatedComputronsPerVatCreation,
+  [BeansPerBlockComputeLimit]: blockComputeLimit,
+  [BeansPerVatCreation]: vatCreation,
+  [BeansPerXsnapComputron]: xsnapComputron,
 }) {
-  assert.typeof(maxComputronsPerBlock, 'bigint');
-  assert.typeof(estimatedComputronsPerVatCreation, 'bigint');
-  let total = 0n;
+  assert.typeof(blockComputeLimit, 'bigint');
+  assert.typeof(vatCreation, 'bigint');
+  assert.typeof(xsnapComputron, 'bigint');
+  let totalBeans = 0n;
   /** @type { RunPolicy } */
   const policy = harden({
     vatCreated() {
-      total += estimatedComputronsPerVatCreation;
-      return total < maxComputronsPerBlock;
+      totalBeans += vatCreation;
+      return totalBeans < blockComputeLimit;
     },
     crankComplete(details = {}) {
       assert.typeof(details, 'object');
       if (details.computrons) {
         assert.typeof(details.computrons, 'bigint');
-        total += details.computrons;
+
+        // TODO: xsnapComputron should not be assumed here.
+        // Instead, SwingSet should describe the computron model it uses.
+        totalBeans += details.computrons * xsnapComputron;
       }
-      return total < maxComputronsPerBlock;
+      return totalBeans < blockComputeLimit;
     },
     crankFailed() {
-      total += 1000000n; // who knows, 1M is as good as anything
-      return total < maxComputronsPerBlock;
+      const failedComputrons = 1000000n; // who knows, 1M is as good as anything
+      totalBeans += failedComputrons * xsnapComputron;
+      return totalBeans < blockComputeLimit;
     },
   });
   return policy;
@@ -221,7 +233,7 @@ export async function launch(
       blockTime,
     });
 
-    const policy = computronCounter(params);
+    const policy = computronCounter(params.beansPerUnit);
     await crankScheduler(policy);
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
