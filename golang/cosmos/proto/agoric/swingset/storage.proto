@@ -5,41 +5,6 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
-message Params {
-    option (gogoproto.equal) = true;
-    option (gogoproto.goproto_stringer) = false;
-
-    // This is how many computrons we allow before starting a new block.
-    string max_computrons_per_block = 1 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-      (gogoproto.nullable) = false
-    ];
-
-    string estimated_computrons_per_vat_creation = 2 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-      (gogoproto.nullable) = false
-    ];
-
-    string fee_denom = 3;
-
-    string fee_per_message = 4 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-      (gogoproto.nullable) = false
-    ];
-    string fee_per_message_byte = 5 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-      (gogoproto.nullable) = false
-    ];
-    string fee_per_message_slot = 6 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-      (gogoproto.nullable) = false
-    ];
-    string fee_per_inbound_tx = 7 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-      (gogoproto.nullable) = false
-    ];
-}
-
 message Storage {
     option (gogoproto.equal) = false;
 

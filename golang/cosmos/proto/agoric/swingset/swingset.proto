@@ -1,0 +1,44 @@
+syntax = "proto3";
+package agoric.swingset;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
+
+message Params {
+    option (gogoproto.equal) = true;
+    option (gogoproto.goproto_stringer) = false;
+
+    // Map from unit name to a value in SwingSet "beans".
+    // Must not be negative.
+    //
+    // These values are used by SwingSet to normalize named per-resource charges
+    // (maybe rent) in a single Nat usage unit, the "bean".
+    //
+    // The structure and interpretation of this map and the units therein is
+    // entirely determined by the JS-level code.
+    map<string, Beans> beans_per_unit = 1 [
+      (gogoproto.nullable) = false
+    ];
+
+    // The price in Coins per the unit named "fee".  This value is used by
+    // cosmic-swingset JS code to decide how many tokens to charge.
+    //
+    // cost = beans_used * fee_unit_price / beans_per_unit["fee"]
+    repeated cosmos.base.v1beta1.Coin fee_unit_price = 2 [
+      (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+      (gogoproto.nullable) = false
+    ];
+}
+
+// Beans are a Nat unit that is used to ascribe accounting value to other
+// SwingSet-level units.
+message Beans {
+  option (gogoproto.equal) = true;
+
+  string int = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}

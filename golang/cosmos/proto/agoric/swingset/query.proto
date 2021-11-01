@@ -3,6 +3,7 @@ package agoric.swingset;
 
 import "gogoproto/gogo.proto";
 import "agoric/swingset/storage.proto";
+import "agoric/swingset/swingset.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 
