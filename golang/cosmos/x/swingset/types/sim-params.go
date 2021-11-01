@@ -7,21 +7,48 @@ import (
 // This should roughly match the values in
 // `agoric-sdk/packages/cosmic-swingset/src/sim-params.js`.
 //
-// Nothing bad happens if they diverge, but it makes for a better simulation
+// Nothing bad happens if they diverge, but it makes for a truer simulation
 // experience if they don't.
+
+const (
+	BeansPerFeeUnit           = "feeUnit"
+	BeansPerInboundTx         = "inboundTx"
+	BeansPerBlockComputeLimit = "blockComputeLimit"
+	BeansPerMessage           = "message"
+	BeansPerMessageByte       = "messageByte"
+	BeansPerMinFeeDebit       = "minFeeDebit"
+	BeansPerVatCreation       = "vatCreation"
+	BeansPerXsnapComputron    = "xsnapComputron"
+)
+
 var (
-	// This is how many computrons we allow before starting a new block.
-	// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
-	// based on 5 sec voting time and up to 10 sec of computation.
-	DefaultMaxComputronsPerBlock = sdk.NewInt(8000000)
+	DefaultBeansPerXsnapComputron = sdk.NewInt(100)
+
+	// DefaultBeansPerBlockComputeLimit is how many computron beans we allow
+	// before starting a new block.  Some analysis (#3459) suggests this leads to
+	// about 2/3rds utilization, based on 5 sec voting time and up to 10 sec of
+	// computation.
+	DefaultBeansPerBlockComputeLimit = sdk.NewInt(8000000).Mul(DefaultBeansPerXsnapComputron)
 	// observed: 0.385 sec
-	DefaultEstimatedComputronsPerVatCreation = sdk.NewInt(300000)
+	DefaultBeansPerVatCreation = sdk.NewInt(300000).Mul(DefaultBeansPerXsnapComputron)
 
-	// These fee defaults are denominated in urun.
-	DefaultFeeDenom = "urun"
+	// Fees are denominated in units of $1 RUN.
+	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("urun", 1000000))
 
-	DefaultFeePerInboundTx   = sdk.MustNewDecFromStr("100")
-	DefaultFeePerMessage     = sdk.MustNewDecFromStr("10")
-	DefaultFeePerMessageSlot = sdk.MustNewDecFromStr("1")
-	DefaultFeePerMessageByte = sdk.MustNewDecFromStr("0.02")
+	DefaultBeansPerFeeUnit     = sdk.NewInt(1000000000000)                        // $1
+	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewInt(100000))   // $0.00001
+	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewInt(1000000))  // $0.000001
+	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewInt(50000000)) // $0.0000002
+	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewInt(4))        // $0.25
+
+	DefaultBeansPerUnit = map[string]Beans{
+		BeansPerBlockComputeLimit: NewBeans(DefaultBeansPerBlockComputeLimit),
+		BeansPerFeeUnit:           NewBeans(DefaultBeansPerFeeUnit),
+		BeansPerInboundTx:         NewBeans(DefaultBeansPerInboundTx),
+		BeansPerMessage:           NewBeans(DefaultBeansPerMessage),
+		BeansPerMessageByte:       NewBeans(DefaultBeansPerMessageByte),
+		BeansPerMinFeeDebit:       NewBeans(DefaultBeansPerMinFeeDebit),
+		BeansPerVatCreation:       NewBeans(DefaultBeansPerVatCreation),
+		BeansPerXsnapComputron:    NewBeans(DefaultBeansPerXsnapComputron),
+	}
 )

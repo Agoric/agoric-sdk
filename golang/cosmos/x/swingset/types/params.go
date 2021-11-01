@@ -11,14 +11,15 @@ import (
 
 // Parameter keys
 var (
-	ParamStoreKeyMaxComputronsPerBlock             = []byte("max_computrons_per_block")
-	ParamStoreKeyEstimatedComputronsPerVatCreation = []byte("estimated_computrons_per_vat_creation")
-	ParamStoreKeyFeeDenom                          = []byte("fee_denom")
-	ParamStoreKeyFeePerInboundTx                   = []byte("fee_per_inbound_tx")
-	ParamStoreKeyFeePerMessage                     = []byte("fee_per_message")
-	ParamStoreKeyFeePerMessageByte                 = []byte("fee_per_message_byte")
-	ParamStoreKeyFeePerMessageSlot                 = []byte("fee_per_message_slot")
+	ParamStoreKeyBeansPerUnit = []byte("beans_per_unit")
+	ParamStoreKeyFeeUnitPrice = []byte("fee_unit_price")
 )
+
+func NewBeans(i sdk.Int) Beans {
+	return Beans{
+		Int: i,
+	}
+}
 
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
@@ -28,13 +29,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default swingset parameters
 func DefaultParams() Params {
 	return Params{
-		MaxComputronsPerBlock:             DefaultMaxComputronsPerBlock,
-		EstimatedComputronsPerVatCreation: DefaultEstimatedComputronsPerVatCreation,
-		FeeDenom:                          DefaultFeeDenom,
-		FeePerInboundTx:                   DefaultFeePerInboundTx,
-		FeePerMessage:                     DefaultFeePerMessage,
-		FeePerMessageByte:                 DefaultFeePerMessageByte,
-		FeePerMessageSlot:                 DefaultFeePerMessageSlot,
+		BeansPerUnit: DefaultBeansPerUnit,
+		FeeUnitPrice: DefaultFeeUnitPrice,
 	}
 }
 
@@ -46,82 +42,56 @@ func (p Params) String() string {
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyMaxComputronsPerBlock, &p.MaxComputronsPerBlock, validateMaxComputronsPerBlock),
-		paramtypes.NewParamSetPair(ParamStoreKeyEstimatedComputronsPerVatCreation, &p.EstimatedComputronsPerVatCreation, validateEstimatedComputronsPerVatCreation),
-		paramtypes.NewParamSetPair(ParamStoreKeyFeeDenom, &p.FeeDenom, validateFeeDenom),
-		paramtypes.NewParamSetPair(ParamStoreKeyFeePerInboundTx, &p.FeePerInboundTx, validateFeePerInboundTx),
-		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessage, &p.FeePerMessage, validateFeePerMessage),
-		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessageByte, &p.FeePerMessageByte, validateFeePerMessageByte),
-		paramtypes.NewParamSetPair(ParamStoreKeyFeePerMessageSlot, &p.FeePerMessageSlot, validateFeePerMessageSlot),
+		paramtypes.NewParamSetPair(ParamStoreKeyBeansPerUnit, &p.BeansPerUnit, validateBeansPerUnit),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
 	}
 }
 
 // ValidateBasic performs basic validation on swingset parameters.
 func (p Params) ValidateBasic() error {
-	if err := validateMaxComputronsPerBlock(p.MaxComputronsPerBlock); err != nil {
+	if err := validateBeansPerUnit(p.BeansPerUnit); err != nil {
+		return err
+	}
+	if err := validateFeeUnitPrice(p.FeeUnitPrice); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func validateMaxComputronsPerBlock(i interface{}) error {
-	v, ok := i.(sdk.Int)
+func validateBeansPerUnit(i interface{}) error {
+	v, ok := i.(map[string]Beans)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
-	if !v.IsPositive() {
-		return fmt.Errorf("max computrons per block must be positive: %s", v)
+	for unit, beans := range v {
+		if unit == "" {
+			return fmt.Errorf("unit must not be empty")
+		}
+
+		if beans.Int.IsNegative() {
+			return fmt.Errorf("beans per unit %s must not be negative: %s", unit, beans.Int)
+		}
 	}
 
 	return nil
 }
 
-func validateEstimatedComputronsPerVatCreation(i interface{}) error {
-	v, ok := i.(sdk.Int)
+func validateFeeUnitPrice(i interface{}) error {
+	v, ok := i.(sdk.Coins)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
-	if v.IsNegative() {
-		return fmt.Errorf("estimated computrons per vat creation must not be negative: %s", v)
+	for _, coin := range v {
+		if err := sdk.ValidateDenom(coin.Denom); err != nil {
+			return fmt.Errorf("fee unit price denom %s must be valid: %e", coin.Denom, err)
+		}
+		if coin.Amount.IsNegative() {
+			return fmt.Errorf("fee unit price %s must not be negative: %s", coin.Denom, coin.Amount)
+		}
 	}
 
 	return nil
 }
-
-func validateFeeDenom(i interface{}) error {
-	v, ok := i.(string)
-	if !ok {
-		return fmt.Errorf("invalid fee denom parameter type: %T", i)
-	}
-
-	if err := sdk.ValidateDenom(v); err != nil {
-		return fmt.Errorf("invalid fee denom %s: %w", v, err)
-	}
-
-	return nil
-}
-
-func makeFeeValidator(description string) func(interface{}) error {
-	return func(i interface{}) error {
-		v, ok := i.(sdk.Dec)
-		if !ok {
-			return fmt.Errorf("invalid %s parameter type: %T", description, i)
-		}
-
-		if v.IsNegative() {
-			return fmt.Errorf("%s amount must not be negative: %s", description, v)
-		}
-
-		return nil
-	}
-}
-
-var (
-	validateFeePerInboundTx   = makeFeeValidator("fee per inbound tx")
-	validateFeePerMessage     = makeFeeValidator("fee per message")
-	validateFeePerMessageByte = makeFeeValidator("fee per message byte")
-	validateFeePerMessageSlot = makeFeeValidator("fee per message slot")
-)
