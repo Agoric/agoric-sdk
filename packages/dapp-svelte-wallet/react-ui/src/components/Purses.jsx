@@ -1,22 +1,53 @@
+import { useState } from 'react';
 import { CircularProgress } from '@material-ui/core';
-import Card from './Card';
-import CardItem from './CardItem';
-import { withApplicationContext } from '../contexts/Application';
+import Button from '@material-ui/core/Button';
+import Transfer from './Transfer';
 import PurseAmount from './PurseAmount';
+import { withApplicationContext } from '../contexts/Application';
+import CardItem from './CardItem';
+import Card from './Card';
 
 import './Purses.scss';
 
 // Exported for testing only.
-export const PursesInternalDoNotImportOrElse = ({ purses }) => {
+export const PursesInternalDoNotImportOrElse = ({
+  purses,
+  pendingTransfers,
+}) => {
+  const [openPurse, setOpenPurse] = useState(null);
+
+  const handleClickOpen = purse => {
+    setOpenPurse(purse);
+  };
+
+  const handleClose = () => {
+    setOpenPurse(null);
+  };
+
   const Purse = purse => {
     return (
       <CardItem key={purse.id}>
-        <PurseAmount
-          brandPetname={purse.brandPetname}
-          pursePetname={purse.pursePetname}
-          value={purse.currentAmount.value}
-          displayInfo={purse.displayInfo}
-        />
+        <div className="Left">
+          <PurseAmount
+            brandPetname={purse.brandPetname}
+            pursePetname={purse.pursePetname}
+            value={purse.currentAmount.value}
+            displayInfo={purse.displayInfo}
+          />
+        </div>
+        <div className="Right">
+          {pendingTransfers.has(purse.id) ? (
+            <CircularProgress />
+          ) : (
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => handleClickOpen(purse)}
+            >
+              Send
+            </Button>
+          )}
+        </div>
       </CardItem>
     );
   };
@@ -25,6 +56,7 @@ export const PursesInternalDoNotImportOrElse = ({ purses }) => {
   return (
     <div>
       <Card header="Purses">{purseItems}</Card>
+      <Transfer purse={openPurse} handleClose={handleClose} />
     </div>
   );
 };
@@ -33,5 +65,6 @@ export default withApplicationContext(
   PursesInternalDoNotImportOrElse,
   context => ({
     purses: context.purses,
+    pendingTransfers: context.pendingTransfers,
   }),
 );
