@@ -38,19 +38,6 @@ const makeBundle = async sourceRoot => {
   return contractBundle;
 };
 
-// makeBundle is a slow step, so we do it once for all the tests.
-const [
-  autoswapBundle,
-  contractGovernorBundle,
-  committeeBundle,
-  voteCounterBundle,
-] = await Promise.all([
-  makeBundle(ammRoot),
-  makeBundle(contractGovernorRoot),
-  makeBundle(committeeRoot),
-  makeBundle(voteCounterRoot),
-]);
-
 const setUpZoeForTest = async () => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
   let isFirst = true;
@@ -79,6 +66,12 @@ const setUpZoeForTest = async () => {
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
+// makeBundle is a slow step, so we do it once for all the tests.
+const autoswapBundleP = makeBundle(ammRoot);
+const contractGovernorBundleP = makeBundle(contractGovernorRoot);
+const committeeBundleP = makeBundle(committeeRoot);
+const voteCounterBundleP = makeBundle(voteCounterRoot);
+
 // called separately by each test so AMM/zoe/priceAuthority don't interfere
 const setupServices = async (
   electorateTerms,
@@ -87,6 +80,18 @@ const setupServices = async (
   timer = buildManualTimer(console.log),
 ) => {
   const { zoe } = await setUpZoeForTest();
+
+  const [
+    autoswapBundle,
+    contractGovernorBundle,
+    committeeBundle,
+    voteCounterBundle,
+  ] = await Promise.all([
+    autoswapBundleP,
+    contractGovernorBundleP,
+    committeeBundleP,
+    voteCounterBundleP,
+  ]);
 
   const [autoswap, governor, electorate, counter] = await Promise.all([
     installBundle(zoe, autoswapBundle),

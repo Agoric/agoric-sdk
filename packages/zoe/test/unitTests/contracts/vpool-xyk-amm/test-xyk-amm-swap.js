@@ -59,17 +59,10 @@ const makeBundle = async sourceRoot => {
 };
 
 // makeBundle is a slow step, so we do it once for all the tests.
-const [
-  autoswapBundle,
-  contractGovernorBundle,
-  committeeBundle,
-  voteCounterBundle,
-] = await Promise.all([
-  makeBundle(ammRoot),
-  makeBundle(contractGovernorRoot),
-  makeBundle(committeeRoot),
-  makeBundle(voteCounterRoot),
-]);
+const autoswapBundleP = makeBundle(ammRoot);
+const contractGovernorBundleP = makeBundle(contractGovernorRoot);
+const committeeBundleP = makeBundle(committeeRoot);
+const voteCounterBundleP = makeBundle(voteCounterRoot);
 
 const setUpZoeForTest = async () => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
@@ -107,6 +100,19 @@ const setupServices = async (
   timer = buildManualTimer(console.log),
 ) => {
   const { zoe } = await setUpZoeForTest();
+
+  // XS doesn't like top-level await, so do it here. this should be quick
+  const [
+    autoswapBundle,
+    contractGovernorBundle,
+    committeeBundle,
+    voteCounterBundle,
+  ] = await Promise.all([
+    autoswapBundleP,
+    contractGovernorBundleP,
+    committeeBundleP,
+    voteCounterBundleP,
+  ]);
 
   const [autoswap, governor, electorate, counter] = await Promise.all([
     installBundle(zoe, autoswapBundle),
