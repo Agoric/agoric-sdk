@@ -436,8 +436,8 @@ export default function buildKernel(
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       if (vd[0] !== 'bringOutYourDead') {
-        if (vatKeeper.boydCountdown()) {
-          kernelKeeper.scheduleBoyd(vatID);
+        if (vatKeeper.countdownToReap()) {
+          kernelKeeper.scheduleReap(vatID);
         }
       }
       const [status, problem] = deliveryResult;
@@ -697,11 +697,11 @@ export default function buildKernel(
     if (!dynamicOptions.managerType) {
       options.managerType = kernelKeeper.getDefaultManagerType();
     }
-    if (!dynamicOptions.boydFrequency) {
-      options.boydFrequency = kernelKeeper.getDefaultBoydFrequency();
+    if (!dynamicOptions.reapInterval) {
+      options.reapInterval = kernelKeeper.getDefaultReapInterval();
     }
     vatKeeper.setSourceAndOptions(source, options);
-    vatKeeper.initializeBoydCountdown(options.boydFrequency);
+    vatKeeper.initializeReapCountdown(options.reapInterval);
 
     function makeSuccessResponse() {
       // build success message, giving admin vat access to the new vat's root
@@ -986,7 +986,7 @@ export default function buildKernel(
     assertKnownOptions(creationOptions, [
       'enablePipelining',
       'metered',
-      'boydFrequency',
+      'reapInterval',
     ]);
 
     assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
@@ -995,11 +995,11 @@ export default function buildKernel(
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    if (!creationOptions.boydFrequency) {
-      creationOptions.boydFrequency = 'never';
+    if (!creationOptions.reapInterval) {
+      creationOptions.reapInterval = 'never';
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.initializeBoydCountdown(creationOptions.boydFrequency);
+    vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
     return vatID;
@@ -1121,9 +1121,9 @@ export default function buildKernel(
     if (gcMessage) {
       return gcMessage;
     }
-    const boydMessage = kernelKeeper.nextBoydAction();
-    if (boydMessage) {
-      return boydMessage;
+    const reapMessage = kernelKeeper.nextReapAction();
+    if (reapMessage) {
+      return reapMessage;
     }
 
     if (!kernelKeeper.isRunQueueEmpty()) {

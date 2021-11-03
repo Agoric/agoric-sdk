@@ -53,10 +53,10 @@ async function dropPresence(t, dropExport) {
   if (dropExport) {
     c.queueToVatRoot('bootstrap', 'drop', capargs([]));
     await c.step(); // message
-    await c.step(); // BOYD
+    await c.step(); // reap
   }
   await c.step(); // message
-  await c.step(); // BOYD
+  await c.step(); // reap
 
   // examine the run-queue to learn the krefs for objects A and B
   const rq = c.dump().runQueue;

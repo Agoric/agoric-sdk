@@ -50,7 +50,7 @@ const enableKernelGC = true;
 // bundle.$NAME = JSON(bundle)
 //
 // kernel.defaultManagerType = managerType
-// kernel.defaultBoydFrequency = $NN
+// kernel.defaultReapInterval = $NN
 
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
 // v$NN.options = JSON
@@ -65,8 +65,8 @@ const enableKernelGC = true;
 // v$NN.t.endPosition = $NN
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN // XXX does this exist?
-// v$NN.boydFrequency = $NN or 'never'
-// v$NN.boydCountdown = $NN or 'never'
+// v$NN.reapInterval = $NN or 'never'
+// v$NN.reapCountdown = $NN or 'never'
 // exclude from consensus
 // local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 
@@ -87,7 +87,7 @@ const enableKernelGC = true;
 // crankNumber = $NN
 // runQueue = JSON(runQueue)
 // gcActions = JSON(gcActions)
-// boydQueue = JSON([vatIDs...])
+// reapQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
 
 // ko.nextID = $NN
@@ -276,9 +276,9 @@ export default function makeKernelKeeper(
 
   /**
    * @param { ManagerType } defaultManagerType
-   * @param { number } defaultBoydFrequency
+   * @param { number } defaultReapInterval
    */
-  function createStartingKernelState(defaultManagerType, defaultBoydFrequency) {
+  function createStartingKernelState(defaultManagerType, defaultReapInterval) {
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
@@ -289,19 +289,19 @@ export default function makeKernelKeeper(
     kvStore.set('kp.nextID', `${FIRST_PROMISE_ID}`);
     kvStore.set('meter.nextID', `${FIRST_METER_ID}`);
     kvStore.set('gcActions', '[]');
-    kvStore.set('boydQueue', '[]');
+    kvStore.set('reapQueue', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
-    kvStore.set('kernel.defaultBoydFrequency', `${defaultBoydFrequency}`);
+    kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
   }
 
   function getDefaultManagerType() {
     return getRequired('kernel.defaultManagerType');
   }
 
-  function getDefaultBoydFrequency() {
-    return getRequired('kernel.defaultBoydFrequency');
+  function getDefaultReapInterval() {
+    return getRequired('kernel.defaultReapInterval');
   }
 
   function addBundle(name, bundle) {
@@ -338,19 +338,19 @@ export default function makeKernelKeeper(
     setGCActions(actions);
   }
 
-  function scheduleBoyd(vatID) {
-    const boydQueue = JSON.parse(getRequired('boydQueue'));
-    if (!boydQueue.includes(vatID)) {
-      boydQueue.push(vatID);
-      kvStore.set('boydQueue', JSON.stringify(boydQueue));
+  function scheduleReap(vatID) {
+    const reapQueue = JSON.parse(getRequired('reapQueue'));
+    if (!reapQueue.includes(vatID)) {
+      reapQueue.push(vatID);
+      kvStore.set('reapQueue', JSON.stringify(reapQueue));
     }
   }
 
-  function nextBoydAction() {
-    const boydQueue = JSON.parse(getRequired('boydQueue'));
-    if (boydQueue.length > 0) {
-      const vatID = boydQueue.shift();
-      kvStore.set('boydQueue', JSON.stringify(boydQueue));
+  function nextReapAction() {
+    const reapQueue = JSON.parse(getRequired('reapQueue'));
+    if (reapQueue.length > 0) {
+      const vatID = reapQueue.shift();
+      kvStore.set('reapQueue', JSON.stringify(reapQueue));
       return harden({ type: 'bringOutYourDead', vatID });
     } else {
       return undefined;
@@ -1310,7 +1310,7 @@ export default function makeKernelKeeper(
     const gcActions = Array.from(getGCActions());
     gcActions.sort();
 
-    const boydQueue = JSON.parse(getRequired('boydQueue'));
+    const reapQueue = JSON.parse(getRequired('reapQueue'));
 
     const runQueue = JSON.parse(getRequired('runQueue'));
 
@@ -1320,7 +1320,7 @@ export default function makeKernelKeeper(
       promises,
       objects,
       gcActions,
-      boydQueue,
+      reapQueue,
       runQueue,
     });
   }
@@ -1330,7 +1330,7 @@ export default function makeKernelKeeper(
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,
-    getDefaultBoydFrequency,
+    getDefaultReapInterval,
     addBundle,
     getBundle,
 
@@ -1347,8 +1347,8 @@ export default function makeKernelKeeper(
     getGCActions,
     setGCActions,
     addGCActions,
-    scheduleBoyd,
-    nextBoydAction,
+    scheduleReap,
+    nextReapAction,
 
     addKernelObject,
     ownerOfKernelObject,

@@ -34,7 +34,7 @@
  *   metered?: boolean,
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
- *   boydFrequency?: number | 'never',
+ *   reapInterval?: number | 'never',
  *   enableVatstore?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,

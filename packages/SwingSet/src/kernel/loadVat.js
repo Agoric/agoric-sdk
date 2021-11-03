@@ -95,7 +95,7 @@ export function makeVatLoader(stuff) {
     'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
-    'boydFrequency',
+    'reapInterval',
   ];
 
   const allowedStaticOptions = [
@@ -109,7 +109,7 @@ export function makeVatLoader(stuff) {
     'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
-    'boydFrequency',
+    'reapInterval',
   ];
 
   /**
@@ -171,13 +171,13 @@ export function makeVatLoader(stuff) {
    *        internal state can be reconstructed via replay.  If false, no such
    *        record is kept.  Defaults to true.
    *
-   * @param {number|'never'} [options.boydFrequency] The frequency (measured
+   * @param {number|'never'} [options.reapInterval] The interval (measured
    *        in number of deliveries to the vat) after which the kernel will
    *        deliver the 'bringOutYourDead' directive to the vat.  If the value
    *        is 'never', 'bringOutYourDead' will never be delivered and the vat
    *        will be responsible for internally managing (in a deterministic
    *        manner) any visible effects of garbage collection.  Defaults to the
-   *        kernel's configured 'defaultBoydFrequency' value.
+   *        kernel's configured 'defaultReapInterval' value.
    *
    * @param {string} [options.name]
    * @param {string} [options.description]
