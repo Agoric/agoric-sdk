@@ -118,6 +118,30 @@ export function makeVatKeeper(
     return harden(options);
   }
 
+  function initializeReapCountdown(count) {
+    kvStore.set(`${vatID}.reapInterval`, `${count}`);
+    kvStore.set(`${vatID}.reapCountdown`, `${count}`);
+  }
+
+  function countdownToReap() {
+    const rawCount = getRequired(`${vatID}.reapCountdown`);
+    if (rawCount === 'never') {
+      return false;
+    } else {
+      const count = Number.parseInt(rawCount, 10);
+      if (count === 1) {
+        kvStore.set(
+          `${vatID}.reapCountdown`,
+          getRequired(`${vatID}.reapInterval`),
+        );
+        return true;
+      } else {
+        kvStore.set(`${vatID}.reapCountdown`, `${count - 1}`);
+        return false;
+      }
+    }
+  }
+
   function nextDeliveryNum() {
     const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
@@ -582,6 +606,8 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
+    initializeReapCountdown,
+    countdownToReap,
     nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,

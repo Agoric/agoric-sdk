@@ -12,6 +12,10 @@
 /**
  * Create a purse for a new, local issuer. Used only for ZCFMint issuers.
  *
+ * Note: in the case of the feeMint, it may have been registered
+ * before with `feeMintAccess`. In that case, we do not create a new
+ * purse, but reuse the existing purse.
+ *
  * @callback MakeLocalPurse
  * @param {Issuer} issuer
  * @param {Brand} brand

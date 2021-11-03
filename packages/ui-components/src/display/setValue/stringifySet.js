@@ -1,3 +1,3 @@
-export const stringifySet = _str => {
-  assert.fail('stringifySet not yet implemented');
+export const stringifySet = value => {
+  return `${value.length}`;
 };

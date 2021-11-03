@@ -30,9 +30,13 @@ export const makeEscrowStorage = () => {
    * @type {MakeLocalPurse}
    */
   const makeLocalPurse = (issuer, brand) => {
-    const localPurse = issuer.makeEmptyPurse();
-    brandToPurse.init(brand, localPurse);
-    return localPurse;
+    if (brandToPurse.has(brand)) {
+      return /** @type {Purse} */ (brandToPurse.get(brand));
+    } else {
+      const localPurse = issuer.makeEmptyPurse();
+      brandToPurse.init(brand, localPurse);
+      return localPurse;
+    }
   };
 
   /** @type {WithdrawPayments} */

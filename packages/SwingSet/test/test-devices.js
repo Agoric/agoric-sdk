@@ -89,6 +89,7 @@ test.serial('d1', async t => {
   const sharedArray = [];
   const config = {
     bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
     vats: {
       bootstrap: {
         bundle: t.context.data.bootstrap1,
@@ -124,6 +125,7 @@ test.serial('d1', async t => {
 async function test2(t, mode) {
   const config = {
     bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
     vats: {
       bootstrap: {
         bundle: t.context.data.bootstrap2,

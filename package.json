@@ -32,6 +32,7 @@
     "packages/vats",
     "packages/access-token",
     "packages/solo",
+    "packages/ui-components",
     "packages/dapp-svelte-wallet/ui",
     "packages/dapp-svelte-wallet/react-ui",
     "packages/dapp-svelte-wallet/api",
@@ -44,7 +45,6 @@
     "packages/notifier",
     "packages/xsnap",
     "packages/deploy-script-support",
-    "packages/ui-components",
     "packages/eslint-config",
     "packages/wallet-connection"
   ],

@@ -95,6 +95,7 @@ export function makeVatLoader(stuff) {
     'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
+    'reapInterval',
   ];
 
   const allowedStaticOptions = [
@@ -108,6 +109,7 @@ export function makeVatLoader(stuff) {
     'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
+    'reapInterval',
   ];
 
   /**
@@ -160,16 +162,22 @@ export function makeVatLoader(stuff) {
    *        without waiting for the promises to be resolved.  If false, such
    *        messages will be queued inside the kernel.  Defaults to false.
    *
-   * @param {boolean} [options.enableVatstore] If true,
-   *        the vat is provided with an object that allows
-   *        individual keyed access (in an insolated subset of the key space) to
-   *        the vatstore.  Defaults to false.
+   * @param {boolean} [options.enableVatstore] If true, the vat is provided with
+   *        an object that allows individual keyed access (in an insolated
+   *        subset of the key space) to the vatstore.  Defaults to false.
    *
-   * @param {boolean} [options.useTranscript] If true,
-   *        saves a transcript of a vat's inbound
-   *        deliveries and outbound syscalls so that the vat's internal state
-   *        can be reconstructed via replay.  If false, no such record is kept.
-   *        Defaults to true.
+   * @param {boolean} [options.useTranscript] If true, saves a transcript of a
+   *        vat's inbound deliveries and outbound syscalls so that the vat's
+   *        internal state can be reconstructed via replay.  If false, no such
+   *        record is kept.  Defaults to true.
+   *
+   * @param {number|'never'} [options.reapInterval] The interval (measured
+   *        in number of deliveries to the vat) after which the kernel will
+   *        deliver the 'bringOutYourDead' directive to the vat.  If the value
+   *        is 'never', 'bringOutYourDead' will never be delivered and the vat
+   *        will be responsible for internally managing (in a deterministic
+   *        manner) any visible effects of garbage collection.  Defaults to the
+   *        kernel's configured 'defaultReapInterval' value.
    *
    * @param {string} [options.name]
    * @param {string} [options.description]

@@ -9,6 +9,7 @@ import { capargs } from '../util.js';
 
 test('vat reload from snapshot', async t => {
   const config = {
+    defaultReapInterval: 'never',
     vats: {
       target: {
         sourceSpec: new URL('vat-warehouse-reload.js', import.meta.url)

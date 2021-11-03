@@ -1263,3 +1263,73 @@ test('xs-worker default manager type', async t => {
     'xs-worker',
   );
 });
+
+async function reapTest(t, freq) {
+  const kernel = makeKernel();
+  await kernel.start();
+  const log = [];
+  function setup() {
+    function dispatch(vatDeliverObject) {
+      log.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vat1', setup, {}, { reapInterval: freq });
+  const vat1 = kernel.vatNameToID('vat1');
+  t.deepEqual(log, []);
+
+  const vatRoot = kernel.addExport(vat1, 'o+1');
+  function deliverMessage(ordinal) {
+    kernel.queueToKref(vatRoot, `msg_${ordinal}`, capdata('[]'));
+  }
+  function matchMsg(ordinal) {
+    return [
+      'message',
+      'o+1',
+      {
+        args: {
+          body: '[]',
+          slots: [],
+        },
+        method: `msg_${ordinal}`,
+        result: `p-${60 + ordinal}`,
+      },
+    ];
+  }
+  function matchReap() {
+    return ['bringOutYourDead'];
+  }
+
+  for (let i = 0; i < 100; i += 1) {
+    deliverMessage(i);
+  }
+  t.deepEqual(log, []);
+  await kernel.run();
+  for (let i = 0; i < 100; i += 1) {
+    t.deepEqual(log.shift(), matchMsg(i));
+    if (freq !== 'never' && (i + 1) % freq === 0) {
+      t.deepEqual(log.shift(), matchReap());
+    }
+  }
+  t.deepEqual(log, []);
+}
+
+test('reap interval 1', async t => {
+  await reapTest(t, 1);
+});
+
+test('reap interval 2', async t => {
+  await reapTest(t, 2);
+});
+
+test('reap interval 5', async t => {
+  await reapTest(t, 5);
+});
+
+test('reap interval 17', async t => {
+  await reapTest(t, 17);
+});
+
+test('reap interval never', async t => {
+  await reapTest(t, 'never');
+});

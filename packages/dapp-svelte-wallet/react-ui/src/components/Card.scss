@@ -1,0 +1,21 @@
+.Card {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  padding: 16px 0 16px;
+  border-radius: 8px;
+  border-color: #e0e0e0;
+  border-width: 1px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  width: 100%;
+}
+
+.Content {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.Header {
+  margin: 0 16px 16px 16px;
+}
