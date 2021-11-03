@@ -339,6 +339,7 @@ export async function initializeSwingset(
       enableSetup: true,
       managerType: 'local',
       useTranscript: false,
+      reapInterval: 'never',
     },
   };
 

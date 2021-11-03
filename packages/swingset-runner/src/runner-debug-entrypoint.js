@@ -5,8 +5,12 @@
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
 
-// LMDB bindings need to be imported before lockdown.
+// Initialize trasitive dependencies that run afoul of the property override
+// after SES lockdown hazard.
 import 'node-lmdb';
+// TODO Remove babel-standalone preinitialization
+// https://github.com/endojs/endo/issues/768
+import '@agoric/babel-standalone';
 
 // Now do lockdown.
 import './install-optional-metering-and-ses.js';

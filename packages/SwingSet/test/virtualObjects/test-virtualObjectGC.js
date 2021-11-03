@@ -9,6 +9,7 @@ import {
   makeDropExports,
   makeRetireImports,
   makeRetireExports,
+  makeBringOutYourDead,
 } from '../util.js';
 
 // Legs:
@@ -360,16 +361,20 @@ function setupLifecycleTest(t) {
   async function dispatchMessage(message, args = capargs([])) {
     const rp = nextRP();
     await dispatch(makeMessage(root, message, args, rp));
+    await dispatch(makeBringOutYourDead());
     return rp;
   }
   async function dispatchDropExports(...vrefs) {
     await dispatch(makeDropExports(...vrefs));
+    await dispatch(makeBringOutYourDead());
   }
   async function dispatchRetireImports(...vrefs) {
     await dispatch(makeRetireImports(...vrefs));
+    await dispatch(makeBringOutYourDead());
   }
   async function dispatchRetireExports(...vrefs) {
     await dispatch(makeRetireExports(...vrefs));
+    await dispatch(makeBringOutYourDead());
   }
 
   const v = { t, log };

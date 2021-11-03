@@ -5,6 +5,8 @@ import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
 
+const reapMessageVatDelivery = harden(['bringOutYourDead']);
+
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
@@ -116,6 +118,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
+  function translateBringOutYourDead() {
+    return reapMessageVatDelivery;
+  }
+
   function kernelDeliveryToVatDelivery(kd) {
     const [type, ...args] = kd;
     switch (type) {
@@ -129,6 +135,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         return translateRetireExports(...args);
       case 'retireImports':
         return translateRetireImports(...args);
+      case 'bringOutYourDead':
+        return translateBringOutYourDead(...args);
       default:
         assert.fail(X`unknown kernelDelivery.type ${type}`);
     }
@@ -138,6 +146,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['dropExports', vrefs]
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
+    //  ['bringOutYourDead']
   }
 
   return kernelDeliveryToVatDelivery;

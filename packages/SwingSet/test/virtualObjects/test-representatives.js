@@ -308,10 +308,10 @@ test.serial('exercise cache', async t => {
   t.deepEqual(log, []);
 
   await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
-  t.deepEqual(log.shift(), ['get', rcKey(2), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(2), '1']);
   t.deepEqual(log.shift(), ['set', dataKey(2), thingVal('thing2')]);
   t.deepEqual(log.shift(), ['set', esKey(5), '1']);
+  t.deepEqual(log.shift(), ['get', rcKey(2), undefined]);
+  t.deepEqual(log.shift(), ['get', esKey(2), '1']);
   t.deepEqual(log, []);
 
   await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
@@ -320,31 +320,31 @@ test.serial('exercise cache', async t => {
   t.deepEqual(log, []);
 
   await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
-  t.deepEqual(log.shift(), ['get', rcKey(3), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(3), '1']);
   t.deepEqual(log.shift(), ['set', dataKey(3), thingVal('thing3')]);
   t.deepEqual(log.shift(), ['set', esKey(7), '1']);
+  t.deepEqual(log.shift(), ['get', rcKey(3), undefined]);
+  t.deepEqual(log.shift(), ['get', esKey(3), '1']);
   t.deepEqual(log, []);
 
   await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
-  t.deepEqual(log.shift(), ['get', rcKey(4), undefined]);
-  t.deepEqual(log.shift(), ['get', esKey(4), '1']);
   t.deepEqual(log.shift(), ['set', dataKey(4), thingVal('thing4')]);
   t.deepEqual(log.shift(), ['set', esKey(8), '1']);
+  t.deepEqual(log.shift(), ['get', rcKey(4), undefined]);
+  t.deepEqual(log.shift(), ['get', esKey(4), '1']);
   t.deepEqual(log, []);
 
   await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
   t.deepEqual(log.shift(), ['get', dataKey(2), thingVal('thing2')]);
+  t.deepEqual(log.shift(), ['set', dataKey(5), thingVal('thing5')]);
   t.deepEqual(log.shift(), ['get', rcKey(5), undefined]);
   t.deepEqual(log.shift(), ['get', esKey(5), '1']);
-  t.deepEqual(log.shift(), ['set', dataKey(5), thingVal('thing5')]);
   t.deepEqual(log, []);
 
   await readHeld('thing1'); // reanimate t1, evict t6 - [t1 t2 t8 t7]
   t.deepEqual(log.shift(), ['get', dataKey(1), thingVal('thing1')]);
+  t.deepEqual(log.shift(), ['set', dataKey(6), thingVal('thing6')]);
   t.deepEqual(log.shift(), ['get', rcKey(6), undefined]);
   t.deepEqual(log.shift(), ['get', esKey(6), '1']);
-  t.deepEqual(log.shift(), ['set', dataKey(6), thingVal('thing6')]);
   t.deepEqual(log, []);
 
   await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
@@ -356,9 +356,9 @@ test.serial('exercise cache', async t => {
 
   await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
   t.deepEqual(log.shift(), ['get', dataKey(6), thingVal('thing6')]);
+  t.deepEqual(log.shift(), ['set', dataKey(2), thingVal('thing2 updated')]);
   t.deepEqual(log.shift(), ['get', rcKey(2), undefined]);
   t.deepEqual(log.shift(), ['get', esKey(2), '1']);
-  t.deepEqual(log.shift(), ['set', dataKey(2), thingVal('thing2 updated')]);
   t.deepEqual(log, []);
 
   await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
@@ -373,9 +373,9 @@ test.serial('exercise cache', async t => {
 
   await read(T3, 'thing3'); // reanimate t3, evict t7 - [t3 t4 t5 t6]
   t.deepEqual(log.shift(), ['get', dataKey(3), thingVal('thing3')]);
+  t.deepEqual(log.shift(), ['set', dataKey(7), thingVal('thing7')]);
   t.deepEqual(log.shift(), ['get', rcKey(7), undefined]);
   t.deepEqual(log.shift(), ['get', esKey(7), '1']);
-  t.deepEqual(log.shift(), ['set', dataKey(7), thingVal('thing7')]);
   t.deepEqual(log, []);
 
   await read(T2, 'thing2 updated'); // reanimate t2, evict t6 - [t2 t3 t4 t5]
