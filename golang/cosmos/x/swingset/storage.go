@@ -50,27 +50,25 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 	// Handle generic paths.
 	switch msg.Method {
 	case "set":
-		storage := NewStorage()
-		storage.Value = msg.Value
-		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, storage.Value)
-		keeper.SetStorage(cctx.Context, msg.Key, storage)
+		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
+		keeper.SetStorage(cctx.Context, msg.Key, msg.Value)
 		return "true", nil
 
 	case "get":
-		storage := keeper.GetStorage(cctx.Context, msg.Key)
-		if storage.Value == "" {
+		value := keeper.GetStorage(cctx.Context, msg.Key)
+		if value == "" {
 			return "null", nil
 		}
-		//fmt.Printf("Keeper.GetStorage gave us %s\n", storage.Value)
-		s, err := json.Marshal(storage.Value)
+		//fmt.Printf("Keeper.GetStorage gave us %bz\n", value)
+		bz, err := json.Marshal(value)
 		if err != nil {
 			return "", err
 		}
-		return string(s), nil
+		return string(bz), nil
 
 	case "has":
-		storage := keeper.GetStorage(cctx.Context, msg.Key)
-		if storage.Value == "" {
+		value := keeper.GetStorage(cctx.Context, msg.Key)
+		if value == "" {
 			return "false", nil
 		}
 		return "true", nil
@@ -92,8 +90,7 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 		for i, key := range keys.Keys {
 			ents[i] = make([]string, 2)
 			ents[i][0] = key
-			storage := keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
-			ents[i][1] = storage.Value
+			ents[i][i] = keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 		}
 		bytes, err := json.Marshal(ents)
 		if err != nil {
@@ -105,8 +102,7 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 		keys := keeper.GetKeys(cctx.Context, msg.Key)
 		vals := make([]string, len(keys.Keys))
 		for i, key := range keys.Keys {
-			storage := keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
-			vals[i] = storage.Value
+			vals[i] = keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {

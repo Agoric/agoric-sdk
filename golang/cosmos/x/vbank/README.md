@@ -57,7 +57,7 @@ To use Cosmos governance to change the `fee_epoch_duration_blocks` value:
 
 ```sh
 $ agd query vbank params
-{"fee_epoch_duration_blocks":"720"}
+fee_epoch_duration_blocks: "720"
 $ cat <<EOF > epoch-duration-proposal.json
 {
   "title": "Vbank param-change test",
@@ -65,18 +65,18 @@ $ cat <<EOF > epoch-duration-proposal.json
   "changes": [
     {
       "subspace": "vbank",
-      "key": "feeepochdurationblocks",
+      "key": "fee_epoch_duration_blocks",
       "value": "30"
     }
   ],
   "deposit": "1000000ubld"
 }
 EOF
-$ agd tx gov submit-proposal param-change epochdur.json --from=mykey --chain-id=agoric
+$ agd tx gov submit-proposal param-change epoch-duration-proposal.json --from=mykey --chain-id=agoric
 # Then vote on the proposal.
 $ agd tx vote ...
 # After passing,
 $ agd query vbank params
-{"fee_epoch_duration_blocks":"30"}
+fee_epoch_duration_blocks: "30"
 $
 ```
