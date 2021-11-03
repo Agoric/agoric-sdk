@@ -1264,7 +1264,7 @@ test('xs-worker default manager type', async t => {
   );
 });
 
-async function boydTest(t, freq) {
+async function reapTest(t, freq) {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
@@ -1274,7 +1274,7 @@ async function boydTest(t, freq) {
     }
     return dispatch;
   }
-  await kernel.createTestVat('vat1', setup, {}, { boydFrequency: freq });
+  await kernel.createTestVat('vat1', setup, {}, { reapInterval: freq });
   const vat1 = kernel.vatNameToID('vat1');
   t.deepEqual(log, []);
 
@@ -1296,7 +1296,7 @@ async function boydTest(t, freq) {
       },
     ];
   }
-  function matchBoyd() {
+  function matchReap() {
     return ['bringOutYourDead'];
   }
 
@@ -1308,28 +1308,28 @@ async function boydTest(t, freq) {
   for (let i = 0; i < 100; i += 1) {
     t.deepEqual(log.shift(), matchMsg(i));
     if (freq !== 'never' && (i + 1) % freq === 0) {
-      t.deepEqual(log.shift(), matchBoyd());
+      t.deepEqual(log.shift(), matchReap());
     }
   }
   t.deepEqual(log, []);
 }
 
-test('boyd frequency 1', async t => {
-  await boydTest(t, 1);
+test('reap interval 1', async t => {
+  await reapTest(t, 1);
 });
 
-test('boyd frequency 2', async t => {
-  await boydTest(t, 2);
+test('reap interval 2', async t => {
+  await reapTest(t, 2);
 });
 
-test('boyd frequency 5', async t => {
-  await boydTest(t, 5);
+test('reap interval 5', async t => {
+  await reapTest(t, 5);
 });
 
-test('boyd frequency 17', async t => {
-  await boydTest(t, 17);
+test('reap interval 17', async t => {
+  await reapTest(t, 17);
 });
 
-test('boyd frequency never', async t => {
-  await boydTest(t, 'never');
+test('reap interval never', async t => {
+  await reapTest(t, 'never');
 });

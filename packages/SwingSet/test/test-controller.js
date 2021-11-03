@@ -247,7 +247,7 @@ test.serial('bootstrap export', async t => {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
-    while (c.dump().boydQueue.length) {
+    while (c.dump().reapQueue.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }

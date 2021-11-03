@@ -12,7 +12,7 @@ async function vatSyscallFailure(t, beDynamic) {
         sourceSpec: new URL('vat-syscall-failure.js', import.meta.url).pathname,
       },
     },
-    defaultBoydFrequency: 'never',
+    defaultReapInterval: 'never',
     vats: {
       bootstrap: {
         sourceSpec: new URL('bootstrap-syscall-failure.js', import.meta.url)

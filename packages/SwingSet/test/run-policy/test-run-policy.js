@@ -12,7 +12,7 @@ import {
 
 async function testCranks(t, mode) {
   const config = {
-    defaultBoydFrequency: 'never',
+    defaultReapInterval: 'never',
     vats: {
       left: {
         sourceSpec: new URL('vat-policy-left.js', import.meta.url).pathname,

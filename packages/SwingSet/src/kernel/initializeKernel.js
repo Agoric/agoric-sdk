@@ -25,7 +25,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   assert(!wasInitialized);
   kernelKeeper.createStartingKernelState(
     config.defaultManagerType || 'local',
-    config.defaultBoydFrequency || 1,
+    config.defaultReapInterval || 1,
   );
 
   if (config.bundles) {
@@ -69,7 +69,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'enableVatstore',
         'virtualObjectCacheSize',
         'useTranscript',
-        'boydFrequency',
+        'reapInterval',
       ]);
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
@@ -77,15 +77,15 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       if (!creationOptions.managerType) {
         creationOptions.managerType = kernelKeeper.getDefaultManagerType();
       }
-      if (!creationOptions.boydFrequency) {
-        creationOptions.boydFrequency = kernelKeeper.getDefaultBoydFrequency();
+      if (!creationOptions.reapInterval) {
+        creationOptions.reapInterval = kernelKeeper.getDefaultReapInterval();
       }
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
-      vatKeeper.initializeBoydCountdown(creationOptions.boydFrequency);
+      vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
         // about creation/termination of dynamic vats.
