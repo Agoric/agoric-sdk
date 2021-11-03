@@ -3,8 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountMath } from '@agoric/ertp';
 import { governedParameterTerms } from '../../../src/params';
+import { ammMock } from '../../mockAmm';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -26,24 +26,21 @@ const build = async (
   electorateInstance,
 ) => {
   const [moolaBrand] = brands;
-  const [moolaPayment] = payments;
   const [moolaIssuer] = issuers;
 
   const loanParams = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
-    poolFee: 24n,
-    protocolFee: 6n,
   };
 
   const priceAuthorityKit = await E(priceAuthorityVat).makePriceAuthority();
   const terms = harden({
-    autoswapInstall: installations.autoswap,
     priceAuthority: priceAuthorityKit.priceAuthority,
     loanParams,
     liquidationInstall: installations.liquidateMinimum,
     timerService: timer,
     governedParams: governedParameterTerms,
+    ammPublicFacet: ammMock,
   });
   const privateTreasuryArgs = { feeMintAccess };
 
@@ -68,33 +65,21 @@ const build = async (
 
   const {
     issuers: { RUN: runIssuer },
-    brands: { Governance: govBrand, RUN: runBrand },
+    brands: { RUN: runBrand },
   } = await E(zoe).getTerms(governedInstance);
 
   const rates = {
-    initialPrice: makeRatio(10000n, runBrand, 5n, moolaBrand),
     initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate: makeRatio(250n, runBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, runBrand, BASIS_POINTS),
   };
 
-  const addTypeInvitation = await E(
-    E(governor).getCreatorFacet(),
-  ).makeAddTypeInvitation(moolaIssuer, 'Moola', rates);
-  const proposal = harden({
-    give: {
-      Collateral: AmountMath.make(moolaBrand, 1000n),
-    },
-    want: { Governance: AmountMath.makeEmpty(govBrand) },
-  });
-
-  const seat = await E(zoe).offer(
-    addTypeInvitation,
-    proposal,
-    harden({ Collateral: moolaPayment }),
+  await E(E(governor).getCreatorFacet()).addVaultType(
+    moolaIssuer,
+    'Moola',
+    rates,
   );
-  await E(seat).getOfferResult();
 
   const QUOTE_INTERVAL = 24n * 60n * 60n;
   const moolaPriceAuthority = await E(priceAuthorityVat).makeFakePriceAuthority(

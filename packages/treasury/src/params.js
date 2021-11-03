@@ -4,9 +4,6 @@ import './types.js';
 
 import { buildParamManager, ParamType } from '@agoric/governance';
 
-export const POOL_FEE_KEY = 'PoolFee';
-export const PROTOCOL_FEE_KEY = 'ProtocolFee';
-
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
 
@@ -16,8 +13,7 @@ export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
 export const governedParameterTerms = {
-  loanParams: [POOL_FEE_KEY, PROTOCOL_FEE_KEY],
-  poolParams: [
+  vaultParams: [
     CHARGING_PERIOD_KEY,
     RECORDING_PERIOD_KEY,
     INITIAL_MARGIN_KEY,
@@ -27,31 +23,8 @@ export const governedParameterTerms = {
   ],
 };
 
-/** @type {{ FEE: 'fee', POOL: 'pool' }} */
-export const ParamKey = {
-  FEE: 'fee',
-  POOL: 'pool',
-};
-
-/** @type {MakeFeeParamManager} */
-export const makeFeeParamManager = ammFees => {
-  // @ts-ignore buildParamManager doesn't describe all the update methods
-  return buildParamManager([
-    {
-      name: POOL_FEE_KEY,
-      value: ammFees.poolFee,
-      type: ParamType.NAT,
-    },
-    {
-      name: PROTOCOL_FEE_KEY,
-      value: ammFees.protocolFee,
-      type: ParamType.NAT,
-    },
-  ]);
-};
-
-/** @type {MakePoolParamManager} */
-export const makePoolParamManager = (loanParams, rates) => {
+/** @type {MakeVaultParamManager} */
+export const makeVaultParamManager = (loanParams, rates) => {
   // @ts-ignore buildParamManager doesn't describe all the update methods
   return buildParamManager([
     {

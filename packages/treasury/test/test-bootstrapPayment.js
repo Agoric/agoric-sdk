@@ -22,7 +22,7 @@ const dirname = path.dirname(filename);
 const stablecoinRoot = `${dirname}/../src/stablecoinMachine.js`;
 const liquidationRoot = `${dirname}/../src/liquidateMinimum.js`;
 const autoswapRoot =
-  '@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js';
+  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
 const governanceRoot = '@agoric/governance/src/contractGovernor.js';
 const electorateRoot = '@agoric/governance/src/committee.js';
 
@@ -101,7 +101,7 @@ const setUpZoeForTest = async setJig => {
    * @property {ContractFacet} zcf
    * @property {IssuerRecord} runIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
-   * @property {ERef<MultipoolAutoswapPublicFacet>} autoswap
+   * @property {ERef<XYKAMMPublicFacet>} amm
    */
 
   const {

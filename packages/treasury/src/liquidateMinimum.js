@@ -2,15 +2,11 @@
 
 import { E } from '@agoric/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
-import { assert, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
 import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from './makeTracer.js';
-
-// TODO(hibbert): export from autoswap
-const AutoswapInsufficientMsg = / is insufficient to buy amountOut /;
 
 const trace = makeTracer('LM');
 
@@ -23,8 +19,8 @@ const trace = makeTracer('LM');
  */
 
 /** @type {ContractStartFn} */
-export async function start(zcf) {
-  const { autoswap } = zcf.getTerms();
+async function start(zcf) {
+  const { amm } = zcf.getTerms();
 
   function makeDebtorHook(runDebt) {
     const runBrand = runDebt.brand;
@@ -32,11 +28,9 @@ export async function start(zcf) {
       const {
         give: { In: amountIn },
       } = debtorSeat.getProposal();
+      const inBefore = debtorSeat.getAmountAllocated('In');
 
-      trace(`Proposal: ${q(debtorSeat.getProposal())}`);
-
-      const swapInvitation = E(autoswap).makeSwapOutInvitation();
-
+      const swapInvitation = E(amm).makeSwapOutInvitation();
       const liqProposal = harden({
         give: { In: amountIn },
         want: { Out: runDebt },
@@ -51,21 +45,17 @@ export async function start(zcf) {
         debtorSeat,
       );
 
-      // if swapOut failed for insufficient funds, we'll sell it all
-      async function onSwapOutFail(error) {
-        const strategy = makeDefaultLiquidationStrategy(autoswap);
+      // if swapOut failed to make the trade, we'll sell it all
+      async function onSwapOutNoTrade() {
+        const strategy = makeDefaultLiquidationStrategy(amm);
         trace(`onSwapoutFail`);
-        assert(
-          error.message.match(AutoswapInsufficientMsg),
-          `unable to liquidate: ${error}`,
-        );
 
         const {
           deposited: sellAllDeposited,
           userSeatPromise: sellAllSeat,
         } = await offerTo(
           zcf,
-          strategy.makeInvitation(),
+          strategy.makeInvitation(runDebt),
           undefined, // The keywords were mapped already
           strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
           debtorSeat,
@@ -82,9 +72,13 @@ export async function start(zcf) {
       // await deposited, but we don't need the value. We'll need it to have
       // resolved in both branches, so can't put it in Promise.all.
       await deposited;
-      await E(liqSeat)
-        .getOfferResult()
-        .catch(onSwapOutFail);
+      await E(liqSeat).getOfferResult();
+
+      if (AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))) {
+        trace('trying again because nothing was liquidated');
+        await onSwapOutNoTrade();
+      }
+
       debtorSeat.exit();
     };
   }
@@ -97,9 +91,10 @@ export async function start(zcf) {
   return harden({ creatorFacet });
 }
 
-export function makeLiquidationStrategy(creatorFacet) {
+/** @type {MakeLiquidationStrategy} */
+function makeLiquidationStrategy(creatorFacet) {
   async function makeInvitation(runDebt) {
-    return creatorFacet.makeDebtorInvitation(runDebt);
+    return E(creatorFacet).makeDebtorInvitation(runDebt);
   }
 
   function keywordMapping() {
@@ -122,3 +117,8 @@ export function makeLiquidationStrategy(creatorFacet) {
     makeProposal,
   };
 }
+
+harden(start);
+harden(makeLiquidationStrategy);
+
+export { start, makeLiquidationStrategy };

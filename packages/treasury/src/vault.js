@@ -4,10 +4,11 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
-  divideBy,
-  multiplyBy,
   getAmountOut,
   makeRatioFromAmounts,
+  ceilMultiplyBy,
+  floorMultiplyBy,
+  floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -40,7 +41,6 @@ export function makeVaultKit(
   zcf,
   manager,
   runMint,
-  autoswap,
   priceAuthority,
   loanParamManager,
   startTimeStamp,
@@ -99,7 +99,8 @@ export function makeVaultKit(
       runBrand,
     );
 
-    return divideBy(getAmountOut(quoteAmount), manager.getLiquidationMargin());
+    // floorDivide because we want the debt ceiling lower
+    return floorDivideBy(getAmountOut(quoteAmount), manager.getInitialMargin());
   }
 
   async function assertSufficientCollateral(collateralAmount, wantedRun) {
@@ -342,7 +343,7 @@ export function makeVaultKit(
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
-      fee = multiplyBy(proposal.want.RUN, manager.getLoanFee());
+      fee = ceilMultiplyBy(proposal.want.RUN, manager.getLoanFee());
       toMint = AmountMath.add(proposal.want.RUN, fee);
       newDebt = AmountMath.add(runDebt, toMint);
     } else if (proposal.give.RUN) {
@@ -388,8 +389,11 @@ export function makeVaultKit(
       // We can pro-rate maxDebt because the quote is either linear (price is
       // unchanging) or super-linear (meaning it's an AMM. When the volume sold
       // falls, the proceeds fall less than linearly, so this is a conservative
-      // choice.)
-      const maxDebtAfter = multiplyBy(vaultCollateral, priceOfCollateralInRun);
+      // choice.) floorMultiply because the debt ceiling should constrain more.
+      const maxDebtAfter = floorMultiplyBy(
+        vaultCollateral,
+        priceOfCollateralInRun,
+      );
       assert(
         AmountMath.isGTE(maxDebtAfter, newDebt),
         X`The requested debt ${q(
@@ -439,7 +443,7 @@ export function makeVaultKit(
 
     // todo trigger process() check right away, in case the price dropped while we ran
 
-    const fee = multiplyBy(wantedRun, manager.getLoanFee());
+    const fee = ceilMultiplyBy(wantedRun, manager.getLoanFee());
     if (AmountMath.isEmpty(fee)) {
       throw seat.fail(
         Error('loan requested is too small; cannot accrue interest'),
