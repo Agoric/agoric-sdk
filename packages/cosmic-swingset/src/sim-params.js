@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 
-const makeBeans = int => ({ int: `${Nat(int)}` });
+const makeBeans = whole => ({ whole: `${Nat(whole)}` });
 
 // This should roughly match the values in
 // `agoric-sdk/golang/cosmos/x/swingset/types/sim-params.go`.

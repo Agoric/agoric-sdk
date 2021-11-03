@@ -58,13 +58,13 @@ const parseParams = params => {
           beans,
           X`${key} beans must be an object, not ${beans}`,
         );
-        const { int, ...rest } = beans;
+        const { whole, ...rest } = beans;
         assert.equal(
           Object.keys(rest).length,
           0,
           X`${key} beans must have no unexpected properties; had ${rest}`,
         );
-        return [key, stringToNat(int)];
+        return [key, stringToNat(whole)];
       }),
   );
 

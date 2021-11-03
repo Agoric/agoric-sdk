@@ -37,8 +37,8 @@ message Params {
 message Beans {
   option (gogoproto.equal) = true;
 
-  string int = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+  string whole = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint",
     (gogoproto.nullable) = false
   ];
 }

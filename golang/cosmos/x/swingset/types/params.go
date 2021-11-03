@@ -15,9 +15,9 @@ var (
 	ParamStoreKeyFeeUnitPrice = []byte("fee_unit_price")
 )
 
-func NewBeans(i sdk.Int) Beans {
+func NewBeans(u sdk.Uint) Beans {
 	return Beans{
-		Int: i,
+		Whole: u,
 	}
 }
 
@@ -65,13 +65,9 @@ func validateBeansPerUnit(i interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
-	for unit, beans := range v {
+	for unit := range v {
 		if unit == "" {
 			return fmt.Errorf("unit must not be empty")
-		}
-
-		if beans.Int.IsNegative() {
-			return fmt.Errorf("beans per unit %s must not be negative: %s", unit, beans.Int)
 		}
 	}
 
