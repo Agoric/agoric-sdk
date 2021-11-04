@@ -24,9 +24,17 @@ There are three entry points in ERTP:
 This document will only analyze `AmountMath.coerce`, but the
 methodology for validating inputs remains the same for the ERTP functions.
 
-`AmountMath.coerce` takes a `brand` and an `amount` and returns a new `amount`, but throws if the amount does not match the brand, or if the amount is not a valid amount generally.
+`AmountMath.coerce` takes a `brand` and an `amount` and returns a new
+`amount`, but throws if the amount's brand is not identical to the
+`brand` argument, or if the amount is not a valid amount generally.
+(Note that we do not check whether the `assetKind` according to the
+`brand` argument matches the implicit `assetKind` of the `amount`
+argument's value. This is because checking the `assetKind` according
+to the `brand` would currently require an asynchronous call on the
+brand.)
 
-For `coerce` to work according to spec, if the user passes in an invalid brand or an invalid amount, we must throw. 
+For `coerce` to work according to spec, if the user passes in an
+invalid brand or an invalid amount, the function should throw. 
 
 ## Valid amounts
 
@@ -49,7 +57,10 @@ There are a number of ways in which amounts can be invalid:
 
 ### Not a CopyRecord
 
-* **The danger**: an object that isn’t a `copyRecord` can have `getters` that return different values at different times, so checking the value is no guarantee that the value will be the same when accessed later. For example:
+* **The danger**: an object that isn’t a `copyRecord` can have
+  `getters` that return different values at different times, so
+  checking the value would be no guarantee that the value will be the
+  same when accessed later. For example:
 
 ```js
 const object1 = {};
@@ -74,25 +85,33 @@ Object.defineProperty(object1, 'value', {
  
 `Object.freeze(object1)` is not helpful here, as the `getter` is not changing, the value that is being returned is. `harden` also does not prevent `value` from changing. ​​When harden does encounter an accessor property during its traversal, it does not "read" the property, and thereby does not call the getter. Rather, it proceeds to recursively harden the getter and setter themselves. That's because, for an accessor property, its current value isn't, for this purpose, considered part of its API surface, but rather part of the behavior of that API. Thus, we need an additional way to ensure that the value of `checked` cannot change.
 
-`isPassStyleOf` throws on objects with accessor properties like the object defined above.
+`passStyleOf` throws on objects with accessor properties like the
+object defined above. (In the future, `passStyleOf` may allow far
+objects (passStyleOf === 'remotable') to have getters. When that
+change happens, `passStyleOf` would not throw in that case.)
 
 ### Is a CopyRecord and is a proxy
 
 * **The dangers**: 
-  1) A proxy can throw on any property access, but only the first
-     time. Any time it does *not* throw, it *must* return the same
+  1) A proxy can throw on any property access. Any time it does *not* throw, it *must* return the same
      value as before. 
-  2) A proxy can mount a reentrancy attack where a proxy handler is running while code is executing, and can reenter the code while the original is still executing. 
+  2) A proxy can mount a reentrancy attack. When the property is
+     accessed, the proxy handler is called, and the handler can
+     reenter the code while the original is still waiting for that
+     property access to return. 
 
-Commit points are a good mitigation for #1 - do all of your checks upfront so that any throwing causes you to fail fast, before any state is changed.
-
-Some mitigation for #2 are: 
+To mitigate the effects of proxies: 
 1. Create a new object with a spread operator so that the proxy isn't
    used further. 
 2. Destructure and then never use the original object again. 
 3. Use `pureCopy`. `pureCopy` ensures the object is not a proxy, but `pureCopy` only works for copyRecords that are pure data, meaning no remotables and no promises.
 
-We aim to address proxy-based reentrancy by other, lower-level means, thus making `passStyleOf(amount) === ‘copyRecord’` sufficient protection against proxy-based reentrancy as well, but we should note that proxy-based reentrancy is not a threat across a vat boundary because it requires synchronous access.
+We aim to address proxy-based reentrancy by other, lower-level means.
+Specifically, `passStyleOf(x) === 'copyRecord'` or 
+`passStyleOf(x) === 'copyArray'` would guarantee that `x` is not a proxy, protecting
+against dangers #1 and #2. We should note that proxy-based reentrancy
+is not a threat across a vat boundary because it requires synchronous
+access.
 
 ## Invalid brands
 
@@ -133,8 +152,8 @@ valid `brand` and `value` properties.
 If `allegedAmount` were a proxy, we would either throw in step 3 (the
 destructuring), or we successfully get both the `allegedBrand` and
 `allegedValue` and never touch the proxy again. Currently, we do not
-attempt to prevent proxy-based reentrancy, so this is the full extent
-of our defense.
+attempt to prevent proxy-based reentrancy, so defending against danger
+#1 is the full extent of our defense.
 
 
 
