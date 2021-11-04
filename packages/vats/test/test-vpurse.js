@@ -273,8 +273,9 @@ test('vpurse.deposit', async t => {
 });
 
 test('vpurse.deposit promise', async t => {
-  t.plan(2);
+  t.plan(1);
   const { issuer, mint, brand, vpurse } = setup(t);
+
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);

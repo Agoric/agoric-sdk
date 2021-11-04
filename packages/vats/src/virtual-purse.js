@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
 import '@agoric/ertp/exported.js';
@@ -66,34 +66,10 @@ function makeVirtualPurse(vpc, kit) {
     redeem = amount => E(myEscrowPurse).withdraw(amount);
   }
 
-  /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit();
-
-  /** @type {ERef<Amount>} */
-  let lastBalance = E.get(balanceNotifier.getUpdateSince()).value;
-
-  // Robustly observe the balance.
-  const fail = reason => {
-    balanceUpdater.fail(reason);
-    const rej = Promise.reject(reason);
-    rej.catch(_ => {});
-    lastBalance = rej;
-  };
-  observeIteration(E(vpc).getBalances(brand), {
-    fail,
-    updateState(nonFinalValue) {
-      balanceUpdater.updateState(nonFinalValue);
-      lastBalance = nonFinalValue;
-    },
-    finish(completion) {
-      balanceUpdater.finish(completion);
-      lastBalance = completion;
-    },
-    // Propagate a failed balance properly if the iteration observer fails.
-  }).catch(fail);
+  /** @type {Notifier<Amount>} */
+  const balanceNotifier = makeNotifierFromAsyncIterable(
+    E(vpc).getBalances(brand),
+  );
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = Far('Virtual Deposit Facet', {
@@ -124,9 +100,7 @@ function makeVirtualPurse(vpc, kit) {
     getAllegedBrand() {
       return brand;
     },
-    getCurrentAmount() {
-      return lastBalance;
-    },
+    getCurrentAmount: () => E.get(balanceNotifier.getUpdateSince()).value,
     getCurrentAmountNotifier() {
       return balanceNotifier;
     },
