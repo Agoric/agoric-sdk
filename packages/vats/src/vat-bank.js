@@ -3,6 +3,7 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeStore, makeWeakStore } from '@agoric/store';
@@ -45,19 +46,45 @@ async function* generateBalances({
   registerBalanceUpdater,
   notifierThresholdAmount,
 }) {
+  const {
+    brand: thresholdBrand,
+    value: thresholdValue,
+  } = notifierThresholdAmount;
+  assert.equal(thresholdBrand, brand);
+  assert.typeof(thresholdValue, 'bigint');
+  const notifierThresholdValue = Nat(thresholdValue);
+
   /** @type {PromiseRecord<Amount>} */
   let amountPK = makePromiseKit();
 
-  const getUpdateSinceLast = async () => {
-    const amount = await amountPK.promise;
-    // Immediately switch to the next promise.
-    amountPK = makePromiseKit();
-    return amount;
-  };
+  // Initially unsatisfiable notifier thresholds to ensure the first balance
+  // update is notified.
+  let highWaterMark = -notifierThresholdValue;
+  let lowWaterMark = notifierThresholdValue;
+
+  // TODO: Use bankCall messages to declare high- and low- water marks, which
+  // would either return a promise for the value now if the balance is already
+  // out of range, or make a one-shot subscription that publishes via the
+  // registered balance updater when it changes to be out of range.  Let them
+  // race against each other.
 
   const balanceUpdater = Far(`${denom} updater`, stringValue => {
     const value = BigInt(stringValue);
+
+    if (lowWaterMark < value && value < highWaterMark) {
+      // Within range, don't notify.
+      return;
+    }
+
     amountPK.resolve(AmountMath.make(brand, value));
+
+    // Set new high- and low- water marks.
+    highWaterMark = value + notifierThresholdValue;
+    lowWaterMark = value - notifierThresholdValue;
+    if (lowWaterMark < 0n && value > 0n) {
+      // Always notify when we first hit zero.
+      lowWaterMark = 0n;
+    }
   });
   registerBalanceUpdater(balanceUpdater);
 
@@ -68,27 +95,12 @@ async function* generateBalances({
     denom,
   }).then(balanceUpdater);
 
-  // Always yield the initial balance.
-  let lastNotified = await getUpdateSinceLast();
-  yield lastNotified;
-
   while (true) {
     // eslint-disable-next-line no-await-in-loop
-    const amount = await getUpdateSinceLast();
-
-    // Only notify if the balance has changed by more than the threshold.
-    const [hi, lo] = AmountMath.isGTE(amount, lastNotified)
-      ? [amount, lastNotified]
-      : [lastNotified, amount];
-    const absDiff = AmountMath.subtract(hi, lo);
-    if (
-      AmountMath.isGTE(absDiff, notifierThresholdAmount) &&
-      // Even with no threshold, we avoid notifying if there is no change.
-      !AmountMath.isEmpty(absDiff)
-    ) {
-      lastNotified = amount;
-      yield amount;
-    }
+    const amount = await amountPK.promise;
+    // Immediately switch to the next promise.
+    amountPK = makePromiseKit();
+    yield amount;
   }
 }
 
@@ -355,7 +367,7 @@ export function buildRootObject(_vatPowers) {
           const payment = await kit.payment;
           await (payment && E(escrowPurse).deposit(payment));
 
-          const { notifierThresholdAmount = AmountMath.make(brand, 1n) } = kit;
+          const { notifierThresholdAmount = AmountMath.makeEmpty(brand) } = kit;
 
           /** @type {AssetRecord} */
           const assetRecord = harden({
