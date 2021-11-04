@@ -1,9 +1,9 @@
 import './CardItem.scss';
 
-const CardItem = ({ children }) => {
+const CardItem = ({ children, hideDivider }) => {
   return (
     <div className="CardItem">
-      <div className="Divider" />
+      {!hideDivider && <div className="Divider" />}
       {children}
     </div>
   );

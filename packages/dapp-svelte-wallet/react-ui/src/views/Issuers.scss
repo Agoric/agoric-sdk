@@ -1,0 +1,35 @@
+.Card-wrapper {
+  margin-top: 16px;
+}
+
+.Import-button {
+  margin-top: 16px;
+}
+
+.Left {
+  float: left;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 16px;
+}
+
+.Right {
+  margin-top: 9px;
+  float: right;
+}
+
+.Left > img {
+  margin-right: 16px;
+}
+
+.Board {
+  font-weight: 800;
+}
+
+.Top-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}

@@ -83,14 +83,30 @@ const paymentsReducer = (_, newPayments) =>
     .map(payment => ({ ...payment, id: payment.meta.id }))
     .sort((a, b) => cmp(a.id, b.id));
 
+const pendingPurseCreationsReducer = (
+  pendingPurseCreations,
+  { issuerId, isPending },
+) => {
+  if (isPending) pendingPurseCreations.add(issuerId);
+  else pendingPurseCreations.delete(issuerId);
+
+  return new Set(pendingPurseCreations);
+};
+
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
+  const [walletBridge, setWalletBridge] = useState(null);
   const [inbox, setInbox] = useReducer(inboxReducer, null);
   const [purses, setPurses] = useReducer(pursesReducer, null);
   const [dapps, setDapps] = useReducer(dappsReducer, null);
   const [contacts, setContacts] = useReducer(contactsReducer, null);
   const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
+
+  const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
+    pendingPurseCreationsReducer,
+    new Set(),
+  );
 
   const state = {
     connectionState,
@@ -107,9 +123,22 @@ const Provider = ({ children }) => {
     setPayments,
     issuers,
     setIssuers,
+    pendingPurseCreations,
+    setPendingPurseCreations,
+    walletBridge,
+    setWalletBridge,
   };
 
-  useDebugLogging(state, [inbox, purses, dapps, contacts, payments, issuers]);
+  useDebugLogging(state, [
+    inbox,
+    purses,
+    dapps,
+    contacts,
+    payments,
+    issuers,
+    pendingPurseCreations,
+    walletBridge,
+  ]);
 
   return (
     <ApplicationContext.Provider value={state}>
