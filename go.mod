@@ -4,8 +4,8 @@ go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.9
-	github.com/cosmos/cosmos-sdk v0.44.0
-	github.com/cosmos/ibc-go v1.1.0
+	github.com/cosmos/cosmos-sdk v0.44.2
+	github.com/cosmos/ibc-go v1.2.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0

@@ -6,6 +6,43 @@ export const MINT_DENOM = 'ubld';
 export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 
+export const DENOM_METADATA = [
+  {
+    name: 'Agoric Staking Token',
+    description: 'The token used by delegates to stake on the Agoric chain',
+    denom_units: [
+      {
+        denom: 'ubld',
+        exponent: 0,
+      },
+      {
+        denom: 'bld',
+        exponent: 6,
+      },
+    ],
+    base: 'ubld',
+    display: 'bld',
+    symbol: 'BLD',
+  },
+  {
+    name: 'Agoric Stable Local Currency',
+    description: 'The stable local currency ($USD) used by the Agoric chain',
+    denom_units: [
+      {
+        denom: 'urun',
+        exponent: 0,
+      },
+      {
+        denom: 'run',
+        exponent: 6,
+      },
+    ],
+    base: 'urun',
+    display: 'run',
+    symbol: 'RUN',
+  },
+];
+
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 
@@ -136,6 +173,8 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   // between exports in order to be able to carry forward IBC conns.
   genesis.app_state.ibc = initState.ibc;
   genesis.app_state.capability = initState.capability;
+
+  genesis.app_state.bank.denom_metadata = DENOM_METADATA;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;

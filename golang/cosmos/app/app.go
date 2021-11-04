@@ -377,7 +377,7 @@ func NewAgoricApp(
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
-		appCodec, keys[swingset.StoreKey],
+		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
 		callToController,
 	)
@@ -800,6 +800,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
 
 	return paramsKeeper

@@ -21,12 +21,38 @@ func GetQueryCmd(storeKey string) *cobra.Command {
 	}
 	swingsetQueryCmd.AddCommand(
 		GetCmdGetEgress(storeKey),
+		GetCmdQueryParams(storeKey),
 		GetCmdGetStorage(storeKey),
 		GetCmdGetKeys(storeKey),
 		GetCmdMailbox(storeKey),
 	)
 
 	return swingsetQueryCmd
+}
+
+func GetCmdQueryParams(queryRoute string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Args:  cobra.NoArgs,
+		Short: "Query swingset params",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(&res.Params)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
 }
 
 func GetCmdGetEgress(queryRoute string) *cobra.Command {

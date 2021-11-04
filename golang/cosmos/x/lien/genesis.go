@@ -10,10 +10,10 @@ func DefaultGenesisState() types.GenesisState {
 	return types.GenesisState{}
 }
 
-// ValidateGenesisState returns whether genesisState is well-formed.
+// ValidateGenesis returns whether genesisState is well-formed.
 // Since liens can apply to otherwise empty accounts and the source of truth
 // is stored at the Swingset level, we can only validate the addresses.
-func ValidateGenesisState(genesisState types.GenesisState) error {
+func ValidateGenesis(genesisState types.GenesisState) error {
 	for _, lien := range genesisState.Liens {
 		_, err := sdk.AccAddressFromBech32(lien.Address)
 		if err != nil {

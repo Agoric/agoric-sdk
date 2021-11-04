@@ -17,6 +17,7 @@ import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getMeterProvider } from './kernel-stats.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
 const console = anylogger('fake-chain');
 
@@ -111,8 +112,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
+      const params = DEFAULT_SIM_SWINGSET_PARAMS;
       await blockManager(
-        { type: 'BEGIN_BLOCK', blockHeight, blockTime },
+        { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
         savedChainSends,
       );
       for (let i = 0; i < thisBlock.length; i += 1) {
@@ -125,12 +127,13 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
             ack: acknum,
             blockHeight,
             blockTime,
+            params,
           },
           savedChainSends,
         );
       }
       await blockManager(
-        { type: 'END_BLOCK', blockHeight, blockTime },
+        { type: 'END_BLOCK', blockHeight, blockTime, params },
         savedChainSends,
       );
 

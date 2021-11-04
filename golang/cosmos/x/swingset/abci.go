@@ -14,18 +14,20 @@ import (
 )
 
 type beginBlockAction struct {
-	Type        string `json:"type"`
-	StoragePort int    `json:"storagePort"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
-	ChainID     string `json:"chainID"`
+	Type        string       `json:"type"`
+	StoragePort int          `json:"storagePort"`
+	BlockHeight int64        `json:"blockHeight"`
+	BlockTime   int64        `json:"blockTime"`
+	ChainID     string       `json:"chainID"`
+	Params      types.Params `json:"params"`
 }
 
 type endBlockAction struct {
-	Type        string `json:"type"`
-	StoragePort int    `json:"storagePort"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	Type        string       `json:"type"`
+	StoragePort int          `json:"storagePort"`
+	BlockHeight int64        `json:"blockHeight"`
+	BlockTime   int64        `json:"blockTime"`
+	Params      types.Params `json:"params"`
 }
 
 type commitBlockAction struct {
@@ -43,6 +45,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),
+		Params:      keeper.GetParams(ctx),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {
@@ -65,6 +68,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		StoragePort: vm.GetPort("storage"),
+		Params:      keeper.GetParams(ctx),
 	}
 	b, err := json.Marshal(action)
 	if err != nil {

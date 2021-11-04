@@ -3,6 +3,7 @@ package agoric.swingset;
 
 import "gogoproto/gogo.proto";
 import "agoric/swingset/storage.proto";
+import "agoric/swingset/swingset.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 
@@ -10,6 +11,11 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 
 // Query provides defines the gRPC querier service
 service Query {
+  // Params queries params of the swingset module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/agoric/swingset/params";
+  }
+
   // Egress queries a provisioned egress.
   rpc Egress(QueryEgressRequest) returns (agoric.swingset.Egress) {
     option (google.api.http).get = "/agoric/swingset/egress/{peer}";
@@ -27,6 +33,15 @@ service Query {
     returns (QueryStorageKeysResponse) {
       option (google.api.http).get = "/agoric/swingset/storage/keys/{path}";
   }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
 }
 
 // QueryEgressRequest is the request type for the Query/Egress RPC method

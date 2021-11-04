@@ -18,16 +18,29 @@ type Querier struct {
 
 var _ types.QueryServer = Querier{}
 
+func (k Querier) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	params := k.GetParams(ctx)
+
+	return &types.QueryParamsResponse{
+		Params: params,
+	}, nil
+}
+
 func (k Querier) Storage(c context.Context, req *types.QueryStorageRequest) (*types.QueryStorageResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	storage := k.GetStorage(ctx, strings.Join(req.Path, "."))
+	value := k.GetStorage(ctx, strings.Join(req.Path, "."))
 
 	return &types.QueryStorageResponse{
-		Value: storage.Value,
+		Value: value,
 	}, nil
 }
 
@@ -64,12 +77,12 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	mb := k.GetMailbox(ctx, req.Peer.String())
-	if mb.Value == "" {
+	value := k.GetMailbox(ctx, req.Peer.String())
+	if value == "" {
 		return nil, status.Error(codes.NotFound, "mailbox not found")
 	}
 
 	return &types.QueryStorageResponse{
-		Value: mb.Value,
+		Value: value,
 	}, nil
 }

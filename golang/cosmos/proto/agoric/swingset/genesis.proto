@@ -2,6 +2,7 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "gogoproto/gogo.proto";
+import "agoric/swingset/swingset.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
@@ -12,4 +13,6 @@ message GenesisState {
         (gogoproto.jsontag)    = "storage",
         (gogoproto.moretags)   = "yaml:\"storage\""
     ];
+
+    Params params = 2 [(gogoproto.nullable) = false];
 }

@@ -61,9 +61,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 
 // nolint: unparam
 func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	storage := keeper.GetStorage(ctx, path)
-	value := storage.Value
-
+	value := keeper.GetStorage(ctx, path)
 	if value == "" {
 		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get storage %+v", path)
 	}
@@ -97,8 +95,7 @@ func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	peer := path[0]
 
-	mailbox := keeper.GetMailbox(ctx, peer)
-	value := mailbox.Value
+	value := keeper.GetMailbox(ctx, peer)
 
 	if value == "" {
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
