@@ -29,6 +29,10 @@ const QUOTE_INTERVAL = 5 * 60;
 
 const BASIS_POINTS_DENOM = 10000n;
 
+// Minimum number of decimal places to consider before publishing a notifier
+// update from the bank.
+const BANK_BALANCE_UPDATE_DECIMAL_PLACES = 2;
+
 const CENTRAL_DENOM_NAME = 'urun';
 // On-chain timer device is in seconds, so scale to milliseconds.
 const CHAIN_TIMER_DEVICE_SCALE = 1000;
@@ -311,12 +315,27 @@ export function buildRootObject(vatPowers, vatParameters) {
         assert(brand);
         assert(issuer);
 
+        // Ensure the bank purses don't fire balance updates too frequently.
+        const { decimalPlaces = 0 } = await E(brand).getDisplayInfo();
+        const notifierThresholdAmount = AmountMath.make(
+          brand,
+          10n **
+            BigInt(
+              Math.max(decimalPlaces - BANK_BALANCE_UPDATE_DECIMAL_PLACES, 0),
+            ),
+        );
+
         const makeMintKit = async () => {
           // We need to obtain the mint in order to mint the tokens when they
           // come from the bank.
           // FIXME: Be more careful with the mint.
           const mint = await E(vats.mints).getMint(issuerName);
-          return harden({ brand, issuer, mint });
+          return harden({
+            brand,
+            issuer,
+            mint,
+            notifierThresholdAmount,
+          });
         };
 
         let kitP;
