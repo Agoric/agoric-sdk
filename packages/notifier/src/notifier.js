@@ -155,11 +155,12 @@ export const makeNotifierKit = (...args) => {
  * Adaptor from async iterable to notifier.
  *
  * @template T
- * @param {AsyncIterable<T>} asyncIterable
+ * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @returns {Notifier<T>}
  */
-export const makeNotifierFromAsyncIterable = asyncIterable => {
-  const iterator = asyncIterable[Symbol.asyncIterator]();
+export const makeNotifierFromAsyncIterable = asyncIterableP => {
+  /** @type {ERef<AsyncIterator<T>>} */
+  const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
@@ -192,9 +193,8 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
 
       // otherwise return a promise for the next state.
       if (!optNextPromise) {
-        const nextIterResultP = iterator.next();
-        optNextPromise = E.when(
-          nextIterResultP,
+        const nextIterResultP = E(iteratorP).next();
+        optNextPromise = nextIterResultP.then(
           ({ done, value }) => {
             assert(currentUpdateCount);
             currentUpdateCount = done ? undefined : currentUpdateCount + 1;
@@ -220,7 +220,10 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
   });
 
   return Far('notifier', {
-    ...asyncIterable,
+    // Don't leak the original asyncIterableP since it may be remote and we also
+    // want the same semantics for this exposed iterable and the baseNotifier.
+    ...makeAsyncIterableFromNotifier(baseNotifier),
+    // TODO stop exposing baseNotifier methods directly
     ...baseNotifier,
 
     /**
