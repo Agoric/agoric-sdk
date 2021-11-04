@@ -74,6 +74,20 @@ const { details: X } = assert;
  * it is provided as a bigint. The protocolFee is always charged in RUN, but the
  * initial value is specified as a bigint for consistency.
  *
+ * The contract gets the initial values for those parameters from its terms, and
+ * thereafter can be seen to only use the values provided by the
+ * `getParamValue()` method returned by the paramManager.
+ *
+ * `handleParamGovernance()` adds several methods to the publicFacet of the
+ * contract, and bundles the privateFacet to ensure that governance
+ * functionality is only accessible to the contractGovernor.
+ *
+ * The creatorFacet has one method (makeCollectFeesInvitation, which returns
+ * collected fees to the creator). `handleParamGovernance()` adds internal
+ * methods used by the contractGovernor. The contractGovernor then has access to
+ * those internal methods, and reveals the original AMM creatorFacet to its own
+ * creator.
+ *
  * @type {ContractStartFn}
  */
 const start = zcf => {
@@ -104,8 +118,8 @@ const start = zcf => {
     makeCreatorFacet,
     getParamValue,
   } = handleParamGovernance(zcf, makeInitialValues(poolFeeBP, protocolFeeBP));
-  const getPoolFeeBP = () => getParamValue(POOL_FEE_KEY).value;
-  const getProtocolFeeBP = () => getParamValue(PROTOCOL_FEE_KEY).value;
+  const getPoolFeeBP = () => getParamValue(POOL_FEE_KEY);
+  const getProtocolFeeBP = () => getParamValue(PROTOCOL_FEE_KEY);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');

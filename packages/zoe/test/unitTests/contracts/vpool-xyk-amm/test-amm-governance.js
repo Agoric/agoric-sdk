@@ -118,7 +118,6 @@ const setupServices = async (
     governed: {
       terms: ammTerms,
       issuerKeywordRecord: { Central: centralR.issuer },
-      privateArgs: {},
     },
   };
 
@@ -186,19 +185,17 @@ test('amm change param via Governance', async t => {
   } = await setupServices(electorateTerms, ammTerms, centralR, timer);
 
   t.deepEqual(
-    await E(amm.ammPublicFacet).getGovernedParamsValues(),
+    await E(amm.ammPublicFacet).getGovernedParams(),
     {
-      main: {
-        PoolFee: {
-          name: POOL_FEE_KEY,
-          type: 'nat',
-          value: 24n,
-        },
-        ProtocolFee: {
-          name: PROTOCOL_FEE_KEY,
-          type: 'nat',
-          value: 6n,
-        },
+      PoolFee: {
+        name: POOL_FEE_KEY,
+        type: 'nat',
+        value: 24n,
+      },
+      ProtocolFee: {
+        name: PROTOCOL_FEE_KEY,
+        type: 'nat',
+        value: 6n,
       },
     },
     'initial values',
@@ -206,13 +203,12 @@ test('amm change param via Governance', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const foo = await E(governorCreatorFacet).voteOnParamChange(
+  const { details } = await E(governorCreatorFacet).voteOnParamChange(
     { parameterName: PROTOCOL_FEE_KEY },
     20n,
     installs.counter,
     2n,
   );
-  const { details } = foo;
   const { positions, questionHandle } = await details;
 
   const exerciseAndVote = invitation => {
@@ -226,8 +222,10 @@ test('amm change param via Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramDesc = await E(amm.ammPublicFacet).getParamValue(PROTOCOL_FEE_KEY);
-  t.deepEqual(paramDesc.value, 20n, 'updated value');
+  const paramValue = await E(amm.ammPublicFacet).getParamValue(
+    PROTOCOL_FEE_KEY,
+  );
+  t.deepEqual(paramValue, 20n, 'updated value');
 });
 
 test('price check after Governance param change', async t => {
@@ -298,19 +296,17 @@ test('price check after Governance param change', async t => {
   );
 
   t.deepEqual(
-    await E(amm.ammPublicFacet).getGovernedParamsValues(),
+    await E(amm.ammPublicFacet).getGovernedParams(),
     {
-      main: {
-        PoolFee: {
-          name: POOL_FEE_KEY,
-          type: 'nat',
-          value: 24n,
-        },
-        ProtocolFee: {
-          name: PROTOCOL_FEE_KEY,
-          type: 'nat',
-          value: 6n,
-        },
+      PoolFee: {
+        name: POOL_FEE_KEY,
+        type: 'nat',
+        value: 24n,
+      },
+      ProtocolFee: {
+        name: PROTOCOL_FEE_KEY,
+        type: 'nat',
+        value: 6n,
       },
     },
     'initial values',
@@ -318,13 +314,12 @@ test('price check after Governance param change', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const foo = await E(governorCreatorFacet).voteOnParamChange(
+  const { details } = await E(governorCreatorFacet).voteOnParamChange(
     { parameterName: PROTOCOL_FEE_KEY },
     20n,
     installs.counter,
     2n,
   );
-  const { details } = foo;
   const { positions, questionHandle } = await details;
 
   const exerciseAndVote = invitation => {
@@ -338,8 +333,10 @@ test('price check after Governance param change', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramDesc = await E(amm.ammPublicFacet).getParamValue(PROTOCOL_FEE_KEY);
-  t.deepEqual(paramDesc.value, 20n, 'updated value');
+  const paramValue = await E(amm.ammPublicFacet).getParamValue(
+    PROTOCOL_FEE_KEY,
+  );
+  t.deepEqual(paramValue, 20n, 'updated value');
 
   const priceAfter = await E(amm.ammPublicFacet).getInputPrice(
     moola(17000),

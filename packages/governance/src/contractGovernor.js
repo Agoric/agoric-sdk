@@ -42,16 +42,14 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * The terms for this contract include the Timer, Electorate and
  * the Installation to be started, as well as an issuerKeywordRecord or terms
  * needed by the governed contract. Those details for the governed contract are
- * included in this contract's terms as a "governed" record.
+ * included in this contract's terms as a "governed" record. If the contract
+ * expects privateArgs, those can be supplied as well.
  *
  * terms = {
  *    timer,
  *    electorateInstance,
  *    governedContractInstallation,
- *    governed: {
- *      issuerKeywordRecord: governedIssuerKeywordRecord,
- *      terms: governedTerms,
- *    },
+ *    governed: { issuerKeywordRecord, terms, privateArgs, },
  * };
  *
  * The governedContract is responsible for supplying getParamMgrRetriever() in

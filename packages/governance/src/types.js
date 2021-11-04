@@ -501,14 +501,53 @@
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => any} getPublicFacet - public facet of the governed contract
+ * @property {() => any} getInternalCreatorFacet - powerful creator facet of the
+ *   governed contract
  * @property {() => Promise<Instance>} getInstance - instance of the governed
  *   contract
+ */
+
+/**
+ * @typedef {Object} GovernedPublicFacet
+ * @property {() => Subscription<ParamDescription>} getSubscription
+ * @property {VoteOnParamChange} getContractGovernor
+ * @property {GetParams} getGovernedParams - get descriptions of
+ *   all the governed parameters
+ * @property {(name: string) => ParamValue} getParamValue - get the value of a
+ *   named parameter
+ */
+
+/**
+ * @typedef {Object} GovernedCreatorFacet
+ * @property {() => ParamManagerRetriever} getParamMgrRetriever
+ * @property {() => any} getInternalCreatorFacet
+ * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet
+ */
+
+/**
+ * @callback MakePublicFacet
+ * @param {any} originalPublicFacet
+ * @returns {GovernedPublicFacet}
+ */
+
+/**
+ * @callback MakeCreatorFacet
+ * @param {any} originalCreatorFacet
+ * @returns {GovernedCreatorFacet}
+ */
+
+/**
+ * @typedef {Object} ParamGovernorBundle
+ * @property {MakePublicFacet} makePublicFacet
+ * @property {MakeCreatorFacet} makeCreatorFacet
+ * @property {(name: string) => ParamValue} getParamValue
  */
 
 /**
  * @callback HandleParamGovernance
  * @param {ContractFacet} zcf
  * @param {ParamDescriptions} governedParamsTemplate
+ * @returns {ParamGovernorBundle}
  */
 
 /**

@@ -139,7 +139,6 @@ const setupServices = async (
     governed: {
       terms: ammTerms,
       issuerKeywordRecord: { Central: centralR.issuer },
-      privateArgs: {},
     },
   };
 
