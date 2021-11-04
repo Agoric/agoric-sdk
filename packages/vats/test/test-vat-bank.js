@@ -8,7 +8,7 @@ import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank.js';
 
 test('communication', async t => {
-  t.plan(38);
+  t.plan(35);
   const bankVat = E(buildRootObject)();
 
   /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
@@ -113,13 +113,13 @@ test('communication', async t => {
   // First balance.
   const vpurse = await E(bank).getPurse(kit.brand);
   const bal = await E(vpurse).getCurrentAmount();
-  t.assert(AmountMath.isEqual(bal, AmountMath.make(kit.brand, 11993n)));
+  t.deepEqual(bal, AmountMath.make(kit.brand, 11993n));
 
   // Deposit.
   const paymentAmount = AmountMath.make(kit.brand, 14n);
   const payment = await E(kit.mint).mintPayment(paymentAmount);
   const actualPaymentAmount = await E(vpurse).deposit(payment, paymentAmount);
-  t.assert(AmountMath.isEqual(actualPaymentAmount, paymentAmount));
+  t.deepEqual(actualPaymentAmount, paymentAmount);
 
   // Withdrawal.  We can't easily type a `VirtualPurse` unless we make it
   // callable only with `E`, in which case we can't automatically unwrap the
@@ -136,7 +136,7 @@ test('communication', async t => {
     payment2,
     paymentAmount,
   );
-  t.assert(AmountMath.isEqual(actualPaymentAmount2, paymentAmount));
+  t.deepEqual(actualPaymentAmount2, paymentAmount);
 
   // Balance update.
   const notifier = E(vpurse).getCurrentAmountNotifier();
@@ -149,12 +149,7 @@ test('communication', async t => {
   // Wait for new balance.
   await E(notifier).getUpdateSince(updateRecord.updateCount);
   const bal2 = await E(vpurse).getCurrentAmount();
-  t.assert(
-    AmountMath.isEqual(
-      bal2,
-      AmountMath.make(kit.brand, BigInt(balance.amount)),
-    ),
-  );
+  t.deepEqual(bal2, AmountMath.make(kit.brand, BigInt(balance.amount)));
 
   const { mint, ...feeKit } = makeIssuerKit(
     'fee',
@@ -183,5 +178,5 @@ test('communication', async t => {
   const feeReceived = await E(
     E(bankMgr).getFeeCollectorDepositFacet('ufee', feeKit),
   ).receive(feePayment);
-  t.assert(AmountMath.isEqual(feeReceived, feeAmount));
+  t.deepEqual(feeReceived, feeAmount);
 });

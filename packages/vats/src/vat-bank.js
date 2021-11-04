@@ -3,13 +3,13 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
+import { makeSubscriptionKit } from '@agoric/notifier';
+import { makePromiseKit } from '@agoric/promise-kit';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
-
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
  * @typedef {ReturnType<typeof makeVirtualPurse>} VirtualPurse
@@ -18,38 +18,93 @@ import '@agoric/notifier/exported.js';
 /**
  * @callback BalanceUpdater
  * @param {any} value
- * @param {any} [nonce]
  */
 
 /**
- * @param {(obj: any) => Promise<any>} bankCall
- * @param {string} denom
- * @param {Brand} brand
- * @param {string} address
- * @param {Notifier<Amount>} balanceNotifier
- * @param {(obj: any) => boolean} updateBalances
- * @returns {VirtualPurseController}
+ * @typedef {Object} PurseControllerParams
+ * @property {Amount} notifierThresholdAmount
+ * @property {(obj: any) => Promise<any>} bankCall
+ * @property {string} denom
+ * @property {Brand} brand
+ * @property {string} address
+ * @property {(obj: any) => boolean} updateBalances
+ * @property {(updater: BalanceUpdater) => void} registerBalanceUpdater
  */
-const makePurseController = (
+
+/**
+ * A generator that yields the latest balance of a virtual purse.
+ *
+ * @param {PurseControllerParams} param0
+ * @yields {Amount}
+ */
+async function* generateBalances({
   bankCall,
   denom,
   brand,
   address,
-  balanceNotifier,
-  updateBalances,
-) => {
+  registerBalanceUpdater,
+  notifierThresholdAmount,
+}) {
+  /** @type {PromiseRecord<Amount>} */
+  let amountPK = makePromiseKit();
+
+  const getUpdateSinceLast = async () => {
+    const amount = await amountPK.promise;
+    // Immediately switch to the next promise.
+    amountPK = makePromiseKit();
+    return amount;
+  };
+
+  const balanceUpdater = Far(`${denom} updater`, stringValue => {
+    const value = BigInt(stringValue);
+    amountPK.resolve(AmountMath.make(brand, value));
+  });
+  registerBalanceUpdater(balanceUpdater);
+
+  // Get initial balance.
+  bankCall({
+    type: 'VBANK_GET_BALANCE',
+    address,
+    denom,
+  }).then(balanceUpdater);
+
+  // Always yield the initial balance.
+  let lastNotified = await getUpdateSinceLast();
+  yield lastNotified;
+
+  while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const amount = await getUpdateSinceLast();
+
+    // Only notify if the balance has changed by more than the threshold.
+    const [hi, lo] = AmountMath.isGTE(amount, lastNotified)
+      ? [amount, lastNotified]
+      : [lastNotified, amount];
+    const absDiff = AmountMath.subtract(hi, lo);
+    if (
+      AmountMath.isGTE(absDiff, notifierThresholdAmount) &&
+      // Even with no threshold, we avoid notifying if there is no change.
+      !AmountMath.isEmpty(absDiff)
+    ) {
+      lastNotified = amount;
+      yield amount;
+    }
+  }
+}
+
+/**
+ * @param {PurseControllerParams} opts
+ * @returns {VirtualPurseController}
+ */
+const makePurseController = opts => {
+  const { bankCall, address, brand, denom, updateBalances } = opts;
+
+  const balancesIterable = generateBalances(opts);
+
   return harden({
-    async *getBalances(b) {
+    getBalances(b) {
       assert.equal(b, brand);
-      let updateRecord = await balanceNotifier.getUpdateSince();
-      while (updateRecord.updateCount) {
-        yield updateRecord.value;
-        // eslint-disable-next-line no-await-in-loop
-        updateRecord = await balanceNotifier.getUpdateSince(
-          updateRecord.updateCount,
-        );
-      }
-      return updateRecord.value;
+      return balancesIterable;
     },
     async pushAmount(amt) {
       const value = AmountMath.getValue(brand, amt);
@@ -79,10 +134,15 @@ const makePurseController = (
  * @property {Mint} [mint]
  * @property {Issuer} issuer
  * @property {Brand} brand
+ * @property {Amount} [notifierThresholdAmount]
  */
 
 /**
- * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
+ * @typedef {AssetIssuerKit & {
+ *   denom: string,
+ *   escrowPurse?: ERef<Purse>,
+ *   notifierThresholdAmount: Amount
+ * }} AssetRecord
  */
 
 /**
@@ -111,21 +171,20 @@ export function buildRootObject(_vatPowers) {
         switch (obj && obj.type) {
           case 'VBANK_BALANCE_UPDATE': {
             for (const update of obj.updated) {
-              try {
-                const { address, denom, amount: value } = update;
+              const { address, denom, amount: value } = update;
+              if (denomToAddressUpdater.has(denom)) {
                 const addressToUpdater = denomToAddressUpdater.get(denom);
-                const updater = addressToUpdater.get(address);
-
-                updater(value, obj.nonce);
-                console.error('Successful update', update);
-              } catch (e) {
-                console.error('Unregistered update', update);
+                if (addressToUpdater.has(address)) {
+                  const updater = addressToUpdater.get(address);
+                  updater(value);
+                }
               }
             }
             return true;
           }
-          default:
+          default: {
             return false;
+          }
         }
       };
 
@@ -209,45 +268,17 @@ export function buildRootObject(_vatPowers) {
               assetRecord.denom,
             );
 
-            /** @type {NotifierRecord<Amount>} */
-            const { updater, notifier } = makeNotifierKit();
-            /** @type {bigint} */
-            let lastBalanceUpdate = -1n;
-            /** @type {BalanceUpdater} */
-            const balanceUpdater = Far(
-              'balanceUpdater',
-              (value, nonce = undefined) => {
-                if (nonce !== undefined) {
-                  const thisBalanceUpdate = BigInt(nonce);
-                  if (thisBalanceUpdate <= lastBalanceUpdate) {
-                    return;
-                  }
-                  lastBalanceUpdate = thisBalanceUpdate;
-                }
-                // Convert the string value to a bigint.
-                const amt = AmountMath.make(brand, BigInt(value));
-                updater.updateState(amt);
-              },
-            );
-
-            // Get the initial balance.
-            addressToUpdater.init(address, balanceUpdater);
-            const balanceString = await bankCall({
-              type: 'VBANK_GET_BALANCE',
-              address,
-              denom: assetRecord.denom,
-            });
-            balanceUpdater(balanceString);
-
             // Create and return the virtual purse.
-            const vpc = makePurseController(
+            const vpc = makePurseController({
               bankCall,
-              assetRecord.denom,
+              notifierThresholdAmount: assetRecord.notifierThresholdAmount,
+              denom: assetRecord.denom,
               brand,
               address,
-              notifier,
               updateBalances,
-            );
+              registerBalanceUpdater: updater =>
+                addressToUpdater.init(address, updater),
+            });
             const vpurse = makeVirtualPurse(vpc, assetRecord);
             brandToVPurse.init(brand, vpurse);
             return vpurse;
@@ -324,7 +355,11 @@ export function buildRootObject(_vatPowers) {
           const payment = await kit.payment;
           await (payment && E(escrowPurse).deposit(payment));
 
+          const { notifierThresholdAmount = AmountMath.make(brand, 1n) } = kit;
+
+          /** @type {AssetRecord} */
           const assetRecord = harden({
+            notifierThresholdAmount,
             escrowPurse,
             issuer: kit.issuer,
             mint: kit.mint,
