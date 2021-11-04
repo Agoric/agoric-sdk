@@ -46,27 +46,20 @@
  * This section blindly imitates what Endo's ses/src/error/types.js
  * does to express type overloaded methods.
  *
- * @callback AmountMakeBrandValue
+ * @callback AmountMake
  * @param {Brand} brand
  * @param {Value} allegedValue
  * @returns {Amount}
  *
- * @typedef {AmountMakeBrandValue} AmountMake
- *
- * @callback AmountCoerceBrandAmount
+ * @callback AmountCoerce
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Amount}
  *
- * @typedef {AmountCoerceBrandAmount} AmountCoerce
- *
- * @callback AmountGetValueBrandAmount
+ * @callback AmountGetValue
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Value}
- *
- *
- * @typedef {AmountGetValueBrandAmount} AmountGetValue
  */
 
 /**
@@ -302,7 +295,6 @@
 /**
  * @typedef {Object} AdditionalDisplayInfo
  *
- * Does not include `assetKind`, which is automatically added in MakeIssuerKit
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
  *   other words, which position corresponds to whole numbers. We
@@ -313,6 +305,7 @@
  *   assets, should not be specified. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
+ * @property {AssetKind=} assetKind
  */
 
 /**

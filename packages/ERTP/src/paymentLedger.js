@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
-import { Far, assertArray } from '@agoric/marshal';
+import { Far, assertCopyArray } from '@agoric/marshal';
 import { makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';
@@ -100,8 +100,8 @@ export const makePaymentLedger = (
    * @returns {Payment[]}
    */
   const moveAssets = (payments, newPaymentBalances) => {
-    assertArray(payments, 'payments');
-    assertArray(newPaymentBalances, 'newPaymentBalances');
+    assertCopyArray(payments, 'payments');
+    assertCopyArray(newPaymentBalances, 'newPaymentBalances');
 
     // There may be zero, one, or many payments as input to
     // moveAssets. We want to protect against someone passing in
@@ -198,7 +198,7 @@ export const makePaymentLedger = (
 
   /** @type {IssuerCombine} */
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
-    assertArray(fromPaymentsPArray, 'fromPaymentsArray');
+    assertCopyArray(fromPaymentsPArray, 'fromPaymentsArray');
     // Payments in `fromPaymentsPArray` must be distinct. Alias
     // checking is delegated to the `moveAssets` function.
     return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
@@ -237,7 +237,7 @@ export const makePaymentLedger = (
   const splitMany = (paymentP, amounts) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
-      assertArray(amounts, 'amounts');
+      assertCopyArray(amounts, 'amounts');
       amounts = amounts.map(coerce);
       // Note COMMIT POINT within moveAssets.
       const newPayments = moveAssets(harden([srcPayment]), harden(amounts));

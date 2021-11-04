@@ -3,8 +3,8 @@
 import './types.js';
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import natMathHelpers from '@agoric/ertp/src/mathHelpers/natMathHelpers.js';
 import { assertRecord } from '@agoric/marshal';
+import { isNat } from '@agoric/nat';
 
 import { natSafeMath } from './safeMath.js';
 
@@ -49,8 +49,16 @@ export const assertIsRatio = ratio => {
       X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
     );
   }
-  natMathHelpers.doCoerce(ratio.numerator.value);
-  natMathHelpers.doCoerce(ratio.denominator.value);
+  const numeratorValue = ratio.numerator.value;
+  const denominatorValue = ratio.denominator.value;
+  assert(
+    isNat(numeratorValue),
+    X`The numerator value must be a NatValue, not ${numeratorValue}`,
+  );
+  assert(
+    isNat(denominatorValue),
+    X`The denominator value must be a NatValue, not ${denominatorValue}`,
+  );
 };
 
 /** @type {MakeRatio} */

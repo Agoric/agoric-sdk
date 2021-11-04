@@ -183,7 +183,7 @@ const AmountMath = {
   isEmpty: (amount, brand = undefined) => {
     assertRecord(amount, 'amount');
     const { brand: allegedBrand, value } = amount;
-    assertRemotable(allegedBrand);
+    assertRemotable(allegedBrand, 'brand');
     optionalBrandCheck(allegedBrand, brand);
     const h = assertValueGetHelpers(value);
     // @ts-ignore Needs better typing to express Value to Helpers relationship

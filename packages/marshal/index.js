@@ -19,9 +19,9 @@ export {
 } from './src/structure.js';
 export {
   assertRecord,
-  assertArray,
+  assertCopyArray,
   assertRemotable,
   isRemotable,
   isRecord,
-  isArray,
+  isCopyArray,
 } from './src/assertPassStyleOf.js';

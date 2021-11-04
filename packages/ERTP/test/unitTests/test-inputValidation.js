@@ -34,18 +34,21 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
 });
 
 test('makeIssuerKit bad displayInfo.assetKind', async t => {
-  // The bad assetKind gets silently overridden
-  const { issuer } = makeIssuerKit(
-    'myTokens',
-    AssetKind.NAT,
-    // @ts-ignore Intentional wrong type for testing
-    harden({
-      assetKind: 'something',
-    }),
+  t.throws(
+    () =>
+      makeIssuerKit(
+        'myTokens',
+        AssetKind.NAT,
+        // @ts-ignore Intentional wrong type for testing
+        harden({
+          assetKind: 'something',
+        }),
+      ),
+    {
+      message:
+        'displayInfo.assetKind was present ("something") and did not match the assetKind argument ("nat")',
+    },
   );
-  t.deepEqual(issuer.getDisplayInfo(), {
-    assetKind: 'nat',
-  });
 });
 
 test('makeIssuerKit bad displayInfo.whatever', async t => {

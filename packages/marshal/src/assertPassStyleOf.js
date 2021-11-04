@@ -19,8 +19,8 @@ const { details: X, quote: q } = assert;
  * @param {CopyArray} array
  * @returns {boolean}
  */
-const isArray = array => passStyleOf(array) === 'copyArray';
-harden(isArray);
+const isCopyArray = array => passStyleOf(array) === 'copyArray';
+harden(isCopyArray);
 
 /**
  * Check whether the argument is a pass-by-copy record, AKA a
@@ -49,7 +49,7 @@ harden(isRemotable);
  * @param {string=} optNameOfArray
  * @returns {void}
  */
-const assertArray = (array, optNameOfArray = 'Alleged array') => {
+const assertCopyArray = (array, optNameOfArray = 'Alleged array') => {
   const passStyle = passStyleOf(array);
   assert(
     passStyle === 'copyArray',
@@ -58,7 +58,7 @@ const assertArray = (array, optNameOfArray = 'Alleged array') => {
     )} ${array} must be a pass-by-copy array, not ${passStyle}`,
   );
 };
-harden(assertArray);
+harden(assertCopyArray);
 
 /**
  * Assert that the argument is a pass-by-copy record, or a
@@ -102,9 +102,9 @@ harden(assertRemotable);
 
 export {
   assertRecord,
-  assertArray,
+  assertCopyArray,
   assertRemotable,
   isRemotable,
   isRecord,
-  isArray,
+  isCopyArray,
 };

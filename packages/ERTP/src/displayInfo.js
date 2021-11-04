@@ -37,6 +37,12 @@ export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
   // `pureCopy` works in this case because displayInfo is a copyRecord
   // that is pure data, meaning no remotables and no promises.
   allegedDisplayInfo = pureCopy(allegedDisplayInfo);
+  if (allegedDisplayInfo.assetKind !== undefined) {
+    assert(
+      allegedDisplayInfo.assetKind === assetKind,
+      X`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`,
+    );
+  }
   const displayInfo = harden({ ...allegedDisplayInfo, assetKind });
 
   assertSubset(displayInfoKeys, Object.keys(displayInfo));
