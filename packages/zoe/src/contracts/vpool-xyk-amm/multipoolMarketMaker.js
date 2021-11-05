@@ -142,6 +142,7 @@ const start = zcf => {
     centralBrand,
     timer,
     quoteIssuerKit,
+    // @ts-ignore returns a bigint
     getProtocolFeeBP,
     getPoolFeeBP,
     protocolSeat,
@@ -171,6 +172,7 @@ const start = zcf => {
         zcf,
         getPool(brandIn),
         getPool(brandOut),
+        // @ts-ignore returns a bigint
         getProtocolFeeBP,
         getPoolFeeBP,
         protocolSeat,
@@ -216,6 +218,7 @@ const start = zcf => {
   );
 
   /** @type {XYKAMMPublicFacet} */
+  // @ts-ignore makePublicFacet includes all the methods that are passed in.
   const publicFacet = makePublicFacet(
     Far('AMM public facet', {
       addPool,
