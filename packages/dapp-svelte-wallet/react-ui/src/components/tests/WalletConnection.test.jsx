@@ -32,6 +32,7 @@ const setDapps = jest.fn();
 const setContacts = jest.fn();
 const setPayments = jest.fn();
 const setIssuers = jest.fn();
+const setWalletBridge = jest.fn();
 let connectionStatus = 'idle';
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
@@ -44,6 +45,7 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
       setContacts={setContacts}
       setPayments={setPayments}
       setIssuers={setIssuers}
+      setWalletBridge={setWalletBridge}
       {...props}
     />
   );
@@ -184,6 +186,7 @@ describe('WalletConnection', () => {
         expect(observeNotifier).toHaveBeenCalledWith('mockIssuersNotifier', {
           updateState: setIssuers,
         });
+        expect(setWalletBridge).toHaveBeenCalledWith(getAdminBootstrap());
       });
     });
 
