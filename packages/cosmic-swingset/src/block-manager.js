@@ -3,6 +3,7 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 import { isObject } from '@agoric/marshal';
+import { Nat } from '@agoric/nat';
 
 const console = anylogger('block-manager');
 
@@ -19,6 +20,66 @@ const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
 const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
   : 0;
+
+const stringToNat = s => {
+  assert.typeof(s, 'string', X`${s} must be a string`);
+  const bint = BigInt(s);
+  const nat = Nat(bint);
+  assert.equal(
+    `${nat}`,
+    s,
+    X`${s} must be the canonical representation of ${nat}`,
+  );
+  return nat;
+};
+
+// Map the SwingSet parameters to a deterministic data structure.
+//
+// NOTE: `params` is JSON-marshalled by Protobuf 3, so it is already
+// deterministic (though maybe ordered differently than alphabetical).
+const parseParams = params => {
+  const {
+    beans_per_unit: rawBeansPerUnit,
+    fee_unit_price: rawFeeUnitPrice,
+  } = params;
+  assert.equal(
+    Object(rawBeansPerUnit),
+    rawBeansPerUnit,
+    X`beansPerUnit must be an object, not ${rawBeansPerUnit}`,
+  );
+  const beansPerUnit = Object.fromEntries(
+    Object.keys(rawBeansPerUnit)
+      .sort()
+      .map(key => {
+        assert.typeof(key, 'string', X`Key ${key} must be a string`);
+        const beans = rawBeansPerUnit[key];
+        assert.equal(
+          Object(beans),
+          beans,
+          X`${key} beans must be an object, not ${beans}`,
+        );
+        const { whole, ...rest } = beans;
+        assert.equal(
+          Object.keys(rest).length,
+          0,
+          X`${key} beans must have no unexpected properties; had ${rest}`,
+        );
+        return [key, stringToNat(whole)];
+      }),
+  );
+
+  assert(
+    Array.isArray(rawFeeUnitPrice),
+    X`feeUnitPrice ${rawFeeUnitPrice} must be an array`,
+  );
+  const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
+    assert.typeof(denom, 'string', X`denom ${denom} must be a string`);
+    assert(denom, X`denom ${denom} must be non-empty`);
+    return { denom, amount: stringToNat(amount) };
+  });
+
+  return { beansPerUnit, feeUnitPrice };
+};
 
 export default function makeBlockManager({
   deliverInbound,
@@ -49,7 +110,11 @@ export default function makeBlockManager({
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
-        p = beginBlock(action.blockHeight, action.blockTime);
+        p = beginBlock(
+          action.blockHeight,
+          action.blockTime,
+          parseParams(action.params),
+        );
         break;
 
       case DELIVER_INBOUND:
@@ -59,6 +124,7 @@ export default function makeBlockManager({
           action.ack,
           action.blockHeight,
           action.blockTime,
+          parseParams(action.params),
         );
         break;
 
@@ -78,7 +144,11 @@ export default function makeBlockManager({
       }
 
       case END_BLOCK: {
-        p = endBlock(action.blockHeight, action.blockTime);
+        p = endBlock(
+          action.blockHeight,
+          action.blockTime,
+          parseParams(action.params),
+        );
         if (END_BLOCK_SPIN_MS) {
           // Introduce a busy-wait to artificially put load on the chain.
           p = p.then(res => {

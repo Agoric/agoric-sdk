@@ -64,6 +64,7 @@ test.before(async t => {
   const bundleLocal = await bundleSource(bootstrapLocal);
   const localConfig = {
     bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
     vats: {
       bootstrap: { bundle: bundleLocal },
       a: { bundle: bundleA },
@@ -86,6 +87,7 @@ test.before(async t => {
   const moreVatTP = { bundle: kernelBundles.vattp };
   const commsConfig = {
     bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
     vats: {
       bootstrap: { bundle: bundleComms },
       a: { bundle: bundleA },

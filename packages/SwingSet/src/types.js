@@ -34,6 +34,7 @@
  *   metered?: boolean,
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
+ *   reapInterval?: number | 'never',
  *   enableVatstore?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
@@ -89,8 +90,9 @@
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
+ * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
- *            | VatDeliveryRetireExports | VatDeliveryRetireImports
+ *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
  *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult

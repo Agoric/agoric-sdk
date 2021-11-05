@@ -19,17 +19,15 @@ import {
   makeSlogCallbacks,
 } from './kernel-stats.js';
 
+import {
+  BeansPerBlockComputeLimit,
+  BeansPerVatCreation,
+  BeansPerXsnapComputron,
+} from './sim-params.js';
+
 const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
-
-// This is how many computrons we allow before starting a new block.
-// Some analysis (#3459) suggests this leads to about 2/3rds utilization,
-// based on 5 sec voting time and up to 10 sec of computation.
-// FIXME: should be subject to governance?
-const FIXME_MAX_COMPUTRONS_PER_BLOCK = 8_000_000n;
-// observed: 0.385 sec
-const ESTIMATED_COMPUTRONS_PER_VAT_CREATION = 300_000n;
 
 async function buildSwingset(
   mailboxStorage,
@@ -89,27 +87,36 @@ async function buildSwingset(
   return { controller, mb, bridgeInbound, timer };
 }
 
-function computronCounter(limit, vatCost) {
-  assert.typeof(limit, 'bigint');
-  assert.typeof(vatCost, 'bigint');
-  let total = 0n;
+function computronCounter({
+  [BeansPerBlockComputeLimit]: blockComputeLimit,
+  [BeansPerVatCreation]: vatCreation,
+  [BeansPerXsnapComputron]: xsnapComputron,
+}) {
+  assert.typeof(blockComputeLimit, 'bigint');
+  assert.typeof(vatCreation, 'bigint');
+  assert.typeof(xsnapComputron, 'bigint');
+  let totalBeans = 0n;
   /** @type { RunPolicy } */
   const policy = harden({
     vatCreated() {
-      total += vatCost;
-      return total < limit;
+      totalBeans += vatCreation;
+      return totalBeans < blockComputeLimit;
     },
     crankComplete(details = {}) {
       assert.typeof(details, 'object');
       if (details.computrons) {
         assert.typeof(details.computrons, 'bigint');
-        total += details.computrons;
+
+        // TODO: xsnapComputron should not be assumed here.
+        // Instead, SwingSet should describe the computron model it uses.
+        totalBeans += details.computrons * xsnapComputron;
       }
-      return total < limit;
+      return totalBeans < blockComputeLimit;
     },
     crankFailed() {
-      total += 1000000n; // who knows, 1M is as good as anything
-      return total < limit;
+      const failedComputrons = 1000000n; // who knows, 1M is as good as anything
+      totalBeans += failedComputrons * xsnapComputron;
+      return totalBeans < blockComputeLimit;
     },
   });
   return policy;
@@ -180,17 +187,11 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
-  async function crankScheduler(runBootstrap, clock = () => Date.now()) {
+  async function crankScheduler(policy, clock = () => Date.now()) {
     let now = clock();
     let crankStart = now;
     const blockStart = now;
 
-    const policy = runBootstrap
-      ? neverStop()
-      : computronCounter(
-          FIXME_MAX_COMPUTRONS_PER_BLOCK,
-          ESTIMATED_COMPUTRONS_PER_VAT_CREATION,
-        );
     const instrumentedPolicy = harden({
       ...policy,
       crankComplete(details) {
@@ -214,7 +215,8 @@ export async function launch(
     });
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    await crankScheduler(true);
+    const policy = neverStop();
+    await crankScheduler(policy);
     controller.writeSlogObject({
       type: 'cosmic-swingset-bootstrap-block-finish',
       blockTime,
@@ -224,13 +226,15 @@ export async function launch(
     }
   }
 
-  async function endBlock(blockHeight, blockTime) {
+  async function endBlock(blockHeight, blockTime, params) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-start',
       blockHeight,
       blockTime,
     });
-    await crankScheduler(false);
+
+    const policy = computronCounter(params.beansPerUnit);
+    await crankScheduler(policy);
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-finish',
       blockHeight,
@@ -278,7 +282,7 @@ export async function launch(
     bridgeInbound(source, body);
   }
 
-  async function beginBlock(blockHeight, blockTime) {
+  async function beginBlock(blockHeight, blockTime, _params) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-begin-block',
       blockHeight,

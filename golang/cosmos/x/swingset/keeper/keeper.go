@@ -14,12 +14,14 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
-	cdc      codec.Codec
+	storeKey   sdk.StoreKey
+	cdc        codec.Codec
+	paramSpace paramtypes.Subspace
 
 	accountKeeper types.AccountKeeper
 	bankKeeper    bankkeeper.Keeper
@@ -45,18 +47,33 @@ func stringToKey(keyStr string) []byte {
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey,
+	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
 	return Keeper{
 		storeKey:         key,
 		cdc:              cdc,
+		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		CallToController: callToController,
 	}
+}
+
+func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+	k.paramSpace.GetParamSet(ctx, &params)
+	return params
+}
+
+func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+	k.paramSpace.SetParamSet(ctx, &params)
 }
 
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
@@ -66,13 +83,13 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 // GetEgress gets the entire egress struct for a peer
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 	path := "egress." + addr.String()
-	storage := k.GetStorage(ctx, path)
-	if storage.Value == "" {
+	value := k.GetStorage(ctx, path)
+	if value == "" {
 		return types.Egress{}
 	}
 
 	var egress types.Egress
-	err := json.Unmarshal([]byte(storage.Value), &egress)
+	err := json.Unmarshal([]byte(value), &egress)
 	if err != nil {
 		panic(err)
 	}
@@ -84,13 +101,12 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 	path := "egress." + egress.Peer.String()
 
-	json, err := json.Marshal(egress)
+	bz, err := json.Marshal(egress)
 	if err != nil {
 		return err
 	}
 
-	storage := &types.Storage{Value: string(json)}
-	k.SetStorage(ctx, path, storage)
+	k.SetStorage(ctx, path, string(bz))
 
 	// Now make sure the corresponding account has been initialised.
 	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
@@ -118,27 +134,24 @@ func (k Keeper) ExportStorage(ctx sdk.Context) map[string]string {
 	exported := make(map[string]string)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		var storage types.Storage
 		keyStr := keyToString(iterator.Key())
-		k.cdc.MustUnmarshalLengthPrefixed(iterator.Value(), &storage)
-		exported[keyStr] = storage.Value
+		exported[keyStr] = string(iterator.Value())
 	}
 	return exported
 }
 
 // GetStorage gets generic storage
-func (k Keeper) GetStorage(ctx sdk.Context, path string) *types.Storage {
+func (k Keeper) GetStorage(ctx sdk.Context, path string) string {
 	//fmt.Printf("GetStorage(%s)\n", path);
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	dataKey := stringToKey(path)
 	if !dataStore.Has(dataKey) {
-		return &types.Storage{Value: ""}
+		return ""
 	}
 	bz := dataStore.Get(dataKey)
-	var storage types.Storage
-	k.cdc.MustUnmarshalLengthPrefixed(bz, &storage)
-	return &storage
+	value := string(bz)
+	return value
 }
 
 // GetKeys gets all storage child keys at a given path
@@ -156,21 +169,21 @@ func (k Keeper) GetKeys(ctx sdk.Context, path string) *types.Keys {
 }
 
 // SetStorage sets the entire generic storage for a path
-func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage) {
+func (k Keeper) SetStorage(ctx sdk.Context, path, value string) {
 	store := ctx.KVStore(k.storeKey)
 	dataStore := prefix.NewStore(store, types.DataPrefix)
 	keysStore := prefix.NewStore(store, types.KeysPrefix)
 
 	// Update the value.
 	pathKey := stringToKey(path)
-	if storage.Value == "" {
+	if value == "" {
 		dataStore.Delete(pathKey)
 	} else {
-		dataStore.Set(pathKey, k.cdc.MustMarshalLengthPrefixed(storage))
+		dataStore.Set(pathKey, []byte(value))
 	}
 
 	ctx.EventManager().EmitEvent(
-		types.NewStorageEvent(path, storage.Value),
+		types.NewStorageEvent(path, value),
 	)
 
 	// Update the parent keys.
@@ -188,7 +201,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, path string, storage *types.Storage)
 		}
 
 		// Decide if we need to add or remove the key.
-		if storage.Value == "" {
+		if value == "" {
 			if _, ok := keyMap[lastKeyStr]; !ok {
 				// If the key is already gone, we don't need to remove from the key lists.
 				return
@@ -229,13 +242,13 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // GetMailbox gets the entire mailbox struct for a peer
-func (k Keeper) GetMailbox(ctx sdk.Context, peer string) *types.Storage {
+func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
 	path := "mailbox." + peer
 	return k.GetStorage(ctx, path)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
-func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox *types.Storage) {
+func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := "mailbox." + peer
 	k.SetStorage(ctx, path, mailbox)
 }

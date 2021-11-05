@@ -174,6 +174,7 @@ test.serial('bootstrap export', async t => {
   const config = await loadBasedir(
     new URL('basedir-controller-3', import.meta.url).pathname,
   );
+  config.defaultManagerType = 'xs-worker';
   const c = await buildVatController(config);
   c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
@@ -246,12 +247,16 @@ test.serial('bootstrap export', async t => {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
+    while (c.dump().reapQueue.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
     await c.step(); // the non- GC action
   }
 
   t.deepEqual(c.dump().log, []);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
-  await stepGC();
+  await stepGC(); // message bootstrap
   // kernel promise for result of the foo() that bootstrap sends to vat-left
   const fooP = 'kp41';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()']);
@@ -280,7 +285,8 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
-  await stepGC();
+  await stepGC(); // dropExports
+  await stepGC(); // message foo
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
   kt.push([right0, leftVatID, 'o-50']);
@@ -303,7 +309,7 @@ test.serial('bootstrap export', async t => {
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
   ]);
 
-  await stepGC();
+  await stepGC(); // message bar
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',
@@ -318,7 +324,7 @@ test.serial('bootstrap export', async t => {
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
-  await stepGC();
+  await stepGC(); // notify
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',
@@ -340,7 +346,7 @@ test.serial('bootstrap export', async t => {
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
-  await stepGC();
+  await stepGC(); // notify
 
   t.deepEqual(c.dump().log, [
     'bootstrap.obj0.bootstrap()',

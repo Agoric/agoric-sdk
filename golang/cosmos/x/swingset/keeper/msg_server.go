@@ -31,6 +31,7 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
+	Params      types.Params    `json:"params"`
 }
 
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
@@ -51,6 +52,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		StoragePort: vm.GetPort("storage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
+		Params:      keeper.GetParams(ctx),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	b, err := json.Marshal(action)

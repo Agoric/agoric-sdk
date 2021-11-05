@@ -47,7 +47,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	if err := cdc.UnmarshalJSON(data, &genesisState); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
-	return ValidateGenesisState(genesisState)
+	return ValidateGenesis(genesisState)
 }
 
 func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
