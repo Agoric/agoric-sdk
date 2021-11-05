@@ -2,7 +2,7 @@ import { mount } from 'enzyme';
 import { act } from '@testing-library/react';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Button from '@material-ui/core/Button';
-import Issuers, { IssuersInternalDoNotImport } from '../Issuers';
+import Issuers, { IssuersWithoutContext } from '../Issuers';
 import MakePurse from '../../components/MakePurse';
 
 jest.mock('../../components/MakePurse', () => () => 'MakePurse');
@@ -54,7 +54,7 @@ test('renders a loading indicator over pending transfers', () => {
 });
 
 test('renders a loading indicator when issuers is null', () => {
-  const component = mount(<IssuersInternalDoNotImport />);
+  const component = mount(<IssuersWithoutContext />);
 
   expect(component.find(CircularProgress)).toHaveLength(1);
   expect(component.find(Button)).toHaveLength(1);

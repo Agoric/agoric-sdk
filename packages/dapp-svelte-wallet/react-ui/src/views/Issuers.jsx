@@ -11,10 +11,7 @@ import { withApplicationContext } from '../contexts/Application';
 import './Issuers.scss';
 
 // Exported for testing only.
-export const IssuersInternalDoNotImport = ({
-  issuers,
-  pendingPurseCreations,
-}) => {
+export const IssuersWithoutContext = ({ issuers, pendingPurseCreations }) => {
   const [selectedIssuer, setSelectedIssuer] = useState(null);
   const handleCreatePurse = id => setSelectedIssuer(id);
   const closeMakePurse = () => setSelectedIssuer(null);
@@ -73,7 +70,7 @@ export const IssuersInternalDoNotImport = ({
   );
 };
 
-export default withApplicationContext(IssuersInternalDoNotImport, context => ({
+export default withApplicationContext(IssuersWithoutContext, context => ({
   issuers: context.issuers,
   pendingPurseCreations: context.pendingPurseCreations,
 }));

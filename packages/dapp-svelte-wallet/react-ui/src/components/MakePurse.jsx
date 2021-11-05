@@ -11,7 +11,7 @@ import Snackbar from '@material-ui/core/Snackbar';
 import { withApplicationContext } from '../contexts/Application';
 
 // Exported for testing only.
-export const MakePurseInternalDoNotImport = ({
+export const MakePurseWithoutContext = ({
   issuerId,
   issuers,
   purses,
@@ -106,12 +106,9 @@ export const MakePurseInternalDoNotImport = ({
   );
 };
 
-export default withApplicationContext(
-  MakePurseInternalDoNotImport,
-  context => ({
-    issuers: context.issuers,
-    purses: context.purses,
-    setPendingPurseCreations: context.setPendingPurseCreations,
-    walletBridge: context.walletBridge,
-  }),
-);
+export default withApplicationContext(MakePurseWithoutContext, context => ({
+  issuers: context.issuers,
+  purses: context.purses,
+  setPendingPurseCreations: context.setPendingPurseCreations,
+  walletBridge: context.walletBridge,
+}));
