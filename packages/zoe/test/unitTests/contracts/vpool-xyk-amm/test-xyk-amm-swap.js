@@ -1,18 +1,19 @@
 // @ts-check
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { assert, q } from '@agoric/assert';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
+import { makeLoopback } from '@agoric/captp';
+
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { ParamType } from '@agoric/governance';
+import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
 
 // noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
-import { setup } from '../../setupBasicMints.js';
 import {
   makeTrader,
   updatePoolState,
@@ -30,25 +31,189 @@ import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '../../../zoeTestHelpers.js';
+import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
+import {
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+} from '../../../../src/contracts/vpool-xyk-amm/params.js';
 
+const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const ammRoot =
+  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
 
-const ammRoot = `${dirname}/../../../../src/contracts/vpool-xyk-amm/multipoolMarketMaker.js`;
+const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
+const committeeRoot = '@agoric/governance/src/committee.js';
+const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
+
+const POOL_FEE_BP = 24n;
+const PROTOCOL_FEE_BP = 6n;
+
+const makeBundle = async sourceRoot => {
+  const url = await importMetaResolve(sourceRoot, import.meta.url);
+  const path = new URL(url).pathname;
+  const contractBundle = await bundleSource(path);
+  console.log(`makeBundle ${sourceRoot}`);
+  return contractBundle;
+};
+
+// makeBundle is a slow step, so we do it once for all the tests.
+const autoswapBundleP = makeBundle(ammRoot);
+const contractGovernorBundleP = makeBundle(contractGovernorRoot);
+const committeeBundleP = makeBundle(committeeRoot);
+const voteCounterBundleP = makeBundle(voteCounterRoot);
+
+const setUpZoeForTest = async () => {
+  const { makeFar, makeNear } = makeLoopback('zoeTest');
+  let isFirst = true;
+  const makeRemote = arg => {
+    const result = isFirst ? makeNear(arg) : arg;
+    // this seems fragile. It relies on one contract being created first by Zoe
+    isFirst = false;
+    return result;
+  };
+
+  const {
+    zoeService: nonFarZoeService,
+    feeMintAccess: nonFarFeeMintAccess,
+  } = makeZoeKit(makeFakeVatAdmin(() => {}, makeRemote).admin);
+  const feePurse = E(nonFarZoeService).makeFeePurse();
+
+  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
+  /** @type {ERef<ZoeService>} */
+  const zoe = makeFar(zoeService);
+  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
+  return {
+    zoe,
+    feeMintAccess,
+  };
+};
+
+const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
+
+// called separately by each test so AMM/zoe/priceAuthority don't interfere
+const setupServices = async (
+  electorateTerms,
+  ammTerms,
+  centralR,
+  timer = buildManualTimer(console.log),
+) => {
+  const { zoe } = await setUpZoeForTest();
+
+  // XS doesn't like top-level await, so do it here. this should be quick
+  const [
+    autoswapBundle,
+    contractGovernorBundle,
+    committeeBundle,
+    voteCounterBundle,
+  ] = await Promise.all([
+    autoswapBundleP,
+    contractGovernorBundleP,
+    committeeBundleP,
+    voteCounterBundleP,
+  ]);
+
+  const [autoswap, governor, electorate, counter] = await Promise.all([
+    installBundle(zoe, autoswapBundle),
+    installBundle(zoe, contractGovernorBundle),
+    installBundle(zoe, committeeBundle),
+    installBundle(zoe, voteCounterBundle),
+  ]);
+  const installs = {
+    autoswap,
+    governor,
+    electorate,
+    counter,
+  };
+
+  const {
+    creatorFacet: committeeCreator,
+    instance: electorateInstance,
+  } = await E(zoe).startInstance(installs.electorate, {}, electorateTerms);
+
+  const governorTerms = {
+    timer,
+    electorateInstance,
+    governedContractInstallation: installs.autoswap,
+    governed: {
+      terms: ammTerms,
+      issuerKeywordRecord: { Central: centralR.issuer },
+    },
+  };
+
+  const {
+    instance: governorInstance,
+    publicFacet: governorPublicFacet,
+    creatorFacet: governorCreatorFacet,
+  } = await E(zoe).startInstance(installs.governor, {}, governorTerms, {
+    electorateCreatorFacet: committeeCreator,
+  });
+
+  const ammCreatorFacetP = E(governorCreatorFacet).getInternalCreatorFacet();
+  const ammPublicP = E(governorCreatorFacet).getPublicFacet();
+
+  const [ammCreatorFacet, ammPublicFacet] = await Promise.all([
+    ammCreatorFacetP,
+    ammPublicP,
+  ]);
+
+  const g = { governorInstance, governorPublicFacet, governorCreatorFacet };
+  const governedInstance = E(governorPublicFacet).getGovernedContract();
+
+  const amm = { ammCreatorFacet, ammPublicFacet, instance: governedInstance };
+
+  return {
+    zoe,
+    installs,
+    electorate,
+    governor: g,
+    amm,
+  };
+};
+
+const ammInitialValues = harden([
+  {
+    name: POOL_FEE_KEY,
+    value: 24n,
+    type: ParamType.NAT,
+  },
+  {
+    name: PROTOCOL_FEE_KEY,
+    value: 6n,
+    type: ParamType.NAT,
+  },
+]);
 
 test('amm with valid offers', async t => {
-  const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const invitationBrand = await E(invitationIssuer).getBrand();
-
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const simoleanR = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+
+  const timer = buildManualTimer(console.log, 30n);
+  const protocolFeeRatio = makeRatio(6n, centralR.brand, BASIS_POINTS);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+
+  const { zoe, amm, installs } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
+  );
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
@@ -59,66 +224,54 @@ test('amm with valid offers', async t => {
   // Setup Bob
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(17000));
 
-  // Alice creates an autoswap instance
-
-  // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
-
-  const installation = await E(zoe).install(bundle);
-  // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30n);
-  const { instance, publicFacet } = await E(zoe).startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
-  );
   const aliceAddLiquidityInvitation = E(
-    publicFacet,
+    amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
 
   const aliceInvitationAmount = await E(invitationIssuer).getAmountOf(
     aliceAddLiquidityInvitation,
   );
+  const ammInstance = await amm.instance;
   t.deepEqual(
     aliceInvitationAmount,
     AmountMath.make(
-      [
+      invitationBrand,
+      harden([
         {
           description: 'multipool autoswap add liquidity',
-          instance,
-          installation,
+          instance: ammInstance,
+          installation: installs.autoswap,
           handle: aliceInvitationAmount.value[0].handle,
           fee: undefined,
           expiry: undefined,
           zoeTimeAuthority: undefined,
         },
-      ],
-      invitationBrand,
+      ]),
     ),
     `invitation value is as expected`,
   );
 
-  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     moolaR.issuer,
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
-  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+  const simoleanLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     simoleanR.issuer,
     'Simoleans',
   );
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    AmountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(simoleanLiquidityBrand, value);
 
   const { toCentral: priceAuthority } = await E(
-    publicFacet,
+    amm.ammPublicFacet,
   ).getPriceAuthorities(moolaR.brand);
 
-  const issuerKeywordRecord = await E(zoe).getIssuers(instance);
+  const issuerKeywordRecord = await E(zoe).getIssuers(ammInstance);
   t.deepEqual(
     issuerKeywordRecord,
     harden({
@@ -131,12 +284,12 @@ test('amm with valid offers', async t => {
     `There are keywords for central token and two additional tokens and liquidity`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
     {},
     `The poolAllocation object values for moola should be empty`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(simoleanR.brand),
     {},
     `The poolAllocation object values for simoleans should be empty`,
   );
@@ -165,14 +318,14 @@ test('amm with valid offers', async t => {
     `Alice added moola and central liquidity`,
   );
 
-  const liquidityPayout = await addLiquiditySeat.getPayout('Liquidity');
+  const liquidityPayout = await E(addLiquiditySeat).getPayout('Liquidity');
 
   t.deepEqual(
-    await moolaLiquidityIssuer.getAmountOf(liquidityPayout),
+    await E(moolaLiquidityIssuer).getAmountOf(liquidityPayout),
     moolaLiquidity(50000),
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
     harden({
       Secondary: moola(100000),
       Central: centralTokens(50000),
@@ -182,10 +335,9 @@ test('amm with valid offers', async t => {
   );
 
   // Bob creates a swap invitation for himself
-  const bobSwapInvitation1 = await E(publicFacet).makeSwapInInvitation();
+  const bobSwapInvitation1 = await E(amm.ammPublicFacet).makeSwapInInvitation();
 
   const { value } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
-  assert(Array.isArray(value));
   const [bobInvitationValue] = value;
   const bobPublicFacet = await E(zoe).getPublicFacet(
     bobInvitationValue.instance,
@@ -193,7 +345,7 @@ test('amm with valid offers', async t => {
 
   t.is(
     bobInvitationValue.installation,
-    installation,
+    installs.autoswap,
     `installation is as expected`,
   );
 
@@ -203,7 +355,7 @@ test('amm with valid offers', async t => {
     AmountMath.makeEmpty(centralR.brand),
   );
 
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {});
 
   const bobMoolaForCentralProposal = harden({
     want: { Out: priceInCentrals },
@@ -218,10 +370,9 @@ test('amm with valid offers', async t => {
     bobMoolaForCentralPayments,
   );
 
-  const protocolFeeRatio = makeRatio(6n, centralR.brand, 10000);
   /** @type {Amount} */
   let runningFees = ceilMultiplyBy(priceInCentrals, protocolFeeRatio);
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
 
@@ -238,18 +389,18 @@ test('amm with valid offers', async t => {
 
   t.is(await E(bobSeat).getOfferResult(), 'Swap successfully completed.');
 
-  const bobMoolaPayout1 = await bobSeat.getPayout('In');
-  const bobCentralPayout1 = await bobSeat.getPayout('Out');
+  const bobMoolaPayout1 = await E(bobSeat).getPayout('In');
+  const bobCentralPayout1 = await E(bobSeat).getPayout('Out');
 
   assertAmountsEqual(
     t,
-    await moolaR.issuer.getAmountOf(bobMoolaPayout1),
+    await E(moolaR.issuer).getAmountOf(bobMoolaPayout1),
     moola(2n),
     `bob gets 2 moola back`,
   );
   assertAmountsEqual(
     t,
-    await centralR.issuer.getAmountOf(bobCentralPayout1),
+    await E(centralR.issuer).getAmountOf(bobCentralPayout1),
     centralTokens(7241),
     `bob gets the same price as when he called the getInputPrice method`,
   );
@@ -300,12 +451,12 @@ test('amm with valid offers', async t => {
     runningFees,
     ceilMultiplyBy(centralTokens(700), protocolFeeRatio),
   );
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
 
   t.is(
-    await bobSeat2.getOfferResult(),
+    await E(bobSeat2).getOfferResult(),
     'Swap successfully completed.',
     `second swap successful`,
   );
@@ -320,16 +471,16 @@ test('amm with valid offers', async t => {
     AmountMath.make(centralR.brand, 1801n),
   );
 
-  const bobMoolaPayout2 = await bobSeat2.getPayout('Out');
-  const bobCentralPayout2 = await bobSeat2.getPayout('In');
+  const bobMoolaPayout2 = await E(bobSeat2).getPayout('Out');
+  const bobCentralPayout2 = await E(bobSeat2).getPayout('In');
 
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(bobMoolaPayout2),
+    await E(moolaR.issuer).getAmountOf(bobMoolaPayout2),
     moola(1877),
     `bob gets 1877 moola back`,
   );
   t.deepEqual(
-    await centralR.issuer.getAmountOf(bobCentralPayout2),
+    await E(centralR.issuer).getAmountOf(bobCentralPayout2),
     centralTokens(0),
     `bob gets no central tokens back`,
   );
@@ -348,7 +499,7 @@ test('amm with valid offers', async t => {
   // the liquidity adding
   //
   const aliceSimCentralLiquidityInvitation = E(
-    publicFacet,
+    amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
     want: { Liquidity: simoleanLiquidity(43) },
@@ -379,20 +530,20 @@ test('amm with valid offers', async t => {
     AmountMath.make(centralR.brand, 1801n),
   );
   t.is(
-    await aliceSeat2.getOfferResult(),
+    await E(aliceSeat2).getOfferResult(),
     'Added liquidity.',
     `Alice added simoleans and central liquidity`,
   );
 
-  const simoleanLiquidityPayout = await aliceSeat2.getPayout('Liquidity');
+  const simoleanLiquidityPayout = await E(aliceSeat2).getPayout('Liquidity');
 
   t.deepEqual(
-    await simoleanLiquidityIssuer.getAmountOf(simoleanLiquidityPayout),
+    await E(simoleanLiquidityIssuer).getAmountOf(simoleanLiquidityPayout),
     simoleanLiquidity(43),
     `simoleanLiquidity minted was equal to the amount of central tokens added to pool`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(simoleanR.brand),
     harden({
       Secondary: simoleans(398),
       Central: centralTokens(43),
@@ -403,14 +554,31 @@ test('amm with valid offers', async t => {
 });
 
 test('amm doubleSwap', async t => {
-  const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const simoleanR = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(console.log, 30n);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+  // This timer is only used to build quotes. Let's make it non-zero
+
+  const { zoe, amm } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
@@ -422,42 +590,29 @@ test('amm doubleSwap', async t => {
   const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000));
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000));
 
-  // Alice creates an autoswap instance
-  const bundle = await bundleSource(ammRoot);
+  const ammInstance = await amm.instance;
 
-  const installation = await E(zoe).install(bundle);
-  // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30n);
-  const { instance, publicFacet, creatorFacet } = await E(zoe).startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    {
-      timer: fakeTimer,
-      poolFeeBP: 24n,
-      protocolFeeBP: 6n,
-    },
-  );
   const aliceAddLiquidityInvitation = E(
-    publicFacet,
+    amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
 
-  const moolaLiquidityIssuer = await E(publicFacet).addPool(
+  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     moolaR.issuer,
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
-  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
+  const simoleanLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     simoleanR.issuer,
     'Simoleans',
   );
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    AmountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(simoleanLiquidityBrand, value);
 
-  const issuerKeywordRecord = await E(zoe).getIssuers(instance);
+  const issuerKeywordRecord = await E(zoe).getIssuers(ammInstance);
   t.deepEqual(
     issuerKeywordRecord,
     harden({
@@ -470,12 +625,12 @@ test('amm doubleSwap', async t => {
     `There are keywords for central token and two additional tokens and liquidity`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
     {},
     `The poolAllocation object values for moola should be empty`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(simoleanR.brand),
     {},
     `The poolAllocation object values for simoleans should be empty`,
   );
@@ -503,14 +658,14 @@ test('amm doubleSwap', async t => {
     'Added liquidity.',
     `Alice added moola and central liquidity`,
   );
-  await addLiquiditySeat.getPayout('Liquidity');
+  await E(addLiquiditySeat).getPayout('Liquidity');
 
   // Alice adds simoleans and central tokens to the simolean
   // liquidity pool. 398 simoleans = 43 central tokens at the time of
   // the liquidity adding
   //
   const aliceSimLiquidityInvitation = E(
-    publicFacet,
+    amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
     want: { Liquidity: simoleanLiquidity(430) },
@@ -531,7 +686,7 @@ test('amm doubleSwap', async t => {
   );
 
   t.is(
-    await aliceSeat2.getOfferResult(),
+    await E(aliceSeat2).getOfferResult(),
     'Added liquidity.',
     `Alice added simoleans and central liquidity`,
   );
@@ -539,12 +694,12 @@ test('amm doubleSwap', async t => {
   // Bob swaps moola for simoleans
 
   // Bob looks up the value of 4000 simoleans in moola
-  const { amountOut: priceInMoola } = await E(publicFacet).getInputPrice(
+  const { amountOut: priceInMoola } = await E(amm.ammPublicFacet).getInputPrice(
     simoleans(4000),
     AmountMath.makeEmpty(moolaR.brand),
   );
 
-  const bobInvitation = await E(publicFacet).makeSwapInInvitation();
+  const bobInvitation = await E(amm.ammPublicFacet).makeSwapInInvitation();
   const bobSimsForMoolaProposal = harden({
     want: { Out: priceInMoola },
     give: { In: simoleans(4000) },
@@ -553,14 +708,14 @@ test('amm doubleSwap', async t => {
     In: bobSimoleanPayment,
   });
 
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {});
 
   const bobSeat1 = await E(zoe).offer(
     bobInvitation,
     bobSimsForMoolaProposal,
     simsForMoolaPayments,
   );
-  const bobMoolaPayout = await bobSeat1.getPayout('Out');
+  const bobMoolaPayout = await E(bobSeat1).getPayout('Out');
 
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout),
@@ -569,19 +724,18 @@ test('amm doubleSwap', async t => {
   );
 
   let runningFees = AmountMath.make(centralR.brand, 6n);
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
 
   // Bob swaps simoleans for moola
 
   // Bob looks up the value of 5000 moola in simoleans
-  const { amountOut: priceInSimoleans } = await E(publicFacet).getInputPrice(
-    moola(5000),
-    AmountMath.makeEmpty(simoleanR.brand),
-  );
+  const { amountOut: priceInSimoleans } = await E(
+    amm.ammPublicFacet,
+  ).getInputPrice(moola(5000), AmountMath.makeEmpty(simoleanR.brand));
 
-  const bobInvitation2 = await E(publicFacet).makeSwapInInvitation();
+  const bobInvitation2 = await E(amm.ammPublicFacet).makeSwapInInvitation();
   const bobMoolaForSimsProposal = harden({
     want: { Out: priceInSimoleans },
     give: { In: moola(5000) },
@@ -595,7 +749,7 @@ test('amm doubleSwap', async t => {
     bobMoolaForSimsProposal,
     moolaForSimsPayments,
   );
-  const bobSimoleanPayout = await bobSeat2.getPayout('Out');
+  const bobSimoleanPayout = await E(bobSeat2).getPayout('Out');
 
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
@@ -607,11 +761,13 @@ test('amm doubleSwap', async t => {
     runningFees,
     AmountMath.make(centralR.brand, 4n),
   );
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
   });
 
-  const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
+  const collectFeesInvitation = E(
+    amm.ammCreatorFacet,
+  ).makeCollectFeesInvitation();
   const collectFeesSeat = await E(zoe).offer(
     collectFeesInvitation,
     undefined,
@@ -622,44 +778,46 @@ test('amm doubleSwap', async t => {
 
   await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
 
-  t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
+  t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: AmountMath.makeEmpty(centralR.brand),
   });
 });
 
 test('amm with some invalid offers', async t => {
-  const { moolaR, moola } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+
+  const timer = buildManualTimer(console.log);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+  // This timer is only used to build quotes. Let's make it non-zero
+
+  const { zoe, amm } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
+  );
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Bob
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(17));
 
-  // Alice creates an autoswap instance
-
-  // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
-
-  const fakeTimer = buildManualTimer(console.log);
-  const installation = await E(zoe).install(bundle);
-  const { publicFacet } = await E(zoe).startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
-  );
-
-  await E(publicFacet).addPool(moolaR.issuer, 'Moola');
+  await E(amm.ammPublicFacet).addPool(moolaR.issuer, 'Moola');
   // Bob creates a swap invitation for himself
-  const bobSwapInvitation1 = await E(publicFacet).makeSwapInInvitation();
+  const bobSwapInvitation1 = await E(amm.ammPublicFacet).makeSwapInInvitation();
 
   const { value } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
-  assert(Array.isArray(value));
   const [bobInvitationValue] = value;
   const bobPublicFacet = E(zoe).getPublicFacet(bobInvitationValue.instance);
 
@@ -691,7 +849,7 @@ test('amm with some invalid offers', async t => {
     bobMoolaForCentralPayments,
   );
   await t.throwsAsync(
-    () => failedSeat.getOfferResult(),
+    () => E(failedSeat).getOfferResult(),
     {
       message:
         '"poolAllocation.Central" must be greater than 0: {"brand":"[Alleged: central brand]","value":"[0n]"}',
@@ -699,22 +857,35 @@ test('amm with some invalid offers', async t => {
     'pool not initialized',
   );
 
-  t.deepEqual(await E(publicFacet).getAllPoolBrands(), [moolaR.brand]);
+  t.deepEqual(await E(amm.ammPublicFacet).getAllPoolBrands(), [moolaR.brand]);
 });
 
 test('amm jig - swapOut uneven', async t => {
-  const { moolaR, moola, simoleanR, simoleans } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-
-  // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
-  const installation = await E(zoe).install(bundle);
-
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const simoleanR = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+
+  const timer = buildManualTimer(console.log);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+
+  const { zoe, amm } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
+  );
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(centralTokens(30000000));
@@ -725,23 +896,16 @@ test('amm jig - swapOut uneven', async t => {
   const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
   simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000000)));
 
-  const fakeTimer = buildManualTimer(console.log);
-  const startRecord = await E(zoe).startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
-  );
+  /** @type {XYKAMMPublicFacet} */
+  const publicFacet = amm.ammPublicFacet;
+  const creatorFacet = amm.ammCreatorFacet;
 
-  const {
-    /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
-    creatorFacet,
-  } = startRecord;
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const simoleanLiquidityIssuer = await E(publicFacet).addPool(
     simoleanR.issuer,
@@ -750,17 +914,17 @@ test('amm jig - swapOut uneven', async t => {
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
-    AmountMath.make(value, simoleanLiquidityBrand);
+    AmountMath.make(simoleanLiquidityBrand, value);
   const mIssuerKeywordRecord = {
     Secondary: moolaR.issuer,
     Liquidity: moolaLiquidityIssuer,
   };
   const purses = [
     moolaPurse,
-    moolaLiquidityIssuer.makeEmptyPurse(),
+    E(moolaLiquidityIssuer).makeEmptyPurse(),
     centralPurse,
     simoleanPurse,
-    simoleanLiquidityIssuer.makeEmptyPurse(),
+    E(simoleanLiquidityIssuer).makeEmptyPurse(),
   ];
   const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
 
@@ -946,49 +1110,47 @@ test('amm jig - swapOut uneven', async t => {
 });
 
 test('amm jig - breaking scenario', async t => {
-  const { moolaR, moola, simoleanR } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-
-  // Pack the contract.
-  const bundle = await bundleSource(ammRoot);
-  const installation = await E(zoe).install(bundle);
-
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+
+  const timer = buildManualTimer(console.log);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+
+  const { zoe, amm } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
+  );
+
+  const publicFacet = amm.ammPublicFacet;
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(
     centralTokens(55825056949339n),
   );
-  const centralPurse = centralR.issuer.makeEmptyPurse();
-  await centralPurse.deposit(centralPayment);
+  const centralPurse = E(centralR.issuer).makeEmptyPurse();
+  await E(centralPurse).deposit(centralPayment);
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
   moolaPurse.deposit(moolaR.mint.mintPayment(moola(2396247730468n + 4145005n)));
 
-  const fakeTimer = buildManualTimer(console.log);
-  const startRecord = await E(zoe).startInstance(
-    installation,
-    harden({ Central: centralR.issuer }),
-    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
-  );
-
-  const {
-    /** @type {MultipoolAutoswapPublicFacet} */ publicFacet,
-  } = startRecord;
   const moolaLiquidityIssuer = await E(publicFacet).addPool(
     moolaR.issuer,
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
-
-  const simoleanLiquidityIssuer = await E(publicFacet).addPool(
-    simoleanR.issuer,
-    'Simoleans',
-  );
+  const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const mIssuerKeywordRecord = {
     Secondary: moolaR.issuer,
@@ -996,9 +1158,8 @@ test('amm jig - breaking scenario', async t => {
   };
   const purses = [
     moolaPurse,
-    moolaLiquidityIssuer.makeEmptyPurse(),
+    E(moolaLiquidityIssuer).makeEmptyPurse(),
     centralPurse,
-    simoleanLiquidityIssuer.makeEmptyPurse(),
   ];
   const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
 
@@ -1066,26 +1227,31 @@ test('amm jig - breaking scenario', async t => {
 // This demonstrates that Zoe can reallocate empty amounts. i.e. that
 // https://github.com/Agoric/agoric-sdk/issues/3033 stays fixed
 test('zoe allow empty reallocations', async t => {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
-
   // Set up central token
-  const { issuer, brand } = makeIssuerKit('central');
+  const centralR = makeIssuerKit('central');
 
-  // Alice creates an autoswap instance
-  const bundle = await bundleSource(ammRoot);
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
-  const installation = await E(zoe).install(bundle);
   // This timer is only used to build quotes. Let's make it non-zero
-  const fakeTimer = buildManualTimer(console.log, 30n);
-  const { creatorFacet } = await E(zoe).startInstance(
-    installation,
-    harden({ Central: issuer }),
-    { timer: fakeTimer, poolFeeBP: 24n, protocolFeeBP: 6n },
+  const timer = buildManualTimer(console.log, 30n);
+
+  const ammTerms = {
+    timer,
+    poolFeeBP: POOL_FEE_BP,
+    protocolFeeBP: PROTOCOL_FEE_BP,
+    main: ammInitialValues,
+  };
+
+  const { zoe, amm } = await setupServices(
+    electorateTerms,
+    ammTerms,
+    centralR,
+    timer,
   );
 
-  const collectFeesInvitation2 = E(creatorFacet).makeCollectFeesInvitation();
+  const collectFeesInvitation2 = E(
+    amm.ammCreatorFacet,
+  ).makeCollectFeesInvitation();
   const collectFeesSeat2 = await E(zoe).offer(
     collectFeesInvitation2,
     undefined,
@@ -1096,5 +1262,10 @@ test('zoe allow empty reallocations', async t => {
   const result = await E(collectFeesSeat2).getOfferResult();
 
   t.deepEqual(result, 'paid out 0');
-  await assertPayoutAmount(t, issuer, payout, AmountMath.makeEmpty(brand));
+  await assertPayoutAmount(
+    t,
+    centralR.issuer,
+    payout,
+    AmountMath.makeEmpty(centralR.brand),
+  );
 });

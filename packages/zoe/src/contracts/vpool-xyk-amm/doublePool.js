@@ -1,13 +1,14 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { makeFeeRatio } from '../constantProduct/calcFees';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
 } from '../constantProduct/calcSwapPrices.js';
+
+const { details: X } = assert;
 
 // Price calculations and swap using a pair of pools. Both pools map between RUN
 // and some collateral. We arrange the trades so collateralInPool will have
@@ -23,8 +24,8 @@ const publicPrices = prices => {
  * @param {ContractFacet} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
- * @param {BASIS_POINTS} protocolFeeBP
- * @param {BASIS_POINTS} poolFeeBP
+ * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
+ * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
  * @returns {VPool}
  */
@@ -32,8 +33,8 @@ export const makeDoublePool = (
   zcf,
   collateralInPool,
   collateralOutPool,
-  protocolFeeBP,
-  poolFeeBP,
+  getProtocolFeeBP,
+  getPoolFeeBP,
   feeSeat,
 ) => {
   const inCentral = collateralInPool.getCentralAmount();
@@ -46,9 +47,7 @@ export const makeDoublePool = (
   const outAllocation = { Central: outCentral, Secondary: outSecondary };
 
   const centralBrand = inCentral.brand;
-  const centralFeeRatio = makeFeeRatio(poolFeeBP, centralBrand);
   const emptyCentralAmount = AmountMath.makeEmpty(centralBrand);
-  const protocolFeeRatio = makeFeeRatio(protocolFeeBP, centralBrand);
   assert(
     centralBrand === outCentral.brand,
     X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
@@ -74,6 +73,10 @@ export const makeDoublePool = (
   };
 
   const getPriceForInput = (amountIn, amountOut) => {
+    const protocolFeeRatio = makeFeeRatio(getProtocolFeeBP(), centralBrand);
+    const poolFeeRatioCentral = makeFeeRatio(getPoolFeeBP(), centralBrand);
+    const poolFeeRatioAmountOut = makeFeeRatio(getPoolFeeBP(), amountOut.brand);
+
     // We must do two consecutive swapInPrice() calls,
     // followed by a call to swapOutPrice().
     // 1) from amountIn to the central token, which tells us how much central
@@ -90,21 +93,21 @@ export const makeDoublePool = (
       inAllocation,
       emptyCentralAmount,
       protocolFeeRatio,
-      centralFeeRatio,
+      poolFeeRatioCentral,
     );
     const outPoolPrices = pricesForStatedInput(
       interimInpoolPrices.swapperGets,
       outAllocation,
       amountOut,
       protocolFeeRatio,
-      makeFeeRatio(poolFeeBP, amountOut.brand),
+      poolFeeRatioAmountOut,
     );
     const finalInPoolPrices = pricesForStatedOutput(
       amountIn,
       inAllocation,
       outPoolPrices.swapperGives,
       protocolFeeRatio,
-      centralFeeRatio,
+      poolFeeRatioCentral,
     );
     return harden({
       swapperGives: finalInPoolPrices.swapperGives,
@@ -130,6 +133,10 @@ export const makeDoublePool = (
   };
 
   const getPriceForOutput = (amountIn, amountOut) => {
+    const protocolFeeRatio = makeFeeRatio(getProtocolFeeBP(), centralBrand);
+    const poolFeeRatioCentral = makeFeeRatio(getPoolFeeBP(), centralBrand);
+    const poolFeeRatioAmountIn = makeFeeRatio(getPoolFeeBP(), amountIn.brand);
+
     // We must do two consecutive swapOutPrice() calls, followed by a call to
     // swapInPrice().
     // 1) from amountOut to the central token, which tells us how much central
@@ -147,21 +154,21 @@ export const makeDoublePool = (
       outAllocation,
       amountOut,
       protocolFeeRatio,
-      centralFeeRatio,
+      poolFeeRatioCentral,
     );
     const inpoolPrices = pricesForStatedOutput(
       amountIn,
       inAllocation,
       interimOutpoolPrices.swapperGets,
       protocolFeeRatio,
-      makeFeeRatio(poolFeeBP, amountIn.brand),
+      poolFeeRatioAmountIn,
     );
     const finalOutpoolPrices = pricesForStatedInput(
       inpoolPrices.swapperGives,
       outAllocation,
       amountOut,
       protocolFeeRatio,
-      centralFeeRatio,
+      poolFeeRatioCentral,
     );
     return harden({
       swapperGives: inpoolPrices.swapperGives,

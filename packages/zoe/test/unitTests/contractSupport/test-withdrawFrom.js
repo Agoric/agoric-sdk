@@ -64,7 +64,7 @@ test(`withdrawFromSeat - groundZero`, async t => {
   await depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { C: newBucks });
   const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2) });
 
-  assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2), 'C is 2');
+  await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2), 'C is 2');
 });
 
 test(`withdrawFromSeat - violates offerSafety`, async t => {

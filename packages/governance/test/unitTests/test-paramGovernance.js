@@ -84,13 +84,11 @@ test('governParam happy path with fakes', async t => {
     t.fail(e),
   );
 
-  t.deepEqual(governedFacets.publicFacet.getGovernedParamsValues(), {
-    main: {
-      MalleableNumber: {
-        name: MALLEABLE_NUMBER,
-        type: 'nat',
-        value: 25n,
-      },
+  t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
+    MalleableNumber: {
+      name: MALLEABLE_NUMBER,
+      type: 'nat',
+      value: 25n,
     },
   });
 });
@@ -152,13 +150,11 @@ test('governParam no votes', async t => {
     t.is(e, 'no quorum'),
   );
 
-  t.deepEqual(governedFacets.publicFacet.getGovernedParamsValues(), {
-    main: {
-      MalleableNumber: {
-        name: MALLEABLE_NUMBER,
-        type: 'nat',
-        value: 602214090000000000000000n,
-      },
+  t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
+    MalleableNumber: {
+      name: MALLEABLE_NUMBER,
+      type: 'nat',
+      value: 602214090000000000000000n,
     },
   });
 });
@@ -227,13 +223,11 @@ test('governParam bad update', async t => {
     'Expected a throw',
   );
 
-  t.deepEqual(governedFacets.publicFacet.getGovernedParamsValues(), {
-    main: {
-      MalleableNumber: {
-        name: MALLEABLE_NUMBER,
-        type: 'nat',
-        value: 602214090000000000000000n,
-      },
+  t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
+    MalleableNumber: {
+      name: MALLEABLE_NUMBER,
+      type: 'nat',
+      value: 602214090000000000000000n,
     },
   });
 });

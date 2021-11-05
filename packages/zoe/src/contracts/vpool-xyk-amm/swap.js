@@ -7,10 +7,9 @@ import { LOW_FEE, SHORT_EXP } from '../../constants.js';
 
 /**
  * @param {ContractFacet} zcf
- * @param {(brandIn: Brand, brandOut: Brand, fee: bigint) => VPool} provideVPool
- * @param {BASIS_POINTS} poolFeeBP
+ * @param {(brandIn: Brand, brandOut: Brand) => VPool} provideVPool
  */
-export const makeMakeSwapInvitation = (zcf, provideVPool, poolFeeBP) => {
+export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   // trade with a stated amountIn.
   const swapIn = seat => {
     assertProposalShape(seat, {
@@ -21,7 +20,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool, poolFeeBP) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand, poolFeeBP);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     return pool.swapIn(seat, amountIn, amountOut);
   };
 
@@ -36,7 +35,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool, poolFeeBP) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand, poolFeeBP);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     return pool.swapOut(seat, amountIn, amountOut);
   };
 
