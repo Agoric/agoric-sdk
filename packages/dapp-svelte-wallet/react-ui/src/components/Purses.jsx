@@ -42,6 +42,8 @@ export const PursesInternalDoNotImportOrElse = ({
             <Button
               variant="outlined"
               color="primary"
+              size="small"
+              style={{ marginTop: '8px' }}
               onClick={() => handleClickOpen(purse)}
             >
               Send

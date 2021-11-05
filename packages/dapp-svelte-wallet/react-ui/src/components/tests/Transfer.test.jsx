@@ -3,6 +3,7 @@ import Button from '@material-ui/core/Button';
 import { act } from '@testing-library/react';
 import Select from '@material-ui/core/Select';
 import TextField from '@material-ui/core/TextField';
+import Snackbar from '@material-ui/core/Snackbar';
 import Transfer from '../Transfer';
 
 jest.mock('../PurseAmount', () => () => 'PurseAmount');
@@ -161,6 +162,7 @@ test('sends the payment', async () => {
   component.update();
   const sendButton = component.find(Button).get(1);
   await act(async () => sendButton.props.onClick());
+  component.update();
 
   expect(purses[0].actions.send).toHaveBeenCalledWith(
     purses[1].actions,
@@ -175,4 +177,26 @@ test('sends the payment', async () => {
     purseId: 0,
   });
   expect(handleClose).toHaveBeenCalled();
+  const snackbar = component.find(Snackbar);
+  expect(snackbar.props().open).toEqual(true);
+  expect(snackbar.props().message).toEqual('Transfer completed.');
+});
+
+test('shows an error when the transfer fails', async () => {
+  purses[0].actions.send.mockRejectedValue(new Error('Cannot send payment'));
+  const component = mount(
+    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+  );
+  const textField = component.find(TextField);
+  const destinationSelect = component.find(Select).first();
+
+  act(() => textField.props().onChange({ target: { value: '1000000' } }));
+  act(() => destinationSelect.props().onChange({ target: { value: 1 } }));
+  const sendButton = component.find(Button).get(1);
+  await act(async () => sendButton.props.onClick());
+  component.update();
+
+  const snackbar = component.find(Snackbar);
+  expect(snackbar.props().open).toEqual(true);
+  expect(snackbar.props().message).toEqual('Transfer failed.');
 });
