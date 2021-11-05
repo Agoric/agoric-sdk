@@ -72,7 +72,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
    */
   const makePeg = (state, desc) => {
     /** @type {Peg} */
-    const peg = Far('peg', {
+    const peg = Far(`${desc.allegedName} peg`, {
       getAllegedName() {
         return desc.allegedName;
       },
