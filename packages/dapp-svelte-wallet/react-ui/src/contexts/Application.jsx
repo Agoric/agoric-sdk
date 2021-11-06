@@ -93,6 +93,13 @@ const pendingPurseCreationsReducer = (
   return new Set(pendingPurseCreations);
 };
 
+const pendingTransfersReducer = (pendingTransfers, { purseId, isPending }) => {
+  if (isPending) pendingTransfers.add(purseId);
+  else pendingTransfers.delete(purseId);
+
+  return new Set(pendingTransfers);
+};
+
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
   const [walletBridge, setWalletBridge] = useState(null);
@@ -105,6 +112,10 @@ const Provider = ({ children }) => {
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
+    new Set(),
+  );
+  const [pendingTransfers, setPendingTransfers] = useReducer(
+    pendingTransfersReducer,
     new Set(),
   );
 
@@ -127,6 +138,8 @@ const Provider = ({ children }) => {
     setPendingPurseCreations,
     walletBridge,
     setWalletBridge,
+    pendingTransfers,
+    setPendingTransfers,
   };
 
   useDebugLogging(state, [
@@ -138,6 +151,7 @@ const Provider = ({ children }) => {
     issuers,
     pendingPurseCreations,
     walletBridge,
+    pendingTransfers,
   ]);
 
   return (

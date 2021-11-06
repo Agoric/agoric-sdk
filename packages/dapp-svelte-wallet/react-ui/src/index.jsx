@@ -24,7 +24,7 @@ const appTheme = createTheme({
   },
   typography: {
     fontFamily: ['Roboto', 'Helvetica', 'Arial', 'sans-serif'].join(','),
-    fontWeightRegular: 500,
+    fontWeightRegular: 400,
     h1: {
       fontFamily: ['Montserrat', 'Arial', 'sans-serif'].join(','),
       fontSize: '32px',
