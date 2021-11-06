@@ -58,15 +58,15 @@ test('multipoolAutoSwap with valid offers', async t => {
 
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const centralTokens = value => AmountMath.make(value, centralR.brand);
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100n));
   // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50));
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50n));
 
   // Setup Bob
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17n));
 
   // Alice creates an autoswap instance
 
@@ -90,14 +90,14 @@ test('multipoolAutoSwap with valid offers', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const moolaLiquidity = value => AmountMath.make(value, moolaLiquidityBrand);
+  const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   // Alice adds liquidity
   // 10 moola = 5 central tokens at the time of the liquidity adding
   // aka 2 moola = 1 central token
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50) },
-    give: { Secondary: moola(100), Central: centralTokens(50) },
+    want: { Liquidity: moolaLiquidity(50n) },
+    give: { Secondary: moola(100n), Central: centralTokens(50n) },
   });
   const alicePayments = {
     Secondary: aliceMoolaPayment,
@@ -130,8 +130,8 @@ test('multipoolAutoSwap with valid offers', async t => {
   t.deepEqual(bobInvitationValue.zoeTimeAuthority, fakeTimer);
 
   const bobMoolaForCentralProposal = harden({
-    want: { Out: centralTokens(7) },
-    give: { In: moola(17) },
+    want: { Out: centralTokens(7n) },
+    give: { In: moola(17n) },
   });
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 

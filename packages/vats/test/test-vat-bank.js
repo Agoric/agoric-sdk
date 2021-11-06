@@ -156,9 +156,13 @@ test('communication', async t => {
     ),
   );
 
-  const { mint, ...feeKit } = makeIssuerKit('fee', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const { mint, ...feeKit } = makeIssuerKit(
+    'fee',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
 
   const backingFee = mint.mintPayment(AmountMath.make(feeKit.brand, 20000000n));
   await E(bankMgr).addAsset('ufee', 'FEE', 'ERTP Fees', {

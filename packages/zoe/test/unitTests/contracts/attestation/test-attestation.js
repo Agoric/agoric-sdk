@@ -27,9 +27,13 @@ test('attestation contract basic tests', async t => {
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
   const installation = await E(zoe).install(bundle);
 
-  const bldIssuerKit = makeIssuerKit('BLD', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const bldIssuerKit = makeIssuerKit(
+    'BLD',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
   const uBrand = bldIssuerKit.brand;
   const uIssuer = bldIssuerKit.issuer;
 
@@ -103,24 +107,30 @@ test('attestation contract basic tests', async t => {
 
   t.deepEqual(
     await E(issuers.returnable).getAmountOf(returnable1),
-    AmountMath.make(brands.returnable, [
-      {
-        address: 'address1',
-        amountLiened: amount50,
-      },
-    ]),
+    AmountMath.make(
+      brands.returnable,
+      harden([
+        {
+          address: 'address1',
+          amountLiened: amount50,
+        },
+      ]),
+    ),
   );
   const expiring1Amount = await E(issuers.expiring).getAmountOf(expiring1);
   t.deepEqual(
     expiring1Amount,
-    AmountMath.make(brands.expiring, [
-      {
-        address: 'address1',
-        amountLiened: amount50,
-        expiration: shortExpiration,
-        handle: expiring1Amount.value[0].handle,
-      },
-    ]),
+    AmountMath.make(
+      brands.expiring,
+      harden([
+        {
+          address: 'address1',
+          amountLiened: amount50,
+          expiration: shortExpiration,
+          handle: expiring1Amount.value[0].handle,
+        },
+      ]),
+    ),
   );
 
   const liened2 = await E(creatorFacet).getLiened(
@@ -139,24 +149,30 @@ test('attestation contract basic tests', async t => {
 
   t.deepEqual(
     await E(issuers.returnable).getAmountOf(returnable2),
-    AmountMath.make(brands.returnable, [
-      {
-        address: 'address1',
-        amountLiened: amount25,
-      },
-    ]),
+    AmountMath.make(
+      brands.returnable,
+      harden([
+        {
+          address: 'address1',
+          amountLiened: amount25,
+        },
+      ]),
+    ),
   );
   const expiring2Amount = await E(issuers.expiring).getAmountOf(expiring2);
   t.deepEqual(
     expiring2Amount,
-    AmountMath.make(brands.expiring, [
-      {
-        address: 'address1',
-        amountLiened: amount25,
-        expiration: longExpiration,
-        handle: expiring2Amount.value[0].handle,
-      },
-    ]),
+    AmountMath.make(
+      brands.expiring,
+      harden([
+        {
+          address: 'address1',
+          amountLiened: amount25,
+          expiration: longExpiration,
+          handle: expiring2Amount.value[0].handle,
+        },
+      ]),
+    ),
   );
   t.not(expiring1Amount.value[0].handle, expiring2Amount.value[0].handle);
 
@@ -262,14 +278,17 @@ test('attestation contract basic tests', async t => {
   const expiring4Amount = await E(issuers.expiring).getAmountOf(expiring4);
   t.deepEqual(
     expiring4Amount,
-    AmountMath.make(brands.expiring, [
-      {
-        address: 'address1',
-        amountLiened: amount50,
-        expiration: 103n,
-        handle: expiring3Amount.value[0].handle,
-      },
-    ]),
+    AmountMath.make(
+      brands.expiring,
+      harden([
+        {
+          address: 'address1',
+          amountLiened: amount50,
+          expiration: 103n,
+          handle: expiring3Amount.value[0].handle,
+        },
+      ]),
+    ),
   );
 
   await E(creatorFacet).slashed(harden([address1]), currentTime, uBrand);

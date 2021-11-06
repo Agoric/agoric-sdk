@@ -19,7 +19,7 @@ import { assert } from '@agoric/assert';
  *   count: 3n,
  *   moneyIssuer: moolaIssuer,
  *   sellItemsInstallationHandle,
- *   pricePerItem: AmountMath.make(20n, moolaBrand),
+ *   pricePerItem: AmountMath.make(moolaBrand, 20n),
  * }
  * The payouts are returned as an offerResult in the `outcome`, and an API that
  * allows selling the tickets that were produced. You can reuse the ticket maker
@@ -42,16 +42,18 @@ const start = zcf => {
     pricePerItem,
   }) => {
     const tokenAmount = AmountMath.make(
-      Array(count)
-        .fill(undefined)
-        .map((_, i) => {
-          const tokenNumber = i + 1;
-          return {
-            ...customValueProperties,
-            number: tokenNumber,
-          };
-        }),
       brand,
+      harden(
+        Array(count)
+          .fill(undefined)
+          .map((_, i) => {
+            const tokenNumber = i + 1;
+            return {
+              ...customValueProperties,
+              number: tokenNumber,
+            };
+          }),
+      ),
     );
     const tokenPayment = mint.mintPayment(harden(tokenAmount));
     // Note that the proposal `want` is empty

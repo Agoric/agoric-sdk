@@ -37,29 +37,33 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
   // Make zcfSeat2
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
   // Make ZCFMint
-  const zcfMint = await zcf.makeZCFMint('Token', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const zcfMint = await zcf.makeZCFMint(
+    'Token',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
   const { brand: tokenBrand } = zcfMint.getIssuerRecord();
 
   // Decrement zcfSeat2 by non-zcfMintToken
-  zcfSeat2.decrementBy({ B: moola(2) });
+  zcfSeat2.decrementBy({ B: moola(2n) });
   t.true(zcfSeat2.hasStagedAllocation());
-  t.deepEqual(zcfSeat2.getStagedAllocation(), { B: moola(1) });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), { B: moola(3) });
+  t.deepEqual(zcfSeat2.getStagedAllocation(), { B: moola(1n) });
+  t.deepEqual(zcfSeat2.getCurrentAllocation(), { B: moola(3n) });
 
   // Mint gains to zcfSeat2
   zcfMint.mintGains(
@@ -74,11 +78,11 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // added to the current allocation also gets added to any
   // in-progress staged allocation.
   t.deepEqual(zcfSeat2.getStagedAllocation(), {
-    B: moola(1),
+    B: moola(1n),
     MyToken: AmountMath.make(tokenBrand, 100n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(3),
+    B: moola(3n),
     MyToken: AmountMath.make(tokenBrand, 100n),
   });
 
@@ -93,19 +97,19 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // allocation should have changed to include the minted tokens
   t.false(zcfSeat1.hasStagedAllocation());
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    B: moola(3),
+    B: moola(3n),
     OtherTokens: AmountMath.make(tokenBrand, 50n),
   });
 
   // zcfSeat1.incrementBy non-zcfMint token
-  zcfSeat1.incrementBy({ B: moola(2) });
+  zcfSeat1.incrementBy({ B: moola(2n) });
   // Both the staged allocation and the current allocation show the OtherTokens
   t.deepEqual(zcfSeat1.getStagedAllocation(), {
-    B: moola(5),
+    B: moola(5n),
     OtherTokens: AmountMath.make(tokenBrand, 50n),
   });
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    B: moola(3),
+    B: moola(3n),
     OtherTokens: AmountMath.make(tokenBrand, 50n),
   });
 
@@ -114,11 +118,11 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   t.false(zcfSeat1.hasStagedAllocation());
   t.false(zcfSeat2.hasStagedAllocation());
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    B: moola(5),
+    B: moola(5n),
     OtherTokens: AmountMath.make(tokenBrand, 50n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(1),
+    B: moola(1n),
     MyToken: AmountMath.make(tokenBrand, 100n),
   });
 
@@ -127,7 +131,7 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // zcfSeat1 decrementBy both zcfMint token and non-zcfMint token
   zcfSeat1.decrementBy({
     OtherTokens: AmountMath.make(tokenBrand, 5n),
-    B: moola(1),
+    B: moola(1n),
   });
 
   // zcfMint.burnLosses on zcfSeat1
@@ -139,11 +143,11 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // stagedAllocation, but currentAllocation does not include the
   // stagedAllocations, and will not until zcf.reallocate is called.
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    B: moola(5), // no change since reallocate
+    B: moola(5n), // no change since reallocate
     OtherTokens: AmountMath.make(tokenBrand, 43n),
   });
   t.deepEqual(zcfSeat1.getStagedAllocation(), {
-    B: moola(4),
+    B: moola(4n),
     OtherTokens: AmountMath.make(tokenBrand, 38n), // includes decrementBy and burnLosses
   });
 
@@ -155,7 +159,7 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
     zcfSeat2,
   );
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(1),
+    B: moola(1n),
     MyToken: AmountMath.make(tokenBrand, 83n),
   });
   t.false(zcfSeat2.hasStagedAllocation());
@@ -163,14 +167,14 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // zcfSeat2.incrementBy
   zcfSeat2.incrementBy({
     OtherTokens: AmountMath.make(tokenBrand, 5n), // let's keep this keyword separate even though we don't have to
-    B: moola(1),
+    B: moola(1n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(1),
+    B: moola(1n),
     MyToken: AmountMath.make(tokenBrand, 83n),
   });
   t.deepEqual(zcfSeat2.getStagedAllocation(), {
-    B: moola(2),
+    B: moola(2n),
     MyToken: AmountMath.make(tokenBrand, 83n),
     OtherTokens: AmountMath.make(tokenBrand, 5n),
   });
@@ -183,12 +187,12 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
     zcfSeat2,
   );
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(1),
+    B: moola(1n),
     MyToken: AmountMath.make(tokenBrand, 83n),
     AnotherOne: AmountMath.make(tokenBrand, 2n),
   });
   t.deepEqual(zcfSeat2.getStagedAllocation(), {
-    B: moola(2),
+    B: moola(2n),
     MyToken: AmountMath.make(tokenBrand, 83n),
     OtherTokens: AmountMath.make(tokenBrand, 5n),
     AnotherOne: AmountMath.make(tokenBrand, 2n),
@@ -197,13 +201,13 @@ test(`stagedAllocations safely interleave with zcfMint calls`, async t => {
   // One last reallocate
   zcf.reallocate(zcfSeat1, zcfSeat2);
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: moola(2),
+    B: moola(2n),
     MyToken: AmountMath.make(tokenBrand, 83n),
     OtherTokens: AmountMath.make(tokenBrand, 5n),
     AnotherOne: AmountMath.make(tokenBrand, 2n),
   });
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    B: moola(4),
+    B: moola(4n),
     OtherTokens: AmountMath.make(tokenBrand, 38n),
   });
   t.false(zcfSeat1.hasStagedAllocation());

@@ -12,9 +12,8 @@ const { details: X } = assert;
  *
  * @type {MakeFeeRatio}
  */
-const makeFeeRatio = (feeBP, brandOfFee) => {
-  return makeRatio(feeBP, brandOfFee, BASIS_POINTS);
-};
+const makeFeeRatio = (feeBP, brandOfFee) =>
+  makeRatio(feeBP, brandOfFee, BASIS_POINTS);
 
 /** @type {Maximum} */
 const maximum = (left, right) => {

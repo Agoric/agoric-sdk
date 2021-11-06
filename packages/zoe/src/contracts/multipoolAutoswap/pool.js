@@ -57,8 +57,8 @@ export const makeAddPool = (
       );
 
       const liquidityAmountOut = AmountMath.make(
-        liquidityValueOut,
         liquidityBrand,
+        liquidityValueOut,
       );
       liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
       liqTokenSupply += liquidityValueOut;
@@ -144,8 +144,8 @@ export const makeAddPool = (
           feeBP,
         );
         return {
-          amountOut: AmountMath.make(valueOut, outputBrand),
-          amountIn: AmountMath.make(valueIn, inputAmount.brand),
+          amountOut: AmountMath.make(outputBrand, valueOut),
+          amountIn: AmountMath.make(inputAmount.brand, valueIn),
         };
       },
 
@@ -183,8 +183,8 @@ export const makeAddPool = (
           feeBP,
         );
         return {
-          amountOut: AmountMath.make(valueOut, outputAmount.brand),
-          amountIn: AmountMath.make(valueIn, inputBrand),
+          amountOut: AmountMath.make(outputAmount.brand, valueOut),
+          amountIn: AmountMath.make(inputBrand, valueIn),
         };
       },
       addLiquidity: zcfSeat => {
@@ -205,13 +205,13 @@ export const makeAddPool = (
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
         const secondaryOut = AmountMath.make(
+          secondaryBrand,
           calcSecondaryRequired(
             userAllocation.Central.value,
             centralAmount.value,
             secondaryAmount.value,
             secondaryIn.value,
           ),
-          secondaryBrand,
         );
 
         // Central was specified precisely so offer must provide enough secondary.
@@ -230,21 +230,21 @@ export const makeAddPool = (
         const liquidityValueIn = liquidityIn.value;
         assert(isNatValue(liquidityValueIn));
         const centralTokenAmountOut = AmountMath.make(
+          centralBrand,
           calcValueToRemove(
             liqTokenSupply,
             pool.getCentralAmount().value,
             liquidityValueIn,
           ),
-          centralBrand,
         );
 
         const tokenKeywordAmountOut = AmountMath.make(
+          secondaryBrand,
           calcValueToRemove(
             liqTokenSupply,
             pool.getSecondaryAmount().value,
             liquidityValueIn,
           ),
-          secondaryBrand,
         );
 
         liqTokenSupply -= liquidityValueIn;

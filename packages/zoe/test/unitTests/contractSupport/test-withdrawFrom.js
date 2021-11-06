@@ -56,15 +56,15 @@ test(`withdrawFromSeat - groundZero`, async t => {
   const { zcfSeat } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: moola(3) }, give: { B: bucks(5) } }),
-    harden({ B: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
+    harden({ B: bucksMint.mintPayment(bucks(5n)) }),
   );
 
-  const newBucks = bucksMint.mintPayment(bucks(2));
-  await depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { C: newBucks });
-  const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2) });
+  const newBucks = bucksMint.mintPayment(bucks(2n));
+  await depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { C: newBucks });
+  const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2n) });
 
-  assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2), 'C is 2');
+  await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2n), 'C is 2');
 });
 
 test(`withdrawFromSeat - violates offerSafety`, async t => {
@@ -74,19 +74,19 @@ test(`withdrawFromSeat - violates offerSafety`, async t => {
   const { zcfSeat } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: moola(3) }, give: { B: bucks(5) } }),
-    harden({ B: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
+    harden({ B: bucksMint.mintPayment(bucks(5n)) }),
   );
 
-  const newBucks = bucksMint.mintPayment(bucks(2));
-  await depositToSeat(zcf, zcfSeat, { B: bucks(2) }, { B: newBucks });
+  const newBucks = bucksMint.mintPayment(bucks(2n));
+  await depositToSeat(zcf, zcfSeat, { B: bucks(2n) }, { B: newBucks });
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
     { A: moola(0n), B: bucks(7n) },
     'should add deposit',
   );
   await t.throwsAsync(
-    withdrawFromSeat(zcf, zcfSeat, { B: bucks(4) }),
+    withdrawFromSeat(zcf, zcfSeat, { B: bucks(4n) }),
     {
       message: /Offer safety was violated by the proposed allocation/,
     },

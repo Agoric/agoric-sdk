@@ -1,7 +1,6 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
@@ -16,6 +15,8 @@ import '../../../exported.js';
 import { makePriceAuthority } from '../multipoolAutoswap/priceAuthority.js';
 import { makeSinglePool } from './singlePool.js';
 
+const { details: X } = assert;
+
 // Pools represent a single pool of liquidity. Price calculations and trading
 // happen in a wrapper class that knows whether the proposed trade involves a
 // single pool or multiple hops.
@@ -27,8 +28,8 @@ import { makeSinglePool } from './singlePool.js';
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {BASIS_POINTS} protocolFeeBP - soon to be replaced with governed value
- * @param {BASIS_POINTS} poolFeeBP - soon to be replaced with governed value
+ * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
+ * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} protocolSeat
  */
 export const makeAddPool = (
@@ -38,8 +39,8 @@ export const makeAddPool = (
   centralBrand,
   timer,
   quoteIssuerKit,
-  protocolFeeBP,
-  poolFeeBP,
+  getProtocolFeeBP,
+  getPoolFeeBP,
   protocolSeat,
 ) => {
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
@@ -69,8 +70,8 @@ export const makeAddPool = (
       );
 
       const liquidityAmountOut = AmountMath.make(
-        liquidityValueOut,
         liquidityBrand,
+        liquidityValueOut,
       );
       liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
       liqTokenSupply += liquidityValueOut;
@@ -111,21 +112,21 @@ export const makeAddPool = (
         const secondaryIn = userAllocation.Secondary;
         const centralAmount = pool.getCentralAmount();
         const secondaryAmount = pool.getSecondaryAmount();
-        assert(isNatValue(userAllocation.Central.value));
-        assert(isNatValue(centralAmount.value));
-        assert(isNatValue(secondaryAmount.value));
-        assert(isNatValue(secondaryIn.value));
+        assert(isNatValue(userAllocation.Central.value), 'User Central');
+        assert(isNatValue(centralAmount.value), 'Pool Central');
+        assert(isNatValue(secondaryAmount.value), 'Pool Secondary');
+        assert(isNatValue(secondaryIn.value), 'User Secondary');
 
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
         const secondaryOut = AmountMath.make(
+          secondaryBrand,
           calcSecondaryRequired(
             userAllocation.Central.value,
             centralAmount.value,
             secondaryAmount.value,
             secondaryIn.value,
           ),
-          secondaryBrand,
         );
 
         // Central was specified precisely so offer must provide enough secondary.
@@ -142,23 +143,23 @@ export const makeAddPool = (
           liquidityBrand,
         );
         const liquidityValueIn = liquidityIn.value;
-        assert(isNatValue(liquidityValueIn));
+        assert(isNatValue(liquidityValueIn), 'User Liquidity');
         const centralTokenAmountOut = AmountMath.make(
+          centralBrand,
           calcValueToRemove(
             liqTokenSupply,
             pool.getCentralAmount().value,
             liquidityValueIn,
           ),
-          centralBrand,
         );
 
         const tokenKeywordAmountOut = AmountMath.make(
+          secondaryBrand,
           calcValueToRemove(
             liqTokenSupply,
             pool.getSecondaryAmount().value,
             liquidityValueIn,
           ),
-          secondaryBrand,
         );
 
         liqTokenSupply -= liquidityValueIn;
@@ -189,8 +190,8 @@ export const makeAddPool = (
     const vPool = makeSinglePool(
       zcf,
       pool,
-      protocolFeeBP,
-      poolFeeBP,
+      getProtocolFeeBP,
+      getPoolFeeBP,
       protocolSeat,
     );
 

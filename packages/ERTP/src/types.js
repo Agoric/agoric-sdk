@@ -46,56 +46,20 @@
  * This section blindly imitates what Endo's ses/src/error/types.js
  * does to express type overloaded methods.
  *
- * @callback AmountMakeBrandValue
+ * @callback AmountMake
  * @param {Brand} brand
  * @param {Value} allegedValue
  * @returns {Amount}
  *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountMakeValueBrand
- * Please use the brand-first overload. The value-first overload
- * is deprecated and will go way.
- * @param {Value} brand
- * @param {Brand} allegedValue
- * @returns {Amount}
- *
- * @typedef {AmountMakeBrandValue & AmountMakeValueBrand} AmountMake
- *
- * @callback AmountCoerceBrandAmount
+ * @callback AmountCoerce
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Amount}
  *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountCoerceAmountBrand
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
- * @param {Amount} brand
- * @param {Brand} allegedAmount
- * @returns {Amount}
- *
- * @typedef {AmountCoerceBrandAmount & AmountCoerceAmountBrand} AmountCoerce
- *
- * @callback AmountGetValueBrandAmount
+ * @callback AmountGetValue
  * @param {Brand} brand
  * @param {Amount} allegedAmount
  * @returns {Value}
- *
- * TODO find out how to get this "deprecated" marking recognized,
- * or remove it.
- * @deprecated Use brand-first overload instead
- * @callback AmountGetValueAmountBrand
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
- * @param {Amount} brand
- * @param {Brand} allegedAmount
- * @returns {Value}
- *
- * @typedef {AmountGetValueBrandAmount & AmountGetValueAmountBrand} AmountGetValue
  */
 
 /**
@@ -110,19 +74,13 @@
  *
  * @property {AmountMake} make
  * Make an amount from a value by adding the brand.
- * Please use the brand-first overload. The value-first overload
- * is deprecated and will go way.
  *
  * @property {AmountCoerce} coerce
  * Make sure this amount is valid enough, and return a corresponding
  * valid amount if so.
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
  *
  * @property {AmountGetValue} getValue
  * Extract and return the value.
- * Please use the brand-first overload. The amount-first overload
- * is deprecated and will go way.
  *
  * @property {MakeEmpty} makeEmpty
  * Return the amount representing an empty amount. This is the
@@ -337,7 +295,6 @@
 /**
  * @typedef {Object} AdditionalDisplayInfo
  *
- * Does not include `assetKind`, which is automatically added in MakeIssuerKit
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
  *   other words, which position corresponds to whole numbers. We
@@ -348,6 +305,7 @@
  *   assets, should not be specified. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
+ * @property {AssetKind=} assetKind
  */
 
 /**
@@ -552,4 +510,10 @@
 
 /**
  * @typedef {MathHelpers<SetValue>} SetMathHelpers
+ */
+
+/**
+ * @callback AssertAssetKind
+ * @param {AssetKind} allegedAK
+ * @returns {void}
  */

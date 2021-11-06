@@ -4,15 +4,17 @@ import { E } from '@agoric/eventual-send';
 
 import '../exported.js';
 import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers.js';
-import { AmountMath, looksLikeSetValue, isNatValue } from '@agoric/ertp';
+import { AmountMath, isNatValue, isSetValue } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';
 
 export const assertAmountsEqual = (t, amount, expected, label = '') => {
+  harden(amount);
+  harden(expected);
   const brandsEqual = amount.brand === expected.brand;
   const l = label ? `${label} ` : '';
   let valuesEqual;
-  if (looksLikeSetValue(expected.value)) {
+  if (isSetValue(expected.value)) {
     valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
   } else if (isNatValue(expected.value)) {
     valuesEqual = amount.value === expected.value;
@@ -40,7 +42,7 @@ export const assertPayoutAmount = async (
   expectedAmount,
   label = '',
 ) => {
-  const amount = await issuer.getAmountOf(payout);
+  const amount = await E(issuer).getAmountOf(payout);
   assertAmountsEqual(t, amount, expectedAmount, label);
 };
 

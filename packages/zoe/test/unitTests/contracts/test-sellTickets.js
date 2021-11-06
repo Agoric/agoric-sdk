@@ -6,8 +6,7 @@ import path from 'path';
 
 import { assert } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { looksLikeSetValue } from '@agoric/ertp/src/typeGuards.js';
+import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
@@ -48,7 +47,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 3,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: AmountMath.make(20n, moolaBrand),
+    pricePerItem: AmountMath.make(moolaBrand, 20n),
   });
   t.is(
     await sellItemsCreatorSeat.getOfferResult(),
@@ -95,7 +94,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
     count: 2,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: AmountMath.make(20n, moolaBrand),
+    pricePerItem: AmountMath.make(moolaBrand, 20n),
   });
   const sellItemsPublicFacet2 = await E(zoe).getPublicFacet(sellItemsInstance2);
   const ticketsForSale2 = await E(sellItemsPublicFacet2).getAvailableItems();
@@ -147,7 +146,7 @@ test(`mint and sell opera tickets`, async t => {
     brand: moolaBrand,
   } = makeIssuerKit('moola');
 
-  const moola = value => AmountMath.make(value, moolaBrand);
+  const moola = value => AmountMath.make(moolaBrand, value);
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
   const feePurse = E(zoeService).makeFeePurse();
@@ -179,7 +178,7 @@ test(`mint and sell opera tickets`, async t => {
       count: 3,
       moneyIssuer: moolaIssuer,
       sellItemsInstallation,
-      pricePerItem: moola(22),
+      pricePerItem: moola(22n),
     });
 
     const ticketsForSale = await E(sellItemsPublicFacet).getAvailableItems();
@@ -208,7 +207,7 @@ test(`mint and sell opera tickets`, async t => {
     const alicePurse = await E(moolaIssuer).makeEmptyPurse();
     await E(alicePurse).deposit(moola100Payment);
 
-    t.deepEqual(terms.pricePerItem, moola(22), `pricePerItem is 22 moola`);
+    t.deepEqual(terms.pricePerItem, moola(22n), `pricePerItem is 22 moola`);
 
     const availableTickets = await E(
       ticketSalesPublicFacet,
@@ -219,7 +218,7 @@ test(`mint and sell opera tickets`, async t => {
       3,
       'Alice should see 3 available tickets',
     );
-    assert(looksLikeSetValue(availableTickets.value));
+    assert(isSetValue(availableTickets.value));
     t.truthy(
       availableTickets.value.find(ticket => ticket.number === 1),
       `availableTickets contains ticket number 1`,
@@ -238,7 +237,7 @@ test(`mint and sell opera tickets`, async t => {
       ticket => ticket.number === 1,
     );
     // make the corresponding amount
-    const ticket1Amount = AmountMath.make([ticket1Value], ticketBrand);
+    const ticket1Amount = AmountMath.make(ticketBrand, harden([ticket1Value]));
 
     const aliceProposal = harden({
       give: { Money: terms.pricePerItem },
@@ -301,14 +300,14 @@ test(`mint and sell opera tickets`, async t => {
     // Joker does NOT check available tickets and tries to buy the ticket
     // number 1(already bought by Alice, but he doesn't know)
     const ticket1Amount = AmountMath.make(
-      [
+      ticketBrand,
+      harden([
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
           number: 1,
         },
-      ],
-      ticketBrand,
+      ]),
     );
 
     const jokerProposal = harden({
@@ -345,7 +344,7 @@ test(`mint and sell opera tickets`, async t => {
     );
     t.deepEqual(
       jokerMoneyPayoutAmount,
-      moola(22),
+      moola(22n),
       'Joker should get a refund after trying to get ticket #1',
     );
   };
@@ -370,17 +369,17 @@ test(`mint and sell opera tickets`, async t => {
     await E(jokerPurse).deposit(moola100Payment);
 
     const ticket2Amount = AmountMath.make(
-      [
+      ticketBrand,
+      harden([
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
           number: 2,
         },
-      ],
-      ticketBrand,
+      ]),
     );
 
-    const insufficientAmount = moola(1);
+    const insufficientAmount = moola(1n);
     const jokerProposal = harden({
       give: { Money: insufficientAmount },
       want: { Items: ticket2Amount },
@@ -443,7 +442,7 @@ test(`mint and sell opera tickets`, async t => {
       ticketSalesPublicFacet,
     ).getAvailableItems();
 
-    assert(looksLikeSetValue(availableTickets.value));
+    assert(isSetValue(availableTickets.value));
     // Bob sees the currently available tickets
     t.is(
       availableTickets.value.length,
@@ -465,11 +464,11 @@ test(`mint and sell opera tickets`, async t => {
 
     // Bob buys tickets 2 and 3
     const ticket2and3Amount = AmountMath.make(
-      [
+      ticketBrand,
+      harden([
         availableTickets.value.find(ticket => ticket.number === 2),
         availableTickets.value.find(ticket => ticket.number === 3),
-      ],
-      ticketBrand,
+      ]),
     );
 
     const totalCost = moola(2n * terms.pricePerItem.value);
@@ -522,22 +521,22 @@ test(`mint and sell opera tickets`, async t => {
   const ticketSalesInvitation1 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await aliceBuysTicket1(
     ticketSalesInvitation1,
-    moolaMint.mintPayment(moola(100)),
+    moolaMint.mintPayment(moola(100n)),
   );
   const ticketSalesInvitation2 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await jokerBuysTicket1(
     ticketSalesInvitation2,
-    moolaMint.mintPayment(moola(100)),
+    moolaMint.mintPayment(moola(100n)),
   );
   const ticketSalesInvitation3 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await jokerTriesToBuyTicket2(
     ticketSalesInvitation3,
-    moolaMint.mintPayment(moola(100)),
+    moolaMint.mintPayment(moola(100n)),
   );
   const ticketSalesInvitation4 = E(sellItemsCreatorFacet).makeBuyerInvitation();
   await bobBuysTicket2And3(
     ticketSalesInvitation4,
-    moolaMint.mintPayment(moola(100)),
+    moolaMint.mintPayment(moola(100n)),
   );
   await ticketSellerClosesContract(sellItemsCreatorSeat);
 });
@@ -573,7 +572,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     count: 23,
     moneyIssuer: moolaIssuer,
     sellItemsInstallation,
-    pricePerItem: AmountMath.make(634n, moolaBrand),
+    pricePerItem: AmountMath.make(moolaBrand, 634n),
   });
   t.is(
     await sellItemsCreatorSeat.getOfferResult(),

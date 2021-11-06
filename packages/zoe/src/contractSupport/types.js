@@ -131,7 +131,7 @@
  * @callback MakeRatio
  * @param {bigint} numerator
  * @param {Brand} numeratorBrand
- * @param {bigint=} denominator The default denomiator is 100
+ * @param {bigint=} denominator The default denominator is 100
  * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
  * @returns {Ratio}
  */

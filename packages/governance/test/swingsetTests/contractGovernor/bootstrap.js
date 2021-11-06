@@ -5,7 +5,7 @@ import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
 import { makeGovernedNat } from '../../../src/paramMakers.js';
-import { MALLEABLE_NUMBER } from './governedContract';
+import { MALLEABLE_NUMBER } from './governedContract.js';
 
 const { quote: q } = assert;
 
@@ -132,7 +132,7 @@ const oneVoterValidate = async (
 const checkContractState = async (zoe, contractInstanceP, log) => {
   const contractInstance = await contractInstanceP;
   const contractPublic = E(zoe).getPublicFacet(contractInstance);
-  let paramValues = await E(contractPublic).getGovernedParamsValues();
+  let paramValues = await E(contractPublic).getGovernedParams();
   const subscription = await E(contractPublic).getSubscription();
   const paramChangeObserver = Far('param observer', {
     updateState: update => {
@@ -142,8 +142,8 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   observeIteration(subscription, paramChangeObserver);
 
   // it takes a while for the update to propagate. The second time it seems good
-  paramValues = await E(contractPublic).getGovernedParamsValues();
-  const malleableNumber = paramValues.main.MalleableNumber;
+  paramValues = await E(contractPublic).getGovernedParams();
+  const malleableNumber = paramValues.MalleableNumber;
 
   log(`current value of ${malleableNumber.name} is ${malleableNumber.value}`);
 };

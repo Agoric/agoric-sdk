@@ -18,24 +18,28 @@ test(`allStagedSeatsUsed should not be asserted`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
-  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2) }));
+  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2n) }));
   // Seats have staged allocations
   t.true(zcfSeat1.hasStagedAllocation());
 
-  const zcfMint = await zcf.makeZCFMint('Token', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const zcfMint = await zcf.makeZCFMint(
+    'Token',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
 
   const { brand: tokenBrand } = zcfMint.getIssuerRecord();
 
@@ -58,27 +62,27 @@ test(`allStagedSeatsUsed should be asserted`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
   const { zcfSeat: zcfSeat3 } = await makeOffer(
     zoe,
     zcf,
-    harden({ give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
-  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2) }));
+  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2n) }));
 
-  zcfSeat3.incrementBy({ B: moola(3) });
+  zcfSeat3.incrementBy({ B: moola(3n) });
 
   t.true(zcfSeat3.hasStagedAllocation());
 

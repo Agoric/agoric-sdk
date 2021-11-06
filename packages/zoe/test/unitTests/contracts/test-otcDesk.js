@@ -69,9 +69,9 @@ const makeAlice = async (
       });
       const proposal = harden({
         give: {
-          Moola: moola(10000),
-          Simolean: simoleans(10000),
-          Buck: bucks(10000),
+          Moola: moola(10000n),
+          Simolean: simoleans(10000n),
+          Buck: bucks(10000n),
         },
       });
       const payments = {
@@ -142,22 +142,22 @@ const makeBob = (
       );
       t.deepEqual(
         invitationValue.underlyingAssets,
-        { Moola: moola(3) },
+        { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
         invitationValue.strikePrice,
-        { Simolean: simoleans(4) },
+        { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
 
       // Bob can use whatever keywords he wants
       const proposal = harden({
-        give: { Whatever1: simoleans(4) },
-        want: { Whatever2: moola(3) },
+        give: { Whatever1: simoleans(4n) },
+        want: { Whatever2: moola(3n) },
         exit: { onDemand: null },
       });
-      const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4));
+      const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4n));
       const payments = { Whatever1: simoleanPayment1 };
 
       const seat = await E(zoe).offer(invitation, proposal, payments);
@@ -171,14 +171,14 @@ const makeBob = (
         t,
         moolaIssuer,
         E(seat).getPayout('Whatever2'),
-        moola(3),
+        moola(3n),
         'bob moola',
       );
       await assertPayoutAmount(
         t,
         simoleanIssuer,
         E(seat).getPayout('Whatever1'),
-        simoleans(0),
+        simoleans(0n),
         'bob simolean',
       );
     },
@@ -193,22 +193,22 @@ const makeBob = (
       );
       t.deepEqual(
         invitationValue.underlyingAssets,
-        { Moola: moola(3) },
+        { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
         invitationValue.strikePrice,
-        { Simolean: simoleans(4) },
+        { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
 
       // Bob can use whatever keywords he wants
       const proposal = harden({
-        give: { Whatever1: simoleans(4) },
-        want: { Whatever2: moola(3) },
+        give: { Whatever1: simoleans(4n) },
+        want: { Whatever2: moola(3n) },
         exit: { onDemand: null },
       });
-      const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4));
+      const simoleanPayment1 = simoleanPurse.withdraw(simoleans(4n));
       const payments = { Whatever1: simoleanPayment1 };
 
       const offerExpiredSeat = await E(zoe).offer(
@@ -232,7 +232,7 @@ const makeBob = (
         t,
         simoleanIssuer,
         E(offerExpiredSeat).getPayout('Whatever1'),
-        simoleans(4),
+        simoleans(4n),
         'bob simolean',
       );
     },
@@ -247,23 +247,23 @@ const makeBob = (
       );
       t.deepEqual(
         invitationValue.underlyingAssets,
-        { Simolean: simoleans(15) },
+        { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
         invitationValue.strikePrice,
-        { Buck: bucks(500), Moola: moola(35) },
+        { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );
 
       // Bob can use whatever keywords he wants
       const proposal = harden({
-        give: { Whatever1: bucks(500), Whatever2: moola(35) },
-        want: { Whatever3: simoleans(16) },
+        give: { Whatever1: bucks(500n), Whatever2: moola(35n) },
+        want: { Whatever3: simoleans(16n) },
         exit: { onDemand: null },
       });
-      const bucks500Payment = bucksPurse.withdraw(bucks(500));
-      const moola35Payment = moolaPurse.withdraw(moola(35));
+      const bucks500Payment = bucksPurse.withdraw(bucks(500n));
+      const moola35Payment = moolaPurse.withdraw(moola(35n));
       const payments = {
         Whatever1: bucks500Payment,
         Whatever2: moola35Payment,
@@ -280,21 +280,21 @@ const makeBob = (
         t,
         bucksIssuer,
         E(seat).getPayout('Whatever1'),
-        bucks(500),
+        bucks(500n),
         'bob bucks',
       );
       await assertPayoutAmount(
         t,
         moolaIssuer,
         E(seat).getPayout('Whatever2'),
-        moola(35),
+        moola(35n),
         'bob moola',
       );
       await assertPayoutAmount(
         t,
         simoleanIssuer,
         E(seat).getPayout('Whatever3'),
-        simoleans(0),
+        simoleans(0n),
         'bob simolean',
       );
     },
@@ -309,12 +309,12 @@ const makeBob = (
       );
       t.deepEqual(
         invitationValue.underlyingAssets,
-        { Simolean: simoleans(15) },
+        { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
         invitationValue.strikePrice,
-        { Buck: bucks(500), Moola: moola(35) },
+        { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );
 
@@ -324,12 +324,12 @@ const makeBob = (
 
       // Bob can use whatever keywords he wants
       const proposal = harden({
-        give: { Whatever1: bucks(500), Whatever2: moola(35) },
-        want: { Whatever3: simoleans(15) },
+        give: { Whatever1: bucks(500n), Whatever2: moola(35n) },
+        want: { Whatever3: simoleans(15n) },
         exit: { onDemand: null },
       });
-      const bucks500Payment = bucksPurse.withdraw(bucks(500));
-      const moola35Payment = moolaPurse.withdraw(moola(35));
+      const bucks500Payment = bucksPurse.withdraw(bucks(500n));
+      const moola35Payment = moolaPurse.withdraw(moola(35n));
       const payments = {
         Whatever1: bucks500Payment,
         Whatever2: moola35Payment,
@@ -348,21 +348,21 @@ const makeBob = (
         t,
         bucksIssuer,
         E(seat).getPayout('Whatever1'),
-        bucks(500),
+        bucks(500n),
         'bob bucks',
       );
       await assertPayoutAmount(
         t,
         moolaIssuer,
         E(seat).getPayout('Whatever2'),
-        moola(35),
+        moola(35n),
         'bob moola',
       );
       await assertPayoutAmount(
         t,
         simoleanIssuer,
         E(seat).getPayout('Whatever3'),
-        simoleans(0),
+        simoleans(0n),
         'bob simolean',
       );
     },
@@ -391,6 +391,13 @@ const issuers = {
   bucks,
 };
 
+/**
+ * @param {Value} moolaValue
+ * @param {Value} simoleanValue
+ * @param {Value} bucksValue
+ * @returns {{ moolaPayment: Payment, simoleanPayment: Payment,
+ * bucksPayment: Payment }}
+ */
 const makeInitialPayments = (moolaValue, simoleanValue, bucksValue) => ({
   moolaPayment: moolaKit.mint.mintPayment(moola(moolaValue)),
   simoleanPayment: simoleanKit.mint.mintPayment(simoleans(simoleanValue)),
@@ -403,7 +410,7 @@ test('zoe - otcDesk - offerOk', async t => {
   const coveredCallInstallation = await installCoveredCall(zoe);
 
   // Make Alice
-  const alicePayments = makeInitialPayments(10000, 10000, 10000);
+  const alicePayments = makeInitialPayments(10000n, 10000n, 10000n);
   const alice = await makeAlice(
     t,
     zoe,
@@ -414,7 +421,7 @@ test('zoe - otcDesk - offerOk', async t => {
   );
 
   // Make Bob
-  const bobPayments = makeInitialPayments(10000, 10000, 10000);
+  const bobPayments = makeInitialPayments(10000n, 10000n, 10000n);
   const bob = await makeBob(
     t,
     zoe,
@@ -436,14 +443,14 @@ test('zoe - otcDesk - offerOk', async t => {
 
   // Alice makes a custom quote for Bob
   const invitation1 = await alice.makeQuoteForBob(
-    { Simolean: simoleans(4) },
-    { Moola: moola(3) },
+    { Simolean: simoleans(4n) },
+    { Moola: moola(3n) },
     timer,
     1n,
   );
 
   await bob.offerOk(invitation1);
-  await alice.removeInventory(simoleans(2));
+  await alice.removeInventory(simoleans(2n));
 });
 
 test('zoe - otcDesk - offerExpired', async t => {
@@ -452,7 +459,7 @@ test('zoe - otcDesk - offerExpired', async t => {
   const coveredCallInstallation = await installCoveredCall(zoe);
 
   // Make Alice
-  const alicePayments = makeInitialPayments(10000, 10000, 10000);
+  const alicePayments = makeInitialPayments(10000n, 10000n, 10000n);
   const alice = await makeAlice(
     t,
     zoe,
@@ -463,7 +470,7 @@ test('zoe - otcDesk - offerExpired', async t => {
   );
 
   // Make Bob
-  const bobPayments = makeInitialPayments(10000, 10000, 10000);
+  const bobPayments = makeInitialPayments(10000n, 10000n, 10000n);
   const bob = await makeBob(
     t,
     zoe,
@@ -485,8 +492,8 @@ test('zoe - otcDesk - offerExpired', async t => {
 
   // Alice makes a custom quote for Bob
   const invitation2 = await alice.makeQuoteForBob(
-    { Simolean: simoleans(4) },
-    { Moola: moola(3) },
+    { Simolean: simoleans(4n) },
+    { Moola: moola(3n) },
     timer,
     1n,
   );
@@ -502,7 +509,7 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
   const coveredCallInstallation = await installCoveredCall(zoe);
 
   // Make Alice
-  const alicePayments = makeInitialPayments(10000, 10000, 10000);
+  const alicePayments = makeInitialPayments(10000n, 10000n, 10000n);
   const alice = await makeAlice(
     t,
     zoe,
@@ -513,7 +520,7 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
   );
 
   // Make Bob
-  const bobPayments = makeInitialPayments(10000, 10000, 10000);
+  const bobPayments = makeInitialPayments(10000n, 10000n, 10000n);
   const bob = await makeBob(
     t,
     zoe,
@@ -534,8 +541,8 @@ test('zoe - otcDesk - offerWantTooMuch', async t => {
   await alice.addInventory();
 
   const invitation3 = await alice.makeQuoteForBob(
-    { Buck: bucks(500), Moola: moola(35) },
-    { Simolean: simoleans(15) },
+    { Buck: bucks(500n), Moola: moola(35n) },
+    { Simolean: simoleans(15n) },
     timer,
     100n,
   );

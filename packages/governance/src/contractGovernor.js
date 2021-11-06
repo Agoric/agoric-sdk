@@ -42,16 +42,14 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * The terms for this contract include the Timer, Electorate and
  * the Installation to be started, as well as an issuerKeywordRecord or terms
  * needed by the governed contract. Those details for the governed contract are
- * included in this contract's terms as a "governed" record.
+ * included in this contract's terms as a "governed" record. If the contract
+ * expects privateArgs, those can be supplied as well.
  *
  * terms = {
  *    timer,
  *    electorateInstance,
  *    governedContractInstallation,
- *    governed: {
- *      issuerKeywordRecord: governedIssuerKeywordRecord,
- *      terms: governedTerms,
- *    },
+ *    governed: { issuerKeywordRecord, terms, privateArgs, },
  * };
  *
  * The governedContract is responsible for supplying getParamMgrRetriever() in
@@ -61,7 +59,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * only one) and the parameterName. The interpretation of ParamSpecification is
  * up to the contract.
  *
- * The contractGovenor creatorFacet includes voteOnParamChange(),
+ * The contractGovernor creatorFacet includes voteOnParamChange(),
  * which is used to create questions that will automatically update
  * contract parameters if passed. This facet will usually be closely held. The
  * creatorFacet can also be used to retrieve the governed instance, publicFacet,
@@ -155,6 +153,7 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
     getCreatorFacet: () => limitedCreatorFacet,
+    getInternalCreatorFacet: () => E(governedCF).getInternalCreatorFacet(),
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,
   });

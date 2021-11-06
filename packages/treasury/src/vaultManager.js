@@ -98,7 +98,7 @@ export function makeVaultManager(
       const displayInfo = await E(collateralBrand).getDisplayInfo();
       const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;
       return E(priceAuthority).quoteGiven(
-        AmountMath.make(10n ** Nat(decimalPlaces), collateralBrand),
+        AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
         runBrand,
       );
     },

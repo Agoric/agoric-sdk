@@ -2,9 +2,9 @@
 
 import './types.js';
 import { assert, details as X, q } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
-import { passStyleOf } from '@agoric/marshal';
+import { assertRecord } from '@agoric/marshal';
+import { isNat } from '@agoric/nat';
 
 import { natSafeMath } from './safeMath.js';
 
@@ -40,20 +40,25 @@ const PERCENT = 100n;
 const ratioPropertyNames = ['numerator', 'denominator'];
 
 export const assertIsRatio = ratio => {
-  assert.equal(passStyleOf(ratio), 'copyRecord');
-  const propertyNames = Object.getOwnPropertyNames(ratio);
-  assert(
-    propertyNames.length === 2,
-    X`Ratio ${ratio} must be a record with 2 fields.`,
-  );
-  for (const name of propertyNames) {
+  assertRecord(ratio, 'ratio');
+  const keys = Object.keys(ratio);
+  assert(keys.length === 2, X`Ratio ${ratio} must be a record with 2 fields.`);
+  for (const name of keys) {
     assert(
       ratioPropertyNames.includes(name),
       X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
     );
   }
-  Nat(ratio.numerator.value);
-  Nat(ratio.denominator.value);
+  const numeratorValue = ratio.numerator.value;
+  const denominatorValue = ratio.denominator.value;
+  assert(
+    isNat(numeratorValue),
+    X`The numerator value must be a NatValue, not ${numeratorValue}`,
+  );
+  assert(
+    isNat(denominatorValue),
+    X`The denominator value must be a NatValue, not ${denominatorValue}`,
+  );
 };
 
 /** @type {MakeRatio} */
@@ -69,8 +74,8 @@ export const makeRatio = (
   );
 
   return harden({
-    numerator: AmountMath.make(numeratorBrand, Nat(numerator)),
-    denominator: AmountMath.make(denominatorBrand, Nat(denominator)),
+    numerator: AmountMath.make(numeratorBrand, numerator),
+    denominator: AmountMath.make(denominatorBrand, denominator),
   });
 };
 
@@ -79,9 +84,9 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
-    Nat(/** @type {NatValue} */ (numeratorAmount.value)),
+    /** @type {NatValue} */ (numeratorAmount.value),
     numeratorAmount.brand,
-    Nat(/** @type {NatValue} */ (denominatorAmount.value)),
+    /** @type {NatValue} */ (denominatorAmount.value),
     denominatorAmount.brand,
   );
 };

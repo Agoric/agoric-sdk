@@ -8,9 +8,13 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { setupMakeFeePurse } from '../../../src/zoeService/feePurse.js';
 
 const setup = () => {
-  const runIssuerKit = makeIssuerKit('RUN', AssetKind.NAT, {
-    decimalPlaces: 6,
-  });
+  const runIssuerKit = makeIssuerKit(
+    'RUN',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: 6,
+    }),
+  );
   const { makeFeePurse, chargeZoeFee } = setupMakeFeePurse(runIssuerKit.issuer);
   return { makeFeePurse, chargeZoeFee, runIssuerKit };
 };

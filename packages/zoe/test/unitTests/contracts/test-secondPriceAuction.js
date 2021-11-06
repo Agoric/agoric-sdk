@@ -50,8 +50,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       },
       offer: async sellInvitation => {
         const proposal = harden({
-          give: { Asset: moola(1) },
-          want: { Ask: simoleans(3) },
+          give: { Asset: moola(1n) },
+          want: { Ask: simoleans(3n) },
           exit: { waived: null },
         });
 
@@ -80,7 +80,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(7),
+              simoleans(7n),
               `Alice got the second price bid, Carol's bid, even though Bob won`,
             ),
           );
@@ -109,12 +109,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         );
         t.deepEqual(
           invitationValue.auctionedAssets,
-          moola(1),
+          moola(1n),
           `asset to be auctioned is 1 moola`,
         );
         t.deepEqual(
           invitationValue.minimumBid,
-          simoleans(3),
+          simoleans(3n),
           `minimum bid is 3 simoleans`,
         );
 
@@ -125,8 +125,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         );
 
         const proposal = harden({
-          give: { Bid: simoleans(11) },
-          want: { Asset: moola(1) },
+          give: { Bid: simoleans(11n) },
+          want: { Asset: moola(1n) },
         });
         const payments = { Bid: simoleanPayment };
 
@@ -143,7 +143,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           .getPayout('Asset')
           .then(moolaPurse.deposit)
           .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(1), `Bob wins the auction`),
+            t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
           );
 
         await E(seat)
@@ -152,7 +152,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(4),
+              simoleans(4n),
               `Bob gets the difference between the second-price bid (Carol's 7 simoleans) and his bid back`,
             ),
           );
@@ -170,7 +170,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
         const proposal = harden({
           give: { Bid: bidAmount },
-          want: { Asset: moola(1) },
+          want: { Asset: moola(1n) },
         });
         const payments = { Bid: simoleanPayment };
 
@@ -202,21 +202,21 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
   // Setup Alice
   const timer = buildManualTimer(console.log);
-  const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1)));
+  const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
   const installation = await alice.installCode();
 
   // Setup Bob, Carol, Dave
   const bob = makeBob(
     installation,
-    await simoleanKit.mint.mintPayment(simoleans(11)),
+    await simoleanKit.mint.mintPayment(simoleans(11n)),
   );
   const carol = makeLosingBidder(
-    simoleans(7),
-    await simoleanKit.mint.mintPayment(simoleans(7)),
+    simoleans(7n),
+    await simoleanKit.mint.mintPayment(simoleans(7n)),
   );
   const dave = makeLosingBidder(
-    simoleans(5),
-    await simoleanKit.mint.mintPayment(simoleans(5)),
+    simoleans(5n),
+    await simoleanKit.mint.mintPayment(simoleans(5n)),
   );
 
   const { creatorInvitation } = await alice.startInstance(installation);
@@ -250,17 +250,17 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
   const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11));
+  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11n));
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
 
   // Setup Carol
-  const carolSimoleanPayment = simoleanR.mint.mintPayment(simoleans(8));
+  const carolSimoleanPayment = simoleanR.mint.mintPayment(simoleans(8n));
 
   // Alice creates a secondPriceAuction instance
 
@@ -282,8 +282,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
   // Alice escrows with zoe
   const aliceProposal = harden({
-    give: { Asset: moola(1) },
-    want: { Ask: simoleans(3) },
+    give: { Asset: moola(1n) },
+    want: { Ask: simoleans(3n) },
     exit: { waived: null },
   });
   const alicePayments = harden({ Asset: aliceMoolaPayment });
@@ -307,8 +307,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Alice gives Bob the invitation
 
   const bobProposal = harden({
-    want: { Asset: moola(1) },
-    give: { Bid: simoleans(11) },
+    want: { Asset: moola(1n) },
+    give: { Bid: simoleans(11n) },
   });
   const bobPayments = harden({ Bid: bobSimoleanPayment });
 
@@ -329,8 +329,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   const carolInvitation = await E(makeInvitationObj).makeBidInvitation();
 
   const carolProposal = harden({
-    want: { Asset: moola(1) },
-    give: { Bid: simoleans(8) },
+    want: { Asset: moola(1n) },
+    give: { Bid: simoleans(8n) },
   });
   const carolPayments = harden({ Bid: carolSimoleanPayment });
 
@@ -360,7 +360,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Alice got Carol's simoleans
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
-    simoleans(8),
+    simoleans(8n),
   );
 
   // Alice deposits her payout to ensure she can
@@ -380,10 +380,10 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
   // Carol gets the assets and all her simoleans are taken to pay
   // Alice
-  t.deepEqual(await moolaR.issuer.getAmountOf(carolMoolaPayout), moola(1));
+  t.deepEqual(await moolaR.issuer.getAmountOf(carolMoolaPayout), moola(1n));
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(carolSimoleanPayout),
-    simoleans(0),
+    simoleans(0n),
   );
 
   // Assert that the correct refunds were received.
@@ -413,17 +413,17 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobMoolaPayment = moolaMint.mintPayment(moola(11));
+  const bobMoolaPayment = moolaMint.mintPayment(moola(11n));
   const bobCcPurse = ccIssuer.makeEmptyPurse();
   const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
 
   // Setup Carol
-  const carolMoolaPayment = moolaMint.mintPayment(moola(7));
+  const carolMoolaPayment = moolaMint.mintPayment(moola(7n));
   const carolCcPurse = ccIssuer.makeEmptyPurse();
   const carolMoolaPurse = moolaIssuer.makeEmptyPurse();
 
   // Setup Dave
-  const daveMoolaPayment = moolaMint.mintPayment(moola(5));
+  const daveMoolaPayment = moolaMint.mintPayment(moola(5n));
   const daveCcPurse = ccIssuer.makeEmptyPurse();
   const daveMoolaPurse = moolaIssuer.makeEmptyPurse();
 
@@ -448,7 +448,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice escrows with zoe
   const aliceProposal = harden({
     give: { Asset: cryptoCats(harden(['Felix'])) },
-    want: { Ask: moola(3) },
+    want: { Ask: moola(3n) },
     exit: { waived: null },
   });
   const alicePayments = { Asset: aliceCcPayment };
@@ -474,7 +474,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
-  t.deepEqual(bobInvitationValue.minimumBid, moola(3), 'minimumBid');
+  t.deepEqual(bobInvitationValue.minimumBid, moola(3n), 'minimumBid');
   t.deepEqual(
     bobInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
@@ -482,7 +482,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   const bobProposal = harden({
-    give: { Bid: moola(11) },
+    give: { Bid: moola(11n) },
     want: { Asset: cryptoCats(harden(['Felix'])) },
   });
   const bobPayments = { Bid: bobMoolaPayment };
@@ -518,7 +518,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     { Asset: ccIssuer, Ask: moolaIssuer },
     'carolIssuers',
   );
-  t.deepEqual(carolInvitationValue.minimumBid, moola(3), 'carolMinimumBid');
+  t.deepEqual(carolInvitationValue.minimumBid, moola(3n), 'carolMinimumBid');
   t.deepEqual(
     carolInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
@@ -526,7 +526,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   const carolProposal = harden({
-    give: { Bid: moola(7) },
+    give: { Bid: moola(7n) },
     want: { Asset: cryptoCats(harden(['Felix'])) },
   });
   const carolPayments = { Bid: carolMoolaPayment };
@@ -561,7 +561,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     { Asset: ccIssuer, Ask: moolaIssuer },
     'daveIssuers',
   );
-  t.deepEqual(daveInvitationValue.minimumBid, moola(3), 'daveMinimumBid');
+  t.deepEqual(daveInvitationValue.minimumBid, moola(3n), 'daveMinimumBid');
   t.deepEqual(
     daveInvitationValue.auctionedAssets,
     cryptoCats(harden(['Felix'])),
@@ -569,7 +569,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   const daveProposal = harden({
-    give: { Bid: moola(5) },
+    give: { Bid: moola(5n) },
     want: { Asset: cryptoCats(harden(['Felix'])) },
   });
   const davePayments = { Bid: daveMoolaPayment };
@@ -629,7 +629,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
   t.deepEqual(
     await moolaIssuer.getAmountOf(bobMoolaPayout),
-    moola(4),
+    moola(4n),
     `bob gets difference back`,
   );
 

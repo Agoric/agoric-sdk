@@ -163,7 +163,7 @@ test('getInputPrice negative', t => {
     outputReserve: 117n,
     inputValue: -7n,
   };
-  const message = 'value "[-7n]" must be a Nat or an array';
+  const message = 'value "[-7n]" must be a natural number';
   getInputPriceThrows(t, input, message);
 });
 

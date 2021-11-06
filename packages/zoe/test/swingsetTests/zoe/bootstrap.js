@@ -27,7 +27,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) =>
-      mint.mintPayment(AmountMath.make(values[i], brands[i])),
+      mint.mintPayment(AmountMath.make(brands[i], BigInt(values[i]))),
     );
   const [aliceValues, bobValues, carolValues, daveValues] = startingValues;
 

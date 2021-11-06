@@ -36,12 +36,12 @@ const build = async (log, zoe, issuers, payments, installations) => {
         ),
         X`issuerKeywordRecord were not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3n)));
+      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1n)));
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(7) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(7n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };

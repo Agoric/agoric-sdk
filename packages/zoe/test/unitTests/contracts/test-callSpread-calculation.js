@@ -30,9 +30,9 @@ test('callSpread-calculation, at lower bound', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(20);
-  const strike2 = moola(70);
-  const price = moola(20);
+  const strike1 = moola(20n);
+  const strike2 = moola(70n);
+  const price = moola(20n);
   compareShareRatios(
     t,
     calculateShares(bucksBrand, price, strike1, strike2),
@@ -40,7 +40,7 @@ test('callSpread-calculation, at lower bound', async t => {
       longShare: make0Percent(bucksBrand),
       shortShare: make100Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });
 
@@ -48,9 +48,9 @@ test('callSpread-calculation, at upper bound', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(20);
-  const strike2 = moola(55);
-  const price = moola(55);
+  const strike1 = moola(20n);
+  const strike2 = moola(55n);
+  const price = moola(55n);
   compareShareRatios(
     t,
     calculateShares(bucksBrand, price, strike1, strike2),
@@ -58,7 +58,7 @@ test('callSpread-calculation, at upper bound', async t => {
       longShare: make100Percent(bucksBrand),
       shortShare: make0Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });
 
@@ -66,8 +66,8 @@ test('callSpread-calculation, below lower bound', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(15);
-  const strike2 = moola(55);
+  const strike1 = moola(15n);
+  const strike2 = moola(55n);
   const price = moola(0n);
   compareShareRatios(
     t,
@@ -76,7 +76,7 @@ test('callSpread-calculation, below lower bound', async t => {
       longShare: make0Percent(bucksBrand),
       shortShare: make100Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });
 
@@ -85,9 +85,9 @@ test('callSpread-calculation, above upper bound', async t => {
 
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(15);
-  const strike2 = moola(55);
-  const price = moola(60);
+  const strike1 = moola(15n);
+  const strike2 = moola(55n);
+  const price = moola(60n);
   compareShareRatios(
     t,
     calculateShares(bucksBrand, price, strike1, strike2),
@@ -95,7 +95,7 @@ test('callSpread-calculation, above upper bound', async t => {
       longShare: make100Percent(bucksBrand),
       shortShare: make0Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });
 
@@ -103,25 +103,25 @@ test('callSpread-calculation, mid-way', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(15);
-  const strike2 = moola(45);
-  const price = moola(40);
+  const strike1 = moola(15n);
+  const strike2 = moola(45n);
+  const price = moola(40n);
   const { longShare, shortShare } = calculateShares(
     bucksBrand,
     price,
     strike1,
     strike2,
   );
-  t.deepEqual(ceilMultiplyBy(bucks(1000), longShare), bucks(834));
-  t.deepEqual(floorMultiplyBy(bucks(1000), shortShare), bucks(166));
+  t.deepEqual(ceilMultiplyBy(bucks(1000n), longShare), bucks(834n));
+  t.deepEqual(floorMultiplyBy(bucks(1000n), shortShare), bucks(166n));
 });
 
 test('callSpread-calculation, zero', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(15);
-  const strike2 = moola(45);
+  const strike1 = moola(15n);
+  const strike2 = moola(45n);
   const price = moola(0n);
   compareShareRatios(
     t,
@@ -130,7 +130,7 @@ test('callSpread-calculation, zero', async t => {
       longShare: make0Percent(bucksBrand),
       shortShare: make100Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });
 
@@ -138,9 +138,9 @@ test('callSpread-calculation, large', async t => {
   const { moola, bucks, brands } = setup();
   const bucksBrand = brands.get('bucks');
 
-  const strike1 = moola(15);
-  const strike2 = moola(45);
-  const price = moola(10000000000);
+  const strike1 = moola(15n);
+  const strike2 = moola(45n);
+  const price = moola(10000000000n);
   compareShareRatios(
     t,
     calculateShares(bucksBrand, price, strike1, strike2),
@@ -148,6 +148,6 @@ test('callSpread-calculation, large', async t => {
       longShare: make100Percent(bucksBrand),
       shortShare: make0Percent(bucksBrand),
     },
-    bucks(1000),
+    bucks(1000n),
   );
 });

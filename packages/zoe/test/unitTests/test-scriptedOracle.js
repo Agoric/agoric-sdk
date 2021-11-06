@@ -192,9 +192,14 @@ test('pay no bounty', async t => {
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  assertPayoutAmount(t, moolaIssuer, funderSeat.getPayout('Fee'), moola(50n));
+  const p1 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    funderSeat.getPayout('Fee'),
+    moola(50n),
+  );
   // Alice gets the funds back.
-  assertPayoutAmount(
+  const p2 = assertPayoutAmount(
     t,
     moolaIssuer,
     funderSeat.getPayout('Bounty'),
@@ -212,12 +217,24 @@ test('pay no bounty', async t => {
       Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Fee'), moola(0n));
+  const p3 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    bountySeat.getPayout('Fee'),
+    moola(0n),
+  );
   // Bob doesn't receive the bounty
-  assertPayoutAmount(t, moolaIssuer, bountySeat.getPayout('Bounty'), moola(0n));
+  const p4 = assertPayoutAmount(
+    t,
+    moolaIssuer,
+    bountySeat.getPayout('Bounty'),
+    moola(0n),
+  );
 
   await E(timer).tick();
   await E(timer).tick();
   await E(timer).tick();
   await E(timer).tick();
+
+  await Promise.all([p1, p2, p3, p4]);
 });

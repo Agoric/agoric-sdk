@@ -260,7 +260,7 @@ test('bootstrap payment - only minted once', async t => {
   ).getBootstrapPayment();
 
   await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
-    message: /^payment not found for "RUN"/,
+    message: /was not a live payment/,
   });
 });
 

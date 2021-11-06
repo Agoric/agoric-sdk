@@ -42,7 +42,7 @@ export const checkPayout = async (
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {string} expected
  */
@@ -53,7 +53,7 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {InvitationDetails} expectedNullHandle expected invitation
  * details with the handle set to 'null'

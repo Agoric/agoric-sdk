@@ -35,10 +35,10 @@ test('simpleExchange with valid offers', async t => {
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7n));
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
   // and wide with instructions on how to call makeInvitation().
@@ -77,8 +77,8 @@ test('simpleExchange with valid offers', async t => {
   // sell 3 moola and wants to receive at least 4 simoleans in
   // return.
   const aliceSellOrderProposal = harden({
-    give: { Asset: moola(3) },
-    want: { Price: simoleans(4) },
+    give: { Asset: moola(3n) },
+    want: { Price: simoleans(4n) },
     exit: { onDemand: null },
   });
   const alicePayments = { Asset: aliceMoolaPayment };
@@ -135,8 +135,8 @@ test('simpleExchange with valid offers', async t => {
   // Bob creates a buy order, saying that he wants exactly 3 moola,
   // and is willing to pay up to 7 simoleans.
   const bobBuyOrderProposal = harden({
-    give: { Price: simoleans(7) },
-    want: { Asset: moola(3) },
+    give: { Price: simoleans(7n) },
+    want: { Asset: moola(3n) },
     exit: { onDemand: null },
   });
   const bobPayments = { Price: bobSimoleanPayment };
@@ -187,13 +187,23 @@ test('simpleExchange with valid offers', async t => {
     part1,
     // 6: Alice deposits her payout to ensure she can
     // Alice had 0 moola and 4 simoleans.
-    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
-    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
+    await assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
+    await assertPayoutAmount(
+      t,
+      simoleanIssuer,
+      aliceSimoleanPayout,
+      simoleans(4n),
+    ),
 
     // 7: Bob deposits his original payments to ensure he can
     // Bob had 3 moola and 3 simoleans.
-    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3)),
-    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3)),
+    await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3n)),
+    await assertPayoutAmount(
+      t,
+      simoleanIssuer,
+      bobSimoleanPayout,
+      simoleans(3n),
+    ),
   ]);
 });
 
@@ -211,8 +221,8 @@ test('simpleExchange with multiple sell offers', async t => {
   const installation = await installationPFromSource(zoe, simpleExchange);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(30));
-  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(30));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(30n));
+  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(30n));
   const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
   const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
   await aliceMoolaPurse.deposit(aliceMoolaPayment);
@@ -229,12 +239,12 @@ test('simpleExchange with multiple sell offers', async t => {
   // sell 3 moola and wants to receive at least 4 simoleans in
   // return.
   const aliceSale1OrderProposal = harden({
-    give: { Asset: moola(3) },
-    want: { Price: simoleans(4) },
+    give: { Asset: moola(3n) },
+    want: { Price: simoleans(4n) },
     exit: { onDemand: null },
   });
 
-  const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3)) };
+  const alicePayments = { Asset: aliceMoolaPurse.withdraw(moola(3n)) };
 
   const aliceInvitation1 = E(publicFacet).makeInvitation();
   // 4: Alice adds her sell order to the exchange
@@ -249,12 +259,12 @@ test('simpleExchange with multiple sell offers', async t => {
     await E(publicFacet).makeInvitation(),
   );
   const aliceSale2OrderProposal = harden({
-    give: { Asset: moola(5) },
-    want: { Price: simoleans(8) },
+    give: { Asset: moola(5n) },
+    want: { Price: simoleans(8n) },
     exit: { onDemand: null },
   });
   const proposal2 = {
-    Asset: aliceMoolaPurse.withdraw(moola(5)),
+    Asset: aliceMoolaPurse.withdraw(moola(5n)),
   };
   const aliceSeat2 = await E(zoe).offer(
     aliceInvitation2,
@@ -267,11 +277,11 @@ test('simpleExchange with multiple sell offers', async t => {
     await E(publicFacet).makeInvitation(),
   );
   const aliceBuyOrderProposal = harden({
-    give: { Price: simoleans(18) },
-    want: { Asset: moola(29) },
+    give: { Price: simoleans(18n) },
+    want: { Asset: moola(29n) },
     exit: { onDemand: null },
   });
-  const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18)) };
+  const proposal3 = { Price: aliceSimoleanPurse.withdraw(simoleans(18n)) };
   const aliceSeat3 = await E(zoe).offer(
     aliceInvitation3,
     aliceBuyOrderProposal,
@@ -284,10 +294,10 @@ test('simpleExchange with multiple sell offers', async t => {
     aliceSeat3.getOfferResult(),
   ]).then(async () => {
     const expectedBook = {
-      buys: [{ want: { Asset: moola(29) }, give: { Price: simoleans(18) } }],
+      buys: [{ want: { Asset: moola(29n) }, give: { Price: simoleans(18n) } }],
       sells: [
-        { want: { Price: simoleans(4) }, give: { Asset: moola(3) } },
-        { want: { Price: simoleans(8) }, give: { Asset: moola(5) } },
+        { want: { Price: simoleans(4n) }, give: { Asset: moola(3n) } },
+        { want: { Price: simoleans(8n) }, give: { Asset: moola(5n) } },
       ],
     };
     t.deepEqual(

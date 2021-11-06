@@ -59,10 +59,10 @@ test('zoe - escrowToVote', async t => {
   // Voter 1 votes YES. Vote will be weighted by 3 (3 moola escrowed).
   const voter1Votes = async invitation => {
     const proposal = harden({
-      give: { Assets: moola(3) },
+      give: { Assets: moola(3n) },
     });
     const payments = harden({
-      Assets: moolaMint.mintPayment(moola(3)),
+      Assets: moolaMint.mintPayment(moola(3n)),
     });
     const seat = await E(zoe).offer(invitation, proposal, payments);
 
@@ -77,7 +77,7 @@ test('zoe - escrowToVote', async t => {
     const moolaPayment = await seat.getPayout('Assets');
     t.deepEqual(
       await moolaIssuer.getAmountOf(moolaPayment),
-      moola(3),
+      moola(3n),
       `voter1 gets everything she escrowed back`,
     );
 
@@ -95,10 +95,10 @@ test('zoe - escrowToVote', async t => {
   // vote to NO. Vote will be weighted by 5 (5 moola escrowed).
   const voter2Votes = async invitation => {
     const proposal = harden({
-      give: { Assets: moola(5) },
+      give: { Assets: moola(5n) },
     });
     const payments = harden({
-      Assets: moolaMint.mintPayment(moola(5)),
+      Assets: moolaMint.mintPayment(moola(5n)),
     });
     const seat = await E(zoe).offer(invitation, proposal, payments);
 
@@ -130,7 +130,7 @@ test('zoe - escrowToVote', async t => {
     const moolaPayment = await seat.getPayout('Assets');
     t.deepEqual(
       await moolaIssuer.getAmountOf(moolaPayment),
-      moola(5),
+      moola(5n),
       `voter2 gets everything she escrowed back`,
     );
 
@@ -149,10 +149,10 @@ test('zoe - escrowToVote', async t => {
   // their full moola (1 moola) back as a payout.
   const voter3Votes = async invitation => {
     const proposal = harden({
-      give: { Assets: moola(1) },
+      give: { Assets: moola(1n) },
     });
     const payments = harden({
-      Assets: moolaMint.mintPayment(moola(1)),
+      Assets: moolaMint.mintPayment(moola(1n)),
     });
     const seat = await E(zoe).offer(invitation, proposal, payments);
 
@@ -172,7 +172,7 @@ test('zoe - escrowToVote', async t => {
 
     t.deepEqual(
       await moolaIssuer.getAmountOf(moolaPayment),
-      moola(1),
+      moola(1n),
       `voter3 gets everything she escrowed back`,
     );
 
@@ -189,10 +189,10 @@ test('zoe - escrowToVote', async t => {
   // Voter4 votes YES with a weight of 4
   const voter4Votes = async invitation => {
     const proposal = harden({
-      give: { Assets: moola(4) },
+      give: { Assets: moola(4n) },
     });
     const payments = harden({
-      Assets: moolaMint.mintPayment(moola(4)),
+      Assets: moolaMint.mintPayment(moola(4n)),
     });
     const seat = await E(zoe).offer(invitation, proposal, payments);
 
@@ -208,7 +208,7 @@ test('zoe - escrowToVote', async t => {
     const moolaPayment = seat.getPayout('Assets');
     t.deepEqual(
       await moolaIssuer.getAmountOf(moolaPayment),
-      moola(4),
+      moola(4n),
       `voter4 gets everything she escrowed back`,
     );
   };
@@ -218,7 +218,7 @@ test('zoe - escrowToVote', async t => {
 
   // Secretary closes election and tallies the votes.
   const electionResults = await E(secretary).closeElection();
-  t.deepEqual(electionResults, { YES: moola(7), NO: moola(5) });
+  t.deepEqual(electionResults, { YES: moola(7n), NO: moola(5n) });
 
   // Once the election is closed, the voters get their escrowed funds
   // back and can no longer vote.

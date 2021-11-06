@@ -32,15 +32,17 @@ test('makeEscrowStorage', async t => {
   // Normally only used for ZCFMint issuers
   makeLocalPurse(ticketKit.issuer, ticketKit.brand);
 
-  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
-    { show: 'superbowl' },
-  ]);
+  const gameTicketAmount = AmountMath.make(
+    ticketKit.brand,
+    harden([{ show: 'superbowl' }]),
+  );
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
-  const wantedConcertTicketAmount = AmountMath.make(ticketKit.brand, [
-    { show: 'my show' },
-  ]);
+  const wantedConcertTicketAmount = AmountMath.make(
+    ticketKit.brand,
+    harden([{ show: 'my show' }]),
+  );
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
@@ -138,9 +140,10 @@ test('payments without matching give keywords', async t => {
 
   const { ticketKit, currencyKit } = setupPurses(createPurse);
 
-  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
-    { show: 'superbowl' },
-  ]);
+  const gameTicketAmount = AmountMath.make(
+    ticketKit.brand,
+    harden([{ show: 'superbowl' }]),
+  );
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
@@ -172,9 +175,10 @@ test(`give keywords without matching payments`, async t => {
 
   const { ticketKit, currencyKit } = setupPurses(createPurse);
 
-  const gameTicketAmount = AmountMath.make(ticketKit.brand, [
-    { show: 'superbowl' },
-  ]);
+  const gameTicketAmount = AmountMath.make(
+    ticketKit.brand,
+    harden([{ show: 'superbowl' }]),
+  );
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 

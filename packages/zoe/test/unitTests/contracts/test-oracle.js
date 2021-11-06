@@ -53,7 +53,7 @@ test.before(
     // using the same code.
     const installation = await E(zoe).install(contractBundle);
 
-    const feeAmount = AmountMath.make(1000n, link.brand);
+    const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
      * @param {ExecutionContext} _t
      * @returns {Promise<OracleKit>}
@@ -151,7 +151,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   // Ensure our oracle handles $LINK.
   const overAmount = AmountMath.add(
     feeAmount,
-    AmountMath.make(799n, link.brand),
+    AmountMath.make(link.brand, 799n),
   );
   const offer3 = E(zoe).offer(
     invitation3,
@@ -183,7 +183,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const offer2 = E(zoe).offer(invitation2);
 
   // Check the underpaid result.
-  const underAmount = AmountMath.make(500n, link.brand);
+  const underAmount = AmountMath.make(link.brand, 500n);
   const offer4 = E(zoe).offer(
     invitation4,
     harden({ give: { Fee: underAmount } }),
@@ -203,7 +203,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   const withdrawOffer = E(zoe).offer(
     withdrawSome,
     harden({
-      want: { Fee: AmountMath.make(201n, link.brand) },
+      want: { Fee: AmountMath.make(link.brand, 201n) },
     }),
   );
   t.is(await E(withdrawOffer).getOfferResult(), 'Successfully withdrawn');
@@ -222,7 +222,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
       ),
     )
     .then(kvals => {
-      t.deepEqual(kvals, [['Fee', AmountMath.make(799n, link.brand)]]);
+      t.deepEqual(kvals, [['Fee', AmountMath.make(link.brand, 799n)]]);
     });
 
   const badInvitation = E(publicFacet).makeQueryInvitation({
@@ -243,6 +243,6 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
 
   t.deepEqual(
     await link.issuer.getAmountOf(E(withdrawOffer).getPayout('Fee')),
-    AmountMath.make(201n, link.brand),
+    AmountMath.make(link.brand, 201n),
   );
 });
