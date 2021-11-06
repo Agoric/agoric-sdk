@@ -156,25 +156,27 @@ export const TransferInternal = ({
           value={purse.currentAmount.value}
           displayInfo={purse.displayInfo}
         />
-        <TextField
-          error={!amountValid && amount !== ''}
-          autoFocus
-          margin="dense"
-          label="Send amount"
-          fullWidth
-          variant="standard"
-          value={amount}
-          helperText={amountValid ? '' : amount && 'Invalid amount'}
-          onChange={handleAmountChange}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                {purse.brandPetname}
-              </InputAdornment>
-            ),
-          }}
-        />
-        <FormControl style={{ marginTop: '16px' }}>
+        <div style={{ height: '68px' }}>
+          <TextField
+            error={!amountValid && amount !== ''}
+            autoFocus
+            margin="dense"
+            label="Send amount"
+            fullWidth
+            variant="standard"
+            value={amount}
+            helperText={amountValid ? '' : amount && 'Invalid amount'}
+            onChange={handleAmountChange}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  {purse.brandPetname}
+                </InputAdornment>
+              ),
+            }}
+          />
+        </div>
+        <FormControl style={{ marginTop: '8px' }}>
           <RadioGroup
             aria-label="transfer type"
             value={type}

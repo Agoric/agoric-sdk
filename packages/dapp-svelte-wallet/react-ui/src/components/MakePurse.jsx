@@ -66,17 +66,19 @@ export const MakePurseWithoutContext = ({
     <>
       <DialogTitle>Create New Purse for {issuer.issuerPetname}</DialogTitle>
       <DialogContent>
-        <TextField
-          error={!isPetnameValid}
-          autoFocus
-          margin="dense"
-          label="Petname"
-          fullWidth
-          value={petname}
-          onChange={handlePetnameChange}
-          helperText={isPetnameValid ? '' : 'Petname already exists'}
-          variant="standard"
-        />
+        <div style={{ height: '68px' }}>
+          <TextField
+            error={!isPetnameValid}
+            autoFocus
+            margin="dense"
+            label="Petname"
+            fullWidth
+            value={petname}
+            onChange={handlePetnameChange}
+            helperText={isPetnameValid ? '' : 'Petname already exists'}
+            variant="standard"
+          />
+        </div>
       </DialogContent>
       <DialogActions>
         <Button onClick={close}>Cancel</Button>

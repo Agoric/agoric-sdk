@@ -37,13 +37,14 @@ export const PursesInternalDoNotImportOrElse = ({
         </div>
         <div className="Right">
           {pendingTransfers.has(purse.id) ? (
-            <CircularProgress />
+            <div className="PurseProgressWrapper">
+              <CircularProgress size={30} />
+            </div>
           ) : (
             <Button
               variant="outlined"
               color="primary"
               size="small"
-              style={{ marginTop: '8px' }}
               onClick={() => handleClickOpen(purse)}
             >
               Send

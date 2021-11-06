@@ -30,7 +30,9 @@ export const IssuersWithoutContext = ({ issuers, pendingPurseCreations }) => {
         </div>
         <div className="Right">
           {pendingPurseCreations.has(issuer.id) ? (
-            <CircularProgress />
+            <div className="IssuerProgressWrapper">
+              <CircularProgress size={30} />
+            </div>
           ) : (
             <Button
               variant="outlined"
