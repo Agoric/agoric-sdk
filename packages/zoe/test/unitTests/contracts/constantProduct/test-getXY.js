@@ -51,7 +51,7 @@ test('swap Central for Secondary no Give', t => {
 test('swap Central for Secondary no want', t => {
   const { run, bld } = setupMintKits();
 
-  const amountGiven = run(3000);
+  const amountGiven = run(3000n);
   const poolAllocation = {
     Central: run(102902920n),
     Secondary: bld(203838393n),
@@ -119,7 +119,7 @@ test('swap Secondary for Central no give', t => {
     Central: run(102902920n),
     Secondary: bld(203838393n),
   };
-  const amountWanted = run(9342193);
+  const amountWanted = run(9342193n);
   const { x, y, deltaX, deltaY } = getXY({
     amountGiven,
     poolAllocation,

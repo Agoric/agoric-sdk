@@ -23,7 +23,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     harden({}),
   );
 
-  const collateral = AmountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(collateralKit.brand, 10n);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,
@@ -33,7 +33,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Collateral: collateralKit.mint.mintPayment(collateral) },
   );
 
-  const loan1000 = AmountMath.make(1000n, loanKit.brand);
+  const loan1000 = AmountMath.make(loanKit.brand, 1000n);
 
   // Setup fake autoswap
   const { zcfSeat: fakePoolSeat } = await makeSeatKit(
@@ -42,7 +42,7 @@ test('test doLiquidation with mocked autoswap', async t => {
     { Central: loanKit.mint.mintPayment(loan1000) },
   );
 
-  const price = AmountMath.make(20n, loanKit.brand);
+  const price = AmountMath.make(loanKit.brand, 20n);
 
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
@@ -108,7 +108,7 @@ test('test with malfunctioning autoswap', async t => {
     harden({}),
   );
 
-  const collateral = AmountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(collateralKit.brand, 10n);
   const {
     zcfSeat: collateralSeat,
     userSeat: collateralUserSeat,

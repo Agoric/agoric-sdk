@@ -20,9 +20,9 @@ export const setupIssuers = async (zoe, issuers) => {
     issuers.map(issuer => E(issuer).getBrand()),
   );
 
-  const moola = value => AmountMath.make(value, moolaBrand);
-  const simoleans = value => AmountMath.make(value, simoleanBrand);
-  const bucks = value => AmountMath.make(value, bucksBrand);
+  const moola = value => AmountMath.make(moolaBrand, value);
+  const simoleans = value => AmountMath.make(simoleanBrand, value);
+  const bucks = value => AmountMath.make(bucksBrand, value);
 
   return harden({
     issuers: harden([moolaIssuer, simoleanIssuer]),

@@ -52,11 +52,11 @@ test(`depositToSeat - groundZero`, async t => {
   const { zcfSeat } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: moola(3) }, give: { B: bucks(5) } }),
-    harden({ B: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
+    harden({ B: bucksMint.mintPayment(bucks(5n)) }),
   );
-  const newBucks = bucksMint.mintPayment(bucks(2));
-  await depositToSeat(zcf, zcfSeat, { B: bucks(2) }, { B: newBucks });
+  const newBucks = bucksMint.mintPayment(bucks(2n));
+  await depositToSeat(zcf, zcfSeat, { B: bucks(2n) }, { B: newBucks });
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
     { A: moola(0n), B: bucks(7n) },
@@ -71,14 +71,14 @@ test(`depositToSeat - keyword variations`, async t => {
   const { zcfSeat } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: moola(3) }, give: { B: bucks(5) } }),
-    harden({ B: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
+    harden({ B: bucksMint.mintPayment(bucks(5n)) }),
   );
-  const newBucks = bucksMint.mintPayment(bucks(2));
-  await depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { C: newBucks });
+  const newBucks = bucksMint.mintPayment(bucks(2n));
+  await depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { C: newBucks });
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    { A: moola(0n), B: bucks(5), C: bucks(2) },
+    { A: moola(0n), B: bucks(5n), C: bucks(2n) },
     'should add deposit',
   );
 });
@@ -90,12 +90,12 @@ test(`depositToSeat - mismatched keywords`, async t => {
   const { zcfSeat } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: moola(3) }, give: { B: bucks(5) } }),
-    harden({ B: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
+    harden({ B: bucksMint.mintPayment(bucks(5n)) }),
   );
-  const newBucks = bucksMint.mintPayment(bucks(2));
+  const newBucks = bucksMint.mintPayment(bucks(2n));
   await t.throwsAsync(
-    () => depositToSeat(zcf, zcfSeat, { C: bucks(2) }, { D: newBucks }),
+    () => depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { D: newBucks }),
     {
       message:
         'The "D" keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ["C"]',
@@ -104,7 +104,7 @@ test(`depositToSeat - mismatched keywords`, async t => {
   );
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    { A: moola(0n), B: bucks(5) },
+    { A: moola(0n), B: bucks(5n) },
     'should add deposit',
   );
 });

@@ -194,7 +194,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // current invitation from Alice. He wants 1 buck in return.
       const bobProposalSwap = harden({
         give: { Asset: optionAmounts },
-        want: { Price: bucks(1) },
+        want: { Price: bucks(1n) },
       });
 
       const bobSwapPayments = harden({ Asset: exclInvitation });

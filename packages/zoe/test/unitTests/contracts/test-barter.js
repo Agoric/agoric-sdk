@@ -31,10 +31,10 @@ test('barter with valid offers', async t => {
   const installation = await installationPFromSource(zoe, barter);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7));
+  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7n));
 
   // 1: Simon creates a barter instance and spreads the instance far and
   // wide with instructions on how to use it.
@@ -51,8 +51,8 @@ test('barter with valid offers', async t => {
   // sell 3 moola and wants to receive at least 4 simoleans in
   // return.
   const aliceSellOrderProposal = harden({
-    give: { In: moola(3) },
-    want: { Out: simoleans(4) },
+    give: { In: moola(3n) },
+    want: { Out: simoleans(4n) },
     exit: { onDemand: null },
   });
   const alicePayments = { In: aliceMoolaPayment };
@@ -80,8 +80,8 @@ test('barter with valid offers', async t => {
   // Bob creates a buy order, saying that he wants exactly 3 moola,
   // and is willing to pay up to 7 simoleans.
   const bobBuyOrderProposal = harden({
-    give: { In: simoleans(7) },
-    want: { Out: moola(3) },
+    give: { In: simoleans(7n) },
+    want: { Out: moola(3n) },
     exit: { onDemand: null },
   });
   const bobPayments = { In: bobSimoleanPayment };
@@ -118,11 +118,21 @@ test('barter with valid offers', async t => {
 
   await Promise.all([
     // Alice had 0 moola and 4 simoleans.
-    assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
-    assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(4)),
+    await assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(0n)),
+    await assertPayoutAmount(
+      t,
+      simoleanIssuer,
+      aliceSimoleanPayout,
+      simoleans(4n),
+    ),
 
     // Bob had 3 moola and 3 simoleans.
-    assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3)),
-    assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout, simoleans(3)),
+    await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout, moola(3n)),
+    await assertPayoutAmount(
+      t,
+      simoleanIssuer,
+      bobSimoleanPayout,
+      simoleans(3n),
+    ),
   ]);
 });

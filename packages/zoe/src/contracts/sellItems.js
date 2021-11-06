@@ -97,8 +97,8 @@ const start = zcf => {
 
     // All items are the same price.
     const totalCost = AmountMath.make(
-      pricePerItem.value * Nat(wantedItems.value.length),
       brands.Money,
+      pricePerItem.value * Nat(wantedItems.value.length),
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.

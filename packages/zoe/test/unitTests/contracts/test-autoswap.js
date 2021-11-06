@@ -39,13 +39,13 @@ test('autoSwap API interactions, no jig', async t => {
   const installation = await installationPFromSource(zoe, autoswap);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(10n));
   // Let's assume that simoleans are worth 2x as much as moola
-  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
+  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5n));
 
   // Setup Bob
-  const bobMoolaPayment = moolaMint.mintPayment(moola(3));
-  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3));
+  const bobMoolaPayment = moolaMint.mintPayment(moola(3n));
+  const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3n));
 
   // Alice creates an autoswap instance
   const issuerKeywordRecord = harden({
@@ -60,14 +60,14 @@ test('autoSwap API interactions, no jig', async t => {
   const publicFacet = startRecord.publicFacet;
   const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
   const liquidityBrand = await E(liquidityIssuerP).getBrand();
-  const liquidity = value => AmountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(liquidityBrand, value);
 
   // Alice adds liquidity
   // 10 moola = 5 simoleans at the time of the liquidity adding
   // aka 2 moola = 1 simolean
   const aliceProposal = harden({
-    want: { Liquidity: liquidity(10) },
-    give: { Central: moola(10), Secondary: simoleans(5) },
+    want: { Liquidity: liquidity(10n) },
+    give: { Central: moola(10n), Secondary: simoleans(5n) },
   });
   const alicePayments = {
     Central: aliceMoolaPayment,
@@ -82,13 +82,18 @@ test('autoSwap API interactions, no jig', async t => {
 
   assertOfferResult(t, aliceSeat, 'Added liquidity.');
   const liquidityPayout = await aliceSeat.getPayout('Liquidity');
-  assertPayoutAmount(t, liquidityIssuerP, liquidityPayout, liquidity(10));
+  await assertPayoutAmount(
+    t,
+    liquidityIssuerP,
+    liquidityPayout,
+    liquidity(10n),
+  );
   t.deepEqual(
     await E(publicFacet).getPoolAllocation(),
     {
-      Central: moola(10),
-      Secondary: simoleans(5),
-      Liquidity: liquidity(0),
+      Central: moola(10n),
+      Secondary: simoleans(5n),
+      Liquidity: liquidity(0n),
     },
     `pool allocation`,
   );
@@ -105,15 +110,15 @@ test('autoSwap API interactions, no jig', async t => {
 
   // Bob looks up how much he can get in simoleans for 3 moola
   const simoleanAmounts = await E(bobAutoswap).getInputPrice(
-    moola(3),
-    simoleans(0).brand,
+    moola(3n),
+    simoleans(0n).brand,
   );
-  t.deepEqual(simoleanAmounts, simoleans(1), `currentPrice`);
+  t.deepEqual(simoleanAmounts, simoleans(1n), `currentPrice`);
 
   // Bob escrows
   const bobMoolaForSimProposal = harden({
-    want: { Out: simoleans(1) },
-    give: { In: moola(3) },
+    want: { Out: simoleans(1n) },
+    give: { In: moola(3n) },
   });
   const bobMoolaForSimPayments = harden({ In: bobMoolaPayment });
 
@@ -131,14 +136,19 @@ test('autoSwap API interactions, no jig', async t => {
     Out: bobSimoleanPayout1,
   } = await bobSeat.getPayouts();
 
-  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0n));
-  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout1, simoleans(1));
+  await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0n));
+  await assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    bobSimoleanPayout1,
+    simoleans(1n),
+  );
   t.deepEqual(
     await E(bobAutoswap).getPoolAllocation(),
     {
-      Central: moola(13),
-      Secondary: simoleans(4),
-      Liquidity: liquidity(0),
+      Central: moola(13n),
+      Secondary: simoleans(4n),
+      Liquidity: liquidity(0n),
     },
     `pool allocation after first swap`,
   );
@@ -147,16 +157,16 @@ test('autoSwap API interactions, no jig', async t => {
 
   // Bob looks up how much he can get for 3 simoleans
   const moolaAmounts = await E(bobAutoswap).getInputPrice(
-    simoleans(3),
+    simoleans(3n),
     moola(0n).brand,
   );
-  t.deepEqual(moolaAmounts, moola(5), `price 2`);
+  t.deepEqual(moolaAmounts, moola(5n), `price 2`);
 
   // Bob makes another offer and swaps
   const bobSecondInvitation = E(bobAutoswap).makeSwapInvitation();
   const bobSimsForMoolaProposal = harden({
-    want: { Out: moola(5) },
-    give: { In: simoleans(3) },
+    want: { Out: moola(5n) },
+    give: { In: simoleans(3n) },
   });
   const simsForMoolaPayments = harden({ In: bobSimoleanPayment });
 
@@ -172,15 +182,20 @@ test('autoSwap API interactions, no jig', async t => {
     Out: bobMoolaPayout2,
     In: bobSimoleanPayout2,
   } = await bobSecondSeat.getPayouts();
-  assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5));
-  assertPayoutAmount(t, simoleanIssuer, bobSimoleanPayout2, simoleans(0));
+  await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5n));
+  await assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    bobSimoleanPayout2,
+    simoleans(0n),
+  );
 
   t.deepEqual(
     await E(bobAutoswap).getPoolAllocation(),
     {
-      Central: moola(8),
-      Secondary: simoleans(7),
-      Liquidity: liquidity(0),
+      Central: moola(8n),
+      Secondary: simoleans(7n),
+      Liquidity: liquidity(0n),
     },
     `pool allocation after swap`,
   );
@@ -191,8 +206,8 @@ test('autoSwap API interactions, no jig', async t => {
   ).makeRemoveLiquidityInvitation();
   // She's not picky...
   const aliceRemoveLiquidityProposal = harden({
-    give: { Liquidity: liquidity(10) },
-    want: { Central: moola(0n), Secondary: simoleans(0) },
+    give: { Liquidity: liquidity(10n) },
+    want: { Central: moola(0n), Secondary: simoleans(0n) },
   });
 
   const aliceRmLiqSeat = await E(zoe).offer(
@@ -207,14 +222,24 @@ test('autoSwap API interactions, no jig', async t => {
     Secondary: aliceSimoleanPayout,
     Liquidity: aliceLiquidityPayout,
   } = await aliceRmLiqSeat.getPayouts();
-  assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(8));
-  assertPayoutAmount(t, simoleanIssuer, aliceSimoleanPayout, simoleans(7));
-  assertPayoutAmount(t, liquidityIssuerP, aliceLiquidityPayout, liquidity(0));
+  await assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(8n));
+  await assertPayoutAmount(
+    t,
+    simoleanIssuer,
+    aliceSimoleanPayout,
+    simoleans(7n),
+  );
+  await assertPayoutAmount(
+    t,
+    liquidityIssuerP,
+    aliceLiquidityPayout,
+    liquidity(0n),
+  );
 
   t.deepEqual(await E(publicFacet).getPoolAllocation(), {
     Central: moola(0n),
-    Secondary: simoleans(0),
-    Liquidity: liquidity(10),
+    Secondary: simoleans(0n),
+    Liquidity: liquidity(10n),
   });
 });
 
@@ -251,12 +276,12 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
 
   // Setup Alice
   const moolaPurse = moolaIssuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
+  moolaPurse.deposit(moolaMint.mintPayment(moola(50000n)));
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
+  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000n)));
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => AmountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(liquidityBrand, value);
 
   const alice = await makeTrader(
     [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
@@ -271,9 +296,9 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     Liquidity: liquidityIssuer,
   });
   const initLiquidityDetails = {
-    cAmount: moola(10000),
-    sAmount: simoleans(10000),
-    lAmount: liquidity(10000),
+    cAmount: moola(10000n),
+    sAmount: simoleans(10000n),
+    lAmount: liquidity(10000n),
   };
   const initLiquidityExpected = {
     c: 10000n,
@@ -295,8 +320,8 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
   poolState = updatePoolState(poolState, initLiquidityExpected);
 
   const tradeDetails = {
-    inAmount: moola(1000),
-    outAmount: simoleans(906),
+    inAmount: moola(1000n),
+    outAmount: simoleans(906n),
   };
   const tradeExpected = {
     c: 11000n,
@@ -318,9 +343,9 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
   poolState = updatePoolState(poolState, tradeExpected);
 
   const liqDetails1 = {
-    cAmount: moola(1100),
-    sAmount: simoleans(910),
-    lAmount: liquidity(1000),
+    cAmount: moola(1100n),
+    sAmount: simoleans(910n),
+    lAmount: liquidity(1000n),
   };
 
   const deposit1 = { c: 1100n, s: 910n };
@@ -368,13 +393,13 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
   };
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => AmountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(liquidityBrand, value);
 
   // Setup Alice
   const moolaPurse = moolaIssuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
+  moolaPurse.deposit(moolaMint.mintPayment(moola(50000n)));
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
+  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000n)));
   const alice = await makeTrader(
     [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
     zoe,
@@ -388,9 +413,9 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
     Liquidity: liquidityIssuer,
   });
   const initLiquidityDetails = {
-    cAmount: moola(10000),
-    sAmount: simoleans(10000),
-    lAmount: liquidity(10000),
+    cAmount: moola(10000n),
+    sAmount: simoleans(10000n),
+    lAmount: liquidity(10000n),
   };
   const initLiquidityExpected = {
     c: 10000n,
@@ -415,8 +440,8 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
   // 12100 Moola and 11000 liquidity)
   const liqDetails1 = {
     cAmount: moola(200n),
-    sAmount: simoleans(200),
-    lAmount: liquidity(200),
+    sAmount: simoleans(200n),
+    lAmount: liquidity(200n),
   };
 
   const deposit1 = { c: 200n, s: 200n };
@@ -454,11 +479,11 @@ test('autoSwap - trade attempt before init, no jig', async t => {
   const publicFacet = startRecord.publicFacet;
 
   const moolaPurse = moolaIssuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaMint.mintPayment(moola(100)));
+  moolaPurse.deposit(moolaMint.mintPayment(moola(100n)));
 
-  const inAmount = moola(100);
+  const inAmount = moola(100n);
   const proposal = harden({
-    want: { Out: simoleans(0) },
+    want: { Out: simoleans(0n) },
     give: { In: inAmount },
   });
   const payment = harden({ In: moolaPurse.withdraw(inAmount) });
@@ -475,8 +500,8 @@ test('autoSwap - trade attempt before init, no jig', async t => {
   );
 
   const { In: mPayout, Out: sPayout } = await seat.getPayouts();
-  assertPayoutAmount(t, moolaIssuer, mPayout, moola(100));
-  assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(0));
+  await assertPayoutAmount(t, moolaIssuer, mPayout, moola(100n));
+  await assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(0n));
 
   const poolPost = await E(publicFacet).getPoolAllocation();
   t.deepEqual({}, poolPost, `empty Pool still`);
@@ -517,9 +542,9 @@ test('autoSwap jig - swap varying amounts', async t => {
 
   // Setup Alice
   const moolaPurse = moolaIssuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaMint.mintPayment(moola(50000)));
+  moolaPurse.deposit(moolaMint.mintPayment(moola(50000n)));
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000)));
+  simoleanPurse.deposit(simoleanMint.mintPayment(simoleans(50000n)));
   const alice = await makeTrader(
     [moolaPurse, simoleanPurse, liquidityIssuer.makeEmptyPurse()],
     zoe,
@@ -528,7 +553,7 @@ test('autoSwap jig - swap varying amounts', async t => {
   );
 
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  const liquidity = value => AmountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(liquidityBrand, value);
 
   const issuerRecord = harden({
     Central: moolaIssuer,
@@ -536,9 +561,9 @@ test('autoSwap jig - swap varying amounts', async t => {
     Liquidity: liquidityIssuer,
   });
   const initLiquidityDetails = {
-    cAmount: moola(10000),
-    sAmount: simoleans(10000),
-    lAmount: liquidity(10000),
+    cAmount: moola(10000n),
+    sAmount: simoleans(10000n),
+    lAmount: liquidity(10000n),
   };
   const initLiquidityExpected = {
     c: 10000n,
@@ -561,8 +586,8 @@ test('autoSwap jig - swap varying amounts', async t => {
 
   // (A) trade w/out specifying output
   const tradeDetailsA = {
-    inAmount: moola(1000),
-    outAmount: simoleans(0),
+    inAmount: moola(1000n),
+    outAmount: simoleans(0n),
   };
 
   const simPrice = outputFromInputPrice(poolState.c, poolState.s, 1000n, 30n);
@@ -587,8 +612,8 @@ test('autoSwap jig - swap varying amounts', async t => {
 
   // (B) trade specifying output
   const tradeDetailsB = {
-    inAmount: moola(500),
-    outAmount: simoleans(300),
+    inAmount: moola(500n),
+    outAmount: simoleans(300n),
   };
 
   const mPrice = priceFromTargetOutput(300n, poolState.s, poolState.c, 30n);
@@ -612,7 +637,7 @@ test('autoSwap jig - swap varying amounts', async t => {
   poolState = updatePoolState(poolState, expectedB);
 
   // Attempt (unsucessfully) to trade for a specified amount
-  const failedSeat = await alice.offerAndTrade(simoleans(75), moola(3));
+  const failedSeat = await alice.offerAndTrade(simoleans(75n), moola(3n));
 
   t.throwsAsync(
     failedSeat.getOfferResult(),
@@ -621,8 +646,8 @@ test('autoSwap jig - swap varying amounts', async t => {
   );
 
   const { In: moolaReturn, Out: noSimoleans } = await failedSeat.getPayouts();
-  assertPayoutAmount(t, moolaIssuer, moolaReturn, moola(3));
-  await assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0));
+  await assertPayoutAmount(t, moolaIssuer, moolaReturn, moola(3n));
+  await assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0n));
 
   // attempt a trade with bad numbers
 });
@@ -640,9 +665,9 @@ test('autoSwap price quote for zero', async t => {
   const installation = await installationPFromSource(zoe, autoswap);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(10));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(10n));
   // Let's assume that simoleans are worth 2x as much as moola
-  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5));
+  const aliceSimoleanPayment = simoleanMint.mintPayment(simoleans(5n));
 
   // Alice creates an autoswap instance
   const issuerKeywordRecord = harden({
@@ -657,14 +682,14 @@ test('autoSwap price quote for zero', async t => {
   const publicFacet = startRecord.publicFacet;
   const liquidityIssuerP = await E(publicFacet).getLiquidityIssuer();
   const liquidityBrand = await E(liquidityIssuerP).getBrand();
-  const liquidity = value => AmountMath.make(value, liquidityBrand);
+  const liquidity = value => AmountMath.make(liquidityBrand, value);
 
   // Alice adds liquidity
   // 10 moola = 5 simoleans at the time of the liquidity adding
   // aka 2 moola = 1 simolean
   const aliceProposal = harden({
-    want: { Liquidity: liquidity(10) },
-    give: { Central: moola(10), Secondary: simoleans(5) },
+    want: { Liquidity: liquidity(10n) },
+    give: { Central: moola(10n), Secondary: simoleans(5n) },
   });
   const alicePayments = {
     Central: aliceMoolaPayment,
@@ -674,14 +699,14 @@ test('autoSwap price quote for zero', async t => {
   await E(zoe).offer(aliceInvitation, aliceProposal, alicePayments);
 
   const simoleanAmounts = await E(publicFacet).getInputPrice(
-    moola(0),
-    simoleans(0).brand,
+    moola(0n),
+    simoleans(0n).brand,
   );
-  t.deepEqual(simoleanAmounts, simoleans(0), `currentPrice`);
+  t.deepEqual(simoleanAmounts, simoleans(0n), `currentPrice`);
 
   const moolaAmounts = await E(publicFacet).getOutputPrice(
-    simoleans(0),
+    simoleans(0n),
     moola(0n).brand,
   );
-  t.deepEqual(moolaAmounts, moola(0), `price 0`);
+  t.deepEqual(moolaAmounts, moola(0n), `price 0`);
 });

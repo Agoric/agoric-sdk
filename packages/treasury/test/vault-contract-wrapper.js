@@ -35,7 +35,7 @@ export async function start(zcf, privateArgs) {
   const autoswapMock = {
     getInputPrice(amountIn, brandOut) {
       assert.equal(brandOut, runBrand);
-      return AmountMath.make(4n * amountIn.value, runBrand);
+      return AmountMath.make(runBrand, 4n * amountIn.value);
     },
   };
 

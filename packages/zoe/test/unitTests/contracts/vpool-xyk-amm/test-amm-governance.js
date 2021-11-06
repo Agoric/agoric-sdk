@@ -253,9 +253,9 @@ test('price check after Governance param change', async t => {
   } = await setupServices(electorateTerms, ammTerms, centralR, timer);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
   // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
 
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,
@@ -269,8 +269,8 @@ test('price check after Governance param change', async t => {
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50000) },
-    give: { Secondary: moola(100000), Central: centralTokens(50000) },
+    want: { Liquidity: moolaLiquidity(50000n) },
+    give: { Secondary: moola(100000n), Central: centralTokens(50000n) },
   });
   const alicePayments = {
     Secondary: aliceMoolaPayment,
@@ -291,7 +291,7 @@ test('price check after Governance param change', async t => {
 
   // look up the price of 17000 moola in central tokens
   const priceInCentrals = await E(amm.ammPublicFacet).getInputPrice(
-    moola(17000),
+    moola(17000n),
     AmountMath.makeEmpty(centralR.brand),
   );
 
@@ -339,7 +339,7 @@ test('price check after Governance param change', async t => {
   t.deepEqual(paramValue, 20n, 'updated value');
 
   const priceAfter = await E(amm.ammPublicFacet).getInputPrice(
-    moola(17000),
+    moola(17000n),
     AmountMath.makeEmpty(centralR.brand),
   );
 

@@ -37,7 +37,7 @@ test(`fee charged for install, startInstance, offer, getPublicFacet`, async t =>
   const feeIssuerConfig = {
     name: 'RUN',
     assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+    displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
     initialFunds: 200n,
   };
 

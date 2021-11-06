@@ -28,7 +28,7 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) => {
-      return mint.mintPayment(AmountMath.make(values[i], brands[i]));
+      return mint.mintPayment(AmountMath.make(brands[i], BigInt(values[i])));
     });
 
   // Setup Alice

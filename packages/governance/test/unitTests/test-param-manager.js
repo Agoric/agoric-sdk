@@ -77,7 +77,7 @@ test('params one Amount', async t => {
   t.throws(
     () => updateAmount(18.1),
     {
-      message: 'The brand "[undefined]" doesn\'t look like a brand.',
+      message: '"brand" "[undefined]" must be a remotable, not "undefined"',
     },
     'value should be a amount',
   );
@@ -134,7 +134,7 @@ test('params one ratio', async t => {
   t.throws(
     () => updateRatio(18.1),
     {
-      message: 'Expected "number" is same as "copyRecord"',
+      message: '"ratio" 18.1 must be a pass-by-copy record, not "number"',
     },
     'value should be a ratio',
   );

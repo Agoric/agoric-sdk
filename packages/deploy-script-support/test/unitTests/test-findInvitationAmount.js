@@ -14,9 +14,10 @@ test('findInvitationAmount', async t => {
   const walletAdmin = {};
   const zoe = {};
 
-  const paymentAmount = AmountMath.make(brand, [
-    { description: 'found', instance: {} },
-  ]);
+  const paymentAmount = AmountMath.make(
+    brand,
+    harden([{ description: 'found', instance: {} }]),
+  );
   const payment = mint.mintPayment(paymentAmount);
   zoeInvitationPurse.deposit(payment);
 

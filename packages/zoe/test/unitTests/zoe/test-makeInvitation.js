@@ -34,18 +34,21 @@ test('createInvitationKit', async t => {
 
   t.deepEqual(
     amount,
-    AmountMath.make(invitationBrand, [
-      {
-        description: 'myInvitation',
-        fruit: 'apple',
-        handle: mockInvitationHandle,
-        installation: mockInstallation,
-        instance: mockInstance,
-        fee: undefined,
-        expiry: undefined,
-        zoeTimeAuthority: undefined,
-      },
-    ]),
+    AmountMath.make(
+      invitationBrand,
+      harden([
+        {
+          description: 'myInvitation',
+          fruit: 'apple',
+          handle: mockInvitationHandle,
+          installation: mockInstallation,
+          instance: mockInstance,
+          fee: undefined,
+          expiry: undefined,
+          zoeTimeAuthority: undefined,
+        },
+      ]),
+    ),
   );
 });
 
@@ -99,16 +102,19 @@ test('customProperties ok to omit', async t => {
 
   t.deepEqual(
     amount,
-    AmountMath.make(invitationBrand, [
-      {
-        description: 'myInvitation',
-        handle: mockInvitationHandle,
-        installation: mockInstallation,
-        instance: mockInstance,
-        fee: undefined,
-        expiry: undefined,
-        zoeTimeAuthority: undefined,
-      },
-    ]),
+    AmountMath.make(
+      invitationBrand,
+      harden([
+        {
+          description: 'myInvitation',
+          handle: mockInvitationHandle,
+          installation: mockInstallation,
+          instance: mockInstance,
+          fee: undefined,
+          expiry: undefined,
+          zoeTimeAuthority: undefined,
+        },
+      ]),
+    ),
   );
 });

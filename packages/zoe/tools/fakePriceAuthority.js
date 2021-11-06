@@ -40,7 +40,7 @@ export async function makeFakePriceAuthority(options) {
     priceList,
     tradeList,
     timer,
-    unitAmountIn = AmountMath.make(1n, actualBrandIn),
+    unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
     quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
   } = options;
@@ -50,7 +50,7 @@ export async function makeFakePriceAuthority(options) {
     X`One of priceList or tradeList must be specified`,
   );
 
-  const unitValueIn = AmountMath.getValue(unitAmountIn, actualBrandIn);
+  const unitValueIn = AmountMath.getValue(actualBrandIn, unitAmountIn);
 
   const comparisonQueue = [];
 
@@ -109,22 +109,22 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
     assertBrands(amountIn.brand, brandOut);
-    AmountMath.coerce(amountIn, actualBrandIn);
+    AmountMath.coerce(actualBrandIn, amountIn);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueOut = natSafeMath.floorDivide(
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
     const quoteAmount = AmountMath.make(
-      [
+      quoteBrand,
+      harden([
         {
           amountIn,
-          amountOut: AmountMath.make(valueOut, actualBrandOut),
+          amountOut: AmountMath.make(actualBrandOut, valueOut),
           timer,
           timestamp: quoteTime,
         },
-      ],
-      quoteBrand,
+      ]),
     );
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),
@@ -141,14 +141,14 @@ export async function makeFakePriceAuthority(options) {
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
     assertBrands(brandIn, amountOut.brand);
-    const valueOut = AmountMath.getValue(amountOut, actualBrandOut);
+    const valueOut = AmountMath.getValue(actualBrandOut, amountOut);
     const [tradeValueIn, tradeValueOut] = currentTrade();
     const valueIn = natSafeMath.ceilDivide(
       natSafeMath.multiply(valueOut, tradeValueIn),
       tradeValueOut,
     );
     return priceInQuote(
-      AmountMath.make(valueIn, brandIn),
+      AmountMath.make(brandIn, valueIn),
       amountOut.brand,
       quoteTime,
     );

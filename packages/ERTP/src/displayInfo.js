@@ -1,11 +1,11 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { pureCopy, passStyleOf } from '@agoric/marshal';
+import { pureCopy, assertRecord } from '@agoric/marshal';
 
-// TODO: assertSubset and assertKeysAllowed are copied from Zoe. Move
-// this code to a location where it can be used by ERTP and Zoe
-// easily. Perhaps another package.
+// TODO: assertSubset is copied from Zoe. Move this code to a location
+// where it can be used by ERTP and Zoe easily. Perhaps another
+// package.
 
 /**
  * Assert all values from `part` appear in `whole`.
@@ -13,9 +13,8 @@ import { pureCopy, passStyleOf } from '@agoric/marshal';
  * @param {string[]} whole
  * @param {string[]} part
  */
-export const assertSubset = (whole, part) => {
+const assertSubset = (whole, part) => {
   part.forEach(key => {
-    assert.typeof(key, 'string');
     assert(
       whole.includes(key),
       X`key ${q(key)} was not one of the expected keys ${q(whole)}`,
@@ -23,38 +22,7 @@ export const assertSubset = (whole, part) => {
   });
 };
 
-/**
- * Assert that the keys of `record` are all in `allowedKeys`. If a key
- * of `record` is not in `allowedKeys`, throw an error. If a key in
- * `allowedKeys` is not a key of record, we do not throw an error.
- *
- * @param {string[]} allowedKeys
- * @param {Object} record
- */
-export const assertKeysAllowed = (allowedKeys, record) => {
-  const keys = Object.getOwnPropertyNames(record);
-  assertSubset(allowedKeys, keys);
-  // assert that there are no symbol properties.
-  assert(
-    Object.getOwnPropertySymbols(record).length === 0,
-    X`no symbol properties allowed`,
-  );
-};
-
-// eslint-disable-next-line jsdoc/require-returns-check
-/**
- * @param {DisplayInfo} allegedDisplayInfo
- * @returns {asserts allegedDisplayInfo is DisplayInfo}
- */
-function assertDisplayInfo(allegedDisplayInfo) {
-  assert(
-    passStyleOf(allegedDisplayInfo) === 'copyRecord',
-    X`A displayInfo can only be a pass-by-copy record: ${allegedDisplayInfo}`,
-  );
-  const displayInfoKeys = harden(['decimalPlaces', 'assetKind']);
-  assertKeysAllowed(displayInfoKeys, allegedDisplayInfo);
-}
-export { assertDisplayInfo };
+const displayInfoKeys = harden(['decimalPlaces', 'assetKind']);
 
 /**
  * @param {AdditionalDisplayInfo} allegedDisplayInfo
@@ -62,9 +30,24 @@ export { assertDisplayInfo };
  * @returns {DisplayInfo}
  */
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
-  const copyDisplayInfo = pureCopy(
-    harden({ ...allegedDisplayInfo, assetKind }),
-  );
-  assertDisplayInfo(copyDisplayInfo);
-  return copyDisplayInfo;
+  // We include this check for a better error message
+  assertRecord(allegedDisplayInfo, 'displayInfo');
+
+  // `pureCopy` ensures the resulting object is not a proxy. Note that
+  // `pureCopy` works in this case because displayInfo is a copyRecord
+  // that is pure data, meaning no remotables and no promises.
+  allegedDisplayInfo = pureCopy(allegedDisplayInfo);
+  if (allegedDisplayInfo.assetKind !== undefined) {
+    assert(
+      allegedDisplayInfo.assetKind === assetKind,
+      X`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`,
+    );
+  }
+  const displayInfo = harden({ ...allegedDisplayInfo, assetKind });
+
+  assertSubset(displayInfoKeys, Object.keys(displayInfo));
+  if (displayInfo.decimalPlaces !== undefined) {
+    assert.typeof(displayInfo.decimalPlaces, 'number');
+  }
+  return displayInfo;
 };

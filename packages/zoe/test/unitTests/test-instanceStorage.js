@@ -80,10 +80,14 @@ test('makeAndStoreInstanceRecord', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
-      assetKind: AssetKind.NAT,
-      decimalPlaces: 18,
-    }),
+    makeIssuerRecord(
+      currencyKit.brand,
+      currencyKit.issuer,
+      harden({
+        assetKind: AssetKind.NAT,
+        decimalPlaces: 18,
+      }),
+    ),
   );
 
   t.deepEqual(getIssuers(), { ...issuers, Money: currencyKit.issuer });
@@ -135,10 +139,14 @@ test('makeInstanceRecordStorage', async t => {
   // Add currency again, but call it "money"
   addIssuerToInstanceRecord(
     'Money',
-    makeIssuerRecord(currencyKit.brand, currencyKit.issuer, {
-      assetKind: AssetKind.NAT,
-      decimalPlaces: 18,
-    }),
+    makeIssuerRecord(
+      currencyKit.brand,
+      currencyKit.issuer,
+      harden({
+        assetKind: AssetKind.NAT,
+        decimalPlaces: 18,
+      }),
+    ),
   );
 
   t.deepEqual(getIssuers(), { ...issuers, Money: currencyKit.issuer });

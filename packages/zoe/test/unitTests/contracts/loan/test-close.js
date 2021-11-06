@@ -26,7 +26,7 @@ test.todo(`repay - request too much collateral`);
 test('makeCloseLoanInvitation repay all', async t => {
   const { zcf, zoe, collateralKit, loanKit } = await setupLoanUnitTest();
 
-  const collateral = AmountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(collateralKit.brand, 10n);
 
   // Set up the collateral seat
   const { zcfSeat: collateralSeat } = await makeSeatKit(
@@ -43,8 +43,8 @@ test('makeCloseLoanInvitation repay all', async t => {
     userSeat: lenderUserSeatP,
   } = zcf.makeEmptySeatKit();
 
-  const borrowedAmount = AmountMath.make(20n, loanKit.brand);
-  const interest = AmountMath.make(3n, loanKit.brand);
+  const borrowedAmount = AmountMath.make(loanKit.brand, 20n);
+  const interest = AmountMath.make(loanKit.brand, 3n);
   const required = AmountMath.add(borrowedAmount, interest);
   const getDebt = () => required;
 
@@ -60,7 +60,7 @@ test('makeCloseLoanInvitation repay all', async t => {
 
   const proposal = harden({
     give: { Loan: required },
-    want: { Collateral: AmountMath.make(10n, collateralKit.brand) },
+    want: { Collateral: AmountMath.make(collateralKit.brand, 10n) },
   });
 
   const payments = harden({
@@ -80,7 +80,7 @@ test('makeCloseLoanInvitation repay all', async t => {
     { Loan: loanKit, Collateral: collateralKit },
     {
       Loan: AmountMath.makeEmpty(loanKit.brand),
-      Collateral: AmountMath.make(10n, collateralKit.brand),
+      Collateral: AmountMath.make(collateralKit.brand, 10n),
     },
     'repaySeat',
   );

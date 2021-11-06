@@ -19,7 +19,7 @@ const start = zcf => {
 
   const throwInDepositToSeat = async seat => {
     const issuerKit = makeIssuerKit('token');
-    const tokens10 = AmountMath.make(10n, issuerKit.brand);
+    const tokens10 = AmountMath.make(issuerKit.brand, 10n);
     const payment = issuerKit.mint.mintPayment(tokens10);
     const amounts = harden({ Token: tokens10 });
     const payments = harden({ Tokens: payment });

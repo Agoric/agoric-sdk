@@ -188,6 +188,7 @@ const ammInitialValues = harden([
 test('amm with valid offers', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
+  /** @param {NatValue} value */
   const centralTokens = value => AmountMath.make(centralR.brand, value);
   const moolaR = makeIssuerKit('moola');
   const moola = value => AmountMath.make(moolaR.brand, value);
@@ -216,13 +217,13 @@ test('amm with valid offers', async t => {
   const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
   // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
-  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(398));
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
+  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(398n));
 
   // Setup Bob
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17000));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17000n));
 
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,
@@ -256,6 +257,7 @@ test('amm with valid offers', async t => {
     'Moola',
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  /** @param {NatValue} value */
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const simoleanLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
@@ -298,8 +300,8 @@ test('amm with valid offers', async t => {
   // 10 moola = 5 central tokens at the time of the liquidity adding
   // aka 2 moola = 1 central token
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50000) },
-    give: { Secondary: moola(100000), Central: centralTokens(50000) },
+    want: { Liquidity: moolaLiquidity(50000n) },
+    give: { Secondary: moola(100000n), Central: centralTokens(50000n) },
   });
   const alicePayments = {
     Secondary: aliceMoolaPayment,
@@ -322,14 +324,14 @@ test('amm with valid offers', async t => {
 
   t.deepEqual(
     await E(moolaLiquidityIssuer).getAmountOf(liquidityPayout),
-    moolaLiquidity(50000),
+    moolaLiquidity(50000n),
   );
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
     harden({
-      Secondary: moola(100000),
-      Central: centralTokens(50000),
-      Liquidity: moolaLiquidity(0),
+      Secondary: moola(100000n),
+      Central: centralTokens(50000n),
+      Liquidity: moolaLiquidity(0n),
     }),
     `The poolAmounts record should contain the new liquidity`,
   );
@@ -351,7 +353,7 @@ test('amm with valid offers', async t => {
 
   // Bob looks up the price of 17000 moola in central tokens
   const { amountOut: priceInCentrals } = await E(bobPublicFacet).getInputPrice(
-    moola(17000),
+    moola(17000n),
     AmountMath.makeEmpty(centralR.brand),
   );
 
@@ -359,7 +361,7 @@ test('amm with valid offers', async t => {
 
   const bobMoolaForCentralProposal = harden({
     want: { Out: priceInCentrals },
-    give: { In: moola(17000) },
+    give: { In: moola(17000n) },
   });
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
@@ -377,7 +379,7 @@ test('amm with valid offers', async t => {
   });
 
   const quoteGivenBob = await E(priceAuthority).quoteGiven(
-    moola(5000),
+    moola(5000n),
     centralR.brand,
   );
   assertAmountsEqual(
@@ -401,15 +403,15 @@ test('amm with valid offers', async t => {
   assertAmountsEqual(
     t,
     await E(centralR.issuer).getAmountOf(bobCentralPayout1),
-    centralTokens(7241),
+    centralTokens(7241n),
     `bob gets the same price as when he called the getInputPrice method`,
   );
   t.deepEqual(
     await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
     {
-      Secondary: moola(117000 - 2),
-      Central: centralTokens(42750 + 4),
-      Liquidity: moolaLiquidity(0),
+      Secondary: moola(117000n - 2n),
+      Central: centralTokens(42750n + 4n),
+      Liquidity: moolaLiquidity(0n),
     },
     `pool allocation added the moola and subtracted the central tokens`,
   );
@@ -419,14 +421,14 @@ test('amm with valid offers', async t => {
 
   // Bob looks up the price of 700 central tokens in moola
   const priceFor700 = await E(bobPublicFacet).getInputPrice(
-    centralTokens(700),
+    centralTokens(700n),
     AmountMath.makeEmpty(moolaR.brand),
   );
   t.deepEqual(
     priceFor700,
     {
-      amountOut: moola(1877),
-      amountIn: centralTokens(700),
+      amountOut: moola(1877n),
+      amountIn: centralTokens(700n),
     },
     `the fee was one moola over the two trades`,
   );
@@ -434,11 +436,11 @@ test('amm with valid offers', async t => {
   // Bob makes another offer and swaps
   const bobSwapInvitation2 = await E(bobPublicFacet).makeSwapInInvitation();
   const bobCentralForMoolaProposal = harden({
-    want: { Out: moola(1877) },
-    give: { In: centralTokens(700) },
+    want: { Out: moola(1877n) },
+    give: { In: centralTokens(700n) },
   });
   const centralForMoolaPayments = harden({
-    In: await E(bobCentralPurse).withdraw(centralTokens(700)),
+    In: await E(bobCentralPurse).withdraw(centralTokens(700n)),
   });
 
   const bobSeat2 = await E(zoe).offer(
@@ -449,7 +451,7 @@ test('amm with valid offers', async t => {
 
   runningFees = AmountMath.add(
     runningFees,
-    ceilMultiplyBy(centralTokens(700), protocolFeeRatio),
+    ceilMultiplyBy(centralTokens(700n), protocolFeeRatio),
   );
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
@@ -462,7 +464,7 @@ test('amm with valid offers', async t => {
   );
 
   const quoteBob2 = await E(priceAuthority).quoteGiven(
-    moola(5000),
+    moola(5000n),
     centralR.brand,
   );
   assertAmountsEqual(
@@ -476,20 +478,20 @@ test('amm with valid offers', async t => {
 
   t.deepEqual(
     await E(moolaR.issuer).getAmountOf(bobMoolaPayout2),
-    moola(1877),
+    moola(1877n),
     `bob gets 1877 moola back`,
   );
   t.deepEqual(
     await E(centralR.issuer).getAmountOf(bobCentralPayout2),
-    centralTokens(0),
+    centralTokens(0n),
     `bob gets no central tokens back`,
   );
   t.deepEqual(
     await E(bobPublicFacet).getPoolAllocation(moolaR.brand),
     {
-      Secondary: moola(115121),
-      Central: centralTokens(43453),
-      Liquidity: moolaLiquidity(0),
+      Secondary: moola(115121n),
+      Central: centralTokens(43453n),
+      Liquidity: moolaLiquidity(0n),
     },
     `fee added to liquidity pool`,
   );
@@ -502,11 +504,11 @@ test('amm with valid offers', async t => {
     amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
-    want: { Liquidity: simoleanLiquidity(43) },
-    give: { Secondary: simoleans(398), Central: centralTokens(43) },
+    want: { Liquidity: simoleanLiquidity(43n) },
+    give: { Secondary: simoleans(398n), Central: centralTokens(43n) },
   });
   const aliceCentralPayment2 = await centralR.mint.mintPayment(
-    centralTokens(43),
+    centralTokens(43n),
   );
   const aliceSimCentralPayments = {
     Secondary: aliceSimoleanPayment,
@@ -520,7 +522,7 @@ test('amm with valid offers', async t => {
   );
 
   const quoteLiquidation2 = await E(priceAuthority).quoteGiven(
-    moola(5000),
+    moola(5000n),
     centralR.brand,
   );
   // a simolean trade had no effect on moola prices
@@ -539,15 +541,15 @@ test('amm with valid offers', async t => {
 
   t.deepEqual(
     await E(simoleanLiquidityIssuer).getAmountOf(simoleanLiquidityPayout),
-    simoleanLiquidity(43),
+    simoleanLiquidity(43n),
     `simoleanLiquidity minted was equal to the amount of central tokens added to pool`,
   );
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(simoleanR.brand),
     harden({
-      Secondary: simoleans(398),
-      Central: centralTokens(43),
-      Liquidity: simoleanLiquidity(0),
+      Secondary: simoleans(398n),
+      Central: centralTokens(43n),
+      Liquidity: simoleanLiquidity(0n),
     }),
     `The poolAmounts record should contain the new liquidity`,
   );
@@ -581,14 +583,14 @@ test('amm doubleSwap', async t => {
   );
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000));
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
   // Let's assume that central tokens are worth 2x as much as moola
-  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000));
-  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(39800));
+  const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
+  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(39800n));
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000));
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000));
+  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000n));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000n));
 
   const ammInstance = await amm.instance;
 
@@ -639,8 +641,8 @@ test('amm doubleSwap', async t => {
   // 10 moola = 5 central tokens at the time of the liquidity adding
   // aka 2 moola = 1 central token
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50000) },
-    give: { Secondary: moola(100000), Central: centralTokens(50000) },
+    want: { Liquidity: moolaLiquidity(50000n) },
+    give: { Secondary: moola(100000n), Central: centralTokens(50000n) },
   });
   const alicePayments = {
     Secondary: aliceMoolaPayment,
@@ -668,11 +670,11 @@ test('amm doubleSwap', async t => {
     amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
   const aliceSimCentralProposal = harden({
-    want: { Liquidity: simoleanLiquidity(430) },
-    give: { Secondary: simoleans(39800), Central: centralTokens(43000) },
+    want: { Liquidity: simoleanLiquidity(430n) },
+    give: { Secondary: simoleans(39800n), Central: centralTokens(43000n) },
   });
   const aliceCentralPayment2 = await centralR.mint.mintPayment(
-    centralTokens(43000),
+    centralTokens(43000n),
   );
   const aliceSimCentralPayments = {
     Secondary: aliceSimoleanPayment,
@@ -695,14 +697,14 @@ test('amm doubleSwap', async t => {
 
   // Bob looks up the value of 4000 simoleans in moola
   const { amountOut: priceInMoola } = await E(amm.ammPublicFacet).getInputPrice(
-    simoleans(4000),
+    simoleans(4000n),
     AmountMath.makeEmpty(moolaR.brand),
   );
 
   const bobInvitation = await E(amm.ammPublicFacet).makeSwapInInvitation();
   const bobSimsForMoolaProposal = harden({
     want: { Out: priceInMoola },
-    give: { In: simoleans(4000) },
+    give: { In: simoleans(4000n) },
   });
   const simsForMoolaPayments = harden({
     In: bobSimoleanPayment,
@@ -719,7 +721,7 @@ test('amm doubleSwap', async t => {
 
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout),
-    moola(7234),
+    moola(7234n),
     `bob gets 7234 moola`,
   );
 
@@ -733,12 +735,12 @@ test('amm doubleSwap', async t => {
   // Bob looks up the value of 5000 moola in simoleans
   const { amountOut: priceInSimoleans } = await E(
     amm.ammPublicFacet,
-  ).getInputPrice(moola(5000), AmountMath.makeEmpty(simoleanR.brand));
+  ).getInputPrice(moola(5000n), AmountMath.makeEmpty(simoleanR.brand));
 
   const bobInvitation2 = await E(amm.ammPublicFacet).makeSwapInInvitation();
   const bobMoolaForSimsProposal = harden({
     want: { Out: priceInSimoleans },
-    give: { In: moola(5000) },
+    give: { In: moola(5000n) },
   });
   const moolaForSimsPayments = harden({
     In: bobMoolaPayment,
@@ -753,7 +755,7 @@ test('amm doubleSwap', async t => {
 
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
-    simoleans(2868),
+    simoleans(2868n),
     `bob gets 2880 simoleans`,
   );
 
@@ -811,7 +813,7 @@ test('amm with some invalid offers', async t => {
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Bob
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17));
+  const bobMoolaPayment = moolaR.mint.mintPayment(moola(17n));
 
   await E(amm.ammPublicFacet).addPool(moolaR.issuer, 'Moola');
   // Bob creates a swap invitation for himself
@@ -825,7 +827,7 @@ test('amm with some invalid offers', async t => {
   await t.throwsAsync(
     () =>
       E(bobPublicFacet).getInputPrice(
-        moola(5),
+        moola(5n),
         AmountMath.makeEmpty(centralR.brand),
       ),
     {
@@ -837,8 +839,8 @@ test('amm with some invalid offers', async t => {
 
   // Bob tries to trade anyway.
   const bobMoolaForCentralProposal = harden({
-    want: { Out: centralTokens(7) },
-    give: { In: moola(17) },
+    want: { Out: centralTokens(7n) },
+    give: { In: moola(17n) },
   });
   const bobMoolaForCentralPayments = harden({ In: bobMoolaPayment });
 
@@ -888,13 +890,13 @@ test('amm jig - swapOut uneven', async t => {
   );
 
   // set up purses
-  const centralPayment = centralR.mint.mintPayment(centralTokens(30000000));
+  const centralPayment = centralR.mint.mintPayment(centralTokens(30000000n));
   const centralPurse = centralR.issuer.makeEmptyPurse();
   await centralPurse.deposit(centralPayment);
   const moolaPurse = moolaR.issuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000000)));
+  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000000n)));
   const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000000)));
+  simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000000n)));
 
   /** @type {XYKAMMPublicFacet} */
   const publicFacet = amm.ammPublicFacet;
@@ -937,12 +939,12 @@ test('amm jig - swapOut uneven', async t => {
 
   // this test uses twice as much Central as Moola to make the price difference
   // more visible.
-  const initMoolaLiquidityDetails = {
-    cAmount: centralTokens(10000000),
-    sAmount: moola(5000000),
-    lAmount: moolaLiquidity(10000000),
+  const initmoolaLiquidityDetails = {
+    cAmount: centralTokens(10000000n),
+    sAmount: moola(5000000n),
+    lAmount: moolaLiquidity(10000000n),
   };
-  const initMoolaLiquidityExpected = {
+  const initmoolaLiquidityExpected = {
     c: 10000000n,
     s: 5000000n,
     l: 10000000n,
@@ -954,11 +956,11 @@ test('amm jig - swapOut uneven', async t => {
   await alice.initLiquidityAndCheck(
     t,
     mPoolState,
-    initMoolaLiquidityDetails,
-    initMoolaLiquidityExpected,
+    initmoolaLiquidityDetails,
+    initmoolaLiquidityExpected,
     mIssuerKeywordRecord,
   );
-  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+  mPoolState = updatePoolState(mPoolState, initmoolaLiquidityExpected);
 
   let sPoolState = {
     c: 0n,
@@ -966,10 +968,10 @@ test('amm jig - swapOut uneven', async t => {
     l: 0n,
     k: 0n,
   };
-  const initSimoleanLiquidityDetails = {
-    cAmount: centralTokens(10000000),
-    sAmount: simoleans(10000000),
-    lAmount: simoleanLiquidity(10000000),
+  const initsimoleanLiquidityDetails = {
+    cAmount: centralTokens(10000000n),
+    sAmount: simoleans(10000000n),
+    lAmount: simoleanLiquidity(10000000n),
   };
   const initSimLiqExpected = {
     c: 10000000n,
@@ -988,7 +990,7 @@ test('amm jig - swapOut uneven', async t => {
   await alice.initLiquidityAndCheck(
     t,
     sPoolState,
-    initSimoleanLiquidityDetails,
+    initsimoleanLiquidityDetails,
     initSimLiqExpected,
     sIssuerKeywordRecord,
   );
@@ -1170,12 +1172,12 @@ test('amm jig - breaking scenario', async t => {
     k: 0n,
   };
 
-  const initMoolaLiquidityDetails = {
+  const initmoolaLiquidityDetails = {
     cAmount: centralTokens(50825056949339n),
     sAmount: moola(2196247730468n),
     lAmount: moolaLiquidity(50825056949339n),
   };
-  const initMoolaLiquidityExpected = {
+  const initmoolaLiquidityExpected = {
     c: 50825056949339n,
     s: 2196247730468n,
     l: 50825056949339n,
@@ -1187,11 +1189,11 @@ test('amm jig - breaking scenario', async t => {
   await alice.initLiquidityAndCheck(
     t,
     mPoolState,
-    initMoolaLiquidityDetails,
-    initMoolaLiquidityExpected,
+    initmoolaLiquidityDetails,
+    initmoolaLiquidityExpected,
     mIssuerKeywordRecord,
   );
-  mPoolState = updatePoolState(mPoolState, initMoolaLiquidityExpected);
+  mPoolState = updatePoolState(mPoolState, initmoolaLiquidityExpected);
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 

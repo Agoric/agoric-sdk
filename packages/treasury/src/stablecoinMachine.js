@@ -195,7 +195,7 @@ export async function start(zcf, privateArgs) {
       // initialPrice is in rates, but only used at creation, so not in governor
       const runAmount = ceilMultiplyBy(collateralIn, rates.initialPrice);
       // arbitrarily, give governance tokens equal to RUN tokens
-      const govAmount = AmountMath.make(runAmount.value, govBrand);
+      const govAmount = AmountMath.make(govBrand, runAmount.value);
 
       // Create new governance tokens, trade them with the incoming offer for
       // collateral. The offer uses the keywords Collateral and Governance.

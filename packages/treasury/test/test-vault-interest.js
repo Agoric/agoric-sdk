@@ -74,10 +74,10 @@ async function launch(zoeP, sourceRoot) {
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = AmountMath.make(50000n, collaterlBrand);
+  const collateral50 = AmountMath.make(collaterlBrand, 50000n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: AmountMath.make(70000n, runBrand) },
+    want: { RUN: AmountMath.make(runBrand, 70000n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -108,18 +108,18 @@ test('interest', async t => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { value: v1, updateCount: c1 } = await E(notifier).getUpdateSince();
-  t.deepEqual(v1.debt, AmountMath.make(73500n, runBrand));
-  t.deepEqual(v1.locked, AmountMath.make(50000n, collateralBrand));
+  t.deepEqual(v1.debt, AmountMath.make(runBrand, 73500n));
+  t.deepEqual(v1.locked, AmountMath.make(collateralBrand, 50000n));
   t.is(c1, 2);
 
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(73500n, runBrand),
+    AmountMath.make(runBrand, 73500n),
     'borrower owes 73 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    AmountMath.make(50000n, collateralBrand),
+    AmountMath.make(collateralBrand, 50000n),
     'vault holds 50 Collateral',
   );
 
@@ -136,11 +136,11 @@ test('interest', async t => {
     timer.getCurrentTimestamp(),
   );
   t.truthy(
-    AmountMath.isEqual(nextInterest, AmountMath.make(63n, runBrand)),
+    AmountMath.isEqual(nextInterest, AmountMath.make(runBrand, 63n)),
     `interest should be 3, was ${nextInterest.value}`,
   );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
-  t.deepEqual(v2.debt, AmountMath.make(73500n + 63n, runBrand));
+  t.deepEqual(v2.debt, AmountMath.make(runBrand, 73500n + 63n));
   t.deepEqual(v2.interestRate, makeRatio(5n, runBrand, 100n));
   t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
   const collateralization = v2.collateralizationRatio;

@@ -32,7 +32,7 @@ function calculateDebtToCollateral(debtAmount, collateralAmount) {
   if (AmountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
       debtAmount,
-      AmountMath.make(1n, collateralAmount.brand),
+      AmountMath.make(collateralAmount.brand, 1n),
     );
   }
   return makeRatioFromAmounts(debtAmount, collateralAmount);

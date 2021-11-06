@@ -1,9 +1,10 @@
 // @ts-check
 
-import { Nat } from '@agoric/nat';
+import { Nat, isNat } from '@agoric/nat';
 
 import '../types.js';
 
+const { details: X } = assert;
 const empty = 0n;
 
 /**
@@ -19,7 +20,12 @@ const empty = 0n;
  * @type {NatMathHelpers}
  */
 const natMathHelpers = {
-  doCoerce: Nat,
+  doCoerce: nat => {
+    // TODO: tighten the definition of Nat in @agoric/nat to throw on `number`
+    assert.typeof(nat, 'bigint');
+    assert(isNat(nat), X`value ${nat} must be a natural number`);
+    return Nat(nat);
+  },
   doMakeEmpty: () => empty,
   doIsEmpty: nat => nat === empty,
   doIsGTE: (left, right) => left >= right,

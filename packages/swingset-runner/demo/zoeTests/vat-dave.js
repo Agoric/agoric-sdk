@@ -105,7 +105,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`asset is the option`,
       );
       assert(
-        sameStructure(invitationValue[0].price, bucks(1)),
+        sameStructure(invitationValue[0].price, bucks(1n)),
         X`price is 1 buck`,
       );
       const optionValue = optionAmounts.value;
@@ -133,7 +133,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({
         want: { Asset: optionAmounts },
-        give: { Price: bucks(1) },
+        give: { Price: bucks(1n) },
       });
       const daveSwapPayments = harden({ Price: bucksPayment });
       const seatP = await E(zoe).offer(

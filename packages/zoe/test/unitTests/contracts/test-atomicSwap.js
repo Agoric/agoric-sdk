@@ -42,8 +42,8 @@ test('zoe - atomicSwap', async t => {
       },
       offer: async firstInvitation => {
         const proposal = harden({
-          give: { Asset: moola(3) },
-          want: { Price: simoleans(7) },
+          give: { Asset: moola(3n) },
+          want: { Price: simoleans(7n) },
           exit: { onDemand: null },
         });
         const payments = { Asset: moolaPayment };
@@ -73,7 +73,7 @@ test('zoe - atomicSwap', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(7),
+              simoleans(7n),
               `Alice got exactly what she wanted`,
             ),
           );
@@ -100,18 +100,18 @@ test('zoe - atomicSwap', async t => {
         );
         t.deepEqual(
           invitationValue.asset,
-          moola(3),
+          moola(3n),
           `asset to be traded is 3 moola`,
         );
         t.deepEqual(
           invitationValue.price,
-          simoleans(7),
+          simoleans(7n),
           `price is 7 simoleans, so bob must give that`,
         );
 
         const proposal = harden({
-          give: { Price: simoleans(7) },
-          want: { Asset: moola(3) },
+          give: { Price: simoleans(7n) },
+          want: { Asset: moola(3n) },
           exit: { onDemand: null },
         });
         const payments = { Price: simoleanPayment };
@@ -140,7 +140,7 @@ test('zoe - atomicSwap', async t => {
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
-              simoleans(0),
+              simoleans(0n),
               `Bob didn't get anything back`,
             ),
           );
@@ -150,13 +150,13 @@ test('zoe - atomicSwap', async t => {
     });
   };
 
-  const alice = await makeAlice(await E(moolaKit.mint).mintPayment(moola(3)));
+  const alice = await makeAlice(await E(moolaKit.mint).mintPayment(moola(3n)));
   // Alice makes an instance and makes her offer.
   const installation = await alice.installCode();
 
   const bob = await makeBob(
     installation,
-    await E(simoleanKit.mint).mintPayment(simoleans(7)),
+    await E(simoleanKit.mint).mintPayment(simoleans(7n)),
   );
 
   const { creatorInvitation } = await alice.startInstance(installation);
@@ -348,11 +348,11 @@ test('zoe - atomicSwap like-for-like', async t => {
   const installation = await E(zoe).install(bundle);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
   const aliceMoolaPurse = moolaIssuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobMoolaPayment = moolaMint.mintPayment(moola(7));
+  const bobMoolaPayment = moolaMint.mintPayment(moola(7n));
   const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
 
   // 1: Alice creates an atomicSwap instance
@@ -367,8 +367,8 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   // 2: Alice escrows with zoe
   const aliceProposal = harden({
-    give: { Asset: moola(3) },
-    want: { Price: moola(7) },
+    give: { Asset: moola(3n) },
+    want: { Price: moola(7n) },
     exit: { onDemand: null },
   });
   const alicePayments = { Asset: aliceMoolaPayment };
@@ -396,12 +396,12 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEqual(bobInvitationValue.asset, moola(3));
-  t.deepEqual(bobInvitationValue.price, moola(7));
+  t.deepEqual(bobInvitationValue.asset, moola(3n));
+  t.deepEqual(bobInvitationValue.price, moola(7n));
 
   const bobProposal = harden({
-    give: { Price: moola(7) },
-    want: { Asset: moola(3) },
+    give: { Price: moola(7n) },
+    want: { Asset: moola(3n) },
     exit: { onDemand: null },
   });
   const bobPayments = { Price: bobMoolaPayment };
