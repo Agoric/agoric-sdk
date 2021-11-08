@@ -21,7 +21,7 @@ test('makeLendInvitation', async t => {
 
   await checkDescription(t, zoe, lendInvitation, 'lend');
 
-  const maxLoan = AmountMath.make(1000n, loanKit.brand);
+  const maxLoan = AmountMath.make(loanKit.brand, 1000n);
 
   const proposal = harden({
     give: { Loan: maxLoan },

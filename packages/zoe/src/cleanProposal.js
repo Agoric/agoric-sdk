@@ -80,7 +80,7 @@ const coerceAmountKeywordRecord = (
       assetKind === brandAssetKind,
       X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
     );
-    return AmountMath.coerce(amount, amount.brand);
+    return AmountMath.coerce(amount.brand, amount);
   });
 
   // Recreate the amountKeywordRecord with coercedAmounts.

@@ -69,7 +69,10 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
       handle,
     );
 
-    const amountToMint = AmountMath.make(attestationBrand, [attestationElem]);
+    const amountToMint = AmountMath.make(
+      attestationBrand,
+      harden([attestationElem]),
+    );
     addToLiened(lienedAmounts, attestationElem);
 
     return mintZCFMintPayment(zcf, zcfMint, amountToMint);

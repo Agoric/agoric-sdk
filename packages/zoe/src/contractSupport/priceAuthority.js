@@ -98,8 +98,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
      * of calcAmountTrigger
      */
     async function quoteWhenOutTrigger(amountIn, amountOutLimit) {
-      AmountMath.coerce(amountIn, actualBrandIn);
-      AmountMath.coerce(amountOutLimit, actualBrandOut);
+      amountIn = AmountMath.coerce(actualBrandIn, amountIn);
+      amountOutLimit = AmountMath.coerce(actualBrandOut, amountOutLimit);
 
       /** @type {PromiseRecord<PriceQuote>} */
       const triggerPK = makePromiseKit();
@@ -147,8 +147,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   const makeMutableQuote = compareAmountsFn =>
     async function mutableQuoteWhenOutTrigger(amountInArg, amountOutLimitArg) {
-      let amountIn = AmountMath.coerce(amountInArg, actualBrandIn);
-      let amountOutLimit = AmountMath.coerce(amountOutLimitArg, actualBrandOut);
+      let amountIn = AmountMath.coerce(actualBrandIn, amountInArg);
+      let amountOutLimit = AmountMath.coerce(actualBrandOut, amountOutLimitArg);
 
       /** @type {PromiseRecord<PriceQuote>} */
       const triggerPK = makePromiseKit();
@@ -156,10 +156,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
       const mutableQuote = Far('MutableQuote', {
         cancel: e => triggerPK.reject(e),
         updateLevel: (newAmountIn, newAmountOutLimit) => {
-          const coercedAmountIn = AmountMath.coerce(newAmountIn, actualBrandIn);
+          const coercedAmountIn = AmountMath.coerce(actualBrandIn, newAmountIn);
           const coercedAmountOutLimit = AmountMath.coerce(
-            newAmountOutLimit,
             actualBrandOut,
+            newAmountOutLimit,
           );
           amountIn = coercedAmountIn;
           amountOutLimit = coercedAmountOutLimit;
@@ -238,7 +238,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return timer;
     },
     makeQuoteNotifier(amountIn, brandOut) {
-      AmountMath.coerce(amountIn, actualBrandIn);
+      AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 
       // Wrap our underlying notifier with specific quotes.
@@ -271,7 +271,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return specificNotifier;
     },
     async quoteGiven(amountIn, brandOut) {
-      AmountMath.coerce(amountIn, actualBrandIn);
+      AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 
       await E(notifier).getUpdateSince();
@@ -283,7 +283,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return quote;
     },
     async quoteWanted(brandIn, amountOut) {
-      AmountMath.coerce(amountOut, actualBrandOut);
+      AmountMath.coerce(actualBrandOut, amountOut);
       assertBrands(brandIn, amountOut.brand);
 
       await E(notifier).getUpdateSince();
@@ -303,7 +303,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
     },
     async quoteAtTime(deadline, amountIn, brandOut) {
       assert.typeof(deadline, 'bigint');
-      AmountMath.coerce(amountIn, actualBrandIn);
+      AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 
       await E(notifier).getUpdateSince();

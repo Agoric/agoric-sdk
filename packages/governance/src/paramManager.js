@@ -1,8 +1,8 @@
 // @ts-check
 
+import { isRemotable, Far } from '@agoric/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountMath, looksLikeBrand } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
@@ -47,7 +47,7 @@ const assertType = (type, value, name) => {
     case ParamType.BRAND:
       assert(
         // @ts-ignore value is undifferentiated to this point
-        looksLikeBrand(value),
+        isRemotable(value),
         X`value for ${name} must be a brand, was ${value}`,
       );
       break;

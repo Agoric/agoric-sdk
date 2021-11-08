@@ -32,24 +32,24 @@ function amountsEqual(t, a1, a2, brand) {
 
 test('ratio - ALL', t => {
   const { brand } = makeIssuerKit('moe');
-  const moe = value => AmountMath.make(value, brand);
+  const moe = value => AmountMath.make(brand, value);
 
   amountsEqual(
     t,
-    floorMultiplyBy(moe(100000), make100Percent(brand)),
-    moe(100000),
+    floorMultiplyBy(moe(100000n), make100Percent(brand)),
+    moe(100000n),
     brand,
   );
 });
 
 test('ratio - NONE', t => {
   const { brand } = makeIssuerKit('moe');
-  const moe = value => AmountMath.make(value, brand);
+  const moe = value => AmountMath.make(brand, value);
 
   amountsEqual(
     t,
     AmountMath.makeEmpty(brand),
-    floorMultiplyBy(moe(100000), make0Percent(brand)),
+    floorMultiplyBy(moe(100000n), make0Percent(brand)),
     brand,
   );
 });

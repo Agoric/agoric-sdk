@@ -1,8 +1,7 @@
 // @ts-check
 
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf, assertStructure, sameStructure } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { mustBeComparable, sameStructure } from '@agoric/same-structure';
 
 import '../types.js';
 
@@ -76,7 +75,7 @@ const makeBuckets = list => {
  *
  * @param {Buckets} buckets
  */
-const checkForDupes = buckets => {
+const assertNoDuplicates = buckets => {
   for (const maybeMatches of buckets.values()) {
     for (let i = 0; i < maybeMatches.length; i += 1) {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
@@ -114,10 +113,16 @@ const hasElement = (buckets, elem) => {
  */
 const setMathHelpers = harden({
   doCoerce: list => {
-    harden(list);
-    mustBeComparable(list);
-    assert(passStyleOf(list) === 'copyArray', 'list must be an array');
-    checkForDupes(makeBuckets(list));
+    assert(
+      passStyleOf(list) === 'copyArray',
+      `The value of a non-fungible token must be an array but was ${list}`,
+    );
+    // Assert that list contains only
+    //   * pass-by-copy primitives,
+    //   * pass-by-copy containers,
+    //   * remotables.
+    assertStructure(list);
+    assertNoDuplicates(makeBuckets(list));
     return list;
   },
   doMakeEmpty: () => empty,
@@ -131,7 +136,7 @@ const setMathHelpers = harden({
   },
   doAdd: (left, right) => {
     const combined = harden([...left, ...right]);
-    checkForDupes(makeBuckets(combined));
+    assertNoDuplicates(makeBuckets(combined));
     return combined;
   },
   doSubtract: (left, right) => {

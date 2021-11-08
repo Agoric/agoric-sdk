@@ -41,11 +41,11 @@ const doTest = (
     currentAllocation = {};
   } else if (moreThanOneElem) {
     currentAllocation = {
-      Attestation: AmountMath.make(attestationBrand, [elem, elem2]),
+      Attestation: AmountMath.make(attestationBrand, harden([elem, elem2])),
     };
   } else {
     currentAllocation = {
-      Attestation: AmountMath.make(attestationBrand, [elem]),
+      Attestation: AmountMath.make(attestationBrand, harden([elem])),
     };
   }
 
@@ -83,11 +83,14 @@ const doTest = (
     mintGains: (gains, seat) => {
       if (moreThanOneElem) {
         t.deepEqual(gains, {
-          Attestation: AmountMath.make(attestationBrand, [newElem, newElem2]),
+          Attestation: AmountMath.make(
+            attestationBrand,
+            harden([newElem, newElem2]),
+          ),
         });
       } else {
         t.deepEqual(gains, {
-          Attestation: AmountMath.make(attestationBrand, [newElem]),
+          Attestation: AmountMath.make(attestationBrand, harden([newElem])),
         });
       }
       t.is(seat, zcfSeat);

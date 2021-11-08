@@ -91,8 +91,8 @@ test(`offerTo - basic usage`, async t => {
   const { zcfSeat: fromSeatContractA } = await makeOffer(
     zoe,
     zcfA,
-    harden({ want: harden({}), give: { TokenK: bucks(5) } }),
-    harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: harden({}), give: { TokenK: bucks(5n) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5n)) }),
   );
 
   // Create a seat in contract instance B to exchange with.
@@ -100,8 +100,8 @@ test(`offerTo - basic usage`, async t => {
   const { zcfSeat: contractBCollateralSeat } = await makeOffer(
     zoe,
     zcfB,
-    harden({ want: { TokenM: bucks(5) }, give: { TokenL: moola(10) } }),
-    harden({ TokenL: moolaMint.mintPayment(moola(10)) }),
+    harden({ want: { TokenM: bucks(5n) }, give: { TokenL: moola(10n) } }),
+    harden({ TokenL: moolaMint.mintPayment(moola(10n)) }),
   );
 
   // create an invitation for contract instance B. This offer will
@@ -138,10 +138,10 @@ test(`offerTo - basic usage`, async t => {
 
   const proposal = harden({
     give: {
-      TokenM: bucks(5),
+      TokenM: bucks(5n),
     },
     want: {
-      TokenL: moola(10),
+      TokenL: moola(10n),
     },
   });
 
@@ -161,8 +161,8 @@ test(`offerTo - basic usage`, async t => {
   // The toSeat successfully got the payout from the offer to Contract
   // Instance B
   t.deepEqual(toSeatContractA.getCurrentAllocation(), {
-    TokenJ: moola(10),
-    TokenK: bucks(0),
+    TokenJ: moola(10n),
+    TokenK: bucks(0n),
   });
 
   // The offerResult is as expected
@@ -189,8 +189,8 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
     zoe,
     zcfA,
     // Actually enforce offer safety
-    harden({ want: { TokenJ: moola(3) }, give: { TokenK: bucks(5) } }),
-    harden({ TokenK: bucksMint.mintPayment(bucks(5)) }),
+    harden({ want: { TokenJ: moola(3n) }, give: { TokenK: bucks(5n) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5n)) }),
   );
 
   const offerHandler = () => {};
@@ -207,10 +207,10 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
 
   const proposal = harden({
     give: {
-      TokenM: bucks(5),
+      TokenM: bucks(5n),
     },
     want: {
-      TokenL: moola(10),
+      TokenL: moola(10n),
     },
   });
 
@@ -235,7 +235,7 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
 
   t.deepEqual(fromSeatContractA.getCurrentAllocation(), {
     TokenJ: moola(0n),
-    TokenK: bucks(5),
+    TokenK: bucks(5n),
   });
   t.falsy(fromSeatContractA.hasExited());
 });

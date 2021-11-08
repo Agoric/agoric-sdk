@@ -28,10 +28,10 @@ const start = async zcf => {
     timer: rawTimer,
     POLL_INTERVAL,
     brands: { In: brandIn, Out: brandOut },
-    unitAmountIn = AmountMath.make(1n, brandIn),
+    unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
 
-  const unitIn = AmountMath.getValue(unitAmountIn, brandIn);
+  const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
 
   /** @type {TimerService} */
   const timer = rawTimer;
@@ -53,7 +53,7 @@ const start = async zcf => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
-    const quoteAmount = AmountMath.make(quote, quoteKit.brand);
+    const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
@@ -119,10 +119,10 @@ const start = async zcf => {
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
-        const valueIn = AmountMath.getValue(amountIn, brandIn);
+        const valueIn = AmountMath.getValue(brandIn, amountIn);
         return AmountMath.make(
-          floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
           brandOut,
+          floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
         );
       };
 
@@ -131,10 +131,10 @@ const start = async zcf => {
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
-        const valueOut = AmountMath.getValue(amountOut, brandOut);
+        const valueOut = AmountMath.getValue(brandOut, amountOut);
         return AmountMath.make(
-          ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
           brandIn,
+          ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
         );
       };
 
@@ -149,8 +149,8 @@ const start = async zcf => {
         amountOut,
         timestamp: theirTimestamp = timestamp,
       } = quote;
-      AmountMath.coerce(amountIn, brandIn);
-      AmountMath.coerce(amountOut, brandOut);
+      AmountMath.coerce(brandIn, amountIn);
+      AmountMath.coerce(brandOut, amountOut);
       if (theirTimestamp !== undefined) {
         return authenticateQuote([
           { amountIn, amountOut, timer, timestamp: theirTimestamp },
@@ -178,7 +178,7 @@ const start = async zcf => {
       return;
     }
 
-    const amountOut = AmountMath.make(median, brandOut);
+    const amountOut = AmountMath.make(brandOut, median);
 
     /** @type {PriceDescription} */
     const quote = {

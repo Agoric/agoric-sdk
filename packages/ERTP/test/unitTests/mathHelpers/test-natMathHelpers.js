@@ -13,19 +13,21 @@ import { mockBrand } from './mockBrand.js';
 test('natMathHelpers make', t => {
   t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
   // @ts-ignore deliberate invalid arguments for testing
-  t.deepEqual(m.make(mockBrand, 4), { brand: mockBrand, value: 4n });
+  t.throws(() => m.make(mockBrand, 4), {
+    message: 'value 4 must be a bigint or an array, not "number"',
+  });
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
-      message: /value .* must be a Nat or an array/,
+      message: 'value "abc" must be a bigint or an array, not "string"',
     },
     `'abc' is not a nat`,
   );
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, -1),
-    { message: /value .* must be a Nat or an array/ },
+    { message: 'value -1 must be a bigint or an array, not "number"' },
     `- 1 is not a valid Nat`,
   );
 });
@@ -35,7 +37,7 @@ test('natMathHelpers make no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(4n),
     {
-      message: /The brand "\[4n\]" doesn't look like a brand./,
+      message: '"brand" "[4n]" must be a remotable, not "bigint"',
     },
     `brand is required in make`,
   );
@@ -43,7 +45,7 @@ test('natMathHelpers make no brand', t => {
 
 test('natMathHelpers coerce', t => {
   t.deepEqual(
-    m.coerce(mockBrand, { brand: mockBrand, value: 4n }),
+    m.coerce(mockBrand, harden({ brand: mockBrand, value: 4n })),
     {
       brand: mockBrand,
       value: 4n,
@@ -52,14 +54,17 @@ test('natMathHelpers coerce', t => {
   );
   t.throws(
     () =>
-      m.coerce(mockBrand, {
-        brand: Far('otherBrand', {
-          getAllegedName: () => 'somename',
-          isMyIssuer: async () => false,
-          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+      m.coerce(
+        mockBrand,
+        harden({
+          brand: Far('otherBrand', {
+            getAllegedName: () => 'somename',
+            isMyIssuer: async () => false,
+            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          }),
+          value: 4n,
         }),
-        value: 4n,
-      }),
+      ),
     {
       message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
@@ -69,7 +74,7 @@ test('natMathHelpers coerce', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(3n, mockBrand),
     {
-      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
+      message: '"brand" "[3n]" must be a remotable, not "bigint"',
     },
     `coerce needs a brand`,
   );
@@ -80,7 +85,7 @@ test('natMathHelpers coerce no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
-      message: /The brand {"brand":"\[Alleged: brand\]","value":"\[4n\]"} doesn't look like a brand./,
+      message: '"brand" "[4n]" must be a remotable, not "bigint"',
     },
     `brand is required in coerce`,
   );
@@ -89,7 +94,9 @@ test('natMathHelpers coerce no brand', t => {
 test('natMathHelpers getValue', t => {
   t.is(m.getValue(mockBrand, m.make(mockBrand, 4n)), 4n);
   // @ts-ignore deliberate invalid arguments for testing
-  t.is(m.getValue(mockBrand, m.make(mockBrand, 4)), 4n);
+  t.throws(() => m.getValue(mockBrand, m.make(mockBrand, 4)), {
+    message: 'value 4 must be a bigint or an array, not "number"',
+  });
 });
 
 test('natMathHelpers getValue no brand', t => {
@@ -97,7 +104,7 @@ test('natMathHelpers getValue no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
-      message: /The brand {"brand":"\[Alleged: brand\]","value":"\[4n\]"} doesn't look like a brand./,
+      message: '"brand" "[4n]" must be a remotable, not "bigint"',
     },
     `brand is required in getValue`,
   );
@@ -114,30 +121,36 @@ test('natMathHelpers makeEmpty no brand', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.makeEmpty(AssetKind.NAT),
     {
-      message: /The brand .* doesn't look like a brand./,
+      message: '"brand" "nat" must be a remotable, not "string"',
     },
     `make empty no brand`,
   );
 });
 
 test('natMathHelpers isEmpty', t => {
-  t.assert(m.isEmpty({ brand: mockBrand, value: 0n }), `isEmpty(0) is true`);
-  t.falsy(m.isEmpty({ brand: mockBrand, value: 6n }), `isEmpty(6) is false`);
+  t.assert(
+    m.isEmpty(harden({ brand: mockBrand, value: 0n })),
+    `isEmpty(0) is true`,
+  );
+  t.falsy(
+    m.isEmpty(harden({ brand: mockBrand, value: 6n })),
+    `isEmpty(6) is false`,
+  );
   t.assert(m.isEmpty(m.make(mockBrand, 0n)), `isEmpty(0) is true`);
   t.falsy(m.isEmpty(m.make(mockBrand, 6n)), `isEmpty(6) is false`);
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty('abc'),
     {
-      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
+      message: '"amount" "abc" must be a pass-by-copy record, not "string"',
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
-    () => m.isEmpty({ brand: mockBrand, value: 'abc' }),
+    () => m.isEmpty(harden({ brand: mockBrand, value: 'abc' })),
     {
-      message: /value .* must be a Nat or an array/,
+      message: 'value "abc" must be a bigint or an array, not "string"',
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );
@@ -145,7 +158,7 @@ test('natMathHelpers isEmpty', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty(0n),
     {
-      message: /The amount .* doesn't look like an amount. Did you pass a value instead?/,
+      message: '"amount" "[0n]" must be a pass-by-copy record, not "bigint"',
     },
     `isEmpty(0) throws because it cannot be coerced`,
   );
@@ -155,7 +168,10 @@ test('natMathHelpers isGTE', t => {
   t.assert(m.isGTE(m.make(mockBrand, 5n), m.make(mockBrand, 3n)), `5 >= 3`);
   t.assert(m.isGTE(m.make(mockBrand, 3n), m.make(mockBrand, 3n)), `3 >= 3`);
   t.falsy(
-    m.isGTE({ brand: mockBrand, value: 3n }, { brand: mockBrand, value: 4n }),
+    m.isGTE(
+      harden({ brand: mockBrand, value: 3n }),
+      harden({ brand: mockBrand, value: 4n }),
+    ),
     `3 < 4`,
   );
 });

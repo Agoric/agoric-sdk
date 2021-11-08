@@ -60,16 +60,19 @@ export const createInvitationKit = (
       // example, the value for `instance` will always be the actual
       // instance for the contract, even if customProperties includes
       // a property called `instance`.
-      const invitationAmount = AmountMath.make(invitationKit.brand, [
-        {
-          ...customProperties,
-          description,
-          handle: invitationHandle,
-          instance,
-          installation,
-          ...feeInfo, // will override customProperties if they exist
-        },
-      ]);
+      const invitationAmount = AmountMath.make(
+        invitationKit.brand,
+        harden([
+          {
+            ...customProperties,
+            description,
+            handle: invitationHandle,
+            instance,
+            installation,
+            ...feeInfo, // will override customProperties if they exist
+          },
+        ]),
+      );
       return invitationKit.mint.mintPayment(invitationAmount);
     };
     return makeInvitation;

@@ -48,12 +48,15 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     const amountToLien = validateInputs(externalBrand, address, amount);
 
     addToLiened(lienedAmounts, address, amountToLien);
-    const amountToMint = AmountMath.make(attestationBrand, [
-      /** @type {ReturnableAttElem} */ ({
-        address,
-        amountLiened: amountToLien,
-      }),
-    ]);
+    const amountToMint = AmountMath.make(
+      attestationBrand,
+      harden([
+        /** @type {ReturnableAttElem} */ ({
+          address,
+          amountLiened: amountToLien,
+        }),
+      ]),
+    );
 
     return mintZCFMintPayment(zcf, zcfMint, amountToMint);
   };

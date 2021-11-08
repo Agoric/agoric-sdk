@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { Far, assertCopyArray } from '@agoric/marshal';
 import { makeWeakStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';
@@ -60,6 +60,8 @@ export const makePaymentLedger = (
    * which, if present, is supposed to be equal to the balance of the
    * payment. This helper function does that check.
    *
+   * Note: `amount` is user-supplied with no previous validation.
+   *
    * @param {Amount} paymentBalance
    * @param {Amount | undefined} amount
    * @returns {void}
@@ -80,7 +82,7 @@ export const makePaymentLedger = (
   const assertLivePayment = payment => {
     assert(
       paymentLedger.has(payment),
-      X`payment not found for ${allegedName}; got ${payment}`,
+      X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
     );
   };
 
@@ -89,7 +91,7 @@ export const makePaymentLedger = (
    * created and returned, with balances from `newPaymentBalances`.
    * Enforces that total assets are conserved.
    *
-   * Note that this is not the only operation that reallocates assets.
+   * Note that this is not the only operation that moves assets.
    * `purse.deposit` and `purse.withdraw` move assets between a purse and
    * a payment, and so must also enforce conservation there.
    *
@@ -97,9 +99,12 @@ export const makePaymentLedger = (
    * @param {Amount[]} newPaymentBalances
    * @returns {Payment[]}
    */
-  const reallocate = (payments, newPaymentBalances) => {
+  const moveAssets = (payments, newPaymentBalances) => {
+    assertCopyArray(payments, 'payments');
+    assertCopyArray(newPaymentBalances, 'newPaymentBalances');
+
     // There may be zero, one, or many payments as input to
-    // reallocate. We want to protect against someone passing in
+    // moveAssets. We want to protect against someone passing in
     // what appears to be multiple payments that turn out to actually
     // be the same payment (an aliasing issue). The `combine` method
     // legitimately needs to take in multiple payments, but we don't
@@ -109,9 +114,10 @@ export const makePaymentLedger = (
     if (payments.length > 1) {
       const antiAliasingStore = new Set();
       payments.forEach(payment => {
-        if (antiAliasingStore.has(payment)) {
-          throw Error('same payment seen twice');
-        }
+        assert(
+          !antiAliasingStore.has(payment),
+          `same payment ${payment} seen twice`,
+        );
         antiAliasingStore.add(payment);
       });
     }
@@ -181,24 +187,31 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountConsistent(srcPaymentBalance, optAmount);
-      // Note COMMIT POINT within reallocate.
-      const [payment] = reallocate([srcPayment], [srcPaymentBalance]);
+      // Note COMMIT POINT within moveAssets.
+      const [payment] = moveAssets(
+        harden([srcPayment]),
+        harden([srcPaymentBalance]),
+      );
       return payment;
     });
   };
 
   /** @type {IssuerCombine} */
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
+    assertCopyArray(fromPaymentsPArray, 'fromPaymentsArray');
     // Payments in `fromPaymentsPArray` must be distinct. Alias
-    // checking is delegated to the `reallocate` function.
+    // checking is delegated to the `moveAssets` function.
     return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
       fromPaymentsArray.every(assertLivePayment);
       const totalPaymentsBalance = fromPaymentsArray
         .map(paymentLedger.get)
         .reduce(add, emptyAmount);
       assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Note COMMIT POINT within reallocate.
-      const [payment] = reallocate(fromPaymentsArray, [totalPaymentsBalance]);
+      // Note COMMIT POINT within moveAssets.
+      const [payment] = moveAssets(
+        harden(fromPaymentsArray),
+        harden([totalPaymentsBalance]),
+      );
       return payment;
     });
   };
@@ -211,10 +224,10 @@ export const makePaymentLedger = (
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Note COMMIT POINT within reallocate.
-      const newPayments = reallocate(
-        [srcPayment],
-        [paymentAmountA, paymentAmountB],
+      // Note COMMIT POINT within moveAssets.
+      const newPayments = moveAssets(
+        harden([srcPayment]),
+        harden([paymentAmountA, paymentAmountB]),
       );
       return newPayments;
     });
@@ -224,9 +237,10 @@ export const makePaymentLedger = (
   const splitMany = (paymentP, amounts) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
+      assertCopyArray(amounts, 'amounts');
       amounts = amounts.map(coerce);
-      // Note COMMIT POINT within reallocate.
-      const newPayments = reallocate([srcPayment], amounts);
+      // Note COMMIT POINT within moveAssets.
+      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
       return newPayments;
     });
   };
@@ -256,14 +270,13 @@ export const makePaymentLedger = (
     srcPayment,
     optAmount = undefined,
   ) => {
-    if (isPromise(srcPayment)) {
-      throw TypeError(
-        `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
-      );
-    }
+    assert(
+      !isPromise(srcPayment),
+      `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
+      TypeError,
+    );
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
-    // Note: this does not guarantee that optAmount itself is a valid stable amount
     assertAmountConsistent(srcPaymentBalance, optAmount);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
     try {
@@ -299,9 +312,8 @@ export const makePaymentLedger = (
 
     const payment = makePayment(allegedName, brand);
     try {
-      // COMMIT POINT
-      // Move the withdrawn assets from this purse into a new payment
-      // which is returned. Total assets must remain conserved.
+      // COMMIT POINT Move the withdrawn assets from this purse into
+      // payment. Total assets must remain conserved.
       updatePurseBalance(newPurseBalance);
       paymentLedger.init(payment, amount);
     } catch (err) {

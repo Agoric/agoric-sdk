@@ -21,8 +21,8 @@ import {
  * the two keywords symmetrically. New offers can be created and existing offers
  * can be accepted in either direction.
  *
- * { give: { 'Asset', simoleans(5) }, want: { 'Price', quatloos(3) } }
- * { give: { 'Price', quatloos(8) }, want: { 'Asset', simoleans(3) } }
+ * { give: { 'Asset', simoleans(5n) }, want: { 'Price', quatloos(3) } }
+ * { give: { 'Price', quatloos(8) }, want: { 'Asset', simoleans(3n) } }
  *
  * The Asset is treated as an exact amount to be exchanged, while the
  * Price is a limit that may be improved on. This simple exchange does

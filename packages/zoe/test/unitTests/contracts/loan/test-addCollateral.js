@@ -23,7 +23,7 @@ test.todo('makeAddCollateralInvitation - test bad proposal');
 test('makeAddCollateralInvitation', async t => {
   const { zcf, zoe, collateralKit, loanKit } = await setupLoanUnitTest();
 
-  const collateral = AmountMath.make(10n, collateralKit.brand);
+  const collateral = AmountMath.make(collateralKit.brand, 10n);
 
   // Set up the collateral seat
   const { zcfSeat: collateralSeat } = await makeSeatKit(
@@ -46,7 +46,7 @@ test('makeAddCollateralInvitation', async t => {
   });
 
   const autoswapInstance = {};
-  const getDebt = () => AmountMath.make(100n, loanKit.brand);
+  const getDebt = () => AmountMath.make(loanKit.brand, 100n);
 
   const config = {
     collateralSeat,
@@ -59,7 +59,7 @@ test('makeAddCollateralInvitation', async t => {
   };
   const addCollateralInvitation = makeAddCollateralInvitation(zcf, config);
 
-  const addedAmount = AmountMath.make(3n, collateralKit.brand);
+  const addedAmount = AmountMath.make(collateralKit.brand, 3n);
 
   await performAddCollateral(
     t,

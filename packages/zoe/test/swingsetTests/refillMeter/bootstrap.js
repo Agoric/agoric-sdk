@@ -16,7 +16,7 @@ export function buildRootObject(vatPowers) {
       const feeIssuerConfig = {
         name: 'RUN',
         assetKind: AssetKind.NAT,
-        displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+        displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
         initialFunds: 4_470_000n,
       };
       const zoeFeesConfig = {

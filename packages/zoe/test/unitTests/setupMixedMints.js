@@ -23,8 +23,8 @@ const setupMixed = () => {
   const moolaIssuer = issuers.get('moola');
   const ccMint = mints.get('cc');
   const moolaMint = mints.get('moola');
-  const cryptoCats = value => AmountMath.make(value, allBundles.cc.brand);
-  const moola = value => AmountMath.make(value, allBundles.moola.brand);
+  const cryptoCats = value => AmountMath.make(allBundles.cc.brand, value);
+  const moola = value => AmountMath.make(allBundles.moola.brand, value);
 
   const { zoeService } = makeZoeKit(fakeVatAdmin);
   const feePurse = E(zoeService).makeFeePurse();

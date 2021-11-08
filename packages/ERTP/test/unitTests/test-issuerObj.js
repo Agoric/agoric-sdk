@@ -263,7 +263,7 @@ test('issuer.burn', async t => {
     `entire minted payment was burnt`,
   );
   await t.throwsAsync(() => issuer.getAmountOf(payment1), {
-    message: /payment not found/,
+    message: /was not a live payment for brand/,
   });
 });
 
@@ -287,7 +287,7 @@ test('issuer.claim', async t => {
       });
 
       return t.throwsAsync(() => issuer.getAmountOf(payment1), {
-        message: /payment not found/,
+        message: /was not a live payment for brand/,
       });
     });
 });
@@ -295,7 +295,7 @@ test('issuer.claim', async t => {
 test('issuer.splitMany bad amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
-  const badAmounts = Array(2).fill(AmountMath.make(brand, 10n));
+  const badAmounts = harden(Array(2).fill(AmountMath.make(brand, 10n)));
   await t.throwsAsync(
     _ => E(issuer).splitMany(payment, badAmounts),
     { message: /rights were not conserved/ },
@@ -322,13 +322,13 @@ test('issuer.splitMany good amount', async t => {
     }
     await t.throwsAsync(
       () => issuer.getAmountOf(oldPayment),
-      { message: /payment not found/ },
+      { message: /was not a live payment for brand/ },
       `oldPayment no longer exists`,
     );
   };
 
   await E(issuer)
-    .splitMany(oldPayment, goodAmounts)
+    .splitMany(oldPayment, harden(goodAmounts))
     .then(checkPayments);
 });
 
@@ -363,7 +363,9 @@ test('issuer.split good amount', async t => {
     }
     await t.throwsAsync(
       () => issuer.getAmountOf(oldPayment),
-      { message: /payment not found/ },
+      {
+        message: `"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
+      },
       `oldPayment no longer exists`,
     );
   };
@@ -380,6 +382,7 @@ test('issuer.combine good payments', async t => {
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
   }
+  harden(payments);
 
   const checkCombinedPayment = async combinedPayment => {
     const amount = await issuer.getAmountOf(combinedPayment);
@@ -393,7 +396,7 @@ test('issuer.combine good payments', async t => {
       payments.map(payment =>
         t.throwsAsync(
           () => issuer.getAmountOf(payment),
-          { message: /payment not found/ },
+          { message: /was not a live payment for brand/ },
           `original payments no longer exist`,
         ),
       ),
@@ -413,6 +416,7 @@ test('issuer.combine array of promises', async t => {
     const paymentP = issuer.claim(freshPayment);
     paymentsP.push(paymentP);
   }
+  harden(paymentsP);
 
   const checkCombinedResult = paymentP => {
     issuer.getAmountOf(paymentP).then(pAmount => {
@@ -436,6 +440,7 @@ test('issuer.combine bad payments', async t => {
   }
   const otherPayment = otherMint.mintPayment(AmountMath.make(otherBrand, 10n));
   payments.push(otherPayment);
+  harden(payments);
 
   await t.throwsAsync(
     () => E(issuer).combine(payments),

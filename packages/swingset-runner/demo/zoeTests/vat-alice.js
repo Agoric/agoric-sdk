@@ -328,8 +328,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     // 10 moola = 5 simoleans at the time of the liquidity adding
     // aka 2 moola = 1 simolean
     const addLiquidityProposal = harden({
-      give: { Central: moola(10), Secondary: simoleans(5) },
-      want: { Liquidity: liquidity(10) },
+      give: { Central: moola(10n), Secondary: simoleans(5n) },
+      want: { Liquidity: liquidity(10n) },
     });
     const paymentKeywordRecord = harden({
       Central: moolaPayment,
@@ -353,12 +353,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
     // remove the liquidity
     const aliceRemoveLiquidityProposal = harden({
-      give: { Liquidity: liquidity(10) },
+      give: { Liquidity: liquidity(10n) },
       want: { Central: moola(0n), Secondary: simoleans(0) },
     });
 
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
-      liquidity(10),
+      liquidity(10n),
     );
     const removeLiquidityInvitation = E(
       publicFacet,
@@ -401,16 +401,18 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       sellItemsCreatorSeat,
       sellItemsPublicFacet,
       sellItemsCreatorFacet,
-    } = await E(creatorFacet).sellTokens({
-      customValueProperties: {
-        show: 'Steven Universe, the Opera',
-        start: 'Wed, March 25th 2020 at 8pm',
-      },
-      count: 3,
-      moneyIssuer: moolaIssuer,
-      sellItemsInstallation: installations.sellItems,
-      pricePerItem: moola(22),
-    });
+    } = await E(creatorFacet).sellTokens(
+      harden({
+        customValueProperties: {
+          show: 'Steven Universe, the Opera',
+          start: 'Wed, March 25th 2020 at 8pm',
+        },
+        count: 3,
+        moneyIssuer: moolaIssuer,
+        sellItemsInstallation: installations.sellItems,
+        pricePerItem: moola(22),
+      }),
+    );
     const buyerInvitation = E(sellItemsCreatorFacet).makeBuyerInvitation();
     await E(bobP).doBuyTickets(ticketSalesInstance, buyerInvitation);
 
@@ -446,7 +448,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       give: {
         Moola: moola(10000),
         Simolean: simoleans(10000),
-        Buck: bucks(10000),
+        Buck: bucks(10000n),
       },
     });
     const addInventoryPayments = {

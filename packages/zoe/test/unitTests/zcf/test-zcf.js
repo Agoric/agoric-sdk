@@ -422,12 +422,12 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.NAT);
   const { brand } = zcfMint.getIssuerRecord();
-  const zcfSeat = zcfMint.mintGains({ A: AmountMath.make(4n, brand) });
+  const zcfSeat = zcfMint.mintGains({ A: AmountMath.make(brand, 4n) });
   t.truthy(zcfSeat);
   assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
-    AmountMath.make(4n, brand),
+    AmountMath.make(brand, 4n),
   );
 });
 
@@ -468,7 +468,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  t.throws(() => zcfMint.mintGains({ Moola: moola(3) }, zcfSeat), {
+  t.throws(() => zcfMint.mintGains({ Moola: moola(3n) }, zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
@@ -479,7 +479,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  t.throws(() => zcfMint.burnLosses({ Moola: moola(3) }, zcfSeat), {
+  t.throws(() => zcfMint.burnLosses({ Moola: moola(3n) }, zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
@@ -491,14 +491,14 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(4n, brand) },
+    { A: AmountMath.make(brand, 4n) },
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
   assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
-    AmountMath.make(4n, brand),
+    AmountMath.make(brand, 4n),
   );
 });
 
@@ -509,23 +509,23 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(4n, brand) },
+    { A: AmountMath.make(brand, 4n) },
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
   assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
-    AmountMath.make(4n, brand),
+    AmountMath.make(brand, 4n),
   );
   // TODO: return a seat?
   // https://github.com/Agoric/agoric-sdk/issues/1709
-  const result = zcfMint.burnLosses({ A: AmountMath.make(1n, brand) }, zcfSeat);
+  const result = zcfMint.burnLosses({ A: AmountMath.make(brand, 1n) }, zcfSeat);
   t.is(result, undefined);
   assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
-    AmountMath.make(3n, brand),
+    AmountMath.make(brand, 3n),
   );
 });
 
@@ -536,7 +536,7 @@ test(`zcf.makeZCFMint - mintGains - seat exited`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   zcfSeat.exit();
   t.throws(
-    () => zcfMint.mintGains({ A: AmountMath.make(4n, brand) }, zcfSeat),
+    () => zcfMint.mintGains({ A: AmountMath.make(brand, 4n) }, zcfSeat),
     {
       message: `zcfSeat must be active to mint gains for the zcfSeat`,
     },
@@ -549,18 +549,18 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(4n, brand) },
+    { A: AmountMath.make(brand, 4n) },
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
   assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
-    AmountMath.make(4n, brand),
+    AmountMath.make(brand, 4n),
   );
   zcfSeat.exit();
   t.throws(
-    () => zcfMint.burnLosses({ A: AmountMath.make(1n, brand) }, zcfSeat),
+    () => zcfMint.burnLosses({ A: AmountMath.make(brand, 1n) }, zcfSeat),
     {
       message: `zcfSeat must be active to burn losses from the zcfSeat`,
     },
@@ -692,9 +692,18 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.truthy(zcfSeat.isOfferSafe());
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0n) }));
-  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10) }));
+  t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10n) }));
 });
 
+/**
+ *
+ * @param {ContractFacet} zcf
+ * @param {Keyword} zcfMintKeyword
+ * @param {ZCFSeat} zcfSeat
+ * @param {Keyword} gainsKeyword
+ * @param {Value} gainsValue
+ * @returns {Promise<IssuerRecord>}
+ */
 const allocateEasy = async (
   zcf,
   zcfMintKeyword,
@@ -706,7 +715,7 @@ const allocateEasy = async (
   const zcfMint = await zcf.makeZCFMint(zcfMintKeyword);
   const { brand } = zcfMint.getIssuerRecord();
   zcfMint.mintGains(
-    { [gainsKeyword]: AmountMath.make(gainsValue, brand) },
+    { [gainsKeyword]: AmountMath.make(brand, gainsValue) },
     zcfSeat,
   );
   return zcfMint.getIssuerRecord();
@@ -720,7 +729,7 @@ test(`zcfSeat.getNotifier`, async t => {
   t.not(notifier, await E(userSeat).getNotifier());
 
   // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   t.deepEqual(await notifier.getUpdateSince(2), {
     updateCount: 3,
     value: {
@@ -731,7 +740,7 @@ test(`zcfSeat.getNotifier`, async t => {
     },
   });
 
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
   t.deepEqual(await notifier.getUpdateSince(3), {
     updateCount: 4,
     value: {
@@ -765,7 +774,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(zcfSeat.getCurrentAllocation(), {});
 
   // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
@@ -775,7 +784,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   });
 
   // Again, mint some gains to change the allocation.
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
 
   t.deepEqual(zcfSeat.getCurrentAllocation(), {
     A: {
@@ -799,7 +808,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
 
   // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
   assertAmountsEqual(t, zcfSeat.getAmountAllocated('A', brand1), {
     brand: brand1,
@@ -807,7 +816,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   });
 
   // Again, mint some gains to change the allocation.
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
 
   assertAmountsEqual(t, zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
@@ -829,18 +838,18 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
   const { zcfSeat: zcfSeat1 } = zcf.makeEmptySeatKit();
   const { zcfSeat: zcfSeat2 } = zcf.makeEmptySeatKit();
 
-  const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6);
-  const six = AmountMath.make(6n, issuerRecord1.brand);
+  const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6n);
+  const six = AmountMath.make(issuerRecord1.brand, 6n);
   zcfSeat1.decrementBy({ A: six });
   zcfSeat2.incrementBy({ B: six });
 
   zcf.reallocate(zcfSeat1, zcfSeat2);
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: AmountMath.make(0n, issuerRecord1.brand),
+    A: AmountMath.make(issuerRecord1.brand, 0n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    B: AmountMath.make(6n, issuerRecord1.brand),
+    B: AmountMath.make(issuerRecord1.brand, 6n),
   });
 });
 
@@ -929,7 +938,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {});
 
   // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
@@ -939,7 +948,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   });
 
   // Again, mint some gains to change the allocation.
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
 
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
     A: {
@@ -971,7 +980,7 @@ test(`userSeat.getNotifier`, async t => {
   const notifier = await E(userSeat).getNotifier();
 
   // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3);
+  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   t.deepEqual(await notifier.getUpdateSince(), {
     updateCount: 3,
     value: {
@@ -982,7 +991,7 @@ test(`userSeat.getNotifier`, async t => {
     },
   });
 
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6);
+  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
   t.deepEqual(await notifier.getUpdateSince(2), {
     updateCount: 4,
     value: {
@@ -1015,7 +1024,7 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
     'Stuff',
     zcfSeat,
     'A',
-    3,
+    3n,
   );
 
   // Again, mint some gains to change the allocation.
@@ -1024,7 +1033,7 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
     'Stuff2',
     zcfSeat,
     'B',
-    6,
+    6n,
   );
 
   t.deepEqual(await E(userSeat).getCurrentAllocation(), {
@@ -1084,46 +1093,46 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: simoleans(2) }, give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(2) },
-      give: { Whatever2: simoleans(2) },
+      want: { Whatever: moola(2n) },
+      give: { Whatever2: simoleans(2n) },
     }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2)) }),
+    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
   );
 
   const { zcfSeat: zcfSeat3 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(1) },
+      want: { Whatever: moola(1n) },
     }),
   );
   zcfSeat1.decrementBy({ B: moola(3n) });
-  zcfSeat3.incrementBy({ Whatever: moola(1) });
-  zcfSeat2.incrementBy({ Whatever: moola(2) });
+  zcfSeat3.incrementBy({ Whatever: moola(1n) });
+  zcfSeat2.incrementBy({ Whatever: moola(2n) });
 
-  zcfSeat2.decrementBy({ Whatever2: simoleans(2) });
-  zcfSeat1.incrementBy({ A: simoleans(2) });
+  zcfSeat2.decrementBy({ Whatever2: simoleans(2n) });
+  zcfSeat1.incrementBy({ A: simoleans(2n) });
 
   zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3);
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(2),
+    A: simoleans(2n),
     B: moola(0n),
   });
 
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Whatever: moola(2),
-    Whatever2: simoleans(0),
+    Whatever: moola(2n),
+    Whatever2: simoleans(0n),
   });
 
   t.deepEqual(zcfSeat3.getCurrentAllocation(), {
-    Whatever: moola(1),
+    Whatever: moola(1n),
   });
 });
 
@@ -1137,29 +1146,29 @@ test(`zcf.reallocate 3 seats, some not staged`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: simoleans(2) }, give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(2) },
-      give: { Whatever2: simoleans(2) },
+      want: { Whatever: moola(2n) },
+      give: { Whatever2: simoleans(2n) },
     }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2)) }),
+    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
   );
 
   const { zcfSeat: zcfSeat3 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(1) },
+      want: { Whatever: moola(1n) },
     }),
   );
 
   zcfSeat1.incrementBy({
-    A: simoleans(100),
+    A: simoleans(100n),
   });
 
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
@@ -1168,12 +1177,12 @@ test(`zcf.reallocate 3 seats, some not staged`, async t => {
   });
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(0),
-    B: moola(3),
+    A: simoleans(0n),
+    B: moola(3n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
     Whatever: moola(0n),
-    Whatever2: simoleans(2),
+    Whatever2: simoleans(2n),
   });
   t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
 });
@@ -1188,45 +1197,45 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
   const { zcfSeat: zcfSeat1 } = await makeOffer(
     zoe,
     zcf,
-    harden({ want: { A: simoleans(2) }, give: { B: moola(3) } }),
-    harden({ B: moolaKit.mint.mintPayment(moola(3)) }),
+    harden({ want: { A: simoleans(2n) }, give: { B: moola(3n) } }),
+    harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
   const { zcfSeat: zcfSeat2 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(2) },
-      give: { Whatever2: simoleans(2) },
+      want: { Whatever: moola(2n) },
+      give: { Whatever2: simoleans(2n) },
     }),
-    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2)) }),
+    harden({ Whatever2: simoleanKit.mint.mintPayment(simoleans(2n)) }),
   );
 
   const { zcfSeat: zcfSeat3 } = await makeOffer(
     zoe,
     zcf,
     harden({
-      want: { Whatever: moola(1) },
+      want: { Whatever: moola(1n) },
     }),
   );
 
-  zcfSeat2.decrementBy({ Whatever2: simoleans(2) });
+  zcfSeat2.decrementBy({ Whatever2: simoleans(2n) });
   // This does not conserve rights in the slightest
   zcfSeat1.incrementBy({
-    A: simoleans(100),
+    A: simoleans(100n),
   });
-  zcfSeat3.incrementBy({ Whatever: moola(1) });
+  zcfSeat3.incrementBy({ Whatever: moola(1n) });
 
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
     message: /rights were not conserved for brand .*/,
   });
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    A: simoleans(0),
-    B: moola(3),
+    A: simoleans(0n),
+    B: moola(3n),
   });
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
     Whatever: moola(0n),
-    Whatever2: simoleans(2),
+    Whatever2: simoleans(2n),
   });
   t.deepEqual(zcfSeat3.getCurrentAllocation(), { Whatever: moola(0n) });
 });
@@ -1263,11 +1272,11 @@ test(`zcf.shutdown - no further offers accepted`, async t => {
 test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
   const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
-  zcf.shutdownWithFailure(`And don't come back`);
+  zcf.shutdownWithFailure(Error(`And don't come back`));
   await t.throwsAsync(() => E(zoe).offer(invitation), {
     message: 'No further offers are accepted',
   });
-  t.is(vatAdminState.getExitMessage(), `And don't come back`);
+  t.is(vatAdminState.getExitMessage().message, `And don't come back`);
   t.truthy(vatAdminState.getExitWithFailure());
 });
 

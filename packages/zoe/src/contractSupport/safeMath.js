@@ -19,6 +19,5 @@ export const natSafeMath = harden({
     y = Nat(y);
     return Nat(Nat(x) + y - 1n) / y;
   },
-  // Numbers and BigInts already compare magnitudes correctly.
   isGTE: (x, y) => x >= y,
 });

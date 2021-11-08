@@ -30,7 +30,7 @@ test('zoe - useObj', async t => {
   const installation = await E(zoe).install(bundle);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaMint.mintPayment(moola(3));
+  const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -45,7 +45,7 @@ test('zoe - useObj', async t => {
 
   // Alice escrows with zoe
   const aliceProposal = harden({
-    give: { Pixels: moola(3) },
+    give: { Pixels: moola(3n) },
   });
   const alicePayments = { Pixels: aliceMoolaPayment };
 
@@ -70,7 +70,7 @@ test('zoe - useObj', async t => {
 
   t.deepEqual(
     await moolaIssuer.getAmountOf(aliceMoolaPayoutPayment),
-    moola(3),
+    moola(3n),
     `alice gets everything she escrowed back`,
   );
 
