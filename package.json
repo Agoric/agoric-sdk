@@ -70,6 +70,9 @@
   "engines": {
     "node": ">=14.15.0"
   },
+  "eslintConfig": {
+    "root": true
+  },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
