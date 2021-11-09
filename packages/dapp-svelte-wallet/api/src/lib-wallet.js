@@ -859,6 +859,10 @@ export function makeWallet({
         Object.fromEntries(
           Object.entries(amountKeywordRecord).map(
             ([keyword, { pursePetname, value }]) => {
+              // Automatically convert numbers to BigInts.
+              if (typeof value === 'number') {
+                value = BigInt(value);
+              }
               const purse = getPurse(pursePetname);
               purseKeywordRecord[keyword] = purse;
               const brand = purseToBrand.get(purse);
@@ -1203,7 +1207,7 @@ export function makeWallet({
   const makePaymentActionsForId = id =>
     makePaymentActions({
       getRecord: () => idToPaymentRecord.get(id),
-      updateRecord: (record, withoutMeta = undefined) => {
+      updateRecord: (record, withoutMeta = {}) => {
         // This order is important, so that the `withoutMeta.meta` gets
         // overridden by `record.meta`.
         updatePaymentRecord({ ...withoutMeta, ...addMeta(record) });
