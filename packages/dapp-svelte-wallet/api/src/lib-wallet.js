@@ -17,6 +17,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
+import { Nat } from '@agoric/nat';
 import {
   makeNotifierKit,
   observeIteration,
@@ -859,6 +860,10 @@ export function makeWallet({
         Object.fromEntries(
           Object.entries(amountKeywordRecord).map(
             ([keyword, { pursePetname, value }]) => {
+              // Automatically convert numbers to Nats.
+              if (typeof value === 'number') {
+                value = Nat(value);
+              }
               const purse = getPurse(pursePetname);
               purseKeywordRecord[keyword] = purse;
               const brand = purseToBrand.get(purse);
@@ -1203,7 +1208,7 @@ export function makeWallet({
   const makePaymentActionsForId = id =>
     makePaymentActions({
       getRecord: () => idToPaymentRecord.get(id),
-      updateRecord: (record, withoutMeta = undefined) => {
+      updateRecord: (record, withoutMeta = {}) => {
         // This order is important, so that the `withoutMeta.meta` gets
         // overridden by `record.meta`.
         updatePaymentRecord({ ...withoutMeta, ...addMeta(record) });
