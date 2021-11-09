@@ -31,7 +31,6 @@
     "@agoric/stat-logger": "^0.4.24",
     "@agoric/swing-store": "^0.6.2",
     "@agoric/swingset-vat": "^0.23.0",
-    "@agoric/tame-metering": "^2.0.14",
     "@agoric/zoe": "^0.20.0",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
