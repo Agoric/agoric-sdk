@@ -116,14 +116,15 @@ const start = zcf => {
     const performBid = seat => {
       assert(!isClosed, X`Auction session is closed, no more bidding`);
 
-      // XXX await make function hanging
-      startWakeupTimerIfNeeded();
-
       assertProposalShape(seat, {
         give: { Bid: null },
         want: { Asset: null },
       });
       assertBidSeat(zcf, sellSeat, seat);
+
+      // XXX await make function hanging
+      startWakeupTimerIfNeeded();
+
       bidSeats.push(seat);
       return defaultAcceptanceMsg;
     };
