@@ -17,6 +17,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
+import { Nat } from '@agoric/nat';
 import {
   makeNotifierKit,
   observeIteration,
@@ -859,9 +860,9 @@ export function makeWallet({
         Object.fromEntries(
           Object.entries(amountKeywordRecord).map(
             ([keyword, { pursePetname, value }]) => {
-              // Automatically convert numbers to BigInts.
+              // Automatically convert numbers to Nats.
               if (typeof value === 'number') {
-                value = BigInt(value);
+                value = Nat(value);
               }
               const purse = getPurse(pursePetname);
               purseKeywordRecord[keyword] = purse;

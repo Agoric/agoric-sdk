@@ -1025,7 +1025,7 @@ test('lib-wallet addOffer for autoswap swap', async t => {
       give: {
         In: {
           pursePetname: 'Fun budget',
-          // Test automatic BigInt conversion.
+          // Test automatic Nat conversion.
           value: 30,
         },
       },
