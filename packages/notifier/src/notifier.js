@@ -12,11 +12,11 @@ import './types.js';
 
 /**
  * @template T
- * @param {ERef<BaseNotifier<T>>} baseNotifierP
- * @returns {AsyncIterable<T> & SharableNotifier}
+ * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
+ * @returns {AsyncIterable<T> & SharableNotifier<T>}
  */
-export const makeNotifier = baseNotifierP => {
-  const asyncIterable = makeAsyncIterableFromNotifier(baseNotifierP);
+export const makeNotifier = sharableInternalsP => {
+  const asyncIterable = makeAsyncIterableFromNotifier(sharableInternalsP);
 
   return Far('notifier', {
     ...asyncIterable,
@@ -26,10 +26,8 @@ export const makeNotifier = baseNotifierP => {
      * by obtaining this from the Notifier to be replicated, and applying
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
-     *
-     * @returns {NotifierInternals}
      */
-    getSharableNotifierInternals: () => baseNotifierP,
+    getSharableNotifierInternals: () => sharableInternalsP,
   });
 };
 
@@ -85,7 +83,6 @@ export const makeNotifierKit = (...args) => {
 
   const notifier = Far('notifier', {
     ...makeNotifier(baseNotifier),
-    // TODO stop exposing baseNotifier methods directly
     ...baseNotifier,
   });
 
@@ -155,11 +152,12 @@ export const makeNotifierKit = (...args) => {
  * Adaptor from async iterable to notifier.
  *
  * @template T
- * @param {AsyncIterable<T>} asyncIterable
+ * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @returns {Notifier<T>}
  */
-export const makeNotifierFromAsyncIterable = asyncIterable => {
-  const iterator = asyncIterable[Symbol.asyncIterator]();
+export const makeNotifierFromAsyncIterable = asyncIterableP => {
+  /** @type {ERef<AsyncIterator<T>>} */
+  const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
@@ -192,7 +190,7 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
 
       // otherwise return a promise for the next state.
       if (!optNextPromise) {
-        const nextIterResultP = iterator.next();
+        const nextIterResultP = E(iteratorP).next();
         optNextPromise = E.when(
           nextIterResultP,
           ({ done, value }) => {
@@ -208,9 +206,8 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
           _reason => {
             currentUpdateCount = undefined;
             currentResponse = undefined;
-            // This coercion between incompatible promise types is fine
-            // here, because we know that nextIterResultP is rejected,
-            // and we just need any promise rejected by that reason.
+            // We know that nextIterResultP is rejected, and we just need any
+            // promise rejected by that reason.
             return /** @type {Promise<UpdateRecord<T>>} */ (nextIterResultP);
           },
         );
@@ -220,7 +217,9 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
   });
 
   return Far('notifier', {
-    ...asyncIterable,
+    // Don't leak the original asyncIterableP since it may be remote and we also
+    // want the same semantics for this exposed iterable and the baseNotifier.
+    ...makeAsyncIterableFromNotifier(baseNotifier),
     ...baseNotifier,
 
     /**
@@ -228,8 +227,6 @@ export const makeNotifierFromAsyncIterable = asyncIterable => {
      * by obtaining this from the Notifier to be replicated, and applying
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
-     *
-     * @returns {NotifierInternals}
      */
     getSharableNotifierInternals: () => baseNotifier,
   });

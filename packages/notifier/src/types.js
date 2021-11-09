@@ -12,6 +12,14 @@
 
 /**
  * @template T
+ * @typedef {{
+ *   [Symbol.asyncIterator]: () => AsyncIterator<T, T>
+ * }} ConsistentAsyncIterable
+ * An AsyncIterable that returns the same type as it yields.
+ */
+
+/**
+ * @template T
  * @typedef {Object} IterationObserver<T>
  * A valid sequence of calls to the methods of an `IterationObserver`
  * represents an iteration. A valid sequence consists of any number of calls
@@ -61,20 +69,24 @@
  */
 
 /**
- * @typedef {any} NotifierInternals Purposely opaque. Will be shared between
- * machines, so it must be safe to expose. But other software should avoid
- * depending on its internal structure.
+ * @template T
+ * @typedef {BaseNotifier<T>} NotifierInternals Will be shared between machines,
+ * so it must be safe to expose. But other software should avoid depending on
+ * its internal structure.
  */
 
 /**
  * @template T
- * @typedef {BaseNotifier<T> & AsyncIterable<T> & SharableNotifier} Notifier<T> an object that can
- * be used to get the current state or updates
+ * @typedef {BaseNotifier<T> &
+ *   ConsistentAsyncIterable<T> &
+ *   SharableNotifier<T>
+ * } Notifier<T> an object that can be used to get the current state or updates
  */
 
 /**
+ * @template T
  * @typedef {Object} SharableNotifier
- * @property {() => NotifierInternals} getSharableNotifierInternals
+ * @property {() => ERef<NotifierInternals<T>>} getSharableNotifierInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Notification, do
  * ```js
@@ -101,20 +113,26 @@
  */
 
 /**
- * @typedef {any} SubscriptionInternals Purposely opaque. Will be shared between
- * machines, so it must be safe to expose. But other software should avoid
- * depending on its internal structure.
+ * @template T
+ * @typedef {Object} SubscriptionInternals
+ * Will be shared between machines, so it must be safe to expose. But other
+ * software should avoid depending on its internal structure.
+ * @property {ERef<IteratorResult<T, T>>} head internal only
+ * @property {Promise<SubscriptionInternals<T>>} tail internal onli
  */
 
 /**
  * @template T
- * @typedef {BaseSubscription<T> & AsyncIterable<T> & SharableSubscription} Subscription<T>
+ * @typedef {BaseSubscription<T> &
+ *   ConsistentAsyncIterable<T> &
+ *   SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
 
 /**
+ * @template T
  * @typedef {Object} SharableSubscription
- * @property {() => SubscriptionInternals} getSharableSubscriptionInternals
+ * @property {() => ERef<SubscriptionInternals<T>>} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do
  * ```js
@@ -127,7 +145,7 @@
 
 /**
  * @template T
- * @typedef {AsyncIterator<T> & AsyncIterable<T>} SubscriptionIterator<T>
+ * @typedef {AsyncIterator<T, T> & ConsistentAsyncIterable<T>} SubscriptionIterator<T>
  * an AsyncIterator supporting distributed and multicast usage.
  *
  * @property {() => Subscription<T>} subscribe

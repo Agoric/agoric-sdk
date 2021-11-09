@@ -34,7 +34,7 @@ import './types.js';
  *
  * @template T
  * @param {ERef<BaseNotifier<T>>} notifierP
- * @returns {AsyncIterable<T>}
+ * @returns {ConsistentAsyncIterable<T>}
  */
 export const makeAsyncIterableFromNotifier = notifierP => {
   return Far('asyncIterableFromNotifier', {

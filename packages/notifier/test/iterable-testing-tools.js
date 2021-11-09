@@ -6,6 +6,8 @@ import { observeIteration, observeIterator } from '../src/index.js';
 import '@agoric/marshal/exported.js';
 import '../src/types.js';
 
+/** @typedef {import('ava').Assertions} Assertions */
+
 const obj = harden({});
 const unresP = new Promise(_ => {});
 const rejP = Promise.reject(new Error('foo'));
@@ -73,7 +75,7 @@ export const explodingStream = makeTestIterable(true);
  * this promise to succeed with the canonical `refResult` successful
  * completion, or to fail with the canonical `refReason` reason for failure.
  *
- * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {Assertions} t
  * @param {ERef<Passable>} p
  * @param {boolean} fails
  */
@@ -119,7 +121,7 @@ const skip = (i, value, lossy) => {
  * non-final values are from a sampliing subset of the canonical test
  * iteration. Otherwise it checks for exact conformance.
  *
- * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {Assertions} t
  * @param {AsyncIterable<Passable>} iterable
  * @param {boolean} lossy
  * @returns {Promise<Passable>}
@@ -157,7 +159,7 @@ export const testManualConsumer = (t, iterable, lossy = false) => {
  * case, `testAutoConsumer` fulfills the returned promise with the canonical
  * `refResult` completion value, which is what `testEnding` expects.
  *
- * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {Assertions} t
  * @param {AsyncIterable<Passable>} iterable
  * @param {boolean} lossy
  * @returns {Promise<Passable>}
@@ -182,7 +184,7 @@ export const testAutoConsumer = async (t, iterable, lossy = false) => {
  * Makes an IterationObserver which will test iteration reported to it against
  * the canonical test iteration.
  *
- * @param {any} t TODO What's the correct type for Ava's `t`?
+ * @param {Assertions} t
  * @param {boolean} lossy Are we checking every non-final value or only a
  * sampling subset?
  * @param {boolean} fails Do we expect termination with the canonical successful
