@@ -250,10 +250,6 @@ jobs:
       run: cd packages/import-manager && yarn test
       env:
         ESM_DISABLE_CACHE: true
-    - name: yarn test (install-metering-and-ses)
-      run: cd packages/install-metering-and-ses && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
       env:
@@ -344,14 +340,6 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-    - name: yarn test (tame-metering)
-      run: cd packages/tame-metering && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-    - name: yarn test (transform-metering)
-      run: cd packages/transform-metering && yarn test
       env:
         ESM_DISABLE_CACHE: true
     - name: yarn test (deploy-script-support)
