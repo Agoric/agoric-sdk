@@ -15,7 +15,7 @@ import 'node-lmdb';
 import '@agoric/babel-standalone';
 
 // Now do lockdown.
-import './install-optional-metering-and-ses.js';
+import '@agoric/install-ses';
 import { main } from './main.js';
 
 main();
