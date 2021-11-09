@@ -494,8 +494,6 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
   const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
 
-  // Alice (the creator of the auction) gets Carol's simoleans and
-  // carol gets the assets.
   t.deepEqual(
     await moolaR.issuer.getAmountOf(aliceMoolaPayout),
     moola(1n),
