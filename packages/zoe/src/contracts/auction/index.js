@@ -34,8 +34,6 @@ const SECOND_PRICE = 'second-price';
  * seller's offer. Each bidder can submit an offer: { give: { Bid:
  * null } want: { Asset: null } }.
  *
- * XXX This is a copy of original one, hopefully we can make a PR for this later on
- *
  * @type {ContractStartFn}
  */
 const start = zcf => {
