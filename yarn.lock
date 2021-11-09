@@ -17,11 +17,6 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.1.0.tgz#102794e033ffc183a20b0f86031a2e76d204b9f6"
   integrity sha512-2oMoh3DMn0Fx8HChPPiH8irBNdT/33ttxAZJohhd3nU3gyBRQ1u+eEoOQWfSkrE6M02iMkQM7GE9MzGmjQ6bHg==
 
-"@agoric/tame-metering@^2.0.14":
-  version "2.0.14"
-  resolved "https://registry.yarnpkg.com/@agoric/tame-metering/-/tame-metering-2.0.14.tgz#4c5dfd85cccd3b9d6f5a04b064769b43356612aa"
-  integrity sha512-iOp5coGPtox6W5MC4+JuoOHnquKJRjCEtxNBAqBd2MfWQPiVHsmcvnBlSYAaro0GCAwt00PwXU0EZPxc8VuTvw==
-
 "@babel/cli@^7.12.13":
   version "7.13.10"
   resolved "https://registry.yarnpkg.com/@babel/cli/-/cli-7.13.10.tgz#3a9254cbe806639c8ca4ebd49ebe54b4267b88c9"
