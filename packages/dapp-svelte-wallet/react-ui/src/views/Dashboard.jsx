@@ -12,7 +12,7 @@ const Dashboard = () => {
         <div className="Flex-item">
           <Requests />
         </div>
-        <div className="Flex-item">
+        <div className="Flex-item Purses">
           <Purses />
         </div>
       </span>
