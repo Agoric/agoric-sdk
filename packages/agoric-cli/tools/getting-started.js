@@ -9,7 +9,7 @@ import { request } from 'http';
 
 import { spawn } from 'child_process';
 
-import { makePspawn } from '../lib/helpers.js';
+import { makePspawn } from '../src/helpers.js';
 
 const TIMEOUT_SECONDS = 20 * 60;
 
