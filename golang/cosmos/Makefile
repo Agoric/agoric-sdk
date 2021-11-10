@@ -104,7 +104,7 @@ t:
 
 TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
 GOGO_PROTO_URL   := https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go)/proto/ibc/core
+IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v2)/proto/ibc/core
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
