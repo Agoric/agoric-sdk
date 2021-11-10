@@ -3,7 +3,6 @@
 
 import fs from 'fs';
 import process from 'process';
-import re2 from 're2';
 import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
@@ -193,18 +192,7 @@ export async function makeSwingsetController(
   }
 
   function kernelRequire(what) {
-    if (what === 're2') {
-      // The kernel imports @agoric/transform-metering to get makeMeter(),
-      // and transform-metering imports re2, to add it to the generated
-      // endowments. TODO Our transformers no longer traffic in endowments,
-      // so that could probably be removed, in which case we'd no longer need
-      // to provide it here. We should decide whether to let the kernel use
-      // the native RegExp or replace it with re2. TODO we also need to make
-      // sure vats get (and stick with) re2 for their 'RegExp'.
-      return re2;
-    } else {
-      assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
-    }
+    assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
   }
   // @ts-ignore assume kernelBundle is set
   const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
@@ -223,11 +211,7 @@ export async function makeSwingsetController(
   writeSlogObject({ type: 'import-kernel-finish' });
 
   // all vats get these in their global scope, plus a vat-specific 'console'
-  const vatEndowments = harden({
-    // re2 is a RegExp work-a-like that disables backtracking expressions for
-    // safer memory consumption
-    RegExp: re2,
-  });
+  const vatEndowments = harden({});
 
   // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {
