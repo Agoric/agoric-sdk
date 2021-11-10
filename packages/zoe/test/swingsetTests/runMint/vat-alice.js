@@ -1,10 +1,25 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
+/**
+ * @param {*} log
+ * @param {ZoeService} zoe
+ * @param {*} installations
+ * @param {FeeMintAccess} feeMintAccess
+ */
 const build = async (log, zoe, installations, feeMintAccess) => {
   return Far('build', {
     runMintTest: async () => {
       log('starting runMintTest');
+      const { instance } = await E(zoe).startInstance(
+        installations.offerArgsUsageContract,
+        {
+          RUN: E(zoe).getFeeIssuer(),
+        },
+        undefined,
+      );
+      const issuers = await E(zoe).getIssuers(instance);
+      log(issuers);
       const { creatorFacet: cf1 } = await E(zoe).startInstance(
         installations.runMintContract,
         undefined,

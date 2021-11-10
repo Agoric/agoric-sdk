@@ -36,6 +36,8 @@ import { refillMeter } from './refillMeter.js';
  * @param {ERef<TimerService> | undefined} timeAuthority
  * @param {TranslateFee} translateFee
  * @param {TranslateExpiry} translateExpiry
+ * @param {Issuer} feeIssuer
+ * @param {Brand} feeBrand
  * @returns {ZoeStorageManager}
  */
 export const makeZoeStorageManager = (
@@ -49,6 +51,8 @@ export const makeZoeStorageManager = (
   timeAuthority,
   translateFee,
   translateExpiry,
+  feeIssuer,
+  feeBrand,
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
@@ -60,6 +64,14 @@ export const makeZoeStorageManager = (
   // object should be closely held and tracked: all of the digital
   // assets that users escrow are contained within these purses.
   const escrowStorage = makeEscrowStorage();
+
+  // Add a purse for escrowing user funds (not for fees). Create the
+  // local, non-remote escrow purse for the fee mint immediately.
+  // Without this step, registration of the feeIssuer in a contract
+  // would treat the feeIssuer as if it is remote, creating a promise
+  // for a purse with E(issuer).makeEmptyPurse(). We need a local
+  // purse, so we cannot allow that to happen.
+  escrowStorage.makeLocalPurse(feeIssuer, feeBrand);
 
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
