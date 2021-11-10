@@ -186,9 +186,13 @@ test('console - objects should include detail', async t => {
 
   // send all args to print(), which come from console methods
   // filter stack traces so that we're insensitive to line number changes
+  // filter lockdown warnings
   await worker.evaluate(`
-    const skipLineNumbers = s => !s.startsWith('Error: ');
-    send(printed.map(args => args.map(a => a.toString()).filter(skipLineNumbers)))
+  const isStackTrace = args => args[0].startsWith('Error: ');
+  const isLockdownWarning = args => args[0].startsWith('Removing intrinsics.');
+  const relevant = args => (args.length && !isStackTrace(args) && !isLockdownWarning(args));
+  const argStrings = args => args.map(a => a.toString());
+  send(printed.filter(relevant).map(argStrings));
   `);
   t.deepEqual(
     opts.messages.map(s => JSON.parse(s)),
@@ -200,7 +204,6 @@ test('console - objects should include detail', async t => {
           'assertion text',
           '{"prop1":["elem1a","elem1b"],"prop2":["elem2a","elem2b"]}',
         ],
-        [],
         [
           'primitive:',
           '"[undefined]"',
@@ -220,7 +223,6 @@ test('console - objects should include detail', async t => {
           '(Error#2)',
         ],
         ['Error#2:', 'oops!'],
-        [],
       ],
     ],
   );
