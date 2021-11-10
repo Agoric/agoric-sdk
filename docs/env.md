@@ -116,3 +116,12 @@ Description: when nonempty, use the value as an absolute path to which SwingSet
 debug logs should be written.
 
 Lifetime: ?
+
+## SWINGSET_WORKER_TYPE
+
+Affects: solo
+
+Purpose: select the default Worker type (default `xs-worker`)
+
+Description: default `xs-worker`, but you can use `local` to run vats within the
+same Node.js process (to facilitate debugging).
