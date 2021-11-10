@@ -10,7 +10,10 @@ import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 
-const CONTRACT_FILES = ['runMintContract'];
+// offerArgsUsageContract is just used as a generic contract for the
+// purpose of registering a feeBrand before any zcfMint for the
+// feeBrand is made
+const CONTRACT_FILES = ['runMintContract', 'offerArgsUsageContract'];
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -72,6 +75,7 @@ async function main(t, argv) {
 
 const expected = [
   'starting runMintTest',
+  '{"RUN":{}}',
   'first instance started',
   'second instance started',
   'first payment minted',
