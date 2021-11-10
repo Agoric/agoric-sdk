@@ -350,8 +350,8 @@ jobs:
       run: cd packages/ui-components && yarn test
       env:
         ESM_DISABLE_CACHE: true
-    - name: yarn test (dapp-svelte-wallet/react-ui)
-      run: cd packages/dapp-svelte-wallet/react-ui && yarn test
+    - name: yarn test (dapp-wallet/ui)
+      run: cd packages/dapp-wallet/ui && yarn test
       env:
         ESM_DISABLE_CACHE: true
 

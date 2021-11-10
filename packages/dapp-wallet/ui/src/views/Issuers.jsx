@@ -47,7 +47,9 @@ export const IssuersWithoutContext = ({ issuers, pendingPurseCreations }) => {
       </CardItem>
     );
   };
-  const issuerItems = (issuers && issuers.map(Issuer)) ?? <CircularProgress />;
+  const issuerItems = (issuers && issuers.map(Issuer)) ?? (
+    <CircularProgress style={{ margin: 'auto' }} />
+  );
 
   return (
     <>

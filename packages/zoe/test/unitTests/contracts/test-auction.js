@@ -7,6 +7,7 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
+import { assert, details as X } from '@agoric/assert';
 
 // noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -18,7 +19,7 @@ import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const secondPriceAuctionRoot = `${dirname}/../../../src/contracts/auction/secondPriceAuction.js`;
+const auctionRoot = `${dirname}/../../../src/contracts/auction/index.js`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   t.plan(15);
@@ -30,7 +31,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     return {
       installCode: async () => {
         // pack the contract
-        const bundle = await bundleSource(secondPriceAuctionRoot);
+        const bundle = await bundleSource(auctionRoot);
         // install the contract
         const installationP = E(zoe).install(bundle);
         return installationP;
@@ -40,7 +41,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           Asset: moolaKit.issuer,
           Ask: simoleanKit.issuer,
         });
-        const terms = { timeAuthority: timer, closesAfter: 1n };
+        const terms = { timeAuthority: timer, bidDuration: 1n };
         const adminP = E(zoe).startInstance(
           installation,
           issuerKeywordRecord,
@@ -119,7 +120,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         );
 
         t.deepEqual(
-          invitationValue.closesAfter,
+          invitationValue.bidDuration,
           1n,
           `auction will be closed after 1 tick according to the timeAuthority`,
         );
@@ -229,6 +230,9 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const bidInvitation2 = E(makeBidInvitationObj).makeBidInvitation();
   const bidInvitation3 = E(makeBidInvitationObj).makeBidInvitation();
 
+  // timer ticks before offering, nothing happens
+  timer.tick();
+
   const bobSeat = await bob.offer(bidInvitation1);
   const carolSeat = await carol.offer(bidInvitation2);
   const daveSeat = await dave.offer(bidInvitation3);
@@ -265,7 +269,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Alice creates a secondPriceAuction instance
 
   // Pack the contract.
-  const bundle = await bundleSource(secondPriceAuctionRoot);
+  const bundle = await bundleSource(auctionRoot);
 
   const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
@@ -273,7 +277,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Ask: simoleanR.issuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, closesAfter: 1n });
+  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -287,6 +291,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     exit: { waived: null },
   });
   const alicePayments = harden({ Asset: aliceMoolaPayment });
+
+  assert(!!aliceInvitation);
   // Alice initializes the auction
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -303,6 +309,9 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     { message: /Only seats with the exit rule "onDemand" can exit at will/ },
     `alice can't exit`,
   );
+
+  // timer ticks before offering, nothing happens
+  timer.tick();
 
   // Alice gives Bob the invitation
 
@@ -393,6 +402,132 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.is(bobSimoleanPurse.getCurrentAmount().value, 11n);
 });
 
+test('zoe - secondPriceAuction - all bidders try to exit', async t => {
+  t.plan(10);
+  const { moolaR, simoleanR, moola, simoleans } = setup();
+  const { zoeService } = makeZoeKit(fakeVatAdmin);
+  const feePurse = E(zoeService).makeFeePurse();
+  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+
+  // Setup Alice
+  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
+  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+
+  // Setup Bob
+  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11n));
+  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+
+  // Alice creates a secondPriceAuction instance
+
+  // Pack the contract.
+  const bundle = await bundleSource(auctionRoot);
+
+  const installation = await E(zoe).install(bundle);
+  const issuerKeywordRecord = harden({
+    Asset: moolaR.issuer,
+    Ask: simoleanR.issuer,
+  });
+  const timer = buildManualTimer(console.log);
+  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
+  const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
+    installation,
+    issuerKeywordRecord,
+    terms,
+  );
+
+  // Alice escrows with zoe
+  const aliceProposal = harden({
+    give: { Asset: moola(1n) },
+    want: { Ask: simoleans(3n) },
+    exit: { waived: null },
+  });
+  const alicePayments = harden({ Asset: aliceMoolaPayment });
+
+  assert(!!aliceInvitation, X`Alice invitation must be presented`);
+  // Alice initializes the auction
+  const aliceSeat = await E(zoe).offer(
+    aliceInvitation,
+    aliceProposal,
+    alicePayments,
+  );
+  const makeInvitationObj = await E(aliceSeat).getOfferResult();
+
+  const bobInvitation = await E(makeInvitationObj).makeBidInvitation();
+
+  // Alice tries to exit, but cannot
+  await t.throwsAsync(
+    () => E(aliceSeat).tryExit(),
+    { message: /Only seats with the exit rule "onDemand" can exit at will/ },
+    `alice can't exit`,
+  );
+
+  // timer ticks before offering, nothing happens
+  timer.tick();
+
+  // Alice gives Bob the invitation
+
+  const bobProposal = harden({
+    want: { Asset: moola(1n) },
+    give: { Bid: simoleans(11n) },
+  });
+  const bobPayments = harden({ Bid: bobSimoleanPayment });
+
+  // Bob escrows with zoe
+  // Bob bids
+  const bobSeat = await E(zoe).offer(bobInvitation, bobProposal, bobPayments);
+
+  t.is(
+    await E(bobSeat).getOfferResult(),
+    'The offer has been accepted. Once the contract has been completed, please check your payout',
+  );
+
+  // Bob exits early, but this does not stop the auction.
+  await E(bobSeat).tryExit();
+  const bobMoolaPayout = await bobSeat.getPayout('Asset');
+  const bobSimoleanPayout = await bobSeat.getPayout('Bid');
+
+  timer.tick();
+
+  // no active bidders, the auction should fail
+  const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
+  const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
+
+  t.deepEqual(
+    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    moola(1n),
+    `alice should keep moola`,
+  );
+
+  t.deepEqual(
+    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    simoleans(0n),
+    `alic has no simolean`,
+  );
+
+  // Alice deposits her payout to ensure she can
+  await aliceMoolaPurse.deposit(aliceMoolaPayout);
+  await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
+
+  // Bob gets a refund
+  t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0n));
+  t.deepEqual(
+    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+    bobProposal.give.Bid,
+  );
+
+  // Bob deposits his payout to ensure he can
+  await bobMoolaPurse.deposit(bobMoolaPayout);
+  await bobSimoleanPurse.deposit(bobSimoleanPayout);
+
+  // Assert that the correct refunds were received.
+  t.is(aliceMoolaPurse.getCurrentAmount().value, 1n);
+  t.is(aliceSimoleanPurse.getCurrentAmount().value, 0n);
+  t.is(bobMoolaPurse.getCurrentAmount().value, 0n);
+  t.is(bobSimoleanPurse.getCurrentAmount().value, 11n);
+});
+
 // Three bidders with (fungible) moola bid for a CryptoCat
 test('zoe - secondPriceAuction non-fungible asset', async t => {
   t.plan(30);
@@ -430,7 +565,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   // Alice creates a secondPriceAuction instance
 
   // Pack the contract.
-  const bundle = await bundleSource(secondPriceAuctionRoot);
+  const bundle = await bundleSource(auctionRoot);
 
   const installation = await E(zoe).install(bundle);
   const issuerKeywordRecord = harden({
@@ -438,7 +573,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Ask: moolaIssuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, closesAfter: 1n });
+  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -452,6 +587,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     exit: { waived: null },
   });
   const alicePayments = { Asset: aliceCcPayment };
+
+  assert(!!aliceInvitation);
   // Alice initializes the auction
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
@@ -683,4 +820,233 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   t.is(carolMoolaPurse.getCurrentAmount().value, 7n);
   t.deepEqual(daveCcPurse.getCurrentAmount().value, []);
   t.is(daveMoolaPurse.getCurrentAmount().value, 5n);
+});
+
+test('zoe - firstPriceAuction w/ 3 bids', async t => {
+  t.plan(15);
+  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+
+  const makeAlice = async (timer, moolaPayment) => {
+    const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
+    const simoleanPurse = await E(simoleanKit.issuer).makeEmptyPurse();
+    return {
+      installCode: async () => {
+        // pack the contract
+        const bundle = await bundleSource(auctionRoot);
+        // install the contract
+        const installationP = E(zoe).install(bundle);
+        return installationP;
+      },
+      startInstance: async installation => {
+        const issuerKeywordRecord = harden({
+          Asset: moolaKit.issuer,
+          Ask: simoleanKit.issuer,
+        });
+        const terms = {
+          timeAuthority: timer,
+          bidDuration: 1n,
+          winnerPriceOption: 'first-price',
+        };
+        const adminP = E(zoe).startInstance(
+          installation,
+          issuerKeywordRecord,
+          terms,
+        );
+        return adminP;
+      },
+      offer: async sellInvitation => {
+        const proposal = harden({
+          give: { Asset: moola(1n) },
+          want: { Ask: simoleans(3n) },
+          exit: { waived: null },
+        });
+
+        const payments = { Asset: moolaPayment };
+
+        const seat = await E(zoe).offer(sellInvitation, proposal, payments);
+
+        const makeBidInvitationObj = await E(seat).getOfferResult();
+        return { seat, makeBidInvitationObj };
+      },
+      collectPayout: async seat => {
+        await E(seat)
+          .getPayout('Asset')
+          .then(moolaPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(
+              amountDeposited,
+              moola(0n),
+              `Alice didn't get any of what she put in`,
+            ),
+          );
+
+        await E(seat)
+          .getPayout('Ask')
+          .then(simoleanPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(
+              amountDeposited,
+              simoleans(11n),
+              `Alice got the first price bid, which is Bob`,
+            ),
+          );
+      },
+    };
+  };
+
+  const makeBob = (installation, simoleanPayment) => {
+    const moolaPurse = moolaKit.issuer.makeEmptyPurse();
+    const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    return Far('bob', {
+      offer: async untrustedInvitation => {
+        const invitationIssuer = await E(zoe).getInvitationIssuer();
+
+        // Bob is able to use the trusted invitationIssuer from Zoe to
+        // transform an untrusted invitation that Alice also has access to, to
+        // an
+        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+
+        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+
+        t.is(
+          invitationValue.installation,
+          installation,
+          'installation is secondPriceAuction',
+        );
+        t.deepEqual(
+          invitationValue.auctionedAssets,
+          moola(1n),
+          `asset to be auctioned is 1 moola`,
+        );
+        t.deepEqual(
+          invitationValue.minimumBid,
+          simoleans(3n),
+          `minimum bid is 3 simoleans`,
+        );
+
+        t.deepEqual(
+          invitationValue.bidDuration,
+          1n,
+          `auction will be closed after 1 tick according to the timeAuthority`,
+        );
+
+        const proposal = harden({
+          give: { Bid: simoleans(11n) },
+          want: { Asset: moola(1n) },
+        });
+        const payments = { Bid: simoleanPayment };
+
+        const seat = await E(zoe).offer(invitation, proposal, payments);
+
+        t.is(
+          await E(seat).getOfferResult(),
+          'The offer has been accepted. Once the contract has been completed, please check your payout',
+        );
+        return seat;
+      },
+      collectPayout: async seat => {
+        await E(seat)
+          .getPayout('Asset')
+          .then(moolaPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
+          );
+
+        await E(seat)
+          .getPayout('Bid')
+          .then(simoleanPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(
+              amountDeposited,
+              simoleans(0n),
+              `Bob gets the difference between his bid back`,
+            ),
+          );
+      },
+    });
+  };
+
+  const makeLosingBidder = (bidAmount, simoleanPayment) => {
+    const moolaPurse = moolaKit.issuer.makeEmptyPurse();
+    const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    return Far('losing bidder', {
+      offer: async untrustedInvitation => {
+        const invitationIssuer = await E(zoe).getInvitationIssuer();
+        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+
+        const proposal = harden({
+          give: { Bid: bidAmount },
+          want: { Asset: moola(1n) },
+        });
+        const payments = { Bid: simoleanPayment };
+
+        const seat = await E(zoe).offer(invitation, proposal, payments);
+
+        t.is(
+          await E(seat).getOfferResult(),
+          'The offer has been accepted. Once the contract has been completed, please check your payout',
+        );
+        return seat;
+      },
+      collectPayout: async seat => {
+        await E(seat)
+          .getPayout('Asset')
+          .then(moolaPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
+          );
+
+        await E(seat)
+          .getPayout('Bid')
+          .then(simoleanPurse.deposit)
+          .then(amountDeposited =>
+            t.deepEqual(amountDeposited, bidAmount, `full refund`),
+          );
+      },
+    });
+  };
+
+  // Setup Alice
+  const timer = buildManualTimer(console.log);
+  const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
+  const installation = await alice.installCode();
+
+  // Setup Bob, Carol, Dave
+  const bob = makeBob(
+    installation,
+    await simoleanKit.mint.mintPayment(simoleans(11n)),
+  );
+  const carol = makeLosingBidder(
+    simoleans(7n),
+    await simoleanKit.mint.mintPayment(simoleans(7n)),
+  );
+  const dave = makeLosingBidder(
+    simoleans(5n),
+    await simoleanKit.mint.mintPayment(simoleans(5n)),
+  );
+
+  const { creatorInvitation } = await alice.startInstance(installation);
+
+  const { seat: aliceSeat, makeBidInvitationObj } = await alice.offer(
+    creatorInvitation,
+  );
+
+  const bidInvitation1 = E(makeBidInvitationObj).makeBidInvitation();
+  const bidInvitation2 = E(makeBidInvitationObj).makeBidInvitation();
+  const bidInvitation3 = E(makeBidInvitationObj).makeBidInvitation();
+
+  // timer ticks before offering, nothing happens
+  timer.tick();
+
+  const bobSeat = await bob.offer(bidInvitation1);
+  const carolSeat = await carol.offer(bidInvitation2);
+  const daveSeat = await dave.offer(bidInvitation3);
+  timer.tick();
+
+  await Promise.all([
+    alice.collectPayout(aliceSeat),
+    bob.collectPayout(bobSeat),
+    carol.collectPayout(carolSeat),
+    dave.collectPayout(daveSeat),
+  ]);
 });

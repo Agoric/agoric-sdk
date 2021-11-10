@@ -55,7 +55,7 @@ test.skip('zoe - metering - refill meter', async t => {
   // computron values. This test aims to be resilient to changes in
   // computron values for particular actions but a significant change
   // may break the test.
-  assert(METER_TYPE === 'xs-meter-11');
+  assert(METER_TYPE === 'xs-meter-12');
   const dump = await main(['refillMeter']);
   t.deepEqual(dump.log, refillMeterLog, 'log is correct');
 });

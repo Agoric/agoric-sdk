@@ -427,6 +427,9 @@ export default async function start(basedir, argv) {
   // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
   // runs correctly under the same version of the JS engine we're currently
   // using.
+
+  // We turn off NODE_OPTIONS in case the user is debugging.
+  const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
   const cp = fork(
     agoricCli,
     [
@@ -436,7 +439,7 @@ export default async function start(basedir, argv) {
       `--hostport=${hostport}`,
       `${agWalletDeploy}`,
     ],
-    { stdio: 'inherit' },
+    { stdio: 'inherit', env: noOptionsEnv },
     err => {
       if (err) {
         console.error(err);

@@ -1,0 +1,29 @@
+.Content {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  width: 100%;
+  column-gap: 16px;
+}
+
+.Flex-item {
+  margin: 16px 0 0 0;
+  max-width: 100%;
+}
+
+.Purses {
+  width: calc(100% - 448px);
+  min-width: 540px;
+}
+
+@media screen and (max-width: 1280px) {
+  .Content {
+    justify-content: center;
+  }
+
+  .Purses {
+    min-width: 100%;
+  }
+}

@@ -54,7 +54,9 @@ export const PursesInternalDoNotImportOrElse = ({
       </CardItem>
     );
   };
-  const purseItems = (purses && purses.map(Purse)) ?? <CircularProgress />;
+  const purseItems = (purses && purses.map(Purse)) ?? (
+    <CircularProgress style={{ margin: 'auto' }} />
+  );
 
   return (
     <div>
