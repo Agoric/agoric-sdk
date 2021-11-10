@@ -7,12 +7,12 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/modules/core/exported"
+	"github.com/cosmos/ibc-go/v2/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -177,6 +177,19 @@ func (am AppModule) CallToController(ctx sdk.Context, send string) (string, erro
 	reply, err := am.keeper.CallToController(ctx, send)
 	// fmt.Println("ibc.go upcall reply", reply, err)
 	return reply, err
+}
+
+func (AppModule) NegotiateAppVersion(
+	ctx sdk.Context,
+	order channeltypes.Order,
+	connectionID string,
+	portID string,
+	counterparty channeltypes.Counterparty,
+	proposedVersion string,
+) (version string, err error) {
+	// FIXME: We cannot guarantee a synchronous response from the controller, so
+	// we always accept the proposed version.
+	return proposedVersion, err
 }
 
 type channelOpenInitEvent struct {
@@ -484,7 +497,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
-) (*sdk.Result, error) {
+) error {
 	event := acknowledgementPacketEvent{
 		Type:            "IBC_EVENT",
 		Event:           "acknowledgementPacket",
@@ -496,17 +509,15 @@ func (am AppModule) OnAcknowledgementPacket(
 
 	bytes, err := json.Marshal(&event)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &sdk.Result{
-		Events: ctx.EventManager().Events().ToABCIEvents(),
-	}, nil
+	return nil
 }
 
 type timeoutPacketEvent struct {
@@ -521,7 +532,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
-) (*sdk.Result, error) {
+) error {
 	event := timeoutPacketEvent{
 		Type:        "IBC_EVENT",
 		Event:       "timeoutPacket",
@@ -532,15 +543,13 @@ func (am AppModule) OnTimeoutPacket(
 
 	bytes, err := json.Marshal(&event)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	_, err = am.CallToController(ctx, string(bytes))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &sdk.Result{
-		Events: ctx.EventManager().Events().ToABCIEvents(),
-	}, nil
+	return nil
 }
