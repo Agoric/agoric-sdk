@@ -6,6 +6,7 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
+import { SECOND_PRICE } from '../../../src/contracts/auction/index';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);
@@ -138,8 +139,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Asset: moolaIssuer,
       Ask: simoleanIssuer,
     });
-    const now = await E(timer).getCurrentTimestamp();
-    const terms = harden({ timeAuthority: timer, closesAfter: now + 1n });
+    const terms = harden({
+      timeAuthority: timer,
+      winnerPriceOption: SECOND_PRICE,
+      bidDuration: 1n,
+    });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(
