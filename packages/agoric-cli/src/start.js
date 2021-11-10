@@ -46,6 +46,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const pspawnEnv = { ...process.env };
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
 
+  // Turn on some debugging options.
+  const nodeDebugEnv = { ...pspawnEnv };
+  if (opts.debug) {
+    nodeDebugEnv.NODE_OPTIONS = '--inspect-brk';
+    nodeDebugEnv.SWINGSET_WORKER_TYPE = 'local';
+  }
+
   let keysSpawn;
   if (opts.sdk) {
     const { cosmosHelper } = getSDKBinaries();
@@ -173,6 +180,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const ps = pspawn(agSolo, [...debugOpts, 'start'], {
       cwd: agServer,
+      env: nodeDebugEnv,
     });
     process.on('SIGINT', () => ps.childProcess.kill('SIGINT'));
     return ps;
@@ -350,10 +358,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return chainSpawn(
       [...debugOpts, 'start'],
       {
-        env: {
-          ...pspawnEnv,
-          ROLE: 'two_chain',
-        },
+        env: nodeDebugEnv,
       },
       // Accessible via either localhost or host.docker.internal
       [`--publish=127.0.0.1:${portNum}:${portNum}`, `--name=agoric-n0`],
@@ -560,7 +565,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     // Now actually start the solo.
-    return soloSpawn(['start'], spawnOpts, [
+    return soloSpawn(['start'], { ...spawnOpts, env: nodeDebugEnv }, [
       `--publish=127.0.0.1:${portNum}:${portNum}`,
     ]);
   }

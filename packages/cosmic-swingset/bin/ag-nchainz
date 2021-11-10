@@ -97,9 +97,9 @@ start-daemon)
   # "$($CLI --home "$BASEDIR/n0/$DAEMON" keys show n0 --keyring-backend=test | jq -r .address)"
   echo "Starting $DAEMON_CMD ${1+"$@"}"
   if [[ $debug == yes ]]; then
-    NODE_OPTIONS=--inspect-brk DEBUG=agoric ROLE=two_chain "$DAEMON_CMD" ${1+"$@"}
+    NODE_OPTIONS=--inspect-brk DEBUG=agoric "$DAEMON_CMD" ${1+"$@"}
   else
-    DEBUG=agoric ROLE=two_chain "$DAEMON_CMD" ${1+"$@"}
+    DEBUG=agoric "$DAEMON_CMD" ${1+"$@"}
   fi
   exit 0
   ;;
