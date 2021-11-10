@@ -192,6 +192,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .command('start [profile] [args...]')
     .description('run an Agoric VM')
+    .option('-d, --debug', 'run in JS debugger mode')
     .option('--reset', 'clear all VM state before starting')
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
