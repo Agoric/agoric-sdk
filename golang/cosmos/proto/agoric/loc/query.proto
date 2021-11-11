@@ -1,0 +1,18 @@
+syntax = "proto3";
+package agoric.loc;
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types";
+
+import "agoric/loc/loc.proto";
+
+service Query {
+    rpc LoC(QueryLoCRequest) returns (QueryLoCResponse);
+}
+
+message QueryLoCRequest {
+    string address = 1;
+}
+
+message QueryLoCResponse {
+    LoC loc = 1;
+}

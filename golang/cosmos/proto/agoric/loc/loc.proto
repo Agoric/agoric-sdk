@@ -1,0 +1,50 @@
+syntax = "proto3";
+package agoric.loc;
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types";
+option (gogoproto.equal_all) = true;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Params defines the set of parameters for the line-of-credit module.
+message Params {
+    option (gogoproto.goproto_stringer) = false;
+
+    // Gives the loan that can be obtained for the collatoral of one staking token.
+    // The staking token is the one defined by the x/staking module.
+    // If absent, standalone lines of credit may not be initiated.
+    cosmos.base.v1beta1.DecCoin standalone_ratio = 1 [
+        (gogoproto.moretags) = "yaml:\"standalone_ratio\""
+    ];
+}
+
+// LoC records an active line of credit for an implicit account.
+// An LoC consisting of collateral and a loan amount.
+message LoC {
+    // The collateral is liened (preventing transfer) until the loan is repaid.
+    cosmos.base.v1beta1.Coin collateral = 1;
+
+    // The loan outstanding.
+    // It must be repaid to lift the lien on the collateral.
+    cosmos.base.v1beta1.Coin loan = 2;
+}
+
+// Account LoC binds an LoC with an address.
+// It is used to export and import the total LoC state.
+message AccountLoC {
+    // address is the address of the LoC borrower.
+    string address = 1;
+
+    // loc is the single LoC held by this borrower.
+    LoC loc = 2;
+}
+
+// GenesisState defines the loc module's genesis state.
+message GenesisState {
+    // params defines all the parameters of the module.
+    Params params = 1;
+
+    // account_loc defines the active LoCs.
+    repeated AccountLoC account_loc = 2;
+}

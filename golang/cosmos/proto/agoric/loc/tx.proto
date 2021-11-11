@@ -1,0 +1,20 @@
+syntax = "proto3";
+package agoric.loc;
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types";
+
+import "agoric/loc/loc.proto";
+
+// Msg defines the loc Msg service.
+service Msg {
+    // Create, refinance, or remove an LoC via standalone settings.
+    rpc UpdateStandaloneLoC(MsgUpdateStandaloneLoCRequest) returns (MsgUpdateStandaloneLoCResponse);
+}
+
+message MsgUpdateStandaloneLoCRequest {
+    string address = 1;
+    LoC current_loc = 2;
+    LoC new_loc = 3;
+}
+
+message MsgUpdateStandaloneLoCResponse {}
