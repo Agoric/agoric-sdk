@@ -6,6 +6,7 @@ import CloseIcon from '@material-ui/icons/Close';
 import Request from './Request';
 import Petname from './Petname';
 import { icons, defaultIcon } from '../util/Icons.js';
+import { formatDateNow } from '../util/Date';
 
 import './Offer.scss';
 
@@ -25,18 +26,6 @@ const statusColors = {
   pending: 'alert',
   proposed: 'default',
   complete: 'success',
-};
-
-const formatDateNow = stamp => {
-  if (!stamp) {
-    return 'unknown time';
-  }
-  const date = new Date(stamp);
-  const isoStamp = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
-  const isoDate = new Date(isoStamp);
-  const isoStr = isoDate.toISOString();
-  const match = isoStr.match(/^(.*)T(.*)\..*/);
-  return `${match[1]} ${match[2]}`;
 };
 
 const cmp = (a, b) => {
