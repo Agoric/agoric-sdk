@@ -18,6 +18,12 @@ const appTheme = createTheme({
     secondary: {
       main: 'hsla(0,0%,39.2%,.2)',
     },
+    success: {
+      main: 'rgb(76, 175, 80)',
+    },
+    alert: {
+      main: 'rgb(255, 152, 0)',
+    },
     background: {
       default: '#ffffff',
     },

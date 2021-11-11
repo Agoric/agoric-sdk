@@ -34,7 +34,7 @@ const RequestsInternal = ({ payments, offers, dapps, purses }) => {
 
   const Item = request => {
     if (request.type === 'offer') {
-      return <Offer key={request.data.id} />;
+      return <Offer offer={request.data} key={request.data.id} />;
     } else if (request.type === 'payment') {
       return <Payment key={request.data.id} />;
     } else {
