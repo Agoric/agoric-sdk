@@ -3,11 +3,14 @@ import { stringifyPurseValue } from '@agoric/ui-components';
 import { mount } from 'enzyme';
 import Chip from '@material-ui/core/Chip';
 import Offer from '../Offer';
+import { formatDateNow } from '../../util/Date';
 
 jest.mock('@agoric/ui-components', () => ({
   stringifyPurseValue: ({ value, displayInfo }) =>
     `${value} ${displayInfo?.assetKind} ${displayInfo?.decimalPlaces}`,
 }));
+
+jest.mock('../../util/Date', () => ({ formatDateNow: stamp => stamp }));
 
 const offer = {
   status: 'proposed',
@@ -102,13 +105,17 @@ test('renders the expiry', () => {
   const expiry = component.find('.OfferEntry').at(3);
 
   expect(expiry.text()).toContain('Expiry');
-  expect(expiry.text()).toContain('2024-08-07 00:01:28');
+  expect(expiry.text()).toContain(
+    formatDateNow(offer.invitationDetails.expiry),
+  );
 });
 
 test('renders the timestamp', () => {
   const component = mount(<Offer offer={offer} />);
 
-  expect(component.find('.Date').text()).toContain('2021-11-10 23:00:38');
+  expect(component.find('.Date').text()).toContain(
+    formatDateNow(offer.requestContext.date),
+  );
 });
 
 test('renders the controls', () => {
