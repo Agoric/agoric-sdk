@@ -91,7 +91,7 @@ proto-gen: proto-tools
 	./scripts/protocgen.sh
 
 proto-lint: proto-tools
-	buf check lint --error-format=json
+	buf lint --error-format=json
 
 proto-check-breaking: proto-tools
 	buf check breaking --against-input '.git#branch=master'
@@ -133,7 +133,7 @@ proto-update-deps:
 UNAME_S ?= $(shell uname -s)
 UNAME_M ?= $(shell uname -m)
 
-BUF_VERSION ?= 0.11.0
+BUF_VERSION ?= 0.56.0
 
 PROTOC_VERSION ?= 3.11.2
 ifeq ($(UNAME_S),Linux)
