@@ -1,0 +1,46 @@
+.Date {
+  float: right;
+  font-size: 16px;
+  line-height: 32px;
+}
+
+.Blue {
+  color: rgb(0, 176, 255);
+}
+
+.OfferOrigin {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.OfferEntry {
+  margin-top: 8px;
+}
+
+.Token {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 16px;
+
+  & > img {
+    margin-right: 16px;
+  }
+
+  & .Value {
+    font-weight: 600;
+  }
+}
+
+.Controls {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-top: 16px;
+}
+
+.Expiry {
+  font-size: 16px;
+  margin-top: 8px;
+}
