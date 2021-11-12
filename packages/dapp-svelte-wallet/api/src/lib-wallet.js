@@ -923,11 +923,16 @@ export function makeWallet({
     updater: dappsUpdater,
   } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
-  function updateDapp(dappRecord) {
+  const updateDapp = dappRecord => {
     harden(addMeta(dappRecord));
     dappOrigins.set(dappRecord.origin, dappRecord);
     dappsUpdater.updateState([...dappOrigins.values()]);
-  }
+  };
+
+  const deleteDapp = ({ origin }) => {
+    dappOrigins.delete(origin);
+    dappsUpdater.updateState([...dappOrigins.values()]);
+  };
 
   async function waitForDappApproval(
     suggestedPetname,
@@ -993,6 +998,12 @@ export function makeWallet({
             });
             updateDapp(dappRecord);
             return dappRecord.actions;
+          },
+          delete() {
+            if (reject) {
+              reject('Dapp deleted');
+            }
+            deleteDapp(dappRecord);
           },
         }),
       });
