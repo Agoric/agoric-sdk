@@ -23,86 +23,96 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @typedef {Object} PurseControllerParams
- * @property {Amount} notifierThresholdAmount
  * @property {(obj: any) => Promise<any>} bankCall
  * @property {string} denom
  * @property {Brand} brand
  * @property {string} address
  * @property {(obj: any) => boolean} updateBalances
  * @property {(updater: BalanceUpdater) => void} registerBalanceUpdater
+ * @property {() => Amount} getNotifierThresholdAmount
  */
 
 /**
  * A generator that yields the latest balance of a virtual purse.
  *
  * @param {PurseControllerParams} param0
- * @yields {Amount}
  */
-async function* generateBalances({
+const makeBalanceGenerator = ({
   bankCall,
   denom,
   brand,
   address,
   registerBalanceUpdater,
-  notifierThresholdAmount,
-}) {
-  const {
-    brand: thresholdBrand,
-    value: thresholdValue,
-  } = notifierThresholdAmount;
-  assert.equal(thresholdBrand, brand);
-  assert.typeof(thresholdValue, 'bigint');
-  const notifierThresholdValue = Nat(thresholdValue);
+  getNotifierThresholdAmount,
+}) => {
+  const getNotifierThresholdValue = () => {
+    const {
+      brand: thresholdBrand,
+      value: thresholdValue,
+    } = getNotifierThresholdAmount();
+    assert.equal(thresholdBrand, brand);
+    assert.typeof(thresholdValue, 'bigint');
+    return Nat(thresholdValue);
+  };
 
   /** @type {PromiseRecord<Amount>} */
   let amountPK = makePromiseKit();
 
-  // Initially unsatisfiable notifier thresholds to ensure the first balance
-  // update is notified.
-  let highWaterMark = -notifierThresholdValue;
-  let lowWaterMark = notifierThresholdValue;
+  let lastBalanceValue = -1n;
 
-  // TODO: Use bankCall messages to declare high- and low- water marks, which
-  // would either return a promise for the value now if the balance is already
-  // out of range, or make a one-shot subscription that publishes via the
-  // registered balance updater when it changes to be out of range.  Let them
-  // race against each other.
+  /**
+   * TODO: Use bankCall messages to declare high- and low- water marks, which
+   * would either return a promise for the value now if the balance is already
+   * out of range, or make a one-shot subscription that publishes via the
+   * registered balance updater when it changes to be out of range.  Let them
+   * race against each other.
+   *
+   * @param {bigint} value
+   */
+  const updateBalance = value => {
+    // Notify if there's a change to zero, but only once.
+    if (value !== 0n || lastBalanceValue === 0n) {
+      const notifierThresholdValue = getNotifierThresholdValue();
+      const lowWaterMark = lastBalanceValue - notifierThresholdValue;
+      const highWaterMark = lastBalanceValue + notifierThresholdValue;
 
-  const balanceUpdater = Far(`${denom} updater`, stringValue => {
-    const value = BigInt(stringValue);
-
-    if (lowWaterMark < value && value < highWaterMark) {
-      // Within range, don't notify.
-      return;
+      if (lowWaterMark < value && value < highWaterMark) {
+        // Within range, don't notify.
+        return;
+      }
     }
 
     amountPK.resolve(AmountMath.make(brand, value));
+    lastBalanceValue = value;
+  };
 
-    // Set new high- and low- water marks.
-    highWaterMark = value + notifierThresholdValue;
-    lowWaterMark = value - notifierThresholdValue;
-    if (lowWaterMark < 0n && value > 0n) {
-      // Always notify when we first hit zero.
-      lowWaterMark = 0n;
-    }
+  const balanceUpdater = Far(`${denom} updater`, stringValue => {
+    const value = BigInt(stringValue);
+    updateBalance(value);
   });
   registerBalanceUpdater(balanceUpdater);
 
-  // Get initial balance.
-  bankCall({
-    type: 'VBANK_GET_BALANCE',
-    address,
-    denom,
-  }).then(balanceUpdater);
+  /**
+   * @yields {Amount}
+   */
+  async function* generateBalances() {
+    // Get initial balance.
+    bankCall({
+      type: 'VBANK_GET_BALANCE',
+      address,
+      denom,
+    }).then(balanceUpdater);
 
-  while (true) {
-    // eslint-disable-next-line no-await-in-loop
-    const amount = await amountPK.promise;
-    // Immediately switch to the next promise.
-    amountPK = makePromiseKit();
-    yield amount;
+    while (true) {
+      // eslint-disable-next-line no-await-in-loop
+      const amount = await amountPK.promise;
+      // Immediately switch to the next promise.
+      amountPK = makePromiseKit();
+      yield amount;
+    }
   }
-}
+  return generateBalances();
+};
 
 /**
  * @param {PurseControllerParams} opts
@@ -111,7 +121,7 @@ async function* generateBalances({
 const makePurseController = opts => {
   const { bankCall, address, brand, denom, updateBalances } = opts;
 
-  const balancesIterable = generateBalances(opts);
+  const balancesIterable = makeBalanceGenerator(opts);
 
   return harden({
     getBalances(b) {
@@ -283,7 +293,8 @@ export function buildRootObject(_vatPowers) {
             // Create and return the virtual purse.
             const vpc = makePurseController({
               bankCall,
-              notifierThresholdAmount: assetRecord.notifierThresholdAmount,
+              getNotifierThresholdAmount: () =>
+                brandToAssetRecord.get(brand).notifierThresholdAmount,
               denom: assetRecord.denom,
               brand,
               address,
@@ -367,11 +378,9 @@ export function buildRootObject(_vatPowers) {
           const payment = await kit.payment;
           await (payment && E(escrowPurse).deposit(payment));
 
-          const { notifierThresholdAmount = AmountMath.makeEmpty(brand) } = kit;
-
           /** @type {AssetRecord} */
           const assetRecord = harden({
-            notifierThresholdAmount,
+            notifierThresholdAmount: AmountMath.makeEmpty(brand),
             escrowPurse,
             issuer: kit.issuer,
             mint: kit.mint,
@@ -389,6 +398,32 @@ export function buildRootObject(_vatPowers) {
               proposedName,
             }),
           );
+        },
+        /**
+         * Change the threshold amount used to decide the low and high
+         * watermarks for a given asset (which has already been added via
+         * `addAsset`).
+         *
+         * NOTE: We would ideally trigger balance updates for every vpurse that
+         * matches the new threshold.  Unfortunately, that would expose our vat
+         * to denial-of-service in the form of either a) too many callbacks in
+         * one crank, or equivalently, b) a promise resolution that triggers too
+         * many callbacks.
+         *
+         * @param {Amount} thresholdAmount
+         */
+        setNotifierThresholdAmount: thresholdAmount => {
+          const { brand, value } = thresholdAmount;
+          const assetRecord = brandToAssetRecord.get(brand);
+          assert.typeof(value, 'bigint');
+
+          const notifierThresholdAmount = AmountMath.make(brand, Nat(value));
+
+          const newAssetRecord = harden({
+            ...assetRecord,
+            notifierThresholdAmount,
+          });
+          brandToAssetRecord.set(brand, newAssetRecord);
         },
         getBankForAddress,
       });

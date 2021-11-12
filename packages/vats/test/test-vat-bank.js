@@ -5,6 +5,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E } from '@agoric/eventual-send';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
+import { makeAsyncIterableFromNotifier } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
 test('communication', async t => {
@@ -179,4 +180,148 @@ test('communication', async t => {
     E(bankMgr).getFeeCollectorDepositFacet('ufee', feeKit),
   ).receive(feePayment);
   t.deepEqual(feeReceived, feeAmount);
+});
+
+/**
+ * @param {import('ava').Assertions} t
+ */
+const setupBalanceNotifierTest = async t => {
+  const bankVat = E(buildRootObject)();
+
+  /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
+  let bankHandler;
+
+  /** @type {import('../src/bridge').BridgeManager} */
+  const bridgeMgr = Far('fakeBridgeManager', {
+    register(srcID, handler) {
+      t.is(srcID, 'bank');
+      t.assert(handler);
+      bankHandler = handler;
+    },
+    toBridge(dstID, obj) {
+      t.is(dstID, 'bank');
+      let ret;
+      switch (obj.type) {
+        case 'VBANK_GET_BALANCE': {
+          const { address, denom: _denom, type: _type, ...rest } = obj;
+          t.is(address, 'agoricfoo');
+          t.deepEqual(rest, {});
+          ret = '0';
+          break;
+        }
+
+        default: {
+          t.is(obj, null);
+        }
+      }
+      return ret;
+    },
+    unregister(srcID) {
+      t.is(srcID, 'bank');
+      t.fail('no expected unregister');
+    },
+  });
+
+  // Create a bank manager.
+  const bankMgr = await E(bankVat).makeBankManager(bridgeMgr);
+  t.assert(bankHandler);
+  const bank = E(bankMgr).getBankForAddress('agoricfoo');
+
+  const kit = makeIssuerKit('BLD', AssetKind.NAT, harden({ decimalPlaces: 4 }));
+  await E(bankMgr).addAsset('ubld', 'BLD', 'Staking Tokens', kit);
+
+  const vpurse = E(bank).getPurse(kit.brand);
+  const notifier = E(vpurse).getCurrentAmountNotifier();
+  const ait = makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
+
+  const sendBalanceUpdate = value => {
+    assert(bankHandler);
+    bankHandler.fromBridge('bank', {
+      type: 'VBANK_BALANCE_UPDATE',
+      updated: [
+        { address: 'agoricatata', denom: 'ubld', amount: `${value + 3n}` },
+        { address: 'agoricfoo', denom: 'ubld', amount: `${value}` },
+        { address: 'agoricfoo', denom: 'urun', amount: `${value + 5n}` },
+      ],
+    });
+  };
+
+  const getNextBalance = () => ait.next().then(r => r.value.value);
+  const setNotifierThresholdValue = value =>
+    bankMgr.setNotifierThresholdAmount(AmountMath.make(kit.brand, value));
+
+  return {
+    getNextBalance,
+    sendBalanceUpdate,
+    setNotifierThresholdValue,
+  };
+};
+
+test('balance updates with thresholds', async t => {
+  const {
+    getNextBalance,
+    sendBalanceUpdate,
+    setNotifierThresholdValue,
+  } = await setupBalanceNotifierTest(t);
+
+  let currentBalance;
+  let nextP = getNextBalance().then(b => (currentBalance = b));
+  await null;
+  t.is(currentBalance, undefined);
+
+  t.log('check initial zero');
+  t.is(await nextP, 0n);
+
+  t.log('done travel to zero');
+  setNotifierThresholdValue(0n);
+  sendBalanceUpdate(1n);
+  t.is(await getNextBalance(), 1n);
+
+  setNotifierThresholdValue(1n);
+  sendBalanceUpdate(2n);
+  t.is(await getNextBalance(), 2n);
+
+  sendBalanceUpdate(3n);
+  t.is(await getNextBalance(), 3n);
+
+  setNotifierThresholdValue(2n);
+  nextP = getNextBalance();
+  sendBalanceUpdate(4n);
+  sendBalanceUpdate(5n);
+  t.is(await nextP, 5n);
+
+  setNotifierThresholdValue(1n);
+  nextP = getNextBalance();
+  sendBalanceUpdate(4n);
+  sendBalanceUpdate(3n);
+  t.is(await nextP, 4n);
+
+  t.log('check up and down');
+  setNotifierThresholdValue(10n);
+  nextP = getNextBalance();
+  sendBalanceUpdate(8n);
+  sendBalanceUpdate(2n);
+  sendBalanceUpdate(15n);
+  t.is(await nextP, 15n);
+
+  t.log('check trigger on zero');
+  setNotifierThresholdValue(20_000n);
+  nextP = getNextBalance();
+  sendBalanceUpdate(0n);
+  t.is(await nextP, 0n);
+
+  // Make sure we don't trigger again for the same value.
+  t.log('check no trigger on repeat');
+  let nonzeroBalance;
+  nextP = getNextBalance().then(b => (nonzeroBalance = b));
+  sendBalanceUpdate(0n);
+  await null;
+  t.is(nonzeroBalance, undefined);
+
+  sendBalanceUpdate(5n);
+  await null;
+  t.is(nonzeroBalance, undefined);
+
+  sendBalanceUpdate(30_000n);
+  t.is(await nextP, 30_000n);
 });

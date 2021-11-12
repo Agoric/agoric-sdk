@@ -31,6 +31,10 @@ const BASIS_POINTS_DENOM = 10000n;
 
 // Minimum number of decimal places to consider before publishing a notifier
 // update from the bank.
+//
+// NOTE: This is only for the assets we add to the bank during bootstrap.
+// Arguably, all of this should be modifiable via governance and no default
+// should ever be used.
 const BANK_BALANCE_UPDATE_DECIMAL_PLACES = 2;
 
 const CENTRAL_DENOM_NAME = 'urun';
@@ -315,16 +319,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         assert(brand);
         assert(issuer);
 
-        // Ensure the bank purses don't fire balance updates too frequently.
-        const { decimalPlaces = 0 } = await E(brand).getDisplayInfo();
-        const notifierThresholdAmount = AmountMath.make(
-          brand,
-          10n **
-            BigInt(
-              Math.max(decimalPlaces - BANK_BALANCE_UPDATE_DECIMAL_PLACES, 0),
-            ),
-        );
-
         const makeMintKit = async () => {
           // We need to obtain the mint in order to mint the tokens when they
           // come from the bank.
@@ -334,7 +328,6 @@ export function buildRootObject(vatPowers, vatParameters) {
             brand,
             issuer,
             mint,
-            notifierThresholdAmount,
           });
         };
 
@@ -350,7 +343,20 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
 
         const kit = await kitP;
-        return E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
+        await E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
+
+        // Ensure the bank purses don't fire balance updates too frequently.
+        const { decimalPlaces = 0 } = await E(brand).getDisplayInfo();
+        const notifierThresholdAmount = AmountMath.make(
+          brand,
+          10n **
+            BigInt(
+              Math.max(decimalPlaces - BANK_BALANCE_UPDATE_DECIMAL_PLACES, 0),
+            ),
+        );
+        return E(bankManager).setNotifierThresholdAmount(
+          notifierThresholdAmount,
+        );
       }),
     );
 
