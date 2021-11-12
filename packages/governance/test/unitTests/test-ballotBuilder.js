@@ -55,7 +55,7 @@ test('bad Question', t => {
         }),
       ),
     {
-      message: 'A question can only be a pass-by-copy record: "will it blend?"',
+      message: 'A question can only be a pass-by-copy record: (a string)',
     },
   );
 });
@@ -76,7 +76,7 @@ test('bad timer', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Timer must be a timer 37' },
+    { message: 'Timer must be a timer (a number)' },
   );
 });
 
@@ -96,7 +96,7 @@ test('bad method', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "ChoiceMethod": "choose"' },
+    { message: 'Illegal (a string): (a string)' },
   );
 });
 
@@ -116,7 +116,7 @@ test('bad Quorum', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "QuorumRule": 0.5' },
+    { message: 'Illegal (a string): (a number)' },
   );
 });
 
@@ -155,7 +155,7 @@ test('bad maxChoices', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'maxChoices must be positive: 0' },
+    { message: 'maxChoices must be positive: (a number)' },
   );
 });
 
@@ -173,8 +173,7 @@ test('bad positions', t => {
         tieOutcome: positions[1],
       }),
     {
-      message:
-        'Cannot pass non-frozen objects like {"text":"yes"}. Use harden()',
+      message: 'Cannot pass non-frozen objects like (an object). Use harden()',
     },
   );
 });
