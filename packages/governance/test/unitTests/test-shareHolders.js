@@ -349,11 +349,11 @@ test('shareHolders bundle/split attestations', async t => {
   const claim7Later = makeAttestation(handle7, 7n, 'a', 10n)[0];
   const claim14 = makeAttestation(handleShared, 14n, 'a', 7n)[0];
 
-  const attest2and4 = AmountMath.make(brand, [claim2, claim4]);
+  const attest2and4 = AmountMath.make(brand, harden([claim2, claim4]));
   const voteFacet2and4 = await voterFacet(mint, publicFacet, attest2and4);
-  const attest4and7 = AmountMath.make(brand, [claim4, claim7]);
+  const attest4and7 = AmountMath.make(brand, harden([claim4, claim7]));
   const voteFacet4and7 = await voterFacet(mint, publicFacet, attest4and7);
-  const attestUpdate = AmountMath.make(brand, [claim7Later, claim14]);
+  const attestUpdate = AmountMath.make(brand, harden([claim7Later, claim14]));
   const voteFacetUpdate = await voterFacet(mint, publicFacet, attestUpdate);
 
   const {
