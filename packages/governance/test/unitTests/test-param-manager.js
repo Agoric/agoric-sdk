@@ -71,8 +71,8 @@ test('params one Amount', async t => {
   };
   const { getParam, updateAmount } = buildParamManager([amountDescription]);
   t.deepEqual(getParam(amountKey), amountDescription);
-  updateAmount(AmountMath.make(brand, [13]));
-  t.deepEqual(getParam(amountKey).value, AmountMath.make(brand, [13]));
+  updateAmount(AmountMath.make(brand, harden([13])));
+  t.deepEqual(getParam(amountKey).value, AmountMath.make(brand, harden([13])));
 
   t.throws(
     () => updateAmount(18.1),
@@ -318,7 +318,10 @@ test('positions amount', t => {
   const positions = makeParamChangePositions(amountSpec, amount);
   t.deepEqual(positions.positive, positive(amountSpec, amount));
   t.deepEqual(positions.negative, negative(amountSpec));
-  t.notDeepEqual(positions.positive, positive(AmountMath.make(brand, [1])));
+  t.notDeepEqual(
+    positions.positive,
+    positive(AmountMath.make(brand, harden([1]))),
+  );
 });
 
 test('positions brand', t => {
