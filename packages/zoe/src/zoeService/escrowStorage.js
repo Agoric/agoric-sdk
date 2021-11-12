@@ -20,9 +20,23 @@ export const makeEscrowStorage = () => {
   const brandToPurse = makeWeakStore('brand');
 
   /** @type {CreatePurse} */
-  const createPurse = (issuer, brand) => {
+  const createPurse = async (issuer, brand) => {
+    if (brandToPurse.has(brand)) {
+      return;
+    }
+    let purseP;
+    try {
+      purseP = await E(issuer).makeEmptyPurse();
+    } catch (err) {
+      const cannotCreateError = Error(
+        X`A purse could not be created for brand ${brand}`,
+      );
+      assert.note(cannotCreateError, X`Caused by: ${err}`);
+      throw cannotCreateError;
+    }
+    // Check again after the `await`
     if (!brandToPurse.has(brand)) {
-      brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+      brandToPurse.init(brand, purseP);
     }
   };
 
