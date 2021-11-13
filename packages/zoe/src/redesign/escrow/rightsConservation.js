@@ -1,22 +1,24 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
-import '../internal-types.js';
+import '../../../exported.js';
+import '../../internal-types.js';
 
 /**
  * Iterate over the amounts and sum, storing the sums in a
  * map by brand.
+ *
+ * Amounts are validated elsewhere.
  *
  * @param  {Amount[]} amounts - an array of amounts
  * @returns {Store<Brand, Amount>} sumsByBrand - a map of Brand keys and
  * Amount values. The amounts are the sums.
  */
 const sumByBrand = amounts => {
-  const sumsByBrand = makeStore('brand');
+  const sumsByBrand = makeScalarMap('brand');
   amounts.forEach(amount => {
     const { brand } = amount;
     if (!sumsByBrand.has(brand)) {
@@ -28,6 +30,7 @@ const sumByBrand = amounts => {
   });
   return sumsByBrand;
 };
+harden(sumByBrand);
 
 /**
  * Assert that the left sums by brand equal the right sums by brand
@@ -83,6 +86,7 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
     );
   });
 };
+harden(assertEqualPerBrand);
 
 /**
  * `assertRightsConserved` checks that the total amount per brand is
