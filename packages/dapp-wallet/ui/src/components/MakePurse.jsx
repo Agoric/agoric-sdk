@@ -1,13 +1,13 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { useEffect, useState } from 'react';
 import { E } from '@agoric/eventual-send';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import Snackbar from '@material-ui/core/Snackbar';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Snackbar from '@mui/material/Snackbar';
 import { withApplicationContext } from '../contexts/Application';
 
 // Exported for testing only.
@@ -81,12 +81,10 @@ export const MakePurseWithoutContext = ({
         </div>
       </DialogContent>
       <DialogActions>
-        <Button onClick={close}>Cancel</Button>
-        <Button
-          disabled={!isPetnameValid || !petname}
-          color="primary"
-          onClick={create}
-        >
+        <Button color="cancel" onClick={close}>
+          Cancel
+        </Button>
+        <Button disabled={!isPetnameValid || !petname} onClick={create}>
           Create
         </Button>
       </DialogActions>

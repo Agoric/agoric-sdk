@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { stringifyPurseValue } from '@agoric/ui-components';
 import { mount } from 'enzyme';
-import Chip from '@material-ui/core/Chip';
+import Chip from '@mui/material/Chip';
 import Offer from '../Offer';
 import { formatDateNow } from '../../util/Date';
 

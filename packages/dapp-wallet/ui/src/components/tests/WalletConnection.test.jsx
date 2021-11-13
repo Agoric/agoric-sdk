@@ -1,6 +1,7 @@
 import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
 import { observeNotifier } from '@agoric/notifier';
+import Tooltip from '@mui/material/Tooltip';
 import WalletConnection from '../WalletConnection';
 
 jest.mock('@agoric/eventual-send', () => ({
@@ -73,12 +74,12 @@ describe('WalletConnection', () => {
   });
 
   test('displays the current connection status', () => {
-    let connectionIndicator = component.find(`.connector button`);
+    let connectionIndicator = component.find('.Connector').find(Tooltip);
     expect(connectionIndicator.props().title).toEqual('Disconnected');
 
     connectionStatus = 'bridged';
     component.setProps({ connectionStatus });
-    connectionIndicator = component.find('.connector button');
+    connectionIndicator = component.find('.Connector').find(Tooltip);
     expect(connectionIndicator.props().title).toEqual('Connected');
   });
 

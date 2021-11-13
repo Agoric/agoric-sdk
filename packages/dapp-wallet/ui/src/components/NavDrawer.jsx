@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useMediaQuery, useTheme } from '@material-ui/core';
-import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/icons/Menu';
-import Drawer from '@material-ui/core/Drawer';
+import { useMediaQuery, useTheme } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/icons-material/Menu';
+import Drawer from '@mui/material/Drawer';
 
 import NavMenu from './NavMenu';
 
 const NavDrawer = () => {
   const theme = useTheme();
   const [drawerOpened, setDrawerOpened] = useState(false);
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const toggleDrawer = open => event => {
     if (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CircularProgress } from '@material-ui/core';
-import Button from '@material-ui/core/Button';
+import { CircularProgress } from '@mui/material';
+import Button from '@mui/material/Button';
 import Transfer from './Transfer';
 import PurseAmount from './PurseAmount';
 import { withApplicationContext } from '../contexts/Application';
@@ -10,10 +10,7 @@ import Card from './Card';
 import './Purses.scss';
 
 // Exported for testing only.
-export const PursesInternalDoNotImportOrElse = ({
-  purses,
-  pendingTransfers,
-}) => {
+export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
   const [openPurse, setOpenPurse] = useState(null);
 
   const handleClickOpen = purse => {
@@ -43,7 +40,6 @@ export const PursesInternalDoNotImportOrElse = ({
           ) : (
             <Button
               variant="outlined"
-              color="primary"
               size="small"
               onClick={() => handleClickOpen(purse)}
             >
@@ -66,10 +62,7 @@ export const PursesInternalDoNotImportOrElse = ({
   );
 };
 
-export default withApplicationContext(
-  PursesInternalDoNotImportOrElse,
-  context => ({
-    purses: context.purses,
-    pendingTransfers: context.pendingTransfers,
-  }),
-);
+export default withApplicationContext(PursesWithoutContext, context => ({
+  purses: context.purses,
+  pendingTransfers: context.pendingTransfers,
+}));
