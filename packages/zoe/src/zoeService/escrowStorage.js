@@ -29,6 +29,7 @@ export const makeEscrowStorage = () => {
       purseP = await E(issuer).makeEmptyPurse();
     } catch (err) {
       const cannotCreateError = Error(
+        // @ts-ignore Types should allow for a DetailsToken
         X`A purse could not be created for brand ${brand}`,
       );
       assert.note(cannotCreateError, X`Caused by: ${err}`);
