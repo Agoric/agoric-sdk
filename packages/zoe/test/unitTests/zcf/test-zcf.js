@@ -217,7 +217,8 @@ test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => zcf.saveIssuer(badIssuer, 'A'),
     {
-      message: 'A purse could not be created for brand "[Alleged: brand]"',
+      message:
+        'A purse could not be created for brand "[Alleged: brand]" because: "[Error: bad issuer]"',
     },
   );
 });
