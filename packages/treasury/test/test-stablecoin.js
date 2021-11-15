@@ -1986,3 +1986,208 @@ test('excessive loan', async t => {
     message: /exceeds max/,
   });
 });
+
+// We'll make two loans, and trigger one via interest charges, and not trigger
+// liquidation of the other. The interest rate is 20%. The liquidation margin is
+// 105%. Both loans will initially be over collateralized 100%. Alice will
+// withdraw enough of the overage that she's on the cusp of getting caught when
+// prices drop. Bob will be charged interest (twice), which will trigger
+// liquidation. Alice's withdrawal is precisely gauged so the difference between
+// a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
+test('mutable liquidity triggers and interest (sensitivity', async t => {
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
+
+  const secondsPerDay = SECONDS_PER_YEAR / 365n;
+  const loanParams = {
+    chargingPeriod: secondsPerDay * 7n,
+    recordingPeriod: secondsPerDay * 7n,
+  };
+  // charge interest on every tick
+  const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
+  const services = await setupServices(
+    loanParams,
+    [10n, 7n],
+    AmountMath.make(aethBrand, 1n),
+    aethBrand,
+    {
+      committeeName: 'TheCabal',
+      committeeSize: 5,
+    },
+    manualTimer,
+    secondsPerDay * 7n,
+    aethLiquidity,
+    500n,
+    aethIssuer,
+  );
+
+  const {
+    zoe,
+    runKit: { issuer: runIssuer, brand: runBrand },
+  } = services;
+  const { stablecoinMachine, lender } = services.stablecoin;
+
+  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
+  const rates = harden({
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    // charge 5% interest
+    interestRate: makeRatio(5n, runBrand),
+    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
+  });
+
+  await E(stablecoinMachine).addVaultType(aethIssuer, 'AEth', rates);
+
+  // initial loans /////////////////////////////////////
+
+  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  const aliceCollateralAmount = AmountMath.make(aethBrand, 1000n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: aliceCollateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(aliceCollateralAmount),
+    }),
+  );
+  const { vault: aliceVault, uiNotifier: aliceNotifier } = await E(
+    aliceLoanSeat,
+  ).getOfferResult();
+
+  const aliceDebtAmount = await E(aliceVault).getDebtAmount();
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
+  let aliceCollateralLevel = AmountMath.make(aethBrand, 1000n);
+
+  t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
+  const { RUN: aliceLentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocation();
+  const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
+
+  const aliceRunLent = await aliceLoanProceeds.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(runIssuer).getAmountOf(aliceRunLent),
+      AmountMath.make(runBrand, 5000n),
+    ),
+  );
+
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
+
+  // Create a loan for Bob for 740 RUN with 100 Aeth collateral
+  const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
+  const bobLoanAmount = AmountMath.make(runBrand, 740n);
+  const bobLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: bobCollateralAmount },
+      want: { RUN: bobLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(bobCollateralAmount),
+    }),
+  );
+  const { vault: bobVault, uiNotifier: bobNotifier } = await E(
+    bobLoanSeat,
+  ).getOfferResult();
+
+  const bobDebtAmount = await E(bobVault).getDebtAmount();
+  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
+  const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
+
+  t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 RUN + fees');
+  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
+  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
+
+  const bobRunLent = await bobLoanProceeds.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(runIssuer).getAmountOf(bobRunLent),
+      AmountMath.make(runBrand, 740n),
+    ),
+  );
+
+  let bobUpdate = await E(bobNotifier).getUpdateSince();
+  t.deepEqual(bobUpdate.value.debt, bobRunDebtLevel);
+
+  // reduce collateral  /////////////////////////////////////
+
+  // Alice reduce collateral by 300. That leaves her at 700 * 10 > 1.05 * 5000.
+  // Prices will drop from 10 to 7, she'll be liquidated: 700 * 7 < 1.05 * 5000.
+  const collateralDecrement = AmountMath.make(aethBrand, 211n);
+  aliceCollateralLevel = AmountMath.subtract(
+    aliceCollateralLevel,
+    collateralDecrement,
+  );
+  const aliceReduceCollateralSeat = await E(zoe).offer(
+    E(aliceVault).makeAdjustBalancesInvitation(),
+    harden({
+      want: { Collateral: collateralDecrement },
+    }),
+  );
+
+  await E(aliceReduceCollateralSeat).getOfferResult();
+
+  await E(aliceReduceCollateralSeat).getCurrentAllocation();
+  const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
+  // t.deepEqual(aliceWithdrawnAeth, AmountMath.make(aethBrand, 210n));
+
+  const collateralWithdrawn = await loanProceeds4.Collateral;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(aethIssuer).getAmountOf(collateralWithdrawn),
+      collateralDecrement,
+    ),
+  );
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
+  const aliceCollateralization4 = aliceUpdate.value.collateralizationRatio;
+  t.deepEqual(
+    aliceCollateralization4.numerator,
+    ceilMultiplyBy(
+      aliceCollateralLevel,
+      makeRatio(10n, runBrand, 1n, aethBrand),
+    ),
+  );
+  t.deepEqual(aliceCollateralization4.denominator, aliceRunDebtLevel);
+
+  await manualTimer.tick();
+  // price levels changed and interest was charged.
+
+  // expect Alice to be liquidated because her collateral is too low.
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+
+  // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
+  // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
+  // liquidated.
+
+  for (let i = 0; i < 8; i += 1) {
+    manualTimer.tick();
+  }
+  await waitForPromisesToSettle();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  bobUpdate = await E(bobNotifier).getUpdateSince();
+  t.falsy(aliceUpdate.value.liquidated);
+
+  for (let i = 0; i < 5; i += 1) {
+    manualTimer.tick();
+  }
+  await waitForPromisesToSettle();
+  bobUpdate = await E(bobNotifier).getUpdateSince();
+
+  t.truthy(bobUpdate.value.liquidated);
+});

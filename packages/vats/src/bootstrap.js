@@ -13,7 +13,10 @@ import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { assert, details as X } from '@agoric/assert';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeRatio,
+  natSafeMath,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeBridgeManager } from './bridge.js';
@@ -24,6 +27,8 @@ import {
   fromCosmosIssuerEntries,
   BLD_ISSUER_ENTRY,
 } from './issuers';
+
+const { multiply, floorDivide } = natSafeMath;
 
 const NUM_IBC_PORTS = 3;
 const QUOTE_INTERVAL = 5 * 60;
@@ -199,9 +204,15 @@ export function buildRootObject(vatPowers, vatParameters) {
         }
         assert(record.tradesGivenCentral);
         /** @type {bigint} */
-        const initialRunPrice = record.tradesGivenCentral[0][0];
-        const poolBalance =
-          initialRunPrice * record.collateralConfig.collateralValue;
+        // The initial trade represents the fair value of RUN for collateral.
+        const initialTrade = record.tradesGivenCentral[0];
+        // The collateralValue to be deposited is given, and we want to deposit
+        // the same value of RUN in the pool. For instance, We're going to
+        // deposit 2 * 10^13 BLD, and 10^6 build will trade for 28.9 * 10^6 RUN
+        const poolBalance = floorDivide(
+          multiply(record.collateralConfig.collateralValue, initialTrade[0]),
+          initialTrade[1],
+        );
         ammTotal += poolBalance;
         ammPoolIssuers.push(issuerName);
         ammPoolBalances.push(poolBalance);

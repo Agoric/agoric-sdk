@@ -12,10 +12,10 @@ const trace = makeTracer('LM');
 
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
- * to satisfy the debt. It uses AutoSwap's swapOut, which sells no more than
+ * to satisfy the debt. It uses the AMM's swapOut, which sells no more than
  * necessary. Because it has offer safety, it can refuse the trade. When that
  * happens, we fall back to selling using the default strategy, which currently
- * uses AutoSwap's swapIn instead.
+ * uses the AMM's swapIn instead.
  */
 
 /** @type {ContractStartFn} */

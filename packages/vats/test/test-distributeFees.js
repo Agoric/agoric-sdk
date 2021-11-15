@@ -37,7 +37,7 @@ function makeFakeFeeDepositFacet(feeIssuer) {
   return { feeDepositFacet, getPayments: _ => depositPayments };
 }
 
-function makeFakeTreasury() {
+function makeFakeFeeProducer() {
   const feePayments = [];
   return {
     collectFees: () => feePayments.pop(),
@@ -62,8 +62,8 @@ test('fee distribution', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeTreasury();
-  const amm = makeFakeTreasury();
+  const treasury = makeFakeFeeProducer();
+  const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,
@@ -92,8 +92,8 @@ test('fee distribution, leftovers', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeTreasury();
-  const amm = makeFakeTreasury();
+  const treasury = makeFakeFeeProducer();
+  const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,

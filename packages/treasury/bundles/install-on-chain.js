@@ -172,9 +172,6 @@ export async function installOnChain({
     protocolFee,
   )
 
-  // todo(hibbert): set up an initial AMM pool with RUN and BLD
-  // const liqSeat = createLiquidityPool(...);
-
   const loanParams = {
     chargingPeriod: SECONDS_PER_HOUR,
     recordingPeriod: SECONDS_PER_DAY,
