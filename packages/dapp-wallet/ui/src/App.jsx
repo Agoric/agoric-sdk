@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import React from 'react';
 import { Switch, Route } from 'react-router-dom';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@mui/styles';
 import AppBar from './components/AppBar';
 import NavMenu from './components/NavMenu';
 import Contacts from './views/Contacts';
@@ -19,13 +19,13 @@ const useStyles = makeStyles(theme => ({
     position: 'absolute',
     width: `calc(100vw - ${theme.navMenuWidth})`,
     top: theme.appBarHeight,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginLeft: '0',
       width: '100vw',
     },
   },
   navMenu: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       display: 'none',
     },
   },

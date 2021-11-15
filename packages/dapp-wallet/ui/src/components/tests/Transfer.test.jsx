@@ -1,9 +1,10 @@
 import { mount } from 'enzyme';
-import Button from '@material-ui/core/Button';
+import Button from '@mui/material/Button';
 import { act } from '@testing-library/react';
-import Select from '@material-ui/core/Select';
-import TextField from '@material-ui/core/TextField';
-import Snackbar from '@material-ui/core/Snackbar';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import { createTheme, ThemeProvider } from '@mui/material';
 import Transfer from '../Transfer';
 
 jest.mock('../PurseAmount', () => () => 'PurseAmount');
@@ -21,6 +22,14 @@ jest.mock('@agoric/eventual-send', () => ({
 jest.mock('@agoric/ui-components', () => ({
   parseAsValue: str => BigInt(str),
 }));
+
+const appTheme = createTheme({
+  palette: {
+    cancel: {
+      main: '#595959',
+    },
+  },
+});
 
 const purses = [
   {
@@ -87,7 +96,9 @@ jest.mock('../../contexts/Application', () => {
 
 test('renders the purse name', () => {
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={jest.fn()} />
+    </ThemeProvider>,
   );
 
   expect(component.text()).toContain('Transfer from Test currency');
@@ -95,7 +106,9 @@ test('renders the purse name', () => {
 
 test('disables the send button with no input', () => {
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={jest.fn()} />
+    </ThemeProvider>,
   );
 
   const sendButton = component.find(Button).get(1);
@@ -105,7 +118,9 @@ test('disables the send button with no input', () => {
 test('calls handleClose on cancel', () => {
   const handleClose = jest.fn();
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={handleClose} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={handleClose} />
+    </ThemeProvider>,
   );
 
   const sendButton = component.find(Button).get(0);
@@ -115,7 +130,9 @@ test('calls handleClose on cancel', () => {
 
 test('displays invalid amount on invalid input', () => {
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={jest.fn()} />
+    </ThemeProvider>,
   );
   let textField = component.find(TextField);
   let sendButton = component.find(Button).get(1);
@@ -132,7 +149,9 @@ test('displays invalid amount on invalid input', () => {
 
 test('enables send button on valid input', () => {
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={jest.fn()} />
+    </ThemeProvider>,
   );
   let textField = component.find(TextField);
   let sendButton = component.find(Button).get(1);
@@ -152,7 +171,9 @@ test('enables send button on valid input', () => {
 test('sends the payment', async () => {
   const handleClose = jest.fn();
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={handleClose} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={handleClose} />
+    </ThemeProvider>,
   );
   const textField = component.find(TextField);
   const destinationSelect = component.find(Select).first();
@@ -185,7 +206,9 @@ test('sends the payment', async () => {
 test('shows an error when the transfer fails', async () => {
   purses[0].actions.send.mockRejectedValue(new Error('Cannot send payment'));
   const component = mount(
-    <Transfer purse={purses[0]} handleClose={jest.fn()} />,
+    <ThemeProvider theme={appTheme}>
+      <Transfer purse={purses[0]} handleClose={jest.fn()} />
+    </ThemeProvider>,
   );
   const textField = component.find(TextField);
   const destinationSelect = component.find(Select).first();

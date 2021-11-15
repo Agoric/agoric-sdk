@@ -1,6 +1,6 @@
 import { mount } from 'enzyme';
-import Drawer from '@material-ui/core/Drawer';
-import IconButton from '@material-ui/core/IconButton';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
 import NavDrawer from '../NavDrawer';
 
 jest.mock('../NavMenu', () => () => 'NavMenu');

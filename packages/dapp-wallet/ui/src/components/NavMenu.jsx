@@ -1,13 +1,14 @@
 import { useMemo, forwardRef } from 'react';
 import { Link, useRouteMatch } from 'react-router-dom';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import { ListItemText, ListItemIcon } from '@material-ui/core';
-import DashboardIcon from '@material-ui/icons/Dashboard';
-import Apps from '@material-ui/icons/Apps';
-import People from '@material-ui/icons/People';
-import AddCircle from '@material-ui/icons/AddCircle';
+import { makeStyles, useTheme } from '@mui/styles';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import Apps from '@mui/icons-material/Apps';
+import People from '@mui/icons-material/People';
+import AddCircle from '@mui/icons-material/AddCircle';
 
 const useStyles = makeStyles(theme => ({
   nav: {
@@ -16,7 +17,7 @@ const useStyles = makeStyles(theme => ({
     width: theme.navMenuWidth,
     height: `calc(100vh - ${theme.appBarHeight})`,
     overflowY: 'auto',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       position: 'relative',
       top: '0',
     },
@@ -51,6 +52,7 @@ const ListItemLink = ({ icon, primary, to }) => {
         button
         style={{ borderRadius: '0 32px 32px 0' }}
         component={renderLink}
+        color="primary"
       >
         {icon ? <ListItemIcon>{icon}</ListItemIcon> : null}
         <ListItemText primary={primary} />

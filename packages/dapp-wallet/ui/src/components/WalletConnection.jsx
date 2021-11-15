@@ -5,10 +5,10 @@ import React, { useCallback } from 'react';
 import clsx from 'clsx';
 import { E } from '@agoric/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
-import { makeStyles } from '@material-ui/core/styles';
-import IconButton from '@material-ui/core/IconButton';
-import Public from '@material-ui/icons/Public';
-import Tooltip from '@material-ui/core/Tooltip';
+import { makeStyles } from '@mui/styles';
+import IconButton from '@mui/material/IconButton';
+import Public from '@mui/icons-material/Public';
+import Tooltip from '@mui/material/Tooltip';
 
 import { withApplicationContext } from '../contexts/Application';
 
@@ -126,7 +126,7 @@ const WalletConnection = ({
   }, []);
 
   return (
-    <div className={clsx('connector', classes.connector)}>
+    <div className={clsx('Connector', classes.connector)}>
       <Tooltip
         title={connectionState === 'bridged' ? 'Connected' : 'Disconnected'}
       >

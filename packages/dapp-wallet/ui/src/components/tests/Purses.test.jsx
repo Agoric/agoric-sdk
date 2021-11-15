@@ -1,8 +1,9 @@
 import { mount } from 'enzyme';
 import { act } from '@testing-library/react';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import Button from '@material-ui/core/Button';
-import Purses, { PursesInternalDoNotImportOrElse } from '../Purses';
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+import { createTheme, ThemeProvider } from '@mui/material';
+import Purses, { PursesWithoutContext } from '../Purses';
 import PurseAmount from '../PurseAmount';
 import Transfer from '../Transfer';
 
@@ -21,6 +22,14 @@ jest.mock('@agoric/eventual-send', () => ({
 jest.mock('@agoric/ui-components', () => ({
   parseAsValue: str => new BigInt(str),
 }));
+
+const appTheme = createTheme({
+  palette: {
+    cancel: {
+      main: '#595959',
+    },
+  },
+});
 
 const purses = [
   {
@@ -57,27 +66,43 @@ jest.mock('../../contexts/Application', () => {
 });
 
 test('renders the purse amounts', () => {
-  const component = mount(<Purses />);
+  const component = mount(
+    <ThemeProvider theme={appTheme}>
+      <Purses />
+    </ThemeProvider>,
+  );
 
   expect(component.find(PurseAmount)).toHaveLength(2);
 });
 
 test('renders a loading indicator over pending transfers', () => {
-  const component = mount(<Purses />);
+  const component = mount(
+    <ThemeProvider theme={appTheme}>
+      <Purses />
+    </ThemeProvider>,
+  );
 
   expect(component.find(CircularProgress)).toHaveLength(1);
   expect(component.find(Button)).toHaveLength(1);
 });
 
 test('renders a loading indicator when purses is null', () => {
-  const component = mount(<PursesInternalDoNotImportOrElse />);
+  const component = mount(
+    <ThemeProvider theme={appTheme}>
+      <PursesWithoutContext />
+    </ThemeProvider>,
+  );
 
   expect(component.find(CircularProgress)).toHaveLength(1);
   expect(component.find(Button)).toHaveLength(0);
 });
 
 test('opens the transfer dialog when the button is clicked', async () => {
-  const component = mount(<Purses />);
+  const component = mount(
+    <ThemeProvider theme={appTheme}>
+      <Purses />
+    </ThemeProvider>,
+  );
 
   const firstSendButton = component.find(Button).get(0);
   await act(async () => firstSendButton.props.onClick());

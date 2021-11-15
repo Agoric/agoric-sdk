@@ -4,7 +4,12 @@ import '@agoric/eventual-send/shim';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { CssBaseline, createTheme, ThemeProvider } from '@material-ui/core';
+import {
+  CssBaseline,
+  createTheme,
+  ThemeProvider,
+  StyledEngineProvider,
+} from '@mui/material';
 import App from './App';
 import ApplicationContextProvider from './contexts/Application';
 
@@ -21,7 +26,10 @@ const appTheme = createTheme({
     success: {
       main: 'rgb(76, 175, 80)',
     },
-    alert: {
+    cancel: {
+      main: '#595959',
+    },
+    warning: {
       main: 'rgb(255, 152, 0)',
     },
     background: {
@@ -47,10 +55,12 @@ const appTheme = createTheme({
 ReactDOM.render(
   <ApplicationContextProvider>
     <Router>
-      <ThemeProvider theme={appTheme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={appTheme}>
+          <CssBaseline />
+          <App />
+        </ThemeProvider>
+      </StyledEngineProvider>
     </Router>
   </ApplicationContextProvider>,
   document.getElementById('root'),

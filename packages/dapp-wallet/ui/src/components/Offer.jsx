@@ -1,8 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
+import { Nat } from '@agoric/nat';
 import { stringifyPurseValue } from '@agoric/ui-components';
-import Chip from '@material-ui/core/Chip';
-import CheckIcon from '@material-ui/icons/Check';
-import CloseIcon from '@material-ui/icons/Close';
+import Chip from '@mui/material/Chip';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import Request from './Request';
 import Petname from './Petname';
 import { icons, defaultIcon } from '../util/Icons.js';
@@ -23,7 +24,7 @@ const statusColors = {
   accept: 'success',
   rejected: 'error',
   decline: 'error',
-  pending: 'alert',
+  pending: 'warning',
   proposed: 'default',
   complete: 'success',
 };
@@ -60,31 +61,35 @@ const Offer = ({ offer }) => {
   const gives = Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb));
   const wants = Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
-  const OfferEntry = (type, [role, { amount, pursePetname }]) => (
-    <div className="OfferEntry" key={amount.brand.petname}>
-      <h6>
-        {type.header} {role}
-      </h6>
-      <div className="Token">
-        <img
-          alt="icon"
-          src={icons[amount.brand.petname] ?? defaultIcon}
-          height="32px"
-          width="32px"
-        />
-        <div>
-          <div className="Value">
-            {stringifyPurseValue({
-              value: amount.value,
-              displayInfo: amount.displayInfo,
-            })}{' '}
-            <Petname name={amount.brand.petname} />
+  const OfferEntry = (type, [role, { amount, pursePetname }]) => {
+    const value =
+      amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
+    return (
+      <div className="OfferEntry" key={amount.brand.petname}>
+        <h6>
+          {type.header} {role}
+        </h6>
+        <div className="Token">
+          <img
+            alt="icon"
+            src={icons[amount.brand.petname] ?? defaultIcon}
+            height="32px"
+            width="32px"
+          />
+          <div>
+            <div className="Value">
+              {stringifyPurseValue({
+                value,
+                displayInfo: amount.displayInfo,
+              })}{' '}
+              <Petname name={amount.brand.petname} />
+            </div>
+            {type.move} <Petname name={pursePetname} />
           </div>
-          {type.move} <Petname name={pursePetname} />
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const feeEntry = fee && (
     <div className="OfferEntry">
@@ -121,6 +126,7 @@ const Offer = ({ offer }) => {
         <Chip
           onClick={cancel}
           variant="outlined"
+          color="error"
           label="Cancel"
           icon={<CloseIcon />}
         />
@@ -132,13 +138,14 @@ const Offer = ({ offer }) => {
             variant="outlined"
             label="Accept"
             icon={<CheckIcon />}
-            color="primary"
+            color="success"
             style={{ marginLeft: '8px' }}
           />
           <Chip
             variant="outlined"
             onClick={decline}
             label="Decline"
+            color="error"
             icon={<CloseIcon />}
           />
         </>
@@ -153,7 +160,11 @@ const Offer = ({ offer }) => {
         status === 'accept' || status === 'decline' || status === 'complete'
       }
     >
-      <Chip color={statusColors[status]} label={statusText[status]} />
+      <Chip
+        variant="outlined"
+        color={statusColors[status]}
+        label={statusText[status]}
+      />
       <span className="Date text-gray">{formatDateNow(date)}</span>
       <div className="OfferOrigin">
         <Petname name={instancePetname} board={instanceHandleBoardId} />

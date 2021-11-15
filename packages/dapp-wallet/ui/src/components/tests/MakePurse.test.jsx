@@ -1,8 +1,9 @@
 import { mount } from 'enzyme';
-import Button from '@material-ui/core/Button';
+import Button from '@mui/material/Button';
 import { act } from '@testing-library/react';
-import TextField from '@material-ui/core/TextField';
-import Snackbar from '@material-ui/core/Snackbar';
+import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import { createTheme, ThemeProvider } from '@mui/material';
 import MakePurse from '../MakePurse';
 
 jest.mock('@agoric/eventual-send', () => ({
@@ -14,6 +15,14 @@ jest.mock('@agoric/eventual-send', () => ({
       },
     }),
 }));
+
+const appTheme = createTheme({
+  palette: {
+    cancel: {
+      main: '#595959',
+    },
+  },
+});
 
 const purses = [
   {
@@ -49,13 +58,15 @@ const walletBridge = { makeEmptyPurse: jest.fn() };
 
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
-    <Component
-      issuers={issuers}
-      purses={purses}
-      setPendingPurseCreations={setPendingPurseCreations}
-      walletBridge={walletBridge}
-      {...props}
-    />
+    <ThemeProvider theme={appTheme}>
+      <Component
+        issuers={issuers}
+        purses={purses}
+        setPendingPurseCreations={setPendingPurseCreations}
+        walletBridge={walletBridge}
+        {...props}
+      />
+    </ThemeProvider>
   );
 };
 

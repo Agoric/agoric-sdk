@@ -1,4 +1,4 @@
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@mui/styles';
 
 import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
