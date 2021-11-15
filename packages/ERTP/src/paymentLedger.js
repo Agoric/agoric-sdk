@@ -35,7 +35,12 @@ export const makePaymentLedger = (
     // TODO This should also destroy ledger state.
     // See https://github.com/Agoric/agoric-sdk/issues/3434
     if (optShutdownWithFailure !== undefined) {
-      optShutdownWithFailure(reason);
+      try {
+        optShutdownWithFailure(reason);
+      } catch (errInShutdown) {
+        assert.note(errInShutdown, X`Caused by: ${reason}`);
+        throw errInShutdown;
+      }
     }
     throw reason;
   };
