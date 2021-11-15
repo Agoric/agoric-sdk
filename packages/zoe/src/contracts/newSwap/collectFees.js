@@ -3,7 +3,7 @@
 export const makeMakeCollectFeesInvitation = (zcf, feeSeat, centralBrand) => {
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated('RUN', centralBrand);
-    seat.incrementBy(feeSeat.decrementBy({ RUN: amount }));
+    seat.incrementBy(feeSeat.decrementBy(harden({ RUN: amount })));
     zcf.reallocate(seat, feeSeat);
 
     seat.exit();

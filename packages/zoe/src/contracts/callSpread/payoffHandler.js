@@ -36,7 +36,9 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
 
   function reallocateToSeat(seatPromise, seatPortion) {
     seatPromise.then(seat => {
-      seat.incrementBy(collateralSeat.decrementBy({ Collateral: seatPortion }));
+      seat.incrementBy(
+        collateralSeat.decrementBy(harden({ Collateral: seatPortion })),
+      );
       zcf.reallocate(seat, collateralSeat);
       seat.exit();
       seatsExited += 1;

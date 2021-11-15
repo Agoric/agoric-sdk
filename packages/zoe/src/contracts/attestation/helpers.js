@@ -31,7 +31,7 @@ harden(validateInputs);
  */
 const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
   const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
-  zcfMint.mintGains({ Attestation: amountToMint }, zcfSeat);
+  zcfMint.mintGains(harden({ Attestation: amountToMint }), zcfSeat);
   zcfSeat.exit();
   return E(userSeat).getPayout('Attestation');
 };

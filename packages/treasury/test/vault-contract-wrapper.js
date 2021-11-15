@@ -41,9 +41,11 @@ export async function start(zcf, privateArgs) {
 
   function reallocateReward(amount, fromSeat, otherSeat) {
     stableCoinSeat.incrementBy(
-      fromSeat.decrementBy({
-        RUN: amount,
-      }),
+      fromSeat.decrementBy(
+        harden({
+          RUN: amount,
+        }),
+      ),
     );
     if (otherSeat !== undefined) {
       zcf.reallocate(stableCoinSeat, fromSeat, otherSeat);

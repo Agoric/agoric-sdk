@@ -10,7 +10,7 @@ import { E } from '@agoric/eventual-send';
  */
 export async function paymentFromZCFMint(zcf, zcfMint, amount) {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-  zcfMint.mintGains({ Temp: amount }, zcfSeat);
+  zcfMint.mintGains(harden({ Temp: amount }), zcfSeat);
   zcfSeat.exit();
   return E(userSeat).getPayout('Temp');
 }

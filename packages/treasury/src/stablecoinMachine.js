@@ -121,9 +121,11 @@ export async function start(zcf, privateArgs) {
    */
   function reallocateReward(amount, fromSeat, otherSeat = undefined) {
     rewardPoolSeat.incrementBy(
-      fromSeat.decrementBy({
-        RUN: amount,
-      }),
+      fromSeat.decrementBy(
+        harden({
+          RUN: amount,
+        }),
+      ),
     );
     if (otherSeat !== undefined) {
       zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
@@ -205,13 +207,13 @@ export async function start(zcf, privateArgs) {
       // tokens as Liquidity. These governance tokens are held by govSeat
       const { zcfSeat: govSeat } = zcf.makeEmptySeatKit();
       // TODO this should create the seat for us
-      govMint.mintGains({ Governance: govAmount }, govSeat);
+      govMint.mintGains(harden({ Governance: govAmount }), govSeat);
 
       // trade the governance tokens for collateral, putting the
       // collateral on Secondary to be positioned for Autoswap
-      seat.incrementBy(govSeat.decrementBy({ Governance: govAmount }));
-      seat.decrementBy({ Collateral: collateralIn });
-      govSeat.incrementBy({ Secondary: collateralIn });
+      seat.incrementBy(govSeat.decrementBy(harden({ Governance: govAmount })));
+      seat.decrementBy(harden({ Collateral: collateralIn }));
+      govSeat.incrementBy(harden({ Secondary: collateralIn }));
 
       zcf.reallocate(govSeat, seat);
       // the collateral is now on the temporary seat
@@ -221,7 +223,7 @@ export async function start(zcf, privateArgs) {
 
       // mint the new RUN to the Central position on the govSeat
       // so we can setup the autoswap pool
-      runMint.mintGains({ Central: runAmount }, govSeat);
+      runMint.mintGains(harden({ Central: runAmount }), govSeat);
 
       // TODO: check for existing pool, use its price instead of the
       // user-provided 'rate'. Or throw an error if it already exists.
@@ -356,9 +358,9 @@ export async function start(zcf, privateArgs) {
     } = zcf.makeEmptySeatKit();
     const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
     runMint.mintGains(
-      {
+      harden({
         Bootstrap: bootstrapAmount,
-      },
+      }),
       bootstrapZCFSeat,
     );
     bootstrapZCFSeat.exit();

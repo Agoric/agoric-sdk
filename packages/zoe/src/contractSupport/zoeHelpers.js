@@ -54,11 +54,11 @@ export const satisfies = (zcf, seat, update) => {
 /** @type {Swap} */
 export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(leftSeat.getProposal().want);
-    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(harden(leftSeat.getProposal().want));
+    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
 
-    leftSeat.decrementBy(rightSeat.getProposal().want);
-    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(harden(rightSeat.getProposal().want));
+    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
 
     zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
@@ -75,11 +75,11 @@ export const swap = (zcf, leftSeat, rightSeat) => {
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(rightSeat.getProposal().give);
-    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(harden(rightSeat.getProposal().give));
+    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
 
-    leftSeat.decrementBy(leftSeat.getProposal().give);
-    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(harden(leftSeat.getProposal().give));
+    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
 
     zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
@@ -178,8 +178,8 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
     // offerResult resolves.
-    tempSeat.decrementBy(amounts);
-    recipientSeat.incrementBy(amounts);
+    tempSeat.decrementBy(harden(amounts));
+    recipientSeat.incrementBy(harden(amounts));
     zcf.reallocate(tempSeat, recipientSeat);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
@@ -213,8 +213,8 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
 export async function withdrawFromSeat(zcf, seat, amounts) {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
-  seat.decrementBy(amounts);
-  tempSeat.incrementBy(amounts);
+  seat.decrementBy(harden(amounts));
+  tempSeat.incrementBy(harden(amounts));
   zcf.reallocate(tempSeat, seat);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();

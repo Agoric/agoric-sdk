@@ -60,18 +60,23 @@ export const makeAddPool = (
         liquidityBrand,
         liquidityValueOut,
       );
-      liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
+      liquidityZcfMint.mintGains(
+        harden({ Liquidity: liquidityAmountOut }),
+        poolSeat,
+      );
       liqTokenSupply += liquidityValueOut;
 
       poolSeat.incrementBy(
-        zcfSeat.decrementBy({
-          Central: zcfSeat.getCurrentAllocation().Central,
-          Secondary: secondaryAmount,
-        }),
+        zcfSeat.decrementBy(
+          harden({
+            Central: zcfSeat.getCurrentAllocation().Central,
+            Secondary: secondaryAmount,
+          }),
+        ),
       );
 
       zcfSeat.incrementBy(
-        poolSeat.decrementBy({ Liquidity: liquidityAmountOut }),
+        poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
       );
       zcf.reallocate(poolSeat, zcfSeat);
       zcfSeat.exit();
@@ -249,12 +254,16 @@ export const makeAddPool = (
 
         liqTokenSupply -= liquidityValueIn;
 
-        poolSeat.incrementBy(userSeat.decrementBy({ Liquidity: liquidityIn }));
+        poolSeat.incrementBy(
+          userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
+        );
         userSeat.incrementBy(
-          poolSeat.decrementBy({
-            Central: centralTokenAmountOut,
-            Secondary: tokenKeywordAmountOut,
-          }),
+          poolSeat.decrementBy(
+            harden({
+              Central: centralTokenAmountOut,
+              Secondary: tokenKeywordAmountOut,
+            }),
+          ),
         );
         zcf.reallocate(userSeat, poolSeat);
 

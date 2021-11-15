@@ -9,6 +9,7 @@ import { Far } from '@agoric/marshal';
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
+import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -303,6 +304,10 @@ export const createSeatManager = (
       },
       incrementBy: amountKeywordRecord => {
         assertActive(zcfSeat);
+        amountKeywordRecord = coerceAmountKeywordRecord(
+          amountKeywordRecord,
+          getAssetKindByBrand,
+        );
         setStagedAllocation(
           zcfSeat,
           addToAllocation(getStagedAllocation(zcfSeat), amountKeywordRecord),
@@ -311,6 +316,10 @@ export const createSeatManager = (
       },
       decrementBy: amountKeywordRecord => {
         assertActive(zcfSeat);
+        amountKeywordRecord = coerceAmountKeywordRecord(
+          amountKeywordRecord,
+          getAssetKindByBrand,
+        );
         setStagedAllocation(
           zcfSeat,
           subtractFromAllocation(
