@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
@@ -197,6 +198,29 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
     message:
       'target has no method "getBrand", has ["getAllegedName","getDisplayInfo","isMyIssuer"]',
   });
+});
+
+test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
+  const { zcf } = await setupZCFTest();
+  const brand = Far('brand', {
+    // eslint-disable-next-line no-use-before-define
+    isMyIssuer: i => i === badIssuer,
+    getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+  });
+  const badIssuer = Far('issuer', {
+    makeEmptyPurse: async () => {
+      throw Error('bad issuer');
+    },
+    getBrand: () => brand,
+  });
+  await t.throwsAsync(
+    // @ts-ignore deliberate invalid arguments for testing
+    () => zcf.saveIssuer(badIssuer, 'A'),
+    {
+      message:
+        'A purse could not be created for brand "[Alleged: brand]" because: "[Error: bad issuer]"',
+    },
+  );
 });
 
 test(`zcf.saveIssuer - bad keyword`, async t => {

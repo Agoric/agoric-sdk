@@ -4,10 +4,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf, Far } from '@agoric/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
@@ -137,6 +137,29 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
         //
         // /keyword "something" must be ascii and must start with a capital letter./
         /keyword .* must be ascii and must start with a capital letter./,
+    },
+  );
+});
+
+test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
+  const { zoe, installation } = await setupZCFTest();
+  const brand = Far('brand', {
+    // eslint-disable-next-line no-use-before-define
+    isMyIssuer: i => i === badIssuer,
+    getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+  });
+  const badIssuer = Far('issuer', {
+    makeEmptyPurse: async () => {
+      throw Error('bad issuer');
+    },
+    getBrand: () => brand,
+  });
+  await t.throwsAsync(
+    // @ts-ignore deliberate invalid arguments for testing
+    () => E(zoe).startInstance(installation, { Money: badIssuer }),
+    {
+      message:
+        'A purse could not be created for brand "[Alleged: brand]" because: "[Error: bad issuer]"',
     },
   );
 });
