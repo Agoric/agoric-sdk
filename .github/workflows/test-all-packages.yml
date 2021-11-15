@@ -19,6 +19,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
@@ -171,6 +172,9 @@ jobs:
         # github-token: ${{ secrets.GITHUB_TOKEN }}
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+    - name: Check for untested packages
+      run: node ./scripts/check-untested-packages.mjs
 
 ##################
 # Fast-running tests run as a group:
