@@ -14,15 +14,20 @@ export const makeMakeCollectFeesInvitation = (
       autoswapCreatorFacet,
     ).makeCollectFeesInvitation();
     const { zcfSeat: transferSeat } = zcf.makeEmptySeatKit();
-    await E.get(offerTo(zcf, invitation, {}, {}, transferSeat)).deposited;
+    await E.get(offerTo(zcf, invitation, harden({}), harden({}), transferSeat))
+      .deposited;
 
     seat.incrementBy(
-      feeSeat.decrementBy({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
+      feeSeat.decrementBy(
+        harden({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
+      ),
     );
     seat.incrementBy(
-      transferSeat.decrementBy({
-        RUN: transferSeat.getAmountAllocated('RUN', runBrand),
-      }),
+      transferSeat.decrementBy(
+        harden({
+          RUN: transferSeat.getAmountAllocated('RUN', runBrand),
+        }),
+      ),
     );
     const totalTransferred = seat.getStagedAllocation().RUN;
 

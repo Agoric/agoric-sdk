@@ -413,7 +413,7 @@ test(`zoe.makeFeePurse`, async t => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
 
   const fee1000 = AmountMath.make(feeBrand, 1000n);
-  zcfMint.mintGains({ Fee: fee1000 }, zcfSeat);
+  zcfMint.mintGains(harden({ Fee: fee1000 }), zcfSeat);
 
   zcfSeat.exit();
   const payment = await E(userSeat).getPayout('Fee');
@@ -436,8 +436,8 @@ test(`zcf.registerFeeMint twice`, async t => {
   const zcfMint1 = await zcf1.registerFeeMint('RUN', feeMintAccess);
   const zcfMint2 = await zcf2.registerFeeMint('RUN', feeMintAccess);
 
-  const zcfSeat1 = zcfMint1.mintGains({ Fee: fee1000 });
-  const zcfSeat2 = zcfMint2.mintGains({ Fee: fee1000 });
+  const zcfSeat1 = zcfMint1.mintGains(harden({ Fee: fee1000 }));
+  const zcfSeat2 = zcfMint2.mintGains(harden({ Fee: fee1000 }));
 
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
     Fee: fee1000,

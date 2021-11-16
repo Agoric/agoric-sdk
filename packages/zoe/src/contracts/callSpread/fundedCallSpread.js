@@ -111,13 +111,15 @@ const start = async zcf => {
         want: { LongOption: null, ShortOption: null },
       });
       collateralSeat.incrementBy(
-        creatorSeat.decrementBy({ Collateral: settlementAmount }),
+        creatorSeat.decrementBy(harden({ Collateral: settlementAmount })),
       );
       creatorSeat.incrementBy(
-        collateralSeat.decrementBy({
-          LongOption: longAmount,
-          ShortOption: shortAmount,
-        }),
+        collateralSeat.decrementBy(
+          harden({
+            LongOption: longAmount,
+            ShortOption: shortAmount,
+          }),
+        ),
       );
       zcf.reallocate(collateralSeat, creatorSeat);
       payoffHandler.schedulePayoffs();

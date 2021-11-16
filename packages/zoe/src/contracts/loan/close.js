@@ -43,14 +43,16 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // Transfer the repaid loan amount to the lender
 
     repaySeat.incrementBy(
-      collateralSeat.decrementBy({
-        Collateral: collateralSeat.getAmountAllocated(
-          'Collateral',
-          collateralBrand,
-        ),
-      }),
+      collateralSeat.decrementBy(
+        harden({
+          Collateral: collateralSeat.getAmountAllocated(
+            'Collateral',
+            collateralBrand,
+          ),
+        }),
+      ),
     );
-    lenderSeat.incrementBy(repaySeat.decrementBy({ Loan: debt }));
+    lenderSeat.incrementBy(repaySeat.decrementBy(harden({ Loan: debt })));
 
     zcf.reallocate(repaySeat, collateralSeat, lenderSeat);
 

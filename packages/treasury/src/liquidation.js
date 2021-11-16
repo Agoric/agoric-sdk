@@ -52,7 +52,7 @@ export async function liquidate(
 
   const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
-  burnLosses({ RUN: runToBurn }, liquidationSeat);
+  burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
   vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded

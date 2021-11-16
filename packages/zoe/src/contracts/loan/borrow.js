@@ -80,11 +80,13 @@ export const makeBorrowInvitation = (zcf, config) => {
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
     // Transfer the wanted Loan amount to the borrower
-    borrowerSeat.incrementBy(lenderSeat.decrementBy({ Loan: loanWanted }));
+    borrowerSeat.incrementBy(
+      lenderSeat.decrementBy(harden({ Loan: loanWanted })),
+    );
 
     // Transfer *all* collateral to the collateral seat.
     collateralSeat.incrementBy(
-      borrowerSeat.decrementBy({ Collateral: collateralGiven }),
+      borrowerSeat.decrementBy(harden({ Collateral: collateralGiven })),
     );
     zcf.reallocate(lenderSeat, borrowerSeat, collateralSeat);
 
