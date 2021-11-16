@@ -29,7 +29,7 @@ test(`allStagedSeatsUsed should not be asserted`, async t => {
     harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
-  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2n) }));
+  zcfSeat1.incrementBy(zcfSeat2.decrementBy(harden({ B: moola(2n) })));
   // Seats have staged allocations
   t.true(zcfSeat1.hasStagedAllocation());
 
@@ -43,9 +43,11 @@ test(`allStagedSeatsUsed should not be asserted`, async t => {
 
   const { brand: tokenBrand } = zcfMint.getIssuerRecord();
 
-  const zcfSeat3 = zcfMint.mintGains({
-    MyToken: AmountMath.make(tokenBrand, 100n),
-  });
+  const zcfSeat3 = zcfMint.mintGains(
+    harden({
+      MyToken: AmountMath.make(tokenBrand, 100n),
+    }),
+  );
 
   // This test was failing due to this bug: https://github.com/Agoric/agoric-sdk/issues/3613
   t.deepEqual(zcfSeat3.getCurrentAllocation(), {
@@ -80,9 +82,9 @@ test(`allStagedSeatsUsed should be asserted`, async t => {
     harden({ B: moolaKit.mint.mintPayment(moola(3n)) }),
   );
 
-  zcfSeat1.incrementBy(zcfSeat2.decrementBy({ B: moola(2n) }));
+  zcfSeat1.incrementBy(harden(zcfSeat2.decrementBy(harden({ B: moola(2n) }))));
 
-  zcfSeat3.incrementBy({ B: moola(3n) });
+  zcfSeat3.incrementBy(harden({ B: moola(3n) }));
 
   t.true(zcfSeat3.hasStagedAllocation());
 

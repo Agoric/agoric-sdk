@@ -421,9 +421,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
         board,
         namesByAddress,
         denomUri,
-        retain: (zcfSeat, amounts) => zcfMint.burnLosses(amounts, zcfSeat),
+        retain: (zcfSeat, amounts) =>
+          zcfMint.burnLosses(harden(amounts), zcfSeat),
         redeem: (zcfSeat, amounts) => {
-          zcfMint.mintGains(amounts, zcfSeat);
+          zcfMint.mintGains(harden(amounts), zcfSeat);
         },
       });
 
@@ -499,8 +500,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
         winner,
       ) => {
         // Transfer the amount to our backing seat.
-        loser.decrementBy({ [loserKeyword]: amount });
-        winner.incrementBy({ [winnerKeyword]: amount });
+        loser.decrementBy(harden({ [loserKeyword]: amount }));
+        winner.incrementBy(harden({ [winnerKeyword]: amount }));
         zcf.reallocate(loser, winner);
       };
 

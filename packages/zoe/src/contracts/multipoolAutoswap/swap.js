@@ -58,11 +58,11 @@ export const makeMakeSwapInvitation = (
 
       const poolSeat = pool.getPoolSeat();
 
-      seat.decrementBy({ In: reducedAmountIn });
-      poolSeat.incrementBy({ Central: reducedAmountIn });
+      seat.decrementBy(harden({ In: reducedAmountIn }));
+      poolSeat.incrementBy(harden({ Central: reducedAmountIn }));
 
-      poolSeat.decrementBy({ Secondary: amountOut });
-      seat.incrementBy({ Out: amountOut });
+      poolSeat.decrementBy(harden({ Secondary: amountOut }));
+      seat.incrementBy(harden({ Out: amountOut }));
 
       zcf.reallocate(poolSeat, seat);
       seat.exit();
@@ -78,11 +78,11 @@ export const makeMakeSwapInvitation = (
       } = pool.getPriceGivenAvailableInput(amountIn, brandOut);
       const poolSeat = pool.getPoolSeat();
 
-      seat.decrementBy({ In: reducedAmountIn });
-      poolSeat.incrementBy({ Secondary: reducedAmountIn });
+      seat.decrementBy(harden({ In: reducedAmountIn }));
+      poolSeat.incrementBy(harden({ Secondary: reducedAmountIn }));
 
-      poolSeat.decrementBy({ Central: amountOut });
-      seat.incrementBy({ Out: amountOut });
+      poolSeat.decrementBy(harden({ Central: amountOut }));
+      seat.incrementBy(harden({ Out: amountOut }));
 
       zcf.reallocate(seat, poolSeat);
 
@@ -101,14 +101,14 @@ export const makeMakeSwapInvitation = (
       const brandInPoolSeat = getPool(brandIn).getPoolSeat();
       const brandOutPoolSeat = getPool(brandOut).getPoolSeat();
 
-      brandOutPoolSeat.decrementBy({ Secondary: amountOut });
-      seat.incrementBy({ Out: amountOut });
+      brandOutPoolSeat.decrementBy(harden({ Secondary: amountOut }));
+      seat.incrementBy(harden({ Out: amountOut }));
 
-      brandInPoolSeat.decrementBy({ Central: reducedCentralAmount });
-      brandOutPoolSeat.incrementBy({ Central: reducedCentralAmount });
+      brandInPoolSeat.decrementBy(harden({ Central: reducedCentralAmount }));
+      brandOutPoolSeat.incrementBy(harden({ Central: reducedCentralAmount }));
 
-      seat.decrementBy({ In: reducedAmountIn });
-      brandInPoolSeat.incrementBy({ Secondary: reducedAmountIn });
+      seat.decrementBy(harden({ In: reducedAmountIn }));
+      brandInPoolSeat.incrementBy(harden({ Secondary: reducedAmountIn }));
 
       zcf.reallocate(brandOutPoolSeat, brandInPoolSeat, seat);
       seat.exit();
@@ -149,11 +149,11 @@ export const makeMakeSwapInvitation = (
         throw seat.fail(Error(reason));
       }
       const poolSeat = pool.getPoolSeat();
-      seat.decrementBy({ In: amountIn });
-      poolSeat.incrementBy({ Secondary: amountIn });
+      seat.decrementBy(harden({ In: amountIn }));
+      poolSeat.incrementBy(harden({ Secondary: amountIn }));
 
-      poolSeat.decrementBy({ Central: improvedAmountOut });
-      seat.incrementBy({ Out: improvedAmountOut });
+      poolSeat.decrementBy(harden({ Central: improvedAmountOut }));
+      seat.incrementBy(harden({ Out: improvedAmountOut }));
 
       zcf.reallocate(seat, poolSeat);
 
@@ -169,11 +169,11 @@ export const makeMakeSwapInvitation = (
 
       const poolSeat = pool.getPoolSeat();
 
-      seat.decrementBy({ In: amountIn });
-      poolSeat.incrementBy({ Central: amountIn });
+      seat.decrementBy(harden({ In: amountIn }));
+      poolSeat.incrementBy(harden({ Central: amountIn }));
 
-      poolSeat.decrementBy({ Secondary: improvedAmountOut });
-      seat.incrementBy({ Out: improvedAmountOut });
+      poolSeat.decrementBy(harden({ Secondary: improvedAmountOut }));
+      seat.incrementBy(harden({ Out: improvedAmountOut }));
 
       zcf.reallocate(poolSeat, seat);
 
@@ -191,14 +191,14 @@ export const makeMakeSwapInvitation = (
       const brandInPoolSeat = getPool(brandIn).getPoolSeat();
       const brandOutPoolSeat = getPool(brandOut).getPoolSeat();
 
-      brandOutPoolSeat.decrementBy({ Secondary: improvedAmountOut });
-      seat.incrementBy({ Out: improvedAmountOut });
+      brandOutPoolSeat.decrementBy(harden({ Secondary: improvedAmountOut }));
+      seat.incrementBy(harden({ Out: improvedAmountOut }));
 
-      brandInPoolSeat.decrementBy({ Central: improvedCentralAmount });
-      brandOutPoolSeat.incrementBy({ Central: improvedCentralAmount });
+      brandInPoolSeat.decrementBy(harden({ Central: improvedCentralAmount }));
+      brandOutPoolSeat.incrementBy(harden({ Central: improvedCentralAmount }));
 
-      seat.decrementBy({ In: amountIn });
-      brandInPoolSeat.incrementBy({ Secondary: amountIn });
+      seat.decrementBy(harden({ In: amountIn }));
+      brandInPoolSeat.incrementBy(harden({ Secondary: amountIn }));
 
       zcf.reallocate(brandInPoolSeat, brandOutPoolSeat, seat);
       seat.exit();

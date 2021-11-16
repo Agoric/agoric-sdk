@@ -20,13 +20,13 @@ test(`zcf.reallocate introducing new empty amount`, async t => {
   const empty = AmountMath.makeEmpty(brand, AssetKind.NAT);
 
   // decrementBy empty does not throw, and does not add a keyword
-  zcfSeat1.decrementBy({ RUN: empty });
+  zcfSeat1.decrementBy(harden({ RUN: empty }));
   t.deepEqual(zcfSeat1.getStagedAllocation(), {});
 
   // Try to incrementBy empty. This succeeds, and the keyword is added
   // with an empty amount.
-  zcfSeat1.incrementBy({ RUN: empty });
-  zcfSeat2.incrementBy({ RUN: empty });
+  zcfSeat1.incrementBy(harden({ RUN: empty }));
+  zcfSeat2.incrementBy(harden({ RUN: empty }));
 
   zcf.reallocate(zcfSeat1, zcfSeat2);
 

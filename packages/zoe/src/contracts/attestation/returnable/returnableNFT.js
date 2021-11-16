@@ -66,7 +66,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     const attestationAmount = checkOfferShape(seat, attestationBrand);
 
     // Burn the escrowed attestation payment and exit the seat
-    zcfMint.burnLosses({ Attestation: attestationAmount }, seat);
+    zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
 
     const attestationValue =

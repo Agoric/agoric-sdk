@@ -7,7 +7,7 @@ import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-import { cleanProposal } from '../cleanProposal.js';
+import { cleanProposal, coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeExitObj } from './exit.js';
 import { makeHandle } from '../makeHandle.js';
@@ -113,15 +113,6 @@ export const makeZCFZygote = (
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
   };
 
-  const assertAmountKeywordRecord = (amountKeywordRecord, name) => {
-    assert.typeof(
-      amountKeywordRecord,
-      'object',
-      X`${name} ${amountKeywordRecord} must be an amountKeywordRecord`,
-    );
-    assert(amountKeywordRecord !== null, X`${name} cannot be null`);
-  };
-
   // A helper for the code shared between MakeZCFMint and RegisterZCFMint
   const doMakeZCFMint = async (keyword, zoeMintP) => {
     const {
@@ -148,7 +139,7 @@ export const makeZCFZygote = (
         return mintyIssuerRecord;
       },
       mintGains: (gains, zcfSeat = undefined) => {
-        assertAmountKeywordRecord(gains, 'gains');
+        gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);
         if (zcfSeat === undefined) {
           zcfSeat = makeEmptySeatKit().zcfSeat;
         }
@@ -186,7 +177,7 @@ export const makeZCFZygote = (
         return zcfSeat;
       },
       burnLosses: (losses, zcfSeat) => {
-        assertAmountKeywordRecord(losses, 'losses');
+        losses = coerceAmountKeywordRecord(losses, getAssetKindByBrand);
         const totalToBurn = Object.values(losses).reduce(add, empty);
         assert(
           !zcfSeat.hasExited(),

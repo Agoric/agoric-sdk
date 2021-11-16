@@ -49,11 +49,11 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   }
 
   // Everyone else gets a refund so their values remain the same.
-  highestBidSeat.decrementBy({ Bid: secondHighestBid });
-  sellSeat.incrementBy({ Ask: secondHighestBid });
+  highestBidSeat.decrementBy(harden({ Bid: secondHighestBid }));
+  sellSeat.incrementBy(harden({ Ask: secondHighestBid }));
 
-  sellSeat.decrementBy({ Asset: assetAmount });
-  highestBidSeat.incrementBy({ Asset: assetAmount });
+  sellSeat.decrementBy(harden({ Asset: assetAmount }));
+  highestBidSeat.incrementBy(harden({ Asset: assetAmount }));
 
   zcf.reallocate(sellSeat, highestBidSeat);
   sellSeat.exit();

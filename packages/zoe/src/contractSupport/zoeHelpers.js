@@ -54,11 +54,11 @@ export const satisfies = (zcf, seat, update) => {
 /** @type {Swap} */
 export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(leftSeat.getProposal().want);
-    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(harden(leftSeat.getProposal().want));
+    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
 
-    leftSeat.decrementBy(rightSeat.getProposal().want);
-    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(harden(rightSeat.getProposal().want));
+    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
 
     zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
@@ -75,11 +75,11 @@ export const swap = (zcf, leftSeat, rightSeat) => {
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(rightSeat.getProposal().give);
-    leftSeat.incrementBy(leftSeat.getProposal().want);
+    rightSeat.decrementBy(harden(rightSeat.getProposal().give));
+    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
 
-    leftSeat.decrementBy(leftSeat.getProposal().give);
-    rightSeat.incrementBy(rightSeat.getProposal().want);
+    leftSeat.decrementBy(harden(leftSeat.getProposal().give));
+    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
 
     zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
@@ -178,8 +178,8 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
     // offerResult resolves.
-    tempSeat.decrementBy(amounts);
-    recipientSeat.incrementBy(amounts);
+    tempSeat.decrementBy(harden(amounts));
+    recipientSeat.incrementBy(harden(amounts));
     zcf.reallocate(tempSeat, recipientSeat);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
@@ -213,8 +213,8 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
 export async function withdrawFromSeat(zcf, seat, amounts) {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
-  seat.decrementBy(amounts);
-  tempSeat.incrementBy(amounts);
+  seat.decrementBy(harden(amounts));
+  tempSeat.incrementBy(harden(amounts));
   zcf.reallocate(tempSeat, seat);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
@@ -246,19 +246,23 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = harden({})) {
 
 /** @type {MapKeywords} */
 export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
-  return Object.fromEntries(
-    Object.entries(keywordRecord).map(([keyword, value]) => {
-      if (keywordMapping[keyword] === undefined) {
-        return [keyword, value];
-      }
-      return [keywordMapping[keyword], value];
-    }),
+  return harden(
+    Object.fromEntries(
+      Object.entries(keywordRecord).map(([keyword, value]) => {
+        if (keywordMapping[keyword] === undefined) {
+          return [keyword, value];
+        }
+        return [keywordMapping[keyword], value];
+      }),
+    ),
   );
 };
 /** @type {Reverse} */
 const reverse = (keywordRecord = {}) => {
-  return Object.fromEntries(
-    Object.entries(keywordRecord).map(([key, value]) => [value, key]),
+  return harden(
+    Object.fromEntries(
+      Object.entries(keywordRecord).map(([key, value]) => [value, key]),
+    ),
   );
 };
 
@@ -276,14 +280,14 @@ export const offerTo = async (
   const zoe = zcf.getZoeService();
   const mappingReversed = reverse(keywordMapping);
 
+  const newKeywords =
+    proposal !== undefined
+      ? mapKeywords(proposal.give, mappingReversed)
+      : harden({});
+
   // the proposal is in the other contract's keywords, but we want to
   // use `proposal.give` to withdraw
-  const payments = await withdrawFromSeat(
-    zcf,
-    fromSeat,
-    // `proposal.give` may be undefined
-    mapKeywords(proposal.give, mappingReversed),
-  );
+  const payments = await withdrawFromSeat(zcf, fromSeat, newKeywords);
 
   // Map to the other contract's keywords
   const paymentsForOtherContract = mapKeywords(payments, keywordMapping);

@@ -28,9 +28,11 @@ const start = async zcf => {
 
     function payOffBounty(seat) {
       seat.incrementBy(
-        funderSeat.decrementBy({
-          Bounty: funderSeat.getCurrentAllocation().Bounty,
-        }),
+        funderSeat.decrementBy(
+          harden({
+            Bounty: funderSeat.getCurrentAllocation().Bounty,
+          }),
+        ),
       );
 
       zcf.reallocate(funderSeat, seat);
@@ -59,7 +61,9 @@ const start = async zcf => {
       );
 
       // The funder gets the fee regardless of the outcome.
-      funderSeat.incrementBy(bountySeat.decrementBy({ Fee: feeAmount }));
+      funderSeat.incrementBy(
+        bountySeat.decrementBy(harden({ Fee: feeAmount })),
+      );
       zcf.reallocate(funderSeat, bountySeat);
 
       const wakeHandler = Far('wakeHandler', {

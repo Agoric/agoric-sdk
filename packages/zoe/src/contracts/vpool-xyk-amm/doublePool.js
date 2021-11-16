@@ -57,13 +57,13 @@ export const makeDoublePool = (
     const inPoolSeat = collateralInPool.getPoolSeat();
     const outPoolSeat = collateralOutPool.getPoolSeat();
 
-    seat.decrementBy({ In: prices.swapperGives });
-    seat.incrementBy({ Out: prices.swapperGets });
-    feeSeat.incrementBy({ RUN: prices.protocolFee });
-    inPoolSeat.incrementBy({ Secondary: prices.inPoolIncrement });
-    inPoolSeat.decrementBy({ Central: prices.inPoolDecrement });
-    outPoolSeat.incrementBy({ Central: prices.outPoolIncrement });
-    outPoolSeat.decrementBy({ Secondary: prices.outpoolDecrement });
+    seat.decrementBy(harden({ In: prices.swapperGives }));
+    seat.incrementBy(harden({ Out: prices.swapperGets }));
+    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
+    inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));
+    outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
+    outPoolSeat.decrementBy(harden({ Secondary: prices.outpoolDecrement }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();

@@ -64,7 +64,11 @@ const setupGovernor = async (
   const {
     instance: electorateInstance,
     creatorFacet: electorateCreatorFacet,
-  } = await E(zoe).startInstance(electorateInstall, {}, electorateTerms);
+  } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({}),
+    electorateTerms,
+  );
 
   const governorTerms = {
     electorateInstance,
@@ -74,7 +78,7 @@ const setupGovernor = async (
   };
   return E(zoe).startInstance(
     governanceInstall,
-    {},
+    harden({}),
     governorTerms,
     harden({ electorateCreatorFacet }),
   );

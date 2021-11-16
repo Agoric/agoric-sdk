@@ -93,15 +93,19 @@ const start = async zcf => {
   };
 
   function consummate(tradeAmountIn, tradeAmountOut, swapSeat) {
-    swapSeat.decrementBy({ In: tradeAmountIn });
-    poolSeat.incrementBy({
-      [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn,
-    });
+    swapSeat.decrementBy(harden({ In: tradeAmountIn }));
+    poolSeat.incrementBy(
+      harden({
+        [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn,
+      }),
+    );
 
-    poolSeat.decrementBy({
-      [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut,
-    });
-    swapSeat.incrementBy({ Out: tradeAmountOut });
+    poolSeat.decrementBy(
+      harden({
+        [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut,
+      }),
+    );
+    swapSeat.incrementBy(harden({ Out: tradeAmountOut }));
 
     zcf.reallocate(swapSeat, poolSeat);
 
@@ -191,15 +195,20 @@ const start = async zcf => {
       liquidityBrand,
       liquidityValueOut,
     );
-    liquidityMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
+    liquidityMint.mintGains(
+      harden({ Liquidity: liquidityAmountOut }),
+      poolSeat,
+    );
     liqTokenSupply += liquidityValueOut;
 
     const liquidityDeposited = {
       Central: AmountMath.make(brands.Central, centralIn),
       Secondary: secondaryAmount,
     };
-    poolSeat.incrementBy(seat.decrementBy(liquidityDeposited));
-    seat.incrementBy(poolSeat.decrementBy({ Liquidity: liquidityAmountOut }));
+    poolSeat.incrementBy(seat.decrementBy(harden(liquidityDeposited)));
+    seat.incrementBy(
+      poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
+    );
 
     zcf.reallocate(poolSeat, seat);
 
@@ -296,10 +305,12 @@ const start = async zcf => {
     };
 
     poolSeat.incrementBy(
-      removeLiqSeat.decrementBy({ Liquidity: userAllocation.Liquidity }),
+      removeLiqSeat.decrementBy(
+        harden({ Liquidity: userAllocation.Liquidity }),
+      ),
     );
 
-    removeLiqSeat.incrementBy(poolSeat.decrementBy(liquidityRemoved));
+    removeLiqSeat.incrementBy(poolSeat.decrementBy(harden(liquidityRemoved)));
 
     zcf.reallocate(poolSeat, removeLiqSeat);
 

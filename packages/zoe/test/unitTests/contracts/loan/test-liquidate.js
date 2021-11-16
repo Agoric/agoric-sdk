@@ -47,11 +47,11 @@ test('test doLiquidation with mocked autoswap', async t => {
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
 
-    swapSeat.decrementBy({ In: collateral });
-    fakePoolSeat.incrementBy({ Secondary: collateral });
+    swapSeat.decrementBy(harden({ In: collateral }));
+    fakePoolSeat.incrementBy(harden({ Secondary: collateral }));
 
-    fakePoolSeat.decrementBy({ Central: price });
-    swapSeat.incrementBy({ Out: price });
+    fakePoolSeat.decrementBy(harden({ Central: price }));
+    swapSeat.incrementBy(harden({ Out: price }));
 
     zcf.reallocate(swapSeat, fakePoolSeat);
 

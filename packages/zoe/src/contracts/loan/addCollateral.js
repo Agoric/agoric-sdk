@@ -21,9 +21,11 @@ export const makeAddCollateralInvitation = (zcf, config) => {
     });
 
     collateralSeat.incrementBy(
-      addCollateralSeat.decrementBy({
-        Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
-      }),
+      addCollateralSeat.decrementBy(
+        harden({
+          Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
+        }),
+      ),
     );
 
     zcf.reallocate(collateralSeat, addCollateralSeat);

@@ -54,14 +54,18 @@ const installContracts = async (zoe, cb) => {
 };
 
 const startElectorate = async (zoe, installations) => {
-  const electorateTerms = {
+  const electorateTerms = harden({
     committeeName: 'TwentyCommittee',
     committeeSize: 5,
-  };
+  });
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.electorate, {}, electorateTerms);
+  } = await E(zoe).startInstance(
+    installations.electorate,
+    harden({}),
+    electorateTerms,
+  );
   return { electorateCreatorFacet, electorateInstance };
 };
 
