@@ -3,6 +3,8 @@
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
+PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
+PR_TARGET_BRANCH = master
 
 default: all
 
@@ -91,10 +93,10 @@ proto-gen: proto-tools
 	./scripts/protocgen.sh
 
 proto-lint: proto-tools
-	buf check lint --error-format=json
+	buf lint --error-format=json
 
 proto-check-breaking: proto-tools
-	buf check breaking --against-input '.git#branch=master'
+	buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
 COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
@@ -133,7 +135,7 @@ proto-update-deps:
 UNAME_S ?= $(shell uname -s)
 UNAME_M ?= $(shell uname -m)
 
-BUF_VERSION ?= 0.11.0
+BUF_VERSION ?= 0.56.0
 
 PROTOC_VERSION ?= 3.11.2
 ifeq ($(UNAME_S),Linux)
@@ -143,7 +145,7 @@ ifeq ($(UNAME_S),Darwin)
   PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-osx-x86_64.zip
 endif
 
-proto-tools: proto-tools-stamp buf
+proto-tools: proto-tools-stamp buf grpc-gateway-stamp
 
 proto-tools-stamp:
 	echo "Installing protoc compiler..."
@@ -171,5 +173,15 @@ buf-stamp:
 
 	touch $@
 
+GATEWAY_PKGS = \
+	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
+	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
+	github.com/golang/protobuf/protoc-gen-go
+
+grpc-gateway-stamp:
+	go get $(GATEWAY_PKGS)
+	go install $(GATEWAY_PKGS)
+	touch $@
+
 tools-clean:
-	rm -f proto-tools-stamp buf-stamp
+	rm -f proto-tools-stamp buf-stamp grpc-gateway-stamp
