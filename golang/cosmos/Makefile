@@ -3,7 +3,7 @@
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
-PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
+PR_TARGET_REPO = ../../.git
 PR_TARGET_BRANCH = master
 
 default: all
@@ -90,13 +90,13 @@ go-mod-cache: ../../go.sum
 ###############################################################################
 
 proto-gen: proto-tools
-	./scripts/protocgen.sh
+	PATH="${BIN}:$$PATH" ./scripts/protocgen.sh
 
 proto-lint: proto-tools
-	buf lint --error-format=json
+	${BIN}/buf lint
 
 proto-check-breaking: proto-tools
-	buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
+	${BIN}/buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
 COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
@@ -105,7 +105,7 @@ t:
 	echo "X$(COSMOSVER)X"
 
 TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
-GOGO_PROTO_URL   := https://raw.githubusercontent.com/regen-network/protobuf/cosmos
+GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
 IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v2)/proto/ibc/core
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
@@ -149,9 +149,10 @@ proto-tools: proto-tools-stamp buf grpc-gateway-stamp
 
 proto-tools-stamp:
 	echo "Installing protoc compiler..."
+	mkdir -p "${BIN}"
 	(cd /tmp; \
 	curl -OL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
-	unzip -o ${PROTOC_ZIP} -d ${BIN}/.. bin/protoc 'include/*'; \
+	unzip -o ${PROTOC_ZIP} -d "${BIN}/.." bin/protoc 'include/*'; \
 	rm -f ${PROTOC_ZIP})
 
 	echo "Installing protoc-gen-gocosmos..."
