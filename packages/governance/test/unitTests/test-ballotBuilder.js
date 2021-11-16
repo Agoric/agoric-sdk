@@ -1,13 +1,7 @@
 // @ts-check
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/babel-standalone';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   looksLikeQuestionSpec,
@@ -55,7 +49,7 @@ test('bad Question', t => {
         }),
       ),
     {
-      message: 'A question can only be a pass-by-copy record: (a string)',
+      message: 'A question can only be a pass-by-copy record: "will it blend?"',
     },
   );
 });
@@ -76,7 +70,7 @@ test('bad timer', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Timer must be a timer (a number)' },
+    { message: 'Timer must be a timer 37' },
   );
 });
 
@@ -96,7 +90,7 @@ test('bad method', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal (a string): (a string)' },
+    { message: 'Illegal "ChoiceMethod": "choose"' },
   );
 });
 
@@ -116,7 +110,7 @@ test('bad Quorum', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal (a string): (a number)' },
+    { message: 'Illegal "QuorumRule": 0.5' },
   );
 });
 
@@ -155,7 +149,7 @@ test('bad maxChoices', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'maxChoices must be positive: (a number)' },
+    { message: 'maxChoices must be positive: 0' },
   );
 });
 
@@ -173,7 +167,8 @@ test('bad positions', t => {
         tieOutcome: positions[1],
       }),
     {
-      message: 'Cannot pass non-frozen objects like (an object). Use harden()',
+      message:
+        'Cannot pass non-frozen objects like {"text":"yes"}. Use harden()',
     },
   );
 });
