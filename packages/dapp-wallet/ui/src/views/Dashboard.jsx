@@ -1,4 +1,4 @@
-import { Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
 import Purses from '../components/Purses';
 import Requests from '../components/Requests';
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Typography } from '@material-ui/core';
-import Button from '@material-ui/core/Button';
-import Add from '@material-ui/icons/Add';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import { Typography } from '@mui/material';
+import Button from '@mui/material/Button';
+import Add from '@mui/icons-material/Add';
+import CircularProgress from '@mui/material/CircularProgress';
 import Card from '../components/Card';
 import CardItem from '../components/CardItem';
 import MakePurse from '../components/MakePurse';
@@ -36,7 +36,6 @@ export const IssuersWithoutContext = ({ issuers, pendingPurseCreations }) => {
           ) : (
             <Button
               variant="outlined"
-              color="primary"
               size="small"
               onClick={() => handleCreatePurse(issuer.id)}
             >
@@ -53,16 +52,9 @@ export const IssuersWithoutContext = ({ issuers, pendingPurseCreations }) => {
 
   return (
     <>
-      <Typography variant="h1" className="Header">
-        Issuers
-      </Typography>
+      <Typography variant="h1">Issuers</Typography>
       <div className="Import-button">
-        <Button
-          aria-label="import"
-          size="medium"
-          color="primary"
-          variant="contained"
-        >
+        <Button aria-label="import" size="medium" variant="contained">
           <Add style={{ marginRight: '4px' }} /> Import
         </Button>
       </div>

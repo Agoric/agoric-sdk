@@ -1,4 +1,4 @@
-import { Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
 
 const Dapps = () => {
   return <Typography variant="h1">Dapps</Typography>;

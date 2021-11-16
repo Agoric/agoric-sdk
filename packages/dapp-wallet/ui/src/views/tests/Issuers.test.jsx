@@ -1,7 +1,7 @@
 import { mount } from 'enzyme';
 import { act } from '@testing-library/react';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import Button from '@material-ui/core/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
 import Issuers, { IssuersWithoutContext } from '../Issuers';
 import MakePurse from '../../components/MakePurse';
 

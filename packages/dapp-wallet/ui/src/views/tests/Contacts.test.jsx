@@ -1,5 +1,5 @@
 import { mount } from 'enzyme';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 import Contacts, { ContactsWithoutContext } from '../Contacts';
 
 const contacts = [

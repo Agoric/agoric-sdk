@@ -21,9 +21,22 @@ export const makeEscrowStorage = () => {
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {
-    if (!brandToPurse.has(brand)) {
-      brandToPurse.init(brand, E(issuer).makeEmptyPurse());
+    if (brandToPurse.has(brand)) {
+      return undefined;
     }
+    return E.when(
+      E(issuer).makeEmptyPurse(),
+      purse => {
+        // Check again after the promise resolves
+        if (!brandToPurse.has(brand)) {
+          brandToPurse.init(brand, purse);
+        }
+      },
+      err =>
+        assert.fail(
+          X`A purse could not be created for brand ${brand} because: ${err}`,
+        ),
+    );
   };
 
   /**

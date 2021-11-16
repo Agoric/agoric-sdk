@@ -122,8 +122,10 @@ export const makeZoeStorageManager = (
     );
 
     // Create purses for the issuers if they do not already exist
-    Object.entries(issuers).forEach(([keyword, issuer]) =>
-      escrowStorage.createPurse(issuer, brands[keyword]),
+    await Promise.all(
+      Object.entries(issuers).map(([keyword, issuer]) =>
+        escrowStorage.createPurse(issuer, brands[keyword]),
+      ),
     );
 
     // The instanceRecord is what the contract code is parameterized
@@ -143,7 +145,7 @@ export const makeZoeStorageManager = (
     /** @type {SaveIssuer} */
     const saveIssuer = async (issuerP, keyword) => {
       const issuerRecord = await issuerStorage.storeIssuer(issuerP);
-      escrowStorage.createPurse(issuerRecord.issuer, issuerRecord.brand);
+      await escrowStorage.createPurse(issuerRecord.issuer, issuerRecord.brand);
       instanceRecordManager.addIssuerToInstanceRecord(keyword, issuerRecord);
       return issuerRecord;
     };

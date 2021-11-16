@@ -1,7 +1,7 @@
-import { Typography } from '@material-ui/core';
-import Button from '@material-ui/core/Button';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import Add from '@material-ui/icons/Add';
+import { Typography } from '@mui/material';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Add from '@mui/icons-material/Add';
 import Card from '../components/Card';
 import { withApplicationContext } from '../contexts/Application';
 
@@ -30,12 +30,7 @@ export const ContactsWithoutContext = ({ contacts }) => {
     <>
       <Typography variant="h1">Contacts</Typography>
       <div className="Import-button">
-        <Button
-          aria-label="import"
-          size="medium"
-          color="primary"
-          variant="contained"
-        >
+        <Button aria-label="import" size="medium" variant="contained">
           <Add style={{ marginRight: '4px' }} /> Import
         </Button>
       </div>
