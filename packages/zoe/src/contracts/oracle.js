@@ -34,7 +34,7 @@ const start = async zcf => {
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
 
-        seat.incrementBy(feeSeat.decrementBy(gains));
+        seat.incrementBy(feeSeat.decrementBy(harden(gains)));
         zcf.reallocate(seat, feeSeat);
         seat.exit();
         return 'Successfully withdrawn';
@@ -46,7 +46,9 @@ const start = async zcf => {
     makeShutdownInvitation: () => {
       const shutdown = seat => {
         revoked = true;
-        seat.incrementBy(feeSeat.decrementBy(feeSeat.getCurrentAllocation()));
+        seat.incrementBy(
+          feeSeat.decrementBy(harden(feeSeat.getCurrentAllocation())),
+        );
         zcf.reallocate(seat, feeSeat);
         zcf.shutdown(revokedMsg);
       };
@@ -84,7 +86,9 @@ const start = async zcf => {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
-            feeSeat.incrementBy(querySeat.decrementBy({ Fee: requiredFee }));
+            feeSeat.incrementBy(
+              querySeat.decrementBy(harden({ Fee: requiredFee })),
+            );
             zcf.reallocate(feeSeat, querySeat);
           }
           querySeat.exit();

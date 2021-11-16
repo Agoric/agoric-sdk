@@ -205,7 +205,7 @@ export function makeVaultManager(
     );
     sortedVaultKits.updateAllDebts();
     reschedulePriceCheck();
-    runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
+    runMint.mintGains(harden({ RUN: poolIncrement }), poolIncrementSeat);
     reallocateReward(poolIncrement, poolIncrementSeat);
   }
 

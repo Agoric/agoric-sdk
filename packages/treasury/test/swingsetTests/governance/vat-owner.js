@@ -50,8 +50,8 @@ const build = async (
 
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
-    {},
-    {
+    harden({}),
+    harden({
       timer,
       electorateInstance,
       governedContractInstallation: installations.treasury,
@@ -60,7 +60,7 @@ const build = async (
         issuerKeywordRecord: {},
         privateArgs: privateTreasuryArgs,
       },
-    },
+    }),
     privateArgs,
   );
 

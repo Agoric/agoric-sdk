@@ -208,8 +208,15 @@ jobs:
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
     # the top level.
+    #
+    # This list should include all packages, except ones that are in another
+    #  category here, or that don't have a package.json.
     #- name: yarn test (everything)
     #  run: yarn test
+    - name: yarn test (access-token)
+      run: cd packages/access-token && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (agoric-cli)
       run: cd packages/agoric-cli && yarn test
       env:
@@ -240,6 +247,10 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (eventual-send)
       run: cd packages/eventual-send && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (governance)
+      run: cd packages/governance && yarn test
       env:
         ESM_DISABLE_CACHE: true
     - name: yarn test (import-bundle)
@@ -292,6 +303,10 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (swing-store)
       run: cd packages/swing-store && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (wallet-connection)
+      run: cd packages/wallet-connection && yarn test
       env:
         ESM_DISABLE_CACHE: true
 
@@ -352,6 +367,15 @@ jobs:
         ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-wallet/ui)
       run: cd packages/dapp-wallet/ui && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+
+    - name: yarn test (dapp-svelte-wallet)
+      run: cd packages/dapp-svelte-wallet && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (eslint-config)
+      run: cd packages/eslint-config && yarn test
       env:
         ESM_DISABLE_CACHE: true
 

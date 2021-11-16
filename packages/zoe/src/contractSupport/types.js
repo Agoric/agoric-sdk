@@ -85,7 +85,7 @@
  *   contractB. Note that the pathway to deposit the payout back to
  *   contractA reverses this mapping.
  *
- * @param {Proposal} proposal
+ * @param {Proposal | undefined} proposal
  *   The proposal for the offer to be made to contractB
  *
  * @param {ZCFSeat} fromSeat

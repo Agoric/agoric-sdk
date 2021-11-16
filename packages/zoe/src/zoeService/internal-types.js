@@ -6,7 +6,7 @@
  * @callback CreatePurse
  * @param {Issuer} issuer
  * @param {Brand} brand
- * @returns {void}
+ * @returns {ERef<void>}
  */
 
 /**

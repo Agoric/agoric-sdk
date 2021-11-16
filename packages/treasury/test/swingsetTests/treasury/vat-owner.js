@@ -49,7 +49,7 @@ const build = async (
 
   const { creatorFacet: governor } = await E(zoe).startInstance(
     installations.governor,
-    {},
+    harden({}),
     {
       timer,
       electorateInstance,
@@ -60,7 +60,7 @@ const build = async (
         privateArgs: privateTreasuryArgs,
       },
     },
-    { electorateCreatorFacet: committeeCreator },
+    harden({ electorateCreatorFacet: committeeCreator }),
   );
 
   const governedInstance = await E(governor).getInstance();

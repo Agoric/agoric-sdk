@@ -37,20 +37,20 @@ export const makeMakeSwapInvitation = (
     const poolSeat = pool.getPoolSeat();
 
     // Transfer amountIn from the user
-    seat.decrementBy({ In: amountIn });
-    poolSeat.incrementBy({ Central: amountIn });
+    seat.decrementBy(harden({ In: amountIn }));
+    poolSeat.incrementBy(harden({ Central: amountIn }));
 
     // Transfer protocolFee
 
     // TODO: this should be transferred directly from the user such
     // that there's no way to accidentally take more than expected
     // from the pool.
-    poolSeat.decrementBy({ Central: protocolFee });
-    protocolSeat.incrementBy({ RUN: protocolFee });
+    poolSeat.decrementBy(harden({ Central: protocolFee }));
+    protocolSeat.incrementBy(harden({ RUN: protocolFee }));
 
     // Transfer amountOut from the pool
-    poolSeat.decrementBy({ Secondary: amountOut });
-    seat.incrementBy({ Out: amountOut });
+    poolSeat.decrementBy(harden({ Secondary: amountOut }));
+    seat.incrementBy(harden({ Out: amountOut }));
 
     zcf.reallocate(poolSeat, seat, protocolSeat);
     seat.exit();
@@ -67,16 +67,16 @@ export const makeMakeSwapInvitation = (
     const poolSeat = pool.getPoolSeat();
 
     // Transfer amountIn from the user
-    seat.decrementBy({ In: amountIn });
-    poolSeat.incrementBy({ Secondary: amountIn });
+    seat.decrementBy(harden({ In: amountIn }));
+    poolSeat.incrementBy(harden({ Secondary: amountIn }));
 
     // Transfer amountOut from the pool
-    poolSeat.decrementBy({ Central: amountOut });
-    seat.incrementBy({ Out: amountOut });
+    poolSeat.decrementBy(harden({ Central: amountOut }));
+    seat.incrementBy(harden({ Out: amountOut }));
 
     // Transfer protocolFee
-    poolSeat.decrementBy({ Central: protocolFee });
-    protocolSeat.incrementBy({ RUN: protocolFee });
+    poolSeat.decrementBy(harden({ Central: protocolFee }));
+    protocolSeat.incrementBy(harden({ RUN: protocolFee }));
 
     zcf.reallocate(poolSeat, seat, protocolSeat);
     seat.exit();
@@ -97,8 +97,8 @@ export const makeMakeSwapInvitation = (
     const brandOutPoolSeat = brandOutPool.getPoolSeat();
 
     // Transfer amountIn from the user
-    seat.decrementBy({ In: amountIn });
-    brandInPoolSeat.incrementBy({ Secondary: amountIn });
+    seat.decrementBy(harden({ In: amountIn }));
+    brandInPoolSeat.incrementBy(harden({ Secondary: amountIn }));
 
     // Transfer protocolFee from the brandInPool
 
@@ -107,16 +107,16 @@ export const makeMakeSwapInvitation = (
     // from brandInPool directly, and we subtract more value from
     // brandOutPool than we otherwise would, thus taking part of the
     // fee from brandOutPool too.
-    brandInPoolSeat.decrementBy({ Central: protocolFee });
-    protocolSeat.incrementBy({ RUN: protocolFee });
+    brandInPoolSeat.decrementBy(harden({ Central: protocolFee }));
+    protocolSeat.incrementBy(harden({ RUN: protocolFee }));
 
     // Transfer Central between pools
-    brandInPoolSeat.decrementBy({ Central: centralAmount });
-    brandOutPoolSeat.incrementBy({ Central: centralAmount });
+    brandInPoolSeat.decrementBy(harden({ Central: centralAmount }));
+    brandOutPoolSeat.incrementBy(harden({ Central: centralAmount }));
 
     // Transfer amountOut from the pool
-    brandOutPoolSeat.decrementBy({ Secondary: amountOut });
-    seat.incrementBy({ Out: amountOut });
+    brandOutPoolSeat.decrementBy(harden({ Secondary: amountOut }));
+    seat.incrementBy(harden({ Out: amountOut }));
 
     zcf.reallocate(brandInPoolSeat, brandOutPoolSeat, seat, protocolSeat);
     seat.exit();

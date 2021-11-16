@@ -146,9 +146,14 @@ const setupServices = async (
     instance: governorInstance,
     publicFacet: governorPublicFacet,
     creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(installs.governor, {}, governorTerms, {
-    electorateCreatorFacet: committeeCreator,
-  });
+  } = await E(zoe).startInstance(
+    installs.governor,
+    {},
+    governorTerms,
+    harden({
+      electorateCreatorFacet: committeeCreator,
+    }),
+  );
 
   const ammCreatorFacetP = E(governorCreatorFacet).getInternalCreatorFacet();
   const ammPublicP = E(governorCreatorFacet).getPublicFacet();
