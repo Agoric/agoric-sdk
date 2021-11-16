@@ -1,11 +1,11 @@
 name: Test all Packages
 
-# run CI on pushes to master, and on all PRs (even the ones that target other
+# run CI on pushes to default, and on all PRs (even the ones that target other
 # branches)
 
 on:
  push:
-   branches: [master]
+   branches: [ $default-branch ]
  pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
@@ -86,7 +86,7 @@ jobs:
       matrix:
         # note: only use one node-version
         node-version: ['14.x']
-    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    if: ${{github.event_name == 'push'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -126,7 +126,7 @@ jobs:
       matrix:
         # note: only use one node-version
         node-version: ['14.x']
-    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+    if: ${{github.event_name == 'push'}}
     steps:
     - uses: actions/setup-node@v1
       with:
@@ -164,8 +164,8 @@ jobs:
 
     - uses: nwtgck/actions-netlify@v1.1
       with:
-        # Production deployment if a commit to master.
-        production-deploy: ${{ github.ref == 'refs/heads/master' }}
+        # Production deployment if a push.
+        production-deploy: ${{github.event_name == 'push'}}
         publish-dir: coverage/html
         # SECURITY: we don't want to hand out the Github token to this action.
         # github-token: ${{ secrets.GITHUB_TOKEN }}

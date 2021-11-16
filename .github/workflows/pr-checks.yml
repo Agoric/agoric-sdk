@@ -1,6 +1,6 @@
 name: PR Checks
 
-# run CI on all PRs (even the ones that target non-master
+# run CI on all PRs (even the ones that target non-default
 # branches)
 
 on:
