@@ -107,7 +107,7 @@ export const TransferInternal = ({
   }));
 
   const purseSelect = purseItems && (
-    <FormControl style={{ marginLeft: '34px' }}>
+    <FormControl variant="standard" style={{ marginLeft: '34px' }}>
       <InputLabel id="purse-select-label">Purse</InputLabel>
       <Select
         value={type === transferTypes.WITHIN_WALLET ? destination : ''}
@@ -127,7 +127,7 @@ export const TransferInternal = ({
   );
 
   const contactSelect = contactItems && (
-    <FormControl style={{ marginLeft: '34px' }}>
+    <FormControl variant="standard" style={{ marginLeft: '34px' }}>
       <InputLabel id="contact-select-label">Contact</InputLabel>
       <Select
         value={type === transferTypes.ONE_WAY ? destination : ''}
