@@ -1,4 +1,6 @@
 // +build tools
+//
+// This file exists only to make references to tool modules we need.
 
 package tools
 
