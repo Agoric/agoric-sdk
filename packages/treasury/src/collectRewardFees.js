@@ -14,7 +14,8 @@ export const makeMakeCollectFeesInvitation = (
       autoswapCreatorFacet,
     ).makeCollectFeesInvitation();
     const { zcfSeat: transferSeat } = zcf.makeEmptySeatKit();
-    await E.get(offerTo(zcf, invitation, {}, {}, transferSeat)).deposited;
+    await E.get(offerTo(zcf, invitation, harden({}), harden({}), transferSeat))
+      .deposited;
 
     seat.incrementBy(
       feeSeat.decrementBy(

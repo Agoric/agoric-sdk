@@ -246,19 +246,23 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = harden({})) {
 
 /** @type {MapKeywords} */
 export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
-  return Object.fromEntries(
-    Object.entries(keywordRecord).map(([keyword, value]) => {
-      if (keywordMapping[keyword] === undefined) {
-        return [keyword, value];
-      }
-      return [keywordMapping[keyword], value];
-    }),
+  return harden(
+    Object.fromEntries(
+      Object.entries(keywordRecord).map(([keyword, value]) => {
+        if (keywordMapping[keyword] === undefined) {
+          return [keyword, value];
+        }
+        return [keywordMapping[keyword], value];
+      }),
+    ),
   );
 };
 /** @type {Reverse} */
 const reverse = (keywordRecord = {}) => {
-  return Object.fromEntries(
-    Object.entries(keywordRecord).map(([key, value]) => [value, key]),
+  return harden(
+    Object.fromEntries(
+      Object.entries(keywordRecord).map(([key, value]) => [value, key]),
+    ),
   );
 };
 
@@ -276,14 +280,14 @@ export const offerTo = async (
   const zoe = zcf.getZoeService();
   const mappingReversed = reverse(keywordMapping);
 
+  const newKeywords =
+    proposal !== undefined
+      ? mapKeywords(proposal.give, mappingReversed)
+      : harden({});
+
   // the proposal is in the other contract's keywords, but we want to
   // use `proposal.give` to withdraw
-  const payments = await withdrawFromSeat(
-    zcf,
-    fromSeat,
-    // `proposal.give` may be undefined
-    mapKeywords(proposal.give, mappingReversed),
-  );
+  const payments = await withdrawFromSeat(zcf, fromSeat, newKeywords);
 
   // Map to the other contract's keywords
   const paymentsForOtherContract = mapKeywords(payments, keywordMapping);

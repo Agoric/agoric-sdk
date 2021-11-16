@@ -180,8 +180,8 @@ export async function start(zcf, privateArgs) {
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
-      { RUN: runIssuer },
-      { autoswap: autoswapAPI },
+      harden({ RUN: runIssuer, [collateralKeyword]: collateralIssuer }),
+      harden({ autoswap: autoswapAPI }),
     );
 
     async function addTypeHook(seat) {

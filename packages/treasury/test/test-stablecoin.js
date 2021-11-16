@@ -207,7 +207,11 @@ async function setupServices(
   const {
     creatorFacet: committeeCreator,
     instance: electorateInstance,
-  } = await E(zoe).startInstance(installs.electorate, {}, electorateTerms);
+  } = await E(zoe).startInstance(
+    installs.electorate,
+    harden({}),
+    electorateTerms,
+  );
 
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
@@ -234,9 +238,14 @@ async function setupServices(
     instance: governorInstance,
     publicFacet: governorPublicFacet,
     creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(installs.governor, {}, governorTerms, {
-    electorateCreatorFacet: committeeCreator,
-  });
+  } = await E(zoe).startInstance(
+    installs.governor,
+    harden({}),
+    governorTerms,
+    harden({
+      electorateCreatorFacet: committeeCreator,
+    }),
+  );
 
   const stablecoinMachineP = E(governorCreatorFacet).getCreatorFacet();
   const lenderP = E(governorCreatorFacet).getPublicFacet();
@@ -617,10 +626,10 @@ test('price falls precipitously', async t => {
 
   // Sell some Eth to drive the value down
   const swapInvitation = E(services.autoswapAPI).makeSwapInvitation();
-  const proposal = {
+  const proposal = harden({
     give: { In: AmountMath.make(aethBrand, 200n) },
     want: { Out: AmountMath.makeEmpty(runBrand) },
-  };
+  });
   await E(zoe).offer(
     swapInvitation,
     proposal,
@@ -1265,7 +1274,7 @@ test('overdeposit', async t => {
 
   // overpay debt ///////////////////////////////////// (give RUN)
 
-  const combinedRun = await E(runIssuer).combine([borrowedRun, bobRun]);
+  const combinedRun = await E(runIssuer).combine(harden([borrowedRun, bobRun]));
   const depositRun2 = AmountMath.make(runBrand, 6000n);
 
   const aliceOverpaySeat = await E(zoe).offer(
@@ -1545,15 +1554,15 @@ test('bad chargingPeriod', async t => {
     () =>
       E(zoe).startInstance(
         stablecoinInstall,
-        {},
-        {
+        harden({}),
+        harden({
           autoswapInstall,
           priceAuthority: priceAuthorityPromise,
           loanParams,
           timerService: manualTimer,
           liquidationInstall,
           governedParams: governedParameterTerms,
-        },
+        }),
         harden({ feeMintAccess }),
       ),
     { message: 'chargingPeriod (2) must be a BigInt' },
@@ -1774,7 +1783,7 @@ test('close loan', async t => {
 
   // close loan, using Bob's RUN /////////////////////////////////////
 
-  const runRepayment = await E(runIssuer).combine([bobRun, runLent]);
+  const runRepayment = await E(runIssuer).combine(harden([bobRun, runLent]));
 
   const aliceCloseSeat = await E(zoe).offer(
     E(aliceVault).makeCloseInvitation(),
