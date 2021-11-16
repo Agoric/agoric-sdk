@@ -1,13 +1,7 @@
 // @ts-check
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/babel-standalone';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   looksLikeQuestionSpec,
