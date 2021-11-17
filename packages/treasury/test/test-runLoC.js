@@ -58,6 +58,7 @@ const contractRoots = {
   attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
   electorate: '@agoric/governance/src/noActionElectorate.js',
   governor: '@agoric/governance/src/contractGovernor.js',
+  faker: './attestationFaker.js',
 };
 
 test.before(async t => {
@@ -187,23 +188,42 @@ test('start attestation', async t => {
 
 /**
  * @param { import('ava').ExecutionContext } t
- * @param { TimerService } timer
  * @param {ERef<ZoeService>} zoe
+ * @param { FeeMintAccess } feeMintAccess
  * @param {Record<string, Installation>} installations
- * @param {{ terms: unknown, issuerKeywordRecord: unknown, privateArgs: unknown }} detail
+ * @param {Object} terms
+ * @param {Ratio} terms.collateralPrice
+ * @param {Ratio} terms.collateralizationRate
+ * @param {Issuer} attIssuer
  */
 const startGovernedLoC = async (
   t,
-  timer,
   zoe,
+  feeMintAccess,
   installations,
-  { terms, issuerKeywordRecord, privateArgs },
+  { collateralPrice, collateralizationRate },
+  attIssuer,
 ) => {
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
   } = await E(zoe).startInstance(installations.electorate);
   t.log({ electorateCreatorFacet, electorateInstance });
+
+  const main = harden([
+    {
+      name: CreditTerms.CollateralPrice,
+      type: ParamType.RATIO,
+      value: collateralPrice,
+    },
+    {
+      name: CreditTerms.CollateralizationRate,
+      type: ParamType.RATIO,
+      value: collateralizationRate,
+    },
+  ]);
 
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
@@ -212,11 +232,11 @@ const startGovernedLoC = async (
       timer,
       electorateInstance,
       governedContractInstallation: installations.runLoC,
-      governed: {
-        terms,
-        issuerKeywordRecord,
-        privateArgs,
-      },
+      governed: harden({
+        terms: { main },
+        issuerKeywordRecord: { Attestation: attIssuer },
+        privateArgs: { feeMintAccess },
+      }),
     },
     harden({ electorateCreatorFacet }),
   );
@@ -238,15 +258,16 @@ const startGovernedLoC = async (
  * @param { [bigint, bigint] } detail.rate
  * @param { boolean } [detail.failAttestation]
  * @param { boolean } [detail.failOffer]
+ * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand) => Promise<[Amount, Payment]> } [mockAttestation]
+ * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
  */
-const testLoc = (
+const testLoC = (
   title,
   { account, collateral, runWanted, price, rate, failAttestation, failOffer },
+  mockAttestation = undefined,
 ) => {
   test(title, async t => {
-    assert.typeof(t.context, 'object');
-    assert(t.context);
-
+    // Genesis: start Zoe etc.
     const {
       zoe,
       feeMintAccess,
@@ -256,57 +277,43 @@ const testLoc = (
     } = await genesis(t);
     t.true(!!zoe);
     t.true(!!feeMintAccess);
-    const a = await startAttestation(installations.attestation, zoe);
-    const { brand: bldBrand } = a.bldIssuerKit;
-    a.creatorFacet.addAuthority(
+
+    // start attestation contract
+    const { publicFacet: faker } = await E(zoe).startInstance(
+      installations.faker,
+    );
+    const attest = await startAttestation(installations.attestation, zoe);
+    const { brand: bldBrand } = attest.bldIssuerKit;
+    attest.creatorFacet.addAuthority(
       makeStakeReporter(bldBrand, 'address1', account),
     );
-    const { returnable: attIssuer } = await E(a.publicFacet).getIssuers();
+    const { returnable: attIssuer } = await E(attest.publicFacet).getIssuers();
 
-    /** @param { bigint } value */
-    const run = value => AmountMath.make(runBrand, value);
-
+    // start RUN LoC
     const collateralPrice = makeRatio(price[0], runBrand, price[1], bldBrand);
     const collateralizationRate = makeRatio(rate[0], runBrand, rate[1]);
-
-    const timer = buildManualTimer(t.log, 0n, 1n);
-
-    const governedParams = harden([
-      {
-        name: CreditTerms.CollateralPrice,
-        type: ParamType.RATIO,
-        value: collateralPrice,
-      },
-      {
-        name: CreditTerms.CollateralizationRate,
-        type: ParamType.RATIO,
-        value: collateralizationRate,
-      },
-    ]);
-
     const { publicFacet } = await startGovernedLoC(
       t,
-      timer,
       zoe,
+      feeMintAccess,
       installations,
-      harden({
-        terms: { main: governedParams },
-        issuerKeywordRecord: { Attestation: attIssuer },
-        privateArgs: { feeMintAccess },
-      }),
+      { collateralPrice, collateralizationRate },
+      attIssuer,
     );
 
     /** @type {{ runBrand: Brand, runIssuer: Issuer }} */
     const { runIssuer } = getJig();
+    /** @param { bigint } value */
+    const run = value => AmountMath.make(runBrand, value);
+    /** @param { bigint } value */
+    const ubld = value => AmountMath.make(bldBrand, value);
 
     // @ts-ignore governance wrapper obscures publicFace type :-/
     const lineOfCreditInvitation = await E(publicFacet).getInvitation();
 
-    /** @param { bigint } v */
-    const ubld = v => AmountMath.make(bldBrand, v);
-
+    // Get an attestation (amount, payment)
     const addr = 'address1';
-    const attMaker = await E(a.creatorFacet).getAttMaker(addr);
+    const attMaker = await E(attest.creatorFacet).getAttMaker(addr);
     t.log({ addr, attMaker });
 
     const expiration = 61n;
@@ -318,10 +325,19 @@ const testLoc = (
       await t.throwsAsync(tryAttestations);
       return;
     }
-    const attPmt = await E.get(tryAttestations).returnable;
+    /** @returns { Promise<[Amount, Payment]> } */
+    const getReturnableAttestation = async () =>
+      E.get(tryAttestations).returnable.then(pmt =>
+        E(attIssuer)
+          .getAmountOf(pmt)
+          .then(amt => [amt, pmt]),
+      );
+    const [attAmt, attPmt] = await (mockAttestation
+      ? mockAttestation(faker, bldBrand)
+      : getReturnableAttestation());
     t.log({ attPmt });
-    const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
+    // Offer the attestation in exchange for RUN
     t.log({
       give: { Attestation: attAmt },
       want: { RUN: run(runWanted) },
@@ -345,13 +361,16 @@ const testLoc = (
 
     t.true(await E(seat).hasExited());
 
+    // attPmt is spent
+    t.throwsAsync(E(attIssuer).getAmountOf(attPmt));
+
     const p = await allValues(await E(seat).getPayouts());
     t.log('payout', p);
     t.deepEqual(await E(runIssuer).getAmountOf(p.RUN), run(runWanted));
   });
 };
 
-testLoc('borrow 100 RUN against 6000 BLD at 1.25, 5x', {
+testLoC('borrow 100 RUN against 6000 BLD at 1.25, 5x', {
   runWanted: 100n,
   collateral: 6000n,
   account: { total: 10_000n, bonded: 9_000n, locked: 10n },
@@ -359,7 +378,7 @@ testLoc('borrow 100 RUN against 6000 BLD at 1.25, 5x', {
   rate: [5n, 1n],
 });
 
-testLoc('borrow 151 RUN against 600 BLD at 1.25, 5x', {
+testLoC('borrow 151 RUN against 600 BLD at 1.25, 5x', {
   runWanted: 151n,
   collateral: 600n,
   price: [125n, 100n],
@@ -368,7 +387,7 @@ testLoc('borrow 151 RUN against 600 BLD at 1.25, 5x', {
   failOffer: true,
 });
 
-testLoc('borrow 100 RUN against 600 BLD at 0.15, 5x', {
+testLoC('borrow 100 RUN against 600 BLD at 0.15, 5x', {
   runWanted: 100n,
   collateral: 600n,
   price: [15n, 100n],
@@ -377,7 +396,7 @@ testLoc('borrow 100 RUN against 600 BLD at 0.15, 5x', {
   failOffer: true,
 });
 
-testLoc('borrow against 6000 BLD without enough staked', {
+testLoC('borrow against 6000 BLD without enough staked', {
   runWanted: 100n,
   collateral: 6000n,
   account: { total: 10_000n, bonded: 5_000n, locked: 10n },
@@ -385,3 +404,27 @@ testLoc('borrow against 6000 BLD without enough staked', {
   rate: [5n, 1n],
   failAttestation: true,
 });
+
+/**
+ * @param { StartFaker['publicFacet'] } faker
+ * @param { Brand } bldBrand
+ * @returns { Promise<[Amount, Payment]> }
+ */
+const forgeAttestation = async (faker, bldBrand) => {
+  const address = 'address1';
+  const amountLiened = AmountMath.make(bldBrand, 60_000n);
+  return E(faker).fakeAttestation(address, amountLiened);
+};
+
+testLoC(
+  'forge an attestation',
+  {
+    runWanted: 100n,
+    collateral: 6000n,
+    account: { total: 10_000n, bonded: 5_000n, locked: 10n },
+    price: [125n, 100n],
+    rate: [5n, 1n],
+    failOffer: true,
+  },
+  forgeAttestation,
+);

@@ -61,8 +61,8 @@ const start = async (zcf, { feeMintAccess }) => {
     } = seat.getProposal();
 
     assert(Array.isArray(a.value));
-    // TODO: check that we need to check address here
     const [{ address, amountLiened }] = a.value;
+    // NOTE: we accept any address
     const maxAvailable = floorMultiplyBy(amountLiened, collateralPrice);
     const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRate);
     assert(
@@ -71,9 +71,7 @@ const start = async (zcf, { feeMintAccess }) => {
     );
     runMint.mintGains(harden({ RUN: runWanted }), seat);
     seat.exit();
-    return `borrowed ${q(runWanted)} against ${q(amountLiened)} at price ${q(
-      collateralPrice,
-    )} and rate ${q(collateralizationRate)}`;
+    return `borrowed ${q(runWanted)} against ${q(amountLiened)} at ${address}`;
   };
 
   const publicFacet = makePublicFacet(
