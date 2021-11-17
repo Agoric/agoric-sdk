@@ -4,10 +4,12 @@ import { stringifyPurseValue } from '@agoric/ui-components';
 import Chip from '@mui/material/Chip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import { E } from '@agoric/eventual-send';
 import Request from './Request';
 import Petname from './Petname';
 import { icons, defaultIcon } from '../util/Icons.js';
 import { formatDateNow } from '../util/Date';
+import { withApplicationContext } from '../contexts/Application';
 
 import './Offer.scss';
 
@@ -44,19 +46,58 @@ const entryTypes = {
   give: { header: 'Give', move: 'from' },
 };
 
-const Offer = ({ offer }) => {
+const OfferWithoutContext = ({
+  offer,
+  pendingOffers,
+  setPendingOffers,
+  declinedOffers,
+  setDeclinedOffers,
+  setClosedOffers,
+  walletBridge,
+}) => {
   const {
-    status = 'proposed',
     instancePetname,
     instanceHandleBoardId,
     requestContext: { date, dappOrigin, origin = 'unknown origin' } = {},
     proposalForDisplay: { give = {}, want = {} } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
+    id,
+    offerId,
   } = offer;
+  let status = offer.status || 'proposed';
 
-  const accept = () => {};
-  const decline = () => {};
-  const cancel = () => {};
+  // Update context if component was rendered while pending.
+  if (status === 'pending' && !pendingOffers.has(id)) {
+    setPendingOffers({ offerId: id, isPending: true });
+  }
+
+  // Eagerly show pending and declined offers states.
+  if (status === 'proposed' && pendingOffers.has(id)) {
+    status = 'pending';
+  }
+  if (status === 'proposed' && declinedOffers.has(id)) {
+    status = 'decline';
+  }
+
+  const accept = () => {
+    setPendingOffers({ offerId: id, isPending: true });
+    E(walletBridge).acceptOffer(offerId);
+  };
+
+  const decline = () => {
+    setDeclinedOffers({ offerId: id, isDeclined: true });
+    E(walletBridge).declineOffer(offerId);
+  };
+
+  const cancel = () => {
+    E(walletBridge).cancelOffer(offerId);
+  };
+
+  const close = () => {
+    setPendingOffers({ offerId: id, isPending: false });
+    setDeclinedOffers({ offerId: id, isDeclined: false });
+    setClosedOffers({ offerId: id, isClosed: true });
+  };
 
   const gives = Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb));
   const wants = Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb));
@@ -157,8 +198,12 @@ const Offer = ({ offer }) => {
     <Request
       header="Offer"
       completed={
-        status === 'accept' || status === 'decline' || status === 'complete'
+        status === 'accept' ||
+        status === 'decline' ||
+        status === 'complete' ||
+        status === 'rejected'
       }
+      close={close}
     >
       <Chip
         variant="outlined"
@@ -189,4 +234,11 @@ const Offer = ({ offer }) => {
   );
 };
 
-export default Offer;
+export default withApplicationContext(OfferWithoutContext, context => ({
+  pendingOffers: context.pendingOffers,
+  setPendingOffers: context.setPendingOffers,
+  declinedOffers: context.declinedOffers,
+  setDeclinedOffers: context.setDeclinedOffers,
+  setClosedOffers: context.setClosedOffers,
+  walletBridge: context.walletBridge,
+}));

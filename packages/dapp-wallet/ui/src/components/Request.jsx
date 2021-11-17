@@ -11,7 +11,7 @@ const Request = ({ close, header, completed, children }) => {
           <h6>{header}</h6>
         </div>
         {completed && (
-          <IconButton click={close} size="medium">
+          <IconButton onClick={close} size="medium">
             <CloseIcon />
           </IconButton>
         )}

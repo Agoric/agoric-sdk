@@ -26,7 +26,13 @@ const purses = [
   },
 ];
 
-const offers = [{ id: 3 }];
+const offers = [
+  { id: 3, status: 'accept' },
+  { id: 6, status: 'decline' },
+  { id: 7 },
+  { id: 8 },
+  { id: 9, status: 'accept' },
+];
 
 const dapps = [
   { enable: false, id: 2 },
@@ -38,6 +44,10 @@ const payments = [
   { brand: 'Brouzouf', id: 1 },
 ];
 
+const pendingOffers = new Set([3]);
+const declinedOffers = new Set([6]);
+const closedOffers = new Set([7]);
+
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
     <Component
@@ -45,6 +55,9 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
       offers={offers}
       dapps={dapps}
       payments={payments}
+      pendingOffers={pendingOffers}
+      declinedOffers={declinedOffers}
+      closedOffers={closedOffers}
       {...props}
     />
   );
@@ -60,10 +73,10 @@ test('renders non-autodeposit payments', () => {
   expect(component.find(Payment).length).toEqual(1);
 });
 
-test('renders offers', () => {
+test('renders fresh offers', () => {
   const component = mount(<Requests />);
 
-  expect(component.find(Offer).length).toEqual(1);
+  expect(component.find(Offer).length).toEqual(3);
 });
 
 test('renders unapproved dapps', () => {

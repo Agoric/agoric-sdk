@@ -100,6 +100,27 @@ const pendingTransfersReducer = (pendingTransfers, { purseId, isPending }) => {
   return new Set(pendingTransfers);
 };
 
+const pendingOffersReducer = (pendingOffers, { offerId, isPending }) => {
+  if (isPending) pendingOffers.add(offerId);
+  else pendingOffers.delete(offerId);
+
+  return new Set(pendingOffers);
+};
+
+const declinedOffersReducer = (declinedOffers, { offerId, isDeclined }) => {
+  if (isDeclined) declinedOffers.add(offerId);
+  else declinedOffers.delete(offerId);
+
+  return new Set(declinedOffers);
+};
+
+const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
+  if (isClosed) closedOffers.add(offerId);
+  else closedOffers.delete(offerId);
+
+  return new Set(closedOffers);
+};
+
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
   const [walletBridge, setWalletBridge] = useState(null);
@@ -116,6 +137,25 @@ const Provider = ({ children }) => {
   );
   const [pendingTransfers, setPendingTransfers] = useReducer(
     pendingTransfersReducer,
+    new Set(),
+  );
+
+  // Eager set of pending offer ids.
+  const [pendingOffers, setPendingOffers] = useReducer(
+    pendingOffersReducer,
+    new Set(),
+  );
+
+  // Eager set of declined offer ids.
+  const [declinedOffers, setDeclinedOffers] = useReducer(
+    declinedOffersReducer,
+    new Set(),
+  );
+
+  // Set of closed offers. Allows eagerly declined offers to be closed while
+  // still pending.
+  const [closedOffers, setClosedOffers] = useReducer(
+    closedOffersReducer,
     new Set(),
   );
 
@@ -140,6 +180,12 @@ const Provider = ({ children }) => {
     setWalletBridge,
     pendingTransfers,
     setPendingTransfers,
+    pendingOffers,
+    setPendingOffers,
+    declinedOffers,
+    setDeclinedOffers,
+    closedOffers,
+    setClosedOffers,
   };
 
   useDebugLogging(state, [
@@ -152,6 +198,9 @@ const Provider = ({ children }) => {
     pendingPurseCreations,
     walletBridge,
     pendingTransfers,
+    pendingOffers,
+    declinedOffers,
+    closedOffers,
   ]);
 
   return (
