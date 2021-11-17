@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// The module governance/configuration parameters.
 type Params struct {
 	// fee_epoch_duration_blocks is the length of a fee epoch, in blocks.
 	// A value of zero has the same meaning as a value of one:
@@ -71,6 +72,7 @@ func (m *Params) GetFeeEpochDurationBlocks() int64 {
 	return 0
 }
 
+// The current state of the module.
 type State struct {
 	// rewardPool is the current balance of rewards in the module account.
 	// NOTE: Tracking manually since there is no bank call for getting a

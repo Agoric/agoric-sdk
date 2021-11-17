@@ -6,6 +6,7 @@ import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types";
 
+// The initial or exported state.
 message GenesisState {
     option (gogoproto.equal) = false;
 

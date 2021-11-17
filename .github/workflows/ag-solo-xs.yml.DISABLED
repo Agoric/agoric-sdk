@@ -1,13 +1,13 @@
 name: ag-solo on xs
 
 # xs builds are a bit more expensive, so only run them on PRs that target
-# master
+# default
 
 on:
  push:
-   branches: [master]
+   branches: [$default-branch]
  pull_request:
-   branches: [master]
+   branches: [$default-branch]
 
 jobs:
   xs-build:

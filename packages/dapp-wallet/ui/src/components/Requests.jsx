@@ -38,7 +38,7 @@ const RequestsInternal = ({ payments, offers, dapps, purses }) => {
     } else if (request.type === 'payment') {
       return <Payment key={request.data.id} />;
     } else {
-      return <DappConnection key={request.data.id} />;
+      return <DappConnection dapp={request.data} key={request.data.id} />;
     }
   };
   return (
@@ -54,7 +54,7 @@ const RequestsInternal = ({ payments, offers, dapps, purses }) => {
             width="320"
             height="320"
           />
-          <p className="text-gray">No requests.</p>
+          <p className="text-gray">No requests</p>
         </div>
       )}
     </div>

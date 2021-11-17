@@ -8,6 +8,13 @@ pull_request_rules:
   - name: automerge to master with label automerge:merge and branch protection passing
     conditions:
       - label=automerge:merge
+      - or:
+        - and: # breakage succeeds like we thought
+          - check-success=breakage
+          - -label=proto:expect-breakage
+        - and: # breakage fails like we thought 
+          - check-failure=breakage
+          - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -15,6 +22,13 @@ pull_request_rules:
   - name: automerge to master with label automerge:rebase and branch protection passing
     conditions:
       - label=automerge:rebase
+      - or:
+        - and: # breakage succeeds like we thought
+          - check-success=breakage
+          - -label=proto:expect-breakage
+        - and: # breakage fails like we thought 
+          - check-failure=breakage
+          - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -22,6 +36,13 @@ pull_request_rules:
   - name: automerge to master with label automerge:squash and branch protection passing
     conditions:
       - label=automerge:squash
+      - or:
+        - and: # breakage succeeds like we thought
+          - check-success=breakage
+          - -label=proto:expect-breakage
+        - and: # breakage fails like we thought 
+          - check-failure=breakage
+          - label=proto:expect-breakage
     actions:
       queue:
         name: main
