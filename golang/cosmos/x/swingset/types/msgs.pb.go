@@ -98,6 +98,7 @@ func (m *MsgDeliverInbound) GetSubmitter() github_com_cosmos_cosmos_sdk_types.Ac
 	return nil
 }
 
+// MsgDeliverInboundResponse is an empty reply.
 type MsgDeliverInboundResponse struct {
 }
 
@@ -203,6 +204,7 @@ func (m *MsgProvision) GetSubmitter() github_com_cosmos_cosmos_sdk_types.AccAddr
 	return nil
 }
 
+// MsgProvisionResponse is an empty reply.
 type MsgProvisionResponse struct {
 }
 
@@ -297,7 +299,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
+	// Send inbound messages.
 	DeliverInbound(ctx context.Context, in *MsgDeliverInbound, opts ...grpc.CallOption) (*MsgDeliverInboundResponse, error)
+	// Provision a new endpoint.
 	Provision(ctx context.Context, in *MsgProvision, opts ...grpc.CallOption) (*MsgProvisionResponse, error)
 }
 
@@ -329,7 +333,9 @@ func (c *msgClient) Provision(ctx context.Context, in *MsgProvision, opts ...grp
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
+	// Send inbound messages.
 	DeliverInbound(context.Context, *MsgDeliverInbound) (*MsgDeliverInboundResponse, error)
+	// Provision a new endpoint.
 	Provision(context.Context, *MsgProvision) (*MsgProvisionResponse, error)
 }
 

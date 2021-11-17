@@ -159,6 +159,52 @@ func (m *QueryEgressRequest) GetPeer() github_com_cosmos_cosmos_sdk_types.AccAdd
 	return nil
 }
 
+// QueryEgressResponse is the egress response.
+type QueryEgressResponse struct {
+	Egress *Egress `protobuf:"bytes,1,opt,name=egress,proto3" json:"egress,omitempty"`
+}
+
+func (m *QueryEgressResponse) Reset()         { *m = QueryEgressResponse{} }
+func (m *QueryEgressResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryEgressResponse) ProtoMessage()    {}
+func (*QueryEgressResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{3}
+}
+func (m *QueryEgressResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryEgressResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryEgressResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryEgressResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryEgressResponse.Merge(m, src)
+}
+func (m *QueryEgressResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryEgressResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryEgressResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryEgressResponse proto.InternalMessageInfo
+
+func (m *QueryEgressResponse) GetEgress() *Egress {
+	if m != nil {
+		return m.Egress
+	}
+	return nil
+}
+
+// QueryMailboxRequest is the mailbox query.
 type QueryMailboxRequest struct {
 	Peer github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,1,opt,name=peer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"peer" yaml:"peer"`
 }
@@ -167,7 +213,7 @@ func (m *QueryMailboxRequest) Reset()         { *m = QueryMailboxRequest{} }
 func (m *QueryMailboxRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryMailboxRequest) ProtoMessage()    {}
 func (*QueryMailboxRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76266f656a1a9971, []int{3}
+	return fileDescriptor_76266f656a1a9971, []int{4}
 }
 func (m *QueryMailboxRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -203,6 +249,52 @@ func (m *QueryMailboxRequest) GetPeer() github_com_cosmos_cosmos_sdk_types.AccAd
 	return nil
 }
 
+// QueryMailboxResponse is the mailbox response.
+type QueryMailboxResponse struct {
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value" yaml:"value"`
+}
+
+func (m *QueryMailboxResponse) Reset()         { *m = QueryMailboxResponse{} }
+func (m *QueryMailboxResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryMailboxResponse) ProtoMessage()    {}
+func (*QueryMailboxResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{5}
+}
+func (m *QueryMailboxResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryMailboxResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryMailboxResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryMailboxResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryMailboxResponse.Merge(m, src)
+}
+func (m *QueryMailboxResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryMailboxResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryMailboxResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryMailboxResponse proto.InternalMessageInfo
+
+func (m *QueryMailboxResponse) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+// QueryStorageRequest is the storage query.
 type QueryStorageRequest struct {
 	Path []string `protobuf:"bytes,1,rep,name=path,proto3" json:"path" yaml:"path"`
 }
@@ -211,7 +303,7 @@ func (m *QueryStorageRequest) Reset()         { *m = QueryStorageRequest{} }
 func (m *QueryStorageRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryStorageRequest) ProtoMessage()    {}
 func (*QueryStorageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76266f656a1a9971, []int{4}
+	return fileDescriptor_76266f656a1a9971, []int{6}
 }
 func (m *QueryStorageRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -247,6 +339,7 @@ func (m *QueryStorageRequest) GetPath() []string {
 	return nil
 }
 
+// QueryStorageResponse is the storage response.
 type QueryStorageResponse struct {
 	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value" yaml:"value"`
 }
@@ -255,7 +348,7 @@ func (m *QueryStorageResponse) Reset()         { *m = QueryStorageResponse{} }
 func (m *QueryStorageResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryStorageResponse) ProtoMessage()    {}
 func (*QueryStorageResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76266f656a1a9971, []int{5}
+	return fileDescriptor_76266f656a1a9971, []int{7}
 }
 func (m *QueryStorageResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -291,23 +384,24 @@ func (m *QueryStorageResponse) GetValue() string {
 	return ""
 }
 
-type QueryStorageKeysRequest struct {
+// QueryKeysRequest is the keys query.
+type QueryKeysRequest struct {
 	Path       []string           `protobuf:"bytes,1,rep,name=path,proto3" json:"path" yaml:"path"`
 	Pagination *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryStorageKeysRequest) Reset()         { *m = QueryStorageKeysRequest{} }
-func (m *QueryStorageKeysRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryStorageKeysRequest) ProtoMessage()    {}
-func (*QueryStorageKeysRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76266f656a1a9971, []int{6}
+func (m *QueryKeysRequest) Reset()         { *m = QueryKeysRequest{} }
+func (m *QueryKeysRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryKeysRequest) ProtoMessage()    {}
+func (*QueryKeysRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{8}
 }
-func (m *QueryStorageKeysRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryKeysRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryStorageKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryStorageKeysRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryKeysRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -317,49 +411,50 @@ func (m *QueryStorageKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return b[:n], nil
 	}
 }
-func (m *QueryStorageKeysRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStorageKeysRequest.Merge(m, src)
+func (m *QueryKeysRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryKeysRequest.Merge(m, src)
 }
-func (m *QueryStorageKeysRequest) XXX_Size() int {
+func (m *QueryKeysRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryStorageKeysRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryStorageKeysRequest.DiscardUnknown(m)
+func (m *QueryKeysRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryKeysRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryStorageKeysRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryKeysRequest proto.InternalMessageInfo
 
-func (m *QueryStorageKeysRequest) GetPath() []string {
+func (m *QueryKeysRequest) GetPath() []string {
 	if m != nil {
 		return m.Path
 	}
 	return nil
 }
 
-func (m *QueryStorageKeysRequest) GetPagination() *query.PageRequest {
+func (m *QueryKeysRequest) GetPagination() *query.PageRequest {
 	if m != nil {
 		return m.Pagination
 	}
 	return nil
 }
 
-type QueryStorageKeysResponse struct {
+// QueryKeysResponse is the keys response.
+type QueryKeysResponse struct {
 	Keys       []string            `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys" yaml:"keys"`
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryStorageKeysResponse) Reset()         { *m = QueryStorageKeysResponse{} }
-func (m *QueryStorageKeysResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryStorageKeysResponse) ProtoMessage()    {}
-func (*QueryStorageKeysResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76266f656a1a9971, []int{7}
+func (m *QueryKeysResponse) Reset()         { *m = QueryKeysResponse{} }
+func (m *QueryKeysResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryKeysResponse) ProtoMessage()    {}
+func (*QueryKeysResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{9}
 }
-func (m *QueryStorageKeysResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryKeysResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryStorageKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryStorageKeysResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryKeysResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -369,26 +464,26 @@ func (m *QueryStorageKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *QueryStorageKeysResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStorageKeysResponse.Merge(m, src)
+func (m *QueryKeysResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryKeysResponse.Merge(m, src)
 }
-func (m *QueryStorageKeysResponse) XXX_Size() int {
+func (m *QueryKeysResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryStorageKeysResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryStorageKeysResponse.DiscardUnknown(m)
+func (m *QueryKeysResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryKeysResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryStorageKeysResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryKeysResponse proto.InternalMessageInfo
 
-func (m *QueryStorageKeysResponse) GetKeys() []string {
+func (m *QueryKeysResponse) GetKeys() []string {
 	if m != nil {
 		return m.Keys
 	}
 	return nil
 }
 
-func (m *QueryStorageKeysResponse) GetPagination() *query.PageResponse {
+func (m *QueryKeysResponse) GetPagination() *query.PageResponse {
 	if m != nil {
 		return m.Pagination
 	}
@@ -399,59 +494,63 @@ func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "agoric.swingset.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "agoric.swingset.QueryParamsResponse")
 	proto.RegisterType((*QueryEgressRequest)(nil), "agoric.swingset.QueryEgressRequest")
+	proto.RegisterType((*QueryEgressResponse)(nil), "agoric.swingset.QueryEgressResponse")
 	proto.RegisterType((*QueryMailboxRequest)(nil), "agoric.swingset.QueryMailboxRequest")
+	proto.RegisterType((*QueryMailboxResponse)(nil), "agoric.swingset.QueryMailboxResponse")
 	proto.RegisterType((*QueryStorageRequest)(nil), "agoric.swingset.QueryStorageRequest")
 	proto.RegisterType((*QueryStorageResponse)(nil), "agoric.swingset.QueryStorageResponse")
-	proto.RegisterType((*QueryStorageKeysRequest)(nil), "agoric.swingset.QueryStorageKeysRequest")
-	proto.RegisterType((*QueryStorageKeysResponse)(nil), "agoric.swingset.QueryStorageKeysResponse")
+	proto.RegisterType((*QueryKeysRequest)(nil), "agoric.swingset.QueryKeysRequest")
+	proto.RegisterType((*QueryKeysResponse)(nil), "agoric.swingset.QueryKeysResponse")
 }
 
 func init() { proto.RegisterFile("agoric/swingset/query.proto", fileDescriptor_76266f656a1a9971) }
 
 var fileDescriptor_76266f656a1a9971 = []byte{
-	// 669 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x54, 0x41, 0x4f, 0x13, 0x41,
-	0x14, 0xee, 0x62, 0x29, 0x61, 0x20, 0x31, 0x19, 0x49, 0x5a, 0xaa, 0xee, 0xe2, 0x88, 0x80, 0x22,
-	0x3b, 0x01, 0xe3, 0x45, 0x4f, 0x6c, 0xa2, 0x98, 0xa8, 0x09, 0xae, 0xf1, 0x62, 0xbc, 0x4c, 0xdb,
-	0xc9, 0x74, 0x43, 0xbb, 0xb3, 0xec, 0x4c, 0x91, 0x86, 0x10, 0xa3, 0xf1, 0xe2, 0xc5, 0x90, 0xf8,
-	0xa7, 0x38, 0x92, 0x78, 0xf1, 0xb4, 0x31, 0xe0, 0x89, 0x23, 0x47, 0x4f, 0x66, 0x67, 0xa6, 0xe9,
-	0xb6, 0x4b, 0x91, 0x78, 0xf0, 0xb4, 0x3b, 0xef, 0xbd, 0xf9, 0xbe, 0xef, 0xed, 0xbe, 0xef, 0x81,
-	0xeb, 0x84, 0xf1, 0x38, 0xa8, 0x63, 0xf1, 0x3e, 0x08, 0x99, 0xa0, 0x12, 0x6f, 0x77, 0x68, 0xdc,
-	0x75, 0xa3, 0x98, 0x4b, 0x0e, 0xaf, 0xea, 0xa4, 0xdb, 0x4b, 0x56, 0x67, 0x18, 0x67, 0x5c, 0xe5,
-	0x70, 0xfa, 0xa6, 0xcb, 0xaa, 0x37, 0x87, 0x31, 0x84, 0xe4, 0x31, 0x61, 0xd4, 0xa4, 0xed, 0x5c,
-	0xda, 0xbc, 0x98, 0xfc, 0xbd, 0x3a, 0x17, 0x6d, 0x2e, 0x70, 0x8d, 0x08, 0xaa, 0xe9, 0xf1, 0xce,
-	0x6a, 0x8d, 0x4a, 0xb2, 0x8a, 0x23, 0xc2, 0x82, 0x90, 0xc8, 0x80, 0x87, 0xa6, 0xf6, 0x06, 0xe3,
-	0x9c, 0xb5, 0x28, 0x26, 0x51, 0x80, 0x49, 0x18, 0x72, 0xa9, 0x92, 0x42, 0x67, 0xd1, 0x0c, 0x80,
-	0xaf, 0xd2, 0xfb, 0x9b, 0x24, 0x26, 0x6d, 0xe1, 0xd3, 0xed, 0x0e, 0x15, 0x12, 0xbd, 0x00, 0xd7,
-	0x06, 0xa2, 0x22, 0xe2, 0xa1, 0xa0, 0xf0, 0x21, 0x28, 0x45, 0x2a, 0x52, 0xb1, 0xe6, 0xac, 0xa5,
-	0xa9, 0xb5, 0xb2, 0x3b, 0xd4, 0xad, 0xab, 0x2f, 0x78, 0xc5, 0xc3, 0xc4, 0x29, 0xf8, 0xa6, 0x18,
-	0xc5, 0x86, 0xe3, 0x09, 0x8b, 0xa9, 0xe8, 0x71, 0xc0, 0x77, 0xa0, 0x18, 0x51, 0x1a, 0x2b, 0xa8,
-	0x69, 0xef, 0xd9, 0x69, 0xe2, 0xa8, 0xf3, 0x59, 0xe2, 0x4c, 0x75, 0x49, 0xbb, 0xf5, 0x08, 0xa5,
-	0x27, 0xf4, 0x3b, 0x71, 0x56, 0x58, 0x20, 0x9b, 0x9d, 0x9a, 0x5b, 0xe7, 0x6d, 0x6c, 0xfa, 0xd6,
-	0x8f, 0x15, 0xd1, 0xd8, 0xc2, 0xb2, 0x1b, 0x51, 0xe1, 0xae, 0xd7, 0xeb, 0xeb, 0x8d, 0x86, 0x82,
-	0x57, 0x28, 0x48, 0x98, 0x0e, 0x5e, 0x92, 0xa0, 0x55, 0xe3, 0xbb, 0xff, 0x87, 0xd4, 0x33, 0xa4,
-	0xaf, 0xf5, 0xcf, 0xec, 0x91, 0x2e, 0x83, 0x62, 0x44, 0x64, 0xb3, 0x62, 0xcd, 0x5d, 0x59, 0x9a,
-	0xf4, 0xca, 0x8a, 0x94, 0xc8, 0x66, 0x86, 0x94, 0xc8, 0x26, 0xf2, 0x55, 0x10, 0x6d, 0x80, 0x99,
-	0x41, 0x0c, 0xf3, 0xed, 0x31, 0x18, 0xdf, 0x21, 0xad, 0x0e, 0x55, 0xd2, 0x27, 0xbd, 0xd9, 0xd3,
-	0xc4, 0xd1, 0x81, 0xb3, 0xc4, 0x99, 0xd6, 0x30, 0xea, 0x88, 0x7c, 0x1d, 0x46, 0x5f, 0x2d, 0x50,
-	0xce, 0x22, 0x3d, 0xa7, 0x5d, 0xf1, 0x2f, 0x8a, 0xe0, 0x53, 0x00, 0xfa, 0x43, 0x55, 0x19, 0x53,
-	0x7f, 0x7e, 0xc1, 0xd5, 0x5f, 0xc3, 0x4d, 0x27, 0xd0, 0xd5, 0x06, 0x30, 0x13, 0xe8, 0x6e, 0xf6,
-	0x5b, 0xf7, 0x33, 0x37, 0xd1, 0x81, 0x05, 0x2a, 0x79, 0x41, 0xa6, 0xbd, 0x65, 0x50, 0xdc, 0xa2,
-	0x5d, 0x91, 0x55, 0x94, 0x9e, 0xfb, 0x8a, 0xd2, 0x13, 0xf2, 0x55, 0x10, 0x6e, 0x9c, 0xa3, 0x68,
-	0xf1, 0xaf, 0x8a, 0x34, 0x53, 0x56, 0xd2, 0xda, 0xc7, 0x71, 0x30, 0xae, 0x24, 0x41, 0x09, 0x4a,
-	0x7a, 0x76, 0xe1, 0xed, 0xdc, 0x50, 0xe7, 0x0d, 0x52, 0x9d, 0xbf, 0xb8, 0x48, 0x53, 0x21, 0xe7,
-	0xd3, 0xf7, 0x5f, 0xdf, 0xc6, 0x66, 0x61, 0x19, 0x0f, 0xfb, 0x59, 0x3b, 0x03, 0x86, 0xa0, 0xa4,
-	0x4d, 0x31, 0x8a, 0x75, 0xc0, 0x32, 0xd5, 0xbc, 0xdf, 0x74, 0x1e, 0x2d, 0x28, 0xa2, 0x39, 0x68,
-	0xe7, 0x88, 0xa8, 0x2a, 0xc0, 0x7b, 0xe9, 0x7c, 0xee, 0xc3, 0x0f, 0x60, 0xc2, 0x18, 0x02, 0x8e,
-	0xe8, 0x60, 0xd0, 0x2f, 0xd5, 0x3b, 0xe7, 0x57, 0x0d, 0x0d, 0x27, 0x5a, 0x54, 0xfc, 0xb7, 0xa0,
-	0x93, 0xe3, 0x6f, 0x6b, 0xbc, 0x9e, 0x80, 0xcf, 0x16, 0x98, 0x30, 0x97, 0x47, 0x29, 0x18, 0x34,
-	0xcf, 0x65, 0x15, 0xdc, 0x57, 0x0a, 0x16, 0xe0, 0x3c, 0x1e, 0xb1, 0x59, 0x71, 0x83, 0x48, 0x82,
-	0xf7, 0xd2, 0x89, 0xde, 0x87, 0x5f, 0x2c, 0x50, 0x4c, 0xc7, 0x0f, 0x2e, 0x5d, 0x88, 0x9e, 0xb1,
-	0x4c, 0xf5, 0xee, 0x25, 0x2a, 0x2f, 0xad, 0x25, 0x9d, 0x62, 0xa3, 0xc5, 0x7b, 0x73, 0x78, 0x6c,
-	0x5b, 0x47, 0xc7, 0xb6, 0xf5, 0xf3, 0xd8, 0xb6, 0x0e, 0x4e, 0xec, 0xc2, 0xd1, 0x89, 0x5d, 0xf8,
-	0x71, 0x62, 0x17, 0xde, 0x3e, 0xce, 0xec, 0xa0, 0x75, 0x8d, 0xa4, 0x01, 0xd5, 0x0e, 0x62, 0xbc,
-	0x45, 0x42, 0xd6, 0x5b, 0x4e, 0xbb, 0x7d, 0x12, 0xb5, 0x9c, 0x6a, 0x25, 0xb5, 0xdf, 0x1f, 0xfc,
-	0x09, 0x00, 0x00, 0xff, 0xff, 0x4f, 0x4e, 0xbd, 0xdf, 0xae, 0x06, 0x00, 0x00,
+	// 693 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0xc1, 0x4f, 0x13, 0x4f,
+	0x14, 0xee, 0xf2, 0x2b, 0x25, 0x0c, 0x24, 0x3f, 0x1d, 0x49, 0x80, 0xaa, 0xbb, 0x30, 0x22, 0x10,
+	0x91, 0x9d, 0x80, 0xf1, 0xa2, 0x27, 0x9a, 0x08, 0x26, 0x6a, 0x82, 0x35, 0x5e, 0x8c, 0x97, 0x69,
+	0x3b, 0x99, 0x6e, 0x68, 0x77, 0x96, 0x9d, 0x29, 0xd2, 0x34, 0xc4, 0xc4, 0x98, 0x18, 0x6f, 0x26,
+	0xfe, 0x53, 0x1c, 0x49, 0xbc, 0x78, 0x6a, 0x0c, 0x78, 0xe2, 0xc8, 0xd1, 0x8b, 0x66, 0x67, 0x66,
+	0xdb, 0xdd, 0x96, 0x05, 0xc3, 0xc1, 0x53, 0x67, 0xde, 0x7b, 0xf3, 0x7d, 0xdf, 0x6b, 0xdf, 0xf7,
+	0x0a, 0x6e, 0x12, 0xc6, 0x43, 0xaf, 0x8a, 0xc5, 0x3b, 0xcf, 0x67, 0x82, 0x4a, 0xbc, 0xdb, 0xa2,
+	0x61, 0xdb, 0x0d, 0x42, 0x2e, 0x39, 0xfc, 0x5f, 0x27, 0xdd, 0x38, 0x59, 0x9c, 0x62, 0x9c, 0x71,
+	0x95, 0xc3, 0xd1, 0x49, 0x97, 0x15, 0x6f, 0x0f, 0x62, 0x08, 0xc9, 0x43, 0xc2, 0xa8, 0x49, 0xdb,
+	0x43, 0x69, 0x73, 0x30, 0xf9, 0x7b, 0x55, 0x2e, 0x9a, 0x5c, 0xe0, 0x0a, 0x11, 0x54, 0xd3, 0xe3,
+	0xbd, 0xb5, 0x0a, 0x95, 0x64, 0x0d, 0x07, 0x84, 0x79, 0x3e, 0x91, 0x1e, 0xf7, 0x4d, 0xed, 0x2d,
+	0xc6, 0x39, 0x6b, 0x50, 0x4c, 0x02, 0x0f, 0x13, 0xdf, 0xe7, 0x52, 0x25, 0x85, 0xce, 0xa2, 0x29,
+	0x00, 0x5f, 0x46, 0xef, 0xb7, 0x49, 0x48, 0x9a, 0xa2, 0x4c, 0x77, 0x5b, 0x54, 0x48, 0xf4, 0x1c,
+	0xdc, 0x48, 0x45, 0x45, 0xc0, 0x7d, 0x41, 0xe1, 0x43, 0x50, 0x08, 0x54, 0x64, 0xc6, 0x9a, 0xb3,
+	0x96, 0x27, 0xd6, 0xa7, 0xdd, 0x81, 0x6e, 0x5d, 0xfd, 0xa0, 0x94, 0x3f, 0xec, 0x3a, 0xb9, 0xb2,
+	0x29, 0x46, 0xa1, 0xe1, 0x78, 0xc2, 0x42, 0x2a, 0x62, 0x0e, 0xf8, 0x16, 0xe4, 0x03, 0x4a, 0x43,
+	0x05, 0x35, 0x59, 0x7a, 0x7a, 0xda, 0x75, 0xd4, 0xfd, 0xac, 0xeb, 0x4c, 0xb4, 0x49, 0xb3, 0xf1,
+	0x08, 0x45, 0x37, 0xf4, 0xab, 0xeb, 0xac, 0x32, 0x4f, 0xd6, 0x5b, 0x15, 0xb7, 0xca, 0x9b, 0xd8,
+	0xf4, 0xad, 0x3f, 0x56, 0x45, 0x6d, 0x07, 0xcb, 0x76, 0x40, 0x85, 0xbb, 0x51, 0xad, 0x6e, 0xd4,
+	0x6a, 0x0a, 0x5e, 0xa1, 0xa0, 0x4d, 0xd3, 0x41, 0xcc, 0x69, 0x3a, 0xc0, 0xa0, 0x40, 0x55, 0x24,
+	0xb3, 0x03, 0xf3, 0xc0, 0x94, 0x21, 0x61, 0x70, 0x5e, 0x10, 0xaf, 0x51, 0xe1, 0xfb, 0xff, 0x46,
+	0xfc, 0x16, 0x98, 0x4a, 0x93, 0xf6, 0xd4, 0x8f, 0xee, 0x91, 0x46, 0x8b, 0x2a, 0xda, 0xf1, 0xd2,
+	0xec, 0x69, 0xd7, 0xd1, 0x81, 0xb3, 0xae, 0x33, 0xa9, 0x79, 0xd5, 0x15, 0x95, 0x75, 0x18, 0x95,
+	0x8c, 0xfa, 0x57, 0x7a, 0xba, 0x62, 0xf5, 0x2b, 0x20, 0x1f, 0x10, 0x59, 0x9f, 0xb1, 0xe6, 0xfe,
+	0x5b, 0x1e, 0x2f, 0x4d, 0x2b, 0xf5, 0x44, 0xd6, 0x13, 0xea, 0x89, 0xac, 0xa3, 0xb2, 0x0a, 0xf6,
+	0xc4, 0xf4, 0x30, 0xae, 0x2a, 0xe6, 0x93, 0x05, 0xae, 0x29, 0xa4, 0x67, 0xb4, 0x2d, 0xae, 0x22,
+	0x05, 0x6e, 0x02, 0xd0, 0x1f, 0xef, 0x99, 0x11, 0xf5, 0x0b, 0x2e, 0xba, 0xfa, 0xfb, 0x74, 0x23,
+	0x2f, 0xb8, 0xda, 0x8a, 0xc6, 0x0b, 0xee, 0x76, 0xbf, 0xe7, 0x72, 0xe2, 0x25, 0xfa, 0x6c, 0x81,
+	0xeb, 0x09, 0x25, 0xa6, 0xa1, 0x15, 0x90, 0xdf, 0xa1, 0x6d, 0x91, 0x94, 0x12, 0xdd, 0xfb, 0x52,
+	0xa2, 0x1b, 0x2a, 0xab, 0x20, 0xdc, 0x3a, 0x47, 0xca, 0xd2, 0xa5, 0x52, 0x34, 0x53, 0x52, 0xcb,
+	0xfa, 0xef, 0x3c, 0x18, 0x55, 0x5a, 0xa0, 0x04, 0x05, 0x6d, 0x1f, 0x78, 0x67, 0x68, 0x2a, 0x87,
+	0x3d, 0x5a, 0x5c, 0xb8, 0xb8, 0x48, 0x53, 0x21, 0xe7, 0xc3, 0xb7, 0x9f, 0x5f, 0x47, 0x66, 0xe1,
+	0x34, 0x1e, 0x5c, 0x29, 0xda, 0x9c, 0xb0, 0x03, 0x0a, 0x7a, 0xe4, 0xb3, 0x58, 0x53, 0xae, 0xcd,
+	0x62, 0x4d, 0xdb, 0x0c, 0x2d, 0x2a, 0xd6, 0x39, 0x68, 0x0f, 0xb1, 0x6a, 0x5b, 0xe1, 0x4e, 0x34,
+	0xe7, 0x07, 0xf0, 0x3d, 0x18, 0x33, 0x33, 0x0e, 0x33, 0x80, 0xd3, 0xbe, 0x2b, 0xde, 0xbd, 0xa4,
+	0xca, 0xf0, 0x2f, 0x29, 0xfe, 0x79, 0xe8, 0x0c, 0xf1, 0x37, 0x75, 0x65, 0x2c, 0xe0, 0xa3, 0x05,
+	0xc6, 0xcc, 0x60, 0x67, 0x29, 0x48, 0x7b, 0x27, 0x4b, 0xc1, 0x80, 0x3b, 0xd0, 0x7d, 0xa5, 0x60,
+	0x11, 0x2e, 0xe0, 0x8c, 0x4d, 0x8f, 0x6b, 0x44, 0x12, 0xdc, 0x89, 0xe6, 0xfa, 0x00, 0x76, 0x40,
+	0x3e, 0x1a, 0x45, 0x38, 0x7f, 0x3e, 0x78, 0xc2, 0x30, 0x45, 0x74, 0x51, 0xc9, 0x5f, 0x93, 0x47,
+	0x33, 0x6c, 0xc8, 0x4b, 0xaf, 0x0f, 0x8f, 0x6d, 0xeb, 0xe8, 0xd8, 0xb6, 0x7e, 0x1c, 0xdb, 0xd6,
+	0x97, 0x13, 0x3b, 0x77, 0x74, 0x62, 0xe7, 0xbe, 0x9f, 0xd8, 0xb9, 0x37, 0x8f, 0x13, 0xcb, 0x6b,
+	0x43, 0x23, 0x69, 0x40, 0xb5, 0xbc, 0x18, 0x6f, 0x10, 0x9f, 0xc5, 0x5b, 0x6d, 0xbf, 0x4f, 0xa2,
+	0xb6, 0x5a, 0xa5, 0xa0, 0xfe, 0x60, 0x1e, 0xfc, 0x09, 0x00, 0x00, 0xff, 0xff, 0x63, 0x30, 0x63,
+	0x47, 0x2f, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -469,10 +568,13 @@ type QueryClient interface {
 	// Params queries params of the swingset module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Egress queries a provisioned egress.
-	Egress(ctx context.Context, in *QueryEgressRequest, opts ...grpc.CallOption) (*Egress, error)
-	Mailbox(ctx context.Context, in *QueryMailboxRequest, opts ...grpc.CallOption) (*QueryStorageResponse, error)
+	Egress(ctx context.Context, in *QueryEgressRequest, opts ...grpc.CallOption) (*QueryEgressResponse, error)
+	// Return the contents of a peer's outbound mailbox.
+	Mailbox(ctx context.Context, in *QueryMailboxRequest, opts ...grpc.CallOption) (*QueryMailboxResponse, error)
+	// Return an arbitrary storage datum.
 	Storage(ctx context.Context, in *QueryStorageRequest, opts ...grpc.CallOption) (*QueryStorageResponse, error)
-	Keys(ctx context.Context, in *QueryStorageKeysRequest, opts ...grpc.CallOption) (*QueryStorageKeysResponse, error)
+	// Return the subkeys of a given storage path.
+	Keys(ctx context.Context, in *QueryKeysRequest, opts ...grpc.CallOption) (*QueryKeysResponse, error)
 }
 
 type queryClient struct {
@@ -492,8 +594,8 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
-func (c *queryClient) Egress(ctx context.Context, in *QueryEgressRequest, opts ...grpc.CallOption) (*Egress, error) {
-	out := new(Egress)
+func (c *queryClient) Egress(ctx context.Context, in *QueryEgressRequest, opts ...grpc.CallOption) (*QueryEgressResponse, error) {
+	out := new(QueryEgressResponse)
 	err := c.cc.Invoke(ctx, "/agoric.swingset.Query/Egress", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -501,8 +603,8 @@ func (c *queryClient) Egress(ctx context.Context, in *QueryEgressRequest, opts .
 	return out, nil
 }
 
-func (c *queryClient) Mailbox(ctx context.Context, in *QueryMailboxRequest, opts ...grpc.CallOption) (*QueryStorageResponse, error) {
-	out := new(QueryStorageResponse)
+func (c *queryClient) Mailbox(ctx context.Context, in *QueryMailboxRequest, opts ...grpc.CallOption) (*QueryMailboxResponse, error) {
+	out := new(QueryMailboxResponse)
 	err := c.cc.Invoke(ctx, "/agoric.swingset.Query/Mailbox", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -519,8 +621,8 @@ func (c *queryClient) Storage(ctx context.Context, in *QueryStorageRequest, opts
 	return out, nil
 }
 
-func (c *queryClient) Keys(ctx context.Context, in *QueryStorageKeysRequest, opts ...grpc.CallOption) (*QueryStorageKeysResponse, error) {
-	out := new(QueryStorageKeysResponse)
+func (c *queryClient) Keys(ctx context.Context, in *QueryKeysRequest, opts ...grpc.CallOption) (*QueryKeysResponse, error) {
+	out := new(QueryKeysResponse)
 	err := c.cc.Invoke(ctx, "/agoric.swingset.Query/Keys", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -533,10 +635,13 @@ type QueryServer interface {
 	// Params queries params of the swingset module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Egress queries a provisioned egress.
-	Egress(context.Context, *QueryEgressRequest) (*Egress, error)
-	Mailbox(context.Context, *QueryMailboxRequest) (*QueryStorageResponse, error)
+	Egress(context.Context, *QueryEgressRequest) (*QueryEgressResponse, error)
+	// Return the contents of a peer's outbound mailbox.
+	Mailbox(context.Context, *QueryMailboxRequest) (*QueryMailboxResponse, error)
+	// Return an arbitrary storage datum.
 	Storage(context.Context, *QueryStorageRequest) (*QueryStorageResponse, error)
-	Keys(context.Context, *QueryStorageKeysRequest) (*QueryStorageKeysResponse, error)
+	// Return the subkeys of a given storage path.
+	Keys(context.Context, *QueryKeysRequest) (*QueryKeysResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -546,16 +651,16 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
-func (*UnimplementedQueryServer) Egress(ctx context.Context, req *QueryEgressRequest) (*Egress, error) {
+func (*UnimplementedQueryServer) Egress(ctx context.Context, req *QueryEgressRequest) (*QueryEgressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Egress not implemented")
 }
-func (*UnimplementedQueryServer) Mailbox(ctx context.Context, req *QueryMailboxRequest) (*QueryStorageResponse, error) {
+func (*UnimplementedQueryServer) Mailbox(ctx context.Context, req *QueryMailboxRequest) (*QueryMailboxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Mailbox not implemented")
 }
 func (*UnimplementedQueryServer) Storage(ctx context.Context, req *QueryStorageRequest) (*QueryStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Storage not implemented")
 }
-func (*UnimplementedQueryServer) Keys(ctx context.Context, req *QueryStorageKeysRequest) (*QueryStorageKeysResponse, error) {
+func (*UnimplementedQueryServer) Keys(ctx context.Context, req *QueryKeysRequest) (*QueryKeysResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Keys not implemented")
 }
 
@@ -636,7 +741,7 @@ func _Query_Storage_Handler(srv interface{}, ctx context.Context, dec func(inter
 }
 
 func _Query_Keys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryStorageKeysRequest)
+	in := new(QueryKeysRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -648,7 +753,7 @@ func _Query_Keys_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		FullMethod: "/agoric.swingset.Query/Keys",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Keys(ctx, req.(*QueryStorageKeysRequest))
+		return srv.(QueryServer).Keys(ctx, req.(*QueryKeysRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -768,6 +873,41 @@ func (m *QueryEgressRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryEgressResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryEgressResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryEgressResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Egress != nil {
+		{
+			size, err := m.Egress.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryMailboxRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -792,6 +932,36 @@ func (m *QueryMailboxRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Peer)
 		copy(dAtA[i:], m.Peer)
 		i = encodeVarintQuery(dAtA, i, uint64(len(m.Peer)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryMailboxResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryMailboxResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryMailboxResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Value)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -860,7 +1030,7 @@ func (m *QueryStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryStorageKeysRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryKeysRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -870,12 +1040,12 @@ func (m *QueryStorageKeysRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryStorageKeysRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryKeysRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryStorageKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -904,7 +1074,7 @@ func (m *QueryStorageKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryStorageKeysResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryKeysResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -914,12 +1084,12 @@ func (m *QueryStorageKeysResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryStorageKeysResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryKeysResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryStorageKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -992,6 +1162,19 @@ func (m *QueryEgressRequest) Size() (n int) {
 	return n
 }
 
+func (m *QueryEgressResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Egress != nil {
+		l = m.Egress.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
 func (m *QueryMailboxRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -999,6 +1182,19 @@ func (m *QueryMailboxRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Peer)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryMailboxResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Value)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -1033,7 +1229,7 @@ func (m *QueryStorageResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryStorageKeysRequest) Size() (n int) {
+func (m *QueryKeysRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1052,7 +1248,7 @@ func (m *QueryStorageKeysRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryStorageKeysResponse) Size() (n int) {
+func (m *QueryKeysResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1294,6 +1490,92 @@ func (m *QueryEgressRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *QueryEgressResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryEgressResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryEgressResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Egress", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Egress == nil {
+				m.Egress = &Egress{}
+			}
+			if err := m.Egress.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *QueryMailboxRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1356,6 +1638,88 @@ func (m *QueryMailboxRequest) Unmarshal(dAtA []byte) error {
 			if m.Peer == nil {
 				m.Peer = []byte{}
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryMailboxResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryMailboxResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryMailboxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1542,7 +1906,7 @@ func (m *QueryStorageResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryStorageKeysRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryKeysRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1565,10 +1929,10 @@ func (m *QueryStorageKeysRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryStorageKeysRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryKeysRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryStorageKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1660,7 +2024,7 @@ func (m *QueryStorageKeysRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryStorageKeysResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryKeysResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1683,10 +2047,10 @@ func (m *QueryStorageKeysResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryStorageKeysResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryKeysResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryStorageKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

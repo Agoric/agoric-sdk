@@ -24,6 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Storage is the data storage.
 type Storage struct {
 	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value" yaml:"value"`
 }
@@ -68,6 +69,7 @@ func (m *Storage) GetValue() string {
 	return ""
 }
 
+// Keys are the storage node subkeys.
 type Keys struct {
 	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys" yaml:"keys"`
 }
@@ -112,6 +114,7 @@ func (m *Keys) GetKeys() []string {
 	return nil
 }
 
+// Egress is the format for a swingset egress.
 type Egress struct {
 	Nickname   string                                        `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname" yaml:"nickname"`
 	Peer       github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=peer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"peer" yaml:"peer"`
