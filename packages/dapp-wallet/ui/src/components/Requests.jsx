@@ -6,7 +6,15 @@ import { withApplicationContext } from '../contexts/Application';
 import './Requests.scss';
 
 // Exported for testing only.
-const RequestsInternal = ({ payments, offers, dapps, purses }) => {
+const RequestsInternal = ({
+  payments,
+  offers,
+  dapps,
+  purses,
+  pendingOffers,
+  declinedOffers,
+  closedOffers,
+}) => {
   const hasNoAutodeposit = payment =>
     !purses.filter(
       p => p.brand === payment.brand && (p.depositBoardId || '').length,
@@ -18,10 +26,19 @@ const RequestsInternal = ({ payments, offers, dapps, purses }) => {
     .filter(hasNoAutodeposit)
     .map(p => ({ type: 'payment', data: p }));
 
-  offers = (offers || []).map(o => ({
-    type: 'offer',
-    data: o,
-  }));
+  offers = (offers || [])
+    .filter(
+      ({ status, id }) =>
+        ((status || 'proposed') === 'proposed' ||
+          (status || 'proposed') === 'pending' ||
+          pendingOffers.has(id) ||
+          declinedOffers.has(id)) &&
+        !closedOffers.has(id),
+    )
+    .map(o => ({
+      type: 'offer',
+      data: o,
+    }));
 
   dapps = (dapps || []).filter(isDisabled).map(d => ({
     type: 'dapp',
@@ -66,4 +83,7 @@ export default withApplicationContext(RequestsInternal, context => ({
   offers: context.inbox,
   dapps: context.dapps,
   purses: context.purses,
+  pendingOffers: context.pendingOffers,
+  declinedOffers: context.declinedOffers,
+  closedOffers: context.closedOffers,
 }));
