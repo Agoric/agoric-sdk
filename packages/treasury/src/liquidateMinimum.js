@@ -45,39 +45,40 @@ async function start(zcf) {
         debtorSeat,
       );
 
-      // if swapOut failed to make the trade, we'll sell it all
-      async function onSwapOutNoTrade() {
-        const strategy = makeDefaultLiquidationStrategy(amm);
-        trace(`onSwapoutFail`);
-
-        const {
-          deposited: sellAllDeposited,
-          userSeatPromise: sellAllSeat,
-        } = await offerTo(
-          zcf,
-          strategy.makeInvitation(runDebt),
-          undefined, // The keywords were mapped already
-          strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
-          debtorSeat,
-        );
-        // await sellAllDeposited, but don't need the value
-        await Promise.all([
-          E(sellAllSeat).getOfferResult(),
-          sellAllDeposited,
-        ]).catch(sellAllError => {
-          throw Error(`Unable to liquidate ${sellAllError}`);
-        });
-      }
-
-      // await deposited, but we don't need the value. We'll need it to have
-      // resolved in both branches, so can't put it in Promise.all.
+      // Three (!) awaits coming here. We can't use Promise.all because
+      // offerTo() can return before getOfferResult() is valid, and we can't
+      // check whether swapIn liquidated assets until getOfferResult() returns.
+      // Of course, we also can't exit the seat until one or the other
+      // liquidation takes place.
       await deposited;
       await E(liqSeat).getOfferResult();
 
-      if (AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))) {
-        trace('trying again because nothing was liquidated');
-        await onSwapOutNoTrade();
+      // if swapOut failed to make the trade, we'll sell it all
+      async function sellAllIfUnsold() {
+        if (AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))) {
+          trace('liquidating all collateral because swapIn did not succeed');
+
+          const strategy = makeDefaultLiquidationStrategy(amm);
+          const {
+            deposited: sellAllDeposited,
+            userSeatPromise: sellAllSeat,
+          } = await offerTo(
+            zcf,
+            strategy.makeInvitation(runDebt),
+            undefined, // The keywords were mapped already
+            strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
+            debtorSeat,
+          );
+          // await sellAllDeposited, but don't need the value
+          await Promise.all([
+            E(sellAllSeat).getOfferResult(),
+            sellAllDeposited,
+          ]).catch(sellAllError => {
+            throw Error(`Unable to liquidate ${sellAllError}`);
+          });
+        }
       }
+      await sellAllIfUnsold();
 
       debtorSeat.exit();
     };
