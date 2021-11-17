@@ -1,5 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
+import { handleParamGovernance, ParamType } from '@agoric/governance';
 import { Far } from '@agoric/marshal';
 import {
   assertIsRatio,
@@ -10,20 +11,28 @@ import {
 
 const { details: X, quote: q } = assert;
 
+export const CreditTerms = {
+  CollateralPrice: 'CollateralPrice',
+  CollateralizationRate: 'CollateralizationRate',
+};
+
 /**
  * @param { ContractFacet } zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  */
-const start = async (zcf, privateArgs) => {
+const start = async (zcf, { feeMintAccess }) => {
+  const { main: initialValue } = zcf.getTerms();
+
   const {
-    governedParams,
-    issuers,
-    collateralPrice,
-    collateralizationRate,
-  } = zcf.getTerms();
-  assertIsRatio(collateralPrice);
-  assertIsRatio(collateralizationRate);
-  const { feeMintAccess } = privateArgs;
+    makePublicFacet,
+    makeCreatorFacet,
+    getParamValue,
+  } = handleParamGovernance(zcf, harden(initialValue));
+  const getRatio = name => {
+    const x = getParamValue(name);
+    assertIsRatio(x);
+    return /** @type { Ratio } */ (x);
+  };
 
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { brand: runBrand, issuer: runIssuer } = runMint.getIssuerRecord();
@@ -33,13 +42,15 @@ const start = async (zcf, privateArgs) => {
   };
   zcf.setTestJig(revealRunBrandToTest);
 
-  assert(
-    collateralPrice.numerator.brand === runBrand,
-    X`${collateralPrice} not in RUN`,
-  );
-
   /** @type { OfferHandler } */
   const handleOffer = (seat, _offerArgs = undefined) => {
+    const collateralPrice = getRatio(CreditTerms.CollateralPrice);
+    const collateralizationRate = getRatio(CreditTerms.CollateralizationRate);
+    assert(
+      collateralPrice.numerator.brand === runBrand,
+      X`${collateralPrice} not in RUN`,
+    );
+
     assertProposalShape(seat, {
       give: { Attestation: null },
       want: { RUN: null },
@@ -65,11 +76,14 @@ const start = async (zcf, privateArgs) => {
     )} and rate ${q(collateralizationRate)}`;
   };
 
-  const publicFacet = Far('Line of Credit API', {
-    getInvitation: () => zcf.makeInvitation(handleOffer, 'RUN Line of Credit'),
-  });
+  const publicFacet = makePublicFacet(
+    Far('Line of Credit API', {
+      getInvitation: () =>
+        zcf.makeInvitation(handleOffer, 'RUN Line of Credit'),
+    }),
+  );
 
-  return { publicFacet };
+  return { publicFacet, creatorFacet: makeCreatorFacet(undefined) };
 };
 
 harden(start);
