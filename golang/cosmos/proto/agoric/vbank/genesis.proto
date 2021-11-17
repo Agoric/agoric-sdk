@@ -6,6 +6,7 @@ import "agoric/vbank/vbank.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
 
+// The initial and exported module state.
 message GenesisState {
     option (gogoproto.equal) = false;
 

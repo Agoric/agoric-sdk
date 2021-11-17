@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
+// Storage is the data storage.
 message Storage {
     option (gogoproto.equal) = false;
 
@@ -14,6 +15,7 @@ message Storage {
     ];
 }
 
+// Keys are the storage node subkeys.
 message Keys {
     option (gogoproto.equal) = false;
 
@@ -23,6 +25,7 @@ message Keys {
     ];
 }
 
+// Egress is the format for a swingset egress.
 message Egress {
     option (gogoproto.equal) = false;
 

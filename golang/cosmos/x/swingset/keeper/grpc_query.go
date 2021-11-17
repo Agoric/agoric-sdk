@@ -44,7 +44,7 @@ func (k Querier) Storage(c context.Context, req *types.QueryStorageRequest) (*ty
 	}, nil
 }
 
-func (k Querier) Keys(c context.Context, req *types.QueryStorageKeysRequest) (*types.QueryStorageKeysResponse, error) {
+func (k Querier) Keys(c context.Context, req *types.QueryKeysRequest) (*types.QueryKeysResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -52,12 +52,12 @@ func (k Querier) Keys(c context.Context, req *types.QueryStorageKeysRequest) (*t
 
 	keys := k.GetKeys(ctx, strings.Join(req.Path, "."))
 
-	return &types.QueryStorageKeysResponse{
+	return &types.QueryKeysResponse{
 		Keys: keys.Keys,
 	}, nil
 }
 
-func (k Querier) Egress(c context.Context, req *types.QueryEgressRequest) (*types.Egress, error) {
+func (k Querier) Egress(c context.Context, req *types.QueryEgressRequest) (*types.QueryEgressResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -68,10 +68,12 @@ func (k Querier) Egress(c context.Context, req *types.QueryEgressRequest) (*type
 		return nil, status.Error(codes.NotFound, "egress not found")
 	}
 
-	return &egress, nil
+	return &types.QueryEgressResponse{
+		Egress: &egress,
+	}, nil
 }
 
-func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*types.QueryStorageResponse, error) {
+func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*types.QueryMailboxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -82,7 +84,7 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 		return nil, status.Error(codes.NotFound, "mailbox not found")
 	}
 
-	return &types.QueryStorageResponse{
+	return &types.QueryMailboxResponse{
 		Value: value,
 	}, nil
 }

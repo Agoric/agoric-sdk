@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// The initial or exported state.
 type GenesisState struct {
 	Liens []AccountLien `protobuf:"bytes,1,rep,name=liens,proto3" json:"liens"`
 }

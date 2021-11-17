@@ -132,7 +132,7 @@ func GetCmdGetKeys(queryRoute string) *cobra.Command {
 
 			path := strings.Split(args[0], ".")
 
-			res, err := queryClient.Keys(cmd.Context(), &types.QueryStorageKeysRequest{
+			res, err := queryClient.Keys(cmd.Context(), &types.QueryKeysRequest{
 				Path: path,
 			})
 			if err != nil {
