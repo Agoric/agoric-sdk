@@ -21,7 +21,7 @@ export const CreditTerms = {
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  */
 const start = async (zcf, { feeMintAccess }) => {
-  const { main: initialValue } = zcf.getTerms();
+  const { main: initialValue, brands } = zcf.getTerms();
 
   const {
     makePublicFacet,
@@ -56,13 +56,20 @@ const start = async (zcf, { feeMintAccess }) => {
       want: { RUN: null },
     });
     const {
-      give: { Attestation: a },
+      give: { Attestation: attAmt },
       want: { RUN: runWanted },
     } = seat.getProposal();
 
-    assert(Array.isArray(a.value));
-    const [{ address, amountLiened }] = a.value;
+    assert(
+      attAmt.brand === brands.Attestation,
+      X`Invalid Attestation ${attAmt}. Expected brand ${brands.Attestation}`,
+    );
+    assert(
+      Array.isArray(attAmt.value) && attAmt.value.length === 1,
+      X`expected SET value with 1 item; found ${attAmt.value}`,
+    );
     // NOTE: we accept any address
+    const [{ address, amountLiened }] = attAmt.value;
     const maxAvailable = floorMultiplyBy(amountLiened, collateralPrice);
     const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRate);
     assert(

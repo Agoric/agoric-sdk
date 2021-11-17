@@ -417,7 +417,7 @@ const forgeAttestation = async (faker, bldBrand) => {
 };
 
 testLoC(
-  'forge an attestation',
+  'forged attestation does not work',
   {
     runWanted: 100n,
     collateral: 6000n,
