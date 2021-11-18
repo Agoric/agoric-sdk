@@ -1,12 +1,12 @@
 {
-  "name": "@agoric/install-ses",
-  "version": "0.5.28",
-  "description": "install SES at import time",
+  "name": "@agoric/lockdown",
+  "version": "0.1.0",
+  "description": "wrappers for locking down SES the Agoric way",
   "type": "module",
-  "main": "install-ses.js",
+  "main": "pre.js",
   "scripts": {
     "build": "exit 0",
-    "test": "ava",
+    "test": "exit 0",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
@@ -15,10 +15,8 @@
   "devDependencies": {
     "ava": "^3.12.1"
   },
-  "peerDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/eventual-send": "^0.13.30",
-    "@agoric/lockdown": "^0.1.0"
+  "dependencies": {
+    "ses": "^0.14.3"
   },
   "files": [
     "*.js",
