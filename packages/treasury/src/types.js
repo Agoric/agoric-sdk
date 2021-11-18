@@ -131,7 +131,7 @@
  * @property {PromiseRecord<string>} liquidationPromiseKit
  * @property {ZCFSeat} liquidationZcfSeat
  * @property {() => void} liquidating
- * @property {(Amount) => void} liquidated
+ * @property {(newDebt: Amount) => void} liquidated
  */
 
 /**
