@@ -3,7 +3,9 @@
 export const makeMakeCollectFeesInvitation = (zcf, feeSeat, runBrand) => {
   const collectFees = async seat => {
     seat.incrementBy(
-      feeSeat.decrementBy({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
+      feeSeat.decrementBy(
+        harden({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
+      ),
     );
     const totalTransferred = seat.getStagedAllocation().RUN;
 

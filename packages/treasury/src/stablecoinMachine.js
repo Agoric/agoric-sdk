@@ -121,7 +121,7 @@ export async function start(zcf, privateArgs) {
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
-      harden({ RUN: runIssuer }),
+      harden({ RUN: runIssuer, Collateral: collateralIssuer }),
       harden({ amm: ammPublicFacet }),
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);

@@ -20,7 +20,7 @@ export async function start(zcf, privateArgs) {
       const {
         want: { RUN: runAmount },
       } = seat.getProposal();
-      runMint.mintGains({ RUN: runAmount }, seat);
+      runMint.mintGains(harden({ RUN: runAmount }), seat);
       seat.exit();
       return `success ${runAmount.value}`;
     }

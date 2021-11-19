@@ -205,10 +205,14 @@ async function setupAmm(
   });
   const liqInvitation = E(ammPublicFacet).makeAddLiquidityInvitation();
 
-  const ammLiquiditySeat = await E(zoe).offer(liqInvitation, liqProposal, {
-    Secondary: aethLiquidity.payment,
-    Central: runLiquidity.payment,
-  });
+  const ammLiquiditySeat = await E(zoe).offer(
+    liqInvitation,
+    liqProposal,
+    harden({
+      Secondary: aethLiquidity.payment,
+      Central: runLiquidity.payment,
+    }),
+  );
 
   const g = {
     ammGovernorInstance,
@@ -328,10 +332,9 @@ async function setupServices(
       give: {},
       want: { RUN: AmountMath.make(runBrand, runInitialLiquidity) },
     }),
-    {},
+    harden({}),
     { feeMintAccess },
   );
-  // const result = await E(faucetSeat).getOfferResult();
 
   const {
     creatorFacet: committeeCreator,
@@ -345,7 +348,7 @@ async function setupServices(
   const runPayment = await E(faucetSeat).getPayout('RUN');
 
   const runLiquidity = {
-    proposal: AmountMath.make(runBrand, runInitialLiquidity),
+    proposal: harden(AmountMath.make(runBrand, runInitialLiquidity)),
     payment: runPayment,
   };
 
@@ -1994,7 +1997,7 @@ test('excessive loan', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
-test('mutable liquidity triggers and interest (sensitivity', async t => {
+test('mutable liquidity triggers and interest sensitivity', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
