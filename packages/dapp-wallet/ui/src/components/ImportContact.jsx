@@ -10,9 +10,9 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { withApplicationContext } from '../contexts/Application';
 
 // Exported for testing only.
-export const ImportIssuerWithoutContext = ({
+export const ImportContactWithoutContext = ({
   isOpen,
-  issuers,
+  contacts,
   handleClose,
   handleImport,
 }) => {
@@ -22,7 +22,7 @@ export const ImportIssuerWithoutContext = ({
     setPetname(e.target.value);
   };
   useEffect(() => {
-    if (issuers?.find(({ issuerPetname }) => issuerPetname === petname)) {
+    if (contacts?.find(({ contactPetname }) => contactPetname === petname)) {
       setIsPetnameValid(false);
     } else {
       setIsPetnameValid(true);
@@ -35,7 +35,7 @@ export const ImportIssuerWithoutContext = ({
     setBoardId(e.target.value);
   };
   useEffect(() => {
-    if (issuers?.find(({ issuerBoardId }) => issuerBoardId === boardId)) {
+    if (contacts?.find(({ depositBoardId }) => depositBoardId === boardId)) {
       setIsBoardIdValid(false);
     } else {
       setIsBoardIdValid(true);
@@ -57,7 +57,7 @@ export const ImportIssuerWithoutContext = ({
 
   const content = (
     <>
-      <DialogTitle>Import Issuer</DialogTitle>
+      <DialogTitle>Import Contact</DialogTitle>
       <DialogContent>
         <div style={{ height: '68px' }}>
           <TextField
@@ -111,6 +111,6 @@ export const ImportIssuerWithoutContext = ({
   );
 };
 
-export default withApplicationContext(ImportIssuerWithoutContext, context => ({
-  issuers: context.issuers,
+export default withApplicationContext(ImportContactWithoutContext, context => ({
+  contacts: context.contacts,
 }));
