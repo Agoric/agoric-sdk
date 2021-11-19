@@ -16,6 +16,7 @@ const RequestsInternal = ({
   closedOffers,
 }) => {
   const hasNoAutodeposit = payment =>
+    payment.status !== 'deposited' &&
     !purses.filter(
       p => p.brand === payment.brand && (p.depositBoardId || '').length,
     ).length;
