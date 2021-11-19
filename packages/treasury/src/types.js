@@ -17,20 +17,26 @@
 
 /**
  * @typedef {Object} Rates
- * @property {Ratio} initialMargin minimum required over-collateralization
+ * @property {Ratio} initialMargin - minimum over-collateralization
  * required to open a loan
- * @property {Ratio} liquidationMargin margin below which collateral will be
+ * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
- * @property {Ratio} initialPrice price ratio of collateral to RUN
  * @property {Ratio} interestRate - annual interest rate charged on loans
- * @property {Ratio} loanFee The fee (in BasisPoints) charged when opening
+ * @property {Ratio} loanFee - The fee (in BasisPoints) charged when opening
  * or increasing a loan.
  */
 
 /**
+ * @callback AddVaultType
+ * @param {Issuer} collateralIssuer
+ * @param {Keyword} collateralKeyword
+ * @param {Rates} rates
+ * @returns {Promise<VaultManager>}
+ */
+
+/**
  * @typedef  {Object} StablecoinMachine
- * @property {(collateralIssuer: Issuer, collateralKeyword: Keyword, rates: Rates) => Promise<Invitation>} makeAddTypeInvitation
- * @property {() => Instance} getAMM
+ * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
  * @property {() => ERef<Payment>} getBootstrapPayment
@@ -124,6 +130,8 @@
  * @property {ZCFSeat} vaultSeat
  * @property {PromiseRecord<string>} liquidationPromiseKit
  * @property {ZCFSeat} liquidationZcfSeat
+ * @property {() => void} liquidating
+ * @property {(newDebt: Amount) => void} liquidated
  */
 
 /**
@@ -141,14 +149,24 @@
 /**
  * @typedef {Object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, RUN: Amount) => Proposal} makeProposal
- * @property {() => Promise<Invitation>} makeInvitation
+ * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
+ * @property {(runDebt: Amount) => Promise<Invitation>} makeInvitation
+ */
+
+/**
+ * @typedef {Object} liquidationCreatorFacet
+ * @property {(runDebt: Amount) => Promise<Invitation>} makeDebtorInvitation
+ */
+
+/**
+ * @callback MakeLiquidationStrategy
+ * @param {liquidationCreatorFacet} creatorFacet
+ * @returns {LiquidationStrategy}
  */
 
 /**
  * @callback MakeVaultManager
  * @param {ContractFacet} zcf
- * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -164,7 +182,6 @@
  * @param {ContractFacet} zcf
  * @param {InnerVaultManager} manager
  * @param {ZCFMint} runMint
- * @param {ERef<MultipoolAutoswapPublicFacet>} autoswap
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {GetParams} paramManager
  * @param {Timestamp} startTimeStamp
@@ -213,27 +230,37 @@
  */
 
 /**
- * @typedef {Object} PoolParamManager
+ * @typedef {Object} VaultParamManager
  * @property {GetParams} getParams
  * @property {GetParam} getParam
  * @property {(period: bigint) => void} updateChargingPeriod
  * @property {(period: bigint) => void} updateRecordingPeriod
  * @property {(margin: Ratio) => void} updateInitialMargin
  * @property {(margin: Ratio) => void} updateLiquidationMargin
- * @property {(price: Ratio) => void} updateInitialPrice
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
  */
 
 /**
- * @callback MakePoolParamManager
+ * @callback MakeVaultParamManager
  * @param {LoanParams} loanParams
  * @param {Rates} rates
- * @returns {PoolParamManager}
+ * @returns {VaultParamManager}
  */
 
 /**
  * @callback MakeFeeParamManager
  * @param {AMMFees} ammFees
  * @returns {FeeParamManager}
+ */
+
+/**
+ * @callback TreasuryLiquidate
+ * @param {ContractFacet} zcf,
+ * @param {VaultKit} vaultKit,
+ * @param {(losses: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat,
+ *            ) => void} burnLosses,
+ * @param {LiquidationStrategy} strategy,
+ * @param {Brand} collateralBrand,
  */

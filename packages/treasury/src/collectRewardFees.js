@@ -1,39 +1,16 @@
 // @ts-check
 
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@agoric/eventual-send';
-
-export const makeMakeCollectFeesInvitation = (
-  zcf,
-  feeSeat,
-  autoswapCreatorFacet,
-  runBrand,
-) => {
+export const makeMakeCollectFeesInvitation = (zcf, feeSeat, runBrand) => {
   const collectFees = async seat => {
-    const invitation = await E(
-      autoswapCreatorFacet,
-    ).makeCollectFeesInvitation();
-    const { zcfSeat: transferSeat } = zcf.makeEmptySeatKit();
-    await E.get(offerTo(zcf, invitation, harden({}), harden({}), transferSeat))
-      .deposited;
-
     seat.incrementBy(
       feeSeat.decrementBy(
         harden({ RUN: feeSeat.getAmountAllocated('RUN', runBrand) }),
       ),
     );
-    seat.incrementBy(
-      transferSeat.decrementBy(
-        harden({
-          RUN: transferSeat.getAmountAllocated('RUN', runBrand),
-        }),
-      ),
-    );
     const totalTransferred = seat.getStagedAllocation().RUN;
 
-    zcf.reallocate(transferSeat, feeSeat, seat);
+    zcf.reallocate(feeSeat, seat);
     seat.exit();
-    transferSeat.exit();
 
     return `paid out ${totalTransferred.value}`;
   };

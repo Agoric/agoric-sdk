@@ -13,7 +13,7 @@ import { E } from '@agoric/eventual-send';
 import path from 'path';
 
 import liquidateBundle from '../../../bundles/bundle-liquidateMinimum.js';
-import autoswapBundle from '../../../bundles/bundle-multipoolAutoswap.js';
+import ammBundle from '../../../bundles/bundle-amm.js';
 import stablecoinBundle from '../../../bundles/bundle-stablecoinMachine.js';
 import contractGovernorBundle from '../../../bundles/bundle-contractGovernor.js';
 import committeeBundle from '../../../bundles/bundle-committee.js';
@@ -30,7 +30,7 @@ test.before(async t => {
 
   const nameToBundle = [
     ['liquidateMinimum', liquidateBundle],
-    ['autoswap', autoswapBundle],
+    ['amm', ammBundle],
     ['treasury', stablecoinBundle],
     ['committee', committeeBundle],
     ['contractGovernor', contractGovernorBundle],
@@ -75,25 +75,18 @@ async function main(t, argv) {
 const expectedTreasuryLog = [
   '=> voter and electorate vats are set up',
   '=> alice and the treasury are set up',
-  'param values before {"PoolFee":{"name":"PoolFee","type":"nat","value":"[24n]"},"ProtocolFee":{"name":"ProtocolFee","type":"nat","value":"[6n]"}}',
-  'Voter Bob cast a ballot for {"changeParam":{"key":"fee","parameterName":"PoolFee"},"proposedValue":"[37n]"}',
-  'Voter Carol cast a ballot for {"noChange":{"key":"fee","parameterName":"PoolFee"}}',
-  'Voter Dave cast a ballot for {"noChange":{"key":"fee","parameterName":"PoolFee"}}',
-  'Voter Emma cast a ballot for {"changeParam":{"key":"fee","parameterName":"PoolFee"},"proposedValue":"[37n]"}',
-  'Voter Flora cast a ballot for {"changeParam":{"key":"fee","parameterName":"PoolFee"},"proposedValue":"[37n]"}',
-  'governor from governed matches governor instance',
-  'Param "PoolFee" is in the question',
-  'Voter Bob cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","key":"pool","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
-  'Voter Carol cast a ballot for {"noChange":{"collateralBrand":"[Alleged: moola brand]","key":"pool","parameterName":"InterestRate"}}',
-  'Voter Dave cast a ballot for {"noChange":{"collateralBrand":"[Alleged: moola brand]","key":"pool","parameterName":"InterestRate"}}',
-  'Voter Emma cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","key":"pool","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
-  'Voter Flora cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","key":"pool","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
+  'param values before {"ChargingPeriod":{"name":"ChargingPeriod","type":"nat","value":"[86400n]"},"InitialMargin":{"name":"InitialMargin","type":"ratio","value":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[120n]"}}},"InterestRate":{"name":"InterestRate","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[250n]"}}},"LiquidationMargin":{"name":"LiquidationMargin","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[105n]"}}},"LoanFee":{"name":"LoanFee","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[200n]"}}},"RecordingPeriod":{"name":"RecordingPeriod","type":"nat","value":"[86400n]"}}',
+  'Voter Bob cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
+  'Voter Carol cast a ballot for {"noChange":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"}}',
+  'Voter Dave cast a ballot for {"noChange":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"}}',
+  'Voter Emma cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
+  'Voter Flora cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
   '=> alice.oneLoanWithInterest called',
-  'param values after vote on (PoolFee) {"PoolFee":{"name":"PoolFee","type":"nat","value":"[37n]"},"ProtocolFee":{"name":"ProtocolFee","type":"nat","value":"[6n]"}}',
+  'param values after vote on (InterestRate) {"ChargingPeriod":{"name":"ChargingPeriod","type":"nat","value":"[86400n]"},"InitialMargin":{"name":"InitialMargin","type":"ratio","value":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[120n]"}}},"InterestRate":{"name":"InterestRate","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}},"LiquidationMargin":{"name":"LiquidationMargin","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[105n]"}}},"LoanFee":{"name":"LoanFee","type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[200n]"}}},"RecordingPeriod":{"name":"RecordingPeriod","type":"nat","value":"[86400n]"}}',
   'governor from governed matches governor instance',
   'Param "InterestRate" is in the question',
   'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
-  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510068n]"} after interest',
+  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510069n]"} after interest',
 ];
 
 test.serial('treasury', async t => {

@@ -59,7 +59,7 @@ const makeBundle = async sourceRoot => {
 };
 
 // makeBundle is a slow step, so we do it once for all the tests.
-const autoswapBundleP = makeBundle(ammRoot);
+const ammBundleP = makeBundle(ammRoot);
 const contractGovernorBundleP = makeBundle(contractGovernorRoot);
 const committeeBundleP = makeBundle(committeeRoot);
 const voteCounterBundleP = makeBundle(voteCounterRoot);
@@ -103,25 +103,25 @@ const setupServices = async (
 
   // XS doesn't like top-level await, so do it here. this should be quick
   const [
-    autoswapBundle,
+    ammBundle,
     contractGovernorBundle,
     committeeBundle,
     voteCounterBundle,
   ] = await Promise.all([
-    autoswapBundleP,
+    ammBundleP,
     contractGovernorBundleP,
     committeeBundleP,
     voteCounterBundleP,
   ]);
 
-  const [autoswap, governor, electorate, counter] = await Promise.all([
-    installBundle(zoe, autoswapBundle),
+  const [constProductAmm, governor, electorate, counter] = await Promise.all([
+    installBundle(zoe, ammBundle),
     installBundle(zoe, contractGovernorBundle),
     installBundle(zoe, committeeBundle),
     installBundle(zoe, voteCounterBundle),
   ]);
   const installs = {
-    autoswap,
+    amm: constProductAmm,
     governor,
     electorate,
     counter,
@@ -135,7 +135,7 @@ const setupServices = async (
   const governorTerms = {
     timer,
     electorateInstance,
-    governedContractInstallation: installs.autoswap,
+    governedContractInstallation: installs.amm,
     governed: {
       terms: ammTerms,
       issuerKeywordRecord: { Central: centralR.issuer },
@@ -244,9 +244,9 @@ test('amm with valid offers', async t => {
       invitationBrand,
       harden([
         {
-          description: 'multipool autoswap add liquidity',
+          description: 'multipool amm add liquidity',
           instance: ammInstance,
-          installation: installs.autoswap,
+          installation: installs.amm,
           handle: aliceInvitationAmount.value[0].handle,
           fee: undefined,
           expiry: undefined,
@@ -352,7 +352,7 @@ test('amm with valid offers', async t => {
 
   t.is(
     bobInvitationValue.installation,
-    installs.autoswap,
+    installs.amm,
     `installation is as expected`,
   );
 

@@ -4,7 +4,7 @@ import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/callSpread/types.js';
 import './types.js';
 import {
-  multiplyBy,
+  ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
@@ -48,7 +48,7 @@ export function makeInterestCalculator(
     let growingDebt = newDebt;
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;
-      const newInterest = multiplyBy(growingDebt, ratePerChargingPeriod);
+      const newInterest = ceilMultiplyBy(growingDebt, ratePerChargingPeriod);
       growingInterest = AmountMath.add(growingInterest, newInterest);
       growingDebt = AmountMath.add(growingDebt, newInterest, brand);
     }

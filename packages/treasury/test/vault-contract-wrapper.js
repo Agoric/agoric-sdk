@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/src/types.js';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -30,14 +30,6 @@ export async function start(zcf, privateArgs) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { zcfSeat: stableCoinSeat } = zcf.makeEmptySeatKit();
-
-  /** @type {MultipoolAutoswapPublicFacet} */
-  const autoswapMock = {
-    getInputPrice(amountIn, brandOut) {
-      assert.equal(brandOut, runBrand);
-      return AmountMath.make(runBrand, 4n * amountIn.value);
-    },
-  };
 
   function reallocateReward(amount, fromSeat, otherSeat) {
     stableCoinSeat.incrementBy(
@@ -97,7 +89,6 @@ export async function start(zcf, privateArgs) {
     zcf,
     managerMock,
     runMint,
-    autoswapMock,
     priceAuthority,
     publicFacet,
     timer.getCurrentTimestamp(),
