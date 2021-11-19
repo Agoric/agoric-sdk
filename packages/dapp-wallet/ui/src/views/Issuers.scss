@@ -2,8 +2,10 @@
   margin-top: 16px;
 }
 
-.Import-button {
+.ImportButton {
   margin-top: 16px;
+  display: flex;
+  flex-direction: row;
 }
 
 .Left {
@@ -38,4 +40,10 @@
   height: 30px;
   text-align: center;
   width: 96px;
+}
+
+.ImportIssuerProgress {
+  height: 36px;
+  text-align: center;
+  margin-left: 8px;
 }
