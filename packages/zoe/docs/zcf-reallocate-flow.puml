@@ -1,0 +1,26 @@
+@startuml ZCF.reallocate() flow
+
+package ZoeService <<Rectangle>> {
+  object UserSeat
+  UserSeat : tryExit()
+  UserSeat : ...
+
+  object ZoeSeatAdmin
+  ZoeSeatAdmin : exit()
+  ZoeSeatAdmin : replaceAllocation()
+}
+
+package ZCF <<Rectangle>> {
+  object ZCFSeat
+  ZCFSeat : exit()
+  ZCFSeat : ...
+
+  object ZCFSeatAdmin
+  ZCFSeatAdmin : commit()
+
+}
+
+ZCFSeat --|> ZCFSeatAdmin : 2) looked up in internal map
+ZCFSeatAdmin --|> ZoeSeatAdmin : 3) commit()
+ZoeSeatAdmin --|> ZoeSeatAdmin : 4) replaceAllocation()
+@enduml
