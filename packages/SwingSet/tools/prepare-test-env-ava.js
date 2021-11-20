@@ -4,9 +4,7 @@
  * `test` function.
  */
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
+import '@agoric/install-ses/pre-bundle-source.js';
 
 // eslint thinks these are extraneous dependencies because this file
 // is in the tools/ directory rather than the test/ directory.
