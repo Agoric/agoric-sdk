@@ -32,7 +32,6 @@
     "@agoric/cosmic-swingset": "^0.34.2",
     "@agoric/eventual-send": "^0.13.30",
     "@agoric/import-bundle": "^0.2.31",
-    "@agoric/install-ses": "^0.5.28",
     "@agoric/marshal": "^0.4.28",
     "@agoric/wallet": "^0.11.5",
     "@agoric/notifier": "^0.3.31",

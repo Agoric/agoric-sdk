@@ -33,7 +33,6 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.28",
     "ava": "^3.12.1"
   },
   "files": [
