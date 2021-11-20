@@ -1158,6 +1158,8 @@ test('amm jig - breaking scenario', async t => {
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
+  const displayInfo = await E(moolaLiquidityBrand).getDisplayInfo();
+  t.is(displayInfo.decimalPlaces, 6);
 
   const mIssuerKeywordRecord = {
     Secondary: moolaR.issuer,
