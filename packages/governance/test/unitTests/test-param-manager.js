@@ -9,16 +9,22 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@agoric/marshal';
 import { buildParamManager, ParamType } from '../../src/paramManager.js';
 import { makeParamChangePositions } from '../../src/governParam.js';
+import {
+  makeGovernedString,
+  makeGovernedAmount,
+  makeGovernedNat,
+  makeGovernedRatio,
+  makeGovernedBrand,
+  makeGovernedInstance,
+  makeGovernedInstallation,
+  makeGovernedUnknown,
+} from '../../src/paramMakers.js';
 
 const BASIS_POINTS = 10_000n;
 
 test('params one Nat', async t => {
   const numberKey = 'Number';
-  const numberDescription = {
-    name: numberKey,
-    value: 13n,
-    type: ParamType.NAT,
-  };
+  const numberDescription = makeGovernedNat(numberKey, 13n);
   const { getParam, updateNumber } = buildParamManager([numberDescription]);
   t.deepEqual(getParam(numberKey), numberDescription);
   updateNumber(42n);
@@ -42,11 +48,7 @@ test('params one Nat', async t => {
 
 test('params one String', async t => {
   const stringKey = 'String';
-  const stringDescription = {
-    name: stringKey,
-    value: 'foo',
-    type: ParamType.STRING,
-  };
+  const stringDescription = makeGovernedString(stringKey, 'foo');
   const { getParam, updateString } = buildParamManager([stringDescription]);
   t.deepEqual(getParam(stringKey), stringDescription);
   updateString('bar');
@@ -64,11 +66,8 @@ test('params one String', async t => {
 test('params one Amount', async t => {
   const amountKey = 'Amount';
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const amountDescription = {
-    name: amountKey,
-    value: AmountMath.makeEmpty(brand),
-    type: ParamType.AMOUNT,
-  };
+  const emptyAmount = AmountMath.makeEmpty(brand);
+  const amountDescription = makeGovernedAmount(amountKey, emptyAmount);
   const { getParam, updateAmount } = buildParamManager([amountDescription]);
   t.deepEqual(getParam(amountKey), amountDescription);
   updateAmount(AmountMath.make(brand, harden([13])));
@@ -85,11 +84,7 @@ test('params one Amount', async t => {
 
 test('params one BigInt', async t => {
   const bigintKey = 'Bigint';
-  const bigIntDescription = {
-    name: bigintKey,
-    value: 314159n,
-    type: ParamType.NAT,
-  };
+  const bigIntDescription = makeGovernedNat(bigintKey, 314159n);
   const { getParam, updateBigint } = buildParamManager([bigIntDescription]);
   t.deepEqual(getParam(bigintKey), bigIntDescription);
   updateBigint(271828182845904523536n);
@@ -114,11 +109,7 @@ test('params one BigInt', async t => {
 test('params one ratio', async t => {
   const ratioKey = 'Ratio';
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
-  const ratioDescription = {
-    name: ratioKey,
-    value: makeRatio(7n, brand),
-    type: ParamType.RATIO,
-  };
+  const ratioDescription = makeGovernedRatio(ratioKey, makeRatio(7n, brand));
 
   const { getParam, getParams, updateRatio } = buildParamManager([
     ratioDescription,
@@ -144,11 +135,7 @@ test('params one brand', async t => {
   const brandKey = 'Brand';
   const { brand: roseBrand } = makeIssuerKit('roses', AssetKind.SET);
   const { brand: thornBrand } = makeIssuerKit('thorns');
-  const brandDescription = {
-    name: brandKey,
-    value: roseBrand,
-    type: ParamType.BRAND,
-  };
+  const brandDescription = makeGovernedBrand(brandKey, roseBrand);
   const { getParam, updateBrand } = buildParamManager([brandDescription]);
   t.deepEqual(getParam(brandKey), brandDescription);
   updateBrand(thornBrand);
@@ -166,11 +153,7 @@ test('params one brand', async t => {
 test('params one unknown', async t => {
   const stuffKey = 'Stuff';
   const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
-  const stuffDescription = {
-    name: stuffKey,
-    value: stiltonBrand,
-    type: ParamType.UNKNOWN,
-  };
+  const stuffDescription = makeGovernedUnknown(stuffKey, stiltonBrand);
   const { getParam, updateStuff } = buildParamManager([stuffDescription]);
   t.deepEqual(getParam(stuffKey), stuffDescription);
   updateStuff(18.1);
@@ -182,11 +165,7 @@ test('params one instance', async t => {
   // this is sufficient for the current type check. When we add
   // isInstance() (#3344), we'll need to make a mockZoe.
   const instanceHandle = makeHandle('Instance');
-  const instanceDescription = {
-    name: instanceKey,
-    value: instanceHandle,
-    type: ParamType.INSTANCE,
-  };
+  const instanceDescription = makeGovernedInstance(instanceKey, instanceHandle);
   const { getParam, updateInstance } = buildParamManager([instanceDescription]);
   t.deepEqual(getParam(instanceKey), instanceDescription);
   t.throws(
@@ -208,11 +187,10 @@ test('params one installation', async t => {
   const installationHandle = Far('fake Installation', {
     getBundle: () => ({ obfuscated: 42 }),
   });
-  const installationDescription = {
-    name: installationKey,
-    value: installationHandle,
-    type: ParamType.INSTALLATION,
-  };
+  const installationDescription = makeGovernedInstallation(
+    installationKey,
+    installationHandle,
+  );
   const { getParam, updateInstallation } = buildParamManager([
     installationDescription,
   ]);
@@ -237,16 +215,8 @@ test('params duplicate entry', async t => {
   t.throws(
     () =>
       buildParamManager([
-        {
-          name: stuffKey,
-          value: 37n,
-          type: ParamType.NAT,
-        },
-        {
-          name: stuffKey,
-          value: stiltonBrand,
-          type: ParamType.UNKNOWN,
-        },
+        makeGovernedNat(stuffKey, 37n),
+        makeGovernedUnknown(stuffKey, stiltonBrand),
       ]),
     {
       message: `each parameter name must be unique: "Stuff" duplicated`,
@@ -254,7 +224,7 @@ test('params duplicate entry', async t => {
   );
 });
 
-test('params unknown type', async t => {
+test('params unrecognized type', async t => {
   const stuffKey = 'Stuff';
   const stuffDescription = {
     name: stuffKey,
@@ -271,27 +241,18 @@ test('params multiple values', t => {
   const stuffKey = 'Stuff';
   const natKey = 'Nat';
   const { brand: parmesanBrand } = makeIssuerKit('parmesan', AssetKind.SET);
-  const cheeseDescription = {
-    name: stuffKey,
-    value: parmesanBrand,
-    type: ParamType.UNKNOWN,
-  };
-  const constantDescription = {
-    name: natKey,
-    value: 602214076000000000000000n,
-    type: ParamType.NAT,
-  };
+  const cheeseDescription = makeGovernedUnknown(stuffKey, parmesanBrand);
+  const constantDescription = makeGovernedNat(
+    natKey,
+    602214076000000000000000n,
+  );
   const { getParams, getParam, updateNat, updateStuff } = buildParamManager([
     cheeseDescription,
     constantDescription,
   ]);
   t.deepEqual(getParam(stuffKey), cheeseDescription);
   updateStuff(18.1);
-  const floatDescription = {
-    name: stuffKey,
-    value: 18.1,
-    type: ParamType.UNKNOWN,
-  };
+  const floatDescription = makeGovernedUnknown(stuffKey, 18.1);
   t.deepEqual(getParam(stuffKey), floatDescription);
   t.deepEqual(getParam(natKey), constantDescription);
   t.deepEqual(getParams(), {

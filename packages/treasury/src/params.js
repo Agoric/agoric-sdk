@@ -2,7 +2,11 @@
 
 import './types.js';
 
-import { buildParamManager, ParamType } from '@agoric/governance';
+import { buildParamManager } from '@agoric/governance';
+import {
+  makeGovernedNat,
+  makeGovernedRatio,
+} from '@agoric/governance/src/paramMakers.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
@@ -27,35 +31,11 @@ export const governedParameterTerms = {
 export const makeVaultParamManager = (loanParams, rates) => {
   // @ts-ignore buildParamManager doesn't describe all the update methods
   return buildParamManager([
-    {
-      name: CHARGING_PERIOD_KEY,
-      value: loanParams.chargingPeriod,
-      type: ParamType.NAT,
-    },
-    {
-      name: RECORDING_PERIOD_KEY,
-      value: loanParams.recordingPeriod,
-      type: ParamType.NAT,
-    },
-    {
-      name: INITIAL_MARGIN_KEY,
-      value: rates.initialMargin,
-      type: ParamType.RATIO,
-    },
-    {
-      name: LIQUIDATION_MARGIN_KEY,
-      value: rates.liquidationMargin,
-      type: ParamType.RATIO,
-    },
-    {
-      name: INTEREST_RATE_KEY,
-      value: rates.interestRate,
-      type: ParamType.RATIO,
-    },
-    {
-      name: LOAN_FEE_KEY,
-      value: rates.loanFee,
-      type: ParamType.RATIO,
-    },
+    makeGovernedNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod),
+    makeGovernedNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod),
+    makeGovernedRatio(INITIAL_MARGIN_KEY, rates.initialMargin),
+    makeGovernedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin),
+    makeGovernedRatio(INTEREST_RATE_KEY, rates.interestRate),
+    makeGovernedRatio(LOAN_FEE_KEY, rates.loanFee),
   ]);
 };
