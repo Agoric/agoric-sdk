@@ -170,6 +170,8 @@ jobs:
       run: cd packages/import-manager && yarn test
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
+    - name: yarn test (lockdown)
+      run: cd packages/lockdown && yarn test
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
     - name: yarn test (notifier)
@@ -277,25 +279,6 @@ jobs:
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
 
-  test-xsnap:
-    # BEGIN-TEST-BOILERPLATE
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['14.x', '16.x']
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (xsnap)
-      run: cd packages/xsnap && yarn test
-    # explicitly test the XS worker, for visibility
-    - name: yarn test (SwingSet XS Worker)
-      run: cd packages/SwingSet && yarn test:xs-worker
-
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -328,6 +311,11 @@ jobs:
     # END-TEST-BOILERPLATE
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
+    - name: yarn test (xsnap)
+      run: cd packages/xsnap && yarn test
+    # explicitly test the XS worker, for visibility
+    - name: yarn test (SwingSet XS Worker)
+      run: cd packages/SwingSet && yarn test:xs-worker
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
