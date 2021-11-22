@@ -18,9 +18,10 @@ let status = 0;
 for (const [pkg, { location }] of Object.entries(workspacesInfoJson)) {
   const cmd = `cd ${location} && yarn test`;
   if (!testYamlContent.includes(cmd)) {
-    console.error(`Cannot find ${pkg}`);
+    console.error(`Cannot find ${location} (${pkg})`);
     status = 1;
   }
 }
 
+console.log(status ? 'Failed!' : 'Succeeded!');
 process.exit(status);
