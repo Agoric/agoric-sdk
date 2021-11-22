@@ -55,28 +55,31 @@ async function start(zcf) {
 
       // if swapOut failed to make the trade, we'll sell it all
       async function sellAllIfUnsold() {
-        if (AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))) {
-          trace('liquidating all collateral because swapIn did not succeed');
-
-          const strategy = makeDefaultLiquidationStrategy(amm);
-          const {
-            deposited: sellAllDeposited,
-            userSeatPromise: sellAllSeat,
-          } = await offerTo(
-            zcf,
-            strategy.makeInvitation(runDebt),
-            undefined, // The keywords were mapped already
-            strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
-            debtorSeat,
-          );
-          // await sellAllDeposited, but don't need the value
-          await Promise.all([
-            E(sellAllSeat).getOfferResult(),
-            sellAllDeposited,
-          ]).catch(sellAllError => {
-            throw Error(`Unable to liquidate ${sellAllError}`);
-          });
+        if (
+          !AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))
+        ) {
+          return;
         }
+
+        trace('liquidating all collateral because swapIn did not succeed');
+        const strategy = makeDefaultLiquidationStrategy(amm);
+        const {
+          deposited: sellAllDeposited,
+          userSeatPromise: sellAllSeat,
+        } = await offerTo(
+          zcf,
+          strategy.makeInvitation(runDebt),
+          undefined, // The keywords were mapped already
+          strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
+          debtorSeat,
+        );
+        // await sellAllDeposited, but don't need the value
+        await Promise.all([
+          E(sellAllSeat).getOfferResult(),
+          sellAllDeposited,
+        ]).catch(sellAllError => {
+          throw Error(`Unable to liquidate ${sellAllError}`);
+        });
       }
       await sellAllIfUnsold();
 
