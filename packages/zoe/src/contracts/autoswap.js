@@ -24,8 +24,8 @@ import '../../exported.js';
  * When the contract is instantiated, the two tokens (Central and Secondary) are
  * specified in the issuerKeywordRecord. There is no behavioral difference
  * between the two when trading; the names were chosen for consistency with our
- * multipoolAutoswap. When trading, use the keywords In and Out to specify the
- * amount to be paid in, and the amount to be received.
+ * constant product AMM. When trading, use the keywords In and Out to specify
+ * the amount to be paid in, and the amount to be received.
  *
  * When adding or removing liquidity, the amounts deposited must be in
  * proportion to the current balances in the pool. The amount of the Central
