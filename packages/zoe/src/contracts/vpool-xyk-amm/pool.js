@@ -264,7 +264,11 @@ export const makeAddPool = (
     // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
     // before proceeding), so we can do the work now.
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
+    const liquidityZCFMint = await zcf.makeZCFMint(
+      liquidityKeyword,
+      AssetKind.NAT,
+      harden({ decimalPlaces: 6 }),
+    );
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);
