@@ -12,7 +12,7 @@ import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
 import '../../../exported.js';
-import { makeMakeCollectFeesInvitation } from '../newSwap/collectFees.js';
+import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
 import { makeInitialValues, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
