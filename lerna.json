@@ -4,17 +4,17 @@
       "message": "chore(release): publish",
       "conventionalCommits": true,
       "preid": "dev",
-      "changelogPreset": "conventionalcommits"
+      "changelogPreset": "conventionalcommits",
+      "includeMergedTags": true
     }
   },
   "packages": [
     ".",
     "golang/cosmos",
     "packages/*",
-    "packages/dapp-*-wallet/api",
-    "packages/dapp-*-wallet/contract",
-    "packages/dapp-*-wallet/ui",
-    "packages/dapp-*-wallet/react-ui"
+    "packages/dapp-*/api",
+    "packages/dapp-*/contract",
+    "packages/dapp-*/ui"
   ],
   "version": "independent"
 }

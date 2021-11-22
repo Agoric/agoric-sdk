@@ -4,6 +4,7 @@ import { assert, details as X, q } from '@agoric/assert';
 import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
+import { assertRecord } from '@agoric/marshal';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
@@ -61,10 +62,11 @@ const cleanKeys = (allowedKeys, record) => {
 export const getKeywords = keywordRecord =>
   harden(Object.getOwnPropertyNames(keywordRecord));
 
-const coerceAmountKeywordRecord = (
+export const coerceAmountKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
 ) => {
+  assertRecord(allegedAmountKeywordRecord, 'amountKeywordRecord');
   const keywords = getKeywords(allegedAmountKeywordRecord);
   keywords.forEach(assertKeywordName);
 
@@ -84,7 +86,7 @@ const coerceAmountKeywordRecord = (
   });
 
   // Recreate the amountKeywordRecord with coercedAmounts.
-  return arrayToObj(coercedAmounts, keywords);
+  return harden(arrayToObj(coercedAmounts, keywords));
 };
 
 export const cleanKeywords = keywordRecord => {

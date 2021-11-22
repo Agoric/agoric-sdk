@@ -8,8 +8,8 @@ import {
   makeRatioFromAmounts,
   getAmountOut,
   getAmountIn,
-  divideBy,
-  multiplyBy,
+  ceilMultiplyBy,
+  ceilDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
@@ -40,7 +40,6 @@ const trace = makeTracer(' VM ');
 /** @type {MakeVaultManager} */
 export function makeVaultManager(
   zcf,
-  autoswap,
   runMint,
   collateralBrand,
   priceAuthority,
@@ -131,7 +130,7 @@ export function makeVaultManager(
     // ask to be alerted when the price level falls enough that the vault
     // with the highest debt to collateral ratio will no longer be valued at the
     // liquidationMargin above its debt.
-    const triggerPoint = multiplyBy(
+    const triggerPoint = ceilMultiplyBy(
       highestDebtRatio.numerator,
       liquidationMargin,
     );
@@ -160,9 +159,10 @@ export function makeVaultManager(
     const quote = await E(outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
-    // level) because we use the actual price ratio plus margin here.
+    // level) because we use the actual price ratio plus margin here. Use
+    // ceilDivide to round up because ratios above this will be liquidated.
     const quoteRatioPlusMargin = makeRatioFromAmounts(
-      divideBy(getAmountOut(quote), liquidationMargin),
+      ceilDivideBy(getAmountOut(quote), liquidationMargin),
       getAmountIn(quote),
     );
 
@@ -205,7 +205,7 @@ export function makeVaultManager(
     );
     sortedVaultKits.updateAllDebts();
     reschedulePriceCheck();
-    runMint.mintGains({ RUN: poolIncrement }, poolIncrementSeat);
+    runMint.mintGains(harden({ RUN: poolIncrement }), poolIncrementSeat);
     reallocateReward(poolIncrement, poolIncrementSeat);
   }
 
@@ -251,7 +251,6 @@ export function makeVaultManager(
       zcf,
       innerFacet,
       runMint,
-      autoswap,
       priceAuthority,
       getLoanParams,
       startTimeStamp,

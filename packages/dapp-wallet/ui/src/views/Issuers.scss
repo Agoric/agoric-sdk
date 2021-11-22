@@ -1,0 +1,49 @@
+.Card-wrapper {
+  margin-top: 16px;
+}
+
+.ImportButton {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: row;
+}
+
+.Left {
+  float: left;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 16px;
+}
+
+.Right {
+  margin-top: 9px;
+  float: right;
+}
+
+.Left > img {
+  margin-right: 16px;
+}
+
+.Board {
+  font-weight: 800;
+}
+
+.Top-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.IssuerProgressWrapper {
+  height: 30px;
+  text-align: center;
+  width: 96px;
+}
+
+.ImportIssuerProgress {
+  height: 36px;
+  text-align: center;
+  margin-left: 8px;
+}

@@ -23,11 +23,11 @@ test('constantProduct invariant', async t => {
   const secondaryMint = await checkedZCF.makeZCFMint('Secondary');
   const { brand: secondaryBrand } = secondaryMint.getIssuerRecord();
   centralMint.mintGains(
-    { Central: AmountMath.make(centralBrand, 10n ** 6n) },
+    harden({ Central: AmountMath.make(centralBrand, 10n ** 6n) }),
     poolSeat,
   );
   secondaryMint.mintGains(
-    { Secondary: AmountMath.make(secondaryBrand, 10n ** 6n) },
+    harden({ Secondary: AmountMath.make(secondaryBrand, 10n ** 6n) }),
     poolSeat,
   );
 
@@ -46,11 +46,13 @@ test('constantProduct invariant', async t => {
   // nothing, a clear violation of the constant product
   t.throws(
     () => {
-      poolSeat.decrementBy(poolSeatAllocation);
-      swapSeat.incrementBy({
-        In: poolSeatAllocation.Central,
-        Out: poolSeatAllocation.Secondary,
-      });
+      poolSeat.decrementBy(harden(poolSeatAllocation));
+      swapSeat.incrementBy(
+        harden({
+          In: poolSeatAllocation.Central,
+          Out: poolSeatAllocation.Secondary,
+        }),
+      );
       checkedZCF.reallocate(poolSeat, swapSeat);
     },
     {

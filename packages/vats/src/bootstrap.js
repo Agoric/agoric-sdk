@@ -13,7 +13,10 @@ import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { assert, details as X } from '@agoric/assert';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeRatio,
+  natSafeMath,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeBridgeManager } from './bridge.js';
@@ -22,7 +25,10 @@ import {
   CENTRAL_ISSUER_NAME,
   demoIssuerEntries,
   fromCosmosIssuerEntries,
+  BLD_ISSUER_ENTRY,
 } from './issuers';
+
+const { multiply, floorDivide } = natSafeMath;
 
 const NUM_IBC_PORTS = 3;
 const QUOTE_INTERVAL = 5 * 60;
@@ -157,7 +163,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
 
       // Install the economy, giving the components access to the name admins we made.
-      const [treasuryCreator] = await Promise.all([
+      const [treasuryInstallResults] = await Promise.all([
         installTreasuryOnChain({
           agoricNames,
           board,
@@ -177,8 +183,52 @@ export function buildRootObject(vatPowers, vatParameters) {
           zoeWPurse: zoeWUnlimitedPurse,
         }),
       ]);
-      return treasuryCreator;
+      return treasuryInstallResults;
     }
+
+    const demoIssuers = demoIssuerEntries(noFakeCurrencies);
+    // all the non=RUN issuers. RUN can't be initialized until we have the
+    // bootstrap payment, but we need to know pool sizes to ask for that.
+    const demoAndBldIssuers = [...demoIssuers, BLD_ISSUER_ENTRY];
+
+    // Calculate how much RUN we need to fund the AMM pools
+    function ammPoolRunDeposits(issuers) {
+      let ammTotal = 0n;
+      const ammPoolIssuers = [];
+      const ammPoolBalances = [];
+      issuers.forEach(entry => {
+        const [issuerName, record] = entry;
+        if (!record.collateralConfig) {
+          // skip RUN and fake issuers
+          return;
+        }
+        assert(record.tradesGivenCentral);
+        /** @type {bigint} */
+        // The initial trade represents the fair value of RUN for collateral.
+        const initialTrade = record.tradesGivenCentral[0];
+        // The collateralValue to be deposited is given, and we want to deposit
+        // the same value of RUN in the pool. For instance, We're going to
+        // deposit 2 * 10^13 BLD, and 10^6 build will trade for 28.9 * 10^6 RUN
+        const poolBalance = floorDivide(
+          multiply(record.collateralConfig.collateralValue, initialTrade[0]),
+          initialTrade[1],
+        );
+        ammTotal += poolBalance;
+        ammPoolIssuers.push(issuerName);
+        ammPoolBalances.push(poolBalance);
+      });
+      return {
+        ammTotal,
+        ammPoolBalances,
+        ammPoolIssuers,
+      };
+    }
+
+    const {
+      ammTotal: ammDepositValue,
+      ammPoolBalances,
+      ammPoolIssuers,
+    } = ammPoolRunDeposits(demoAndBldIssuers);
 
     // We'll usually have something like:
     // {
@@ -202,10 +252,12 @@ export function buildRootObject(vatPowers, vatParameters) {
     ) || { amount: '0' };
 
     // Now we can bootstrap the economy!
-    const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
+    const bankBootstrapSupply = Nat(BigInt(centralBootstrapSupply.amount));
+    // Ask the treasury for enough RUN to fund both AMM and bank.
+    const bootstrapPaymentValue = bankBootstrapSupply + ammDepositValue;
     // NOTE: no use of the voteCreator. We'll need it to initiate votes on
     // changing Treasury parameters.
-    const { treasuryCreator, _voteCreator } = await installEconomy(
+    const { treasuryCreator, _voteCreator, ammFacets } = await installEconomy(
       bootstrapPaymentValue,
     );
 
@@ -217,7 +269,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     ] = await Promise.all([
       E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
       E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
-      E(agoricNames).lookup('instance', 'autoswap'),
+      E(agoricNames).lookup('instance', 'amm'),
       E(agoricNames).lookup('instance', 'Pegasus'),
     ]);
 
@@ -239,10 +291,10 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Only distribute fees if there is a collector.
       E(vats.distributeFees)
         .buildDistributor(
-          E(vats.distributeFees).makeTreasuryFeeCollector(
-            zoeWUnlimitedPurse,
+          E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, [
             treasuryCreator,
-          ),
+            ammFacets.creatorFacet,
+          ]),
           feeCollectorDepositFacet,
           epochTimerService,
           harden(distributorParams),
@@ -251,8 +303,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
 
     /**
-     * @type {Store<Brand, Payment>} The store of payments that aren't actually
-     * used by the bank.
+     * @type {Store<Brand, Payment>} A store containing payments that weren't
+     * used by the bank and can be used for other purposes.
      */
     const unusedBankPayments = makeStore('brand');
 
@@ -261,8 +313,16 @@ export function buildRootObject(vatPowers, vatParameters) {
       treasuryCreator,
     ).getBootstrapPayment(AmountMath.make(centralBrand, bootstrapPaymentValue));
 
+    const [ammBootstrapPayment, bankBootstrapPayment] = await E(
+      centralIssuer,
+    ).split(
+      centralBootstrapPayment,
+      AmountMath.make(centralBrand, ammDepositValue),
+    );
+
+    // If there's no bankBridgeManager, we'll find other uses for these funds.
     if (!bankBridgeManager) {
-      unusedBankPayments.init(centralBrand, centralBootstrapPayment);
+      unusedBankPayments.init(centralBrand, bankBootstrapPayment);
     }
 
     /** @type {Array<[string, import('./issuers').IssuerInitializationRecord]>} */
@@ -271,11 +331,11 @@ export function buildRootObject(vatPowers, vatParameters) {
         issuer: centralIssuer,
         brand: centralBrand,
         bankDenom: CENTRAL_DENOM_NAME,
-        bankPayment: centralBootstrapPayment,
+        bankPayment: bankBootstrapPayment,
       }),
       // We still create demo currencies, but not obviously fake ones unless
       // $FAKE_CURRENCIES is given.
-      ...demoIssuerEntries(noFakeCurrencies),
+      ...demoIssuers,
     ];
 
     const issuerEntries = await Promise.all(
@@ -336,10 +396,29 @@ export function buildRootObject(vatPowers, vatParameters) {
     );
 
     async function addAllCollateral() {
-      const govBrand = await E(agoricNames).lookup(
-        'brand',
-        'TreasuryGovernance',
-      );
+      async function splitAllCentralPayments() {
+        const ammPoolAmounts = ammPoolBalances.map(b =>
+          AmountMath.make(centralBrand, b),
+        );
+
+        const allPayments = await E(centralIssuer).splitMany(
+          ammBootstrapPayment,
+          ammPoolAmounts,
+        );
+
+        const issuerMap = {};
+        for (let i = 0; i < ammPoolBalances.length; i += 1) {
+          const issuerName = ammPoolIssuers[i];
+          issuerMap[issuerName] = {
+            payment: allPayments[i],
+            amount: ammPoolAmounts[i],
+          };
+        }
+        return issuerMap;
+      }
+
+      const issuerMap = await splitAllCentralPayments();
+
       return Promise.all(
         issuerEntries.map(async entry => {
           const [issuerName, record] = entry;
@@ -350,9 +429,10 @@ export function buildRootObject(vatPowers, vatParameters) {
           assert(record.tradesGivenCentral);
           const initialPrice = record.tradesGivenCentral[0];
           assert(initialPrice);
+          const initialPriceNumerator = /** @type {bigint} */ (initialPrice[0]);
           const rates = {
             initialPrice: makeRatio(
-              /** @type {bigint} */ (initialPrice[0]),
+              initialPriceNumerator,
               centralBrand,
               /** @type {bigint} */ (initialPrice[1]),
               record.brand,
@@ -374,39 +454,41 @@ export function buildRootObject(vatPowers, vatParameters) {
             ),
           };
 
-          const addTypeInvitation = E(treasuryCreator).makeAddTypeInvitation(
+          const collateralPayments = E(vats.mints).mintInitialPayments(
+            [issuerName],
+            [config.collateralValue],
+          );
+          const secondaryPayment = E.get(collateralPayments)[0];
+
+          assert(record.issuer, `No issuer for ${issuerName}`);
+          const liquidityIssuer = E(ammFacets.ammPublicFacet).addPool(
+            record.issuer,
+            config.keyword,
+          );
+          const [secondaryAmount, liquidityBrand] = await Promise.all([
+            E(record.issuer).getAmountOf(secondaryPayment),
+            E(liquidityIssuer).getBrand(),
+          ]);
+          const centralAmount = issuerMap[issuerName].amount;
+          const proposal = harden({
+            want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
+            give: { Secondary: secondaryAmount, Central: centralAmount },
+          });
+
+          E(zoeWUnlimitedPurse).offer(
+            E(ammFacets.ammPublicFacet).makeAddLiquidityInvitation(),
+            proposal,
+            harden({
+              Secondary: secondaryPayment,
+              Central: issuerMap[issuerName].payment,
+            }),
+          );
+
+          return E(treasuryCreator).addVaultType(
             record.issuer,
             config.keyword,
             rates,
           );
-
-          const payments = E(vats.mints).mintInitialPayments(
-            [issuerName],
-            [config.collateralValue],
-          );
-          const payment = E.get(payments)[0];
-
-          assert(record.issuer);
-          const amount = await E(record.issuer).getAmountOf(payment);
-          const proposal = harden({
-            give: {
-              Collateral: amount,
-            },
-            want: {
-              // We just throw away our governance tokens.
-              Governance: AmountMath.makeEmpty(govBrand, AssetKind.NAT),
-            },
-          });
-          const paymentKeywords = harden({
-            Collateral: payment,
-          });
-          const seat = E(zoeWUnlimitedPurse).offer(
-            addTypeInvitation,
-            proposal,
-            paymentKeywords,
-          );
-          const vaultManager = E(seat).getOfferResult();
-          return vaultManager;
         }),
       );
     }
@@ -577,6 +659,8 @@ export function buildRootObject(vatPowers, vatParameters) {
                   }
                   // We have an unusedPayment, so we can split off a payment.
                   const amount = AmountMath.make(brand, Nat(value));
+                  // TODO: what happens if unusedBankPayment doesn't have enough
+                  // remaining?
                   const [fragment, remaining] = await E(issuer).split(
                     unusedBankPayments.get(brand),
                     amount,

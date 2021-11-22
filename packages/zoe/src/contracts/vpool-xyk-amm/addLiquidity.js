@@ -24,7 +24,7 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
   };
 
   const makeAddLiquidityInvitation = () =>
-    zcf.makeInvitation(addLiquidity, 'multipool autoswap add liquidity');
+    zcf.makeInvitation(addLiquidity, 'multipool amm add liquidity');
 
   return makeAddLiquidityInvitation;
 };

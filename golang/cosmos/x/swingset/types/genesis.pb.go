@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// The initial or exported state.
 type GenesisState struct {
 	Storage map[string]string `protobuf:"bytes,1,rep,name=storage,proto3" json:"storage" yaml:"storage" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Params  Params            `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`

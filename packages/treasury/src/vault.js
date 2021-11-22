@@ -4,10 +4,11 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
-  divideBy,
-  multiplyBy,
   getAmountOut,
   makeRatioFromAmounts,
+  ceilMultiplyBy,
+  floorMultiplyBy,
+  floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -40,7 +41,6 @@ export function makeVaultKit(
   zcf,
   manager,
   runMint,
-  autoswap,
   priceAuthority,
   loanParamManager,
   startTimeStamp,
@@ -99,7 +99,8 @@ export function makeVaultKit(
       runBrand,
     );
 
-    return divideBy(getAmountOut(quoteAmount), manager.getLiquidationMargin());
+    // floorDivide because we want the debt ceiling lower
+    return floorDivideBy(getAmountOut(quoteAmount), manager.getInitialMargin());
   }
 
   async function assertSufficientCollateral(collateralAmount, wantedRun) {
@@ -201,12 +202,14 @@ export function makeVaultKit(
     // Return any overpayment
 
     const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
-    burnSeat.incrementBy(seat.decrementBy({ RUN: runDebt }));
+    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: runDebt })));
     seat.incrementBy(
-      vaultSeat.decrementBy({ Collateral: getCollateralAllocated(vaultSeat) }),
+      vaultSeat.decrementBy(
+        harden({ Collateral: getCollateralAllocated(vaultSeat) }),
+      ),
     );
     zcf.reallocate(seat, vaultSeat, burnSeat);
-    runMint.burnLosses({ RUN: runDebt }, burnSeat);
+    runMint.burnLosses(harden({ RUN: runDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
     vaultState = VaultState.CLOSED;
@@ -276,11 +279,11 @@ export function makeVaultKit(
     const proposal = seat.getProposal();
     if (proposal.want.Collateral) {
       seat.incrementBy(
-        vaultSeat.decrementBy({ Collateral: proposal.want.Collateral }),
+        vaultSeat.decrementBy(harden({ Collateral: proposal.want.Collateral })),
       );
     } else if (proposal.give.Collateral) {
       vaultSeat.incrementBy(
-        seat.decrementBy({ Collateral: proposal.give.Collateral }),
+        seat.decrementBy(harden({ Collateral: proposal.give.Collateral })),
       );
     }
   }
@@ -321,14 +324,16 @@ export function makeVaultKit(
   function transferRun(seat) {
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
-      seat.incrementBy(vaultSeat.decrementBy({ RUN: proposal.want.RUN }));
+      seat.incrementBy(
+        vaultSeat.decrementBy(harden({ RUN: proposal.want.RUN })),
+      );
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
         ? runDebt
         : proposal.give.RUN;
 
-      vaultSeat.incrementBy(seat.decrementBy({ RUN: acceptedRun }));
+      vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: acceptedRun })));
     }
   }
 
@@ -338,7 +343,7 @@ export function makeVaultKit(
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
-      fee = multiplyBy(proposal.want.RUN, manager.getLoanFee());
+      fee = ceilMultiplyBy(proposal.want.RUN, manager.getLoanFee());
       toMint = AmountMath.add(proposal.want.RUN, fee);
       newDebt = AmountMath.add(runDebt, toMint);
     } else if (proposal.give.RUN) {
@@ -384,8 +389,11 @@ export function makeVaultKit(
       // We can pro-rate maxDebt because the quote is either linear (price is
       // unchanging) or super-linear (meaning it's an AMM. When the volume sold
       // falls, the proceeds fall less than linearly, so this is a conservative
-      // choice.)
-      const maxDebtAfter = multiplyBy(vaultCollateral, priceOfCollateralInRun);
+      // choice.) floorMultiply because the debt ceiling should constrain more.
+      const maxDebtAfter = floorMultiplyBy(
+        vaultCollateral,
+        priceOfCollateralInRun,
+      );
       assert(
         AmountMath.isGTE(maxDebtAfter, newDebt),
         X`The requested debt ${q(
@@ -402,13 +410,13 @@ export function makeVaultKit(
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
-    runMint.mintGains({ RUN: toMint }, vaultSeat);
+    runMint.mintGains(harden({ RUN: toMint }), vaultSeat);
     transferCollateral(clientSeat);
     transferRun(clientSeat);
     manager.reallocateReward(fee, vaultSeat, clientSeat);
 
     runDebt = newDebt;
-    runMint.burnLosses({ RUN: runAfter.vault }, vaultSeat);
+    runMint.burnLosses(harden({ RUN: runAfter.vault }), vaultSeat);
 
     assertVaultHoldsNoRun();
 
@@ -435,7 +443,7 @@ export function makeVaultKit(
 
     // todo trigger process() check right away, in case the price dropped while we ran
 
-    const fee = multiplyBy(wantedRun, manager.getLoanFee());
+    const fee = ceilMultiplyBy(wantedRun, manager.getLoanFee());
     if (AmountMath.isEmpty(fee)) {
       throw seat.fail(
         Error('loan requested is too small; cannot accrue interest'),
@@ -445,10 +453,12 @@ export function makeVaultKit(
     runDebt = AmountMath.add(wantedRun, fee);
     await assertSufficientCollateral(collateralAmount, runDebt);
 
-    runMint.mintGains({ RUN: runDebt }, vaultSeat);
+    runMint.mintGains(harden({ RUN: runDebt }), vaultSeat);
 
-    seat.incrementBy(vaultSeat.decrementBy({ RUN: wantedRun }));
-    vaultSeat.incrementBy(seat.decrementBy({ Collateral: collateralAmount }));
+    seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantedRun })));
+    vaultSeat.incrementBy(
+      seat.decrementBy(harden({ Collateral: collateralAmount })),
+    );
     manager.reallocateReward(fee, vaultSeat, seat);
 
     updateUiState();

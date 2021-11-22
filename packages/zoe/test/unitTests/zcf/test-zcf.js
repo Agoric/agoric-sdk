@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { Far } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
@@ -197,6 +198,29 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
     message:
       'target has no method "getBrand", has ["getAllegedName","getDisplayInfo","isMyIssuer"]',
   });
+});
+
+test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
+  const { zcf } = await setupZCFTest();
+  const brand = Far('brand', {
+    // eslint-disable-next-line no-use-before-define
+    isMyIssuer: i => i === badIssuer,
+    getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+  });
+  const badIssuer = Far('issuer', {
+    makeEmptyPurse: async () => {
+      throw Error('bad issuer');
+    },
+    getBrand: () => brand,
+  });
+  await t.throwsAsync(
+    // @ts-ignore deliberate invalid arguments for testing
+    () => zcf.saveIssuer(badIssuer, 'A'),
+    {
+      message:
+        'A purse could not be created for brand "[Alleged: brand]" because: "[Error: bad issuer]"',
+    },
+  );
 });
 
 test(`zcf.saveIssuer - bad keyword`, async t => {
@@ -414,7 +438,8 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
-    message: '"gains" "[undefined]" must be an amountKeywordRecord',
+    message:
+      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -422,7 +447,7 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.NAT);
   const { brand } = zcfMint.getIssuerRecord();
-  const zcfSeat = zcfMint.mintGains({ A: AmountMath.make(brand, 4n) });
+  const zcfSeat = zcfMint.mintGains(harden({ A: AmountMath.make(brand, 4n) }));
   t.truthy(zcfSeat);
   assertAmountsEqual(
     t,
@@ -439,7 +464,8 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1696
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
-    message: '"gains" "[undefined]" must be an amountKeywordRecord',
+    message:
+      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -448,7 +474,8 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
-    message: '"losses" "[undefined]" must be an amountKeywordRecord',
+    message:
+      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -458,7 +485,8 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
-    message: '"losses" "[undefined]" must be an amountKeywordRecord',
+    message:
+      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -468,7 +496,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  t.throws(() => zcfMint.mintGains({ Moola: moola(3n) }, zcfSeat), {
+  t.throws(() => zcfMint.mintGains(harden({ Moola: moola(3n) }), zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
@@ -479,7 +507,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
 
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  t.throws(() => zcfMint.burnLosses({ Moola: moola(3n) }, zcfSeat), {
+  t.throws(() => zcfMint.burnLosses(harden({ Moola: moola(3n) }), zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
   });
 });
@@ -491,7 +519,7 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(brand, 4n) },
+    harden({ A: AmountMath.make(brand, 4n) }),
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
@@ -509,7 +537,7 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(brand, 4n) },
+    harden({ A: AmountMath.make(brand, 4n) }),
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
@@ -520,7 +548,10 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
   );
   // TODO: return a seat?
   // https://github.com/Agoric/agoric-sdk/issues/1709
-  const result = zcfMint.burnLosses({ A: AmountMath.make(brand, 1n) }, zcfSeat);
+  const result = zcfMint.burnLosses(
+    harden({ A: AmountMath.make(brand, 1n) }),
+    zcfSeat,
+  );
   t.is(result, undefined);
   assertAmountsEqual(
     t,
@@ -536,7 +567,7 @@ test(`zcf.makeZCFMint - mintGains - seat exited`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   zcfSeat.exit();
   t.throws(
-    () => zcfMint.mintGains({ A: AmountMath.make(brand, 4n) }, zcfSeat),
+    () => zcfMint.mintGains(harden({ A: AmountMath.make(brand, 4n) }), zcfSeat),
     {
       message: `zcfSeat must be active to mint gains for the zcfSeat`,
     },
@@ -549,7 +580,7 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   const zcfSeat2 = zcfMint.mintGains(
-    { A: AmountMath.make(brand, 4n) },
+    harden({ A: AmountMath.make(brand, 4n) }),
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
@@ -560,7 +591,8 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   );
   zcfSeat.exit();
   t.throws(
-    () => zcfMint.burnLosses({ A: AmountMath.make(brand, 1n) }, zcfSeat),
+    () =>
+      zcfMint.burnLosses(harden({ A: AmountMath.make(brand, 1n) }), zcfSeat),
     {
       message: `zcfSeat must be active to burn losses from the zcfSeat`,
     },
@@ -715,7 +747,7 @@ const allocateEasy = async (
   const zcfMint = await zcf.makeZCFMint(zcfMintKeyword);
   const { brand } = zcfMint.getIssuerRecord();
   zcfMint.mintGains(
-    { [gainsKeyword]: AmountMath.make(brand, gainsValue) },
+    harden({ [gainsKeyword]: AmountMath.make(brand, gainsValue) }),
     zcfSeat,
   );
   return zcfMint.getIssuerRecord();
@@ -840,8 +872,8 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
 
   const issuerRecord1 = await allocateEasy(zcf, 'Stuff', zcfSeat1, 'A', 6n);
   const six = AmountMath.make(issuerRecord1.brand, 6n);
-  zcfSeat1.decrementBy({ A: six });
-  zcfSeat2.incrementBy({ B: six });
+  zcfSeat1.decrementBy(harden({ A: six }));
+  zcfSeat2.incrementBy(harden({ B: six }));
 
   zcf.reallocate(zcfSeat1, zcfSeat2);
 
@@ -1113,12 +1145,12 @@ test(`zcf.reallocate 3 seats, rights conserved`, async t => {
       want: { Whatever: moola(1n) },
     }),
   );
-  zcfSeat1.decrementBy({ B: moola(3n) });
-  zcfSeat3.incrementBy({ Whatever: moola(1n) });
-  zcfSeat2.incrementBy({ Whatever: moola(2n) });
+  zcfSeat1.decrementBy(harden({ B: moola(3n) }));
+  zcfSeat3.incrementBy(harden({ Whatever: moola(1n) }));
+  zcfSeat2.incrementBy(harden({ Whatever: moola(2n) }));
 
-  zcfSeat2.decrementBy({ Whatever2: simoleans(2n) });
-  zcfSeat1.incrementBy({ A: simoleans(2n) });
+  zcfSeat2.decrementBy(harden({ Whatever2: simoleans(2n) }));
+  zcfSeat1.incrementBy(harden({ A: simoleans(2n) }));
 
   zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3);
   t.deepEqual(zcfSeat1.getCurrentAllocation(), {
@@ -1167,9 +1199,11 @@ test(`zcf.reallocate 3 seats, some not staged`, async t => {
     }),
   );
 
-  zcfSeat1.incrementBy({
-    A: simoleans(100n),
-  });
+  zcfSeat1.incrementBy(
+    harden({
+      A: simoleans(100n),
+    }),
+  );
 
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
     message:
@@ -1218,12 +1252,14 @@ test(`zcf.reallocate 3 seats, rights NOT conserved`, async t => {
     }),
   );
 
-  zcfSeat2.decrementBy({ Whatever2: simoleans(2n) });
+  zcfSeat2.decrementBy(harden({ Whatever2: simoleans(2n) }));
   // This does not conserve rights in the slightest
-  zcfSeat1.incrementBy({
-    A: simoleans(100n),
-  });
-  zcfSeat3.incrementBy({ Whatever: moola(1n) });
+  zcfSeat1.incrementBy(
+    harden({
+      A: simoleans(100n),
+    }),
+  );
+  zcfSeat3.incrementBy(harden({ Whatever: moola(1n) }));
 
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, zcfSeat3), {
     message: /rights were not conserved for brand .*/,

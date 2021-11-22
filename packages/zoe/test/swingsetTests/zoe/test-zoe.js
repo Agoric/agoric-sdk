@@ -19,7 +19,7 @@ const CONTRACT_FILES = [
   'autoswap',
   'coveredCall',
   {
-    contractPath: 'auction/secondPriceAuction',
+    contractPath: 'auction/index',
     bundleName: 'secondPriceAuction',
   },
   'atomicSwap',
@@ -44,7 +44,7 @@ test.before(async t => {
       } else {
         ({ bundleName, contractPath } = settings);
       }
-      const source = `${dirname}/../../../src/contracts/${contractPath}`;
+      const source = `${dirname}/../../../src/contracts/${contractPath}.js`;
       const bundle = await bundleSource(source);
       contractBundles[bundleName] = bundle;
     }),
@@ -156,8 +156,8 @@ test.serial('zoe - swapForOption - valid inputs', async t => {
 
 const expectedSecondPriceAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
-  '@@ schedule task for:1, currently: 0 @@',
   'Carol: The offer has been accepted. Once the contract has been completed, please check your payout',
+  '@@ schedule task for:1, currently: 0 @@',
   'Bob: The offer has been accepted. Once the contract has been completed, please check your payout',
   'Dave: The offer has been accepted. Once the contract has been completed, please check your payout',
   '@@ tick:1 @@',

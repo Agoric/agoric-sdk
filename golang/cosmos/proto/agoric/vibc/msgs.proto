@@ -6,7 +6,9 @@ import "ibc/core/channel/v1/channel.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types";
 
+// The module transactions.
 service Msg {
+  // Force sending an arbitrary packet on a channel.
   rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);
 }
 
@@ -26,4 +28,5 @@ message MsgSendPacket {
     ];
 }
 
+// Empty response for SendPacket.
 message MsgSendPacketResponse {}

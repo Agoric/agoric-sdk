@@ -1,0 +1,32 @@
+.Contact {
+  width: 320px;
+  max-width: 320px;
+}
+
+.ContactContent {
+  padding: 8px 16px;
+  width: 100%;
+  font-size: 16px;
+}
+
+.ContactList {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.ImportContactsProgress {
+  height: 36px;
+  text-align: center;
+  margin-left: 8px;
+}
+
+.ImportButton {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: row;
+}

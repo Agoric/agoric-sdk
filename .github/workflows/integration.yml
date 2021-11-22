@@ -2,7 +2,7 @@ name: Integration tests
 
 on:
  push:
-   branches: [master]
+   branches: [$default-branch]
  pull_request:
 
 jobs:

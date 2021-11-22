@@ -35,16 +35,16 @@ export const makeSinglePool = (
 
   const allocateGainsAndLosses = (inBrand, prices, seat) => {
     const poolSeat = pool.getPoolSeat();
-    seat.decrementBy({ In: prices.swapperGives });
-    seat.incrementBy({ Out: prices.swapperGets });
-    feeSeat.incrementBy({ RUN: prices.protocolFee });
+    seat.decrementBy(harden({ In: prices.swapperGives }));
+    seat.incrementBy(harden({ Out: prices.swapperGets }));
+    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     if (inBrand === secondaryBrand) {
-      poolSeat.incrementBy({ Secondary: prices.xIncrement });
-      poolSeat.decrementBy({ Central: prices.yDecrement });
+      poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
+      poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
     } else {
-      poolSeat.incrementBy({ Central: prices.xIncrement });
-      poolSeat.decrementBy({ Secondary: prices.yDecrement });
+      poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
+      poolSeat.decrementBy(harden({ Secondary: prices.yDecrement }));
     }
 
     zcf.reallocate(poolSeat, seat, feeSeat);

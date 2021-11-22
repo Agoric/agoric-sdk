@@ -1,6 +1,6 @@
 name: Test Dapp Treasury
 
-# run CI on pushes to master, and on all PRs (even the ones that target other
+# run CI on pushes to default, and on all PRs (even the ones that target other
 # branches)
 
 on:

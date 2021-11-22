@@ -20,9 +20,9 @@ const start = async (zcf, privateArgs) => {
   const { brand: RUNBrand } = RUNZCFMint.getIssuerRecord();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   RUNZCFMint.mintGains(
-    {
+    harden({
       Winnings: AmountMath.make(RUNBrand, 10n),
-    },
+    }),
     zcfSeat,
   );
 

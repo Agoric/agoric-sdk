@@ -99,7 +99,9 @@ const start = zcf => {
   const addInventory = seat => {
     assertProposalShape(seat, { want: {} });
     // Take everything in this seat and add it to the marketMakerSeat
-    marketMakerSeat.incrementBy(seat.decrementBy(seat.getCurrentAllocation()));
+    marketMakerSeat.incrementBy(
+      seat.decrementBy(harden(seat.getCurrentAllocation())),
+    );
     zcf.reallocate(marketMakerSeat, seat);
     seat.exit();
     return 'Inventory added';
@@ -108,7 +110,7 @@ const start = zcf => {
   const removeInventory = seat => {
     assertProposalShape(seat, { give: {} });
     const { want } = seat.getProposal();
-    seat.incrementBy(marketMakerSeat.decrementBy(want));
+    seat.incrementBy(marketMakerSeat.decrementBy(harden(want)));
     zcf.reallocate(marketMakerSeat, seat);
     seat.exit();
     return 'Inventory removed';

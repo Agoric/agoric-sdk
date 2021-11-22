@@ -67,11 +67,11 @@ const start = zcf => {
     const matchingTrade = findMatchingTrade(offerDetails, orders);
     if (matchingTrade) {
       // reallocate by giving each side what it wants
-      offerDetails.seat.decrementBy({ In: matchingTrade.amountOut });
-      matchingTrade.seat.incrementBy({ Out: matchingTrade.amountOut });
+      offerDetails.seat.decrementBy(harden({ In: matchingTrade.amountOut }));
+      matchingTrade.seat.incrementBy(harden({ Out: matchingTrade.amountOut }));
 
-      matchingTrade.seat.decrementBy({ In: offerDetails.amountOut });
-      offerDetails.seat.incrementBy({ Out: offerDetails.amountOut });
+      matchingTrade.seat.decrementBy(harden({ In: offerDetails.amountOut }));
+      offerDetails.seat.incrementBy(harden({ Out: offerDetails.amountOut }));
 
       zcf.reallocate(offerDetails.seat, matchingTrade.seat);
       removeFromOrders(matchingTrade);

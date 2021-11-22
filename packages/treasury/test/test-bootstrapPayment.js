@@ -22,7 +22,7 @@ const dirname = path.dirname(filename);
 const stablecoinRoot = `${dirname}/../src/stablecoinMachine.js`;
 const liquidationRoot = `${dirname}/../src/liquidateMinimum.js`;
 const autoswapRoot =
-  '@agoric/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js';
+  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
 const governanceRoot = '@agoric/governance/src/contractGovernor.js';
 const electorateRoot = '@agoric/governance/src/committee.js';
 
@@ -64,7 +64,11 @@ const setupGovernor = async (
   const {
     instance: electorateInstance,
     creatorFacet: electorateCreatorFacet,
-  } = await E(zoe).startInstance(electorateInstall, {}, electorateTerms);
+  } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({}),
+    electorateTerms,
+  );
 
   const governorTerms = {
     electorateInstance,
@@ -74,7 +78,7 @@ const setupGovernor = async (
   };
   return E(zoe).startInstance(
     governanceInstall,
-    {},
+    harden({}),
     governorTerms,
     harden({ electorateCreatorFacet }),
   );
@@ -97,7 +101,7 @@ const setUpZoeForTest = async setJig => {
    * @property {ContractFacet} zcf
    * @property {IssuerRecord} runIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
-   * @property {ERef<MultipoolAutoswapPublicFacet>} autoswap
+   * @property {ERef<XYKAMMPublicFacet>} amm
    */
 
   const {

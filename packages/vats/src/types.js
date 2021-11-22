@@ -65,9 +65,9 @@
 /**
  * @callback BuildFeeDistributor
  *
- * @param {ERef<FeeCollector>} treasuryCollector - an object with a
- *  collectFees() method, which will return a payment. can be populated with
- *  makeTreasuryFeeCollector(zoe, treasuryCreatorFacet)
+ * @param {ERef<FeeCollector>[]} collectors - an array of objects with
+ *   collectFees() methods, each of which will return a payment. Can
+ *   be populated with the results of makeFeeCollector(zoe, creatorFacet)
  * @param {EOnly<DepositFacet>} feeDepositFacet - object with receive()
  * @param {ERef<TimerService>} epochTimer - timer that notifies at the end of
  *  each Epoch. The epochInterval parameter controls the interval.

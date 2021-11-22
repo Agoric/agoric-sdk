@@ -94,8 +94,8 @@ test('first', async t => {
   const { creatorSeat, creatorFacet } = await helperContract;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // RUN (charging 3 RUN fee), which uses an autoswap that presents a
-  // fixed price of 4 RUN per Collateral.
+  // RUN (charging 3 RUN fee), which uses an automatic market maker that
+  // presents a fixed price of 4 RUN per Collateral.
   await E(creatorSeat).getOfferResult();
   const { runMint, collateralKit, vault } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
@@ -104,8 +104,8 @@ test('first', async t => {
 
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(runBrand, 73n),
-    'borrower owes 73 RUN',
+    AmountMath.make(runBrand, 74n),
+    'borrower owes 74 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -157,8 +157,8 @@ test('first', async t => {
   const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(runBrand, 70n),
-    'debt reduced to 70 RUN',
+    AmountMath.make(runBrand, 71n),
+    'debt reduced to 71 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -179,8 +179,8 @@ test('bad collateral', async t => {
   const { runMint, collateralKit, vault } = testJig;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // RUN (charging 3 RUN fee), which uses an autoswap that presents a
-  // fixed price of 4 RUN per Collateral.
+  // RUN (charging 3 RUN fee), which uses an automatic market maker that
+  // presents a fixed price of 4 RUN per Collateral.
   await E(offerKit).getOfferResult();
   const { brand: collateralBrand } = collateralKit;
   const { brand: runBrand } = runMint.getIssuerRecord();
@@ -192,8 +192,8 @@ test('bad collateral', async t => {
   );
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(runBrand, 73n),
-    'borrower owes 73 RUN',
+    AmountMath.make(runBrand, 74n),
+    'borrower owes 74 RUN',
   );
 
   const collateralAmount = AmountMath.make(collateralBrand, 2n);

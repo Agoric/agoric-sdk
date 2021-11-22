@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/ibc-go/modules/core/04-channel/types"
+	types "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -83,6 +83,7 @@ func (m *MsgSendPacket) GetSender() github_com_cosmos_cosmos_sdk_types.AccAddres
 	return nil
 }
 
+// Empty response for SendPacket.
 type MsgSendPacketResponse struct {
 }
 
@@ -165,6 +166,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
+	// Force sending an arbitrary packet on a channel.
 	SendPacket(ctx context.Context, in *MsgSendPacket, opts ...grpc.CallOption) (*MsgSendPacketResponse, error)
 }
 
@@ -187,6 +189,7 @@ func (c *msgClient) SendPacket(ctx context.Context, in *MsgSendPacket, opts ...g
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
+	// Force sending an arbitrary packet on a channel.
 	SendPacket(context.Context, *MsgSendPacket) (*MsgSendPacketResponse, error)
 }
 

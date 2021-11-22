@@ -193,6 +193,8 @@ const makeZoeKit = (
     zoeFeesConfig.timeAuthority,
     translateFee,
     translateExpiry,
+    feeIssuer,
+    feeBrand,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance

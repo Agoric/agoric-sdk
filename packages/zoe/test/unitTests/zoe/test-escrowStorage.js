@@ -27,7 +27,7 @@ test('makeEscrowStorage', async t => {
 
   const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
-  createPurse(currencyKit.issuer, currencyKit.brand);
+  await createPurse(currencyKit.issuer, currencyKit.brand);
 
   // Normally only used for ZCFMint issuers
   makeLocalPurse(ticketKit.issuer, ticketKit.brand);
@@ -109,7 +109,7 @@ test('makeEscrowStorage', async t => {
   });
 });
 
-const setupPurses = createPurse => {
+const setupPurses = async createPurse => {
   const currencyKit = makeIssuerKit(
     'currency',
     AssetKind.NAT,
@@ -130,15 +130,15 @@ const setupPurses = createPurse => {
     assetKind: AssetKind.SET,
     brand: ticketKit.brand,
   };
-  createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);
-  createPurse(ticketIssuerRecord.issuer, ticketIssuerRecord.brand);
+  await createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);
+  await createPurse(ticketIssuerRecord.issuer, ticketIssuerRecord.brand);
   return harden({ ticketKit, currencyKit });
 };
 
 test('payments without matching give keywords', async t => {
   const { createPurse, depositPayments } = makeEscrowStorage();
 
-  const { ticketKit, currencyKit } = setupPurses(createPurse);
+  const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
   const gameTicketAmount = AmountMath.make(
     ticketKit.brand,
@@ -173,7 +173,7 @@ test('payments without matching give keywords', async t => {
 test(`give keywords without matching payments`, async t => {
   const { createPurse, depositPayments } = makeEscrowStorage();
 
-  const { ticketKit, currencyKit } = setupPurses(createPurse);
+  const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
   const gameTicketAmount = AmountMath.make(
     ticketKit.brand,

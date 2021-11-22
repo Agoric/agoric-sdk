@@ -73,18 +73,23 @@ export const makeAddPool = (
         liquidityBrand,
         liquidityValueOut,
       );
-      liquidityZcfMint.mintGains({ Liquidity: liquidityAmountOut }, poolSeat);
+      liquidityZcfMint.mintGains(
+        harden({ Liquidity: liquidityAmountOut }),
+        poolSeat,
+      );
       liqTokenSupply += liquidityValueOut;
 
       poolSeat.incrementBy(
-        zcfSeat.decrementBy({
-          Central: zcfSeat.getCurrentAllocation().Central,
-          Secondary: secondaryAmount,
-        }),
+        zcfSeat.decrementBy(
+          harden({
+            Central: zcfSeat.getCurrentAllocation().Central,
+            Secondary: secondaryAmount,
+          }),
+        ),
       );
 
       zcfSeat.incrementBy(
-        poolSeat.decrementBy({ Liquidity: liquidityAmountOut }),
+        poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
       );
       zcf.reallocate(poolSeat, zcfSeat);
       zcfSeat.exit();
@@ -164,12 +169,16 @@ export const makeAddPool = (
 
         liqTokenSupply -= liquidityValueIn;
 
-        poolSeat.incrementBy(userSeat.decrementBy({ Liquidity: liquidityIn }));
+        poolSeat.incrementBy(
+          userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
+        );
         userSeat.incrementBy(
-          poolSeat.decrementBy({
-            Central: centralTokenAmountOut,
-            Secondary: tokenKeywordAmountOut,
-          }),
+          poolSeat.decrementBy(
+            harden({
+              Central: centralTokenAmountOut,
+              Secondary: tokenKeywordAmountOut,
+            }),
+          ),
         );
         zcf.reallocate(userSeat, poolSeat);
 
@@ -255,7 +264,11 @@ export const makeAddPool = (
     // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
     // before proceeding), so we can do the work now.
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    const liquidityZCFMint = await zcf.makeZCFMint(liquidityKeyword);
+    const liquidityZCFMint = await zcf.makeZCFMint(
+      liquidityKeyword,
+      AssetKind.NAT,
+      harden({ decimalPlaces: 6 }),
+    );
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);

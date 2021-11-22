@@ -72,8 +72,8 @@ const extendExpiration = (
 
   // commit point within updateLienedAmount
   valueToMint.forEach(updateLienedAmount);
-  zcfMint.burnLosses(seat.getCurrentAllocation(), seat);
-  zcfMint.mintGains({ Attestation: amountToMint }, seat);
+  zcfMint.burnLosses(harden(seat.getCurrentAllocation()), seat);
+  zcfMint.mintGains(harden({ Attestation: amountToMint }), seat);
   seat.exit();
 };
 harden(extendExpiration);

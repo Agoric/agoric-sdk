@@ -7,19 +7,17 @@ import { makeTracer } from './makeTracer.js';
 
 const trace = makeTracer('LIQ');
 
-// Liquidates a Vault, using the strategy to parameterize the particular
-// contract being used. The strategy provides a KeywordMapping and proposal
-// suitable for `offerTo()`, and an invitation.
-//
-// Once collateral has been sold using the contract, we burn the amount
-// necessary to cover the debt and return the remainder.
-export async function liquidate(
-  zcf,
-  vaultKit,
-  burnLosses,
-  strategy,
-  collateralBrand,
-) {
+/**
+ * Liquidates a Vault, using the strategy to parameterize the particular
+ * contract being used. The strategy provides a KeywordMapping and proposal
+ * suitable for `offerTo()`, and an invitation.
+ *
+ * Once collateral has been sold using the contract, we burn the amount
+ * necessary to cover the debt and return the remainder.
+ *
+ * @type {TreasuryLiquidate}
+ */
+async function liquidate(zcf, vaultKit, burnLosses, strategy, collateralBrand) {
   vaultKit.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;
@@ -37,7 +35,7 @@ export async function liquidate(
     vaultSeat,
     liquidationSeat,
   );
-  trace(` offeredTo`, runDebt);
+  trace(` offeredTo`, collateralToSell, runDebt);
 
   // await deposited, but we don't need the value.
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
@@ -52,7 +50,7 @@ export async function liquidate(
 
   const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
-  burnLosses({ RUN: runToBurn }, liquidationSeat);
+  burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
   vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
@@ -61,9 +59,13 @@ export async function liquidate(
   vaultKit.liquidationPromiseKit.resolve('Liquidated');
 }
 
-// The default strategy converts of all the collateral to RUN using autoswap,
-// and refunds any excess RUN.
-export function makeDefaultLiquidationStrategy(autoswap) {
+/**
+ * The default strategy converts of all the collateral to RUN using autoswap,
+ * and refunds any excess RUN.
+ *
+ * @type {(XYKAMMPublicFacet) => LiquidationStrategy}
+ */
+function makeDefaultLiquidationStrategy(amm) {
   function keywordMapping() {
     return harden({
       Collateral: 'In',
@@ -81,8 +83,13 @@ export function makeDefaultLiquidationStrategy(autoswap) {
   trace(`return from makeDefault`);
 
   return {
-    makeInvitation: () => E(autoswap).makeSwapInInvitation(),
+    makeInvitation: () => E(amm).makeSwapInInvitation(),
     keywordMapping,
     makeProposal,
   };
 }
+
+harden(makeDefaultLiquidationStrategy);
+harden(liquidate);
+
+export { makeDefaultLiquidationStrategy, liquidate };

@@ -108,8 +108,12 @@ const start = zcf => {
     );
 
     // Reallocate.
-    sellerSeat.incrementBy(buyerSeat.decrementBy({ Money: providedMoney }));
-    buyerSeat.incrementBy(sellerSeat.decrementBy({ Items: wantedItems }));
+    sellerSeat.incrementBy(
+      buyerSeat.decrementBy(harden({ Money: providedMoney })),
+    );
+    buyerSeat.incrementBy(
+      sellerSeat.decrementBy(harden({ Items: wantedItems })),
+    );
     zcf.reallocate(buyerSeat, sellerSeat);
 
     // The buyer's offer has been processed.

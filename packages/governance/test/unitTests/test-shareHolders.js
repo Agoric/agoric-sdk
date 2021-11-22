@@ -143,9 +143,9 @@ test('shareHolders attestation returned on simpleInvite', async t => {
 
   const { publicFacet: electoratePub } = await E(zoe).startInstance(
     electorateInstall,
-    {
+    harden({
       Attestation: issuer,
-    },
+    }),
   );
 
   const attest1 = AmountMath.make(brand, attest('a', 37n, 5n));
@@ -159,9 +159,10 @@ test('shareHolders attestation returned on simpleInvite', async t => {
 test('shareHolders attestation to vote', async t => {
   const { issuer, brand, mint } = makeIssuerKit('attestations', AssetKind.SET);
   const timer = buildManualTimer(console.log);
-  const { publicFacet, creatorFacet } = await E(
-    zoe,
-  ).startInstance(electorateInstall, { Attestation: issuer });
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({ Attestation: issuer }),
+  );
 
   const attest1 = AmountMath.make(brand, attest('a', 37n, 5n));
   const voteSeat = voterFacet(mint, publicFacet, attest1);
@@ -185,9 +186,10 @@ test('shareHolders attestation to vote', async t => {
 test('shareHolders reuse across questions', async t => {
   const { issuer, brand, mint } = makeIssuerKit('attestations', AssetKind.SET);
   const timer = buildManualTimer(console.log);
-  const { publicFacet, creatorFacet } = await E(
-    zoe,
-  ).startInstance(electorateInstall, { Attestation: issuer });
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({ Attestation: issuer }),
+  );
 
   const attest1 = AmountMath.make(brand, attest('a', 37n, 5n));
   const voteFacet1 = voterFacet(mint, publicFacet, attest1);
@@ -247,9 +249,10 @@ test('shareHolders reuse across questions', async t => {
 test('shareHolders expiring attestations', async t => {
   const { issuer, brand, mint } = makeIssuerKit('attestations', AssetKind.SET);
   const timer = buildManualTimer(console.log);
-  const { publicFacet, creatorFacet } = await E(
-    zoe,
-  ).startInstance(electorateInstall, { Attestation: issuer });
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({ Attestation: issuer }),
+  );
 
   // deadlines:  depose: 2, dividends: 4
   // voter 1 votes won't count; voter 2 can't vote on dividends.
@@ -335,9 +338,10 @@ test('shareHolders expiring attestations', async t => {
 test('shareHolders bundle/split attestations', async t => {
   const { issuer, brand, mint } = makeIssuerKit('attestations', AssetKind.SET);
   const timer = buildManualTimer(console.log);
-  const { publicFacet, creatorFacet } = await E(
-    zoe,
-  ).startInstance(electorateInstall, { Attestation: issuer });
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({ Attestation: issuer }),
+  );
 
   // deadline:  depose: 2
   const handleShared = makeHandle('Attestation');
@@ -349,11 +353,11 @@ test('shareHolders bundle/split attestations', async t => {
   const claim7Later = makeAttestation(handle7, 7n, 'a', 10n)[0];
   const claim14 = makeAttestation(handleShared, 14n, 'a', 7n)[0];
 
-  const attest2and4 = AmountMath.make(brand, [claim2, claim4]);
+  const attest2and4 = AmountMath.make(brand, harden([claim2, claim4]));
   const voteFacet2and4 = await voterFacet(mint, publicFacet, attest2and4);
-  const attest4and7 = AmountMath.make(brand, [claim4, claim7]);
+  const attest4and7 = AmountMath.make(brand, harden([claim4, claim7]));
   const voteFacet4and7 = await voterFacet(mint, publicFacet, attest4and7);
-  const attestUpdate = AmountMath.make(brand, [claim7Later, claim14]);
+  const attestUpdate = AmountMath.make(brand, harden([claim7Later, claim14]));
   const voteFacetUpdate = await voterFacet(mint, publicFacet, attestUpdate);
 
   const {

@@ -2,10 +2,11 @@
 
 import './types.js';
 
-import { buildParamManager, ParamType } from '@agoric/governance';
-
-export const POOL_FEE_KEY = 'PoolFee';
-export const PROTOCOL_FEE_KEY = 'ProtocolFee';
+import { buildParamManager } from '@agoric/governance';
+import {
+  makeGovernedNat,
+  makeGovernedRatio,
+} from '@agoric/governance/src/paramMakers.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
@@ -16,8 +17,7 @@ export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
 export const governedParameterTerms = {
-  loanParams: [POOL_FEE_KEY, PROTOCOL_FEE_KEY],
-  poolParams: [
+  vaultParams: [
     CHARGING_PERIOD_KEY,
     RECORDING_PERIOD_KEY,
     INITIAL_MARGIN_KEY,
@@ -27,62 +27,15 @@ export const governedParameterTerms = {
   ],
 };
 
-/** @type {{ FEE: 'fee', POOL: 'pool' }} */
-export const ParamKey = {
-  FEE: 'fee',
-  POOL: 'pool',
-};
-
-/** @type {MakeFeeParamManager} */
-export const makeFeeParamManager = ammFees => {
+/** @type {MakeVaultParamManager} */
+export const makeVaultParamManager = (loanParams, rates) => {
   // @ts-ignore buildParamManager doesn't describe all the update methods
   return buildParamManager([
-    {
-      name: POOL_FEE_KEY,
-      value: ammFees.poolFee,
-      type: ParamType.NAT,
-    },
-    {
-      name: PROTOCOL_FEE_KEY,
-      value: ammFees.protocolFee,
-      type: ParamType.NAT,
-    },
-  ]);
-};
-
-/** @type {MakePoolParamManager} */
-export const makePoolParamManager = (loanParams, rates) => {
-  // @ts-ignore buildParamManager doesn't describe all the update methods
-  return buildParamManager([
-    {
-      name: CHARGING_PERIOD_KEY,
-      value: loanParams.chargingPeriod,
-      type: ParamType.NAT,
-    },
-    {
-      name: RECORDING_PERIOD_KEY,
-      value: loanParams.recordingPeriod,
-      type: ParamType.NAT,
-    },
-    {
-      name: INITIAL_MARGIN_KEY,
-      value: rates.initialMargin,
-      type: ParamType.RATIO,
-    },
-    {
-      name: LIQUIDATION_MARGIN_KEY,
-      value: rates.liquidationMargin,
-      type: ParamType.RATIO,
-    },
-    {
-      name: INTEREST_RATE_KEY,
-      value: rates.interestRate,
-      type: ParamType.RATIO,
-    },
-    {
-      name: LOAN_FEE_KEY,
-      value: rates.loanFee,
-      type: ParamType.RATIO,
-    },
+    makeGovernedNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod),
+    makeGovernedNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod),
+    makeGovernedRatio(INITIAL_MARGIN_KEY, rates.initialMargin),
+    makeGovernedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin),
+    makeGovernedRatio(INTEREST_RATE_KEY, rates.interestRate),
+    makeGovernedRatio(LOAN_FEE_KEY, rates.loanFee),
   ]);
 };

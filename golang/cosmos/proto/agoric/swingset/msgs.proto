@@ -5,8 +5,11 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
+// Transactions.
 service Msg {
+  // Send inbound messages.
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
+  // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
 }
 
@@ -33,6 +36,7 @@ message MsgDeliverInbound {
     ];
 }
 
+// MsgDeliverInboundResponse is an empty reply.
 message MsgDeliverInboundResponse {}
 
 // MsgProvision defines an SDK message for provisioning a client to the chain
@@ -60,4 +64,5 @@ message MsgProvision {
     ];
 }
 
+// MsgProvisionResponse is an empty reply.
 message MsgProvisionResponse {}

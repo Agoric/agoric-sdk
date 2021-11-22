@@ -13,7 +13,7 @@ import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import liquidateBundle from '../../../bundles/bundle-liquidateMinimum.js';
-import autoswapBundle from '../../../bundles/bundle-multipoolAutoswap.js';
+import ammBundle from '../../../bundles/bundle-amm.js';
 import stablecoinBundle from '../../../bundles/bundle-stablecoinMachine.js';
 import committeeBundle from '../../../bundles/bundle-committee.js';
 import contractGovernorBundle from '../../../bundles/bundle-contractGovernor.js';
@@ -30,7 +30,7 @@ test.before(async t => {
 
   const nameToBundle = [
     ['liquidateMinimum', liquidateBundle],
-    ['autoswap', autoswapBundle],
+    ['amm', ammBundle],
     ['treasury', stablecoinBundle],
     ['committee', committeeBundle],
     ['contractGovernor', contractGovernorBundle],
@@ -76,7 +76,7 @@ const expectedTreasuryLog = [
   '=> alice and the treasury are set up',
   '=> alice.oneLoanWithInterest called',
   'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
-  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510034n]"} after interest',
+  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"} after interest',
 ];
 
 test.serial('treasury', async t => {

@@ -4,18 +4,14 @@ import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
 // The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
-// individual per-type vaultManagers.
+// "RUN" stablecoin.
 //
-// makeAddTypeInvitation is a closely held method that adds a brand new
-// collateral type. It specifies the initial exchange rate for that type.
-//
-// a second closely held method (not implemented yet) would add collateral of a
-// type for which there is an existing pool. It gets the current price from the
-// pool.
-//
-// ownershipTokens for vaultManagers entitle holders to distributions, but you
-// can't redeem them outright, that would drain the utility from the economy.
+// addVaultType is a closely held method that adds a brand new collateral type.
+// It specifies the initial exchange rate for that type. It depends on a
+// separately specified AMM to provide the ability to liquidate loans that are
+// in arrears. We could check that the AMM has sufficient liquidity, but for the
+// moment leave that to those participating in the governance process for adding
+// new collateral type to ascertain.
 
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
@@ -23,55 +19,30 @@ import '@agoric/governance/src/exported';
 import { makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
-  offerTo,
   getAmountOut,
   getAmountIn,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
-import {
-  ceilMultiplyBy,
-  makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
 
-import { makeTracer } from './makeTracer.js';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 import {
-  makePoolParamManager,
-  makeFeeParamManager,
-  PROTOCOL_FEE_KEY,
-  POOL_FEE_KEY,
+  makeVaultParamManager,
   governedParameterTerms as governedParameterLocal,
-  ParamKey,
 } from './params.js';
 
 const { quote: q, details: X } = assert;
-
-const trace = makeTracer('ST');
-
-// The StableCoinMachine owns a number of VaultManagers, and a mint for the
-// "RUN" stablecoin. This overarching SCM will hold ownershipTokens in the
-// individual per-type vaultManagers.
-//
-// makeAddTypeInvitation is a closely held method that adds a brand new
-// collateral type. It specifies the initial exchange rate for that type.
-//
-// a second closely held method (not implemented yet) would add collateral of a
-// type for which there is an existing pool. It gets the current price from the
-// pool.
-//
-// ownershipTokens for vaultManagers entitle holders to distributions, but you
-// can't redeem them outright; that would drain the utility from the economy.
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
   // loanParams has time limits for charging interest
   const {
-    autoswapInstall,
+    ammPublicFacet,
     priceAuthority,
     loanParams,
     timerService,
@@ -83,6 +54,11 @@ export async function start(zcf, privateArgs) {
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
   const { feeMintAccess } = privateArgs;
+  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
+  zcf.setTestJig(() => ({
+    runIssuerRecord: runMint.getIssuerRecord(),
+  }));
 
   assert.typeof(
     loanParams.chargingPeriod,
@@ -97,33 +73,24 @@ export async function start(zcf, privateArgs) {
 
   assert(
     sameStructure(governedParams, harden(governedParameterLocal)),
-    X`Terms must match ${governedParameterLocal}`,
+    X`Terms ${governedParams} must match ${governedParameterLocal}`,
   );
-  const feeParams = makeFeeParamManager(loanParams);
 
-  const [runMint, govMint] = await Promise.all([
-    zcf.registerFeeMint('RUN', feeMintAccess),
-    zcf.makeZCFMint('Governance', undefined, harden({ decimalPlaces: 6 })),
-  ]);
-  const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
-
-  const { brand: govBrand } = govMint.getIssuerRecord();
-
-  // This is a stand-in for a reward pool. For now, it's a place to squirrel
-  // away fees so the tests show that the funds have been removed.
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
-   * We provide an easy way for the vaultManager and vaults to add rewards to
+   * We provide an easy way for the vaultManager to add rewards to
    * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
    *
    * @type {ReallocateReward}
    */
   function reallocateReward(amount, fromSeat, otherSeat = undefined) {
     rewardPoolSeat.incrementBy(
-      fromSeat.decrementBy({
-        RUN: amount,
-      }),
+      fromSeat.decrementBy(
+        harden({
+          RUN: amount,
+        }),
+      ),
     );
     if (otherSeat !== undefined) {
       zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
@@ -133,161 +100,49 @@ export async function start(zcf, privateArgs) {
   }
 
   /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeScalarMap('brand'); // Brand -> vaultManager
+  const collateralTypes = makeScalarMap('brand');
 
   const zoe = zcf.getZoeService();
 
-  // we assume the multipool-autoswap is public, so folks can buy/sell
-  // through it without our involvement
-  // Should it use creatorFacet, creatorInvitation, instance?
-  /** @type {{ publicFacet: MultipoolAutoswapPublicFacet, instance: Instance,
-   *  creatorFacet: MultipoolAutoswapCreatorFacet }} */
-  const {
-    publicFacet: autoswapAPI,
-    instance: autoswapInstance,
-    creatorFacet: autoswapCreatorFacet,
-  } = await E(zoe).startInstance(
-    autoswapInstall,
-    { Central: runIssuer },
-    {
-      timer: timerService,
-      // TODO(#3862): make the AMM use a paramManager. For now, the values
-      //  are fixed after creation of an autoswap instance.
-      poolFee: feeParams.getParam(POOL_FEE_KEY).value,
-      protocolFee: feeParams.getParam(PROTOCOL_FEE_KEY).value,
-    },
-  );
+  /** @type { Store<Brand, VaultParamManager> } */
+  const vaultParamManagers = makeScalarMap('brand');
 
-  /** @type { Store<Brand, PoolParamManager> } */
-  const poolParamManagers = makeScalarMap('brand');
-
-  // We process only one offer per collateralType. They must tell us the
-  // dollar value of their collateral, and we create that many RUN.
-  // collateralKeyword = 'aEth'
-  async function makeAddTypeInvitation(
-    collateralIssuer,
-    collateralKeyword,
-    rates,
-  ) {
+  async function addVaultType(collateralIssuer, collateralKeyword, rates) {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
-    assert(!collateralTypes.has(collateralBrand));
+    // We create only one vault per collateralType.
+    assert(
+      !collateralTypes.has(collateralBrand),
+      `Collateral brand ${collateralBrand} has already been added`,
+    );
 
-    const poolParamManager = makePoolParamManager(loanParams, rates);
-    poolParamManagers.init(collateralBrand, poolParamManager);
+    const vaultParamManager = makeVaultParamManager(loanParams, rates);
+    vaultParamManagers.init(collateralBrand, vaultParamManager);
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
-      { RUN: runIssuer },
-      { autoswap: autoswapAPI },
+      harden({ RUN: runIssuer, Collateral: collateralIssuer }),
+      harden({ amm: ammPublicFacet }),
     );
+    const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
-    async function addTypeHook(seat) {
-      assertProposalShape(seat, {
-        give: { Collateral: null },
-        want: { Governance: null },
-      });
-      const {
-        give: { Collateral: collateralIn },
-        want: { Governance: _govOut }, // ownership of the whole stablecoin machine
-      } = seat.getProposal();
-      assert(!collateralTypes.has(collateralBrand));
-      // initialPrice is in rates, but only used at creation, so not in governor
-      const runAmount = ceilMultiplyBy(collateralIn, rates.initialPrice);
-      // arbitrarily, give governance tokens equal to RUN tokens
-      const govAmount = AmountMath.make(govBrand, runAmount.value);
-
-      // Create new governance tokens, trade them with the incoming offer for
-      // collateral. The offer uses the keywords Collateral and Governance.
-      // govSeat stores the collateral as Secondary. We then mint new RUN for
-      // govSeat and store them as Central. govSeat then creates a liquidity
-      // pool for autoswap, trading in Central and Secondary for governance
-      // tokens as Liquidity. These governance tokens are held by govSeat
-      const { zcfSeat: govSeat } = zcf.makeEmptySeatKit();
-      // TODO this should create the seat for us
-      govMint.mintGains({ Governance: govAmount }, govSeat);
-
-      // trade the governance tokens for collateral, putting the
-      // collateral on Secondary to be positioned for Autoswap
-      seat.incrementBy(govSeat.decrementBy({ Governance: govAmount }));
-      seat.decrementBy({ Collateral: collateralIn });
-      govSeat.incrementBy({ Secondary: collateralIn });
-
-      zcf.reallocate(govSeat, seat);
-      // the collateral is now on the temporary seat
-
-      // once we've done that, we can put both the collateral and the minted
-      // RUN into the autoswap, giving us liquidity tokens, which we store
-
-      // mint the new RUN to the Central position on the govSeat
-      // so we can setup the autoswap pool
-      runMint.mintGains({ Central: runAmount }, govSeat);
-
-      // TODO: check for existing pool, use its price instead of the
-      // user-provided 'rate'. Or throw an error if it already exists.
-      // `addPool` should combine initial liquidity with pool setup
-
-      const liquidityIssuer = await E(autoswapAPI).addPool(
-        collateralIssuer,
-        collateralKeyword,
-      );
-      const { brand: liquidityBrand } = await zcf.saveIssuer(
-        liquidityIssuer,
-        `${collateralKeyword}Liquidity`,
-      );
-
-      // inject both the collateral and the RUN into the new autoswap, to
-      // provide the initial liquidity pool
-      const liqProposal = harden({
-        give: {
-          Secondary: collateralIn,
-          Central: runAmount,
-        },
-        want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
-      });
-      const liqInvitation = E(autoswapAPI).makeAddLiquidityInvitation();
-
-      const { deposited } = await offerTo(
-        zcf,
-        liqInvitation,
-        undefined,
-        liqProposal,
-        govSeat,
-      );
-
-      const depositValue = await deposited;
-
-      // TODO(hibbert): make use of these assets (Liquidity: 19899 Aeth)
-      trace('depositValue', depositValue);
-
-      const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
-
-      // do something with the liquidity we just bought
-      const vm = makeVaultManager(
-        zcf,
-        autoswapAPI,
-        runMint,
-        collateralBrand,
-        priceAuthority,
-        poolParamManager.getParams,
-        reallocateReward,
-        timerService,
-        liquidationStrategy,
-      );
-      collateralTypes.init(collateralBrand, vm);
-      return vm;
-    }
-
-    return zcf.makeInvitation(addTypeHook, 'AddCollateralType');
+    const vm = makeVaultManager(
+      zcf,
+      runMint,
+      collateralBrand,
+      priceAuthority,
+      vaultParamManager.getParams,
+      reallocateReward,
+      timerService,
+      liquidationStrategy,
+    );
+    collateralTypes.init(collateralBrand, vm);
+    return vm;
   }
 
-  /**
-   * Make a loan in the vaultManager based on the collateral type.
-   */
+  /** Make a loan in the vaultManager based on the collateral type. */
   function makeLoanInvitation() {
-    /**
-     * @param {ZCFSeat} seat
-     */
+    /** @param {ZCFSeat} seat */
     async function makeLoanHook(seat) {
       assertProposalShape(seat, {
         give: { Collateral: null },
@@ -314,12 +169,6 @@ export async function start(zcf, privateArgs) {
       LONG_EXP,
     );
   }
-
-  zcf.setTestJig(() => ({
-    runIssuerRecord: runMint.getIssuerRecord(),
-    govIssuerRecord: govMint.getIssuerRecord(),
-    autoswap: autoswapAPI,
-  }));
 
   async function getCollaterals() {
     // should be collateralTypes.map((vm, brand) => ({
@@ -349,6 +198,7 @@ export async function start(zcf, privateArgs) {
     return rewardPoolSeat.getCurrentAllocation();
   }
 
+  // TODO(#4021) remove this method
   function mintBootstrapPayment() {
     const {
       zcfSeat: bootstrapZCFSeat,
@@ -356,9 +206,9 @@ export async function start(zcf, privateArgs) {
     } = zcf.makeEmptySeatKit();
     const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
     runMint.mintGains(
-      {
+      harden({
         Bootstrap: bootstrapAmount,
-      },
+      }),
       bootstrapZCFSeat,
     );
     bootstrapZCFSeat.exit();
@@ -381,33 +231,16 @@ export async function start(zcf, privateArgs) {
   }
 
   const getParams = paramDesc => {
-    switch (paramDesc.key) {
-      case ParamKey.FEE:
-        return feeParams.getParams();
-      case ParamKey.POOL:
-        return poolParamManagers.get(paramDesc.collateralBrand).getParams();
-      default:
-        throw Error(`Unrecognized param key for Params '${paramDesc.key}'`);
-    }
+    return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
   const getParamState = paramDesc => {
-    switch (paramDesc.keyl) {
-      case ParamKey.FEE:
-        return feeParams.getParam(paramDesc.parameterName);
-      case ParamKey.POOL:
-        return poolParamManagers
-          .get(paramDesc.collateralBrand)
-          .getParam(paramDesc.parameterName);
-      default:
-        throw Error(`Unrecognized param key for State '${paramDesc.key}'`);
-    }
+    return vaultParamManagers
+      .get(paramDesc.collateralBrand)
+      .getParam(paramDesc.parameterName);
   };
 
   const publicFacet = Far('stablecoin public facet', {
-    getAMM() {
-      return autoswapInstance;
-    },
     makeLoanInvitation,
     getCollaterals,
     // TODO this is in the terms, so could be retrieved from there.
@@ -423,32 +256,19 @@ export async function start(zcf, privateArgs) {
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     rewardPoolSeat,
-    autoswapCreatorFacet,
     runBrand,
   );
 
   const getParamMgrRetriever = () =>
     Far('paramManagerAccessor', {
       get: paramDesc => {
-        switch (paramDesc.key) {
-          case ParamKey.FEE:
-            return feeParams;
-          case ParamKey.POOL:
-            return poolParamManagers.get(paramDesc.collateralBrand);
-          default:
-            throw Error(
-              `Unrecognized param key for accessor '${paramDesc.key}'`,
-            );
-        }
+        return vaultParamManagers.get(paramDesc.collateralBrand);
       },
     });
 
   /** @type {StablecoinMachine} */
   const stablecoinMachine = Far('stablecoin machine', {
-    makeAddTypeInvitation,
-    getAMM() {
-      return autoswapInstance;
-    },
+    addVaultType,
     getCollaterals,
     getRewardAllocation,
     getBootstrapPayment: mintBootstrapPayment(),
@@ -464,6 +284,5 @@ export async function start(zcf, privateArgs) {
   return harden({
     creatorFacet: stablecoinMachineWrapper,
     publicFacet,
-    ParamKey,
   });
 }

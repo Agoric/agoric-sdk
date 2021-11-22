@@ -1,0 +1,64 @@
+.Request {
+  width: 420px;
+  max-width: 100%;
+  border-radius: 16px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  margin-bottom: 16px;
+  animation: expand 0.4s;
+  position: relative;
+}
+
+.RequestSummary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgb(40, 34, 48);
+  margin-bottom: 16px;
+  padding: 4px 0;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.RequestHeader {
+  height: 48px;
+  line-height: 48px;
+  text-align: center;
+}
+
+.Overlay {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  border-radius: 16px;
+  top: 0;
+  left: 0;
+  background-color: rgba(40, 34, 48, 0.1);
+  animation: fade-in 2s;
+  pointer-events: none;
+}
+
+@keyframes expand {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

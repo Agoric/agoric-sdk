@@ -21,14 +21,18 @@ const setupBasicMints = () => {
 };
 
 const startElectorate = async (zoe, installations) => {
-  const electorateTerms = {
+  const electorateTerms = harden({
     committeeName: 'TwentyCommittee',
     committeeSize: 5,
-  };
+  });
   const {
     creatorFacet: committeeCreator,
     instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.electorate, {}, electorateTerms);
+  } = await E(zoe).startInstance(
+    installations.electorate,
+    harden({}),
+    electorateTerms,
+  );
   return { committeeCreator, electorateInstance };
 };
 
@@ -89,14 +93,12 @@ function makeBootstrap(argv, cb, vatPowers) {
     const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
     const [
       liquidateMinimum,
-      autoswap,
       treasury,
       electorate,
       counter,
       governor,
     ] = await Promise.all([
       E(zoe).install(cb.liquidateMinimum),
-      E(zoe).install(cb.autoswap),
       E(zoe).install(cb.treasury),
       E(zoe).install(cb.committee),
       E(zoe).install(cb.binaryVoteCounter),
@@ -105,7 +107,6 @@ function makeBootstrap(argv, cb, vatPowers) {
 
     const installations = {
       liquidateMinimum,
-      autoswap,
       treasury,
       electorate,
       counter,

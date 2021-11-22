@@ -55,10 +55,11 @@ test('meter details', async t => {
     {
       compute: 'number',
       allocate: 'number',
+      currentHeapCount: 'number',
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-11');
+  t.is(meterType, 'xs-meter-12');
 });
 
 test('isReady does not compute / allocate', async t => {

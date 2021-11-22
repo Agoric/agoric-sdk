@@ -3,6 +3,8 @@
 NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
+PR_TARGET_REPO = ../../.git
+PR_TARGET_BRANCH = master
 
 default: all
 
@@ -88,13 +90,13 @@ go-mod-cache: ../../go.sum
 ###############################################################################
 
 proto-gen: proto-tools
-	./scripts/protocgen.sh
+	PATH="${BIN}:$$PATH" ./scripts/protocgen.sh
 
 proto-lint: proto-tools
-	buf check lint --error-format=json
+	${BIN}/buf lint
 
 proto-check-breaking: proto-tools
-	buf check breaking --against-input '.git#branch=master'
+	${BIN}/buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
 COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
@@ -103,8 +105,8 @@ t:
 	echo "X$(COSMOSVER)X"
 
 TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
-GOGO_PROTO_URL   := https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go)/proto/ibc/core
+GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
+IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v2)/proto/ibc/core
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
@@ -133,7 +135,7 @@ proto-update-deps:
 UNAME_S ?= $(shell uname -s)
 UNAME_M ?= $(shell uname -m)
 
-BUF_VERSION ?= 0.11.0
+BUF_VERSION ?= 0.56.0
 
 PROTOC_VERSION ?= 3.11.2
 ifeq ($(UNAME_S),Linux)
@@ -143,13 +145,14 @@ ifeq ($(UNAME_S),Darwin)
   PROTOC_ZIP ?= protoc-${PROTOC_VERSION}-osx-x86_64.zip
 endif
 
-proto-tools: proto-tools-stamp buf
+proto-tools: proto-tools-stamp buf grpc-gateway-stamp
 
 proto-tools-stamp:
 	echo "Installing protoc compiler..."
+	mkdir -p "${BIN}"
 	(cd /tmp; \
 	curl -OL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
-	unzip -o ${PROTOC_ZIP} -d ${BIN}/.. bin/protoc 'include/*'; \
+	unzip -o ${PROTOC_ZIP} -d "${BIN}/.." bin/protoc 'include/*'; \
 	rm -f ${PROTOC_ZIP})
 
 	echo "Installing protoc-gen-gocosmos..."
@@ -171,5 +174,15 @@ buf-stamp:
 
 	touch $@
 
+GATEWAY_PKGS = \
+	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
+	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
+	github.com/golang/protobuf/protoc-gen-go
+
+grpc-gateway-stamp:
+	go get $(GATEWAY_PKGS)
+	go install $(GATEWAY_PKGS)
+	touch $@
+
 tools-clean:
-	rm -f proto-tools-stamp buf-stamp
+	rm -f proto-tools-stamp buf-stamp grpc-gateway-stamp

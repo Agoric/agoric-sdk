@@ -37,7 +37,7 @@ function makeFakeFeeDepositFacet(feeIssuer) {
   return { feeDepositFacet, getPayments: _ => depositPayments };
 }
 
-function makeFakeTreasury() {
+function makeFakeFeeProducer() {
   const feePayments = [];
   return {
     collectFees: () => feePayments.pop(),
@@ -47,9 +47,14 @@ function makeFakeTreasury() {
   };
 }
 
-function assertPaymentArray(t, payments, count, value, issuer, brand) {
+function assertPaymentArray(t, payments, count, values, issuer, brand) {
   for (let i = 0; i < count; i += 1) {
-    assertPayoutAmount(t, issuer, payments[i], AmountMath.make(brand, value));
+    assertPayoutAmount(
+      t,
+      issuer,
+      payments[i],
+      AmountMath.make(brand, values[i]),
+    );
   }
 }
 
@@ -57,13 +62,14 @@ test('fee distribution', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeTreasury();
+  const treasury = makeFakeFeeProducer();
+  const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,
   };
   buildDistributor(
-    treasury,
+    [treasury, amm],
     feeDepositFacet,
     epochTimer,
     distributorParams,
@@ -72,40 +78,56 @@ test('fee distribution', async t => {
   });
 
   treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
+  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
 
   t.deepEqual(getPayments(), []);
 
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  await assertPaymentArray(t, getPayments(), 1, 500n, issuer, brand);
+  await assertPaymentArray(t, getPayments(), 2, [500n, 270n], issuer, brand);
 });
 
 test('fee distribution, leftovers', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeTreasury();
+  const treasury = makeFakeFeeProducer();
+  const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,
   };
-  buildDistributor(treasury, feeDepositFacet, epochTimer, distributorParams);
+  buildDistributor(
+    [treasury, amm],
+    feeDepositFacet,
+    epochTimer,
+    distributorParams,
+  );
 
   treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
+  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 8n)));
 
   t.deepEqual(getPayments(), []);
 
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  assertPaymentArray(t, getPayments(), 1, 12n, issuer, brand);
+  assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
 
   // Pay them again
   treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
+  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 7n)));
 
   await epochTimer.tick();
   await waitForPromisesToSettle();
 
-  await assertPaymentArray(t, getPayments().slice(1), 1, 13n, issuer, brand);
+  await assertPaymentArray(
+    t,
+    getPayments().slice(2),
+    2,
+    [13n, 7n],
+    issuer,
+    brand,
+  );
 });

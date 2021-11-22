@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Params are the swingset configuration/governance parameters.
 type Params struct {
 	// Map from unit name to a value in SwingSet "beans".
 	// Must not be negative.

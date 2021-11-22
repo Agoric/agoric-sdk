@@ -11,6 +11,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
       const installations = {
         runMintContract: await E(zoe).install(cb.runMintContract),
+        offerArgsUsageContract: await E(zoe).install(cb.offerArgsUsageContract),
       };
 
       const aliceP = E(vats.alice).build(zoe, installations, feeMintAccess);
