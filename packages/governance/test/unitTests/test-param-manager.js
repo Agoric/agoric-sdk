@@ -7,7 +7,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@agoric/marshal';
-import { buildParamManager, ParamType } from '../../src/paramManager.js';
+import { buildParamManager } from '../../src/paramManager.js';
 import { makeParamChangePositions } from '../../src/governParam.js';
 import {
   makeGovernedString,
