@@ -32,7 +32,7 @@ COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/buil
 RUN cd golang/cosmos && yarn build:gyp
 
 # Install the entry points in GOBIN.
-RUN cd packages/cosmic-swingset && make install install-helper install-agd
+RUN cd packages/cosmic-swingset && make install-local install-helper install-agd
 
 # Check out the specified submodule versions.
 # When changing/adding entries here, make sure to search the whole project for
