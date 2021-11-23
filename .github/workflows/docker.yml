@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "@agoric/sdk@*"
+  schedule:
+    # Build daily images.
+    cron: "0 0 * * *"
 
 jobs:
   docker-sdk:
@@ -19,6 +22,9 @@ jobs:
     - name: Save commit hash, url of submodules to environment
       run: |
         node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
+    - name: Save Docker tag
+      run: echo "DOCKER_TAG=,$SDK_VERSION" >> $GITHUB_ENV
+      if: ${{ github.event_name == 'push' }}
     - name: Build SDK image
       uses: elgohr/Publish-Docker-Github-Action@3.04
       with:
@@ -30,7 +36,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
-        tags: "latest,${{ env.SDK_VERSION }}"
+        tags: "latest${{ env.DOCKER_TAG }}"
 
   # This is currently needed for the relayer integration test framework.
   # It just runs agoric/agoric-sdk with a "single-node" argument.
@@ -49,7 +55,7 @@ jobs:
         context: packages/deployment/docker
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        tags: "ibc-alpha,${{ env.SDK_VERSION }}"
+        tags: "ibc-alpha"
 
   docker-solo:
     needs: docker-sdk
@@ -58,6 +64,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+    - name: Save Docker tag
+      run: echo "DOCKER_TAG=,$SDK_VERSION" >> $GITHUB_ENV
+      if: ${{ github.event_name == 'push' }}
     - name: Build ag-solo image
       uses: elgohr/Publish-Docker-Github-Action@3.04
       with:
@@ -67,7 +76,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
-        tags: "latest,${{ env.SDK_VERSION }}"
+        tags: "latest${{ env.DOCKER_TAG }}"
 
   docker-setup:
     needs: docker-sdk
@@ -76,6 +85,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+    - name: Save Docker tag
+      run: echo "DOCKER_TAG=,$SDK_VERSION" >> $GITHUB_ENV
+      if: ${{ github.event_name == 'push' }}
     - name: Build setup image
       uses: elgohr/Publish-Docker-Github-Action@3.04
       with:
@@ -85,7 +97,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
-        tags: "latest,${{ env.SDK_VERSION }}"
+        tags: "latest${{ env.DOCKER_TAG }}"
 
   docker-deployment:
     runs-on: ubuntu-latest
@@ -93,6 +105,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Save SDK_VERSION
       run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+    - name: Save Docker tag
+      run: echo "DOCKER_TAG=,$SDK_VERSION" >> $GITHUB_ENV
+      if: ${{ github.event_name == 'push' }}
     - name: Build setup image
       uses: elgohr/Publish-Docker-Github-Action@3.04
       with:
@@ -102,4 +117,4 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         snapshot: true
-        tags: "latest,${{ env.SDK_VERSION }}"
+        tags: "latest${{ env.DOCKER_TAG }}"
