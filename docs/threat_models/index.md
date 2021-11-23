@@ -1,4 +1,12 @@
 # Threat Model Diagrams
+## ./pegasus/pegasus_component.png
+
+[![./pegasus/pegasus_component.png](./pegasus/pegasus_component.png)](./pegasus/pegasus_component.png)
+
+## ./pegasus/pegasus_sequence.png
+
+[![./pegasus/pegasus_sequence.png](./pegasus/pegasus_sequence.png)](./pegasus/pegasus_sequence.png)
+
 ## ./smart_contracts/multipool_autoswap/mpas_component.png
 
 [![./smart_contracts/multipool_autoswap/mpas_component.png](./smart_contracts/multipool_autoswap/mpas_component.png)](./smart_contracts/multipool_autoswap/mpas_component.png)

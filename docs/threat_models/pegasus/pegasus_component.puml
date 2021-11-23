@@ -1,0 +1,33 @@
+@startuml
+'https://plantuml.com/component-diagram
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+database "Agoric Chain" {
+    actor "Alice" as alice
+    cloud "Governance" as gov
+
+    node "Dynamic IBC" as dIBC
+    node "Pegasus" as pegasus
+    pegasus <--> dIBC
+}
+
+database "Cosmos Chain" {
+    node "Cosmos IBC" as cIBC
+    actor "Bob" as bob
+}
+cloud {
+    actor "Relayer" as relayer
+
+    relayer <-u-> dIBC
+    relayer <-r-> cIBC
+}
+alice -d-> pegasus
+cIBC -d-> bob
+
+gov <-> pegasus
+@enduml
