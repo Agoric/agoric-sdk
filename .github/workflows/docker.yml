@@ -5,8 +5,8 @@ on:
     tags:
       - "@agoric/sdk@*"
   schedule:
-    # Build daily images.
-    cron: "0 0 * * *"
+      # Build daily images.
+    - cron: "0 0 * * *"
 
 jobs:
   docker-sdk:
