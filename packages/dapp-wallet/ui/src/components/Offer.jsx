@@ -79,17 +79,17 @@ const OfferWithoutContext = ({
     status = 'decline';
   }
 
-  const accept = () => {
+  const approve = () => {
     setPendingOffers({ offerId: id, isPending: true });
     E(walletBridge).acceptOffer(offerId);
   };
 
-  const decline = () => {
+  const cancel = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
     E(walletBridge).declineOffer(offerId);
   };
 
-  const cancel = () => {
+  const exit = () => {
     E(walletBridge).cancelOffer(offerId);
   };
 
@@ -165,27 +165,27 @@ const OfferWithoutContext = ({
     <div className="Controls">
       {status === 'pending' && (
         <Chip
-          onClick={cancel}
+          onClick={exit}
           variant="outlined"
           color="error"
-          label="Cancel"
+          label="Exit"
           icon={<CloseIcon />}
         />
       )}
       {status === 'proposed' && (
         <>
           <Chip
-            onClick={accept}
+            onClick={approve}
             variant="outlined"
-            label="Accept"
+            label="Approve"
             icon={<CheckIcon />}
             color="success"
             style={{ marginLeft: '8px' }}
           />
           <Chip
             variant="outlined"
-            onClick={decline}
-            label="Decline"
+            onClick={cancel}
+            label="Cancel"
             color="error"
             icon={<CloseIcon />}
           />
