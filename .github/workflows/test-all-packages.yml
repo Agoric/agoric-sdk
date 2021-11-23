@@ -19,6 +19,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
@@ -341,6 +342,10 @@ jobs:
       if: steps.built.outputs.cache-hit != 'true'
     # END-RESTORE-BOILERPLATE
 
+    - name: yarn test (cosmos)
+      run: cd golang/cosmos && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
     - name: yarn test (treasury)
       run: cd packages/treasury && yarn test
       env:
@@ -369,15 +374,22 @@ jobs:
       run: cd packages/dapp-wallet/ui && yarn test
       env:
         ESM_DISABLE_CACHE: true
-
     - name: yarn test (dapp-svelte-wallet)
       run: cd packages/dapp-svelte-wallet && yarn test
+      env:
+        ESM_DISABLE_CACHE: true
+    - name: yarn test (dapp-svelte-wallet-ui)
+      run: cd packages/dapp-svelte-wallet/ui && yarn test
       env:
         ESM_DISABLE_CACHE: true
     - name: yarn test (eslint-config)
       run: cd packages/eslint-config && yarn test
       env:
         ESM_DISABLE_CACHE: true
+
+      # The meta-test!
+    - name: Check for untested packages
+      run: node ./scripts/check-untested-packages.mjs
 
 ##############
 # Long-running tests are executed individually.
