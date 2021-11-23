@@ -1,4 +1,8 @@
 import { mount } from 'enzyme';
+import { act } from '@testing-library/react';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Popover from '@mui/material/Popover';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dapps, { DappsWithoutContext } from '../Dapps';
 import Dapp from '../../components/Dapp';
@@ -7,6 +11,9 @@ const dapps = [
   {
     id: 0,
     enable: true,
+    actions: {
+      delete: jest.fn(),
+    },
   },
   {
     id: 1,
@@ -53,4 +60,27 @@ test('renders a message when there are no dapps', () => {
   const component = mount(<Dapps dapps={[]} />);
 
   expect(component.text()).toContain('No Dapps');
+});
+
+test('lets you remove a dapp', async () => {
+  const component = mount(<Dapps />);
+  const firstDappSettingsButton = component.find(IconButton).at(0);
+  let firstDappPopover = component.find(Popover).at(0);
+  expect(firstDappPopover.props().open).toBe(false);
+  await act(async () =>
+    firstDappSettingsButton
+      .props()
+      .onClick({ currentTarget: firstDappPopover }),
+  );
+  component.update();
+
+  firstDappPopover = component.find(Popover).at(0);
+  expect(firstDappPopover.props().open).toBe(true);
+  await act(async () =>
+    firstDappPopover
+      .find(Button)
+      .props()
+      .onClick(),
+  );
+  expect(dapps[0].actions.delete).toHaveBeenCalled();
 });
