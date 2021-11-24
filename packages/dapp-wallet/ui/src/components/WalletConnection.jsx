@@ -92,7 +92,6 @@ const WalletConnection = ({
         /** @type {ERef<WalletBridge>} */
         const bridge = E(walletConnection).getAdminBootstrap(getAccessToken());
         // You should reconstruct all state here.
-        console.log('Got bridge', bridge);
         setWalletBridge(bridge);
         observeNotifier(E(bridge).getOffersNotifier(), {
           updateState: setInbox,
