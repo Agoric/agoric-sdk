@@ -55,4 +55,8 @@ jobs:
 
     - name: run agoric-cli integration-test
       working-directory: ./packages/agoric-cli
-      run: PATH="$PATH:$HOME/bin" AGORIC_INIT_OPTIONS='["--dapp-branch=${{steps.get-branch.outputs.result}}"]' yarn integration-test
+      run: PATH="$PATH:$HOME/bin" yarn integration-test
+      env:
+        AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
+        # Try to avoid hitting a pessimal Actions output rate-limitation.
+        SOLO_MAX_DEBUG_LENGTH: '1024'
