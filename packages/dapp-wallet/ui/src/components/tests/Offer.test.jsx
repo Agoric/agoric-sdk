@@ -171,13 +171,13 @@ test('renders the controls', () => {
       .find(Chip)
       .at(0)
       .text(),
-  ).toContain('Accept');
+  ).toContain('Approve');
   expect(
     controls
       .find(Chip)
       .at(1)
       .text(),
-  ).toContain('Decline');
+  ).toContain('Cancel');
 });
 
 test('renders the cancel button while pending', () => {
@@ -197,7 +197,7 @@ test('renders the cancel button while pending', () => {
       .find('.Controls')
       .find(Chip)
       .text(),
-  ).toContain('Cancel');
+  ).toContain('Exit');
 });
 
 test('renders the pending state eagerly', () => {
@@ -216,7 +216,7 @@ test('renders the pending state eagerly', () => {
       .find('.Controls')
       .find(Chip)
       .text(),
-  ).toContain('Cancel');
+  ).toContain('Exit');
 });
 
 test('renders the declined state eagerly', () => {

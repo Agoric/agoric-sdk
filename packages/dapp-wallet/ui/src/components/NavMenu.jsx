@@ -71,7 +71,11 @@ const NavMenu = () => {
         <ListItemLink to="/" primary="Dashboard" icon={<DashboardIcon />} />
         <ListItemLink to="/dapps" primary="Dapps" icon={<Apps />} />
         <ListItemLink to="/contacts" primary="Contacts" icon={<People />} />
-        <ListItemLink to="/issuers" primary="Issuers" icon={<AddCircle />} />
+        <ListItemLink
+          to="/issuers"
+          primary="Asset Issuers"
+          icon={<AddCircle />}
+        />
       </List>
     </nav>
   );

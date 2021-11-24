@@ -106,6 +106,17 @@ Same as SLOGFILE, but for solo instead of chain.
 
 Lifetime: ?
 
+## SOLO_MAX_DEBUG_LENGTH
+
+Affects: solo
+
+Purpose: reduce the size of each individual `console.debug` output
+
+Description: defaults to no limit, set to a decimal byte count to reduce the
+output
+
+Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
+
 ## SLOGFILE
 
 Affects: cosmic-swingset
