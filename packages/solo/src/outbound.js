@@ -1,6 +1,11 @@
+/* global process */
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
+
+// Limit the debug log length.
+const SOLO_MAX_DEBUG_LENGTH =
+  Number(process.env.SOLO_MAX_DEBUG_LENGTH) || undefined;
 
 const log = anylogger('outbound');
 
@@ -31,7 +36,12 @@ export function deliver(mbs) {
     data[target].outbox.forEach(m => {
       const [msgnum, body] = m;
       if (msgnum > t.highestSent) {
-        log.debug(`new outbound message ${msgnum} for ${target}: ${body}`);
+        log.debug(
+          `new outbound message ${msgnum} for ${target}: ${body}`.slice(
+            0,
+            SOLO_MAX_DEBUG_LENGTH,
+          ),
+        );
         newMessages.push(m);
       }
     });
