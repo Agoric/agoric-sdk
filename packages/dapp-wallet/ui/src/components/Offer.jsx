@@ -84,7 +84,7 @@ const OfferWithoutContext = ({
     E(walletBridge).acceptOffer(offerId);
   };
 
-  const cancel = () => {
+  const decline = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
     E(walletBridge).declineOffer(offerId);
   };
@@ -184,8 +184,8 @@ const OfferWithoutContext = ({
           />
           <Chip
             variant="outlined"
-            onClick={cancel}
-            label="Cancel"
+            onClick={decline}
+            label="Decline"
             color="error"
             icon={<CloseIcon />}
           />

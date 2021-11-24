@@ -177,10 +177,10 @@ test('renders the controls', () => {
       .find(Chip)
       .at(1)
       .text(),
-  ).toContain('Cancel');
+  ).toContain('Decline');
 });
 
-test('renders the cancel button while pending', () => {
+test('renders the exit button while pending', () => {
   const pendingOffer = { ...offer };
   pendingOffer.status = 'pending';
 
