@@ -29,9 +29,9 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
-// At least until post-v0.34.13 is released with
+// At least until post-v0.34.14 is released with
 // https://github.com/tendermint/tendermint/issue/6899 resolved.
-replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.13-alpha.agoric.7
+replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.14-alpha.agoric.1
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
 replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.2-alpha.agoric.1
