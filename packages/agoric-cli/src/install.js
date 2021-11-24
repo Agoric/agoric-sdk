@@ -10,6 +10,8 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
+  const forceSdkVersion = rawArgs[1];
+
   // Notify the preinstall guard that we are running.
   process.env.AGORIC_INSTALL = 'true';
 
@@ -98,8 +100,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       }),
     );
 
-    const sdkVersion = sdkWorktree ? 'workspace:^' : 'latest';
-
     // Link the SDK.
     if (sdkWorktree) {
       await fs.unlink(sdkWorktree).catch(_ => {});
@@ -121,7 +121,12 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           ),
         );
 
-        // Mark all the SDK package dependencies as wildcards.
+        if (forceSdkVersion === undefined) {
+          // No need to change package.json.
+          return;
+        }
+
+        // Modify all the SDK package versions.
         const pjson = `${subdir}/package.json`;
         const packageJSON = await fs
           .readFile(pjson, 'utf-8')
@@ -135,7 +140,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           if (deps) {
             for (const pkg of Object.keys(deps)) {
               if (versions.has(pkg)) {
-                deps[pkg] = sdkVersion;
+                deps[pkg] = forceSdkVersion;
               }
             }
           }
