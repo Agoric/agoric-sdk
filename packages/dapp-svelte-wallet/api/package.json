@@ -57,5 +57,8 @@
       "test/**/test-*.js"
     ],
     "timeout": "2m"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
