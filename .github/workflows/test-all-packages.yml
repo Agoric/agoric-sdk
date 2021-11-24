@@ -61,6 +61,34 @@ jobs:
     - name: lint check
       run: yarn lint-check
 
+  dev-canary:
+    if: ${{github.event_name == 'push'}}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note: only use one node-version
+        node-version: ['14.x']
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
+    - name: configure NPM token
+      run: |
+        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - name: check credentials
+      run: npm whoami
+    - name: publish to NPM dev tag
+      run: |
+        yarn lerna publish --conventional-prerelease --canary --exact \
+          --dist-tag=dev --preid=dev-$(git rev-parse --short=7 HEAD) \
+          --no-push --no-verify-access --yes
+
   benchmark:
     needs: build
     runs-on: ubuntu-latest
