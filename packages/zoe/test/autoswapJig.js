@@ -9,7 +9,7 @@ import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide } = natSafeMath;
 
-// A test Harness that simplifies tests of autoswap and multipoolAutoswap. The
+// A test Harness that simplifies tests of autoswap and constant product AMM. The
 // main component is the Trader, which can be instructed to make various offers
 // to the contracts, and will validate pre- and post-conditions, instructed by
 // a description of the expected previous state, the details of the offer and
@@ -117,7 +117,7 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
     return E(purseMap.get(amount.brand)).withdraw(amount);
   };
 
-  // autoswap ignores issuer, multipoolAutoswap needs to know which pool
+  // autoswap ignores issuer, constant product AMM needs to know which pool
   const getLiquidity = issuer =>
     E(publicFacet).getLiquiditySupply(issuer.getBrand());
   const getPoolAllocation = issuer =>

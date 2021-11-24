@@ -12,7 +12,7 @@ import {
 } from '../../contractSupport/index.js';
 
 import '../../../exported.js';
-import { makePriceAuthority } from '../multipoolAutoswap/priceAuthority.js';
+import { makePriceAuthority } from './priceAuthority.js';
 import { makeSinglePool } from './singlePool.js';
 
 const { details: X } = assert;

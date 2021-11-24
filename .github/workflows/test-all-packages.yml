@@ -173,9 +173,6 @@ jobs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
-    - name: Check for untested packages
-      run: node ./scripts/check-untested-packages.mjs
-
 ##################
 # Fast-running tests run as a group:
   test-quick:
@@ -389,6 +386,10 @@ jobs:
       run: cd packages/eslint-config && yarn test
       env:
         ESM_DISABLE_CACHE: true
+
+      # The meta-test!
+    - name: Check for untested packages
+      run: node ./scripts/check-untested-packages.mjs
 
 ##############
 # Long-running tests are executed individually.

@@ -12,6 +12,13 @@ import {
 
 import { makePspawn, getSDKBinaries } from './helpers.js';
 
+const terminalOnlyFlags = (...flags) => {
+  if (process.stdout.isTTY && process.stdin.isTTY) {
+    return flags;
+  }
+  return [];
+};
+
 const PROVISION_COINS = `100000000${STAKING_DENOM},500000000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},50000000${CENTRAL_DENOM}`;
@@ -66,7 +73,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           'run',
           `--volume=${process.cwd()}:/usr/src/dapp`,
           `--rm`,
-          // `-it`,
+          ...terminalOnlyFlags(`-it`),
           `--entrypoint=agd`,
           SDK_IMAGE,
           `--home=/usr/src/dapp/_agstate/keys`,
@@ -222,7 +229,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.cwd()}:/usr/src/dapp`,
             `--rm`,
             ...dockerArgs,
-            // `-it`,
+            ...terminalOnlyFlags(`-it`),
             SDK_IMAGE,
             ...args,
             `--home=/usr/src/dapp/${agServer}`,
@@ -402,7 +409,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.env.HOME}/.agoric:/root/.agoric`,
             `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
             `--rm`,
-            // `-it`,
+            ...terminalOnlyFlags(`-it`),
             `--entrypoint=ag-solo`,
             ...dockerArgs,
             SOLO_IMAGE,
@@ -595,7 +602,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         `--volume=${process.cwd()}:/usr/src/dapp`,
         `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
         `--rm`,
-        `-it`,
+        ...terminalOnlyFlags(`-it`),
         SOLO_IMAGE,
         `--webport=${port}`,
         `--webhost=0.0.0.0`,
