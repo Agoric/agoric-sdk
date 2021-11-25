@@ -41,11 +41,9 @@ jobs:
     - name: yarn build
       run: yarn build
 
-    - name: cache build outputs
-      uses: actions/cache@v1
+    - uses: ./.github/actions/save-node
       with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+        node-version: ${{ matrix.node-version }}
 
   lint:
     needs: build
@@ -55,27 +53,10 @@ jobs:
         # note: only use one node-version
         node-version: ['14.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
 
     - name: lint check
       run: yarn lint-check
@@ -89,27 +70,10 @@ jobs:
         node-version: ['14.x']
     if: ${{github.event_name == 'push'}}
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
 
     - name: benchmark changes
       env:
@@ -129,27 +93,10 @@ jobs:
         node-version: ['14.x']
     if: ${{github.event_name == 'push'}}
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
 
     - name: generate coverage for all tests
       run: 'yarn test:c8-all || :'
@@ -183,28 +130,11 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
 
     # We run separate steps for each package, to make it easier to drill down
     # into errors. If we wanted to just run everything, run 'yarn test' from
@@ -216,100 +146,52 @@ jobs:
     #  run: yarn test
     - name: yarn test (access-token)
       run: cd packages/access-token && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (agoric-cli)
       run: cd packages/agoric-cli && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (assert)
       run: cd packages/assert && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (bundle-source)
       run: cd packages/bundle-source && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-svelte-wallet/api)
       run: cd packages/dapp-svelte-wallet/api && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (ERTP)
       run: cd packages/ERTP && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (eventual-send)
       run: cd packages/eventual-send && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (governance)
       run: cd packages/governance && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (import-bundle)
       run: cd packages/import-bundle && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (promise-kit)
       run: cd packages/promise-kit && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (same-structure)
       run: cd packages/same-structure && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (sharing-service)
       run: cd packages/sharing-service && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (sparse-ints)
       run: cd packages/sparse-ints && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (spawner)
       run: cd packages/spawner && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (stat-logger)
       run: cd packages/stat-logger && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (store)
       run: cd packages/store && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (swing-store)
       run: cd packages/swing-store && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (wallet-connection)
       run: cd packages/wallet-connection && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -319,73 +201,33 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (cosmos)
       run: cd golang/cosmos && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (treasury)
       run: cd packages/treasury && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (pegasus)
       run: cd packages/pegasus && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (vats)
       run: cd packages/vats && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (deploy-script-support)
       run: cd packages/deploy-script-support && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (ui-components)
       run: cd packages/ui-components && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-wallet/ui)
       run: cd packages/dapp-wallet/ui && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-svelte-wallet)
       run: cd packages/dapp-svelte-wallet && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (dapp-svelte-wallet-ui)
       run: cd packages/dapp-svelte-wallet/ui && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (eslint-config)
       run: cd packages/eslint-config && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
 
       # The meta-test!
     - name: Check for untested packages
@@ -401,35 +243,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (solo)
       timeout-minutes: 20
       run: cd packages/solo && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
-
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -439,29 +260,11 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: Set up Go 1.15
       uses: actions/setup-go@v1
       with:
@@ -475,8 +278,6 @@ jobs:
           ${{ runner.os }}-go-
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -486,42 +287,18 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test 'test/**/test-[A-Ia-i]*.js'
-      env:
-        ESM_DISABLE_CACHE: true
     - name: yarn test (xsnap)
       run: cd packages/xsnap && yarn test
-      env:
-        ESM_DISABLE_CACHE: true
     # explicitly test the XS worker, for visibility
     - name: yarn test (SwingSet XS Worker)
       run: cd packages/SwingSet && yarn test:xs-worker
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -531,33 +308,13 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -567,33 +324,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
 
     - name: yarn test (SwingSet)
       run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -603,34 +341,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (zoe)
       timeout-minutes: 30
       run: cd packages/zoe && yarn test:unit
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -640,34 +358,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (zoe)
       timeout-minutes: 30
       run: cd packages/zoe && yarn test:swingset
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-xs:
     # BEGIN-TEST-BOILERPLATE
@@ -678,34 +376,14 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (xs)
       timeout-minutes: 30
       run: yarn test:xs 'test/**/test-[A-Ia-i]*.js'
-      env:
-        ESM_DISABLE_CACHE: true
 
   test-xs2:
     # BEGIN-TEST-BOILERPLATE
@@ -716,35 +394,14 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (xs)
       timeout-minutes: 30
       run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
-      env:
-        ESM_DISABLE_CACHE: true
-
 
   test-xs3:
     # BEGIN-TEST-BOILERPLATE
@@ -755,31 +412,11 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
       with:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
-    # BEGIN-RESTORE-BOILERPLATE
-    - name: restore built files
-      id: built
-      uses: actions/cache@v1
-      with:
-        path: .
-        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn install
-      run: yarn install
-      if: steps.built.outputs.cache-hit != 'true'
-    - name: yarn build
-      run: yarn build
-      if: steps.built.outputs.cache-hit != 'true'
-    # END-RESTORE-BOILERPLATE
-
     - name: yarn test (xs)
       timeout-minutes: 30
       run: yarn test:xs 'test/**/test-[S-Zs-z0-9]*.js'
-      env:
-        ESM_DISABLE_CACHE: true

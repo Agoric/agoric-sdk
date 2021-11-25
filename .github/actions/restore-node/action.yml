@@ -1,0 +1,35 @@
+name: Agoric SDK restore Node.js build
+description: 'Set up Node.js environment and restore cached built files'
+
+inputs:
+  node-version:
+    description: 'The version of Node.js to use'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: set default environment variables
+      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
+      shell: bash
+    - uses: actions/checkout@v2
+      with:
+        clean: 'false'
+        submodules: 'true'
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ inputs.node-version }}
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ inputs.node-version }}-built-${{ github.sha }}
+    - name: yarn install
+      run: yarn install
+      shell: bash
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      shell: bash
+      if: steps.built.outputs.cache-hit != 'true'
