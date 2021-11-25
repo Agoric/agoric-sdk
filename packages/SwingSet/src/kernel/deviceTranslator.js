@@ -4,7 +4,7 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { kdebug } from './kdebug.js';
-import { insistValidVatstoreKey } from './vatTranslator.js';
+import { assertValidVatstoreKey } from './vatTranslator.js';
 
 /*
  * Return a function that converts KernelInvocation objects into
@@ -98,13 +98,13 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   }
 
   function translateVatstoreGet(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${deviceID}].vatstoreGet(${key})`);
     return harden(['vatstoreGet', deviceID, key]);
   }
 
   function translateVatstoreSet(key, value) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     assert.typeof(value, 'string');
     kdebug(`syscall[${deviceID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', deviceID, key, value]);
@@ -112,11 +112,11 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
 
   function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
     if (priorKey !== '') {
-      insistValidVatstoreKey(priorKey);
+      assertValidVatstoreKey(priorKey);
     }
-    insistValidVatstoreKey(lowerBound);
+    assertValidVatstoreKey(lowerBound);
     if (upperBound) {
-      insistValidVatstoreKey(upperBound);
+      assertValidVatstoreKey(upperBound);
     }
     kdebug(
       `syscall[${deviceID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
@@ -131,7 +131,7 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   }
 
   function translateVatstoreDelete(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${deviceID}].vatstoreDelete(${key})`);
     return harden(['vatstoreDelete', deviceID, key]);
   }

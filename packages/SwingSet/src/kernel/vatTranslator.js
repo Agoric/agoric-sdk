@@ -7,6 +7,10 @@ import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
 
 const reapMessageVatDelivery = harden(['bringOutYourDead']);
 
+export function assertValidVatstoreKey(key) {
+  assert.typeof(key, 'string');
+}
+
 /*
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
@@ -152,11 +156,6 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   return kernelDeliveryToVatDelivery;
 }
 
-export function insistValidVatstoreKey(key) {
-  assert.typeof(key, 'string');
-  assert(key.match(/^[-\w.+/]+$/), 'invalid vatstore key');
-}
-
 /*
  * return a function that converts VatSyscall objects into KernelSyscall
  * objects
@@ -218,13 +217,13 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   }
 
   function translateVatstoreGet(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
     return harden(['vatstoreGet', vatID, key]);
   }
 
   function translateVatstoreSet(key, value) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     assert.typeof(value, 'string');
     kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', vatID, key, value]);
@@ -232,11 +231,14 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
     if (priorKey !== '') {
-      insistValidVatstoreKey(priorKey);
+      assertValidVatstoreKey(priorKey);
     }
-    insistValidVatstoreKey(lowerBound);
+    assertValidVatstoreKey(lowerBound);
     if (upperBound) {
-      insistValidVatstoreKey(upperBound);
+      assertValidVatstoreKey(upperBound);
+    }
+    if (upperBound === null) {
+      upperBound = undefined;
     }
     kdebug(
       `syscall[${vatID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
@@ -251,7 +253,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   }
 
   function translateVatstoreDelete(key) {
-    insistValidVatstoreKey(key);
+    assertValidVatstoreKey(key);
     kdebug(`syscall[${vatID}].vatstoreDelete(${key})`);
     return harden(['vatstoreDelete', vatID, key]);
   }
@@ -460,7 +462,7 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
           assert(Array.isArray(resultData));
           return harden(['ok', resultData]);
         } else {
-          return harden(['ok', undefined]);
+          return harden(['ok', [undefined, undefined]]);
         }
       default:
         assert(successFlag === 'ok', 'unexpected KSR error');

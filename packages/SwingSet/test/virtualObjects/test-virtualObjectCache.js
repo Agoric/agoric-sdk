@@ -37,7 +37,7 @@ function makeThing(n) {
   return {
     vobjID: `t${n}`,
     rawData: `thing #${n}`,
-    dirty: true,
+    dirty: false,
   };
 }
 
@@ -50,6 +50,7 @@ test('cache overflow and refresh', t => {
     const thing = makeThing(i);
     things.push(thing);
     cache.remember(thing);
+    cache.markDirty(thing);
   }
   // cache: t5, t4, t3, t2
 
@@ -73,7 +74,7 @@ test('cache overflow and refresh', t => {
   // lookup that has no effect
   things[0] = cache.lookup('t0'); // cache: t0, t2, t5, t4
   things[0].rawData = 'changed thing #0';
-  things[0].dirty = true; // pretend we changed it
+  cache.markDirty(things[0]); // pretend we changed it
   t.is(things[0].rawData, 'changed thing #0');
   t.is(things[3].rawData, null);
   t.deepEqual(store.getLog(), [['store', 't3', 'thing #3']]);
@@ -86,12 +87,24 @@ test('cache overflow and refresh', t => {
   t.deepEqual(store.getLog(), [['store', 't5', 'thing #5']]);
 
   // verify that everything is there
+  t.truthy(things[0].dirty);
+  t.falsy(things[1].dirty);
+  t.truthy(things[2].dirty);
+  t.falsy(things[3].dirty);
+  t.truthy(things[4].dirty);
+  t.falsy(things[5].dirty);
   cache.flush(); // cache: empty
-  t.is(things[0].rawData, null);
+  t.falsy(things[0].dirty);
+  t.falsy(things[1].dirty);
+  t.falsy(things[2].dirty);
+  t.falsy(things[3].dirty);
+  t.falsy(things[4].dirty);
+  t.falsy(things[5].dirty);
+  t.is(things[0].rawData, 'changed thing #0');
   t.is(things[1].rawData, null);
-  t.is(things[2].rawData, null);
+  t.is(things[2].rawData, 'thing #2');
   t.is(things[3].rawData, null);
-  t.is(things[4].rawData, null);
+  t.is(things[4].rawData, 'thing #4');
   t.is(things[5].rawData, null);
   t.deepEqual(store.getLog(), [
     ['store', 't2', 'thing #2'],

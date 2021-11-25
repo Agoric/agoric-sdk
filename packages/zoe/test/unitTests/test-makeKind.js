@@ -1,5 +1,5 @@
 // @ts-check
-/* global makeKind makeVirtualScalarWeakMap */
+/* global VatData */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -20,7 +20,11 @@ test('makeKind non-swingset', async t => {
   const bundle = await bundleSource(root);
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
-  t.notThrows(() => makeKind());
-  t.notThrows(() => makeVirtualScalarWeakMap());
+  t.notThrows(() => VatData.makeKind());
+  t.notThrows(() => VatData.makeDurableKind());
+  t.notThrows(() => VatData.makeScalarBigMapStore());
+  t.notThrows(() => VatData.makeScalarBigWeakMapStore());
+  t.notThrows(() => VatData.makeScalarBigSetStore());
+  t.notThrows(() => VatData.makeScalarBigWeakSetStore());
   await t.notThrowsAsync(() => E(zoe).startInstance(installation));
 });

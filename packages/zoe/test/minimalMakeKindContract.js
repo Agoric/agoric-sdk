@@ -1,8 +1,12 @@
-/* global makeKind makeVirtualScalarWeakMap */
+/* global VatData */
 
 const start = _zcf => {
-  makeKind();
-  makeVirtualScalarWeakMap();
+  VatData.makeKind();
+  VatData.makeDurableKind();
+  VatData.makeScalarBigMapStore();
+  VatData.makeScalarBigWeakMapStore();
+  VatData.makeScalarBigSetStore();
+  VatData.makeScalarBigWeakSetStore();
 
   return harden({});
 };

@@ -6,17 +6,17 @@ import { Far } from '@endo/marshal';
 
 import engineGC from '../../src/engine-gc.js';
 import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-// empty object, used as makeVirtualScalarWeakMap() key
-function makeKeyInstance(_state) {
+// empty object, used as weak map store key
+function makeKeyInnards(_state) {
   return {
     init() {},
     self: Far('key'),
   };
 }
 
-function makeHolderInstance(state) {
+function makeHolderInnards(state) {
   return {
     init(held) {
       state.held = held;
@@ -79,11 +79,12 @@ function stashRemotableFour(holderMaker) {
 test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
   const vomOptions = { cacheSize: 3, weak: true };
-  const vom = makeFakeVirtualObjectManager(vomOptions);
-  const { makeVirtualScalarWeakMap, makeKind } = vom;
-  const weakStore = makeVirtualScalarWeakMap();
-  const keyMaker = makeKind(makeKeyInstance);
-  const holderMaker = makeKind(makeHolderInstance);
+  const { vom, cm } = makeFakeVirtualStuff(vomOptions);
+  const { makeKind } = vom;
+  const { makeScalarBigWeakMapStore } = cm;
+  const weakStore = makeScalarBigWeakMapStore('ws');
+  const makeKey = makeKind(makeKeyInnards);
+  const makeHolder = makeKind(makeHolderInnards);
 
   // create a Remotable and assign it a vref, then drop it, to make sure the
   // fake VOM isn't holding onto a strong reference, which would cause a
@@ -93,7 +94,7 @@ test('remotables retained by virtualized data', async t => {
   t.falsy(stash0.wr.deref(), `caution: fake VOM didn't release Remotable`);
 
   // stash a Remotable in the value of a weakStore
-  const key1 = keyMaker();
+  const key1 = makeKey();
   const stash1 = stashRemotableOne(weakStore, key1);
   await gcAndFinalize();
   // The weakStore virtualizes the values held under keys which are
@@ -104,14 +105,14 @@ test('remotables retained by virtualized data', async t => {
   t.truthy(stash1.isHeld(weakStore.get(key1)));
 
   // do the same, but exercise weakStore.set instead of .init
-  const key2 = keyMaker();
+  const key2 = makeKey();
   const stash2 = stashRemotableTwo(weakStore, key2);
   await gcAndFinalize();
   t.truthy(stash2.wr.deref());
   t.truthy(stash2.isHeld(weakStore.get(key2)));
 
   // now stash a Remotable in the state of a virtual object during init()
-  const stash3 = stashRemotableThree(holderMaker);
+  const stash3 = stashRemotableThree(makeHolder);
   await gcAndFinalize();
   // Each state property is virtualized upon write (via the generated
   // setters). So again we rely on the VOM to keep the Remotable alive in
@@ -120,7 +121,7 @@ test('remotables retained by virtualized data', async t => {
   t.truthy(stash3.isHeld(stash3.holder.getHeld()));
 
   // same, but stash after init()
-  const stash4 = stashRemotableFour(holderMaker);
+  const stash4 = stashRemotableFour(makeHolder);
   await gcAndFinalize();
   t.truthy(stash4.wr.deref());
   t.truthy(stash4.isHeld(stash4.holder.getHeld()));

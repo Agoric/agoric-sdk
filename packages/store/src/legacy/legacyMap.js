@@ -23,7 +23,7 @@ import { assert, details as X, q } from '@agoric/assert';
  *    * A promiseKit used as a value, even though a promiseKit is not
  *      a passable. Solutions are to make it a passable, or to convert
  *      the container back to a conventional JavaScript Map.
- *    A mutable array used as a value, that is subsequently mutated.
+ *    * A mutable array used as a value, that is subsequently mutated.
  *      Freezing the array wouldn't work of course because it would break
  *      the subsequent mutation. Using a far object wrapping an array would
  *      likely work fine.

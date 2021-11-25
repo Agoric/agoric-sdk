@@ -148,7 +148,7 @@
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
  *    | KernelSyscallRetireImports | KernelSyscallRetireExports
  * } KernelSyscallObject
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} KernelSyscallResultOk
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} KernelSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } KernelSyscallResultError
  * @typedef { KernelSyscallResultOk | KernelSyscallResultError } KernelSyscallResult
  *

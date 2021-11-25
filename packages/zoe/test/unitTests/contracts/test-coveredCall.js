@@ -497,8 +497,6 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Dave escrows his 1 buck with Zoe and forms his proposal
   const daveSwapProposal = harden({
-    // TODO Replace with a pattern over covered call invitation
-    // amounts.
     want: { Asset: optionAmount },
     give: { Price: bucks(1n) },
   });

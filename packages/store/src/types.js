@@ -95,8 +95,11 @@
  * case we internally may use a JavaScript `WeakMap`. Otherwise we internally
  * may use a JavaScript `Map`.
  * Defaults to true, so please mark short lived stores explicitly.
- * @property {Pattern=} keyPattern
- * @property {Pattern=} valuePattern
+ * @property {boolean=} durable  The contents of this store survive termination
+ *   of its containing process, allowing for restart or upgrade but at the cost
+ *   of forbidding storage of references to ephemeral data.  Defaults to false.
+ * @property {Pattern=} keySchema
+ * @property {Pattern=} valueSchema
  */
 
 /**
@@ -542,6 +545,7 @@
  * @property {(patt: Passable) => boolean} isPattern
  * @property {(patt: Pattern) => void} assertKeyPattern
  * @property {(patt: Passable) => boolean} isKeyPattern
+ * @property {GetRankCover} getRankCover
  * @property {MatcherNamespace} M
  */
 
@@ -589,62 +593,4 @@
  * ) => boolean} checkKeyPattern
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid pattern for use as a query key or key schema?
- */
-
-/**
- * @typedef {CopyTagged} Matcher
- */
-
-/**
- * @callback CheckMatches
- * @param {Passable} specimen
- * @param {Pattern} pattern
- * @param {Checker=} check
- */
-
-/**
- * @callback CheckPattern
- * @param {Passable} allegedPattern
- * @param {Checker=} check
- * @returns {boolean}
- */
-
-/**
- * @callback GetRankCover
- * @param {Pattern} pattern
- * @returns {RankCover}
- */
-
-// /////////////////////////////////////////////////////////////////////////////
-
-// TODO
-// The following commented out type should be in internal-types.js, since the
-// `MatchHelper` type is purely internal to this package. However,
-// in order to get the governance and solo packages both to pass lint,
-// I moved the type declaration itself to types.js. See the comment sin
-// in internal-types.js and exports.js
-
-/**
- * @typedef {Object} MatchHelper
- * This factors out only the parts specific to each kind of Matcher. It is
- * encapsulated, and its methods can make the stated unchecker assumptions
- * enforced by the common calling logic.
- * @property {(allegedPayload: Passable,
- *             check?: Checker
- * ) => boolean} checkIsMatcherPayload
- * Assumes this is the payload of a CopyTagged with the corresponding
- * matchTag. Is this a valid payload for a Matcher with that tag?
- * @property {(specimen: Passable,
- *             matcherPayload: Passable,
- *             check?: Checker
- * ) => boolean} checkMatches
- * Assuming a valid Matcher of this type with `matcherPayload` as its
- * payload, does this specimen match that Matcher?
- * @property {(payload: Passable) => RankCover} getRankCover
- * Assumes this is the payload of a CopyTagged with the corresponding
- * matchTag. Return a RankCover to bound from below and above,
- * in rank order, all possible Passables that would match this Matcher.
- * The left element must be before or the same rank as any possible
- * matching specimen. The right element must be after or the same
- * rank as any possible matching specimen.
  */

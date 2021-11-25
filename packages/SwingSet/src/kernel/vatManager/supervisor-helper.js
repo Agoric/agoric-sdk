@@ -115,10 +115,20 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     // vatstoreSet requires a result, and we offer them as a group.
     callNow: (target, method, args) =>
       doSyscall(['callNow', target, method, args]),
-    vatstoreGet: key => doSyscall(['vatstoreGet', key]),
+    vatstoreGet: key => {
+      const result = doSyscall(['vatstoreGet', key]);
+      return result === null ? undefined : result;
+    },
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
-    vatstoreGetAfter: (priorKey, lowerBound, upperBound) =>
-      doSyscall(['vatstoreGetAfter', priorKey, lowerBound, upperBound]),
+    vatstoreGetAfter: (priorKey, lowerBound, upperBound) => {
+      const result = doSyscall([
+        'vatstoreGetAfter',
+        priorKey,
+        lowerBound,
+        upperBound,
+      ]);
+      return result === null ? [undefined, undefined] : result;
+    },
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
 

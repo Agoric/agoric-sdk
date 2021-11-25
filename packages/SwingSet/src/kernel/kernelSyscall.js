@@ -113,11 +113,14 @@ export function makeKernelSyscallHandler(tools) {
    *   For example, if `lowerBound` is 'hello', then `upperBound` would default
    *   to 'hellp')
    *
-   * @returns { KernelSyscallResult } An 'ok' result can provide a pair of the key and value of the
-   *   first vatstore entry whose key is lexically greater than both `priorKey`
-   *   and `lowerBound`.  If there are no such entries or if the first such
-   *   entry has a key that is lexically greater than or equal to `upperBound`,
-   *   undefined is returned instead, signalling the end of iteration.
+   * @returns {['ok', [string, string]|[undefined, undefined]]} A pair of a
+   *   status code and a result value.  In the case of this operation, the
+   *   status code is always 'ok'.  The result value is a pair of the key and
+   *   value of the first vatstore entry whose key is lexically greater than
+   *   both `priorKey` and `lowerBound`.  If there are no such entries or if the
+   *   first such entry has a key that is lexically greater than or equal to
+   *   `upperBound`, then result value is a pair of undefineds instead,
+   *   signalling the end of iteration.
    *
    * Usage notes:
    *
@@ -211,7 +214,7 @@ export function makeKernelSyscallHandler(tools) {
     }
     if (nextIter.done) {
       clearVatStoreIteration();
-      return harden(['ok', null]);
+      return harden(['ok', [undefined, undefined]]);
     } else {
       const nextKey = nextIter.value;
       const resultValue = kvStore.get(nextKey);

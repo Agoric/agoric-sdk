@@ -1116,5 +1116,6 @@ export const {
   isPattern,
   assertKeyPattern,
   isKeyPattern,
+  getRankCover,
   M,
 } = makePatternKit();

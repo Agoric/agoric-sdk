@@ -1,9 +1,9 @@
-/* global makeKind */
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 export function buildRootObject(_vatPowers) {
-  function makeThingInstance(state) {
+  function makeThingInnards(state) {
     return {
       init(label) {
         state.label = label;
@@ -16,7 +16,7 @@ export function buildRootObject(_vatPowers) {
     };
   }
 
-  function makeVirtualHolderInstance(state) {
+  function makeVirtualHolderInnards(state) {
     return {
       init(value) {
         state.value = value;
@@ -29,9 +29,9 @@ export function buildRootObject(_vatPowers) {
     };
   }
 
-  const thingMaker = makeKind(makeThingInstance);
-  const virtualHolderMaker = makeKind(makeVirtualHolderInstance);
-  const cacheDisplacer = thingMaker('cacheDisplacer');
+  const makeThing = makeKind(makeThingInnards);
+  const makeVirtualHolder = makeKind(makeVirtualHolderInnards);
+  const cacheDisplacer = makeThing('cacheDisplacer');
   let nextThingNumber = 0;
   let heldThing = null;
   let virtualHolder = null;
@@ -41,7 +41,7 @@ export function buildRootObject(_vatPowers) {
   }
 
   function makeNextThing() {
-    const thing = thingMaker(`thing #${nextThingNumber}`);
+    const thing = makeThing(`thing #${nextThingNumber}`);
     nextThingNumber += 1;
     return thing;
   }
@@ -56,7 +56,7 @@ export function buildRootObject(_vatPowers) {
       displaceCache();
     },
     storeHeld() {
-      virtualHolder = virtualHolderMaker(heldThing);
+      virtualHolder = makeVirtualHolder(heldThing);
       displaceCache();
     },
     fetchAndHold() {

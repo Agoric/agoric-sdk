@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import engineGC from '../../src/engine-gc.js';
 import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {
