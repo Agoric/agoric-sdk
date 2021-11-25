@@ -233,6 +233,15 @@ async function runTestScript(
  * @property {string=} titleMatch
  */
 async function avaConfig(args, options, { glob, readFile }) {
+  /**
+   * @param { string } pattern
+   * @returns { Promise<string[]> }
+   */
+  const globFiles = pattern =>
+    new Promise((res, rej) =>
+      glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
+    );
+
   /** @type {string[]} */
   let files = [];
   let debug = false;
@@ -253,8 +262,11 @@ async function avaConfig(args, options, { glob, readFile }) {
       case '--match':
         titleMatch = args.shift();
         break;
-      default:
-        files.push(arg);
+      default: {
+        // The argument is a glob for tests to run.
+        const argFiles = await globFiles(arg);
+        files.push(...argFiles);
+      }
     }
   }
   const { packageFilename = 'package.json' } = options;
@@ -281,14 +293,6 @@ async function avaConfig(args, options, { glob, readFile }) {
   );
 
   if (!files.length) {
-    /**
-     * @param { string } pattern
-     * @returns { Promise<string[]> }
-     */
-    const globFiles = pattern =>
-      new Promise((res, rej) =>
-        glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
-      );
     assert(
       Array.isArray(filePatterns),
       X`ava.files: expected Array: ${q(filePatterns)}`,
