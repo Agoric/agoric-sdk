@@ -510,7 +510,7 @@ jobs:
     # END-RESTORE-BOILERPLATE
 
     - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test
+      run: cd packages/SwingSet && yarn test 'test/**/test-[A-Ia-i]*.js'
       env:
         ESM_DISABLE_CACHE: true
     - name: yarn test (xsnap)
@@ -520,6 +520,78 @@ jobs:
     # explicitly test the XS worker, for visibility
     - name: yarn test (SwingSet XS Worker)
       run: cd packages/SwingSet && yarn test:xs-worker
+      env:
+        ESM_DISABLE_CACHE: true
+
+  test-swingset2:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x', '16.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+      env:
+        ESM_DISABLE_CACHE: true
+
+  test-swingset3:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x', '16.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
       env:
         ESM_DISABLE_CACHE: true
 
@@ -598,7 +670,6 @@ jobs:
         ESM_DISABLE_CACHE: true
 
   test-xs:
-    continue-on-error: true # XS failures won't block CI
     # BEGIN-TEST-BOILERPLATE
     needs: build
     runs-on: ubuntu-latest
@@ -632,6 +703,83 @@ jobs:
 
     - name: yarn test (xs)
       timeout-minutes: 30
-      run: yarn test:xs
+      run: yarn test:xs 'test/**/test-[A-Ia-i]*.js'
+      env:
+        ESM_DISABLE_CACHE: true
+
+  test-xs2:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note: only use one node-version, maybe
+        node-version: ['14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (xs)
+      timeout-minutes: 30
+      run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
+      env:
+        ESM_DISABLE_CACHE: true
+
+
+  test-xs3:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note: only use one node-version, maybe
+        node-version: ['14.x']
+    steps:
+    - uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    # BEGIN-RESTORE-BOILERPLATE
+    - name: restore built files
+      id: built
+      uses: actions/cache@v1
+      with:
+        path: .
+        key: ${{ runner.os }}-${{ matrix.node-version }}-built-${{ github.sha }}
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn install
+      run: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
+    - name: yarn build
+      run: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
+    # END-RESTORE-BOILERPLATE
+
+    - name: yarn test (xs)
+      timeout-minutes: 30
+      run: yarn test:xs 'test/**/test-[S-Zs-z0-9]*.js'
       env:
         ESM_DISABLE_CACHE: true
