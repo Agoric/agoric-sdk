@@ -30,7 +30,8 @@ Once tests pass, you can publish to NPM with the following:
 
 ```sh
 # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-yarn lerna publish from-package
+# Specify the --dist-tag if you're publishing a new beta release.
+yarn lerna publish from-package # --dist-tag=beta
 ```
 
 Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE

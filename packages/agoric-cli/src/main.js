@@ -156,12 +156,12 @@ const main = async (progname, rawArgs, powers) => {
     });
 
   program
-    .command('install')
+    .command('install [force-sdk-version]')
     .description('install Dapp dependencies')
-    .action(async cmd => {
+    .action(async (forceSdkVersion, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(installMain, ['install'], opts);
+      return subMain(installMain, ['install', forceSdkVersion], opts);
     });
 
   program

@@ -10,8 +10,15 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
+  const forceSdkVersion = rawArgs[1];
+
   // Notify the preinstall guard that we are running.
   process.env.AGORIC_INSTALL = 'true';
+
+  // Node 16 requires this to be set for C++ addons to compile.
+  if (process.env.CXXFLAGS === undefined) {
+    process.env.CXXFLAGS = '-std=c++14';
+  }
 
   const pspawn = makePspawn({ log, spawn, chalk });
 
@@ -33,13 +40,15 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   }
 
   let subdirs;
+  let sdkWorktree;
   const dappPackageJSON = await fs
     .readFile(`package.json`, 'utf-8')
     .then(data => JSON.parse(data))
     .catch(err => log('error reading', `package.json`, err));
   if (dappPackageJSON.useWorkspaces) {
-    subdirs = await workspaceDirectories();
-    subdirs.unshift('.');
+    const workdirs = await workspaceDirectories();
+    sdkWorktree = workdirs.find(subd => subd === 'agoric-sdk');
+    subdirs = ['.', ...workdirs.filter(subd => subd !== 'agoric-sdk')];
   } else {
     const existingSubdirs = await Promise.all(
       ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
@@ -91,6 +100,12 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       }),
     );
 
+    // Link the SDK.
+    if (sdkWorktree) {
+      await fs.unlink(sdkWorktree).catch(_ => {});
+      await fs.symlink(sdkRoot, sdkWorktree);
+    }
+
     await Promise.all(
       subdirs.map(async subdir => {
         const nm = `${subdir}/node_modules`;
@@ -106,7 +121,12 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           ),
         );
 
-        // Mark all the SDK package dependencies as wildcards.
+        if (forceSdkVersion === undefined) {
+          // No need to change package.json.
+          return;
+        }
+
+        // Modify all the SDK package versions.
         const pjson = `${subdir}/package.json`;
         const packageJSON = await fs
           .readFile(pjson, 'utf-8')
@@ -120,7 +140,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           if (deps) {
             for (const pkg of Object.keys(deps)) {
               if (versions.has(pkg)) {
-                deps[pkg] = `*`;
+                deps[pkg] = forceSdkVersion;
               }
             }
           }
@@ -149,6 +169,10 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   if (yarnInstallUi) {
     log.error('Cannot yarn install in ui directory');
     return 1;
+  }
+
+  if (sdkWorktree) {
+    return 0;
   }
 
   if (opts.sdk) {

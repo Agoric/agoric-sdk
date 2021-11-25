@@ -34,6 +34,17 @@ declarations.
 Lifetime: until all sources (including dapps) conform to using `Far`
 declarations for all remote objects
 
+## CXXFLAGS
+
+Affects: yarn, agoric install
+
+Purpose: add compilation flags to Node.js C++ addons
+
+Description: defaults to `-std=c++14` if not set (empty string doesn't default)
+
+Lifetime: probably forever (until all supported Node versions work with
+`CXXFLAGS=''`)
+
 ## DEBUG
 
 Affects: agoric (CLI), ag-chain-cosmos, ag-solo
