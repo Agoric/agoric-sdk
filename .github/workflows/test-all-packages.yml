@@ -279,6 +279,26 @@ jobs:
     - name: yarn test (cosmic-swingset)
       run: cd packages/cosmic-swingset && yarn test
 
+  test-xsnap:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x', '16.x']
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    - name: yarn test (xsnap)
+      run: cd packages/xsnap && yarn test
+    # explicitly test the XS worker, for visibility
+    - name: yarn test (SwingSet XS Worker)
+      run: cd packages/SwingSet && yarn test:xs-worker
+
+  # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
     needs: build
@@ -293,12 +313,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
     - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[A-Ia-i]*.js'
-    - name: yarn test (xsnap)
-      run: cd packages/xsnap && yarn test
-    # explicitly test the XS worker, for visibility
-    - name: yarn test (SwingSet XS Worker)
-      run: cd packages/SwingSet && yarn test:xs-worker
+      run: cd packages/SwingSet && yarn test 'test/**/test-[A-Da-d]*.js'
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -314,9 +329,25 @@ jobs:
         node-version: ${{ matrix.node-version }}
     # END-TEST-BOILERPLATE
     - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+      run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
 
   test-swingset3:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['14.x', '16.x']
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    - name: yarn test (SwingSet)
+      run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+
+  test-swingset4:
     # BEGIN-TEST-BOILERPLATE
     needs: build
     runs-on: ubuntu-latest
@@ -367,6 +398,7 @@ jobs:
       timeout-minutes: 30
       run: cd packages/zoe && yarn test:swingset
 
+  # The test-xs* tests are split by alphabetical test name.
   test-xs:
     # BEGIN-TEST-BOILERPLATE
     needs: build
@@ -383,7 +415,7 @@ jobs:
     # END-TEST-BOILERPLATE
     - name: yarn test (xs)
       timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[A-Ia-i]*.js'
+      run: yarn test:xs 'test/**/test-[A-Da-d]*.js'
 
   test-xs2:
     # BEGIN-TEST-BOILERPLATE
@@ -401,9 +433,27 @@ jobs:
     # END-TEST-BOILERPLATE
     - name: yarn test (xs)
       timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
+      run: yarn test:xs 'test/**/test-[E-Ie-i]*.js'
 
   test-xs3:
+    # BEGIN-TEST-BOILERPLATE
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # note: only use one node-version, maybe
+        node-version: ['14.x']
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-node
+      with:
+        node-version: ${{ matrix.node-version }}
+    # END-TEST-BOILERPLATE
+    - name: yarn test (xs)
+      timeout-minutes: 30
+      run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
+
+  test-xs4:
     # BEGIN-TEST-BOILERPLATE
     needs: build
     runs-on: ubuntu-latest
