@@ -3,7 +3,10 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
-import { setupGovernance, validateParamChangeQuestion } from './governParam.js';
+import {
+  setupGovernance,
+  validateParamChangeQuestion,
+} from './paramGovernance/governParam.js';
 
 const { details: X } = assert;
 

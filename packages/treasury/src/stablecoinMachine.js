@@ -234,10 +234,16 @@ export async function start(zcf, privateArgs) {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
-  const getParamState = paramDesc => {
+  const getRatioParamState = paramDesc => {
     return vaultParamManagers
       .get(paramDesc.collateralBrand)
-      .getParam(paramDesc.parameterName);
+      .getRatio(paramDesc.parameterName);
+  };
+
+  const getNatParamState = paramDesc => {
+    return vaultParamManagers
+      .get(paramDesc.collateralBrand)
+      .getNat(paramDesc.parameterName);
   };
 
   const publicFacet = Far('stablecoin public facet', {
@@ -248,7 +254,8 @@ export async function start(zcf, privateArgs) {
     getRunIssuer() {
       return runIssuer;
     },
-    getParamState,
+    getNatParamState,
+    getRatioParamState,
     getParams,
     getContractGovernor: () => governorPublic,
   });

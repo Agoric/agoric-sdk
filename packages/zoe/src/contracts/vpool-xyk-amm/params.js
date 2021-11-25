@@ -1,13 +1,14 @@
 // @ts-check
 
-import { makeGovernedNat } from '@agoric/governance/src/paramMakers.js';
+import { makeParamManagerBuilder } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';
 export const PROTOCOL_FEE_KEY = 'ProtocolFee';
 
-export const makeInitialValues = (poolFeeBP, protocolFeeBP) => {
-  return harden([
-    makeGovernedNat(POOL_FEE_KEY, poolFeeBP),
-    makeGovernedNat(PROTOCOL_FEE_KEY, protocolFeeBP),
-  ]);
+/** @type {(poolFeeBP: bigint, protocolFeeBP: bigint) => ParamManagerFull} */
+export const makeParamManager = (poolFeeBP, protocolFeeBP) => {
+  return makeParamManagerBuilder()
+    .addNat(POOL_FEE_KEY, poolFeeBP)
+    .addNat(PROTOCOL_FEE_KEY, protocolFeeBP)
+    .build();
 };

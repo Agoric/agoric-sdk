@@ -42,7 +42,6 @@ export function makeVaultKit(
   manager,
   runMint,
   priceAuthority,
-  loanParamManager,
   startTimeStamp,
 ) {
   const { updater: uiUpdater, notifier } = makeNotifierKit();

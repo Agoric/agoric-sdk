@@ -10,7 +10,6 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js'
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@agoric/marshal';
 
-import { buildParamManager } from '@agoric/governance/src/paramManager';
 import { makeVaultKit } from '../src/vault.js';
 import { paymentFromZCFMint } from '../src/burn.js';
 
@@ -83,14 +82,11 @@ export async function start(zcf, privateArgs) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
-  const { publicFacet } = buildParamManager([]);
-
   const { vault, openLoan, accrueInterestAndAddToPool } = await makeVaultKit(
     zcf,
     managerMock,
     runMint,
     priceAuthority,
-    publicFacet,
     timer.getCurrentTimestamp(),
   );
 

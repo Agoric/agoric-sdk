@@ -2,11 +2,7 @@
 
 import './types.js';
 
-import { buildParamManager } from '@agoric/governance';
-import {
-  makeGovernedNat,
-  makeGovernedRatio,
-} from '@agoric/governance/src/paramMakers.js';
+import { makeParamManagerBuilder } from '@agoric/governance';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
@@ -30,12 +26,12 @@ export const governedParameterTerms = {
 /** @type {MakeVaultParamManager} */
 export const makeVaultParamManager = (loanParams, rates) => {
   // @ts-ignore buildParamManager doesn't describe all the update methods
-  return buildParamManager([
-    makeGovernedNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod),
-    makeGovernedNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod),
-    makeGovernedRatio(INITIAL_MARGIN_KEY, rates.initialMargin),
-    makeGovernedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin),
-    makeGovernedRatio(INTEREST_RATE_KEY, rates.interestRate),
-    makeGovernedRatio(LOAN_FEE_KEY, rates.loanFee),
-  ]);
+  return makeParamManagerBuilder()
+    .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
+    .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+    .addBrandedRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
+    .addBrandedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
+    .addBrandedRatio(INTEREST_RATE_KEY, rates.interestRate)
+    .addBrandedRatio(LOAN_FEE_KEY, rates.loanFee)
+    .build();
 };

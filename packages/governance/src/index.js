@@ -20,12 +20,16 @@ export {
 export { handleParamGovernance } from './contractHelper.js';
 
 export {
-  makeParamChangePositions,
-  validateParamChangeQuestion,
   assertBallotConcernsQuestion,
-} from './governParam.js';
+  makeParamChangePositions,
+  setupGovernance,
+  validateParamChangeQuestion,
+} from './paramGovernance/governParam.js';
 
-export { ParamType, buildParamManager, assertType } from './paramManager.js';
+export {
+  ParamType,
+  makeParamManagerBuilder,
+} from './paramGovernance/paramManager.js';
 
 export {
   assertContractGovernance,

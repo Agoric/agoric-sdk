@@ -11,8 +11,7 @@ import {
   QuorumRule,
   ElectionType,
   looksLikeQuestionSpec,
-} from './question.js';
-import { assertType } from './paramManager.js';
+} from '../question.js';
 
 const { details: X } = assert;
 
@@ -76,8 +75,6 @@ const setupGovernance = async (
   ) => {
     const paramMgr = E(paramManagerRetriever).get(paramSpec);
     const paramName = paramSpec.parameterName;
-    const param = await E(paramMgr).getParam(paramName);
-    assertType(param.type, proposedValue, paramName);
     const outcomeOfUpdateP = makePromiseKit();
 
     const { positive, negative } = makeParamChangePositions(

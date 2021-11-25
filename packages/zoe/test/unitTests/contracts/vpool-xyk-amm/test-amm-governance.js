@@ -156,18 +156,10 @@ const setupServices = async (
   };
 };
 
-const ammInitialValues = harden([
-  {
-    name: POOL_FEE_KEY,
-    value: 24n,
-    type: ParamType.NAT,
-  },
-  {
-    name: PROTOCOL_FEE_KEY,
-    value: 6n,
-    type: ParamType.NAT,
-  },
-]);
+const ammInitialValues = harden({
+  [POOL_FEE_KEY]: { value: 24n, type: ParamType.NAT },
+  [PROTOCOL_FEE_KEY]: { value: 6n, type: ParamType.NAT },
+});
 
 test('amm change param via Governance', async t => {
   const centralR = makeIssuerKit('central');
@@ -193,12 +185,10 @@ test('amm change param via Governance', async t => {
     await E(amm.ammPublicFacet).getGovernedParams(),
     {
       PoolFee: {
-        name: POOL_FEE_KEY,
         type: 'nat',
         value: 24n,
       },
       ProtocolFee: {
-        name: PROTOCOL_FEE_KEY,
         type: 'nat',
         value: 6n,
       },
@@ -227,9 +217,7 @@ test('amm change param via Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getParamValue(
-    PROTOCOL_FEE_KEY,
-  );
+  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
   t.deepEqual(paramValue, 20n, 'updated value');
 });
 
@@ -304,12 +292,10 @@ test('price check after Governance param change', async t => {
     await E(amm.ammPublicFacet).getGovernedParams(),
     {
       PoolFee: {
-        name: POOL_FEE_KEY,
         type: 'nat',
         value: 24n,
       },
       ProtocolFee: {
-        name: PROTOCOL_FEE_KEY,
         type: 'nat',
         value: 6n,
       },
@@ -338,9 +324,7 @@ test('price check after Governance param change', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getParamValue(
-    PROTOCOL_FEE_KEY,
-  );
+  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
   t.deepEqual(paramValue, 20n, 'updated value');
 
   const priceAfter = await E(amm.ammPublicFacet).getInputPrice(

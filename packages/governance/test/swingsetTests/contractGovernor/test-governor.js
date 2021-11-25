@@ -98,6 +98,7 @@ const expectedcontractGovernorStartLog = [
   'updated to "[299792458n]"',
   'MalleableNumber was changed to "[602214090000000000000000n]"',
   'current value of MalleableNumber is 299792458',
+  'MalleableNumber was changed to "[299792458n]"',
   'Voter Alice validated all the things',
 ];
 

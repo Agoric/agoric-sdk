@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
-import { makeGovernedNat } from '../../../src/paramMakers.js';
+import { makeGovernedNat } from '../../../src/paramGovernance/paramMakers.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 
 const { quote: q } = assert;
@@ -145,7 +145,7 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   paramValues = await E(contractPublic).getGovernedParams();
   const malleableNumber = paramValues.MalleableNumber;
 
-  log(`current value of ${malleableNumber.name} is ${malleableNumber.value}`);
+  log(`current value of MalleableNumber is ${malleableNumber.value}`);
 };
 
 const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
@@ -172,7 +172,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governed: {
       issuerKeywordRecord: {},
       terms: {
-        main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)],
+        main: {
+          [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
+        },
       },
     },
   };
