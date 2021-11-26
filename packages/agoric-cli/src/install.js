@@ -106,6 +106,8 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       await fs.symlink(sdkRoot, sdkWorktree);
     }
 
+    const updatesTodo = [];
+    const removesTodo = [];
     await Promise.all(
       subdirs.map(async subdir => {
         const nm = `${subdir}/node_modules`;
@@ -134,21 +136,72 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         if (!packageJSON) {
           return;
         }
+        const obsolete = new Set();
         const pj = JSON.parse(packageJSON);
         for (const section of ['dependencies', 'devDependencies']) {
           const deps = pj[section];
           if (deps) {
             for (const pkg of Object.keys(deps)) {
               if (versions.has(pkg)) {
+                if (deps[pkg] === forceSdkVersion) {
+                  // We need to remove the old package, or the install will not
+                  // pick up the newly-published one.
+                  obsolete.add(pkg);
+                }
                 deps[pkg] = forceSdkVersion;
               }
             }
           }
         }
-        log.info(`updating ${pjson}`);
-        await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
+        // Ensure we update the package.json before exiting.
+        const updatePackageJson = async () => {
+          process.off('beforeExit', updatePackageJson);
+          log.info(`updating ${pjson}`);
+          await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
+        };
+        updatesTodo.push(updatePackageJson);
+        removesTodo.push(async () => {
+          process.on('beforeExit', updatePackageJson);
+          // Remove the old packages.
+          const removePkgs = [...obsolete.keys()];
+          if (!removePkgs.length) {
+            // No packages to remove.
+            return;
+          }
+          const yarnRemove = await pspawn(
+            'yarn',
+            [
+              ...linkFlags,
+              'remove',
+              '--ignore-workspace-root-check', // This may be a root dependency.
+              '--mutex=network', // Don't race with other removals.
+              '--ignore-scripts', // We install later, so no need to run scripts.
+              ...removePkgs,
+            ],
+            { stdio: 'inherit', cwd: subdir },
+          );
+          if (yarnRemove) {
+            throw Error(`yarn remove obsolete packages failed in ${subdir}`);
+          }
+        });
       }),
     );
+
+    // Ensure we do all the updates after the removes, whether there were
+    // failures or not.
+    await Promise.allSettled(removesTodo.map(async remove => remove()))
+      .then(results => {
+        // After all have settled, try throwing the first rejection.
+        const firstFailure = results.find(
+          ({ status }) => status !== 'fulfilled',
+        );
+        if (firstFailure) {
+          throw firstFailure.reason;
+        }
+      })
+      .finally(() =>
+        Promise.allSettled(updatesTodo.map(async update => update())),
+      );
   }
 
   const yarnInstall = await pspawn('yarn', [...linkFlags, 'install'], {
