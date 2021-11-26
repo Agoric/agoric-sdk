@@ -9,12 +9,14 @@ In the project directory, you can run:
 ### `yarn start`
 
 Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Open [http://localhost:3000/wallet/](http://localhost:3000/wallet/) (the trailing slash is needed!) to view it in the browser.
+
+You will need to add the access token copied from `agoric open` to the url, like http://localhost:3000/wallet/#accessToken=<access-token>
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
-### `yarn test`
+### `yarn test:watch`
 
 Launches the test runner in the interactive watch mode.\
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.

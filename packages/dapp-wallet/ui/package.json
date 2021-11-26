@@ -4,7 +4,7 @@
   "description": "Wallet React frontend",
   "author": "Agoric",
   "license": "Apache-2.0",
-  "homepage": ".",
+  "homepage": "/wallet",
   "type": "module",
   "devDependencies": {
     "@agoric/assert": "^0.3.14",

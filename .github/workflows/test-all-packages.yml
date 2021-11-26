@@ -154,8 +154,8 @@ jobs:
       run: cd packages/bundle-source && yarn test
     - name: yarn test (captp)
       run: cd packages/captp && yarn test
-    - name: yarn test (dapp-svelte-wallet/api)
-      run: cd packages/dapp-svelte-wallet/api && yarn test
+    - name: yarn test (dapp-wallet/api)
+      run: cd packages/dapp-wallet/api && yarn test
     - name: yarn test (deployment)
       run: cd packages/deployment && yarn test
     - name: yarn test (ERTP)
@@ -222,10 +222,8 @@ jobs:
       run: cd packages/ui-components && yarn test
     - name: yarn test (dapp-wallet/ui)
       run: cd packages/dapp-wallet/ui && yarn test
-    - name: yarn test (dapp-svelte-wallet)
-      run: cd packages/dapp-svelte-wallet && yarn test
-    - name: yarn test (dapp-svelte-wallet-ui)
-      run: cd packages/dapp-svelte-wallet/ui && yarn test
+    - name: yarn test (dapp-wallet)
+      run: cd packages/dapp-wallet && yarn test
     - name: yarn test (eslint-config)
       run: cd packages/eslint-config && yarn test
 

@@ -54,7 +54,7 @@ const appTheme = createTheme({
 
 ReactDOM.render(
   <ApplicationContextProvider>
-    <Router>
+    <Router basename="/wallet">
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={appTheme}>
           <CssBaseline />

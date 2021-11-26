@@ -23,7 +23,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.3.14",
-    "@agoric/dapp-svelte-wallet": "^0.11.5",
     "@agoric/ertp": "^0.12.2",
     "@agoric/eventual-send": "^0.13.30",
     "@agoric/import-bundle": "^0.2.31",

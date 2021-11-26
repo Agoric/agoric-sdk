@@ -9,7 +9,7 @@ import { HELPER } from './chain-cosmos-sdk.js';
 
 const log = anylogger('ag-solo:init');
 
-const DEFAULT_WALLET = '@agoric/dapp-svelte-wallet';
+const DEFAULT_WALLET = '@agoric/dapp-wallet';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
