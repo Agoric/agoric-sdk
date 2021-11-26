@@ -19,7 +19,12 @@ export const makeAdminWebSocketConnector = component => {
   let ws;
 
   const onAdminOpen = () => {
-    const send = obj => ws.send(JSON.stringify(obj));
+    const send = obj => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      ws.send(JSON.stringify(obj));
+    };
     component._startCapTP(send, 'walletAdmin');
 
     assert(component._captp);
@@ -50,17 +55,32 @@ export const makeAdminWebSocketConnector = component => {
       } = component.service.context;
       assert(location);
 
-      // Find the websocket protocol for this path.
-      const url = new URL('/private/captp', location);
-      url.protocol = url.protocol.replace(/^http/, 'ws');
+      let retry = true;
+      const connect = href => {
+        // Find the websocket protocol for this path.
+        const url = new URL('/private/captp', href);
+        url.protocol = url.protocol.replace(/^http/, 'ws');
 
-      if (accessToken) {
-        url.searchParams.set('accessToken', accessToken);
-      }
+        if (accessToken) {
+          url.searchParams.set('accessToken', accessToken);
+        }
 
-      ws = new WebSocket(url.href);
-      ws.addEventListener('open', onAdminOpen);
-      ws.addEventListener('error', () => component.onError);
+        ws = new WebSocket(url.href);
+        ws.addEventListener('open', ev => {
+          retry = false;
+          return onAdminOpen(ev);
+        });
+        ws.addEventListener('error', ev => {
+          if (retry) {
+            // Try again with the window's own location, in case it's on a
+            // nonstandard port.
+            retry = false;
+            return connect(window.location.href);
+          }
+          return component.onError(ev);
+        });
+      };
+      connect(location);
     },
     hostDisconnected: () => {
       ws.close();
