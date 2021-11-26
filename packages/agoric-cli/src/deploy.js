@@ -262,7 +262,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
             );
           } else {
             await main(bootP, {
-              bundleSource: file => bundleSource(pathResolve(file)),
+              bundleSource: (file, options = undefined) =>
+                bundleSource(pathResolve(file), options),
               pathResolve,
               installUnsafePlugin,
               host,
