@@ -30,8 +30,7 @@ Once tests pass, you can publish to NPM with the following:
 
 ```sh
 # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-# Specify the --dist-tag if you're publishing a new beta release.
-yarn lerna publish from-package # --dist-tag=beta
+yarn lerna publish from-package
 ```
 
 Merge the release PR into master.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE
@@ -42,7 +41,15 @@ REFERENCES TO YOUR TAGS.
 ./scripts/get-released-tags git push origin
 ```
 
-To make validators' lives easier, create a tag for the chain-id:
+If you want to update an NPM dist-tag for the current checked-out Agoric SDK's
+packages (to enable `agoric install <TAG>`), use:
+
+```sh
+# Use "beta" for <TAG> for example.
+./scripts/npm-dist-tag.sh lerna add <TAG>
+```
+
+To make validators' lives easier, create a Git tag for the chain-id:
 
 ```sh
 CHAIN_ID=agoricstage-8 # Change this as necessary
