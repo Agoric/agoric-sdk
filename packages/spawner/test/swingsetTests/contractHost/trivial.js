@@ -23,5 +23,10 @@ export default function start(terms) {
     areYouOk() {
       return 'yes';
     },
+    failureToFar() {
+      return harden({
+        failureReturn() {},
+      });
+    },
   });
 }
