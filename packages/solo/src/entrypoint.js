@@ -3,6 +3,9 @@
 // import node-lmdb early to work around SES incompatibility
 import 'node-lmdb';
 
+// Needed for legacy plugin support (dapp-oracle, for one).
+import 'esm';
+
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
