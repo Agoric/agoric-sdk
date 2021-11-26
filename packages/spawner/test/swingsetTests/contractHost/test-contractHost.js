@@ -51,3 +51,15 @@ test('exhaustion', async t => {
   const dump = await main(t, 'exhaust');
   t.deepEqual(dump.log, contractExhaustedGolden);
 });
+
+const farFailureGolden = [
+  'starting farFailureContractTest',
+  'send non-Far: Error: Remotables must be explicitly declared: {"failureArg":"[Function failureArg]"}',
+  'far failure: Error: Remotables must be explicitly declared: {"failureReturn":"[Function failureReturn]"}',
+  '++ DONE',
+];
+
+test('farFailure', async t => {
+  const dump = await main(t, 'farFailure');
+  t.deepEqual(dump.log, farFailureGolden);
+});
