@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.9
-	github.com/cosmos/cosmos-sdk v0.44.3
+	github.com/cosmos/cosmos-sdk v0.44.4
 	github.com/cosmos/ibc-go/v2 v2.0.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
@@ -16,7 +16,7 @@ require (
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
 	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83
-	google.golang.org/grpc v1.40.0
+	google.golang.org/grpc v1.42.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -34,7 +34,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0.34.14-alpha.agoric.1
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.2-alpha.agoric.1
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.44.4-alpha.agoric.1
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
