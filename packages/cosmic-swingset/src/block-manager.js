@@ -224,18 +224,19 @@ export default function makeBlockManager({
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
-        for (const a of currentActions) {
-          // FIXME: This is a problem, apparently with Cosmos SDK.
-          // Need to diagnose.
-          if (a.blockHeight !== action.blockHeight) {
-            console.debug(
-              'Block',
-              action.blockHeight,
-              'begun with a leftover uncommitted action:',
-              a.type,
-            );
-          }
+        const leftover = currentActions
+          .filter(a => a.blockHeight !== action.blockHeight)
+          .map(a => a.type)
+          .join(', ');
+        if (leftover) {
+          // Leftover actions happen if queries or simulation are incorrectly
+          // resulting in accidental VM messages.
+          decohered = Error(
+            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftover}`,
+          );
+          throw decohered;
         }
+
         currentActions = [];
         runTime = 0;
         currentActions.push(action);
