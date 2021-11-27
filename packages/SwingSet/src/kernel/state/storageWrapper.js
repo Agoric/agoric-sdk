@@ -14,6 +14,43 @@ import { insistStorageAPI } from '../../storageAPI.js';
 // xenophobia.
 
 /**
+ * Given two iterators over ordered sequences, produce a new iterator that will
+ * iterate in order over the merged output of the two iterators.
+ *
+ * @param { Iterator } it1
+ * @param { Iterator } it2
+ *
+ * @yields any
+ */
+function* mergeSortedIterators(it1, it2) {
+  let v1 = it1.next();
+  let v2 = it2.next();
+  while (!v1.done && !v2.done) {
+    if (v1.value < v2.value) {
+      const result = v1.value;
+      v1 = it1.next();
+      yield result;
+    } else if (v1.value === v2.value) {
+      const result = v1.value;
+      v1 = it1.next();
+      v2 = it2.next();
+      yield result;
+    } else {
+      const result = v2.value;
+      v2 = it2.next();
+      yield result;
+    }
+  }
+  const itrest = v1.done ? it2 : it1;
+  let v = v1.done ? v2 : v1;
+  while (!v.done) {
+    const result = v.value;
+    v = itrest.next();
+    yield result;
+  }
+}
+
+/**
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
@@ -40,6 +77,7 @@ export function buildCrankBuffer(
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();
   const deletions = new Set();
+  let liveGeneration = 0n;
   resetCrankhash();
 
   const crankBuffer = {
@@ -54,18 +92,30 @@ export function buildCrankBuffer(
     },
 
     *getKeys(start, end) {
+      const generation = liveGeneration;
       assert.typeof(start, 'string');
       assert.typeof(end, 'string');
-      const keys = new Set(kvStore.getKeys(start, end));
+
+      // find additions within the query range for use during iteration
+      const added = [];
       for (const k of additions.keys()) {
-        keys.add(k);
-      }
-      for (const k of deletions.keys()) {
-        keys.delete(k);
-      }
-      for (const k of Array.from(keys).sort()) {
         if ((start === '' || start <= k) && (end === '' || k < end)) {
-          yield k;
+          added.push(k);
+        }
+      }
+      added.sort();
+
+      for (const k of mergeSortedIterators(
+        added.values(),
+        kvStore.getKeys(start, end),
+      )) {
+        if (liveGeneration > generation) {
+          assert.fail('store modified during iteration');
+        }
+        if ((start === '' || start <= k) && (end === '' || k < end)) {
+          if (!deletions.has(k)) {
+            yield k;
+          }
         }
       }
     },
@@ -86,6 +136,9 @@ export function buildCrankBuffer(
       assert.typeof(value, 'string');
       additions.set(key, value);
       deletions.delete(key);
+      if (!crankBuffer.has(key)) {
+        liveGeneration += 1n;
+      }
       if (isConsensusKey(key)) {
         crankhasher.add('add');
         crankhasher.add('\n');
@@ -100,6 +153,7 @@ export function buildCrankBuffer(
       assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
+      // liveGeneration += 1n; // XXX can this be made to work? I fear not...
       if (isConsensusKey(key)) {
         crankhasher.add('delete');
         crankhasher.add('\n');

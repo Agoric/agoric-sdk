@@ -84,6 +84,17 @@ export function makeKernelSyscallHandler(tools) {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreGetAfter');
     let nextIter;
+    // Note that the working key iterator will be invalidated if the parameters
+    // to `vatstoreGetAfter` don't correspond to the working key iterator's
+    // belief about what iteration was in progress.  In particular,
+    // `actualKeyPrefix` incorporates the vatID.  Additionally, when this
+    // syscall is used for iteration over a collection `keyPrefix` also
+    // incorporates the collection ID.  This ensures that uncoordinated
+    // concurrent iterations cannot interfere with each other.  If such
+    // concurrent iterations *do* happen, there will be a modest performance
+    // cost since the working key iterator will have to be regenerated each
+    // time, but we expect this to be a rare case since the normal use pattern
+    // is a single iteration in a loop within a single crank.
     if (
       workingKeyPrefix === actualKeyPrefix &&
       workingPriorKey === actualPriorKey &&
