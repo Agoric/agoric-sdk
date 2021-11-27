@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.29](https://github.com/Agoric/agoric-sdk/compare/@agoric/install-ses@0.5.28...@agoric/install-ses@0.5.29) (2021-11-27)
+
+**Note:** Version bump only for package @agoric/install-ses
+
+
+
+
+
 ### [0.5.28](https://github.com/Agoric/agoric-sdk/compare/@agoric/install-ses@0.5.27...@agoric/install-ses@0.5.28) (2021-10-13)
 
 

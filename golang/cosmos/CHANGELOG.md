@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.27.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.0...@agoric/cosmos@0.27.1) (2021-11-27)
+
+
+### Features
+
+* **ante:** record `tx_ante_admission_refused` counter ([7d31058](https://github.com/Agoric/agoric-sdk/commit/7d31058caf64a57ef127f129588162ecc7377bea))
+* **beans:** use `sdk.Uint` whole beans to prevent negatives ([46f7fdc](https://github.com/Agoric/agoric-sdk/commit/46f7fdc9a03473c55cacf9d09251d52c71237842))
+* **cosmic-swingset:** add swingset governance params support ([afec1ad](https://github.com/Agoric/agoric-sdk/commit/afec1ad273fd75005ddd33c829479ec1138e180f))
+* **cosmos:** add ControllerAdmissionMsg to allow vm throttling ([f1dd757](https://github.com/Agoric/agoric-sdk/commit/f1dd7574ee4905631ae7aa84c033888951189656))
+* **cosmos:** add some x/swingset fee charging params ([53e43bb](https://github.com/Agoric/agoric-sdk/commit/53e43bb221f7ab977d78ed789027c84fafb14e6d))
+* **cosmos:** add swingset governance param proto definitions ([30557b4](https://github.com/Agoric/agoric-sdk/commit/30557b4ab0ccd5278f09f537f97b6867cfa80d30))
+* **cosmos:** integrate new proto definitions ([a3e9689](https://github.com/Agoric/agoric-sdk/commit/a3e96898c7686a167881a7303c06c37f5b28edc0))
+* **cosmos:** update code for ibc-go v2.0.0 ([459c530](https://github.com/Agoric/agoric-sdk/commit/459c5304c707a058c8108c91698e79e03a16ed59))
+* **cosmos:** update x/swingset proto definitions ([5b61aac](https://github.com/Agoric/agoric-sdk/commit/5b61aac17e23fd4e11304ecdebb5c25167409e1e))
+* **cosmos:** use snake-cased governance params ([41ca6dc](https://github.com/Agoric/agoric-sdk/commit/41ca6dcde40ef01a9ff1c9564d6b3763a779bf35))
+* implement staking state query to support voting ([4d44aa4](https://github.com/Agoric/agoric-sdk/commit/4d44aa40d147389cae6083c1210fe287478257c7))
+
+
+### Bug Fixes
+
+* **cosmos:** use newly-introduced proto types ([1e740b7](https://github.com/Agoric/agoric-sdk/commit/1e740b7dad6cf80897dc9b82202eca8af663ad27))
+* comments and correct protoc options for the version ([7e04df7](https://github.com/Agoric/agoric-sdk/commit/7e04df799e148e6367727653a28ab7281271581d))
+* downgrade grpc-gateway ([7b2295c](https://github.com/Agoric/agoric-sdk/commit/7b2295c6bb3a10a382bc0cfb790dc1ad9585e3c4))
+* generate grpc-gateway and update buf configuration ([86010d1](https://github.com/Agoric/agoric-sdk/commit/86010d1b828e1587d95a3d18c51f6f03def7640c))
+* upgrade and configure buf ([334aa87](https://github.com/Agoric/agoric-sdk/commit/334aa8796b318dd1efbff76da3e51d3fa077ca8e))
+* **cosmos:** remove extra `types.Storage` wrapping from x/swingset ([d716f96](https://github.com/Agoric/agoric-sdk/commit/d716f966ff2582b7fcfa19f74e9b083182df29b0))
+
+
+
 ## [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.26.19...@agoric/cosmos@0.27.0) (2021-10-13)
 
 

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.32](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.31...@agoric/notifier@0.3.32) (2021-11-27)
+
+
+### Features
+
+* **notifier:** `makeNotifierFromAsyncIterable` works with ERefs ([0d330a3](https://github.com/Agoric/agoric-sdk/commit/0d330a30b6c65e456e794b480d9605ee178a9bce))
+* **notifier:** convey internal type parameters ([a4626f3](https://github.com/Agoric/agoric-sdk/commit/a4626f354ead6a9cddad5f8c49a8f18a3b693ee9))
+
+
+
 ### [0.3.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.30...@agoric/notifier@0.3.31) (2021-10-13)
 
 

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.15](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.14...@agoric/assert@0.3.15) (2021-11-27)
+
+**Note:** Version bump only for package @agoric/assert
+
+
+
+
+
 ### [0.3.14](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.13...@agoric/assert@0.3.14) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/assert

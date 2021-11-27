@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.20](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.19...agoric@0.13.20) (2021-11-27)
+
+
+### Features
+
+* **agoric-cli:** `install <TAG>` forces redownload of <TAG> ([1035299](https://github.com/Agoric/agoric-sdk/commit/1035299f64e684845ffb62b2fff2ff04187dc5fe))
+* **agoric-cli:** allow `--no-sdk` to override `--sdk` ([956a934](https://github.com/Agoric/agoric-sdk/commit/956a934f6654f92227eb93bdc50ad25481769c15))
+* **agoric-cli:** allow deploy `bundleSource` to have `options` ([52d801b](https://github.com/Agoric/agoric-sdk/commit/52d801b3cf343b8c1d754c204e9dd295214f5ccb))
+* **agoric-cli:** enable the `agoric start --debug` option ([4f89a5b](https://github.com/Agoric/agoric-sdk/commit/4f89a5bc2250fb0d5cf64e937d2335b1a3857c7a))
+* **agoric-cli:** fill out the default denom metadata ([663c4c9](https://github.com/Agoric/agoric-sdk/commit/663c4c91d689aff6f99db36046672447b97f2ca5))
+* **agoric-cli:** use `agoric install beta` to select that SDK ([75c2d90](https://github.com/Agoric/agoric-sdk/commit/75c2d90b311b1d66c43cd1f457069a3aa9933578))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+
+
+### Bug Fixes
+
+* **agoric-cli:** make `agoric --no-sdk install` work as well ([8e18d36](https://github.com/Agoric/agoric-sdk/commit/8e18d36029d90baa8110118710b73f69f8559e01))
+* **agoric-cli:** only use `docker -it` when connected to a terminal ([9e18754](https://github.com/Agoric/agoric-sdk/commit/9e1875421b350132b82a5e8b45703c3a47783e45))
+* **agoric-cli:** use CXXFLAGS for Node 16 ([dd22da9](https://github.com/Agoric/agoric-sdk/commit/dd22da944592983dee61ee8346f0ae95b1da12a7))
+
+
+
 ### [0.13.19](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.18...agoric@0.13.19) (2021-10-13)
 
 **Note:** Version bump only for package agoric

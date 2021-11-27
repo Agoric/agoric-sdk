@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.1...@agoric/deployment@1.30.0) (2021-11-27)
+
+
+### Features
+
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+
+
+### Bug Fixes
+
+* **deployment:** adapt to new cosmic-swingset `install` target ([02e4f4f](https://github.com/Agoric/agoric-sdk/commit/02e4f4f4fe6c8c3a32ff4715f912e5344985722f))
+* **deployment:** work around bundling divergence in Dockerfile.sdk ([1170879](https://github.com/Agoric/agoric-sdk/commit/11708793b1fe174a4411c0b7f72f439e751421b6))
+* **faucet:** don't fail if `cosmos-delegates.txt` doesn't exist ([f650334](https://github.com/Agoric/agoric-sdk/commit/f65033489cb824d115a6c6dc5811868e5b53aeae))
+
+
+
 ### [1.29.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.0...@agoric/deployment@1.29.1) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/deployment

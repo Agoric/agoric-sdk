@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.2...@agoric/solo@0.5.3) (2021-11-27)
+
+
+### Features
+
+* **agoric-cli:** enable the `agoric start --debug` option ([4f89a5b](https://github.com/Agoric/agoric-sdk/commit/4f89a5bc2250fb0d5cf64e937d2335b1a3857c7a))
+* **solo:** tolerate transactions being rejected by ante handler ([6e3b6cd](https://github.com/Agoric/agoric-sdk/commit/6e3b6cd69fbd4eea38ea3979255dd40efd4daa32))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+
+
+### Bug Fixes
+
+* **solo:** export objects to CapTP on demand ([5e6dc54](https://github.com/Agoric/agoric-sdk/commit/5e6dc549da61f6c3e10be118a78167108b70b361))
+* **solo:** take a dependency on `esm` to reenable plugins ([48b59ae](https://github.com/Agoric/agoric-sdk/commit/48b59ae25616deba5f671fab225cdfe5fc1d4364))
+* **solo:** trim overlong message bodies in debug logs ([7087181](https://github.com/Agoric/agoric-sdk/commit/7087181a33557871f509bee103787f667ef56969))
+
+
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.1...@agoric/solo@0.5.2) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/solo

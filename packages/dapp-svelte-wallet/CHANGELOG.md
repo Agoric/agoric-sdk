@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.5...@agoric/dapp-svelte-wallet@0.12.0) (2021-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Features
+
+* **dapp-svelte-wallet-ui:** use agoric-wallet-connection ([9888854](https://github.com/Agoric/agoric-sdk/commit/98888542b33136cd5b26396edb557e74da3246de))
+* **react-wallet:** Add responsive nav drawer and connection indicator icon ([#3957](https://github.com/Agoric/agoric-sdk/issues/3957)) ([02a6d1e](https://github.com/Agoric/agoric-sdk/commit/02a6d1ecc9729f60060ee0ecdff5def980d64833))
+* **react-wallet:** Link wallet data to app store ([#3992](https://github.com/Agoric/agoric-sdk/issues/3992)) ([e0b6475](https://github.com/Agoric/agoric-sdk/commit/e0b6475e1e8c27cb53a4365ce20d9a0eb009974b))
+* **react-wallet:** Render empty requests and basic purse amounts ([d859019](https://github.com/Agoric/agoric-sdk/commit/d859019b0c9b174b2071df7e39f62c4ab5145233))
+* **wallet:** add delete API for dapps ([3d2fac0](https://github.com/Agoric/agoric-sdk/commit/3d2fac0be151905e77afe28e654a04e8c5c80f52))
+* **wallet:** Add send functionality to purses ([#4022](https://github.com/Agoric/agoric-sdk/issues/4022)) ([20c4ff0](https://github.com/Agoric/agoric-sdk/commit/20c4ff00adbffff067858c3c5702ae7a9e0522b8))
+* **wallet:** Create empty purses for issuers ([#4028](https://github.com/Agoric/agoric-sdk/issues/4028)) ([80c12ff](https://github.com/Agoric/agoric-sdk/commit/80c12ff010de77abc9216546549686983011c160))
+* **wallet:** dashboard layout changes + render basic request cards ([#4049](https://github.com/Agoric/agoric-sdk/issues/4049)) ([b2a0e8d](https://github.com/Agoric/agoric-sdk/commit/b2a0e8dba7b2dd674ec8c5b90daed6334f03faad))
+* **wallet:** render contact cards ([2b8d4d4](https://github.com/Agoric/agoric-sdk/commit/2b8d4d4f9335a2b831d445a256bb7b46171b1f9b))
+* **walletManager:** enable `agoric.chainWallet` deployment power ([93b290b](https://github.com/Agoric/agoric-sdk/commit/93b290b6eb3db3bdf36116e4f78907091e5b9d24))
+
+
+### Bug Fixes
+
+* **react-ui:** use unified 'bridged' state instead of 'admin' ([3edcf5e](https://github.com/Agoric/agoric-sdk/commit/3edcf5ef15a603e5821fdcc6149f05aba32824a1))
+* **wallet:** allow sync `dateNow` via timerService or timerDevice ([8b6069a](https://github.com/Agoric/agoric-sdk/commit/8b6069aa4100f3c1f2c5ec9a098243913dd8b066))
+* **wallet:** automatically convert number values to bigints ([#4048](https://github.com/Agoric/agoric-sdk/issues/4048)) ([b508984](https://github.com/Agoric/agoric-sdk/commit/b508984d05723f7b02f5e8677182b0cd466a5e5c))
+* **wallet:** Fix implicit remotable ([62bac88](https://github.com/Agoric/agoric-sdk/commit/62bac88f133c4d4af23f1fd898eb17bb4f91cf16))
+* **wallet:** release payments when they are dispositioned ([a87b05e](https://github.com/Agoric/agoric-sdk/commit/a87b05e6b8b65641e3f549c0838eba58714fefa6))
+
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ### [0.11.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/dapp-svelte-wallet@0.11.4...@agoric/dapp-svelte-wallet@0.11.5) (2021-10-13)
 
 

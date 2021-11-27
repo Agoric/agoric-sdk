@@ -3,6 +3,138 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [11.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@10.0.2...@agoric/sdk@11.0.0) (2021-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove newSwap; replace with constantProduct AMM where needed (#4097)
+* **zoe:** must harden `amountKeywordRecord` before passing to ZCF objects
+
+* chore: fix treasury errors, etc.
+
+Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
+* METER_TYPE -> xs-meter-12
+
+  - update metering tests
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+* **eventual-send:** implement *SendOnly and handler defaults
+
+### Features
+
+* **agoric-cli:** `install <TAG>` forces redownload of <TAG> ([1035299](https://github.com/Agoric/agoric-sdk/commit/1035299f64e684845ffb62b2fff2ff04187dc5fe))
+* **agoric-cli:** allow `--no-sdk` to override `--sdk` ([956a934](https://github.com/Agoric/agoric-sdk/commit/956a934f6654f92227eb93bdc50ad25481769c15))
+* **agoric-cli:** allow deploy `bundleSource` to have `options` ([52d801b](https://github.com/Agoric/agoric-sdk/commit/52d801b3cf343b8c1d754c204e9dd295214f5ccb))
+* **agoric-cli:** enable the `agoric start --debug` option ([4f89a5b](https://github.com/Agoric/agoric-sdk/commit/4f89a5bc2250fb0d5cf64e937d2335b1a3857c7a))
+* **agoric-cli:** fill out the default denom metadata ([663c4c9](https://github.com/Agoric/agoric-sdk/commit/663c4c91d689aff6f99db36046672447b97f2ca5))
+* **agoric-cli:** use `agoric install beta` to select that SDK ([75c2d90](https://github.com/Agoric/agoric-sdk/commit/75c2d90b311b1d66c43cd1f457069a3aa9933578))
+* **ante:** record `tx_ante_admission_refused` counter ([7d31058](https://github.com/Agoric/agoric-sdk/commit/7d31058caf64a57ef127f129588162ecc7377bea))
+* **beans:** use `sdk.Uint` whole beans to prevent negatives ([46f7fdc](https://github.com/Agoric/agoric-sdk/commit/46f7fdc9a03473c55cacf9d09251d52c71237842))
+* **cosmic-swingset:** add swingset governance params support ([afec1ad](https://github.com/Agoric/agoric-sdk/commit/afec1ad273fd75005ddd33c829479ec1138e180f))
+* **cosmic-swingset:** avoid accidentally running under debugger ([e4a6f4c](https://github.com/Agoric/agoric-sdk/commit/e4a6f4c4bfabf28f3ac7375c30fd06e97756197f))
+* **cosmic-swingset:** use `beans_per_unit` and `fee_unit_price` ([58218de](https://github.com/Agoric/agoric-sdk/commit/58218de58b9fcfa9f941c102c2f66c31837a0b13))
+* **cosmic-swingset:** use governance params instead of constants ([2c20748](https://github.com/Agoric/agoric-sdk/commit/2c207481a2a91cf4ad2924fb946910f1cdaa5806))
+* **cosmos:** add ControllerAdmissionMsg to allow vm throttling ([f1dd757](https://github.com/Agoric/agoric-sdk/commit/f1dd7574ee4905631ae7aa84c033888951189656))
+* **cosmos:** add some x/swingset fee charging params ([53e43bb](https://github.com/Agoric/agoric-sdk/commit/53e43bb221f7ab977d78ed789027c84fafb14e6d))
+* **cosmos:** add swingset governance param proto definitions ([30557b4](https://github.com/Agoric/agoric-sdk/commit/30557b4ab0ccd5278f09f537f97b6867cfa80d30))
+* **cosmos:** integrate new proto definitions ([a3e9689](https://github.com/Agoric/agoric-sdk/commit/a3e96898c7686a167881a7303c06c37f5b28edc0))
+* **cosmos:** update code for ibc-go v2.0.0 ([459c530](https://github.com/Agoric/agoric-sdk/commit/459c5304c707a058c8108c91698e79e03a16ed59))
+* **cosmos:** update x/swingset proto definitions ([5b61aac](https://github.com/Agoric/agoric-sdk/commit/5b61aac17e23fd4e11304ecdebb5c25167409e1e))
+* **cosmos:** use snake-cased governance params ([41ca6dc](https://github.com/Agoric/agoric-sdk/commit/41ca6dcde40ef01a9ff1c9564d6b3763a779bf35))
+* **dapp-svelte-wallet-ui:** use agoric-wallet-connection ([9888854](https://github.com/Agoric/agoric-sdk/commit/98888542b33136cd5b26396edb557e74da3246de))
+* **dist-tag:** add script and instructions to manipulate NPM tags ([4b79b69](https://github.com/Agoric/agoric-sdk/commit/4b79b692270dbd0f21b50ccc315b257444d9ace1))
+* **eventual-send:** implement *SendOnly and handler defaults ([8d2fb33](https://github.com/Agoric/agoric-sdk/commit/8d2fb334df18c88663094510fb2fea809ed8a2ac))
+* **notifier:** `makeNotifierFromAsyncIterable` works with ERefs ([0d330a3](https://github.com/Agoric/agoric-sdk/commit/0d330a30b6c65e456e794b480d9605ee178a9bce))
+* **notifier:** convey internal type parameters ([a4626f3](https://github.com/Agoric/agoric-sdk/commit/a4626f354ead6a9cddad5f8c49a8f18a3b693ee9))
+* **react-wallet:** Add responsive nav drawer and connection indicator icon ([#3957](https://github.com/Agoric/agoric-sdk/issues/3957)) ([02a6d1e](https://github.com/Agoric/agoric-sdk/commit/02a6d1ecc9729f60060ee0ecdff5def980d64833))
+* **react-wallet:** Link wallet data to app store ([#3992](https://github.com/Agoric/agoric-sdk/issues/3992)) ([e0b6475](https://github.com/Agoric/agoric-sdk/commit/e0b6475e1e8c27cb53a4365ce20d9a0eb009974b))
+* **react-wallet:** Render empty requests and basic purse amounts ([d859019](https://github.com/Agoric/agoric-sdk/commit/d859019b0c9b174b2071df7e39f62c4ab5145233))
+* **solo:** tolerate transactions being rejected by ante handler ([6e3b6cd](https://github.com/Agoric/agoric-sdk/commit/6e3b6cd69fbd4eea38ea3979255dd40efd4daa32))
+* **SwingSet:** stub out metering for `SWINGSET_WORKER_TYPE=local` ([19ad030](https://github.com/Agoric/agoric-sdk/commit/19ad030253f6cc24d4f6e1fbf1af4bae65f8c2ae))
+* **wallet:** add delete API for dapps ([3d2fac0](https://github.com/Agoric/agoric-sdk/commit/3d2fac0be151905e77afe28e654a04e8c5c80f52))
+* **wallet:** add reject button for dapps ([305cf92](https://github.com/Agoric/agoric-sdk/commit/305cf92a22a27259d2e5eca39feab688882a73b3))
+* **wallet:** Add send functionality to purses ([#4022](https://github.com/Agoric/agoric-sdk/issues/4022)) ([20c4ff0](https://github.com/Agoric/agoric-sdk/commit/20c4ff00adbffff067858c3c5702ae7a9e0522b8))
+* **wallet:** Create empty purses for issuers ([#4028](https://github.com/Agoric/agoric-sdk/issues/4028)) ([80c12ff](https://github.com/Agoric/agoric-sdk/commit/80c12ff010de77abc9216546549686983011c160))
+* **wallet:** dashboard layout changes + render basic request cards ([#4049](https://github.com/Agoric/agoric-sdk/issues/4049)) ([b2a0e8d](https://github.com/Agoric/agoric-sdk/commit/b2a0e8dba7b2dd674ec8c5b90daed6334f03faad))
+* **wallet:** implement import issuer button ([9958902](https://github.com/Agoric/agoric-sdk/commit/995890254cf917b6731858f3daf19986a21629e5))
+* **wallet:** implement offer actions ([58c3778](https://github.com/Agoric/agoric-sdk/commit/58c37780a506dfafc5356b3edcc8e13edfc537a6))
+* **wallet:** import contacts ([a9458c7](https://github.com/Agoric/agoric-sdk/commit/a9458c75b6d09572b54a346a6e538f9c26e0e3e9))
+* **wallet:** Misc feedback changes ([66fd145](https://github.com/Agoric/agoric-sdk/commit/66fd145ed6986db3ba8c927970c0a3bc5ce4bf7f))
+* **wallet:** render contact cards ([2b8d4d4](https://github.com/Agoric/agoric-sdk/commit/2b8d4d4f9335a2b831d445a256bb7b46171b1f9b))
+* **wallet:** render dapps view and dapp connection requests ([2d57721](https://github.com/Agoric/agoric-sdk/commit/2d57721b406dbb54574e00c359a538f7fe8f4ebd))
+* **wallet:** Render offers ([04799c6](https://github.com/Agoric/agoric-sdk/commit/04799c6d9cd1abc91f67d071b3f93e5689e3b832))
+* **wallet-connection:** fall back to same origin for admin socket ([25c9986](https://github.com/Agoric/agoric-sdk/commit/25c99868b21964152bc7f226a89180c5c9cf14a5))
+* Add displayInfo for the liquidity tokens created in the AMM ([#4102](https://github.com/Agoric/agoric-sdk/issues/4102)) ([aa8e3c3](https://github.com/Agoric/agoric-sdk/commit/aa8e3c3a4374f90f3e12929d842a378bd5c51e38))
+* expose XS the->currentHeapCount to metering/delivery results ([a031d79](https://github.com/Agoric/agoric-sdk/commit/a031d7900440ee3717c15e7c5be4ae8226ef5530)), closes [#3910](https://github.com/Agoric/agoric-sdk/issues/3910)
+* GC virtual object property refs ([9ec8ce7](https://github.com/Agoric/agoric-sdk/commit/9ec8ce73423b783428dd56b8fc3ff1c094a02eed))
+* remove newSwap; replace with constantProduct AMM where needed ([#4097](https://github.com/Agoric/agoric-sdk/issues/4097)) ([aaea050](https://github.com/Agoric/agoric-sdk/commit/aaea0503b369e4d0b4d9cbb1e00ee02109470060))
+* **zoe/contracts:** Support first-price auction, fix wakeup timer in current contract ([#4046](https://github.com/Agoric/agoric-sdk/issues/4046)) ([4fdfe82](https://github.com/Agoric/agoric-sdk/commit/4fdfe829f2fb040540a44d7d16de06dc066759b4))
+* implement Bring Out Your Dead as a kernel-driven operation ([a1310e0](https://github.com/Agoric/agoric-sdk/commit/a1310e0f51348f8d6c7f4d7281f96cbe8e72b134))
+* implement staking state query to support voting ([4d44aa4](https://github.com/Agoric/agoric-sdk/commit/4d44aa40d147389cae6083c1210fe287478257c7))
+* **wallet-connection:** use pluggable connectors, not destinations ([6e6ffea](https://github.com/Agoric/agoric-sdk/commit/6e6ffea0352dea97f81fd6bb2aa181259d42adbc))
+* **walletManager:** enable `agoric.chainWallet` deployment power ([93b290b](https://github.com/Agoric/agoric-sdk/commit/93b290b6eb3db3bdf36116e4f78907091e5b9d24))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+* VOM weak key GC ([4e25336](https://github.com/Agoric/agoric-sdk/commit/4e2533607f9705097b7848d41f582538a212d866))
+
+
+### Bug Fixes
+
+* **agoric-cli:** make `agoric --no-sdk install` work as well ([8e18d36](https://github.com/Agoric/agoric-sdk/commit/8e18d36029d90baa8110118710b73f69f8559e01))
+* **agoric-cli:** only use `docker -it` when connected to a terminal ([9e18754](https://github.com/Agoric/agoric-sdk/commit/9e1875421b350132b82a5e8b45703c3a47783e45))
+* **agoric-cli:** use CXXFLAGS for Node 16 ([dd22da9](https://github.com/Agoric/agoric-sdk/commit/dd22da944592983dee61ee8346f0ae95b1da12a7))
+* **ava-xs:** allow test file globs as arguments, just like AVA ([3d12770](https://github.com/Agoric/agoric-sdk/commit/3d127708000b017aef1e994f424b566e07d04626))
+* **cosmic-swingset:** have `make install` do what you expect ([08e9d74](https://github.com/Agoric/agoric-sdk/commit/08e9d74d59a7acc8782ecf5624c5102457ea8260))
+* **cosmos:** use newly-introduced proto types ([1e740b7](https://github.com/Agoric/agoric-sdk/commit/1e740b7dad6cf80897dc9b82202eca8af663ad27))
+* **deployment:** adapt to new cosmic-swingset `install` target ([02e4f4f](https://github.com/Agoric/agoric-sdk/commit/02e4f4f4fe6c8c3a32ff4715f912e5344985722f))
+* **eventual-send:** do basic sanity of static method invocation ([596d77e](https://github.com/Agoric/agoric-sdk/commit/596d77ed4ed99a46133a78a437c76393665a4073))
+* **eventual-send:** make local handlers more robust ([30d4db5](https://github.com/Agoric/agoric-sdk/commit/30d4db5ab10c6f4201332db866f612b84ac084e5))
+* **liveSlots:** explicitly handle (though stub) remote properties ([ca397ba](https://github.com/Agoric/agoric-sdk/commit/ca397ba2481639beba17f654c9ff07cebb5a5213))
+* **liveSlots:** reflect return value marshalling failures ([a776f25](https://github.com/Agoric/agoric-sdk/commit/a776f259b7049c1d7fa2dd220ceb52ce405dc822))
+* **solo:** take a dependency on `esm` to reenable plugins ([48b59ae](https://github.com/Agoric/agoric-sdk/commit/48b59ae25616deba5f671fab225cdfe5fc1d4364))
+* avoid eslint escaping agoric-sdk package root ([d4bc429](https://github.com/Agoric/agoric-sdk/commit/d4bc4296b5b980b86818f02dcfd0b30316638d81))
+* re2 is obsolete in favor of XS RegExp metering ([54fdc51](https://github.com/Agoric/agoric-sdk/commit/54fdc5173f3d6a97b4eaed4ce076ff8405594746))
+* separate watch from non-watch testing ([002e1bb](https://github.com/Agoric/agoric-sdk/commit/002e1bbbae469446166afac19f1eb22376aa6f7b))
+* **solo:** trim overlong message bodies in debug logs ([7087181](https://github.com/Agoric/agoric-sdk/commit/7087181a33557871f509bee103787f667ef56969))
+* comments and correct protoc options for the version ([7e04df7](https://github.com/Agoric/agoric-sdk/commit/7e04df799e148e6367727653a28ab7281271581d))
+* **eventual-send:** provide `returnedP` when it is available ([a779066](https://github.com/Agoric/agoric-sdk/commit/a7790660db426e1967f444c034c3dedd59ed33eb))
+* **eventual-send:** remove WeakMap workaround for pre-xsnap XS ([dcad6ac](https://github.com/Agoric/agoric-sdk/commit/dcad6ac6ac946414f6411ec1ad73017e04875d6d))
+* **react-ui:** use unified 'bridged' state instead of 'admin' ([3edcf5e](https://github.com/Agoric/agoric-sdk/commit/3edcf5ef15a603e5821fdcc6149f05aba32824a1))
+* **SwingSet:** `typeof f === 'function'`, not `instanceOf Function` ([ed797d0](https://github.com/Agoric/agoric-sdk/commit/ed797d0bee3cbb4084df7e0961fdbfe741039b79))
+* **wallet:** Fix implicit remotable ([62bac88](https://github.com/Agoric/agoric-sdk/commit/62bac88f133c4d4af23f1fd898eb17bb4f91cf16))
+* **xsnap:** get ordering right so that ses loads before most shims ([80d00bf](https://github.com/Agoric/agoric-sdk/commit/80d00bf9046d2b0f23a2a509a6a8a127b613d802))
+* **zoe:** assert that amountKeywordRecord is a copyRecord ([#4069](https://github.com/Agoric/agoric-sdk/issues/4069)) ([fe9a9ff](https://github.com/Agoric/agoric-sdk/commit/fe9a9ff3de86608a0b1f8f9547059f89d45b948d))
+* avoid GC non-determinism to be inappropriately visible ([6624425](https://github.com/Agoric/agoric-sdk/commit/6624425b9f93847e276db6b062064b72a4362b81))
+* changes from review plus fix stochastically broken tests ([e99b15c](https://github.com/Agoric/agoric-sdk/commit/e99b15c9132a8d864e4a0d31876e79e98c0b06e0))
+* correct export retirement handling and GC checks ([f8131e0](https://github.com/Agoric/agoric-sdk/commit/f8131e0d2ca8762c7fe47cbd8c612c07d2e58512))
+* default to disallowing implicit remotables ([#3736](https://github.com/Agoric/agoric-sdk/issues/3736)) ([d14a665](https://github.com/Agoric/agoric-sdk/commit/d14a66548f3981334f9738bbca3b906901c2e657))
+* downgrade grpc-gateway ([7b2295c](https://github.com/Agoric/agoric-sdk/commit/7b2295c6bb3a10a382bc0cfb790dc1ad9585e3c4))
+* fix missing Fars in pools ([#3975](https://github.com/Agoric/agoric-sdk/issues/3975)) ([b5bfb3e](https://github.com/Agoric/agoric-sdk/commit/b5bfb3eec26bf1230ad8680f17045b17e3e305c6))
+* generate grpc-gateway and update buf configuration ([86010d1](https://github.com/Agoric/agoric-sdk/commit/86010d1b828e1587d95a3d18c51f6f03def7640c))
+* if `makeEmptyPurse` fails, then `startInstance` and `saveIssuer` should fail ([#4070](https://github.com/Agoric/agoric-sdk/issues/4070)) ([c8c4aa9](https://github.com/Agoric/agoric-sdk/commit/c8c4aa92a7c11a58247d3784d573a2d05743ea72))
+* prune metering rewrite from swingset-runner ([d42043f](https://github.com/Agoric/agoric-sdk/commit/d42043fd79ab5c982e8188d4b1409bfdf4038ed8))
+* review updates (mostly renaming things) ([9a47516](https://github.com/Agoric/agoric-sdk/commit/9a47516a349185409d3c320b585312178c8a08b8))
+* update newer tests for BOYD ([81c8f8b](https://github.com/Agoric/agoric-sdk/commit/81c8f8b1425cc8bbee1cc36425ca99412ed2e5c9))
+* upgrade and configure buf ([334aa87](https://github.com/Agoric/agoric-sdk/commit/334aa8796b318dd1efbff76da3e51d3fa077ca8e))
+* **cosmos:** remove extra `types.Storage` wrapping from x/swingset ([d716f96](https://github.com/Agoric/agoric-sdk/commit/d716f966ff2582b7fcfa19f74e9b083182df29b0))
+* **solo:** export objects to CapTP on demand ([5e6dc54](https://github.com/Agoric/agoric-sdk/commit/5e6dc549da61f6c3e10be118a78167108b70b361))
+* **SwingSet:** plumb through `runtimeOptions.env` ([250ddc0](https://github.com/Agoric/agoric-sdk/commit/250ddc0a0ee23223d1c3c9f6a0bb0b1eb37b8dec))
+* **wallet:** allow sync `dateNow` via timerService or timerDevice ([8b6069a](https://github.com/Agoric/agoric-sdk/commit/8b6069aa4100f3c1f2c5ec9a098243913dd8b066))
+* **wallet:** automatically convert number values to bigints ([#4048](https://github.com/Agoric/agoric-sdk/issues/4048)) ([b508984](https://github.com/Agoric/agoric-sdk/commit/b508984d05723f7b02f5e8677182b0cd466a5e5c))
+* **wallet:** release payments when they are dispositioned ([a87b05e](https://github.com/Agoric/agoric-sdk/commit/a87b05e6b8b65641e3f549c0838eba58714fefa6))
+* **wallet-connection:** actually find the wallet admin object ([e5a3e83](https://github.com/Agoric/agoric-sdk/commit/e5a3e83633ee6237eca61f1e63a12ef41f46005e))
+* route all finalization through the possiblyDeadSet ([a8e1b3b](https://github.com/Agoric/agoric-sdk/commit/a8e1b3b6f4d4573cd5c3862eb39ef8e46e2b767f))
+
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ## [10.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.1.0...@agoric/sdk@10.0.0) (2021-10-13)
 
 

@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.34.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.2...@agoric/cosmic-swingset@0.34.3) (2021-11-27)
+
+
+### Features
+
+* **agoric-cli:** enable the `agoric start --debug` option ([4f89a5b](https://github.com/Agoric/agoric-sdk/commit/4f89a5bc2250fb0d5cf64e937d2335b1a3857c7a))
+* **beans:** use `sdk.Uint` whole beans to prevent negatives ([46f7fdc](https://github.com/Agoric/agoric-sdk/commit/46f7fdc9a03473c55cacf9d09251d52c71237842))
+* **cosmic-swingset:** avoid accidentally running under debugger ([e4a6f4c](https://github.com/Agoric/agoric-sdk/commit/e4a6f4c4bfabf28f3ac7375c30fd06e97756197f))
+* **cosmic-swingset:** use `beans_per_unit` and `fee_unit_price` ([58218de](https://github.com/Agoric/agoric-sdk/commit/58218de58b9fcfa9f941c102c2f66c31837a0b13))
+* **cosmic-swingset:** use governance params instead of constants ([2c20748](https://github.com/Agoric/agoric-sdk/commit/2c207481a2a91cf4ad2924fb946910f1cdaa5806))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** have `make install` do what you expect ([08e9d74](https://github.com/Agoric/agoric-sdk/commit/08e9d74d59a7acc8782ecf5624c5102457ea8260))
+
+
+
 ### [0.34.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.1...@agoric/cosmic-swingset@0.34.2) (2021-10-13)
 
 
