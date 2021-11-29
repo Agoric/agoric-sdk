@@ -1,3 +1,4 @@
+import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -21,7 +22,13 @@ test('shows the drawer when the button is clicked', () => {
   });
 
   const component = mount(<NavDrawer />);
-  component.find(IconButton).simulate('click');
+  act(() =>
+    component
+      .find(IconButton)
+      .props()
+      .onClick(),
+  );
+  component.update();
 
   expect(component.find(Drawer).props().open).toEqual(true);
 });

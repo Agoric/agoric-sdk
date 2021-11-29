@@ -13,7 +13,7 @@ import { stringifyValue } from '../display/index.js';
  * @returns {PursesJSONState[] | null}
  *
  * @typedef {{ brand: Brand, displayInfo: any }} PursesJSONState
- * see dapp-wallet/api/src/types.js
+ * see wallet/api/src/types.js
  */
 export const filterPurses = (purses, optBrand) => {
   if (!purses) {
