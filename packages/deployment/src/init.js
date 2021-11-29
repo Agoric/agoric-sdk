@@ -278,9 +278,12 @@ const doInit = ({
 }) => async (progname, args) => {
   const { needDoRun, cwd, chdir } = running;
   const PROVIDERS = makeProviders({ env, inquirer, wr, setup, fetch });
-  let {
-    _: [dir, overrideNetworkName],
-  } = parseArgs(args.slice(1));
+
+  const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
+    boolean: ['noninteractive'],
+  });
+  let [dir, overrideNetworkName] = parsedArgs;
+
   if (!dir) {
     dir = setup.SETUP_HOME;
   }
@@ -323,8 +326,7 @@ const doInit = ({
   });
   config.NETWORK_NAME = overrideNetworkName;
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  while (!noninteractive) {
     // eslint-disable-next-line no-await-in-loop
     const { ROLE, ...rest } = await askPlacement({ inquirer })(
       config.PLACEMENTS,
