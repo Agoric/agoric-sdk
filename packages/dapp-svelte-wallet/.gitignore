@@ -1,7 +1,0 @@
-dappConstants.js
-node_modules
-# Disabled only to get past the error at
-# https://github.com/Agoric/agoric-sdk/pull/1876/checks?check_run_id=1276841245
-# defaults.js
-installationConstants.js
-_agstate/yarn-links/
