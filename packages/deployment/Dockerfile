@@ -11,23 +11,13 @@ ARG REPO=agoric/agoric-sdk
 
 FROM $REPO:$TAG
 
-# Install Terraform.
-ARG TERRAFORM_VERSION=0.11.14
-RUN curl https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip > terraform.zip && \
-    unzip -d /usr/local/bin/ terraform.zip && rm -f terraform.zip
-
-# Install Ansible.
-RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /etc/apt/sources.list && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
-    apt-get update --allow-releaseinfo-change -y && \
-    apt-get install -y ansible rsync curl sudo gnupg2 jq python-jmespath && \
-    apt-get clean -y
+RUN /usr/src/agoric-sdk/packages/deployment/scripts/install-deps.sh
 
 # # Copy journalbeat for logging support
 # COPY --from=go-build /go/bin/journalbeat /usr/local/bin/
 
 WORKDIR /usr/src/agoric-sdk/packages/deployment
-RUN ln -sf $PWD/src/entrypoint.js /usr/local/bin/ag-setup-cosmos
+RUN ln -sf $PWD/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
 
 WORKDIR /data/chains
 
