@@ -16,7 +16,7 @@ OP=$1
 shift
 
 ACH="agd --home=$FAUCET_HOME --log_level=info"
-FAUCET_ADDR=$($ACH keys show -a faucet)
+FAUCET_ADDR=$($ACH keys show --keyring-backend=test -a faucet)
 
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
 IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
