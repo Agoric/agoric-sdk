@@ -9,9 +9,15 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
+    - uses: ./.github/actions/restore-golang
+      with:
+        go-version: 1.15
     - uses: ./.github/actions/restore-node
       with:
         node-version: 14.x
+    - name: Build cosmic-swingset dependencies
+      run: make install
+      working-directory: packages/cosmic-swingset 
     - run: sudo ./packages/deployment/scripts/install-deps.sh
     - run: "$GITHUB_WORKSPACE/packages/deployment/scripts/integration-test.sh"
       working-directory: ${{ env.HOME }}

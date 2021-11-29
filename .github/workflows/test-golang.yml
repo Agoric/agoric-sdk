@@ -14,18 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-    - name: Set up Go 1.15
-      uses: actions/setup-go@v1
+    - uses: ./.github/actions/restore-golang
       with:
         go-version: 1.15
-    - name: cache Go modules
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
     - name: go test
       run: cd golang && go test ./...
