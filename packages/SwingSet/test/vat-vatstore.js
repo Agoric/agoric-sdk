@@ -19,13 +19,15 @@ export function buildRootObject(vatPowers) {
       vatstore.set(key, value);
       log(`store ${key} <- "${value}"`);
     },
-    getAfter(keyPrefix, priorKey) {
-      const result = vatstore.getAfter(keyPrefix, priorKey);
+    getAfter(priorKey, lowerBound, upperBound) {
+      const result = vatstore.getAfter(priorKey, lowerBound, upperBound);
       if (result) {
         const [key, value] = result;
-        log(`getAfter ${keyPrefix} ${priorKey} -> [${key}, ${value}]`);
+        log(
+          `getAfter ${priorKey} ${lowerBound} ${upperBound} -> [${key}, ${value}]`,
+        );
       } else {
-        log(`getAfter ${keyPrefix} ${priorKey} -> undefined`);
+        log(`getAfter ${priorKey} ${lowerBound} ${upperBound} -> undefined`);
       }
       return result;
     },
@@ -40,7 +42,7 @@ export function buildRootObject(vatPowers) {
       let fetched;
       let count = 0;
       // eslint-disable-next-line no-cond-assign
-      while ((fetched = vatstore.getAfter(prefix, key))) {
+      while ((fetched = vatstore.getAfter(key, prefix))) {
         count += 1;
         [key, value] = fetched;
         log(`    ${key} -> ${value}`);
@@ -48,6 +50,17 @@ export function buildRootObject(vatPowers) {
           log('    interrupting...');
           vatstore.set('temp', '42');
         }
+      }
+    },
+    scanRange(lower, upper) {
+      log(`scanRange ${lower} ${upper}:`);
+      let key = '';
+      let value;
+      let fetched;
+      // eslint-disable-next-line no-cond-assign
+      while ((fetched = vatstore.getAfter(key, lower, upper))) {
+        [key, value] = fetched;
+        log(`    ${key} -> ${value}`);
       }
     },
     scanInterleaved(prefix1, prefix2) {
@@ -59,14 +72,14 @@ export function buildRootObject(vatPowers) {
       let done1 = false;
       let done2 = false;
       do {
-        const fetched1 = vatstore.getAfter(prefix1, key1);
+        const fetched1 = vatstore.getAfter(key1, prefix1);
         if (fetched1 && !done1) {
           [key1, value1] = fetched1;
           log(`    1: ${key1} -> ${value1}`);
         } else {
           done1 = true;
         }
-        const fetched2 = vatstore.getAfter(prefix2, key2);
+        const fetched2 = vatstore.getAfter(key2, prefix2);
         if (fetched2 && !done2) {
           [key2, value2] = fetched2;
           log(`    2: ${key2} -> ${value2}`);
@@ -88,28 +101,28 @@ export function buildRootObject(vatPowers) {
       const badPriorKey = `aaa${prefix}`;
       log(`apiAbuse ${prefix}: use out of range prior key ${badPriorKey}`);
       try {
-        const fetched2 = vatstore.getAfter(prefix, badPriorKey);
+        const fetched2 = vatstore.getAfter(badPriorKey, prefix);
         if (fetched2) {
           const [key, value] = fetched2;
           log(`  ${key} -> ${value}`);
         } else {
-          log(`  getAfter(${prefix}, ${badPriorKey}) returns undefined`);
+          log(`  getAfter(${badPriorKey}, ${prefix}) returns undefined`);
         }
       } catch (e) {
-        log(`  getAfter(${prefix}, ${badPriorKey}) threw ${e}`);
+        log(`  getAfter(${badPriorKey}, ${prefix}) threw ${e}`);
       }
 
       log(`apiAbuse ${prefix}: use invalid key prefix`);
       try {
-        const fetched3 = vatstore.getAfter('ab@%%$#', '');
+        const fetched3 = vatstore.getAfter('', 'ab@%%$#');
         if (fetched3) {
           const [key, value] = fetched3;
           log(`  ${key} -> ${value}`);
         } else {
-          log(`  getAfter("ab@%%$#", "") returns undefined`);
+          log(`  getAfter("", "ab@%%$#") returns undefined`);
         }
       } catch (e) {
-        log(`  getAfter("ab@%%$#", "") threw ${e}`);
+        log(`  getAfter("", "ab@%%$#") threw ${e}`);
       }
     },
     delete(key) {

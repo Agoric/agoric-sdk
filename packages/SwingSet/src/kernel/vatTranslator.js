@@ -230,13 +230,24 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['vatstoreSet', vatID, key, value]);
   }
 
-  function translateVatstoreGetAfter(keyPrefix, priorKey) {
-    insistValidVatstoreKey(keyPrefix);
+  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
     if (priorKey !== '') {
       insistValidVatstoreKey(priorKey);
     }
-    kdebug(`syscall[${vatID}].vatstoreGetAfter(${keyPrefix}, ${priorKey})`);
-    return harden(['vatstoreGetAfter', vatID, keyPrefix, priorKey]);
+    insistValidVatstoreKey(lowerBound);
+    if (upperBound) {
+      insistValidVatstoreKey(upperBound);
+    }
+    kdebug(
+      `syscall[${vatID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
+    );
+    return harden([
+      'vatstoreGetAfter',
+      vatID,
+      priorKey,
+      lowerBound,
+      upperBound,
+    ]);
   }
 
   function translateVatstoreDelete(key) {

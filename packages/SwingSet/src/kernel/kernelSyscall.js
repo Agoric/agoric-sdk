@@ -51,13 +51,15 @@ export function makeKernelSyscallHandler(tools) {
     return `${vatID}.vs.${key}`;
   }
 
-  let workingKeyPrefix;
   let workingPriorKey;
+  let workingLowerBound;
+  let workingUpperBound;
   let workingKeyIterator;
 
   function clearVatStoreIteration() {
-    workingKeyPrefix = undefined;
     workingPriorKey = undefined;
+    workingLowerBound = undefined;
+    workingUpperBound = undefined;
     workingKeyIterator = undefined;
   }
 
@@ -78,43 +80,52 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
-  function vatstoreGetAfter(vatID, keyPrefix, priorKey) {
-    const actualKeyPrefix = vatstoreKeyKey(vatID, keyPrefix);
+  function vatstoreGetAfter(vatID, priorKey, lowerBound, upperBound) {
     const actualPriorKey = vatstoreKeyKey(vatID, priorKey);
+    const actualLowerBound = vatstoreKeyKey(vatID, lowerBound);
+    let actualUpperBound;
+    if (upperBound) {
+      actualUpperBound = vatstoreKeyKey(vatID, upperBound);
+    } else {
+      const lastChar = String.fromCharCode(
+        actualLowerBound.slice(-1).charCodeAt(0) + 1,
+      );
+      actualUpperBound = `${actualLowerBound.slice(0, -1)}${lastChar}`;
+    }
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreGetAfter');
     let nextIter;
     // Note that the working key iterator will be invalidated if the parameters
     // to `vatstoreGetAfter` don't correspond to the working key iterator's
-    // belief about what iteration was in progress.  In particular,
-    // `actualKeyPrefix` incorporates the vatID.  Additionally, when this
-    // syscall is used for iteration over a collection `keyPrefix` also
-    // incorporates the collection ID.  This ensures that uncoordinated
-    // concurrent iterations cannot interfere with each other.  If such
-    // concurrent iterations *do* happen, there will be a modest performance
-    // cost since the working key iterator will have to be regenerated each
-    // time, but we expect this to be a rare case since the normal use pattern
-    // is a single iteration in a loop within a single crank.
+    // belief about what iteration was in progress.  In particular, the bounds
+    // incorporate the vatID.  Additionally, when this syscall is used for
+    // iteration over a collection, the bounds also incorporate the collection
+    // ID.  This ensures that uncoordinated concurrent iterations cannot
+    // interfere with each other.  If such concurrent iterations *do* happen,
+    // there will be a modest performance cost since the working key iterator
+    // will have to be regenerated each time, but we expect this to be a rare
+    // case since the normal use pattern is a single iteration in a loop within
+    // a single crank.
     if (
-      workingKeyPrefix === actualKeyPrefix &&
       workingPriorKey === actualPriorKey &&
+      workingLowerBound === actualLowerBound &&
+      workingUpperBound === actualUpperBound &&
       workingKeyIterator
     ) {
       nextIter = workingKeyIterator.next();
     } else {
       let startKey;
       if (priorKey === '') {
-        startKey = actualKeyPrefix;
+        startKey = actualLowerBound;
       } else {
         startKey = actualPriorKey;
       }
-      assert(startKey.startsWith(actualKeyPrefix));
-      const lastChar = String.fromCharCode(
-        actualKeyPrefix.slice(-1).charCodeAt(0) + 1,
-      );
-      const endKey = `${actualKeyPrefix.slice(0, -1)}${lastChar}`;
-      workingKeyPrefix = actualKeyPrefix;
-      workingKeyIterator = kvStore.getKeys(startKey, endKey);
+      assert(actualLowerBound <= startKey);
+      assert(actualLowerBound < actualUpperBound);
+      assert(startKey < actualUpperBound);
+      workingLowerBound = actualLowerBound;
+      workingUpperBound = actualUpperBound;
+      workingKeyIterator = kvStore.getKeys(startKey, actualUpperBound);
       nextIter = workingKeyIterator.next();
       if (!nextIter.done && nextIter.value === actualPriorKey) {
         nextIter = workingKeyIterator.next();

@@ -117,8 +117,8 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       doSyscall(['callNow', target, method, args]),
     vatstoreGet: key => doSyscall(['vatstoreGet', key]),
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
-    vatstoreGetAfter: (keyPrefix, priorKey) =>
-      doSyscall(['vatstoreGetAfter', keyPrefix, priorKey]),
+    vatstoreGetAfter: (priorKey, lowerBound, upperBound) =>
+      doSyscall(['vatstoreGetAfter', priorKey, lowerBound, upperBound]),
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
 

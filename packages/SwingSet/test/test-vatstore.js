@@ -62,6 +62,8 @@ test('vatstore', async t => {
   send('store', 'yyy', 'not thisy');
   // check that we hit all the 'x.' keys
   send('scan', 'x.');
+  // check that we can scan an explicit key range
+  send('scanRange', 'x.2', 'x.p');
   // check that this works even if the iteration is interrupted
   send('scan', 'x.', 3);
   // check that interleaved iterations don't interfere
@@ -102,6 +104,10 @@ test('vatstore', async t => {
     '    x.3 -> three',
     '    x.a -> four',
     '    x.qrz -> five',
+    'scanRange x.2 x.p:',
+    '    x.2 -> two',
+    '    x.3 -> three',
+    '    x.a -> four',
     'scan x. 3:',
     '    x.1 -> one',
     '    x.2 -> two',
@@ -126,8 +132,8 @@ test('vatstore', async t => {
     'apiAbuse x.: use prefix as prior key (should work)',
     '  x.1 -> one',
     'apiAbuse x.: use out of range prior key aaax.',
-    '  getAfter(x., aaax.) threw Error: priorKey must start with keyPrefix',
+    '  getAfter(aaax., x.) threw Error: priorKey must be >= lowerBound',
     'apiAbuse x.: use invalid key prefix',
-    '  getAfter("ab@%%$#", "") threw Error: invalid vatstore key',
+    '  getAfter("", "ab@%%$#") threw Error: invalid vatstore key',
   ]);
 });
