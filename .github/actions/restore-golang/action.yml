@@ -9,17 +9,20 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: set default environment variables
+      run: echo GOPATH="$HOME/go" >> $GITHUB_ENV
+      shell: bash
     - uses: actions/checkout@v2
       with:
         clean: 'false'
         submodules: 'true'
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v2
       with:
         go-version: ${{ inputs.go-version }}
     - name: cache Go modules
       uses: actions/cache@v1
       with:
-        path: ~/go/pkg/mod
+        path: ${{ env.GOPATH }}/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
