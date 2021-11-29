@@ -106,7 +106,7 @@ export default function makeBlockManager({
       runTime += Date.now() - start;
     }
 
-    // console.error('Performing action', action);
+    console.error('Performing action', action);
     let p;
     switch (action.type) {
       case BEGIN_BLOCK:
