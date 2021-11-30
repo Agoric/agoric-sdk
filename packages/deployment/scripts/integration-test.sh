@@ -18,5 +18,6 @@ DOCKER_VOLUMES="$(cd "$thisdir/../../.." > /dev/null && pwd -P):/usr/src/agoric-
 # Set up the network from our above deployment.json.
 "$thisdir/setup.sh" init --noninteractive
 
-# Go ahead and bootstrap.
-exec "$thisdir/setup.sh" bootstrap ${1+"$@"}
+# Go ahead and bootstrap with detailed debug logging.
+AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore.trace" \
+  "$thisdir/setup.sh" bootstrap ${1+"$@"}
