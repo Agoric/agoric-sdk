@@ -54,7 +54,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(gaia.DefaultNodeHome).
-		WithViper("AG_COSMOS_")
+		WithViper("AGD_")
 
 	rootCmd := &cobra.Command{
 		Use:   AppName,
@@ -64,9 +64,12 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			initClientCtx = client.ReadHomeFlag(initClientCtx, cmd)
+			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
-			initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return err
 			}
