@@ -1,6 +1,10 @@
 name: Chain deployment test
 
 on:
+  # Use the following to explicitly start thit workflow.
+  # packages/deployment/scripts/start-deployment-test.sh <BRANCH-OR-TAG>
+  workflow_dispatch:
+  # Otherwise, run on a schedule.
   schedule:
     - cron: "0 0 * * *"
 
@@ -29,6 +33,26 @@ jobs:
     - run: sudo ./packages/deployment/scripts/install-deps.sh
       working-directory: /usr/src/agoric-sdk
     - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
-      working-directory: ~
       env:
         NETWORK_NAME: chaintest
+    - name: capture results
+      if: failure()
+      run: |
+        NOW=$(date -u +%Y%m%dT%H%M%S)
+        echo "NOW=$NOW" >> "$GITHUB_ENV"
+
+        # Stop the chain from running.
+        /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
+
+        # Get the results.
+        /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh
+
+        # Tear down the nodes.
+        echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
+      env:
+        NETWORK_NAME: chaintest
+    - uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: deployment-test-results-${{ env.NOW }}
+        path: chaintest/results

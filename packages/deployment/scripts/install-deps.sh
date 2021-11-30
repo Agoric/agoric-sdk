@@ -21,10 +21,8 @@ TERRAFORM_URL=https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${TE
 
 # Extract, then delete temporary file.
 (
-  terraform_zip=$(mktemp -t terraform)
-  trap "rm -f \"\$terraform_zip\"" EXIT
-  echo "$terraform_zip"
-  exit 1
+  trap 'echo "Removing $terraform_zip"; rm -f "$terraform_zip"' EXIT
+  terraform_zip=$(mktemp -t terraformXXXXXX)
   curl "$TERRAFORM_URL" > "$terraform_zip"
   unzip -od /usr/local/bin/ "$terraform_zip"
 )
