@@ -26,7 +26,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.3.14",
-    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/cosmos": "^0.27.0",
     "@agoric/import-bundle": "^0.2.31",
     "@agoric/install-ses": "^0.5.28",

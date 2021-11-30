@@ -1,12 +1,11 @@
 /* global process */
 
+import '@agoric/install-ses/pre-bundle-source.js';
+
 // `test.after.always` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
 // TODO restore
 // import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava';
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';

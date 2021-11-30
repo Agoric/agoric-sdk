@@ -32,8 +32,7 @@
     "@agoric/eventual-send": "^0.13.30",
     "@agoric/install-ses": "^0.5.28",
     "@endo/netstring": "^0.2.8",
-    "glob": "^7.1.6",
-    "ses": "^0.14.3"
+    "glob": "^7.1.6"
   },
   "devDependencies": {
     "@endo/base64": "^0.2.8",

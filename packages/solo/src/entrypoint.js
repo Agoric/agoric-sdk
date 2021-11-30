@@ -1,11 +1,9 @@
 #! /usr/bin/env node
 
+import '@agoric/install-ses/pre-bundle-source.js';
+
 // import node-lmdb early to work around SES incompatibility
 import 'node-lmdb';
-
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)

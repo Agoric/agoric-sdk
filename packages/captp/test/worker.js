@@ -1,4 +1,5 @@
-import './prepare-test-env.js';
+import '@agoric/install-ses/pre-remoting.js';
+import '@agoric/install-ses/debug.js';
 
 import { assert, details as X } from '@agoric/assert';
 

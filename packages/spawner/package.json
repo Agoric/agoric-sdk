@@ -37,7 +37,6 @@
     "@agoric/marshal": "^0.4.28"
   },
   "devDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/bundle-source": "^2.0.0",
     "@agoric/install-ses": "^0.5.28",
     "@agoric/swingset-vat": "^0.23.0",

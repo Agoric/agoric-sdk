@@ -1,5 +1,5 @@
-/* eslint-disable import/no-extraneous-dependencies */
-import 'ses';
+import '@agoric/install-ses/pre-bundle-source.js';
+import '@agoric/install-ses';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';

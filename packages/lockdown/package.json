@@ -1,46 +1,42 @@
 {
-  "name": "@agoric/sharing-service",
-  "version": "0.1.31",
-  "description": "Share objects with another party but not publicly",
+  "name": "@agoric/lockdown",
+  "version": "0.1.0",
+  "description": "wrappers for locking down SES the Agoric way",
   "type": "module",
-  "main": "./src/sharing.js",
-  "engines": {
-    "node": ">=11.0"
-  },
+  "main": "pre.js",
   "scripts": {
     "build": "exit 0",
-    "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test": "exit 0",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
+  "devDependencies": {
+    "ava": "^3.12.1"
+  },
+  "dependencies": {
+    "ses": "^0.14.3"
+  },
+  "files": [
+    "*.js",
+    "src/**.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
-  "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "dependencies": {
-    "@agoric/assert": "^0.3.14",
-    "@agoric/marshal": "^0.4.28"
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ]
   },
-  "devDependencies": {
-    "@agoric/eventual-send": "^0.13.30",
-    "@agoric/swingset-vat": "^0.23.0",
-    "ava": "^3.12.1",
-    "c8": "^7.7.2"
-  },
-  "files": [
-    "src/",
-    "NEWS.md"
-  ],
   "eslintConfig": {
     "extends": [
       "@agoric"
@@ -55,11 +51,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "timeout": "2m"
   }
 }

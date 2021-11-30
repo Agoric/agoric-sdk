@@ -5,6 +5,7 @@
   "useWorkspaces": true,
   "workspaces": [
     "golang/cosmos",
+    "packages/lockdown",
     "packages/assert",
     "packages/install-ses",
     "packages/import-manager",

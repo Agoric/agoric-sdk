@@ -27,7 +27,6 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.15",
     "@agoric/assert": "^0.3.14",
-    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/captp": "^1.10.6",
     "@agoric/cosmic-swingset": "^0.34.2",
     "@agoric/eventual-send": "^0.13.30",
