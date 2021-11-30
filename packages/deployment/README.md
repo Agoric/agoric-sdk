@@ -9,3 +9,11 @@ If you want to create a publically-accessible testnet you will at least need to:
 1. Configure your nodes' firewalls so that only the necessary ports are accessible.
 2. Set up your provisioning server (node0) to expose the provisioner only on HTTPS with some form of authentication.
 3. **Do more, which we are not sure of**
+
+## Triggering deployment tests
+
+Use the following to start a deployment test on [GitHub Actions](https://github.com/Agoric/agoric-sdk/actions/workflows/deployment-test.yml):
+
+```sh
+./scripts/start-deployment-test.sh master
+```

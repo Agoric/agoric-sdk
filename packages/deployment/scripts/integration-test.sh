@@ -9,6 +9,8 @@ export NETWORK_NAME=${NETWORK_NAME-localtest}
 mkdir -p "$NETWORK_NAME/setup"
 cd "$NETWORK_NAME/setup"
 
+export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
+
 # Speed up the docker deployment by pre-mounting /usr/src/agoric-sdk.
 DOCKER_VOLUMES="$(cd "$thisdir/../../.." > /dev/null && pwd -P):/usr/src/agoric-sdk" \
   "$thisdir/docker-deployment.cjs" > deployment.json
