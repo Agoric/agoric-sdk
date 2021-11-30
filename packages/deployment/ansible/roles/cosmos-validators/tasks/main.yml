@@ -44,7 +44,7 @@
   register: staker_balance
   until: staker_balance.stdout.find(staking_denom) != -1
   delay: 10
-  retries: 60
+  retries: 20 # 200 seconds === 3m20s
 
 - name: "Create validators for {{ STAKER }}-*"
   become_user: "{{ service }}"
