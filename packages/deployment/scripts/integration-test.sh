@@ -9,5 +9,7 @@ export NETWORK_NAME=${NETWORK_NAME-localtest}
 mkdir -p "$NETWORK_NAME/setup"
 cd "$NETWORK_NAME/setup"
 
-"$thisdir/docker-deployment.sh" > deployment.json
+# Speed up the docker deployment by pre-mounting /usr/src/agoric-sdk.
+DOCKER_VOLUMES="$(cd "$thisdir/../../.." > /dev/null && pwd -P):/usr/src/agoric-sdk" \
+  "$thisdir/docker-deployment.sh" > deployment.json
 exec "$thisdir/setup.sh" --force-init bootstrap ${1+"$@"}

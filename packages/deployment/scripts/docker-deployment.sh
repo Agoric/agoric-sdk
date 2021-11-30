@@ -5,6 +5,16 @@ set -e
 NETWORK_NAME=${NETWORK_NAME-localtest}
 export NETWORK_NAME
 
+# Add in DOCKER_VOLUMES=host_path:container_path,host_path2:container_path2,...
+ADD_VOLUMES=
+save_IFS=${IFS-$(echo -e '\n\t ')}
+IFS=,; set $DOCKER_VOLUMES
+for hostcontainer in $@; do
+  IFS=: read -r hostpath containerpath <<< "$hostcontainer"
+  ADD_VOLUMES="$ADD_VOLUMES, { \"host_path\": \"$hostpath\", \"container_path\": \"$containerpath\" }"
+done
+IFS=${save_IFS}
+
 cat <<EOF
 {
   "PLACEMENTS": [
@@ -25,7 +35,7 @@ cat <<EOF
         {
           "host_path": "/sys/fs/cgroup",
           "container_path": "/sys/fs/cgroup"
-        }
+        }$ADD_VOLUMES
       ]
     }
   },

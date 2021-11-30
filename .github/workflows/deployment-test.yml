@@ -6,7 +6,7 @@ on:
 
 jobs:
   deployment-test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-18.04 # trusty
     steps:
     - uses: actions/checkout@v2
       with:
