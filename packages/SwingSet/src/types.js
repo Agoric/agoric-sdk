@@ -103,6 +103,7 @@
  * @typedef { [ vpid: string, rejected: boolean, data: SwingSetCapData ]} VatResolutions
  * @typedef { [tag: 'resolve', resolutions: VatResolutions ]} VatSyscallResolve
  * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined | null ]} VatSyscallVatstoreGetAfter
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
@@ -110,8 +111,8 @@
  * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
- *    | VatSyscallResolve | VatSyscallVatstoreGet | VatSyscallVatstoreSet
- *    | VatSyscallVatstoreDelete | VatSyscallDropImports
+ *    | VatSyscallResolve | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
+ *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
  *    | VatSyscallRetireImports | VatSyscallRetireExports
  * } VatSyscallObject
  *
@@ -134,6 +135,7 @@
  * @typedef { [ kpid: string, rejected: boolean, data: SwingSetCapData ]} KernelResolutions
  * @typedef { [tag: 'resolve', resolutions: KernelResolutions ]} KernelSyscallResolve
  * @typedef { [tag: 'vatstoreGet', key: string ]} KernelSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} KernelSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} KernelSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
@@ -141,8 +143,8 @@
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
  *
  * @typedef { KernelSyscallSend | KernelSyscallCallNow | KernelSyscallSubscribe
- *    | KernelSyscallResolve | KernelSyscallVatstoreGet | KernelSyscallVatstoreSet
- *    | KernelSyscallVatstoreDelete | KernelSyscallDropImports
+ *    | KernelSyscallResolve | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
+ *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
  *    | KernelSyscallRetireImports | KernelSyscallRetireExports
  * } KernelSyscallObject
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | null ]} KernelSyscallResultOk

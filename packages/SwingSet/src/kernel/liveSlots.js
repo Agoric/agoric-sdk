@@ -1090,24 +1090,24 @@ function build(
           syscall.vatstoreSet(`vvs.${key}`, value);
         },
         getAfter: (priorKey, lowerBound, upperBound) => {
+          let scopedPriorKey = '';
           if (priorKey !== '') {
             insistValidVatstoreKey(priorKey);
             assert(priorKey >= lowerBound, 'priorKey must be >= lowerBound');
-            priorKey = `vvs.${priorKey}`;
+            scopedPriorKey = `vvs.${priorKey}`;
           }
           insistValidVatstoreKey(lowerBound);
-          lowerBound = `vvs.${lowerBound}`;
-          if (upperBound !== undefined) {
+          const scopedLowerBound = `vvs.${lowerBound}`;
+          let scopedUpperBound;
+          if (upperBound) {
             insistValidVatstoreKey(upperBound);
             assert(upperBound > lowerBound, 'upperBound must be > lowerBound');
-          }
-          if (upperBound !== undefined) {
-            upperBound = `vvs.${upperBound}`;
+            scopedUpperBound = `vvs.${upperBound}`;
           }
           const fetched = syscall.vatstoreGetAfter(
-            priorKey,
-            lowerBound,
-            upperBound,
+            scopedPriorKey,
+            scopedLowerBound,
+            scopedUpperBound,
           );
           if (fetched) {
             const [key, value] = fetched;

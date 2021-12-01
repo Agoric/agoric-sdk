@@ -77,7 +77,6 @@ export function buildCrankBuffer(
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();
   const deletions = new Set();
-  let liveGeneration = 0n;
   resetCrankhash();
 
   const crankBuffer = {
@@ -92,11 +91,27 @@ export function buildCrankBuffer(
     },
 
     *getKeys(start, end) {
-      const generation = liveGeneration;
+      // Warning: this function introduces a consistency risk that callers must
+      // take into account in their usage of it.  If keys are added to the store
+      // within the range from `start` to `end` while iteration is in progress,
+      // these additions will not be visible to this iterator and thus not
+      // reflected in the stream of keys it returns.  Callers who might be
+      // vulnerable to any resulting data inconsistencies thus introduced must
+      // take measures to protect themselves, either by avoiding making such
+      // changes while iterating or by arranging to invalidate and reconstruct
+      // the iterator when such changes are made.  At this layer of abstraction,
+      // the store does not possess the necessary knowledge to protect the
+      // caller from these kinds of risks, as the nature of the risks themselves
+      // varies depending on what the caller is trying to do.  This API should
+      // not be made available to user (i.e., vat) code.  Rather, it is intended
+      // as a low-level mechanism to use in implementating higher level storage
+      // abstractions that are expected to provide their own consistency
+      // protections as appropriate to their own circumstances.
+
       assert.typeof(start, 'string');
       assert.typeof(end, 'string');
 
-      // find additions within the query range for use during iteration
+      // Find additions within the query range for use during iteration.
       const added = [];
       for (const k of additions.keys()) {
         if ((start === '' || start <= k) && (end === '' || k < end)) {
@@ -109,9 +124,6 @@ export function buildCrankBuffer(
         added.values(),
         kvStore.getKeys(start, end),
       )) {
-        if (liveGeneration > generation) {
-          assert.fail('store modified during iteration');
-        }
         if ((start === '' || start <= k) && (end === '' || k < end)) {
           if (!deletions.has(k)) {
             yield k;
@@ -136,9 +148,6 @@ export function buildCrankBuffer(
       assert.typeof(value, 'string');
       additions.set(key, value);
       deletions.delete(key);
-      if (!crankBuffer.has(key)) {
-        liveGeneration += 1n;
-      }
       if (isConsensusKey(key)) {
         crankhasher.add('add');
         crankhasher.add('\n');
@@ -153,7 +162,6 @@ export function buildCrankBuffer(
       assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
-      // liveGeneration += 1n; // XXX can this be made to work? I fear not...
       if (isConsensusKey(key)) {
         crankhasher.add('delete');
         crankhasher.add('\n');

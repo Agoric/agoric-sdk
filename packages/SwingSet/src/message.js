@@ -155,7 +155,7 @@ export function insistVatSyscallObject(vso) {
       const [priorKey, lowerBound, upperBound] = rest;
       assert.typeof(priorKey, 'string');
       assert.typeof(lowerBound, 'string');
-      if (upperBound !== undefined) {
+      if (upperBound !== undefined && upperBound !== null) {
         assert.typeof(upperBound, 'string');
       }
       break;

@@ -125,6 +125,26 @@ export function buildRootObject(vatPowers) {
         log(`  getAfter("", "ab@%%$#") threw ${e}`);
       }
     },
+    scanWithActivity(prefix, delThreshold, toDel, addThreshold, toAdd) {
+      log(
+        `scanWithActivity ${prefix} ${delThreshold} ${toDel} ${addThreshold} ${toAdd}`,
+      );
+      let key = '';
+      let value;
+      let fetched;
+      let count = 0;
+      // eslint-disable-next-line no-cond-assign
+      while ((fetched = vatstore.getAfter(key, prefix))) {
+        count += 1;
+        [key, value] = fetched;
+        log(`    ${key} -> ${value}`);
+        if (count === delThreshold) {
+          vatstore.delete(toDel);
+        } else if (count === addThreshold) {
+          vatstore.set(toAdd, 'whacka whacka');
+        }
+      }
+    },
     delete(key) {
       vatstore.delete(key);
       log(`delete ${key}`);
