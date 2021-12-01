@@ -6,6 +6,10 @@ on:
       - $default-branch
     tags:
       - "@agoric/sdk@*"
+  pull_request:
+    types: [closed]
+    branches:
+      - $default-branch
 
 jobs:
   docker-deployment:

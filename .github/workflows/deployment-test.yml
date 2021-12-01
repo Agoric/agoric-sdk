@@ -8,6 +8,10 @@ on:
   push:
     branches:
       - $default-branch
+  pull_request:
+    types: [closed]
+    branches:
+      - $default-branch
 
 jobs:
   deployment-test:
