@@ -5,7 +5,7 @@ import { provideHostStorage } from '../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox.js';
 
-test('vattp', async t => {
+test.serial('vattp', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -50,7 +50,7 @@ test('vattp', async t => {
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
 });
 
-test('vattp 2', async t => {
+test.serial('vattp 2', async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {

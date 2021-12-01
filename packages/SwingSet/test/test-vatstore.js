@@ -72,6 +72,9 @@ test('vatstore', async t => {
   send('scan', 'z.');
   // exercise various calls with malformed parameters
   send('apiAbuse', 'x.');
+  // check on handling of reads and writes during iteration
+  send('scanWithActivity', 'y.', 2, 'y.b', 4, 'y.q');
+
   await c.run();
   t.deepEqual(c.dump().log, [
     'get zot -> <undefined>',
@@ -135,5 +138,13 @@ test('vatstore', async t => {
     '  getAfter(aaax., x.) threw Error: priorKey must be >= lowerBound',
     'apiAbuse x.: use invalid key prefix',
     '  getAfter("", "ab@%%$#") threw Error: invalid vatstore key',
+    'scanWithActivity y. 2 y.b 4 y.q',
+    '    y.1 -> oney',
+    '    y.2 -> twoy',
+    '    y.3 -> threey',
+    '    y.a -> foury',
+    '    y.c -> sixy',
+    '    y.d -> seveny',
+    '    y.q -> whacka whacka',
   ]);
 });
