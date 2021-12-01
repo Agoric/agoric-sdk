@@ -19,7 +19,11 @@ message Params {
     //
     // The structure and interpretation of this map and the units therein is
     // entirely determined by the JS-level code.
-    map<string, Beans> beans_per_unit = 1 [
+    //
+    // There is no required order to this list of entries, but all the chain
+    // nodes must all serialize and deserialize the existing order without
+    // permuting it.
+    repeated StringBeans beans_per_unit = 1 [
       (gogoproto.nullable) = false
     ];
 
@@ -33,12 +37,15 @@ message Params {
     ];
 }
 
-// Beans are a Nat unit that is used to ascribe accounting value to other
-// SwingSet-level units.
-message Beans {
+// Map element of a string key to a Nat bean count.
+message StringBeans {
   option (gogoproto.equal) = true;
 
-  string whole = 1 [
+  // What the beans are for.
+  string key = 1;
+
+  // The actual bean value.
+  string beans = 2 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint",
     (gogoproto.nullable) = false
   ];

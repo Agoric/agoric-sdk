@@ -42,30 +42,15 @@ const parseParams = params => {
     beans_per_unit: rawBeansPerUnit,
     fee_unit_price: rawFeeUnitPrice,
   } = params;
-  assert.equal(
-    Object(rawBeansPerUnit),
-    rawBeansPerUnit,
-    X`beansPerUnit must be an object, not ${rawBeansPerUnit}`,
+  assert(
+    Array.isArray(rawBeansPerUnit),
+    X`beansPerUnit must be an array, not ${rawBeansPerUnit}`,
   );
   const beansPerUnit = Object.fromEntries(
-    Object.keys(rawBeansPerUnit)
-      .sort()
-      .map(key => {
-        assert.typeof(key, 'string', X`Key ${key} must be a string`);
-        const beans = rawBeansPerUnit[key];
-        assert.equal(
-          Object(beans),
-          beans,
-          X`${key} beans must be an object, not ${beans}`,
-        );
-        const { whole, ...rest } = beans;
-        assert.equal(
-          Object.keys(rest).length,
-          0,
-          X`${key} beans must have no unexpected properties; had ${rest}`,
-        );
-        return [key, stringToNat(whole)];
-      }),
+    rawBeansPerUnit.sort().map(({ key, beans }) => {
+      assert.typeof(key, 'string', X`Key ${key} must be a string`);
+      return [key, stringToNat(beans)];
+    }),
   );
 
   assert(

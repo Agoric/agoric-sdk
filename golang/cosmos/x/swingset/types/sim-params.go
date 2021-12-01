@@ -41,14 +41,14 @@ var (
 	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50000000)) // $0.0000002
 	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(4))        // $0.25
 
-	DefaultBeansPerUnit = map[string]Beans{
-		BeansPerBlockComputeLimit: NewBeans(DefaultBeansPerBlockComputeLimit),
-		BeansPerFeeUnit:           NewBeans(DefaultBeansPerFeeUnit),
-		BeansPerInboundTx:         NewBeans(DefaultBeansPerInboundTx),
-		BeansPerMessage:           NewBeans(DefaultBeansPerMessage),
-		BeansPerMessageByte:       NewBeans(DefaultBeansPerMessageByte),
-		BeansPerMinFeeDebit:       NewBeans(DefaultBeansPerMinFeeDebit),
-		BeansPerVatCreation:       NewBeans(DefaultBeansPerVatCreation),
-		BeansPerXsnapComputron:    NewBeans(DefaultBeansPerXsnapComputron),
+	DefaultBeansPerUnit = []StringBeans{
+		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
+		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
+		NewStringBeans(BeansPerInboundTx, DefaultBeansPerInboundTx),
+		NewStringBeans(BeansPerMessage, DefaultBeansPerMessage),
+		NewStringBeans(BeansPerMessageByte, DefaultBeansPerMessageByte),
+		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
+		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
+		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}
 )
