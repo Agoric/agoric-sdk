@@ -4,9 +4,10 @@ on:
   # Use the following to explicitly start thit workflow.
   # packages/deployment/scripts/start-deployment-test.sh <BRANCH-OR-TAG>
   workflow_dispatch:
-  # Otherwise, run on a schedule.
-  schedule:
-    - cron: "0 0 * * *"
+  # Otherwise, run on default branch.
+  push:
+    branches:
+      - $default-branch
 
 jobs:
   deployment-test:
