@@ -41,5 +41,8 @@
   "prettier": {
     "trailingComma": "all",
     "singleQuote": true
+  },
+  "devDependencies": {
+    "readline-transform": "^1.0.0"
   }
 }
