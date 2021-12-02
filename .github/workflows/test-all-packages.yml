@@ -5,11 +5,8 @@ name: Test all Packages
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ master ] # $default-branch
   pull_request:
-    # Include default types, and also `closed`
-    # See https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#pull_request
-    types: [opened, reopened, synchronize, closed]
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
@@ -65,7 +62,7 @@ jobs:
       run: yarn lint-check
 
   dev-canary:
-    if: ${{github.event_name == 'push' || github.event.pull_request.merged == 'true'}}
+    if: ${{github.event_name == 'push'}}
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -99,7 +96,7 @@ jobs:
       matrix:
         # note: only use one node-version
         node-version: ['14.x']
-    if: ${{github.event_name == 'push' || github.event.pull_request.merged == 'true'}}
+    if: ${{github.event_name == 'push'}}
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/restore-node
@@ -122,7 +119,7 @@ jobs:
       matrix:
         # note: only use one node-version
         node-version: ['14.x']
-    if: ${{github.event_name == 'push' || github.event.pull_request.merged == 'true'}}
+    if: ${{github.event_name == 'push' }}
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/restore-node
@@ -144,7 +141,7 @@ jobs:
     - uses: nwtgck/actions-netlify@v1.1
       with:
         # Production deployment if a push or merged PR.
-        production-deploy: ${{github.event_name == 'push' || github.event.pull_request.merged == 'true'}}
+        production-deploy: ${{github.event_name == 'push'}}
         publish-dir: coverage/html
         # SECURITY: we don't want to hand out the Github token to this action.
         # github-token: ${{ secrets.GITHUB_TOKEN }}

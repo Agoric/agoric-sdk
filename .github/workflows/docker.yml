@@ -2,14 +2,9 @@ name: Build release Docker Images
 
 on:
   push:
-    branches:
-      - $default-branch
+    branches: [ master ] # $default-branch
     tags:
       - "@agoric/sdk@*"
-  pull_request:
-    types: [closed]
-    branches:
-      - $default-branch
 
 jobs:
   docker-deployment:

@@ -4,7 +4,7 @@ name: PR Checks
 # branches)
 
 on:
- pull_request:
+  pull_request:
 
 jobs:
   # Check that commits conform to https://www.conventionalcommits.org/en/v1.0.0/
