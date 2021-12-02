@@ -20,6 +20,7 @@
     "packages/transform-metering",
     "packages/install-metering-and-ses",
     "packages/marshal",
+    "packages/far",
     "packages/same-structure",
     "packages/captp",
     "packages/stat-logger",
