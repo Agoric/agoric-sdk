@@ -4,15 +4,25 @@ package agoric.loc;
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types";
 
 import "agoric/loc/loc.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 service Query {
-    rpc LoC(QueryLoCRequest) returns (QueryLoCResponse);
+    rpc GetLoc(QueryGetLoc) returns (QueryGetLocResponse);
+
+    rpc GetRatio(QueryGetRatio) returns (QueryGetRatioResponse);
 }
 
-message QueryLoCRequest {
+message QueryGetLoc {
     string address = 1;
 }
 
-message QueryLoCResponse {
-    LoC loc = 1;
+message QueryGetLocResponse {
+    Loc loc = 1;
+    cosmos.base.v1beta1.Coin max_loan = 2;
+}
+
+message QueryGetRatio {}
+
+message QueryGetRatioResponse {
+    cosmos.base.v1beta1.DecCoin ratio = 1;
 }

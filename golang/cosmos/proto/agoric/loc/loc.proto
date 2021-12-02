@@ -19,9 +19,9 @@ message Params {
     ];
 }
 
-// LoC records an active line of credit for an implicit account.
-// An LoC consisting of collateral and a loan amount.
-message LoC {
+// Loc records an active line of credit for an implicit account.
+// An Loc consisting of collateral and a loan amount.
+message Loc {
     // The collateral is liened (preventing transfer) until the loan is repaid.
     cosmos.base.v1beta1.Coin collateral = 1;
 
@@ -32,12 +32,12 @@ message LoC {
 
 // Account LoC binds an LoC with an address.
 // It is used to export and import the total LoC state.
-message AccountLoC {
+message AccountLoc {
     // address is the address of the LoC borrower.
     string address = 1;
 
     // loc is the single LoC held by this borrower.
-    LoC loc = 2;
+    Loc loc = 2;
 }
 
 // GenesisState defines the loc module's genesis state.
@@ -46,5 +46,5 @@ message GenesisState {
     Params params = 1;
 
     // account_loc defines the active LoCs.
-    repeated AccountLoC account_loc = 2;
+    repeated AccountLoc account_loc = 2;
 }

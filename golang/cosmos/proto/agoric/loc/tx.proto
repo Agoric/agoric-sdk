@@ -3,18 +3,27 @@ package agoric.loc;
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types";
 
-import "agoric/loc/loc.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // Msg defines the loc Msg service.
 service Msg {
-    // Create, refinance, or remove an LoC via standalone settings.
-    rpc UpdateStandaloneLoC(MsgUpdateStandaloneLoCRequest) returns (MsgUpdateStandaloneLoCResponse);
+    // Create, refinance, or remove an Loc via standalone settings.
+    rpc UpdateLoc(MsgUpdateLoc) returns (MsgUpdateLocResponse);
+
+    rpc UpdateLocLoan(MsgUpdateLocLoan) returns (MsgUpdateLocLoanResponse);
 }
 
-message MsgUpdateStandaloneLoCRequest {
+message MsgUpdateLoc {
     string address = 1;
-    LoC current_loc = 2;
-    LoC new_loc = 3;
+    cosmos.base.v1beta1.Coin collateral = 2;
+    cosmos.base.v1beta1.Coin loan = 3;
 }
 
-message MsgUpdateStandaloneLoCResponse {}
+message MsgUpdateLocResponse {}
+
+message MsgUpdateLocLoan {
+    string address = 1;
+    cosmos.base.v1beta1.Coin loan = 2;
+}
+
+message MsgUpdateLocLoanResponse {}
