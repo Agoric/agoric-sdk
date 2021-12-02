@@ -4,9 +4,9 @@ name: Test Golang
 # branches)
 
 on:
- push:
-   branches: [ $default-branch ]
- pull_request:
+  push:
+    branches: [ master ] # $default-branch
+  pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
