@@ -1,9 +1,8 @@
 import { isPromise } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
-import { getInterfaceOf, Remotable, Far, isObject } from '@agoric/marshal';
+import { Far } from '@agoric/far';
+import * as farExports from '@agoric/far';
 
 import { Nat } from '@agoric/nat';
-import makeUIAgentMakers from './ui-agent.js';
 
 const UNJSONABLES = new Map([
   [NaN, 'NaN'],
@@ -19,7 +18,7 @@ export const dump = (value, spaces = '') =>
   dump0(value, spaces, new WeakSet(), 0);
 
 function dump0(value, spaces, inProgress, depth) {
-  if (!isObject(value)) {
+  if (Object(value) !== value) {
     if (typeof value === 'bigint') {
       return `${value}n`;
     }
@@ -188,19 +187,12 @@ export function getReplHandler(replObjects, send) {
 
   replConsole.log(`Welcome to Agoric!`);
 
-  // TODO: Remove
-  const agentMakers = makeUIAgentMakers({ harden, console: replConsole });
-
   const endowments = {
-    Remotable,
-    Far,
-    getInterfaceOf,
+    ...farExports,
     console: replConsole,
-    E,
     commands,
     history,
     harden,
-    agent: agentMakers, // TODO: Remove
     ...replObjects,
   };
   const c = new Compartment(endowments);

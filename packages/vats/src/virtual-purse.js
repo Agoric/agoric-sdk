@@ -1,6 +1,5 @@
 // @ts-check
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
@@ -9,10 +8,7 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').EOnly<T>} EOnly An object roughly
- * of type T that is only allowed to be consumed via eventual-send.  This allows
- * the object to return Promises wherever it wants to, even when T demands a
- * synchronous return value.
+ * @typedef {import('@agoric/far').EOnly<T>} EOnly
  */
 
 /**

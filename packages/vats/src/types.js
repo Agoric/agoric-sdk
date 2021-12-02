@@ -2,7 +2,7 @@
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').EOnly<T>} EOnly
+ * @typedef {import('@agoric/far').EOnly<T>} EOnly
  */
 
 /**

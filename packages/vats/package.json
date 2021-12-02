@@ -24,10 +24,9 @@
   "dependencies": {
     "@agoric/assert": "^0.3.14",
     "@agoric/ertp": "^0.12.2",
-    "@agoric/eventual-send": "^0.13.30",
+    "@agoric/far": "^0.1.0",
     "@agoric/import-bundle": "^0.2.31",
     "@agoric/install-ses": "^0.5.28",
-    "@agoric/marshal": "^0.4.28",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.31",
     "@agoric/pegasus": "^0.4.5",
