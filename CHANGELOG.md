@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [11.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@11.0.0-stage.4...@agoric/sdk@11.0.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent`
+
+### Features
+
+* **far:** export `ERef<T>` ([180149e](https://github.com/Agoric/agoric-sdk/commit/180149ea1406e0c548fa4e2aeddabe5f16f6089b))
+* **far:** new package `@agoric/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
+* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
+* tweak fictional BLD price to suggest early phase ([472912e](https://github.com/Agoric/agoric-sdk/commit/472912e507a4d83b41734b9110e3127b1bd40755))
+
+
+### Bug Fixes
+
+* represent storage in same order in genesis state ([f584cd1](https://github.com/Agoric/agoric-sdk/commit/f584cd1a1256d4b27cf05a1b46bda1fb6aa591af))
+
+
+
 ## [10.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.1.0...@agoric/sdk@10.0.0) (2021-10-13)
 
 

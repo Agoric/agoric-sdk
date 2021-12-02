@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.21...@agoric/eslint-config@0.3.22) (2021-12-02)
+
+
+### Bug Fixes
+
+* **eslint-config:** loosen no-extraneous-dependencies patterns ([71be149](https://github.com/Agoric/agoric-sdk/commit/71be149522823ec41900bcf96a0b39f75b38bfd9))
+
+
+
 ### [0.3.21](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.3.20...@agoric/eslint-config@0.3.21) (2021-10-13)
 
 

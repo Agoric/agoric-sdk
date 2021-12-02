@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.32](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.31...@agoric/spawner@0.4.32) (2021-12-02)
+
+
+### Bug Fixes
+
+* **deps:** remove explicit `@agoric/babel-standalone` ([4f22453](https://github.com/Agoric/agoric-sdk/commit/4f22453a6f2de1a2c27ae8ad0d11b13116890dab))
+
+
+
 ### [0.4.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.30...@agoric/spawner@0.4.31) (2021-10-13)
 
 

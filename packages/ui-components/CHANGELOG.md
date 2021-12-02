@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.27](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.26...@agoric/ui-components@0.2.27) (2021-12-02)
+
+
+### Features
+
+* **react-wallet:** Render empty requests and basic purse amounts ([d859019](https://github.com/Agoric/agoric-sdk/commit/d859019b0c9b174b2071df7e39f62c4ab5145233))
+
+
+
 ### [0.2.26](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.25...@agoric/ui-components@0.2.26) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/ui-components
