@@ -2,7 +2,7 @@
 
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details as X, q } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 

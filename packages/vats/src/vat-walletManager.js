@@ -1,5 +1,4 @@
-import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { E, Far } from '@agoric/far';
 import walletBundle from '@agoric/wallet-backend/bundles/bundle-wallet.js';
 
 export const buildRootObject = _vatPowers => {

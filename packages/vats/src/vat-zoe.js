@@ -1,6 +1,5 @@
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 import { makeZoeKit } from '@agoric/zoe';
-import { E } from '@agoric/eventual-send';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {

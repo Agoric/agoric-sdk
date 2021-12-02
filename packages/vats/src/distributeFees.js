@@ -1,8 +1,7 @@
 // @ts-check
 
 import { observeNotifier } from '@agoric/notifier';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 
 // wrapper to take the treasury or AMM's creatorFacet, and make a function that
 // will request an invitation and return a promise for a payment.
