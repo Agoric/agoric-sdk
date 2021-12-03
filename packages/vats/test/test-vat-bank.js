@@ -2,9 +2,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/eventual-send';
+import { E, Far } from '@agoric/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
 import { buildRootObject } from '../src/vat-bank.js';
 
 test('communication', async t => {

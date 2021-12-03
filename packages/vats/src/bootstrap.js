@@ -5,8 +5,7 @@ import {
   makeEchoConnectionHandler,
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';

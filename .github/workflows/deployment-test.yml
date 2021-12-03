@@ -6,12 +6,7 @@ on:
   workflow_dispatch:
   # Otherwise, run on default branch.
   push:
-    branches:
-      - $default-branch
-  pull_request:
-    types: [closed]
-    branches:
-      - $default-branch
+    branches: [ master ] # $default-branch
 
 jobs:
   deployment-test:

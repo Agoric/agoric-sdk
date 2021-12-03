@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-connection@0.1.1...@agoric/wallet-connection@0.1.2) (2021-12-02)
+
+
+### Features
+
+* **wallet-connection:** fall back to same origin for admin socket ([25c9986](https://github.com/Agoric/agoric-sdk/commit/25c99868b21964152bc7f226a89180c5c9cf14a5))
+* **wallet-connection:** use pluggable connectors, not destinations ([6e6ffea](https://github.com/Agoric/agoric-sdk/commit/6e6ffea0352dea97f81fd6bb2aa181259d42adbc))
+
+
+### Bug Fixes
+
+* have main entry points use `@agoric/install-ses`, not `ses` ([dce92ac](https://github.com/Agoric/agoric-sdk/commit/dce92acfac4dd0a5de048f7d7865e0e3cdc14396))
+* **wallet-connection:** actually find the wallet admin object ([e5a3e83](https://github.com/Agoric/agoric-sdk/commit/e5a3e83633ee6237eca61f1e63a12ef41f46005e))
+
+
+
 ### 0.1.1 (2021-10-13)
 
 

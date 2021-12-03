@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### 0.10.6 (2021-12-02)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
 ### [0.10.5](https://github.com/Agoric/agoric/compare/@agoric/dapp-svelte-wallet-api@0.10.4...@agoric/dapp-svelte-wallet-api@0.10.5) (2021-10-13)
 
 

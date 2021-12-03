@@ -35,6 +35,10 @@ type Params struct {
 	//
 	// The structure and interpretation of this map and the units therein is
 	// entirely determined by the JS-level code.
+	//
+	// There is no required order to this list of entries, but all the chain
+	// nodes must all serialize and deserialize the existing order without
+	// permuting it.
 	BeansPerUnit []StringBeans `protobuf:"bytes,1,rep,name=beans_per_unit,json=beansPerUnit,proto3" json:"beans_per_unit"`
 	// The price in Coins per the unit named "fee".  This value is used by
 	// cosmic-swingset JS code to decide how many tokens to charge.
@@ -89,8 +93,11 @@ func (m *Params) GetFeeUnitPrice() github_com_cosmos_cosmos_sdk_types.Coins {
 	return nil
 }
 
+// Map element of a string key to a Nat bean count.
 type StringBeans struct {
-	Key   string                                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// What the beans are for.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// The actual bean value.
 	Beans github_com_cosmos_cosmos_sdk_types.Uint `protobuf:"bytes,2,opt,name=beans,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"beans"`
 }
 
