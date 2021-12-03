@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.4.5...@agoric/pegasus@0.5.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zoe:** must harden `amountKeywordRecord` before passing to ZCF objects
+
+* chore: fix treasury errors, etc.
+
+Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
+
+### Bug Fixes
+
+* **zoe:** assert that amountKeywordRecord is a copyRecord ([#4069](https://github.com/Agoric/agoric-sdk/issues/4069)) ([fe9a9ff](https://github.com/Agoric/agoric-sdk/commit/fe9a9ff3de86608a0b1f8f9547059f89d45b948d))
+
+
+
 ### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.4.4...@agoric/pegasus@0.4.5) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/pegasus

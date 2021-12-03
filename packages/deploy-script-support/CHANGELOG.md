@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.5.5...@agoric/deploy-script-support@0.6.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.5.4...@agoric/deploy-script-support@0.5.5) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/deploy-script-support
