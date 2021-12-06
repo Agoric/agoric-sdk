@@ -1,4 +1,7 @@
 import { makeStyles, useTheme } from '@mui/styles';
+import HelpIcon from '@mui/icons-material/HelpOutline';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 
 import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
@@ -55,6 +58,17 @@ const AppBar = () => {
         </a>
       </div>
       <div className={classes.appBarSection}>
+        <div className={classes.connector}>
+          <Tooltip title="Help">
+            <IconButton
+              color="primary"
+              size="medium"
+              href="https://agoric.com/documentation/guides/wallet/ui.html"
+            >
+              <HelpIcon fontSize="inherit">Help</HelpIcon>
+            </IconButton>
+          </Tooltip>
+        </div>
         <div className={classes.connector}>
           <WalletConnection></WalletConnection>
         </div>
