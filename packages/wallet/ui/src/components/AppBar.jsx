@@ -6,6 +6,10 @@ import Tooltip from '@mui/material/Tooltip';
 import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
 
+const logoUrl =
+  'https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg';
+const helpUrl = 'https://agoric.com/documentation/guides/wallet/ui.html';
+
 const useStyles = makeStyles(theme => ({
   header: {
     backgroundColor: theme.palette.background.default,
@@ -50,7 +54,7 @@ const AppBar = () => {
         <NavDrawer />
         <a href="https://agoric.com" className={classes.productLink}>
           <img
-            src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
+            src={logoUrl}
             className={classes.productLogo}
             alt="Agoric"
             width="200"
@@ -63,7 +67,8 @@ const AppBar = () => {
             <IconButton
               color="primary"
               size="medium"
-              href="https://agoric.com/documentation/guides/wallet/ui.html"
+              target="_blank"
+              href={helpUrl}
             >
               <HelpIcon fontSize="inherit">Help</HelpIcon>
             </IconButton>
