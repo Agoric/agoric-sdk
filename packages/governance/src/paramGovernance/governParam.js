@@ -5,7 +5,6 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { sameStructure } from '@agoric/same-structure';
 
-import { q } from '@agoric/assert';
 import {
   ChoiceMethod,
   QuorumRule,
@@ -13,7 +12,11 @@ import {
   looksLikeQuestionSpec,
 } from '../question.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
+
+// The electorate that governs changes to the contract's parameters. It must
+// be declared in the governed contract.
+const CONTRACT_ELECTORATE = 'Electorate';
 
 /** @type {MakeParamChangePositions} */
 const makeParamChangePositions = (paramSpec, proposedValue) => {
@@ -58,13 +61,25 @@ const assertBallotConcernsQuestion = (paramName, questionDetails) => {
 
 /** @type {SetupGovernance} */
 const setupGovernance = async (
+  zoe,
   paramManagerRetriever,
-  poserFacet,
+  electorateInstance,
   contractInstance,
   timer,
+  electorateInvitation,
 ) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
+
+  const invitationAmount = await E(
+    E(paramManagerRetriever).get({ key: 'main' }),
+  ).getInvitationAmount(CONTRACT_ELECTORATE);
+  assert(
+    electorateInstance === invitationAmount.value[0].instance,
+    X`questionPoserInvitation didn't match supplied Electorate ${electorateInstance}`,
+  );
+
+  const poserFacet = E(E(zoe).offer(electorateInvitation)).getOfferResult();
 
   /** @type {VoteOnParamChange} */
   const voteOnParamChange = async (
@@ -151,4 +166,5 @@ export {
   makeParamChangePositions,
   validateParamChangeQuestion,
   assertBallotConcernsQuestion,
+  CONTRACT_ELECTORATE,
 };

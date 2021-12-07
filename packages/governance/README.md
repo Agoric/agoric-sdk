@@ -118,6 +118,18 @@ shouldn't share it. So the contractGovernor's creatorFacet provides access to
 the governed contract's publicFacet, creatorFacet, instance, and
 `voteOnParamChange()`, which the contract's owner should treat as powerful. 
 
+In order to allow the Electorate that controls the ContractGovernor to change,
+the Electorate is a required parameter in all governed contracts. Invitations
+are an unusual kind of managed parameter. Most parameters are copy-objects that
+don't carry any power. Since invitations convey rights, their representation in
+the terms object is only as the invitation's amount. The actual invitation must
+be passed as a private argument to the contract. This combination makes it
+possible for clients to see what the invitation is for, but only the contract
+has the ability to exercise it. Similarly, when there will be a vote to change
+the Electorate (or any other Invitation-valued parameter), observers can see the
+amount, and reviewers can see that the actual invitation will only be exercised
+if/when the vote is successful.
+
 ### ParamManager
 
 `ContractGovernor` expects to work with contracts that use `ParamManager` to
@@ -128,7 +140,7 @@ parameter values.
 
 `makeParamManagerBuilder(zoe)` makes a builder for the ParamManager. The
 parameters that will be managed are specified by a sequence of calls to the
-builder, each describing one parameter. For instance, such a squence might look
+builder, each describing one parameter. For instance, such a sequence might look
 like this:
 
 ``` javascript
@@ -143,7 +155,7 @@ return makeParamManagerBuilder()
 ```
 
 Each `addType()` call returns the builder, so the next call can continue the
-call cascade. At the end, `.build()` is called. One of the calls
+call cascade. At the end, `.build()` is called. One of the calls,
 `addInvitation()`, is `async`, so it can't be cascaded.
 
 ``` javascript
@@ -165,12 +177,25 @@ Current supported methods for adding parameters include 'addAmount', 'addBrand',
 that contracts want to manage. (If you find yourself using 'addUnknown', let us
 know, as that's a sign that we should support a new type). 
 
-There's a contractHelper for the vast majority of expected clients that will
-have a single set of parameters to manage. A contract only has to define the
-parameters in a call to `handleParamGovernance()`, and add any needed methods
-to the public and creator facets. This will
+`contractHelper` provides support for the vast majority of expected clients that
+will have a single set of parameters to manage. A contract only has to define
+the parameters in a call to `handleParamGovernance()`, and add any needed
+methods to the public and creator facets. This will
  * validate that the declaration of the parameters is included in its terms,
  * add the parameter retriever appropriately to the publicFacet and creatorFacet
+
+It's convenient for the contract to export a function (e.g. `makeParamTerms`)
+for the use of those starting up the contract to insert in the terms. They would
+otherwise need to write boilerplate functions to declare all the required
+parameters.
+
+When a governed contract starts up, it should get the parameter declarations
+from the terms, use them to create a paramManager, and pass that to
+`handleParamGovernance`. `handleParamGovernance()` returns functions that add
+required methods to the public and creator facets. Since the governed contract
+uses the values passed in terms to create the paramManager, reviewers of the
+contract can verify that all and only the declared parameters are under the
+control of the paramManager and made visible to the contract's clients.
 
 ## Scenarios
 

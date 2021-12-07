@@ -98,6 +98,7 @@ const expectedcontractGovernorStartLog = [
   'updated to "[299792458n]"',
   'MalleableNumber was changed to "[602214090000000000000000n]"',
   'current value of MalleableNumber is 299792458',
+  'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","expiry":"[undefined]","fee":"[undefined]","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]","zoeTimeAuthority":"[undefined]"}]}',
   'MalleableNumber was changed to "[299792458n]"',
   'Voter Alice validated all the things',
 ];

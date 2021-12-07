@@ -1,28 +1,58 @@
 // @ts-check
 
+import { sameStructure } from '@agoric/marshal';
+
 import { handleParamGovernance } from '../../../src/contractHelper.js';
+import { makeParamManagerBuilder } from '../../../src/paramGovernance/paramManager.js';
+import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 import {
-  ParamType,
-  makeParamManagerBuilder,
-} from '../../../src/paramGovernance/paramManager.js';
+  makeGovernedNat,
+  makeGovernedInvitation,
+} from '../../../src/paramGovernance/paramMakers.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
+const { details: X } = assert;
+
+const makeParamTerms = (number, invitationAmount) => {
+  return harden({
+    [MALLEABLE_NUMBER]: makeGovernedNat(number),
+    [CONTRACT_ELECTORATE]: makeGovernedInvitation(invitationAmount),
+  });
+};
+
+const makeParamManager = async (zoe, number, invitation) => {
+  const builder = makeParamManagerBuilder(zoe).addNat(MALLEABLE_NUMBER, number);
+  await builder.addInvitation(CONTRACT_ELECTORATE, invitation);
+  return builder.build();
+};
+
 /** @type {ContractStartFn} */
-const start = async zcf => {
+const start = async (zcf, privateArgs) => {
   const {
-    main: { [MALLEABLE_NUMBER]: numberParam },
+    main: {
+      [MALLEABLE_NUMBER]: numberParam,
+      [CONTRACT_ELECTORATE]: electorateParam,
+    },
   } = zcf.getTerms();
-  assert(
-    numberParam.type === ParamType.NAT,
-    `${MALLEABLE_NUMBER} Should be a Nat: ${numberParam.type}`,
+  const { initialPoserInvitation } = privateArgs;
+
+  const paramManager = await makeParamManager(
+    zcf.getZoeService(),
+    numberParam.value,
+    initialPoserInvitation,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
-    zcf,
-    makeParamManagerBuilder()
-      .addNat(MALLEABLE_NUMBER, numberParam.value)
-      .build(),
+  const {
+    wrapPublicFacet,
+    wrapCreatorFacet,
+    getInvitationAmount,
+  } = handleParamGovernance(zcf, paramManager);
+
+  const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
+  assert(
+    sameStructure(invitationAmount, electorateParam.value),
+    X`electorate amount ${electorateParam.amount} didn't match ${invitationAmount}`,
   );
 
   return {
@@ -33,5 +63,6 @@ const start = async zcf => {
 
 harden(start);
 harden(MALLEABLE_NUMBER);
+harden(makeParamTerms);
 
-export { start, MALLEABLE_NUMBER };
+export { start, MALLEABLE_NUMBER, makeParamTerms };

@@ -10,7 +10,7 @@ import {
   validateQuestionDetails,
   assertBallotConcernsQuestion,
 } from '../../../src/index.js';
-import { MALLEABLE_NUMBER } from './governedContract';
+import { MALLEABLE_NUMBER } from './governedContract.js';
 
 const { details: X, quote: q } = assert;
 

@@ -4,8 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
-import { makeGovernedNat } from '../../../src/paramGovernance/paramMakers.js';
-import { MALLEABLE_NUMBER } from './governedContract.js';
+import { makeParamTerms } from './governedContract.js';
 
 const { quote: q } = assert;
 
@@ -165,6 +164,13 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   log(`=> voter and electorate vats are set up`);
 
+  const initialPoserInvitation = E(electorateCreatorFacet).getPoserInvitation();
+
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationValue = await E(invitationIssuer).getAmountOf(
+    initialPoserInvitation,
+  );
+
   const terms = {
     timer,
     electorateInstance,
@@ -172,16 +178,15 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governed: {
       issuerKeywordRecord: {},
       terms: {
-        main: {
-          [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
-        },
+        main: makeParamTerms(602214090000000000000000n, invitationValue),
       },
+      privateArgs: { initialPoserInvitation },
     },
   };
-  const privateArgs = { electorateCreatorFacet };
+
   const { creatorFacet: governor, instance: governorInstance } = await E(
     zoe,
-  ).startInstance(installations.contractGovernor, {}, terms, privateArgs);
+  ).startInstance(installations.contractGovernor, {}, terms);
   const governedInstance = E(governor).getInstance();
 
   const [testName] = argv;

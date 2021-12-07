@@ -57,6 +57,24 @@
  */
 
 /**
+ * @template T
+ * @typedef {{ type: T }} ParamShortRecord
+ */
+
+/**
+ * @typedef {ParamShortRecord<'amount'> & { value: Amount } |
+ *   ParamShortRecord<'brand'> & { value: Brand } |
+ *   ParamShortRecord<'installation'> & { value: Installation } |
+ *   ParamShortRecord<'instance'> & { value: Instance } |
+ *   ParamShortRecord<'invitation'> & { value: Amount } |
+ *   ParamShortRecord<'nat'> & { value: bigint } |
+ *   ParamShortRecord<'ratio'> & { value: Ratio } |
+ *   ParamShortRecord<'string'> & { value: string } |
+ *   ParamShortRecord<'unknown'> & { value: unknown }
+ * } ParamShortDescription
+ */
+
+/**
  * @typedef { SimpleIssue | ParamChangeIssue } Issue
  */
 
@@ -388,7 +406,7 @@
 /**
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamDescription>}
+ * @returns {Record<Keyword,ParamShortDescription>}
  */
 
 /**
@@ -404,7 +422,7 @@
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
  * @property {() => ParamDescriptions} getParamList
- * @property {(name:string) => Invitation} getInternalParamValue
+ * @property {(name: string) => Promise<Invitation>} getInternalParamValue
  * @property {() => Subscription<ParamDescription>} getSubscription
  */
 
@@ -463,6 +481,11 @@
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
  * @property {(details: QuestionDetails) => boolean} validateTimer
+ */
+
+/**
+ * @typedef {Object} ParamKey
+ * @property {string} key
  */
 
 /**
@@ -534,6 +557,7 @@
  * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
+ * @property {(name: string) => Promise<Invitation>} getInvitation
  */
 
 /**
@@ -578,7 +602,7 @@
 
 /**
  * @typedef {Object} ParamManagerRetriever
- * @property {(paramSpec: ParamSpecification) => ParamManagerFull} get
+ * @property {(paramKey?: ParamKey) => ParamManagerFull} get
  */
 
 /**
@@ -598,10 +622,12 @@
 
 /**
  * @callback SetupGovernance
+ * @param {ZoeService} zoe
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
- * @param {ERef<PoserFacet>} poserFacet
+ * @param {Instance} electorateInstance
  * @param {Instance} contractInstance
  * @param {Timer} timer
+ * @param {Invitation} electorateInvitation
  * @returns {ParamGovernor}
  */
 
@@ -631,7 +657,6 @@
  * @property {VoteOnParamChange} timer
  * @property {Instance} electorateInstance
  * @property {Installation} governedContractInstallation
- * @property {GovernedContractTerms} governed
  */
 
 /**
@@ -695,7 +720,7 @@
  * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
  * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
  * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
- * @property {(name: string, value: Invitation) => ERef<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
