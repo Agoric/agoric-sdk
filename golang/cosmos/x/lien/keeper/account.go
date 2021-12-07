@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	"strings"
 	"time"
 
+	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -12,44 +12,6 @@ import (
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	"github.com/gogo/protobuf/proto"
 )
-
-// maxCoins returns coins with the maximum amount of each denomination
-// from its arguments.
-func maxCoins(a, b sdk.Coins) sdk.Coins {
-	max := make([]sdk.Coin, 0)
-	indexA, indexB := 0, 0
-	for indexA < len(a) && indexB < len(b) {
-		coinA, coinB := a[indexA], b[indexB]
-		switch cmp := strings.Compare(coinA.Denom, coinB.Denom); {
-		case cmp < 0: // A < B
-			max = append(max, coinA)
-			indexA++
-		case cmp == 0: // A == B
-			maxCoin := coinA
-			if coinB.IsGTE(maxCoin) {
-				maxCoin = coinB
-			}
-			if !maxCoin.IsZero() {
-				max = append(max, maxCoin)
-			}
-			indexA++
-			indexB++
-		case cmp > 0: // A > B
-			max = append(max, coinB)
-			indexB++
-		}
-	}
-	// Any leftovers are by definition the maximum
-	for ; indexA < len(a); indexA++ {
-		max = append(max, a[indexA])
-	}
-	for ; indexB < len(b); indexB++ {
-		max = append(max, b[indexB])
-	}
-	// At most one of the previous two loops has run,
-	// so output should remain sorted.
-	return sdk.NewCoins(max...)
-}
 
 // omniAccount is the full expected interface of non-module accounts.
 // In addition to the methods declared in authtypes.AccountI, additional
@@ -109,7 +71,7 @@ var _ authtypes.GenesisAccount = &LienAccount{}
 func (la *LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 	wrappedLocked := la.omniVestingAccount.LockedCoins(ctx)
 	lienedLocked := la.LienedLockedCoins(ctx)
-	return maxCoins(wrappedLocked, lienedLocked)
+	return agsdk.MaxCoins(wrappedLocked, lienedLocked)
 }
 
 // Returns the coins which are locked for lien encumbrance.
@@ -126,7 +88,7 @@ func computeLienLocked(liened, bonded, unbonding sdk.Coins) sdk.Coins {
 	// subtract the subtrahend:
 	//    max(0, A - B) = max(B, A) - B
 	subtrahend := bonded.Add(unbonding...)
-	return maxCoins(subtrahend, liened).Sub(subtrahend)
+	return agsdk.MaxCoins(subtrahend, liened).Sub(subtrahend)
 }
 
 // XXX_MessageName provides the message name for JSON serialization.
