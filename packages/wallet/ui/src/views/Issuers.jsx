@@ -9,6 +9,7 @@ import Card from '../components/Card';
 import CardItem from '../components/CardItem';
 import MakePurse from '../components/MakePurse';
 import ImportIssuer from '../components/ImportIssuer';
+import Petname from '../components/Petname';
 import { icons, defaultIcon } from '../util/Icons';
 import { withApplicationContext } from '../contexts/Application';
 
@@ -74,7 +75,7 @@ export const IssuersWithoutContext = ({
             width="32px"
           />
           <div>
-            <div className="text-gray">{issuer.issuerPetname}</div>
+            <Petname name={issuer.issuerPetname} />
             <div>
               Board ID: (
               <span className="Board">board:{issuer.issuerBoardId}</span>)
