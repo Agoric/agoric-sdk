@@ -63,3 +63,12 @@
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
  */
+
+/**
+ * @callback MakeAmmParamManager
+ * @param {ERef<ZoeService>} zoe
+ * @param {bigint} poolFeeBP
+ * @param {bigint} protocolFeeBP
+ * @param {Invitation} poserInvitation - invitation for the question poser
+ * @returns {Promise<ParamManagerFull>}
+ */
