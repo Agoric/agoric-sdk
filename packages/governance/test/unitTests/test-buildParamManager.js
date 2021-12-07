@@ -8,10 +8,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import {
-  ParamType,
-  makeParamManagerBuilder,
-} from '../../src/paramGovernance/paramManager.js';
+import { ParamType, makeParamManagerBuilder } from '../../src/index.js';
 
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');

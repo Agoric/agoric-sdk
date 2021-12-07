@@ -65,11 +65,17 @@ const makeParamManagerBuilder = zoe => {
     };
     setParamValue(value);
 
+    const getVisibleValue = proposed => {
+      assertion(proposed);
+      return proposed;
+    };
+
     const publicMethods = Far(`Parameter ${name}`, {
       getValue: () => current,
       assertType: assertion,
       makeDescription: () => ({ name, type, value: current }),
       makeShortDescription: () => ({ type, value: current }),
+      getVisibleValue,
       getType: () => type,
     });
 
@@ -177,15 +183,17 @@ const makeParamManagerBuilder = zoe => {
 
     const setInvitation = async i => {
       [currentAmount] = await Promise.all([
-        E(E(zoe).getInvitationIssuer()).getAmountOf(invitation),
-        assertInvitation(invitation),
+        E(E(zoe).getInvitationIssuer()).getAmountOf(i),
+        assertInvitation(i),
       ]);
+
       currentInvitation = i;
       publication.updateState({
         name,
         type: ParamType.INVITATION,
         value: currentAmount,
       });
+      return currentAmount;
     };
     await setInvitation(invitation);
 
@@ -196,6 +204,9 @@ const makeParamManagerBuilder = zoe => {
       return ({ type: ParamType.INVITATION, value: currentAmount });
     };
 
+    const getVisibleValue = async allegedInvitation =>
+      E(E(zoe).getInvitationIssuer()).getAmountOf(allegedInvitation);
+
     const publicMethods = Far(`Parameter ${name}`, {
       getValue: () => currentAmount,
       getInternalValue: () => currentInvitation,
@@ -203,6 +214,7 @@ const makeParamManagerBuilder = zoe => {
       makeDescription,
       makeShortDescription,
       getType: () => ParamType.INVITATION,
+      getVisibleValue,
     });
 
     // CRUCIAL: here we're creating the update functions that can change the
@@ -235,6 +247,11 @@ const makeParamManagerBuilder = zoe => {
     const param = namesToParams.get(name);
     assert(type === param.getType(), X`${name} is not ${type}`);
     return param.getValue();
+  };
+
+  const getVisibleValue = (name, proposed) => {
+    const param = namesToParams.get(name);
+    return param.getVisibleValue(proposed);
   };
 
   const getParamList = () => {
@@ -271,6 +288,7 @@ const makeParamManagerBuilder = zoe => {
       getRatio: name => getTypedParam(ParamType.RATIO, name),
       getString: name => getTypedParam(ParamType.STRING, name),
       getUnknown: name => getTypedParam(ParamType.UNKNOWN, name),
+      getVisibleValue,
       getParamList,
       getInternalParamValue,
       ...updateFunctions,

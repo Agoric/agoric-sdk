@@ -6,6 +6,7 @@ import { Far } from '@agoric/marshal';
 import {
   setupGovernance,
   validateParamChangeQuestion,
+  CONTRACT_ELECTORATE,
 } from './paramGovernance/governParam.js';
 
 const { details: X } = assert;
@@ -38,7 +39,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 };
 
 /*
- * ContractManager is an ElectionManager that starts up a contract and hands its
+ * ContractGovernor is an ElectionManager that starts up a contract and hands its
  * own creator a facet that allows them to call for votes on parameters that
  * were declared by the contract.
  *
@@ -74,11 +75,10 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *
  * @type {ContractStartFn}
  */
-const start = async (zcf, privateArgs) => {
+const start = async zcf => {
   const zoe = zcf.getZoeService();
   const {
     timer,
-    electorateInstance,
     governedContractInstallation,
     governed: {
       issuerKeywordRecord: governedIssuerKeywordRecord,
@@ -87,43 +87,41 @@ const start = async (zcf, privateArgs) => {
     },
   } = /** @type {ContractGovernorTerms} */ zcf.getTerms();
 
-  const { electorateCreatorFacet } = privateArgs;
+  assert(
+    governedTerms.main[CONTRACT_ELECTORATE],
+    X`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`,
+  );
 
   const augmentedTerms = harden({
     ...governedTerms,
     electionManager: zcf.getInstance(),
   });
-  const poserInvitation = E(electorateCreatorFacet).getPoserInvitation();
 
-  const [
-    {
-      creatorFacet: governedCF,
-      instance: governedInstance,
-      publicFacet: governedPF,
-    },
-    invitationDetails,
-  ] = await Promise.all([
-    E(zoe).startInstance(
-      governedContractInstallation,
-      governedIssuerKeywordRecord,
-      augmentedTerms,
-      privateContractArgs,
-    ),
-    E(zoe).getInvitationDetails(poserInvitation),
-  ]);
-
-  assert(
-    invitationDetails.instance === electorateInstance,
-    X`questionPoserInvitation didn't match supplied Electorate`,
+  const {
+    creatorFacet: governedCF,
+    instance: governedInstance,
+    publicFacet: governedPF,
+  } = await E(zoe).startInstance(
+    governedContractInstallation,
+    governedIssuerKeywordRecord,
+    augmentedTerms,
+    privateContractArgs,
   );
+
+  /** @type {() => Promise<Instance>} */
+  const getElectorateInstance = async () => {
+    const invitationAmount = await E(governedPF).getInvitationAmount(
+      CONTRACT_ELECTORATE,
+    );
+    return invitationAmount.value[0].instance;
+  };
 
   // CRUCIAL: only contractGovernor should get the ability to update params
   /** @type {Promise<LimitedCreatorFacet>} */
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
-
   const { voteOnParamChange, createdQuestion } = await setupGovernance(
+    zoe,
     E(governedCF).getParamMgrRetriever(),
-    E(E(zoe).offer(poserInvitation)).getOfferResult(),
     governedInstance,
     timer,
   );
@@ -143,7 +141,8 @@ const start = async (zcf, privateArgs) => {
   };
 
   const validateElectorate = async regP => {
-    return E.when(regP, reg => {
+    return E.when(regP, async reg => {
+      const electorateInstance = await getElectorateInstance();
       assert(
         reg === electorateInstance,
         X`Electorate doesn't match my Electorate`,
@@ -162,7 +161,7 @@ const start = async (zcf, privateArgs) => {
 
   /** @type {GovernorPublic} */
   const publicFacet = Far('contract governor public', {
-    getElectorate: () => electorateInstance,
+    getElectorate: getElectorateInstance,
     getGovernedContract: () => governedInstance,
     validateVoteCounter,
     validateElectorate,

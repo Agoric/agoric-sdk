@@ -24,6 +24,7 @@ export {
   makeParamChangePositions,
   setupGovernance,
   validateParamChangeQuestion,
+  CONTRACT_ELECTORATE,
 } from './paramGovernance/governParam.js';
 
 export {
@@ -35,3 +36,17 @@ export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
+
+export {
+  makeGovernedAmount,
+  makeGovernedBrand,
+  makeGovernedInstallation,
+  makeGovernedInstance,
+  makeGovernedInvitation,
+  makeGovernedNat,
+  makeGovernedRatio,
+  makeGovernedString,
+  makeGovernedUnknown,
+} from './paramGovernance/paramMakers.js';
+
+export { makeBinaryVoteCounter } from './binaryVoteCounter.js';
