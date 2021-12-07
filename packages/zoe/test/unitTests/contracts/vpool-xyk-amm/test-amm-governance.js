@@ -3,17 +3,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { makeLoopback } from '@agoric/captp';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { ParamType } from '@agoric/governance';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
+import { CONTRACT_ELECTORATE } from '@agoric/governance/src/paramGovernance/governParam.js';
 
 // noinspection ES6PreferShortImport
-import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import {
   POOL_FEE_KEY,
@@ -21,176 +16,36 @@ import {
 } from '../../../../src/contracts/vpool-xyk-amm/params.js';
 import { amountGT } from '../../../../src/contracts/constantProduct/calcFees.js';
 
-const ammRoot =
-  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
-
-const POOL_FEE_BP = 24n;
-const PROTOCOL_FEE_BP = 6n;
-
-const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
-};
-
-const setUpZoeForTest = async () => {
-  const { makeFar, makeNear } = makeLoopback('zoeTest');
-  let isFirst = true;
-  const makeRemote = arg => {
-    const result = isFirst ? makeNear(arg) : arg;
-    // this seems fragile. It relies on one contract being created first by Zoe
-    isFirst = false;
-    return result;
-  };
-
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(() => {}, makeRemote).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-
-const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
-
-// makeBundle is a slow step, so we do it once for all the tests.
-const autoswapBundleP = makeBundle(ammRoot);
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const committeeBundleP = makeBundle(committeeRoot);
-const voteCounterBundleP = makeBundle(voteCounterRoot);
-
-// called separately by each test so AMM/zoe/priceAuthority don't interfere
-const setupServices = async (
-  electorateTerms,
-  ammTerms,
-  centralR,
-  timer = buildManualTimer(console.log),
-) => {
-  const { zoe } = await setUpZoeForTest();
-
-  const [
-    autoswapBundle,
-    contractGovernorBundle,
-    committeeBundle,
-    voteCounterBundle,
-  ] = await Promise.all([
-    autoswapBundleP,
-    contractGovernorBundleP,
-    committeeBundleP,
-    voteCounterBundleP,
-  ]);
-
-  const [autoswap, governor, electorate, counter] = await Promise.all([
-    installBundle(zoe, autoswapBundle),
-    installBundle(zoe, contractGovernorBundle),
-    installBundle(zoe, committeeBundle),
-    installBundle(zoe, voteCounterBundle),
-  ]);
-  const installs = {
-    autoswap,
-    governor,
-    electorate,
-    counter,
-  };
-
-  const {
-    creatorFacet: committeeCreator,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installs.electorate, {}, electorateTerms);
-
-  const governorTerms = {
-    timer,
-    electorateInstance,
-    governedContractInstallation: installs.autoswap,
-    governed: {
-      terms: ammTerms,
-      issuerKeywordRecord: { Central: centralR.issuer },
-    },
-  };
-
-  const {
-    instance: governorInstance,
-    publicFacet: governorPublicFacet,
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(
-    installs.governor,
-    {},
-    governorTerms,
-    harden({
-      electorateCreatorFacet: committeeCreator,
-    }),
-  );
-
-  const ammCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
-  const ammPublicP = E(governorCreatorFacet).getPublicFacet();
-
-  const [ammCreatorFacet, ammPublicFacet] = await Promise.all([
-    ammCreatorFacetP,
-    ammPublicP,
-  ]);
-
-  const g = { governorInstance, governorPublicFacet, governorCreatorFacet };
-  const governedInstance = E(governorPublicFacet).getGovernedContract();
-
-  const amm = { ammCreatorFacet, ammPublicFacet, instance: governedInstance };
-
-  return {
-    zoe,
-    installs,
-    governor: g,
-    amm,
-    committeeCreator,
-  };
-};
-
-const ammInitialValues = harden({
-  [POOL_FEE_KEY]: { value: 24n, type: ParamType.NAT },
-  [PROTOCOL_FEE_KEY]: { value: 6n, type: ParamType.NAT },
-});
+import { setupAmmServices } from './setup.js';
 
 test('amm change param via Governance', async t => {
   const centralR = makeIssuerKit('central');
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(console.log);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
   const {
     zoe,
     amm,
     committeeCreator,
     governor,
     installs,
-  } = await setupServices(electorateTerms, ammTerms, centralR, timer);
+    invitationAmount,
+  } = await setupAmmServices(electorateTerms, centralR, timer);
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getGovernedParams(),
     {
-      PoolFee: {
+      [POOL_FEE_KEY]: {
         type: 'nat',
         value: 24n,
       },
-      ProtocolFee: {
+      [PROTOCOL_FEE_KEY]: {
         type: 'nat',
         value: 6n,
+      },
+      [CONTRACT_ELECTORATE]: {
+        type: 'invitation',
+        value: invitationAmount,
       },
     },
     'initial values',
@@ -230,20 +85,14 @@ test('price check after Governance param change', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(console.log);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
   const {
     zoe,
     amm,
     committeeCreator,
     governor,
     installs,
-  } = await setupServices(electorateTerms, ammTerms, centralR, timer);
+    invitationAmount,
+  } = await setupAmmServices(electorateTerms, centralR, timer);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
@@ -298,6 +147,10 @@ test('price check after Governance param change', async t => {
       ProtocolFee: {
         type: 'nat',
         value: 6n,
+      },
+      Electorate: {
+        type: 'invitation',
+        value: invitationAmount,
       },
     },
     'initial values',

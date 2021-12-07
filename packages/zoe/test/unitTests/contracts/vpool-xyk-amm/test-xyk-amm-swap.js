@@ -3,17 +3,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { makeLoopback } from '@agoric/captp';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { ParamType } from '@agoric/governance';
-import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
-
-// noinspection ES6PreferShortImport
-import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import {
   makeTrader,
   updatePoolState,
@@ -32,155 +24,10 @@ import {
   assertPayoutAmount,
 } from '../../../zoeTestHelpers.js';
 import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
-import {
-  POOL_FEE_KEY,
-  PROTOCOL_FEE_KEY,
-} from '../../../../src/contracts/vpool-xyk-amm/params.js';
+import { setupAmmServices } from './setup.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
-
-const ammRoot =
-  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
-
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
-
-const POOL_FEE_BP = 24n;
-const PROTOCOL_FEE_BP = 6n;
-
-const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
-};
-
-// makeBundle is a slow step, so we do it once for all the tests.
-const ammBundleP = makeBundle(ammRoot);
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const committeeBundleP = makeBundle(committeeRoot);
-const voteCounterBundleP = makeBundle(voteCounterRoot);
-
-const setUpZoeForTest = async () => {
-  const { makeFar, makeNear } = makeLoopback('zoeTest');
-  let isFirst = true;
-  const makeRemote = arg => {
-    const result = isFirst ? makeNear(arg) : arg;
-    // this seems fragile. It relies on one contract being created first by Zoe
-    isFirst = false;
-    return result;
-  };
-
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(() => {}, makeRemote).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-
-const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
-
-// called separately by each test so AMM/zoe/priceAuthority don't interfere
-const setupServices = async (
-  electorateTerms,
-  ammTerms,
-  centralR,
-  timer = buildManualTimer(console.log),
-) => {
-  const { zoe } = await setUpZoeForTest();
-
-  // XS doesn't like top-level await, so do it here. this should be quick
-  const [
-    ammBundle,
-    contractGovernorBundle,
-    committeeBundle,
-    voteCounterBundle,
-  ] = await Promise.all([
-    ammBundleP,
-    contractGovernorBundleP,
-    committeeBundleP,
-    voteCounterBundleP,
-  ]);
-
-  const [constProductAmm, governor, electorate, counter] = await Promise.all([
-    installBundle(zoe, ammBundle),
-    installBundle(zoe, contractGovernorBundle),
-    installBundle(zoe, committeeBundle),
-    installBundle(zoe, voteCounterBundle),
-  ]);
-  const installs = {
-    amm: constProductAmm,
-    governor,
-    electorate,
-    counter,
-  };
-
-  const {
-    creatorFacet: committeeCreator,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installs.electorate, {}, electorateTerms);
-
-  const governorTerms = {
-    timer,
-    electorateInstance,
-    governedContractInstallation: installs.amm,
-    governed: {
-      terms: ammTerms,
-      issuerKeywordRecord: { Central: centralR.issuer },
-    },
-  };
-
-  const {
-    instance: governorInstance,
-    publicFacet: governorPublicFacet,
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(
-    installs.governor,
-    {},
-    governorTerms,
-    harden({
-      electorateCreatorFacet: committeeCreator,
-    }),
-  );
-
-  const ammCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
-  const ammPublicP = E(governorCreatorFacet).getPublicFacet();
-
-  const [ammCreatorFacet, ammPublicFacet] = await Promise.all([
-    ammCreatorFacetP,
-    ammPublicP,
-  ]);
-
-  const g = { governorInstance, governorPublicFacet, governorCreatorFacet };
-  const governedInstance = E(governorPublicFacet).getGovernedContract();
-
-  const amm = { ammCreatorFacet, ammPublicFacet, instance: governedInstance };
-
-  return {
-    zoe,
-    installs,
-    electorate,
-    governor: g,
-    amm,
-  };
-};
-
-const ammInitialValues = harden({
-  [POOL_FEE_KEY]: { value: 24n, type: ParamType.NAT },
-  [PROTOCOL_FEE_KEY]: { value: 6n, type: ParamType.NAT },
-});
 
 test('amm with valid offers', async t => {
   // Set up central token
@@ -197,16 +44,8 @@ test('amm with valid offers', async t => {
   const timer = buildManualTimer(console.log, 30n);
   const protocolFeeRatio = makeRatio(6n, centralR.brand, BASIS_POINTS);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
-  const { zoe, amm, installs } = await setupServices(
+  const { zoe, amm, installs } = await setupAmmServices(
     electorateTerms,
-    ammTerms,
     centralR,
     timer,
   );
@@ -562,22 +401,10 @@ test('amm doubleSwap', async t => {
   const simoleans = value => AmountMath.make(simoleanR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-  // This timer is only used to build quotes. Let's make it non-zero
-
-  const { zoe, amm } = await setupServices(
-    electorateTerms,
-    ammTerms,
-    centralR,
-    timer,
-  );
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
@@ -791,22 +618,10 @@ test('amm with some invalid offers', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
+  // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-  // This timer is only used to build quotes. Let's make it non-zero
-
-  const { zoe, amm } = await setupServices(
-    electorateTerms,
-    ammTerms,
-    centralR,
-    timer,
-  );
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Bob
@@ -872,19 +687,7 @@ test('amm jig - swapOut uneven', async t => {
 
   const timer = buildManualTimer(console.log);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
-  const { zoe, amm } = await setupServices(
-    electorateTerms,
-    ammTerms,
-    centralR,
-    timer,
-  );
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(centralTokens(30000000n));
@@ -1119,19 +922,7 @@ test('amm jig - breaking scenario', async t => {
 
   const timer = buildManualTimer(console.log);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
-  const { zoe, amm } = await setupServices(
-    electorateTerms,
-    ammTerms,
-    centralR,
-    timer,
-  );
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
 
   const publicFacet = amm.ammPublicFacet;
 
@@ -1236,19 +1027,7 @@ test('zoe allow empty reallocations', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-    main: ammInitialValues,
-  };
-
-  const { zoe, amm } = await setupServices(
-    electorateTerms,
-    ammTerms,
-    centralR,
-    timer,
-  );
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
 
   const collectFeesInvitation2 = E(
     amm.ammCreatorFacet,
