@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { handleParamGovernance, ParamType } from '@agoric/governance';
+import { handleParamGovernance } from '@agoric/governance';
 import { Far } from '@agoric/marshal';
 import {
   assertIsRatio,
