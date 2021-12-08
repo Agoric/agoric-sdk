@@ -1,7 +1,14 @@
 import { makeStyles, useTheme } from '@mui/styles';
+import HelpIcon from '@mui/icons-material/HelpOutline';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 
 import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
+
+const logoUrl =
+  'https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg';
+const helpUrl = 'https://agoric.com/documentation/guides/wallet/ui.html';
 
 const useStyles = makeStyles(theme => ({
   header: {
@@ -47,7 +54,7 @@ const AppBar = () => {
         <NavDrawer />
         <a href="https://agoric.com" className={classes.productLink}>
           <img
-            src="https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg"
+            src={logoUrl}
             className={classes.productLogo}
             alt="Agoric"
             width="200"
@@ -55,6 +62,18 @@ const AppBar = () => {
         </a>
       </div>
       <div className={classes.appBarSection}>
+        <div className={classes.connector}>
+          <Tooltip title="Help">
+            <IconButton
+              color="primary"
+              size="medium"
+              target="_blank"
+              href={helpUrl}
+            >
+              <HelpIcon fontSize="inherit">Help</HelpIcon>
+            </IconButton>
+          </Tooltip>
+        </div>
         <div className={classes.connector}>
           <WalletConnection></WalletConnection>
         </div>

@@ -102,6 +102,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   };
 
   const app = express();
+
   // HTTP logging.
   app.use(
     morgan(`:method :url :status :res[content-length] - :response-time ms`, {
@@ -120,6 +121,10 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
   app.use(express.static(new URL('../public', import.meta.url).pathname));
+
+  app.get('/wallet/*', (_, res) =>
+    res.sendFile(path.resolve('html', 'wallet', 'index.html')),
+  );
 
   // The rules for validation:
   //
