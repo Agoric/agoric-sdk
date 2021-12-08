@@ -42,17 +42,19 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
     });
   };
 
-  /** @type {LimitedCreatorFacet} */
-  const limitedCreatorFacet = Far('governedContract creator facet', {
-    getContractGovernor: () => electionManager,
-  });
+  const makeLimitedCreatorFacet = originalCreatorFacet => {
+    return Far('governedContract creator facet', {
+      ...originalCreatorFacet,
+      getContractGovernor: () => electionManager,
+    });
+  };
 
   const makeCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
     return Far('creatorFacet', {
       getParamMgrRetriever: () => {
         return Far('paramRetriever', { get: () => paramManager });
       },
-      getInternalCreatorFacet: () => originalCreatorFacet,
       getLimitedCreatorFacet: () => limitedCreatorFacet,
     });
   };

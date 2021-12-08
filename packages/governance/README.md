@@ -75,7 +75,7 @@ values, is only accessible to a visible ContractGovernor. The ContractGovernor
 makes the Electorate visible, while tightly controlling the process of
 creating new questions and presenting them to the electorate.
 
-The governor starts up the Contract and can see what params are subject to
+The governor starts up the Contract and can see what parameters are subject to
 governance. It provides a private facet that carries the ability to request
 votes on changing particular parameters. Some day we may figure out how to make
 the process and schedule of selecting parameter changes to vote on also subject
@@ -101,6 +101,16 @@ have exclusive access to the facet that allows the values to be set. The
 contract would also make the read-only facet visible, so others can see the
 current values. The initial values of the parameters, along with their types
 remain visible in the contract's terms.
+
+By using ContractHelper, the governedContract returns a (powerful) creatorFacet
+with two methods: `getParamMgrRetriever` (which provides access to read and
+modify parameters), and `getLimitedCreatorFacet`, which has the creator facet
+provided by the governed contract and doesn't include any powerful governance
+capabilities. ContractGovernor starts the governedContract, so it gets the
+powerful creatorFacet. It needs access to the paramManager, but shouldn't share
+that with others. So the contractGovernor's creatorFacet provides access to the
+governed contract's publicFacet, creatorFacet, instance, and
+`voteOnParamChange()`, which the contract's owner should treat as powerful. 
 
 ### ParamManager
 
