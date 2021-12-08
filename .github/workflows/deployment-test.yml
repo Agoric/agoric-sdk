@@ -17,7 +17,7 @@ jobs:
         clean: 'false'
     - uses: ./.github/actions/restore-golang
       with:
-        go-version: 1.15
+        go-version: 1.17
     - uses: ./.github/actions/restore-node
       with:
         node-version: 14.x
