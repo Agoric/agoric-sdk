@@ -17,6 +17,7 @@ import (
 	"github.com/rakyll/statik/fs"
 
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
@@ -610,42 +611,14 @@ func (app *GaiaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.R
 	return app.mm.EndBlock(ctx, req)
 }
 
-func updateTransferPort(gs GenesisState, reservedPort, newPort string) error {
-	var transferGenesis ibctransfertypes.GenesisState
-	if err := json.Unmarshal(gs[ibctransfertypes.ModuleName], &transferGenesis); err != nil {
-		return err
-	}
-	if len(transferGenesis.PortId) > 0 && transferGenesis.PortId != reservedPort {
-		// Already not the reserved port name.
-		return nil
-	}
-	// Change the listening IBC port to avoid conflict.
-	transferGenesis.PortId = newPort
-	transferGenesisBytes, err := json.Marshal(transferGenesis)
-	if err != nil {
-		return err
-	}
-	gs[ibctransfertypes.ModuleName] = transferGenesisBytes
-	return nil
-}
-
 // InitChainer application update at chain initialization
 func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState GenesisState
-	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
-	}
-	if err := updateTransferPort(genesisState, "transfer", "cosmos-transfer"); err != nil {
+	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
-
-	// Set Historical infos in InitChain to ignore genesis params
-	// This is needed for IBC connections not to time out easily
-	stakingParams := app.StakingKeeper.GetParams(ctx)
-	stakingParams.HistoricalEntries = 10000
-	app.StakingKeeper.SetParams(ctx, stakingParams)
 
 	// Agoric: report the genesis time explicitly.
 	genTime := req.GetTime()
