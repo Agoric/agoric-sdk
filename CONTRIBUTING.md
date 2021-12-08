@@ -1,4 +1,42 @@
-# Landing pull requests
+# Contributing to the Agoric SDK
+
+Thanks for getting involved!
+
+## Platforms, Dev Tools and Testing
+
+We support MacOS, linux, and Windows Subsystem for Linux (wsl).
+
+For many of the packages here, JavaScript development tools suffice:
+
+ - [node](https://nodejs.org/) 14.15.0 or higher
+ - [yarn](https://classic.yarnpkg.com/en/docs/install) (`npm install -g yarn`)
+
+But to ensure contributions are compatible with all packages, you will
+also need:
+
+ - [Golang](https://golang.org/doc/install) (version 1.17 or higher)
+ - a C compiler and make
+   - On linux, `apt install build-essentials` or the like
+   - On MacOS, `xcode-select --install` or similar
+   - On WSL, use `nmake` instead of `make`
+
+To check that everything is working before you start, or
+to thoroughly check a contribution, run:
+
+```
+yarn # short for: yarn install
+yarn build
+yarn test
+yarn lint
+```
+
+See also notes on [Coding
+style](https://github.com/Agoric/agoric-sdk/wiki/Coding-Style),
+including [unit
+testing](https://github.com/Agoric/agoric-sdk/wiki/agoric-sdk-unit-testing)
+etc.
+
+## Landing pull requests
 
 The agreement so far is for every change to have a [conventional commit
 message][CC] and for every commit following the leftmost parent from
