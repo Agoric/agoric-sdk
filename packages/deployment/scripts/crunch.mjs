@@ -8,9 +8,15 @@ import fs from 'fs';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import ReadlineTransform from 'readline-transform';
 
-const [TRACE_FILE, LAST_BLOCK_HEIGHT = 0] = process.argv.slice(2);
+const [
+  TRACE_FILE,
+  FIRST_BLOCK_HEIGHT = 0,
+  LAST_BLOCK_HEIGHT = Infinity,
+] = process.argv.slice(2);
 if (!TRACE_FILE) {
-  console.error('usage: crunch trace-file [last-block-height]');
+  console.error(
+    'usage: crunch trace-file [first-block-height [last-block-height]]',
+  );
   process.exit(1);
 }
 
@@ -18,7 +24,7 @@ const escapeCharCode = c => {
   switch (c) {
     // backslash-escape the following characters
     case 92:
-      return '\\';
+      return '\\\\';
     case 10:
       return '\\n';
     case 13:
@@ -50,6 +56,9 @@ const main = async () => {
   for await (const line of rl) {
     const { operation, key, value, metadata } = JSON.parse(line);
     if (operation !== 'write') {
+      continue;
+    }
+    if (!metadata || metadata.blockHeight < FIRST_BLOCK_HEIGHT) {
       continue;
     }
     if (metadata && metadata.blockHeight > LAST_BLOCK_HEIGHT) {
