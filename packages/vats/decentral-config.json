@@ -44,7 +44,7 @@
       }
     },
     "bootstrap": {
-      "sourceSpec": "./src/bootstrap.js"
+      "sourceSpec": "./src/bootstrap-core.js"
     }
   }
 }
