@@ -5,6 +5,13 @@ export const CENTRAL_DENOM = 'urun';
 export const MINT_DENOM = 'ubld';
 export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
+// Required for IBC connections not to time out.
+export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
+
+// We reserve the default `transfer` IBC port for Pegasus (JS-level ERTP
+// assets).  The `cosmos-transfer` IBC port is used for ibc-go (Cosmos-level
+// prefixed string token denominations).
+export const COSMOS_TRANSFER_PORT_ID = 'cosmos-transfer';
 
 export const DENOM_METADATA = [
   {
@@ -178,6 +185,15 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
+  const {
+    historical_entries: existingHistoricalEntries = 0,
+  } = genesis.app_state.staking.params;
+  genesis.app_state.staking.params.historical_entries = Math.max(
+    existingHistoricalEntries,
+    STAKING_MIN_HISTORICAL_ENTRIES,
+  );
+
+  genesis.app_state.transfer.port_id = COSMOS_TRANSFER_PORT_ID;
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
