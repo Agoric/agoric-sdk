@@ -14,7 +14,7 @@ import (
 
 func NewGenesisState() *types.GenesisState {
 	return &types.GenesisState{
-		Storage: make(map[string]string),
+		Storage: []*types.StorageEntry{},
 	}
 }
 
@@ -31,7 +31,7 @@ func ValidateGenesis(data *types.GenesisState) error {
 func DefaultGenesisState() *types.GenesisState {
 	return &types.GenesisState{
 		Params:  types.DefaultParams(),
-		Storage: make(map[string]string),
+		Storage: []*types.StorageEntry{},
 	}
 }
 
@@ -44,9 +44,8 @@ type bootstrapBlockAction struct {
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	keeper.SetParams(ctx, data.GetParams())
 
-	// NONDETERMINISM: order of SetStorage is not deterministic
-	for key, value := range data.Storage {
-		keeper.SetStorage(ctx, key, value)
+	for _, entry := range data.Storage {
+		keeper.SetStorage(ctx, entry.Key, entry.Value)
 	}
 
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for

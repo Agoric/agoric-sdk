@@ -152,6 +152,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   return kernelDeliveryToVatDelivery;
 }
 
+export function insistValidVatstoreKey(key) {
+  assert.typeof(key, 'string');
+  assert(key.match(/^[-\w.+/]+$/), 'invalid vatstore key');
+}
+
 /*
  * return a function that converts VatSyscall objects into KernelSyscall
  * objects
@@ -212,11 +217,6 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     return harden(['exit', vatID, !!isFailure, kernelInfo]);
   }
 
-  function insistValidVatstoreKey(key) {
-    assert.typeof(key, 'string');
-    assert(key.match(/^[-\w.+/]+$/));
-  }
-
   function translateVatstoreGet(key) {
     insistValidVatstoreKey(key);
     kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
@@ -228,6 +228,26 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     assert.typeof(value, 'string');
     kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', vatID, key, value]);
+  }
+
+  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
+    if (priorKey !== '') {
+      insistValidVatstoreKey(priorKey);
+    }
+    insistValidVatstoreKey(lowerBound);
+    if (upperBound) {
+      insistValidVatstoreKey(upperBound);
+    }
+    kdebug(
+      `syscall[${vatID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
+    );
+    return harden([
+      'vatstoreGetAfter',
+      vatID,
+      priorKey,
+      lowerBound,
+      upperBound,
+    ]);
   }
 
   function translateVatstoreDelete(key) {
@@ -366,6 +386,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         return translateVatstoreGet(...args);
       case 'vatstoreSet':
         return translateVatstoreSet(...args);
+      case 'vatstoreGetAfter':
+        return translateVatstoreGetAfter(...args);
       case 'vatstoreDelete':
         return translateVatstoreDelete(...args);
       case 'dropImports':
@@ -414,6 +436,13 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
       case 'vatstoreGet':
         if (resultData) {
           assert.typeof(resultData, 'string');
+          return harden(['ok', resultData]);
+        } else {
+          return harden(['ok', undefined]);
+        }
+      case 'vatstoreGetAfter':
+        if (resultData) {
+          assert(Array.isArray(resultData));
           return harden(['ok', resultData]);
         } else {
           return harden(['ok', undefined]);

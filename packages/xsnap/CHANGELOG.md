@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.10.0...@agoric/xsnap@0.11.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* METER_TYPE -> xs-meter-12
+
+  - update metering tests
+
+### Features
+
+* expose XS the->currentHeapCount to metering/delivery results ([a031d79](https://github.com/Agoric/agoric-sdk/commit/a031d7900440ee3717c15e7c5be4ae8226ef5530)), closes [#3910](https://github.com/Agoric/agoric-sdk/issues/3910)
+
+
+### Bug Fixes
+
+* have main entry points use `@agoric/install-ses`, not `ses` ([dce92ac](https://github.com/Agoric/agoric-sdk/commit/dce92acfac4dd0a5de048f7d7865e0e3cdc14396))
+* **ava-xs:** allow test file globs as arguments, just like AVA ([3d12770](https://github.com/Agoric/agoric-sdk/commit/3d127708000b017aef1e994f424b566e07d04626))
+* **xsnap:** get ordering right so that ses loads before most shims ([80d00bf](https://github.com/Agoric/agoric-sdk/commit/80d00bf9046d2b0f23a2a509a6a8a127b613d802))
+
+
+
 ## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.9.1...@agoric/xsnap@0.10.0) (2021-10-13)
 
 

@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.23.0...@agoric/swingset-vat@0.24.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove newSwap; replace with constantProduct AMM where needed (#4097)
+
+### Features
+
+* GC virtual object property refs ([9ec8ce7](https://github.com/Agoric/agoric-sdk/commit/9ec8ce73423b783428dd56b8fc3ff1c094a02eed))
+* implement Bring Out Your Dead as a kernel-driven operation ([a1310e0](https://github.com/Agoric/agoric-sdk/commit/a1310e0f51348f8d6c7f4d7281f96cbe8e72b134))
+* remove newSwap; replace with constantProduct AMM where needed ([#4097](https://github.com/Agoric/agoric-sdk/issues/4097)) ([aaea050](https://github.com/Agoric/agoric-sdk/commit/aaea0503b369e4d0b4d9cbb1e00ee02109470060))
+* **SwingSet:** stub out metering for `SWINGSET_WORKER_TYPE=local` ([19ad030](https://github.com/Agoric/agoric-sdk/commit/19ad030253f6cc24d4f6e1fbf1af4bae65f8c2ae))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+* VOM weak key GC ([4e25336](https://github.com/Agoric/agoric-sdk/commit/4e2533607f9705097b7848d41f582538a212d866))
+
+
+### Bug Fixes
+
+* **deps:** remove explicit `@agoric/babel-standalone` ([4f22453](https://github.com/Agoric/agoric-sdk/commit/4f22453a6f2de1a2c27ae8ad0d11b13116890dab))
+* **SwingSet:** load SES before providing ses-ava ([4bccfb0](https://github.com/Agoric/agoric-sdk/commit/4bccfb037882a4a4ab92cbd59a2d4bc3b51e14d4))
+* avoid GC non-determinism to be inappropriately visible ([6624425](https://github.com/Agoric/agoric-sdk/commit/6624425b9f93847e276db6b062064b72a4362b81))
+* changes from review plus fix stochastically broken tests ([e99b15c](https://github.com/Agoric/agoric-sdk/commit/e99b15c9132a8d864e4a0d31876e79e98c0b06e0))
+* correct export retirement handling and GC checks ([f8131e0](https://github.com/Agoric/agoric-sdk/commit/f8131e0d2ca8762c7fe47cbd8c612c07d2e58512))
+* re2 is obsolete in favor of XS RegExp metering ([54fdc51](https://github.com/Agoric/agoric-sdk/commit/54fdc5173f3d6a97b4eaed4ce076ff8405594746))
+* review updates (mostly renaming things) ([9a47516](https://github.com/Agoric/agoric-sdk/commit/9a47516a349185409d3c320b585312178c8a08b8))
+* update newer tests for BOYD ([81c8f8b](https://github.com/Agoric/agoric-sdk/commit/81c8f8b1425cc8bbee1cc36425ca99412ed2e5c9))
+* **eventual-send:** provide `returnedP` when it is available ([a779066](https://github.com/Agoric/agoric-sdk/commit/a7790660db426e1967f444c034c3dedd59ed33eb))
+* **liveSlots:** explicitly handle (though stub) remote properties ([ca397ba](https://github.com/Agoric/agoric-sdk/commit/ca397ba2481639beba17f654c9ff07cebb5a5213))
+* **SwingSet:** `typeof f === 'function'`, not `instanceOf Function` ([ed797d0](https://github.com/Agoric/agoric-sdk/commit/ed797d0bee3cbb4084df7e0961fdbfe741039b79))
+* **SwingSet:** plumb through `runtimeOptions.env` ([250ddc0](https://github.com/Agoric/agoric-sdk/commit/250ddc0a0ee23223d1c3c9f6a0bb0b1eb37b8dec))
+* route all finalization through the possiblyDeadSet ([a8e1b3b](https://github.com/Agoric/agoric-sdk/commit/a8e1b3b6f4d4573cd5c3862eb39ef8e46e2b767f))
+
+
+
 ## [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.22.1...@agoric/swingset-vat@0.23.0) (2021-10-13)
 
 

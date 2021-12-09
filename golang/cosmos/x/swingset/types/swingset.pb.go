@@ -35,7 +35,11 @@ type Params struct {
 	//
 	// The structure and interpretation of this map and the units therein is
 	// entirely determined by the JS-level code.
-	BeansPerUnit map[string]Beans `protobuf:"bytes,1,rep,name=beans_per_unit,json=beansPerUnit,proto3" json:"beans_per_unit" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	//
+	// There is no required order to this list of entries, but all the chain
+	// nodes must all serialize and deserialize the existing order without
+	// permuting it.
+	BeansPerUnit []StringBeans `protobuf:"bytes,1,rep,name=beans_per_unit,json=beansPerUnit,proto3" json:"beans_per_unit"`
 	// The price in Coins per the unit named "fee".  This value is used by
 	// cosmic-swingset JS code to decide how many tokens to charge.
 	//
@@ -75,7 +79,7 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
-func (m *Params) GetBeansPerUnit() map[string]Beans {
+func (m *Params) GetBeansPerUnit() []StringBeans {
 	if m != nil {
 		return m.BeansPerUnit
 	}
@@ -89,24 +93,26 @@ func (m *Params) GetFeeUnitPrice() github_com_cosmos_cosmos_sdk_types.Coins {
 	return nil
 }
 
-// Beans are a Nat unit that is used to ascribe accounting value to other
-// SwingSet-level units.
-type Beans struct {
-	Whole github_com_cosmos_cosmos_sdk_types.Uint `protobuf:"bytes,1,opt,name=whole,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"whole"`
+// Map element of a string key to a Nat bean count.
+type StringBeans struct {
+	// What the beans are for.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// The actual bean value.
+	Beans github_com_cosmos_cosmos_sdk_types.Uint `protobuf:"bytes,2,opt,name=beans,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Uint" json:"beans"`
 }
 
-func (m *Beans) Reset()         { *m = Beans{} }
-func (m *Beans) String() string { return proto.CompactTextString(m) }
-func (*Beans) ProtoMessage()    {}
-func (*Beans) Descriptor() ([]byte, []int) {
+func (m *StringBeans) Reset()         { *m = StringBeans{} }
+func (m *StringBeans) String() string { return proto.CompactTextString(m) }
+func (*StringBeans) ProtoMessage()    {}
+func (*StringBeans) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ff9c341e0de15f8b, []int{1}
 }
-func (m *Beans) XXX_Unmarshal(b []byte) error {
+func (m *StringBeans) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Beans) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *StringBeans) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Beans.Marshal(b, m, deterministic)
+		return xxx_messageInfo_StringBeans.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -116,53 +122,57 @@ func (m *Beans) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Beans) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Beans.Merge(m, src)
+func (m *StringBeans) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StringBeans.Merge(m, src)
 }
-func (m *Beans) XXX_Size() int {
+func (m *StringBeans) XXX_Size() int {
 	return m.Size()
 }
-func (m *Beans) XXX_DiscardUnknown() {
-	xxx_messageInfo_Beans.DiscardUnknown(m)
+func (m *StringBeans) XXX_DiscardUnknown() {
+	xxx_messageInfo_StringBeans.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Beans proto.InternalMessageInfo
+var xxx_messageInfo_StringBeans proto.InternalMessageInfo
+
+func (m *StringBeans) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterType((*Params)(nil), "agoric.swingset.Params")
-	proto.RegisterMapType((map[string]Beans)(nil), "agoric.swingset.Params.BeansPerUnitEntry")
-	proto.RegisterType((*Beans)(nil), "agoric.swingset.Beans")
+	proto.RegisterType((*StringBeans)(nil), "agoric.swingset.StringBeans")
 }
 
 func init() { proto.RegisterFile("agoric/swingset/swingset.proto", fileDescriptor_ff9c341e0de15f8b) }
 
 var fileDescriptor_ff9c341e0de15f8b = []byte{
-	// 399 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xb1, 0xae, 0x12, 0x41,
-	0x14, 0x86, 0x77, 0xb8, 0x97, 0x1b, 0x9d, 0x7b, 0x83, 0xba, 0x31, 0x06, 0x29, 0x66, 0x09, 0x8d,
-	0x6b, 0xa2, 0x33, 0x82, 0x8d, 0xc1, 0xca, 0x35, 0xf4, 0x64, 0xe3, 0xc6, 0xc4, 0x86, 0xcc, 0xae,
-	0xc3, 0x32, 0x01, 0x66, 0xd6, 0x9d, 0x01, 0xe4, 0x2d, 0x2c, 0x2d, 0xa9, 0xed, 0x7d, 0x07, 0x4a,
-	0x4a, 0x63, 0x81, 0x06, 0x1a, 0x1f, 0xc3, 0xcc, 0x0c, 0x28, 0x91, 0xc6, 0x6a, 0x4f, 0xf6, 0x3f,
-	0xe7, 0xff, 0xbf, 0x93, 0x39, 0x10, 0xd1, 0x5c, 0x96, 0x3c, 0x23, 0x6a, 0xc1, 0x45, 0xae, 0x98,
-	0xfe, 0x53, 0xe0, 0xa2, 0x94, 0x5a, 0xfa, 0x77, 0x9c, 0x8e, 0x8f, 0xbf, 0x1b, 0xf7, 0x73, 0x99,
-	0x4b, 0xab, 0x11, 0x53, 0xb9, 0xb6, 0x06, 0xca, 0xa4, 0x9a, 0x4a, 0x45, 0x52, 0xaa, 0x18, 0x99,
-	0xb7, 0x53, 0xa6, 0x69, 0x9b, 0x64, 0x92, 0x0b, 0xa7, 0xb7, 0xbe, 0x56, 0xe0, 0x55, 0x9f, 0x96,
-	0x74, 0xaa, 0xfc, 0x04, 0xd6, 0x52, 0x46, 0x85, 0x1a, 0x14, 0xac, 0x1c, 0xcc, 0x04, 0xd7, 0x75,
-	0xd0, 0xbc, 0x08, 0xaf, 0x3b, 0x8f, 0xf1, 0x3f, 0x51, 0xd8, 0x0d, 0xe0, 0xc8, 0x74, 0xf7, 0x59,
-	0x99, 0x08, 0xae, 0x7b, 0x42, 0x97, 0xcb, 0xe8, 0x72, 0xbd, 0x0d, 0xbc, 0xf8, 0x26, 0x3d, 0x11,
-	0xfc, 0x0f, 0xb0, 0x36, 0x64, 0xcc, 0x1a, 0x0e, 0x8a, 0x92, 0x67, 0xac, 0x5e, 0xb1, 0xb6, 0x0f,
-	0xb1, 0x43, 0xc3, 0x06, 0x0d, 0x1f, 0xd0, 0xf0, 0x6b, 0xc9, 0x45, 0xf4, 0xcc, 0xd8, 0x7c, 0xf9,
-	0x11, 0x84, 0x39, 0xd7, 0xa3, 0x59, 0x8a, 0x33, 0x39, 0x25, 0x87, 0x3d, 0xdc, 0xe7, 0xa9, 0x7a,
-	0x3f, 0x26, 0x7a, 0x59, 0x30, 0x65, 0x07, 0x54, 0x7c, 0x33, 0x64, 0xcc, 0xa4, 0xf5, 0x4d, 0x40,
-	0xe3, 0x2d, 0xbc, 0x77, 0xc6, 0xe6, 0xdf, 0x85, 0x17, 0x63, 0xb6, 0xac, 0x83, 0x26, 0x08, 0x6f,
-	0xc7, 0xa6, 0xf4, 0x9f, 0xc0, 0xea, 0x9c, 0x4e, 0x66, 0x06, 0x08, 0x84, 0xd7, 0x9d, 0x07, 0x67,
-	0x7b, 0x5a, 0x93, 0xd8, 0x35, 0x75, 0x2b, 0x2f, 0x40, 0xf7, 0xd6, 0xe7, 0x55, 0xe0, 0xfd, 0x5a,
-	0x05, 0xa0, 0xf5, 0x06, 0x56, 0xad, 0xea, 0xf7, 0x60, 0x75, 0x31, 0x92, 0x13, 0xe6, 0x8c, 0x23,
-	0x62, 0xd0, 0xbf, 0x6f, 0x83, 0x47, 0xff, 0x81, 0x9e, 0x70, 0xa1, 0x63, 0x37, 0xdd, 0xbd, 0x34,
-	0xae, 0x51, 0xb2, 0xde, 0x21, 0xb0, 0xd9, 0x21, 0xf0, 0x73, 0x87, 0xc0, 0xa7, 0x3d, 0xf2, 0x36,
-	0x7b, 0xe4, 0x7d, 0xdb, 0x23, 0xef, 0xdd, 0xcb, 0x13, 0xbf, 0x57, 0xee, 0x32, 0x1c, 0xad, 0xf5,
-	0xcb, 0xe5, 0x84, 0x8a, 0xfc, 0x18, 0xf4, 0xf1, 0xef, 0xd1, 0xd8, 0xa0, 0xf4, 0xca, 0xbe, 0xf5,
-	0xf3, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x51, 0x54, 0x49, 0x43, 0x54, 0x02, 0x00, 0x00,
+	// 364 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0x3f, 0x4f, 0x22, 0x41,
+	0x18, 0xc6, 0x77, 0x80, 0x23, 0x77, 0x0b, 0xe1, 0x2e, 0x9b, 0x2b, 0xf6, 0xc8, 0x65, 0x96, 0xd0,
+	0x1c, 0xcd, 0xcd, 0x1c, 0x67, 0x87, 0x95, 0x6b, 0x4c, 0x2c, 0xc9, 0x1a, 0x1a, 0x1b, 0xb2, 0xbb,
+	0x0e, 0xe3, 0x04, 0x98, 0x59, 0x77, 0x06, 0x95, 0x6f, 0x61, 0x69, 0x49, 0xed, 0x27, 0xa1, 0x93,
+	0xd2, 0x58, 0xa0, 0x81, 0xc6, 0x8f, 0x61, 0x66, 0x06, 0x94, 0x58, 0x59, 0xcd, 0x9b, 0xf7, 0xcf,
+	0xf3, 0x7b, 0x32, 0x8f, 0x0b, 0x63, 0x2a, 0x72, 0x96, 0x62, 0x79, 0xc5, 0x38, 0x95, 0x44, 0xbd,
+	0x15, 0x28, 0xcb, 0x85, 0x12, 0xde, 0x77, 0x3b, 0x47, 0xdb, 0x76, 0xfd, 0x27, 0x15, 0x54, 0x98,
+	0x19, 0xd6, 0x95, 0x5d, 0xab, 0xc3, 0x54, 0xc8, 0xb1, 0x90, 0x38, 0x89, 0x25, 0xc1, 0x97, 0xed,
+	0x84, 0xa8, 0xb8, 0x8d, 0x53, 0xc1, 0xb8, 0x9d, 0x37, 0xef, 0x81, 0x5b, 0xee, 0xc6, 0x79, 0x3c,
+	0x96, 0xde, 0xb1, 0x5b, 0x4b, 0x48, 0xcc, 0x65, 0x3f, 0x23, 0x79, 0x7f, 0xc2, 0x99, 0xf2, 0x41,
+	0xa3, 0xd8, 0xaa, 0xfc, 0xff, 0x8d, 0x3e, 0xa0, 0xd0, 0x89, 0xca, 0x19, 0xa7, 0xa1, 0x5e, 0x0e,
+	0x4b, 0xf3, 0x65, 0xe0, 0x44, 0x55, 0x73, 0xd9, 0x25, 0x79, 0x8f, 0x33, 0xe5, 0x5d, 0xb8, 0xb5,
+	0x01, 0x21, 0x46, 0xa3, 0x9f, 0xe5, 0x2c, 0x25, 0x7e, 0xc1, 0x28, 0xfd, 0x42, 0xd6, 0x0d, 0xd2,
+	0x6e, 0xd0, 0xc6, 0x0d, 0x3a, 0x14, 0x8c, 0x87, 0xff, 0xb4, 0xcc, 0xdd, 0x53, 0xd0, 0xa2, 0x4c,
+	0x9d, 0x4f, 0x12, 0x94, 0x8a, 0x31, 0xde, 0x58, 0xb7, 0xcf, 0x5f, 0x79, 0x36, 0xc4, 0x6a, 0x9a,
+	0x11, 0x69, 0x0e, 0x64, 0x54, 0x1d, 0x10, 0xa2, 0x69, 0x5d, 0x0d, 0xe8, 0x7c, 0xbd, 0x9d, 0x05,
+	0xce, 0xcb, 0x2c, 0x00, 0xcd, 0x91, 0x5b, 0xd9, 0xf1, 0xe7, 0xfd, 0x70, 0x8b, 0x43, 0x32, 0xf5,
+	0x41, 0x03, 0xb4, 0xbe, 0x45, 0xba, 0xf4, 0x8e, 0xdc, 0x2f, 0xc6, 0xad, 0x5f, 0xd0, 0xbd, 0x10,
+	0x6b, 0xf2, 0xe3, 0x32, 0xf8, 0xf3, 0x09, 0x72, 0x8f, 0x71, 0x15, 0xd9, 0xeb, 0x4e, 0x49, 0xd3,
+	0xc2, 0xde, 0x7c, 0x05, 0xc1, 0x62, 0x05, 0xc1, 0xf3, 0x0a, 0x82, 0x9b, 0x35, 0x74, 0x16, 0x6b,
+	0xe8, 0x3c, 0xac, 0xa1, 0x73, 0xba, 0xbf, 0xa3, 0x77, 0x60, 0xb3, 0xb4, 0xff, 0x68, 0xf4, 0xa8,
+	0x18, 0xc5, 0x9c, 0x6e, 0x41, 0xd7, 0xef, 0x31, 0x1b, 0x50, 0x52, 0x36, 0xe9, 0xec, 0xbd, 0x06,
+	0x00, 0x00, 0xff, 0xff, 0x68, 0x6e, 0x18, 0x0f, 0x06, 0x02, 0x00, 0x00,
 }
 
 func (this *Params) Equal(that interface{}) bool {
@@ -188,9 +198,7 @@ func (this *Params) Equal(that interface{}) bool {
 		return false
 	}
 	for i := range this.BeansPerUnit {
-		a := this.BeansPerUnit[i]
-		b := that1.BeansPerUnit[i]
-		if !(&a).Equal(&b) {
+		if !this.BeansPerUnit[i].Equal(&that1.BeansPerUnit[i]) {
 			return false
 		}
 	}
@@ -204,14 +212,14 @@ func (this *Params) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *Beans) Equal(that interface{}) bool {
+func (this *StringBeans) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*Beans)
+	that1, ok := that.(*StringBeans)
 	if !ok {
-		that2, ok := that.(Beans)
+		that2, ok := that.(StringBeans)
 		if ok {
 			that1 = &that2
 		} else {
@@ -223,7 +231,10 @@ func (this *Beans) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Whole.Equal(that1.Whole) {
+	if this.Key != that1.Key {
+		return false
+	}
+	if !this.Beans.Equal(that1.Beans) {
 		return false
 	}
 	return true
@@ -263,11 +274,9 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.BeansPerUnit) > 0 {
-		for k := range m.BeansPerUnit {
-			v := m.BeansPerUnit[k]
-			baseI := i
+		for iNdEx := len(m.BeansPerUnit) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.BeansPerUnit[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -275,21 +284,13 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintSwingset(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintSwingset(dAtA, i, uint64(len(k)))
-			i--
-			dAtA[i] = 0xa
-			i = encodeVarintSwingset(dAtA, i, uint64(baseI-i))
-			i--
 			dAtA[i] = 0xa
 		}
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *Beans) Marshal() (dAtA []byte, err error) {
+func (m *StringBeans) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -299,26 +300,33 @@ func (m *Beans) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Beans) MarshalTo(dAtA []byte) (int, error) {
+func (m *StringBeans) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Beans) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *StringBeans) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	{
-		size := m.Whole.Size()
+		size := m.Beans.Size()
 		i -= size
-		if _, err := m.Whole.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.Beans.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintSwingset(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0xa
+	dAtA[i] = 0x12
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintSwingset(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -340,12 +348,9 @@ func (m *Params) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.BeansPerUnit) > 0 {
-		for k, v := range m.BeansPerUnit {
-			_ = k
-			_ = v
-			l = v.Size()
-			mapEntrySize := 1 + len(k) + sovSwingset(uint64(len(k))) + 1 + l + sovSwingset(uint64(l))
-			n += mapEntrySize + 1 + sovSwingset(uint64(mapEntrySize))
+		for _, e := range m.BeansPerUnit {
+			l = e.Size()
+			n += 1 + l + sovSwingset(uint64(l))
 		}
 	}
 	if len(m.FeeUnitPrice) > 0 {
@@ -357,13 +362,17 @@ func (m *Params) Size() (n int) {
 	return n
 }
 
-func (m *Beans) Size() (n int) {
+func (m *StringBeans) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = m.Whole.Size()
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovSwingset(uint64(l))
+	}
+	l = m.Beans.Size()
 	n += 1 + l + sovSwingset(uint64(l))
 	return n
 }
@@ -432,105 +441,10 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.BeansPerUnit == nil {
-				m.BeansPerUnit = make(map[string]Beans)
+			m.BeansPerUnit = append(m.BeansPerUnit, StringBeans{})
+			if err := m.BeansPerUnit[len(m.BeansPerUnit)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
-			var mapkey string
-			mapvalue := &Beans{}
-			for iNdEx < postIndex {
-				entryPreIndex := iNdEx
-				var wire uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowSwingset
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					wire |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				fieldNum := int32(wire >> 3)
-				if fieldNum == 1 {
-					var stringLenmapkey uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowSwingset
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						stringLenmapkey |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					intStringLenmapkey := int(stringLenmapkey)
-					if intStringLenmapkey < 0 {
-						return ErrInvalidLengthSwingset
-					}
-					postStringIndexmapkey := iNdEx + intStringLenmapkey
-					if postStringIndexmapkey < 0 {
-						return ErrInvalidLengthSwingset
-					}
-					if postStringIndexmapkey > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-					iNdEx = postStringIndexmapkey
-				} else if fieldNum == 2 {
-					var mapmsglen int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowSwingset
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						mapmsglen |= int(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					if mapmsglen < 0 {
-						return ErrInvalidLengthSwingset
-					}
-					postmsgIndex := iNdEx + mapmsglen
-					if postmsgIndex < 0 {
-						return ErrInvalidLengthSwingset
-					}
-					if postmsgIndex > l {
-						return io.ErrUnexpectedEOF
-					}
-					mapvalue = &Beans{}
-					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
-						return err
-					}
-					iNdEx = postmsgIndex
-				} else {
-					iNdEx = entryPreIndex
-					skippy, err := skipSwingset(dAtA[iNdEx:])
-					if err != nil {
-						return err
-					}
-					if (skippy < 0) || (iNdEx+skippy) < 0 {
-						return ErrInvalidLengthSwingset
-					}
-					if (iNdEx + skippy) > postIndex {
-						return io.ErrUnexpectedEOF
-					}
-					iNdEx += skippy
-				}
-			}
-			m.BeansPerUnit[mapkey] = *mapvalue
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -587,7 +501,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Beans) Unmarshal(dAtA []byte) error {
+func (m *StringBeans) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -610,15 +524,15 @@ func (m *Beans) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Beans: wiretype end group for non-group")
+			return fmt.Errorf("proto: StringBeans: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Beans: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: StringBeans: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Whole", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -646,7 +560,39 @@ func (m *Beans) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.Whole.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Beans", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSwingset
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSwingset
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSwingset
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Beans.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

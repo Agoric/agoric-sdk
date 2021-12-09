@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 /* global process */
-// TODO Remove babel-standalone and esm preinitialization
+
+import '@agoric/install-ses/pre-bundle-source.js';
+// TODO Remove esm preinitialization
 // https://github.com/endojs/endo/issues/768
 import 'esm';
-import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 
 import path from 'path';

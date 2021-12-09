@@ -6,9 +6,7 @@
  * for virtual objects: makeKind, makeVirtualScalarWeakMap
  */
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
+import '@agoric/install-ses/pre-bundle-source.js';
 
 import './install-ses-debug.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import '@agoric/install-ses/pre-bundle-source.js';
 import 'node-lmdb';
-import '@agoric/babel-standalone';
 import '@agoric/install-ses';
 
 import fs from 'fs';

@@ -1,8 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeLegacyMap } from '@agoric/store';
 

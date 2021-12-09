@@ -5,7 +5,7 @@ name: Test Dapp Oracle
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ master ] # $default-branch
   pull_request:
 
 jobs:

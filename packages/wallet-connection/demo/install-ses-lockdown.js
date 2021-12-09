@@ -1,6 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import 'ses';
-import '@agoric/eventual-send/shim.js';
+import '@agoric/install-ses/pre-remoting.js';
 
 lockdown({
   __allowUnsafeMonkeyPatching__: 'unsafe',

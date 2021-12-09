@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 
-const makeBeans = whole => ({ whole: `${Nat(whole)}` });
+const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 
 // This should roughly match the values in
 // `agoric-sdk/golang/cosmos/x/swingset/types/sim-params.go`.
@@ -37,16 +37,16 @@ export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000_000n; // $0
 export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000_000n; // $0.0000002
 export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 4n; // $0.25
 
-export const defaultBeansPerUnit = {
-  [BeansPerFeeUnit]: makeBeans(defaultBeansPerFeeUnit),
-  [BeansPerInboundTx]: makeBeans(defaultBeansPerInboundTx),
-  [BeansPerBlockComputeLimit]: makeBeans(defaultBeansPerBlockComputeLimit),
-  [BeansPerMessage]: makeBeans(defaultBeansPerMessage),
-  [BeansPerMessageByte]: makeBeans(defaultBeansPerMessageByte),
-  [BeansPerMinFeeDebit]: makeBeans(defaultBeansPerMinFeeDebit),
-  [BeansPerVatCreation]: makeBeans(defaultBeansPerVatCreation),
-  [BeansPerXsnapComputron]: makeBeans(defaultBeansPerXsnapComputron),
-};
+export const defaultBeansPerUnit = [
+  makeStringBeans(BeansPerFeeUnit, defaultBeansPerFeeUnit),
+  makeStringBeans(BeansPerInboundTx, defaultBeansPerInboundTx),
+  makeStringBeans(BeansPerBlockComputeLimit, defaultBeansPerBlockComputeLimit),
+  makeStringBeans(BeansPerMessage, defaultBeansPerMessage),
+  makeStringBeans(BeansPerMessageByte, defaultBeansPerMessageByte),
+  makeStringBeans(BeansPerMinFeeDebit, defaultBeansPerMinFeeDebit),
+  makeStringBeans(BeansPerVatCreation, defaultBeansPerVatCreation),
+  makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
+];
 
 export const defaultFeeUnitPrice = [
   {
