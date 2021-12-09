@@ -185,7 +185,7 @@ async function setupAmm(
     electorateCreatorFacet: committeeCreator,
   });
 
-  const ammCreatorFacetP = E(ammGovernorCreatorFacet).getInternalCreatorFacet();
+  const ammCreatorFacetP = E(ammGovernorCreatorFacet).getCreatorFacet();
   const ammPublicP = E(ammGovernorCreatorFacet).getPublicFacet();
 
   const [ammCreatorFacet, ammPublicFacet] = await Promise.all([

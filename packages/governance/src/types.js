@@ -501,8 +501,6 @@
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => any} getPublicFacet - public facet of the governed contract
- * @property {() => any} getInternalCreatorFacet - powerful creator facet of the
- *   governed contract
  * @property {() => Promise<Instance>} getInstance - instance of the governed
  *   contract
  */
@@ -519,27 +517,30 @@
 
 /**
  * @typedef {Object} GovernedCreatorFacet
- * @property {() => ParamManagerRetriever} getParamMgrRetriever
- * @property {() => any} getInternalCreatorFacet
- * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet
+ * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
+ *   and updating governed parameters. Should only be directly accessible to the
+ *   contractGovernor
+ * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet - the creator
+ *   facet of the governed contract. Doesn't provide access to any governance
+ *   functionality
  */
 
 /**
- * @callback MakePublicFacet
+ * @callback WrapPublicFacet
  * @param {any} originalPublicFacet
  * @returns {GovernedPublicFacet}
  */
 
 /**
- * @callback MakeCreatorFacet
+ * @callback WrapCreatorFacet
  * @param {any} originalCreatorFacet
  * @returns {GovernedCreatorFacet}
  */
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {MakePublicFacet} makePublicFacet
- * @property {MakeCreatorFacet} makeCreatorFacet
+ * @property {WrapPublicFacet} wrapPublicFacet
+ * @property {WrapCreatorFacet} wrapCreatorFacet
  * @property {(name: string) => ParamValue} getParamValue
  */
 

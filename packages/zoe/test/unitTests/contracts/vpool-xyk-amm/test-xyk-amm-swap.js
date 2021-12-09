@@ -155,7 +155,7 @@ const setupServices = async (
     }),
   );
 
-  const ammCreatorFacetP = E(governorCreatorFacet).getInternalCreatorFacet();
+  const ammCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
   const ammPublicP = E(governorCreatorFacet).getPublicFacet();
 
   const [ammCreatorFacet, ammPublicFacet] = await Promise.all([

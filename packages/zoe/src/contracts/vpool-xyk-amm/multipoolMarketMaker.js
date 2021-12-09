@@ -114,8 +114,8 @@ const start = zcf => {
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
   const {
-    makePublicFacet,
-    makeCreatorFacet,
+    wrapPublicFacet,
+    wrapCreatorFacet,
     getParamValue,
   } = handleParamGovernance(zcf, makeInitialValues(poolFeeBP, protocolFeeBP));
   const getPoolFeeBP = () => getParamValue(POOL_FEE_KEY);
@@ -211,15 +211,10 @@ const start = zcf => {
     protocolSeat,
     centralBrand,
   );
-  const creatorFacet = makeCreatorFacet(
-    Far('AMM Fee Collector facet', {
-      makeCollectFeesInvitation,
-    }),
-  );
 
   /** @type {XYKAMMPublicFacet} */
-  // @ts-ignore makePublicFacet includes all the methods that are passed in.
-  const publicFacet = makePublicFacet(
+  // @ts-ignore wrapPublicFacet includes all the methods that are passed in.
+  const publicFacet = wrapPublicFacet(
     Far('AMM public facet', {
       addPool,
       getPoolAllocation,
@@ -240,6 +235,11 @@ const start = zcf => {
     }),
   );
 
+  const creatorFacet = wrapCreatorFacet(
+    Far('AMM Fee Collector facet', {
+      makeCollectFeesInvitation,
+    }),
+  );
   return harden({ publicFacet, creatorFacet });
 };
 
