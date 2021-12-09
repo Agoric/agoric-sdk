@@ -39,6 +39,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
+
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			config := serverCtx.Config
 
@@ -53,7 +54,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				}
 
 				// attempt to lookup address from Keybase if no address was provided
-				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf)
+				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.KeyringDir, inBuf)
 				if err != nil {
 					return err
 				}
@@ -180,6 +181,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test)")
+	cmd.Flags().String(flags.FlagKeyringDir, "", "Keyring's key storage directory")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
 	cmd.Flags().Int64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
 	cmd.Flags().Int64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")

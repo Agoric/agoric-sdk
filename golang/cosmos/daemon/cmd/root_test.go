@@ -5,14 +5,14 @@ import (
 
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	app "github.com/cosmos/gaia/v6/app"
-	"github.com/cosmos/gaia/v6/cmd/gaiad/cmd"
+	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRootCmdConfig(t *testing.T) {
 
-	rootCmd, _ := cmd.NewRootCmd()
+	rootCmd, _ := cmd.NewRootCmd(nil)
 	rootCmd.SetArgs([]string{
 		"config",          // Test the config cmd
 		"keyring-backend", // key

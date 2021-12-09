@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -20,6 +22,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
@@ -29,13 +32,19 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	gaia "github.com/cosmos/gaia/v6/app"
-	"github.com/cosmos/gaia/v6/app/params"
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 )
+
+// Sender is a function that sends a request to the controller.
+type Sender func(needReply bool, str string) (string, error)
+
+var AppName = "agd"
+var OnStartHook func(log.Logger)
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
-func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
+func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 	encodingConfig := gaia.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
@@ -45,32 +54,64 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(gaia.DefaultNodeHome).
-		WithViper("")
+		WithViper("AGD_")
 
 	rootCmd := &cobra.Command{
-		Use:   "gaiad",
-		Short: "Stargate Cosmos Hub App",
+		Use:   AppName,
+		Short: "Stargate Agoric App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			initClientCtx = client.ReadHomeFlag(initClientCtx, cmd)
-			initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
+			// set the default command outputs
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
+
+			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
 
-			if err = client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
+			if err != nil {
 				return err
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd, "", nil)
+			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
+				return err
+			}
+
+			customAppTemplate, customAppConfig := initAppConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(sender, rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+// initAppConfig helps to override default appConfig template and configs.
+// return "", nil if no custom configuration is required for the application.
+func initAppConfig() (string, interface{}) {
+	// Allow us to overwrite the SDK's default server config.
+	srvCfg := serverconfig.DefaultConfig()
+	// The SDK's default minimum gas price is set to "" (empty value) inside
+	// app.toml. If left empty by validators, the node will halt on startup.
+	// However, the chain developer can set a default app.toml value for their
+	// validators here.
+	//
+	// In summary:
+	// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
+	//   own app.toml config,
+	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
+	//   own app.toml to override, or use this default value.
+	//
+	// FIXME: We may want to have Agoric set a min gas price in urun.
+	// For now, we set it to zero so that validators don't have to worry about it.
+	srvCfg.MinGasPrices = "0urun"
+
+	return serverconfig.DefaultConfigTemplate, *srvCfg
+}
+
+func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -88,6 +129,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 
 	ac := appCreator{
 		encCfg: encodingConfig,
+		sender: sender,
 	}
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
@@ -98,6 +140,8 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		txCommand(),
 		keys.Commands(gaia.DefaultNodeHome),
 	)
+	// add rosetta
+	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
@@ -147,6 +191,8 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		flags.LineBreak,
+		vestingcli.GetTxCmd(),
 	)
 
 	gaia.ModuleBasics.AddTxCommands(cmd)
@@ -157,6 +203,7 @@ func txCommand() *cobra.Command {
 
 type appCreator struct {
 	encCfg params.EncodingConfig
+	sender Sender
 }
 
 func (ac appCreator) newApp(
@@ -165,6 +212,9 @@ func (ac appCreator) newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+	if OnStartHook != nil {
+		OnStartHook(logger)
+	}
 
 	var cache sdk.MultiStorePersistentCache
 
@@ -182,17 +232,23 @@ func (ac appCreator) newApp(
 		panic(err)
 	}
 
-	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
-	if err != nil {
-		panic(err)
+	// FIXME: Actually use the snapshotStore once we have a way to put SwingSet
+	// state into it.
+	var snapshotStore *snapshots.Store
+	if false {
+		snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
+		snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+		if err != nil {
+			panic(err)
+		}
+		snapshotStore, err = snapshots.NewStore(snapshotDB, snapshotDir)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	return gaia.NewGaiaApp(
+	return gaia.NewAgoricApp(
+		ac.sender,
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
@@ -232,7 +288,8 @@ func (ac appCreator) appExport(
 		loadLatest = true
 	}
 
-	gaiaApp := gaia.NewGaiaApp(
+	gaiaApp := gaia.NewAgoricApp(
+		ac.sender,
 		logger,
 		db,
 		traceStore,
