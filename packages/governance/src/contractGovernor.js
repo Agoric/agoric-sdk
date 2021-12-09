@@ -114,7 +114,7 @@ const start = async (zcf, privateArgs) => {
     X`questionPoserInvitation didn't match supplied Electorate`,
   );
 
-  // CRUCIAL: only governedContract should get the ability to update params
+  // CRUCIAL: only contractGovernor should get the ability to update params
   /** @type {Promise<LimitedCreatorFacet>} */
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 

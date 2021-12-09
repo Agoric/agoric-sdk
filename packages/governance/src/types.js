@@ -526,21 +526,21 @@
  */
 
 /**
- * @callback MakePublicFacet
+ * @callback WrapPublicFacet
  * @param {any} originalPublicFacet
  * @returns {GovernedPublicFacet}
  */
 
 /**
- * @callback MakeCreatorFacet
+ * @callback WrapCreatorFacet
  * @param {any} originalCreatorFacet
  * @returns {GovernedCreatorFacet}
  */
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {MakePublicFacet} makePublicFacet
- * @property {MakeCreatorFacet} makeCreatorFacet
+ * @property {WrapPublicFacet} wrapPublicFacet
+ * @property {WrapCreatorFacet} wrapCreatorFacet
  * @property {(name: string) => ParamValue} getParamValue
  */
 
