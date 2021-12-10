@@ -1,3 +1,6 @@
+import * as CSV from './csvParse.js';
+
+export const TEXT = `
 ,,,,,,,,,,,,,,,,,,,,
 Collateralization Ratio,500%,,,,,,,,,,,,,,,,,,,
 BLD Price,$1.25,,,,,,,,,,,,,,,,,,,
@@ -33,3 +36,6 @@ Repayment Examples,,,,,,,,,,,,,,,,,,,,
 User repays entire loan with RUN from their own purse,,,,,,,,,,,,,,,,,,,,
 User repays partial loan with RUN from their own purse,,,,,,,,,,,,,,,,,,,,
 RUN reward stream pays down loan partially,,,,,,,,,,,,,,,,,,,,
+`.trim();
+
+export const ROWS = CSV.parse(TEXT);
