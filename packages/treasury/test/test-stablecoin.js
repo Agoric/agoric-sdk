@@ -5,35 +5,33 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 import '../src/types.js';
 
-import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeLoopback } from '@agoric/captp';
-
-import { makeZoeKit } from '@agoric/zoe';
+import { E } from '@agoric/eventual-send';
+import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeRatio,
   ceilMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makePromiseKit } from '@agoric/promise-kit';
-
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
 import {
-  POOL_FEE_KEY,
-  PROTOCOL_FEE_KEY,
-} from '@agoric/zoe/src/contracts/vpool-xyk-amm/params.js';
+  setUpZoeForTest,
+  setupAmmServices,
+} from '@agoric/zoe/test/unitTests/contracts/vpool-xyk-amm/setup.js';
+import { makeParamManagerBuilder } from '@agoric/governance';
 
-import { makeGovernedNat } from '@agoric/governance/src/paramGovernance/paramMakers.js';
 import { makeTracer } from '../src/makeTracer.js';
 import { SECONDS_PER_YEAR } from '../src/interest.js';
 import { VaultState } from '../src/vault.js';
-import { governedParameterTerms } from '../src/params.js';
+import {
+  makeGovernedTerms,
+  CHARGING_PERIOD_KEY,
+  RECORDING_PERIOD_KEY,
+} from '../src/params.js';
 
 const ammRoot =
   '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
@@ -67,33 +65,6 @@ const committeeBundleP = makeBundle(committeeRoot);
 const voteCounterBundleP = makeBundle(voteCounterRoot);
 const ammBundleP = makeBundle(ammRoot);
 const faucetBundleP = makeBundle(faucetRoot);
-
-const setUpZoeForTest = async setJig => {
-  const { makeFar } = makeLoopback('zoeTest');
-
-  /**
-   * These properties will be assigned by `setJig` in the contract.
-   *
-   * @typedef {Object} TestContext
-   * @property {ContractFacet} zcf
-   * @property {IssuerRecord} runIssuerRecord
-   * @property {IssuerRecord} govIssuerRecord
-   */
-
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(setJig, o => makeFar(o)).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
 
 function installBundle(zoe, contractBundle) {
   return E(zoe).install(contractBundle);
@@ -151,57 +122,27 @@ function makeRates(runBrand) {
   });
 }
 
-const PROTOCOL_FEE_BP = 6n;
-const POOL_FEE_BP = 24n;
-
-async function setupAmm(
+async function setupAmmAndElectorate(
   timer,
-  electorateInstance,
   installs,
   zoe,
-  committeeCreator,
   aethLiquidity,
   runLiquidity,
+  runIssuer,
   aethIssuer,
+  electorateTerms,
 ) {
-  const ammTerms = {
-    timer,
-    main: {
-      [POOL_FEE_KEY]: makeGovernedNat(POOL_FEE_BP),
-      [PROTOCOL_FEE_KEY]: makeGovernedNat(PROTOCOL_FEE_BP),
-    },
-    poolFeeBP: POOL_FEE_BP,
-    protocolFeeBP: PROTOCOL_FEE_BP,
-  };
-
-  const ammGovernorTerms = {
-    timer,
-    electorateInstance,
-    governedContractInstallation: installs.amm,
-    governed: {
-      terms: ammTerms,
-      issuerKeywordRecord: { Central: E(zoe).getFeeIssuer() },
-      privateArgs: {},
-    },
-  };
+  const centralR = { issuer: runIssuer };
 
   const {
-    instance: ammGovernorInstance,
-    publicFacet: ammGovernorPublicFacet,
-    creatorFacet: ammGovernorCreatorFacet,
-  } = await E(zoe).startInstance(installs.governor, {}, ammGovernorTerms, {
-    electorateCreatorFacet: committeeCreator,
-  });
+    amm,
+    committeeCreator,
+    governor,
+    invitationAmount,
+    electorateInstance,
+  } = await setupAmmServices(electorateTerms, centralR, timer, zoe);
 
-  const ammCreatorFacetP = E(ammGovernorCreatorFacet).getCreatorFacet();
-  const ammPublicP = E(ammGovernorCreatorFacet).getPublicFacet();
-
-  const [ammCreatorFacet, ammPublicFacet] = await Promise.all([
-    ammCreatorFacetP,
-    ammPublicP,
-  ]);
-
-  const liquidityIssuer = E(ammPublicFacet).addPool(aethIssuer, 'Aeth');
+  const liquidityIssuer = E(amm.ammPublicFacet).addPool(aethIssuer, 'Aeth');
   const liquidityBrand = await E(liquidityIssuer).getBrand();
 
   const liqProposal = harden({
@@ -211,7 +152,9 @@ async function setupAmm(
     },
     want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
   });
-  const liqInvitation = E(ammPublicFacet).makeAddLiquidityInvitation();
+  const liqInvitation = await E(
+    amm.ammPublicFacet,
+  ).makeAddLiquidityInvitation();
 
   const ammLiquiditySeat = await E(zoe).offer(
     liqInvitation,
@@ -222,23 +165,19 @@ async function setupAmm(
     }),
   );
 
-  const g = {
-    ammGovernorInstance,
-    ammGovernorPublicFacet,
-    ammGovernorCreatorFacet,
-  };
-  const governedInstance = E(ammGovernorPublicFacet).getGovernedContract();
-
-  const amm = {
-    ammCreatorFacet,
-    ammPublicFacet,
-    instance: governedInstance,
+  const newAmm = {
+    ammCreatorFacet: amm.ammCreatorFacet,
+    ammPublicFacet: amm.ammPublicFacet,
+    instance: amm.governedInstance,
     ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
   };
 
   return {
-    governor: g,
-    amm,
+    governor,
+    amm: newAmm,
+    committeeCreator,
+    electorateInstance,
+    invitationAmount,
   };
 }
 
@@ -265,20 +204,7 @@ async function setupTreasury(governorTerms, installs, zoe, committeeCreator) {
   return { g, s };
 }
 
-// called separately by each test so AMM/zoe/priceAuthority don't interfere
-async function setupServices(
-  loanParams,
-  priceList,
-  unitAmountIn,
-  aethBrand,
-  electorateTerms,
-  timer = buildManualTimer(console.log),
-  quoteInterval,
-  aethLiquidity,
-  runInitialLiquidity,
-  aethIssuer,
-) {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+async function bundleInstalls(zoe) {
   const [
     stablecoinBundle,
     liquidationBundle,
@@ -324,9 +250,16 @@ async function setupServices(
     amm,
     faucet,
   };
-  const runIssuer = E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  return installs;
+}
 
+async function getRunFromFaucet(
+  zoe,
+  installs,
+  feeMintAccess,
+  runBrand,
+  runInitialLiquidity,
+) {
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installs.faucet,
@@ -335,7 +268,7 @@ async function setupServices(
     harden({ feeMintAccess }),
   );
   const faucetSeat = E(zoe).offer(
-    E(faucetCreator).makeFaucetInvitation(),
+    await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
       want: { RUN: AmountMath.make(runBrand, runInitialLiquidity) },
@@ -344,54 +277,86 @@ async function setupServices(
     { feeMintAccess },
   );
 
-  const {
-    creatorFacet: committeeCreator,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(
-    installs.electorate,
-    harden({}),
-    electorateTerms,
-  );
-
   const runPayment = await E(faucetSeat).getPayout('RUN');
+  return runPayment;
+}
+
+// called separately by each test so AMM/zoe/priceAuthority don't interfere
+async function setupServices(
+  loanParams,
+  priceList,
+  unitAmountIn,
+  aethBrand,
+  electorateTerms,
+  timer = buildManualTimer(console.log),
+  quoteInterval,
+  aethLiquidity,
+  runInitialLiquidity,
+  aethIssuer,
+) {
+  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const installs = await bundleInstalls(zoe);
+  const runIssuer = await E(zoe).getFeeIssuer();
+  const runBrand = await E(runIssuer).getBrand();
+  const runPayment = await getRunFromFaucet(
+    zoe,
+    installs,
+    feeMintAccess,
+    runBrand,
+    runInitialLiquidity,
+  );
 
   const runLiquidity = {
     proposal: harden(AmountMath.make(runBrand, runInitialLiquidity)),
     payment: runPayment,
   };
 
-  const { governor: _ammGovernorFacets, amm: ammFacets } = await setupAmm(
-    timer,
+  const {
+    amm: ammFacets,
+    committeeCreator,
     electorateInstance,
+  } = await setupAmmAndElectorate(
+    timer,
     installs,
     zoe,
-    committeeCreator,
     aethLiquidity,
     runLiquidity,
+    runIssuer,
     aethIssuer,
+    electorateTerms,
   );
 
   const priceAuthorityPromiseKit = makePromiseKit();
   const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
 
-  const treasuryTerms = {
-    priceAuthority: priceAuthorityPromise,
+  const rates = makeRates(runBrand);
+
+  const poserInvitationP = E(committeeCreator).getPoserInvitation();
+  const [initialPoserInvitation, invitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+
+  const treasuryTerms = makeGovernedTerms(
+    priceAuthorityPromise,
     loanParams,
-    liquidationInstall: installs.liquidation,
-    timerService: timer,
-    governedParams: governedParameterTerms,
-    ammPublicFacet: ammFacets.ammPublicFacet,
-  };
-  const governorTerms = {
+    installs.liquidation,
+    timer,
+    invitationAmount,
+    rates,
+    ammFacets.ammPublicFacet,
+  );
+
+  const governorTerms = harden({
     timer,
     electorateInstance,
     governedContractInstallation: installs.stablecoin,
     governed: {
       terms: treasuryTerms,
       issuerKeywordRecord: {},
-      privateArgs: { feeMintAccess },
+      privateArgs: { feeMintAccess, initialPoserInvitation },
     },
-  };
+  });
 
   const { g, s } = await setupTreasury(
     governorTerms,
@@ -418,7 +383,6 @@ async function setupServices(
   return {
     zoe,
     installs,
-    electorate,
     governor: g,
     stablecoin: s,
     ammFacets,
@@ -473,7 +437,7 @@ test('first', async t => {
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
   const loanAmount = AmountMath.make(runBrand, 470n);
   const loanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    await E(lender).makeLoanInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: loanAmount },
@@ -616,7 +580,7 @@ test('price drop', async t => {
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 270n);
   const loanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    await E(lender).makeLoanInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: loanAmount },
@@ -1661,42 +1625,19 @@ test('mutable liquidity triggers and interest', async t => {
 });
 
 test('bad chargingPeriod', async t => {
-  const setJig = () => {};
-  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
-
-  const [stablecoinBundle, liquidationBundle] = await Promise.all([
-    stablecoinBundleP,
-    liquidationBundleP,
-  ]);
-
-  const [stablecoinInstall, liquidationInstall] = await Promise.all([
-    installBundle(zoe, stablecoinBundle),
-    installBundle(zoe, liquidationBundle),
-  ]);
-
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
   const loanParams = {
     chargingPeriod: 2,
     recordingPeriod: 10n,
   };
-  const manualTimer = buildManualTimer(console.log);
 
-  await t.throwsAsync(
+  t.throws(
     () =>
-      E(zoe).startInstance(
-        stablecoinInstall,
-        harden({}),
-        harden({
-          priceAuthority: priceAuthorityPromise,
-          loanParams,
-          timerService: manualTimer,
-          liquidationInstall,
-          governedParams: governedParameterTerms,
-        }),
-        harden({ feeMintAccess }),
-      ),
-    { message: 'chargingPeriod (2) must be a BigInt' },
+      makeParamManagerBuilder()
+        // @ts-ignore It's not a bigint.
+        .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
+        .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+        .build(),
+    { message: '2 must be a bigint' },
   );
 });
 

@@ -73,8 +73,8 @@ async function main(t, argv) {
 }
 
 const expectedTreasuryLog = [
-  '=> voter and electorate vats are set up',
   '=> alice and the treasury are set up',
+  '=> voter and electorate vats are set up',
   'param values before {"ChargingPeriod":{"type":"nat","value":"[86400n]"},"InitialMargin":{"type":"ratio","value":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[120n]"}}},"InterestRate":{"type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[250n]"}}},"LiquidationMargin":{"type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[100n]"},"numerator":{"brand":"[Seen]","value":"[105n]"}}},"LoanFee":{"type":"ratio","value":{"denominator":{"brand":"[Seen]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[200n]"}}},"RecordingPeriod":{"type":"nat","value":"[86400n]"}}',
   'Voter Bob cast a ballot for {"changeParam":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"},"proposedValue":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[500n]"}}}',
   'Voter Carol cast a ballot for {"noChange":{"collateralBrand":"[Alleged: moola brand]","parameterName":"InterestRate"}}',
