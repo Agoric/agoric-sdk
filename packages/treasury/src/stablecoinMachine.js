@@ -13,6 +13,12 @@ import '@agoric/zoe/src/contracts/exported.js';
 // moment leave that to those participating in the governance process for adding
 // new collateral type to ascertain.
 
+// This contract wants to be managed by a contractGovernor, but it isn't
+// compatible with contractGovernor, since it has a separate paramManager for
+// each Vault. This requires it to manually replicate the API of contractHelper
+// to satisfy contractGovernor. It needs to return a creatorFacet with
+// { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
+
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
 
@@ -27,16 +33,19 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
+import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 import {
   makeVaultParamManager,
-  governedParameterTerms as governedParameterLocal,
+  makeElectorateParamManager,
+  CHARGING_PERIOD_KEY,
+  RECORDING_PERIOD_KEY,
 } from './params.js';
 
-const { quote: q, details: X } = assert;
+const { details: X } = assert;
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
@@ -44,36 +53,35 @@ export async function start(zcf, privateArgs) {
   const {
     ammPublicFacet,
     priceAuthority,
-    loanParams,
     timerService,
     liquidationInstall,
     bootstrapPaymentValue = 0n,
     electionManager,
-    governedParams,
+    main: { [CONTRACT_ELECTORATE]: electorateParam },
+    loanParams,
   } = zcf.getTerms();
+
+  /** @type {Promise<GovernorPublic>} */
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
-  const { feeMintAccess } = privateArgs;
+  const { feeMintAccess, initialPoserInvitation } = privateArgs;
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
   zcf.setTestJig(() => ({
     runIssuerRecord: runMint.getIssuerRecord(),
   }));
 
-  assert.typeof(
-    loanParams.chargingPeriod,
-    'bigint',
-    X`chargingPeriod (${q(loanParams.chargingPeriod)}) must be a BigInt`,
-  );
-  assert.typeof(
-    loanParams.recordingPeriod,
-    'bigint',
-    X`recordingPeriod (${q(loanParams.recordingPeriod)}) must be a BigInt`,
+  const electorateParamManager = await makeElectorateParamManager(
+    zcf.getZoeService(),
+    initialPoserInvitation,
   );
 
+  const electorateInvAmt = electorateParamManager.getInvitationAmount(
+    CONTRACT_ELECTORATE,
+  );
   assert(
-    sameStructure(governedParams, harden(governedParameterLocal)),
-    X`Terms ${governedParams} must match ${governedParameterLocal}`,
+    sameStructure(electorateInvAmt, electorateParam.value),
+    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
   );
 
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
@@ -116,7 +124,11 @@ export async function start(zcf, privateArgs) {
       `Collateral brand ${collateralBrand} has already been added`,
     );
 
-    const vaultParamManager = makeVaultParamManager(loanParams, rates);
+    const loanPeriods = {
+      chargingPeriod: loanParams[CHARGING_PERIOD_KEY].value,
+      recordingPeriod: loanParams[RECORDING_PERIOD_KEY].value,
+    };
+    const vaultParamManager = makeVaultParamManager(loanPeriods, rates);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
@@ -230,10 +242,6 @@ export async function start(zcf, privateArgs) {
     return getBootstrapPayment;
   }
 
-  const getParams = paramDesc => {
-    return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
-  };
-
   const getRatioParamState = paramDesc => {
     return vaultParamManagers
       .get(paramDesc.collateralBrand)
@@ -246,18 +254,20 @@ export async function start(zcf, privateArgs) {
       .getNat(paramDesc.parameterName);
   };
 
+  const getGovernedParams = paramDesc => {
+    return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
+  };
+
+  /** @type {StablecoinPublicFacet} */
   const publicFacet = Far('stablecoin public facet', {
     makeLoanInvitation,
     getCollaterals,
-    // TODO this is in the terms, so could be retrieved from there.
-    // This API is here to consider for usability/discoverability
-    getRunIssuer() {
-      return runIssuer;
-    },
+    getRunIssuer: () => runIssuer,
     getNatParamState,
     getRatioParamState,
-    getParams,
+    getGovernedParams,
     getContractGovernor: () => governorPublic,
+    getInvitationAmount: electorateParamManager.getInvitationAmount,
   });
 
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
@@ -267,9 +277,13 @@ export async function start(zcf, privateArgs) {
   );
 
   const getParamMgrRetriever = () =>
-    Far('paramManagerAccessor', {
+    Far('paramManagerRetriever', {
       get: paramDesc => {
-        return vaultParamManagers.get(paramDesc.collateralBrand);
+        if (paramDesc.key === 'main') {
+          return electorateParamManager;
+        } else {
+          return vaultParamManagers.get(paramDesc.collateralBrand);
+        }
       },
     });
 
@@ -285,6 +299,7 @@ export async function start(zcf, privateArgs) {
 
   const stablecoinMachineWrapper = Far('powerful stablecoinMachine wrapper', {
     getParamMgrRetriever,
+    getInvitation: electorateParamManager.getInternalParamValue,
     getLimitedCreatorFacet: () => stablecoinMachine,
   });
 

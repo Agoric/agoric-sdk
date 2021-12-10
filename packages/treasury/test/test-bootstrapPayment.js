@@ -14,7 +14,11 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeLoopback } from '@agoric/captp';
-import { governedParameterTerms } from '../src/params.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+
+import { makeLoanParams, makeElectorateParams } from '../src/params.js';
+
+const BASIS_POINTS = 10_000n;
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -26,12 +30,12 @@ const autoswapRoot =
 const governanceRoot = '@agoric/governance/src/contractGovernor.js';
 const electorateRoot = '@agoric/governance/src/committee.js';
 
-async function makeBundle(sourceRoot) {
+const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const contractBundle = await bundleSource(new URL(url).pathname);
   console.log(`makeBundle ${sourceRoot}`);
   return contractBundle;
-}
+};
 
 // makeBundle is slow, so we bundle each contract once and reuse in all tests.
 const [
@@ -48,66 +52,14 @@ const [
   makeBundle(electorateRoot),
 ]);
 
-function installBundle(zoe, contractBundle) {
-  return E(zoe).install(contractBundle);
-}
-
-const setupGovernor = async (
-  zoe,
-  electorateInstall,
-  electorateTerms,
-  governedContractInstallation,
-  governanceInstall,
-  governed,
-  timer,
-) => {
-  const {
-    instance: electorateInstance,
-    creatorFacet: electorateCreatorFacet,
-  } = await E(zoe).startInstance(
-    electorateInstall,
-    harden({}),
-    electorateTerms,
-  );
-
-  const governorTerms = {
-    electorateInstance,
-    timer,
-    governedContractInstallation,
-    governed,
-  };
-  return E(zoe).startInstance(
-    governanceInstall,
-    harden({}),
-    governorTerms,
-    harden({ electorateCreatorFacet }),
-  );
-};
+const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
 const setUpZoeForTest = async setJig => {
-  const { makeFar, makeNear } = makeLoopback('zoeTest');
-  let isFirst = true;
-  function makeRemote(arg) {
-    const result = isFirst ? makeNear(arg) : arg;
-    // this seems fragile. It relies on one contract being created first by Zoe
-    isFirst = !isFirst;
-    return result;
-  }
-
-  /**
-   * These properties will be assigned by `setJig` in the contract.
-   *
-   * @typedef {Object} TestContext
-   * @property {ContractFacet} zcf
-   * @property {IssuerRecord} runIssuerRecord
-   * @property {IssuerRecord} govIssuerRecord
-   * @property {ERef<XYKAMMPublicFacet>} amm
-   */
-
+  const { makeFar } = makeLoopback('zoeTest');
   const {
     zoeService: nonFarZoeService,
     feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
+  } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
   const feePurse = E(nonFarZoeService).makeFeePurse();
   const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
   /** @type {ERef<ZoeService>} */
@@ -119,12 +71,22 @@ const setUpZoeForTest = async setJig => {
   };
 };
 
-test('bootstrap payment', async t => {
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
+const makeRates = runBrand =>
+  harden({
+    initialMargin: makeRatio(120n, runBrand),
+    liquidationMargin: makeRatio(105n, runBrand),
+    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
+  });
+
+const startTreasury = async (
+  manualTimer,
+  bootstrapPaymentValue,
+  electorateTerms,
+) => {
+  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const runIssuer = E(zoe).getFeeIssuer();
+  const runBrand = await E(runIssuer).getBrand();
 
   const autoswapInstall = await installBundle(zoe, autoswapBundle);
   const stablecoinInstall = await installBundle(zoe, stablecoinBundle);
@@ -132,123 +94,109 @@ test('bootstrap payment', async t => {
   const electorateInstall = await installBundle(zoe, electorateBundle);
   const governanceInstall = await installBundle(zoe, governanceBundle);
 
+  const {
+    instance: electorateInstance,
+    creatorFacet: electorateCreatorFacet,
+  } = await E(zoe).startInstance(
+    electorateInstall,
+    harden({}),
+    electorateTerms,
+  );
+
+  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+
   const loanParams = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
-    poolFee: 24n,
-    protocolFee: 6n,
   };
-  const manualTimer = buildManualTimer(console.log);
 
-  // This test value is not a statement about the actual value to
-  // be minted
-  const bootstrapPaymentValue = 20000n * 10n ** 6n;
+  const rates = makeRates(runBrand);
+  const loanParamTerms = makeLoanParams(loanParams, rates);
+
   const treasuryTerms = {
     autoswapInstall,
-    priceAuthority: Promise.resolve(),
-    loanParams,
-    timerService: manualTimer,
     liquidationInstall,
-    governedParams: governedParameterTerms,
+    manualTimer,
     bootstrapPaymentValue,
+    main: makeElectorateParams(poserInvitationAmount),
+    loanParams: loanParamTerms,
   };
   const governed = {
     terms: treasuryTerms,
     issuerKeywordRecord: {},
-    privateArgs: { feeMintAccess },
+    privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
   };
 
-  const electorateTerms = { committeeName: 'bandOfAngels', committeeSize: 5 };
-  const { creatorFacet } = await setupGovernor(
-    zoe,
-    electorateInstall,
-    electorateTerms,
-    stablecoinInstall,
-    governanceInstall,
+  const governorTerms = {
+    electorateInstance,
+    timer: manualTimer,
+    governedContractInstallation: stablecoinInstall,
     governed,
-    manualTimer,
+  };
+
+  const { creatorFacet } = await E(zoe).startInstance(
+    governanceInstall,
+    harden({}),
+    governorTerms,
+    harden({ electorateCreatorFacet }),
+  );
+
+  return { runIssuer, creatorFacet, runBrand };
+};
+
+test('bootstrap payment', async t => {
+  const bootstrapPaymentValue = 20000n * 10n ** 6n;
+  const {
+    runIssuer,
+    creatorFacet,
+    runBrand,
+  } = await startTreasury(
+    buildManualTimer(console.log),
+    bootstrapPaymentValue,
+    { committeeName: 'bandOfAngels', committeeSize: 5 },
   );
 
   const bootstrapPayment = E(
     E(creatorFacet).getCreatorFacet(),
   ).getBootstrapPayment();
 
-  const { runIssuerRecord } = testJig;
-
-  const bootstrapAmount = await E(runIssuerRecord.issuer).getAmountOf(
-    bootstrapPayment,
-  );
+  const bootstrapAmount = await E(runIssuer).getAmountOf(bootstrapPayment);
 
   t.true(
     AmountMath.isEqual(
       bootstrapAmount,
-      AmountMath.make(runIssuerRecord.brand, bootstrapPaymentValue),
+      AmountMath.make(runBrand, bootstrapPaymentValue),
     ),
   );
 });
 
 test('bootstrap payment - only minted once', async t => {
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
-
-  const autoswapInstall = await installBundle(zoe, autoswapBundle);
-  const stablecoinInstall = await installBundle(zoe, stablecoinBundle);
-  const liquidationInstall = await installBundle(zoe, liquidationBundle);
-  const electorateInstall = await installBundle(zoe, electorateBundle);
-  const governanceInstall = await installBundle(zoe, governanceBundle);
-
-  const loanParams = {
-    chargingPeriod: 2n,
-    recordingPeriod: 10n,
-    poolFee: 24n,
-    protocolFee: 6n,
-  };
-  const manualTimer = buildManualTimer(console.log);
-
   // This test value is not a statement about the actual value to
   // be minted
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
 
-  const treasuryTerms = {
-    autoswapInstall,
-    priceAuthority: Promise.resolve(),
-    loanParams,
-    timerService: manualTimer,
-    liquidationInstall,
-    governedParams: governedParameterTerms,
+  const {
+    runIssuer,
+    creatorFacet,
+    runBrand,
+  } = await startTreasury(
+    buildManualTimer(console.log),
     bootstrapPaymentValue,
-  };
-  const governed = {
-    terms: treasuryTerms,
-    issuerKeywordRecord: {},
-    privateArgs: { feeMintAccess },
-  };
-
-  const electorateTerms = { committeeName: 'bandOfAngels', committeeSize: 5 };
-  const { creatorFacet } = await setupGovernor(
-    zoe,
-    electorateInstall,
-    electorateTerms,
-    stablecoinInstall,
-    governanceInstall,
-    governed,
-    manualTimer,
+    { committeeName: 'bandOfAngels', committeeSize: 5 },
   );
 
   const bootstrapPayment = E(
     E(creatorFacet).getCreatorFacet(),
   ).getBootstrapPayment();
 
-  const { runIssuerRecord } = testJig;
-  const issuers = { RUN: runIssuerRecord.issuer };
+  const issuers = { RUN: runIssuer };
 
   const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
-
-  const runBrand = await E(issuers.RUN).getBrand();
 
   t.true(
     AmountMath.isEqual(
@@ -269,62 +217,22 @@ test('bootstrap payment - only minted once', async t => {
 });
 
 test('bootstrap payment - default value is 0n', async t => {
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-  const { zoe, feeMintAccess } = await setUpZoeForTest(setJig);
-
-  const autoswapInstall = await installBundle(zoe, autoswapBundle);
-  const stablecoinInstall = await installBundle(zoe, stablecoinBundle);
-  const liquidationInstall = await installBundle(zoe, liquidationBundle);
-  const electorateInstall = await installBundle(zoe, electorateBundle);
-  const governanceInstall = await installBundle(zoe, governanceBundle);
-
-  const loanParams = {
-    chargingPeriod: 2n,
-    recordingPeriod: 10n,
-    poolFee: 24n,
-    protocolFee: 6n,
-  };
-  const manualTimer = buildManualTimer(console.log);
-
-  const electorateTerms = { committeeName: 'bandOfAngels', committeeSize: 5 };
-
-  const treasuryTerms = {
-    autoswapInstall,
-    priceAuthority: Promise.resolve(),
-    loanParams,
-    timerService: manualTimer,
-    liquidationInstall,
-    governedParams: governedParameterTerms,
-  };
-  const governed = {
-    terms: treasuryTerms,
-    issuerKeywordRecord: {},
-    privateArgs: { feeMintAccess },
-  };
-
-  const { creatorFacet } = await setupGovernor(
-    zoe,
-    electorateInstall,
-    electorateTerms,
-    stablecoinInstall,
-    governanceInstall,
-    governed,
-    manualTimer,
+  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
+    buildManualTimer(console.log),
+    0n,
+    {
+      committeeName: 'bandOfAngels',
+      committeeSize: 5,
+    },
   );
 
-  const { runIssuerRecord } = testJig;
-  const issuers = { RUN: runIssuerRecord.issuer };
+  const issuers = { RUN: runIssuer };
 
   const bootstrapPayment = E(
     E(creatorFacet).getCreatorFacet(),
   ).getBootstrapPayment();
 
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
-
-  const runBrand = await E(issuers.RUN).getBrand();
 
   t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
 });

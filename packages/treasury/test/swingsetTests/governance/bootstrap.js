@@ -2,80 +2,13 @@
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
 import { INTEREST_RATE_KEY } from '../../../src/params';
+import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
 
 const { quote: q } = assert;
-const ONE_DAY = 24n * 60n * 60n;
 const BASIS_POINTS = 10000n;
-
-const setupBasicMints = () => {
-  const all = [makeIssuerKit('moola')];
-  const mints = all.map(objs => objs.mint);
-  const issuers = all.map(objs => objs.issuer);
-  const brands = all.map(objs => objs.brand);
-
-  return harden({
-    mints,
-    issuers,
-    brands,
-  });
-};
-
-const installContracts = async (zoe, cb) => {
-  const [
-    liquidateMinimum,
-    treasury,
-    electorate,
-    counter,
-    governor,
-  ] = await Promise.all([
-    E(zoe).install(cb.liquidateMinimum),
-    E(zoe).install(cb.treasury),
-    E(zoe).install(cb.committee),
-    E(zoe).install(cb.binaryVoteCounter),
-    E(zoe).install(cb.contractGovernor),
-  ]);
-
-  const installations = {
-    liquidateMinimum,
-    treasury,
-    electorate,
-    counter,
-    governor,
-  };
-  return installations;
-};
-
-const startElectorate = async (zoe, installations) => {
-  const electorateTerms = harden({
-    committeeName: 'TwentyCommittee',
-    committeeSize: 5,
-  });
-  const {
-    creatorFacet: electorateCreatorFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(
-    installations.electorate,
-    harden({}),
-    electorateTerms,
-  );
-  return { electorateCreatorFacet, electorateInstance };
-};
-
-const createCommittee = async (electorateCreatorFacet, voterCreator) => {
-  const invitations = await E(electorateCreatorFacet).getVoterInvitations();
-
-  const floraP = E(voterCreator).createVoter('Flora', invitations[0]);
-  const bobP = E(voterCreator).createVoter('Bob', invitations[1]);
-  const carolP = E(voterCreator).createVoter('Carol', invitations[2]);
-  const daveP = E(voterCreator).createVoter('Dave', invitations[3]);
-  const emmaP = E(voterCreator).createVoter('Emma', invitations[4]);
-  return Promise.all([bobP, carolP, daveP, emmaP, floraP]);
-};
 
 const votersVote = async (detailsP, votersP, selections) => {
   const [voters, { positions, questionHandle }] = await Promise.all([
@@ -152,47 +85,30 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const voterCreator = E(vats.voter).build(zoe);
 
   const [testName, startingValues] = argv;
-  const timer = buildManualTimer(console.log, 0n, ONE_DAY);
-  const { mints, issuers, brands } = setupBasicMints();
-  const makePayments = values =>
-    mints.map((mint, i) =>
-      mint.mintPayment(AmountMath.make(brands[i], BigInt(values[i]))),
-    );
-  const [aliceValues, ownerValues] = startingValues;
 
-  const { electorateCreatorFacet, electorateInstance } = await startElectorate(
+  const {
+    aliceP,
+    governor,
+    treasury,
+    runBrand,
+    timer,
+    electorateCreatorFacet,
+    electorateInstance,
+    brands: [collateralBrand],
+  } = await makeVats(
+    log,
+    vats,
     zoe,
     installations,
+    startingValues,
+    feeMintAccess,
   );
 
   const votersP = createCommittee(electorateCreatorFacet, voterCreator);
   log(`=> voter and electorate vats are set up`);
 
-  // Setup Alice
-  const aliceP = E(vats.alice).build(
-    zoe,
-    brands,
-    makePayments(aliceValues),
-    timer,
-  );
-
-  // Setup Owner
-  const { governor, governed: treasury, runBrand } = await E(vats.owner).build(
-    zoe,
-    issuers,
-    brands,
-    makePayments(ownerValues),
-    installations,
-    timer,
-    vats.priceAuthority,
-    feeMintAccess,
-    electorateInstance,
-    electorateCreatorFacet,
-  );
-  log(`=> alice and the treasury are set up`);
-
-  const feeParamsStateAnte = await E(treasury.publicFacet).getParams({
-    collateralBrand: brands[0],
+  const feeParamsStateAnte = await E(treasury.publicFacet).getGovernedParams({
+    collateralBrand,
   });
   log(`param values before ${q(feeParamsStateAnte)}`);
 
@@ -201,7 +117,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   const interestRateParam = {
     parameterName: INTEREST_RATE_KEY,
-    collateralBrand: brands[0],
+    collateralBrand,
   };
   const counter = await setUpVote(
     makeRatio(500n, runBrand, BASIS_POINTS),
@@ -215,9 +131,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   E(E(zoe).getPublicFacet(counter))
     .getOutcome()
     .then(async outcome => {
-      const feeParamsStatePost = await E(treasury.publicFacet).getParams(
-        interestRateParam,
-      );
+      const feeParamsStatePost = await E(
+        treasury.publicFacet,
+      ).getGovernedParams(interestRateParam);
       log(
         `param values after vote on (${outcome.changeParam.parameterName}) ${q(
           feeParamsStatePost,
