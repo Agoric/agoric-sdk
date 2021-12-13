@@ -65,7 +65,7 @@ voterHandle.
 ## ContractGovernor
 
 We want some contracts to be able to make it visible that their internal
-parameters can be controlled by a public process, and allow observers to see who
+parameters are controlled by a public process, and allow observers to see who
 has control, and how those changes can happen. To do so, the contract would
 use a ParamManager to hold its mutable state. ParamManager has facets for
 accessing the param values and for setting them. The governed contract would use
@@ -75,7 +75,7 @@ values, is only accessible to a visible ContractGovernor. The ContractGovernor
 makes the Electorate visible, while tightly controlling the process of
 creating new questions and presenting them to the electorate.
 
-The governor starts up the Contract and can see what params are subject to
+The governor starts up the Contract and can see what parameters are subject to
 governance. It provides a private facet that carries the ability to request
 votes on changing particular parameters. Some day we may figure out how to make
 the process and schedule of selecting parameter changes to vote on also subject
@@ -101,6 +101,16 @@ have exclusive access to the facet that allows the values to be set. The
 contract would also make the read-only facet visible, so others can see the
 current values. The initial values of the parameters, along with their types
 remain visible in the contract's terms.
+
+By using ContractHelper, the governed contract returns a (powerful) creatorFacet
+with two methods: `getParamMgrRetriever` (which provides access to read and
+modify parameters), and `getLimitedCreatorFacet`, which has the creator facet
+provided by the governed contract and doesn't include any powerful governance
+capabilities. ContractGovernor starts the governed contract, so it gets the
+powerful creatorFacet. ContractGovernor needs access to the paramManager, but
+shouldn't share it. So the contractGovernor's creatorFacet provides access to
+the governed contract's publicFacet, creatorFacet, instance, and
+`voteOnParamChange()`, which the contract's owner should treat as powerful. 
 
 ### ParamManager
 
@@ -149,7 +159,7 @@ governor's public facet will also refer to the contract it governs. Once you
 have the instance you can retrieve the installation from Zoe which allows you to
 examine the source.
 
-The governedContract will provide the electorate, which allows you to check the
+The governed contract will provide the electorate, which allows you to check the
 electorate, and retrieve a list of open questions. (We should add closed
 questions and their resolution as well.) Each question refers to the
 voteCounter it uses.

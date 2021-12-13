@@ -7,14 +7,14 @@ const MALLEABLE_NUMBER = 'MalleableNumber';
 /** @type {ContractStartFn} */
 const start = async zcf => {
   const { main: initialValue } = zcf.getTerms();
-  const { makePublicFacet, makeCreatorFacet } = handleParamGovernance(
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
     zcf,
     harden(initialValue),
   );
 
   return {
-    publicFacet: makePublicFacet({}),
-    creatorFacet: makeCreatorFacet({}),
+    publicFacet: wrapPublicFacet({}),
+    creatorFacet: wrapCreatorFacet({}),
   };
 };
 

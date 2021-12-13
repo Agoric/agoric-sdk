@@ -11,8 +11,13 @@ const { details: X, quote: q } = assert;
  * Helper for the 90% of contracts that will have only a single set of
  * parameters. In order to support managed parameters, a contract only has to
  *   * define the parameter template, which includes name, type and value
- *   * call handleParamGovernance() to get makePublicFacet and makeCreatorFacet
+ *   * call handleParamGovernance() to get wrapPublicFacet and wrapCreatorFacet
  *   * add any methods needed in the public and creator facets.
+ *
+ *   It's also crucial that the governed contract not interact with the product
+ *   of wrapCreatorFacet(). The wrapped creatorFacet has the power to change
+ *   parameter values, and the governance guarantees only hold if they're not
+ *   used directly by the governed contract.
  *
  *  @type {HandleParamGovernance}
  */
@@ -30,7 +35,7 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
   );
   const paramManager = buildParamManager(governedParams);
 
-  const makePublicFacet = (originalPublicFacet = {}) => {
+  const wrapPublicFacet = (originalPublicFacet = {}) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -42,24 +47,26 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
     });
   };
 
-  /** @type {LimitedCreatorFacet} */
-  const limitedCreatorFacet = Far('governedContract creator facet', {
-    getContractGovernor: () => electionManager,
-  });
+  const makeLimitedCreatorFacet = originalCreatorFacet => {
+    return Far('governedContract creator facet', {
+      ...originalCreatorFacet,
+      getContractGovernor: () => electionManager,
+    });
+  };
 
-  const makeCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
+  const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
     return Far('creatorFacet', {
       getParamMgrRetriever: () => {
         return Far('paramRetriever', { get: () => paramManager });
       },
-      getInternalCreatorFacet: () => originalCreatorFacet,
       getLimitedCreatorFacet: () => limitedCreatorFacet,
     });
   };
 
   return harden({
-    makePublicFacet,
-    makeCreatorFacet,
+    wrapPublicFacet,
+    wrapCreatorFacet,
     getParamValue: name => paramManager.getParam(name).value,
   });
 };
