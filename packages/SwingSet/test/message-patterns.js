@@ -44,8 +44,8 @@ import { ignore } from './util.js';
 function NonError(message) {
   // marshal emits a warning (with stack trace) to the console each time it
   // serializes an Error, which makes it look like tests are failing. We have
-  // tests which test 'raise' and Promise rejection to make sure they are
-  // signalled correctly. We previously used 'raise Error()' for this, but
+  // tests which test 'throw' and Promise rejection to make sure they are
+  // signalled correctly. We previously used 'throw Error()' for this, but
   // that provokes the scary-looking warning. Since we aren't trying to
   // exercise *Error* serialization here, merely Promise rejection, we can
   // use a non-Error instead, which avoids the warning.
