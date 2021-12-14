@@ -174,7 +174,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 	// Distribute rewards.
 	state := am.keeper.GetState(ctx)
-	xfer := agsdk.MinCoins(state.RewardRate, state.RewardPool)
+	xfer := agsdk.CoinsMin(state.RewardRate, state.RewardPool)
 	if !xfer.IsZero() {
 		am.keeper.SendCoinsToFeeCollector(ctx, xfer)
 		state.RewardPool = state.RewardPool.Sub(xfer)
