@@ -24,7 +24,7 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@endo/ses-ava": "^0.2.8",
+    "@endo/ses-ava": "^0.2.13",
     "@types/tmp": "^0.2.0",
     "ava": "^3.12.1",
     "tmp": "^0.2.1"
@@ -43,7 +43,7 @@
     "@agoric/store": "^0.6.8",
     "@agoric/swing-store": "^0.6.3",
     "@agoric/xsnap": "^0.11.0",
-    "@endo/base64": "^0.2.8",
+    "@endo/base64": "^0.2.13",
     "anylogger": "^0.21.0",
     "import-meta-resolve": "^1.1.1",
     "node-lmdb": "^0.9.5",
