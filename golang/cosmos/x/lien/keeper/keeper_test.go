@@ -64,7 +64,7 @@ func makeTestKit() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, st
 	vestingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	stakingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	cdc := encodingConfig.Marshaller
+	cdc := encodingConfig.Marshaler
 
 	// params keeper
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTKey)

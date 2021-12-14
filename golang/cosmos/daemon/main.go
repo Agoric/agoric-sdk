@@ -9,10 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -75,6 +75,7 @@ func RunWithController(sendToController cmd.Sender) {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)
+
 		default:
 			os.Exit(1)
 		}
