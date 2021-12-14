@@ -107,3 +107,29 @@ test('zoe - contract governance', async t => {
   const dump = await main(t, ['contractGovernorStart']);
   t.deepEqual(dump.log, expectedcontractGovernorStartLog);
 });
+
+const expectedChangeElectorateLog = [
+  '=> voter and electorate vats are set up',
+  '@@ schedule task for:3, currently: 0 @@',
+  'Voter Alice voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'Voter Bob voted for {"noChange":{"key":"main","parameterName":"MalleableNumber"}}',
+  'Voter Carol voted for {"noChange":{"key":"main","parameterName":"MalleableNumber"}}',
+  'Voter Dave voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'Voter Emma voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  '@@ tick:1 @@',
+  '@@ tick:2 @@',
+  '@@ tick:3 @@',
+  '&& running a task scheduled for 3. &&',
+  'vote outcome: {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'updated to "[299792458n]"',
+  'MalleableNumber was changed to "[602214090000000000000000n]"',
+  'current value of MalleableNumber is 299792458',
+  'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","expiry":"[undefined]","fee":"[undefined]","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]","zoeTimeAuthority":"[undefined]"}]}',
+  'MalleableNumber was changed to "[299792458n]"',
+  'Voter Alice validated all the things',
+];
+
+test('zoe - change electorate', async t => {
+  const dump = await main(t, ['changeElectorateStart']);
+  t.deepEqual(dump.log, expectedChangeElectorateLog);
+});
