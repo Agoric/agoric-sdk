@@ -1328,10 +1328,10 @@ export function makeLiveSlots(
 }
 
 // for tests
-export function makeMarshaller(syscall, gcTools) {
+export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
   const { m } = build(
     syscall,
-    'forVatID',
+    vatID,
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
     false,
     false,
