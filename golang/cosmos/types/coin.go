@@ -46,6 +46,7 @@ import (
 // CoinsMax and CoinsMin are symmetric and associative
 // A <= A + B
 // (A + B) - A == B
+// A + B == CoinsMax(A, B) + CoinsMin(A, B)
 //
 // The rules for safe use of Coins are:
 // - Always construct Coins values with sdk.NewCoins, not sdk.Coins{...}.
@@ -84,6 +85,13 @@ func CoinsEq(a, b sdk.Coins) bool {
 		}
 	}
 	return true
+}
+
+// CoinsExcess computes the positive denominations in a - b.
+// Computing max(0, a-b) is actually done as a - min(a, b)
+// to avoid negatives in the intermediate result.
+func CoinsExcess(a, b sdk.Coins) sdk.Coins {
+	return a.Sub(CoinsMin(a, b))
 }
 
 // CoinsLTE returns true if b contains as much or more of each denomination in a, otherwise false.

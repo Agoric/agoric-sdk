@@ -279,6 +279,12 @@ func TestBinaryProperties(t *testing.T) {
 				return CoinsEq(c1, c0.Add(c1...).Sub(c0))
 			},
 		},
+		{
+			name: "add-max-min",
+			f: func(c0, c1 sdk.Coins) bool {
+				return CoinsEq(c0.Add(c1...), CoinsMax(c0, c1).Add(CoinsMin(c0, c1)...))
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, c0 := range propertyCoins {
