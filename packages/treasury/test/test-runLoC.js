@@ -16,6 +16,17 @@ import { ParamType } from '@agoric/governance';
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
+const genesisBldBalances = {
+  agoric30: 30n,
+  agoric100: 100n,
+  agoric500: 500n,
+  agoric1k: 1_000n,
+  agoric3k: 3_000n,
+  agoric5k: 5_000n,
+  agoric9k: 9_000n,
+  agoric10k: 10_000n,
+};
+
 /**
  * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
  * @template T
@@ -75,10 +86,7 @@ test.before(async t => {
   assign(t.context, { bundles });
 });
 
-/**
- * @param { import('ava').ExecutionContext } t
- */
-const genesis = async t => {
+const bootstrapZoeAndRun = async () => {
   let testJig;
   const setJig = jig => {
     testJig = jig;
@@ -98,43 +106,64 @@ const genesis = async t => {
     makeFar(nonFarFeeMintAccess),
   ]);
   const zoe = makeFar(zoeService);
-  const installations = await allValues(
-    mapValues(t.context.bundles, b => E(zoe).install(b)),
-  );
-  return { zoe, feeMintAccess, runBrand, installations, getJig: () => testJig };
+  return { zoe, feeMintAccess, runBrand, getJig: () => testJig };
 };
 
 test('RUN mint access', async t => {
   assert.typeof(t.context, 'object');
   assert(t.context);
 
-  const { zoe, feeMintAccess } = await genesis(t);
+  const { zoe, feeMintAccess } = await bootstrapZoeAndRun();
   t.truthy(zoe);
   t.truthy(feeMintAccess);
 });
 
 /**
- * @param {Installation} installation
- * @param {ERef<ZoeService>} zoe
+ * @param {Brand} uBrand
  */
-const startAttestation = async (installation, zoe) => {
-  const { brand: bldBrand, issuer: bldIssuer } = makeIssuerKit(
-    'BLD',
-    AssetKind.NAT,
-    harden({
-      decimalPlaces: 6,
-    }),
-  );
+const makeStakeReporter = uBrand => {
+  /** @param { bigint } v */
+  const ubld = v => AmountMath.make(uBrand, v);
+  let currentTime = 50n;
+  return Far('stakeReporter', {
+    /**
+     * @param { string } address
+     * @param { Brand } brand
+     */
+    getAccountState: (address, brand) => {
+      assert(brand === uBrand, X`unexpected brand: ${brand}`);
+      assert(address in genesisBldBalances, X`no such account: ${address}`);
+      const balance = genesisBldBalances[address];
+      currentTime += 10n;
+      return harden({
+        total: ubld(balance + 5n),
+        bonded: ubld(balance),
+        locked: ubld(0n),
+        currentTime,
+      });
+    },
+  });
+};
 
-  /** @type {StartAttestationResult} */
-  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+/**
+ * @param {Bundle} bundle
+ * @param {ERef<ZoeService>} zoe
+ * @param {{issuer: Issuer, brand: Brand}} bld
+ * @param {ReturnType<typeof makeStakeReporter>} reporter
+ */
+const bootstrapAttestation = async (bundle, zoe, bld, reporter) => {
+  const installation = await E(zoe).install(bundle);
+  /** @type {StartAttestationResult & { instance: Instance }} */
+  const { publicFacet, creatorFacet, instance } = await E(zoe).startInstance(
     installation,
-    harden({ Underlying: bldIssuer }),
+    harden({ Underlying: bld.issuer }),
     harden({
       expiringAttName: 'BldAttGov',
       returnableAttName: 'BldAttLoC',
     }),
   );
+
+  await E(creatorFacet).addAuthority(reporter);
 
   const [
     { returnable: attIssuer },
@@ -144,85 +173,69 @@ const startAttestation = async (installation, zoe) => {
     E(publicFacet).getBrands(),
   ]);
 
+  /** @param { string } address */
+  const provision = address => ({
+    attMaker: E(creatorFacet).getAttMaker(address),
+  });
+
   return {
-    issuers: { Attestation: attIssuer, BLD: bldIssuer },
-    brands: { BLD: bldBrand, Attestation: attBrand },
-    publicFacet,
-    creatorFacet,
+    installations: { Attestation: installation },
+    instances: { Attestation: instance },
+    issuers: { Attestation: attIssuer },
+    brands: { Attestation: attBrand },
+    provision,
   };
 };
 
-/**
- * @param {Brand} uBrand
- * @param { string } myAddress
- * @param {Account} account
- * @typedef {{ total: bigint, bonded: bigint, locked: bigint}} Account
- */
-const makeStakeReporter = (uBrand, myAddress, account) => {
-  const ubld = v => AmountMath.make(uBrand, v);
-  return Far('stakeReporter', {
-    /**
-     * @param { string } address
-     * @param { Brand } brand
-     */
-    getAccountState: (address, brand) => {
-      assert(brand === uBrand, X`unexpected brand: ${brand}`);
-      assert(address === myAddress, X`no such account: ${address}`);
-      return harden({
-        ...mapValues(account, ubld),
-        currentTime: 60n,
-      });
-    },
-  });
-};
-
 test('start attestation', async t => {
-  const { zoe, installations } = await genesis(t);
+  const { zoe } = await bootstrapZoeAndRun();
+  const micro = harden({ decimalPlaces: 6 });
+  const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
-  const a = await startAttestation(installations.attestation, zoe);
-  // t.log('attestation start result', a);
-  const {
-    brands: { BLD: bldBrand, Attestation: attBrand },
-  } = a;
-  const ubld = v => AmountMath.make(bldBrand, v);
-
-  await E(a.creatorFacet).addAuthority(
-    makeStakeReporter(bldBrand, 'address1', {
-      total: 10n,
-      bonded: 9n,
-      locked: 1n,
-    }),
+  /** @type { Record<string, Bundle> } */
+  const bundles = /** @type {any} */ (t.context).bundles;
+  const { issuers, brands, provision } = await bootstrapAttestation(
+    bundles.attestation,
+    zoe,
+    bld,
+    makeStakeReporter(bld.brand),
   );
 
-  const attMaker = E(a.creatorFacet).getAttMaker('address1');
-  const expiration = 65n;
-  const att = await E(attMaker).makeAttestations(ubld(5n), expiration);
-  // t.log('attestation', att);
-  t.truthy(att);
-  const pmt = await att.returnable;
-  // t.log({ pmt });
-  t.truthy(pmt);
+  const attMaker = provision('agoric3k').attMaker;
+  const expiration = 120n;
+  const amountLiened = AmountMath.make(bld.brand, 5n);
+  const pmt = E.get(E(attMaker).makeAttestations(amountLiened, expiration))
+    .returnable;
+  const amt = await E(issuers.Attestation).getAmountOf(pmt);
+  t.deepEqual(amt, {
+    brand: brands.Attestation,
+    value: [{ address: 'agoric3k', amountLiened }],
+  });
 });
 
 /**
- * @param { import('ava').ExecutionContext } t
  * @param {ERef<ZoeService>} zoe
+ * @param {ERef<TimerService>} timer
  * @param { FeeMintAccess } feeMintAccess
- * @param {Record<string, Installation>} installations
+ * @param {Record<string, Bundle>} bundles
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRate
  * @param {Issuer} attIssuer
  */
-const startGovernedLoC = async (
-  t,
+const bootstrapRunLoC = async (
   zoe,
+  timer,
   feeMintAccess,
-  installations,
+  bundles,
   { collateralPrice, collateralizationRate },
   attIssuer,
 ) => {
-  const timer = buildManualTimer(t.log, 0n, 1n);
+  const installations = await allValues({
+    governor: E(zoe).install(bundles.governor),
+    electorate: E(zoe).install(bundles.electorate),
+    runLoC: E(zoe).install(bundles.runLoC),
+  });
 
   const {
     creatorFacet: electorateCreatorFacet,
@@ -295,43 +308,48 @@ const testLoC = (
   },
   mockAttestation = undefined,
 ) => {
-  if (borrowed.after !== 0n && (liened.delta < 0 || borrowed.before !== 0n)) {
+  if (
+    (liened.delta < 0n && borrowed.after !== 0n) ||
+    collateralizationRatio.after ||
+    (liened.before > 0n && liened.delta > 0n) ||
+    borrowed.delta < 0n ||
+    description.match(/FAIL/)
+  ) {
     test.skip(`${testNum} ${description} @@TODO`, _ => {});
     return;
   }
 
   test(`${testNum} ${description}`, async t => {
+    /** @type { Record<string, Bundle> } */
+    const bundles = /** @type { any } */ (t.context).bundles;
+
     // Genesis: start Zoe etc.
-    const {
-      zoe,
-      feeMintAccess,
-      installations,
-      runBrand,
-      getJig,
-    } = await genesis(t);
-    t.true(!!zoe);
-    t.true(!!feeMintAccess);
+    const { zoe, feeMintAccess, runBrand, getJig } = await bootstrapZoeAndRun();
+    const micro = harden({ decimalPlaces: 6 });
+    const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
     // start attestation contract
     const {
-      brands: { BLD: bldBrand, Attestation: attBrand },
+      brands: { Attestation: attBrand },
       issuers: { Attestation: attIssuer },
-      creatorFacet: attestationCreator,
-    } = await startAttestation(installations.attestation, zoe);
-    const account = { total: staked + 100n, bonded: staked, locked: 0n };
-    E(attestationCreator).addAuthority(
-      makeStakeReporter(bldBrand, 'address1', account),
+      provision,
+    } = await bootstrapAttestation(
+      bundles.attestation,
+      zoe,
+      bld,
+      makeStakeReporter(bld.brand),
     );
 
     // start RUN LoC
-    const collateralPrice = makeRatio(price[0], runBrand, price[1], bldBrand);
+    const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
     const rate = collateralizationRatio.before;
     const collateralizationRate = makeRatio(rate[0], runBrand, rate[1]);
-    const { publicFacet } = await startGovernedLoC(
-      t,
+    const timer = buildManualTimer(t.log, 0n, 1n);
+    const { publicFacet } = await bootstrapRunLoC(
       zoe,
+      timer,
       feeMintAccess,
-      installations,
+      bundles,
       { collateralPrice, collateralizationRate },
       attIssuer,
     );
@@ -341,11 +359,13 @@ const testLoC = (
     /** @param { bigint } value */
     const run = value => AmountMath.make(runBrand, value);
     /** @param { bigint } value */
-    const ubld = value => AmountMath.make(bldBrand, value);
+    const ubld = value => AmountMath.make(bld.brand, value);
 
     // Get an attestation (amount, payment)
-    const addr = 'address1';
-    const attMaker = await E(attestationCreator).getAttMaker(addr);
+    const [addrFromStake, _b] =
+      entries(genesisBldBalances).find(([_addr, bal]) => bal === staked) ||
+      assert.fail(X`no matching account: ${staked}`);
+    const attMaker = provision(addrFromStake).attMaker;
     const expiration = 61n;
 
     // @ts-ignore governance wrapper obscures publicFace type :-/
@@ -371,10 +391,11 @@ const testLoC = (
             .getAmountOf(pmt)
             .then(amt => [amt, pmt]),
         );
+      const fakerInstallation = E(zoe).install(bundles.faker);
       const [attAmt, attPmt] = await (mockAttestation
         ? mockAttestation(
-            (await E(zoe).startInstance(installations.faker)).publicFacet,
-            bldBrand,
+            (await E(zoe).startInstance(fakerInstallation)).publicFacet,
+            bld.brand,
           )
         : getReturnableAttestation());
       // t.log({ attPmt });
@@ -400,12 +421,15 @@ const testLoC = (
         await t.throwsAsync(result);
         return undefined;
       }
+      /** @type {LineOfCreditKit} */
       const resultValue = await result;
       t.deepEqual(keys(resultValue), [
         'invitationMakers',
         'uiNotifier',
         'vault',
       ]);
+      const state = await resultValue.uiNotifier.getUpdateSince();
+      t.deepEqual(state.value.debt, run(runValue));
 
       const p = await allValues(await E(seat).getPayouts());
       t.deepEqual(Object.keys(p), ['Attestation', 'RUN']);
@@ -432,18 +456,43 @@ const testLoC = (
         }),
         harden({ RUN: payouts.RUN }),
       );
-      const closeResult = await E(seat).getOfferResult();
-      t.log({ closeResult });
       const attBack = await E(seat).getPayout('Attestation');
       const amt = await E(attIssuer).getAmountOf(attBack);
       t.deepEqual(amt, {
         brand: attBrand,
         value: [
           {
-            address: 'address1',
-            amountLiened: { brand: bldBrand, value: liened.before },
+            address: addrFromStake,
+            amountLiened: ubld(liened.before),
           },
         ],
+      });
+    };
+
+    /** @param { Unpromise<ReturnType<typeof testOpen>> } step1 */
+    const testAdjust = async step1 => {
+      assert(step1);
+      const {
+        resultValue: { invitationMakers, uiNotifier },
+      } = step1;
+
+      const adjustInvitation = invitationMakers.AdjustBalances();
+      const seat = await E(zoe).offer(
+        adjustInvitation,
+        harden({ want: { RUN: run(borrowed.delta) } }),
+      );
+
+      const payout = await E(seat).getPayout('RUN');
+      const amt = await E(runIssuer).getAmountOf(payout);
+      t.deepEqual(amt, run(borrowed.delta));
+
+      const state = await uiNotifier.getUpdateSince();
+      t.log('@@', { state });
+      t.deepEqual(state.value, {
+        collateralizationRatio: collateralizationRate,
+        debt: run(borrowed.after),
+        liened: AmountMath.make(bld.brand, liened.after),
+        vaultState: 'active',
       });
     };
 
@@ -456,7 +505,7 @@ const testLoC = (
       if (borrowed.after === 0n) {
         await testClose(step1);
       } else {
-        t.is(borrowed.after, 0n, 'only close implemented. TODO@@');
+        await testAdjust(step1);
       }
     }
   });
