@@ -22,8 +22,6 @@ var (
 	a = testCoin("A")
 	b = testCoin("B")
 	c = testCoin("C")
-	d = testCoin("D")
-	e = testCoin("E")
 )
 
 func TestMaxCoins(t *testing.T) {
@@ -71,7 +69,7 @@ func TestComputeLienLocked(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := computeLienLocked(tt.liened, tt.bonded, tt.unbonding)
-			if !tt.want.IsEqual(got) {
+			if !coinsEq(tt.want, got) {
 				t.Errorf("computeLienLocked() = %s, want %s", got, tt.want)
 			}
 		})

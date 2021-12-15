@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -37,7 +37,7 @@ var (
 	zero       = i(0)
 	zeroCoins  = sdk.NewCoins()
 	c          = sdk.NewInt64Coin
-	emptyState = keeper.AccountState{
+	emptyState = types.AccountState{
 		Total:     zeroCoins,
 		Bonded:    zeroCoins,
 		Unbonding: zeroCoins,
@@ -51,9 +51,10 @@ func ubld(amt int64) sdk.Coins {
 }
 
 type mockLienKeeper struct {
-	states      map[string]keeper.AccountState
+	states      map[string]types.AccountState
 	validators  map[string]stakingTypes.Validator
 	delegations map[string][]stakingTypes.Delegation
+	update      *types.AccountLien
 }
 
 var _ Keeper = &mockLienKeeper{}
@@ -76,7 +77,12 @@ func (m *mockLienKeeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien type
 func (m *mockLienKeeper) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
 }
 
-func (m *mockLienKeeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) keeper.AccountState {
+func (m *mockLienKeeper) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error {
+	m.update = &types.AccountLien{Address: addr.String(), Lien: newLien.Coins}
+	return nil
+}
+
+func (m *mockLienKeeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState {
 	state, found := m.states[addr.String()]
 	if !found {
 		return emptyState
@@ -104,7 +110,7 @@ func TestBadType(t *testing.T) {
 	ctx := sdk.Context{}
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 	keeper := mockLienKeeper{
-		states: map[string]keeper.AccountState{},
+		states: map[string]types.AccountState{},
 	}
 	ph := NewPortHandler(&keeper)
 
@@ -126,7 +132,7 @@ func TestGetAccountState(t *testing.T) {
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
 	keeper := mockLienKeeper{
-		states: map[string]keeper.AccountState{
+		states: map[string]types.AccountState{
 			addr1: {Total: sdk.NewCoins(c("ubld", 123), c("urun", 456))},
 		},
 	}
@@ -167,7 +173,7 @@ func TestGetAccountState_badRequest(t *testing.T) {
 	ctx := sdk.Context{}
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 	keeper := mockLienKeeper{
-		states: map[string]keeper.AccountState{},
+		states: map[string]types.AccountState{},
 	}
 	ph := NewPortHandler(&keeper)
 
@@ -243,128 +249,33 @@ func TestSetLiened_badDenom(t *testing.T) {
 }
 
 func TestSetLiened(t *testing.T) {
-	for _, tt := range []struct {
-		name     string
-		state    keeper.AccountState
-		newLien  int64
-		wantErr  bool
-		wantFail bool
-	}{
-		{
-			name:    "empty zero",
-			state:   emptyState,
-			newLien: 0,
-		},
-		{
-			name:     "empty some",
-			state:    emptyState,
-			newLien:  123,
-			wantFail: true,
-		},
-		{
-			name: "same",
-			state: keeper.AccountState{
-				Total:     ubld(15),
-				Bonded:    ubld(1),
-				Unbonding: ubld(2),
-				Locked:    ubld(4),
-				Liened:    ubld(8),
-			},
-			newLien: 8,
-		},
-		{
-			name: "reduce",
-			state: keeper.AccountState{
-				Total:     ubld(15),
-				Bonded:    ubld(1),
-				Unbonding: ubld(2),
-				Locked:    ubld(4),
-				Liened:    ubld(8),
-			},
-			newLien: 7,
-		},
-		{
-			name: "insufficient bonded",
-			state: keeper.AccountState{
-				Total:     ubld(15),
-				Bonded:    ubld(1),
-				Unbonding: ubld(2),
-				Locked:    ubld(4),
-				Liened:    ubld(8),
-			},
-			newLien:  9,
-			wantFail: true,
-		},
-		{
-			name: "unbonding not good enough",
-			state: keeper.AccountState{
-				Total:     ubld(15),
-				Bonded:    ubld(0),
-				Unbonding: ubld(15),
-				Locked:    ubld(0),
-				Liened:    ubld(8),
-			},
-			newLien:  9,
-			wantFail: true,
-		},
-		{
-			name: "locked ok",
-			state: keeper.AccountState{
-				Total:     ubld(15),
-				Bonded:    ubld(15),
-				Unbonding: ubld(0),
-				Locked:    ubld(15),
-				Liened:    ubld(0),
-			},
-			newLien: 1,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := sdk.Context{}
-			ctlCtx := &vm.ControllerContext{Context: ctx}
-			keeper := mockLienKeeper{
-				states: map[string]keeper.AccountState{
-					addr1: tt.state,
-				},
-			}
-			ph := NewPortHandler(&keeper)
-			msg := portMessage{
-				Type:    "LIEN_SET_LIENED",
-				Address: addr1,
-				Denom:   "ubld",
-				Amount:  i(tt.newLien),
-			}
-			jsonMsg, err := json.Marshal(&msg)
-			if err != nil {
-				t.Fatalf("cannot marshal message: %v", err)
-			}
-			reply, err := ph.Receive(ctlCtx, string(jsonMsg))
-			if err != nil {
-				if tt.wantErr {
-					return
-				}
-				t.Fatalf("receive Error: %v", err)
-			}
-			if tt.wantErr {
-				t.Fatalf("wanted error, got %v", reply)
-			}
-			var succ bool
-			err = json.Unmarshal([]byte(reply), &succ)
-			if err != nil {
-				t.Fatalf("cannot unmarshal reply %s: %v", reply, err)
-			}
-			if succ != !tt.wantFail {
-				t.Errorf("got result %v, want $%v", succ, !tt.wantFail)
-			}
-			wantState := tt.state
-			if !tt.wantFail {
-				wantState.Liened = sdk.NewCoins(c("ubld", tt.newLien))
-			}
-			if !reflect.DeepEqual(keeper.states[addr1], wantState) {
-				t.Errorf("bad account state %+v, want %+v", keeper.states[addr1], wantState)
-			}
-		})
-
+	ctx := sdk.Context{}
+	ctlCtx := &vm.ControllerContext{Context: ctx}
+	keeper := mockLienKeeper{}
+	ph := NewPortHandler(&keeper)
+	msg := portMessage{
+		Type:    "LIEN_SET_LIENED",
+		Address: addr1,
+		Denom:   "ubld",
+		Amount:  i(123),
+	}
+	jsonMsg, err := json.Marshal(&msg)
+	if err != nil {
+		t.Fatalf("cannot marshal message: %v", err)
+	}
+	reply, err := ph.Receive(ctlCtx, string(jsonMsg))
+	if err != nil {
+		t.Fatalf("Receive error %v", err)
+	}
+	if reply != "true" {
+		t.Fatalf("Receive returned %s, want true", reply)
+	}
+	if keeper.update.Address != addr1 {
+		t.Errorf("lien update with address %s, want %s", keeper.update.Address, addr1)
+	}
+	wantLien := sdk.NewCoins(c("ubld", 123))
+	if !agsdk.CoinsEq(keeper.update.Lien, wantLien) {
+		t.Errorf("lien update got %s, want %s", keeper.update.Lien, wantLien)
 	}
 }
 
