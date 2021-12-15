@@ -1,3 +1,5 @@
+// @ts-check
+// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
@@ -85,7 +87,7 @@
  */
 
 /**
- * @typedef {Object} PegasusConnectionState
+ * @typedef {Object} PegasusConnection
  * @property {PegasusConnectionActions} [actions]
  * @property {Address} localAddr
  * @property {Address} remoteAddr
@@ -95,5 +97,5 @@
 /**
  * @typedef {Object} PegasusConnectionKit
  * @property {ConnectionHandler} handler
- * @property {Subscription<PegasusConnectionState>} subscription
+ * @property {Subscription<PegasusConnection>} subscription
  */

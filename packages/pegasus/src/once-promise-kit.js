@@ -1,3 +1,4 @@
+// @ts-check
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@agoric/promise-kit';
 
@@ -5,12 +6,12 @@ import { makePromiseKit } from '@agoric/promise-kit';
  * Create a promise kit that will throw an exception if it is resolved or
  * rejected more than once.
  *
- * @param {() => Details} makeReinitDetails
+ * @param {DetailsToken} reinitDetails
  */
-export const makeOncePromiseKit = makeReinitDetails => {
+export const makeOncePromiseKit = reinitDetails => {
   const { promise, resolve, reject } = makePromiseKit();
 
-  let initialized = false;
+  let resolved = false;
   /**
    * @template {any[]} A
    * @template R
@@ -18,8 +19,8 @@ export const makeOncePromiseKit = makeReinitDetails => {
    * @returns {(...args: A) => R}
    */
   const onceOnly = fn => (...args) => {
-    assert(!initialized, makeReinitDetails());
-    initialized = true;
+    assert(!resolved, reinitDetails);
+    resolved = true;
     return fn(...args);
   };
 

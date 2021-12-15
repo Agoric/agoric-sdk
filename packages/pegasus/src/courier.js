@@ -1,8 +1,9 @@
+// @ts-check
 import { details as X } from '@agoric/assert';
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
@@ -10,7 +11,7 @@ import { makeOncePromiseKit } from './once-promise-kit.js';
  *
  * @template K
  * @param {K} key
- * @param {Store<K, PromiseRecord<Courier>>} keyToCourierPK
+ * @param {LegacyMap<K, PromiseRecord<Courier>>} keyToCourierPK
  */
 export const getCourierPK = (key, keyToCourierPK) => {
   if (keyToCourierPK.has(key)) {
@@ -19,7 +20,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
 
   // This is the first packet for this denomination.
   // Create a new Courier promise kit for it.
-  const courierPK = makeOncePromiseKit(() => X`${key} already pegged`);
+  const courierPK = makeOncePromiseKit(X`${key} already pegged`);
 
   keyToCourierPK.init(key, courierPK);
   return courierPK;

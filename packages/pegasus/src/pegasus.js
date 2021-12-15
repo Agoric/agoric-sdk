@@ -35,11 +35,11 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @typedef {Object} LocalDenomState
    * @property {Address} localAddr
    * @property {Address} remoteAddr
-   * @property {Store<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
+   * @property {LegacyMap<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
    * @property {IterationObserver<Denom>} remoteDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription
    * @property {number} lastDenomNonce
-   * @property {(reason?: any) => void} abort
+   * @property {(reason: CloseReason) => void} abort
    */
 
   let lastLocalIssuerNonce = 0;
@@ -56,6 +56,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * @type {LegacyWeakMap<Peg, LocalDenomState>}
    */
+  // Legacy because Mappings mix functions and data
   const pegToDenomState = makeLegacyWeakMap('Peg');
 
   /**
@@ -106,12 +107,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
     const pegs = new Set();
 
     /** @type {PegasusConnectionActions} */
-    const pegasusConnectionActions = {
+    const pegasusConnectionActions = Far('pegasusConnectionActions', {
       async rejectStuckTransfers(remoteDenom) {
         checkAbort();
         const { remoteDenomToCourierPK } = localDenomState;
 
         const { reject, promise } = remoteDenomToCourierPK.get(remoteDenom);
+        // If rejected, the rejection is returned to our caller, so we have
+        // handled it correctly and that flow doesn't need to trigger an
+        // additional UnhandledRejectionWarning in our vat.
         promise.catch(() => {});
         reject(assert.error(X`${remoteDenom} is temporarily unavailable`));
 
@@ -253,8 +257,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
           pegToDenomState.delete(peg);
         });
       },
-    };
-    return Far('pegasusConnectionActions', pegasusConnectionActions);
+    });
+    return pegasusConnectionActions;
   };
 
   return Far('pegasus', {
@@ -266,13 +270,13 @@ const makePegasus = (zcf, board, namesByAddress) => {
      */
     makePegasusConnectionKit(transferProtocol = DEFAULT_TRANSFER_PROTOCOL) {
       /**
-       * @type {WeakStore<Connection, LocalDenomState>}
+       * @type {LegacyWeakMap<Connection, LocalDenomState>}
        */
       // Legacy because the value contains a JS Set
       const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
 
       /**
-       * @type {SubscriptionRecord<PegasusConnectionState>}
+       * @type {SubscriptionRecord<PegasusConnection>}
        */
       const {
         subscription: connectionSubscription,
@@ -282,7 +286,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       /** @type {ConnectionHandler} */
       const handler = {
         async onOpen(c, localAddr, remoteAddr) {
-          // Register C with the table of Peg receivers.
+          // Register `c` with the table of Peg receivers.
           const {
             subscription: remoteDenomSubscription,
             publication: remoteDenomPublication,
@@ -303,7 +307,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             },
           };
 
-          // The courier is the only thing that we use to send messages to C.
+          // The courier is the only thing that we use to send messages to `c`.
           const makeCourier = makeCourierMaker(c);
           const actions = makePegasusConnectionActions({
             localDenomState,
@@ -313,7 +317,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
           connectionToLocalDenomState.init(c, localDenomState);
 
-          /** @type {PegasusConnectionState} */
+          /** @type {PegasusConnection} */
           const state = harden({
             localAddr,
             remoteAddr,
@@ -353,7 +357,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
           );
         },
         async onClose(c) {
-          // Unregister C.  Pending transfers will be rejected by the Network API.
+          // Unregister `c`.  Pending transfers will be rejected by the Network
+          // API.
           const {
             remoteDenomPublication,
             remoteDenomToCourierPK,
@@ -364,19 +369,19 @@ const makePegasus = (zcf, board, namesByAddress) => {
           connectionToLocalDenomState.delete(c);
           const err = assert.error(X`pegasusConnectionHandler closed`);
           remoteDenomPublication.fail(err);
-          /** @type {PegasusConnectionState} */
+          /** @type {PegasusConnection} */
           const state = harden({
             localAddr,
             remoteAddr,
           });
           connectionPublication.updateState(state);
-          remoteDenomToCourierPK.values().forEach(courierPK => {
+          for (const courierPK of remoteDenomToCourierPK.values()) {
             try {
               courierPK.reject(err);
             } catch (e) {
               // Already resolved/rejected, so ignore.
             }
-          });
+          }
           abort(err);
         },
       };
