@@ -7,7 +7,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/loc/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 var (
@@ -22,21 +21,6 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{keeper: keeper}
 }
 
-/*
-A new LoC state is valid if:
-
-
-
-*/
-
-func (ms msgServer) validateCollateral(ctx sdk.Context, collateral sdk.Coin) error {
-	bondDenom := ms.keeper.BondDenom(ctx)
-	if collateral.Denom != bondDenom {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "collateral denom %s should be bond denom %s", collateral.Denom, bondDenom)
-	}
-	return nil
-}
-
 func (ms msgServer) UpdateLoc(goCtx context.Context, msg *types.MsgUpdateLoc) (*types.MsgUpdateLocResponse, error) {
 	keeper := ms.keeper
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -45,30 +29,46 @@ func (ms msgServer) UpdateLoc(goCtx context.Context, msg *types.MsgUpdateLoc) (*
 		panic(err) // should have been picked up in static checks
 	}
 	params := keeper.GetParams(ctx)
-	ratio := params.StandaloneRatio // loan amount per collateral
+	ratio := params.StandaloneRatio
 	if ratio == nil {
 		return nil, ErrStandaloneLocDisabled
 	}
 
-	// can always zero out the
-	// check collateral denomination
-	if err := ms.validateCollateral(ctx, *msg.Collateral); err != nil {
-		return nil, err
-	}
-	maxLoan := ratio.Amount.Mul(msg.Collateral.Amount.ToDec()).RoundInt()
-
-	// check loan
-	collateralAmt := msg.NewLoan.Amount.ToDec().QuoRoundUp(ratio.Amount).RoundInt()
-	stakingDenom := keeper.BondDenom(ctx)
-	collateral := sdk.NewCoin(stakingDenom, collateralAmt)
+	oldLoc := keeper.GetLoc(ctx, addr)
 	newLoc := types.Loc{
-		Collateral: &collateral,
-		Loan:       msg.NewLoan,
+		Collateral: msg.Collateral,
+		Loan:       msg.Loan,
 	}
 
-	err = keeper.UpdateLoc(ctx, addr, *msg.CurrentLoc, newLoc)
-	if err != nil {
+	if err = keeper.UpdateLoc(ctx, addr, oldLoc, newLoc); err != nil {
 		return nil, err
 	}
-	return &types.MsgUpdateStandaloneLocResponse{}, nil
+
+	return &types.MsgUpdateLocResponse{}, nil
+}
+
+func (ms msgServer) UpdateLocLoan(goCtx context.Context, msg *types.MsgUpdateLocLoan) (*types.MsgUpdateLocLoanResponse, error) {
+	keeper := ms.keeper
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	addr, err := sdk.AccAddressFromBech32(msg.GetAddress())
+	if err != nil {
+		panic(err) // should have been picked up in static checks
+	}
+	params := keeper.GetParams(ctx)
+	ratio := params.StandaloneRatio
+	if ratio == nil {
+		return nil, ErrStandaloneLocDisabled
+	}
+
+	oldLoc := keeper.GetLoc(ctx, addr)
+	newLoc := types.Loc{
+		Collateral: oldLoc.Collateral,
+		Loan:       msg.Loan,
+	}
+
+	if err := keeper.UpdateLoc(ctx, addr, oldLoc, newLoc); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateLocLoanResponse{}, nil
 }
