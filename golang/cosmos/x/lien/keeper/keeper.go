@@ -1,8 +1,10 @@
 package keeper
 
 import (
+	"fmt"
 	"math"
 
+	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -11,12 +13,18 @@ import (
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+var (
+	coinsEq  = agsdk.CoinsEq
+	coinsLTE = agsdk.CoinsLTE
+)
+
 type Keeper interface {
 	GetAccountWrapper() types.AccountWrapper
 	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
-	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState
+	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error
+	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
 	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
 	GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool)
@@ -98,34 +106,32 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 	}
 }
 
-// AccountState represents the abstract state of an account.
-// See ../spec/01_concepts.md for details.
-type AccountState struct {
-	Total     sdk.Coins `json:"total"`
-	Bonded    sdk.Coins `json:"bonded"`
-	Unbonding sdk.Coins `json:"unbonding"`
-	Locked    sdk.Coins `json:"locked"`
-	Liened    sdk.Coins `json:"liened"`
-}
-
-// IsEqual returns whether two AccountStates are equal.
-// (Coins don't play nicely with equality (==) or reflect.DeepEqual().)
-func (s AccountState) IsEqual(other AccountState) bool {
-	return s.Total.IsEqual(other.Total) &&
-		s.Bonded.IsEqual(other.Bonded) &&
-		s.Unbonding.IsEqual(other.Unbonding) &&
-		s.Locked.IsEqual(other.Locked) &&
-		s.Liened.IsEqual(other.Liened)
+func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error {
+	oldLien := lk.GetLien(ctx, addr)
+	if coinsEq(newLien.Coins, oldLien.Coins) {
+		// no-op, no need to do anything
+		return nil
+	}
+	if !coinsLTE(newLien.Coins, oldLien.Coins) {
+		// see if it's okay to increase the lien
+		state := lk.GetAccountState(ctx, addr)
+		if !coinsLTE(newLien.Coins, state.Bonded) {
+			diff := newLien.Coins.Sub(agsdk.CoinsMin(newLien.Coins, oldLien.Coins))
+			return fmt.Errorf("new lien higher than bonded amount by %s", diff)
+		}
+	}
+	lk.SetLien(ctx, addr, newLien)
+	return nil
 }
 
 // GetAccountState retrieves the AccountState for addr.
-func (lk keeperImpl) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState {
+func (lk keeperImpl) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState {
 	bonded := lk.getBonded(ctx, addr)
 	unbonding := lk.getUnbonding(ctx, addr)
 	locked := lk.getLocked(ctx, addr)
 	liened := lk.GetLien(ctx, addr).Coins
 	total := lk.bankKeeper.GetAllBalances(ctx, addr).Add(bonded...).Add(unbonding...)
-	return AccountState{
+	return types.AccountState{
 		Total:     total,
 		Bonded:    bonded,
 		Unbonding: unbonding,

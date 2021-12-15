@@ -71,7 +71,7 @@ var _ authtypes.GenesisAccount = &LienAccount{}
 func (la *LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 	wrappedLocked := la.omniVestingAccount.LockedCoins(ctx)
 	lienedLocked := la.LienedLockedCoins(ctx)
-	return agsdk.MaxCoins(wrappedLocked, lienedLocked)
+	return agsdk.CoinsMax(wrappedLocked, lienedLocked)
 }
 
 // Returns the coins which are locked for lien encumbrance.
@@ -88,7 +88,7 @@ func computeLienLocked(liened, bonded, unbonding sdk.Coins) sdk.Coins {
 	// subtract the subtrahend:
 	//    max(0, A - B) = max(B, A) - B
 	subtrahend := bonded.Add(unbonding...)
-	return agsdk.MaxCoins(subtrahend, liened).Sub(subtrahend)
+	return agsdk.CoinsMax(subtrahend, liened).Sub(subtrahend)
 }
 
 // XXX_MessageName provides the message name for JSON serialization.
