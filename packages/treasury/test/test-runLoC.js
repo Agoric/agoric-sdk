@@ -16,6 +16,16 @@ import { ParamType } from '@agoric/governance';
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
+/**
+ * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
+/** @typedef {Unpromise<ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>>} StartAttestationResult */
+/** @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit */
+
+const { assign, entries, fromEntries, keys, values } = Object;
+const { details: X } = assert;
+
 const genesisBldBalances = {
   agoric30: 30n,
   agoric100: 100n,
@@ -28,14 +38,31 @@ const genesisBldBalances = {
 };
 
 /**
- * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
- * @template T
+ * @param {Brand} uBrand
  */
-/** @typedef {Unpromise<ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>>} StartAttestationResult */
-/** @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit */
-
-const { assign, entries, fromEntries, keys, values } = Object;
-const { details: X } = assert;
+const mockBridge = uBrand => {
+  /** @param { bigint } v */
+  const ubld = v => AmountMath.make(uBrand, v);
+  let currentTime = 50n;
+  return Far('stakeReporter', {
+    /**
+     * @param { string } address
+     * @param { Brand } brand
+     */
+    getAccountState: (address, brand) => {
+      assert(brand === uBrand, X`unexpected brand: ${brand}`);
+      assert(address in genesisBldBalances, X`no such account: ${address}`);
+      const balance = genesisBldBalances[address];
+      currentTime += 10n;
+      return harden({
+        total: ubld(balance + 5n),
+        bonded: ubld(balance),
+        locked: ubld(0n),
+        currentTime,
+      });
+    },
+  });
+};
 
 /**
  * @param {Record<string, V>} obj
@@ -119,37 +146,10 @@ test('RUN mint access', async t => {
 });
 
 /**
- * @param {Brand} uBrand
- */
-const makeStakeReporter = uBrand => {
-  /** @param { bigint } v */
-  const ubld = v => AmountMath.make(uBrand, v);
-  let currentTime = 50n;
-  return Far('stakeReporter', {
-    /**
-     * @param { string } address
-     * @param { Brand } brand
-     */
-    getAccountState: (address, brand) => {
-      assert(brand === uBrand, X`unexpected brand: ${brand}`);
-      assert(address in genesisBldBalances, X`no such account: ${address}`);
-      const balance = genesisBldBalances[address];
-      currentTime += 10n;
-      return harden({
-        total: ubld(balance + 5n),
-        bonded: ubld(balance),
-        locked: ubld(0n),
-        currentTime,
-      });
-    },
-  });
-};
-
-/**
  * @param {Bundle} bundle
  * @param {ERef<ZoeService>} zoe
  * @param {{issuer: Issuer, brand: Brand}} bld
- * @param {ReturnType<typeof makeStakeReporter>} reporter
+ * @param {ReturnType<typeof mockBridge>} reporter
  */
 const bootstrapAttestation = async (bundle, zoe, bld, reporter) => {
   const installation = await E(zoe).install(bundle);
@@ -198,7 +198,7 @@ test('start attestation', async t => {
     bundles.attestation,
     zoe,
     bld,
-    makeStakeReporter(bld.brand),
+    mockBridge(bld.brand),
   );
 
   const attMaker = provision('agoric3k').attMaker;
@@ -343,7 +343,7 @@ const testLoC = (
       bundles.attestation,
       zoe,
       bld,
-      makeStakeReporter(bld.brand),
+      mockBridge(bld.brand),
     );
 
     // start RUN LoC
