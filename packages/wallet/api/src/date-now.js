@@ -29,17 +29,28 @@ export const makeTimerServiceDateNow = (
   /** @type {PromiseRecord<typeof dateNow>} */
   const dateNowPK = makePromiseKit();
 
-  // Subscribe to a notifier that will poll the local timer service
-  // regularly.
-  const timerNotifier = E(timerService).makeNotifier(0n, timerPollInterval);
+  // Observe the timer service regularly.
+  const observeTimer = async () => {
+    const observer = {
+      updateState(stamp) {
+        lastPolledStamp = parseInt(`${stamp}`, 10);
+        dateNowPK.resolve(dateNow);
+      },
+    };
 
-  // Begin observing the notifier.
-  observeNotifier(timerNotifier, {
-    updateState(stamp) {
-      lastPolledStamp = parseInt(`${stamp}`, 10);
-      dateNowPK.resolve(dateNow);
-    },
-  }).catch(e => dateNowPK.reject(e));
+    // Check the current timestamp.
+    const stamp = await E(timerService).getCurrentTimestamp();
+    observer.updateState(stamp);
+
+    // Subscribe to a notifier that will poll the local timer service
+    // regularly.
+    const timerNotifier = E(timerService).makeNotifier(0n, timerPollInterval);
+
+    // Begin observing the notifier.
+    await observeNotifier(timerNotifier, observer);
+  };
+
+  observeTimer().catch(e => dateNowPK.reject(e));
 
   // Return the dateNow function after the notifier fires at least once.
   return dateNowPK.promise;
