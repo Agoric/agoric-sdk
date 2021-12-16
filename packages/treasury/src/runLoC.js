@@ -97,15 +97,14 @@ export const makeLineOfCreditKit = (
       );
       debtAmount = AmountMath.add(debtAmount, proposal.want.RUN);
       runMint.mintGains(proposal.want, seat);
-      seat.exit();
     } else if (proposal.give.RUN) {
       const toPay = minAmt(proposal.give.RUN, debtAmount);
       debtAmount = AmountMath.subtract(debtAmount, toPay);
       runMint.burnLosses(harden({ RUN: toPay }), seat);
-      seat.exit();
     } else {
-      throw seat.fail(Error('not implemented @@@TODO'));
+      throw seat.fail(Error('only RUN balance can be adjusted'));
     }
+    seat.exit();
     updateUiState();
     return 'balance adjusted';
   };

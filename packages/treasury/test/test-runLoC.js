@@ -1,18 +1,17 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { resolve as metaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { E } from '@agoric/eventual-send';
 import { Far, makeLoopback } from '@agoric/captp';
-import { resolve as metaResolve } from 'import-meta-resolve';
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-// import { makeLoopback } from '@agoric/captp';
-
 import { ParamType } from '@agoric/governance';
+
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
@@ -310,9 +309,9 @@ const testLoC = (
 ) => {
   const todo = fromEntries(
     entries({
-      decreaseLien: liened.delta < 0n && borrowed.after !== 0n,
+      adjustLien:
+        liened.before !== 0n && liened.delta !== 0n && borrowed.after !== 0n,
       collateralizationRatioChange: !!cr.after,
-      increaseLien: liened.before > 0n && liened.delta > 0n,
       failing: !!description.match(/FAIL/),
       unbonded: !!description.match(/unbonded/),
     }).filter(([_why, cond]) => cond),
@@ -406,14 +405,14 @@ const testLoC = (
         : getReturnableAttestation());
       // t.log({ attPmt });
 
-      // Offer the attestation in exchange for RUN
-      t.log({
-        give: { Attestation: attAmt },
-        want: { RUN: run(runValue) },
-        collateralPrice,
-        collateralizationRatio,
-      });
+      // t.log({
+      //   give: { Attestation: attAmt },
+      //   want: { RUN: run(runValue) },
+      //   collateralPrice,
+      //   collateralizationRatio,
+      // });
 
+      // Offer the attestation in exchange for RUN
       const seat = await E(zoe).offer(
         lineOfCreditInvitation,
         harden({
