@@ -13,6 +13,7 @@ import {
 
 const { details: X } = assert;
 
+/** CreditTerms are the parameters subject to governance. */
 export const CreditTerms = {
   CollateralPrice: 'CollateralPrice',
   CollateralizationRatio: 'CollateralizationRatio',
@@ -20,90 +21,91 @@ export const CreditTerms = {
   // TODO: LoanFee
 };
 
+/**
+ * @param {Amount} x
+ * @param {Amount} y
+ */
 const minAmt = (x, y) => (AmountMath.isGTE(x, y) ? y : x);
 
 /**
+ * Make line of credit subject to creditPolicy.
+ *
  * @param {ContractFacet} zcf
- * @param {ZCFSeat} vaultSeat
- * @param {CreditPolicy} creditPolicy
- * @param {Amount} initialDebtAmount
- * @param {Amount} attestationGiven
- * @param {Amount} amountLiened
+ * @param {ZCFSeat} startSeat
+ * @param {ReturnType<makeCreditPolicy>} creditPolicy
  * @param { ZCFMint } runMint
- * @typedef { ReturnType<makeCreditPolicy>} CreditPolicy
- * @typedef { 'active' | 'closed' } LineOfCreditState
- * @typedef {{
- *   liened: Amount,
- *   debt: Amount,
- *   collateralizationRatio: Ratio,
- *   vaultState: LineOfCreditState,
- * }} RunLoCUIState
+ * @param { Brand } runBrand
+ * @returns { LineOfCreditKit } following the wallet invitationMakers pattern
+ * @throws if startSeat proposal is not consistent with creditPolicy
  */
 export const makeLineOfCreditKit = (
   zcf,
-  vaultSeat,
+  startSeat,
   creditPolicy,
-  initialDebtAmount,
-  attestationGiven,
-  amountLiened,
   runMint,
+  runBrand,
 ) => {
-  let debtAmount = initialDebtAmount;
+  const {
+    runWanted,
+    attestationGiven,
+    amountLiened,
+  } = creditPolicy.checkOpenProposal(startSeat);
+  let closed = false;
 
-  const runBrand = initialDebtAmount.brand;
-  const zeroRun = AmountMath.makeEmpty(runBrand);
+  const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
+  vaultSeat.incrementBy(
+    startSeat.decrementBy(harden({ Attestation: attestationGiven })),
+  );
+  /** NOTE: debtAmount corresponds exactly to minted RUN. */
+  runMint.mintGains(harden({ RUN: runWanted }), startSeat);
+  let debtAmount = runWanted;
+  zcf.reallocate(startSeat, vaultSeat);
+  startSeat.exit();
 
-  /** @type { LineOfCreditState } */
-  let vaultState = 'active';
-  function assertVaultIsOpen() {
-    assert(vaultState === 'active', X`line of credit must still be active`);
-  }
-
-  /** @type {NotifierRecord<RunLoCUIState>} */
+  /** @type {NotifierRecord<BaseUIState>} */
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
-  // call this whenever anything changes!
+  /** call this whenever anything changes! */
   const updateUiState = async () => {
     const { collateralizationRatio } = creditPolicy.getCurrentTerms();
 
     const uiState = harden({
       // TODO: interestRate: manager.getInterestRate(),
-      liened: amountLiened,
+      locked: amountLiened,
       debt: debtAmount,
       collateralizationRatio,
-      vaultState,
     });
 
-    switch (vaultState) {
-      case 'active':
-        uiUpdater.updateState(uiState);
-        break;
-      case 'closed':
-        uiUpdater.finish(uiState);
-        break;
-      default:
-        throw Error(`unreachable vaultState: ${vaultState}`);
+    if (closed) {
+      uiUpdater.finish(uiState);
+    } else {
+      uiUpdater.updateState(uiState);
     }
   };
 
-  /** @type {OfferHandler} */
+  /**
+   * Adjust RUN balance up (subject to credit limit) or down.
+   *
+   * @type {OfferHandler}
+   */
   const adjustBalances = seat => {
-    assertVaultIsOpen();
+    assert(!closed, X`line of credit must still be active`);
+
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
-      creditPolicy.checkBorrow(
+      debtAmount = creditPolicy.checkBorrow(
         vaultSeat.getAmountAllocated('Attestation'),
         AmountMath.add(debtAmount, proposal.want.RUN),
-      );
-      debtAmount = AmountMath.add(debtAmount, proposal.want.RUN);
+      ).runWanted;
       runMint.mintGains(proposal.want, seat);
     } else if (proposal.give.RUN) {
       const toPay = minAmt(proposal.give.RUN, debtAmount);
-      debtAmount = AmountMath.subtract(debtAmount, toPay);
       runMint.burnLosses(harden({ RUN: toPay }), seat);
+      debtAmount = AmountMath.subtract(debtAmount, toPay);
     } else {
       throw seat.fail(Error('only RUN balance can be adjusted'));
     }
+
     seat.exit();
     updateUiState();
     return 'balance adjusted';
@@ -115,7 +117,7 @@ export const makeLineOfCreditKit = (
    * @type {OfferHandler}
    */
   const close = seat => {
-    assertVaultIsOpen();
+    assert(!closed, X`line of credit must still be active`);
     assertProposalShape(seat, {
       give: { RUN: null },
       want: { Attestation: null },
@@ -126,21 +128,18 @@ export const makeLineOfCreditKit = (
       vaultSeat.decrementBy(harden({ Attestation: attestationGiven })),
     );
 
-    zcf.reallocate(seat, vaultSeat); // COMMIT POINT
+    zcf.reallocate(seat, vaultSeat);
 
     runMint.burnLosses(harden({ RUN: debtAmount }), vaultSeat);
     seat.exit();
-    debtAmount = zeroRun;
-    vaultState = 'closed';
+    debtAmount = AmountMath.makeEmpty(runBrand);
+    closed = true;
     updateUiState();
 
     return 'RUN line of credit closed';
   };
 
   const vault = Far('line of credit', {
-    makeAdjustBalancesInvitation: () =>
-      zcf.makeInvitation(adjustBalances, 'AdjustBalances'),
-    makeCloseInvitation: () => zcf.makeInvitation(close, 'CloseVault'),
     getCollateralAmount: () => amountLiened,
     getDebtAmount: () => debtAmount,
   });
@@ -149,8 +148,9 @@ export const makeLineOfCreditKit = (
   return harden({
     uiNotifier: notifier,
     invitationMakers: Far('invitation makers', {
-      AdjustBalances: vault.makeAdjustBalancesInvitation,
-      CloseVault: vault.makeCloseInvitation,
+      AdjustBalances: () =>
+        zcf.makeInvitation(adjustBalances, 'AdjustBalances'),
+      CloseVault: () => zcf.makeInvitation(close, 'CloseVault'),
     }),
     vault,
   });
@@ -161,6 +161,7 @@ export const makeLineOfCreditKit = (
  * @param {(name: string) => unknown} getParamValue
  */
 const makeCreditPolicy = (brands, getParamValue) => {
+  // TODO: consolidate getRatio with updated governance API
   /** @param { string } name */
   const getRatio = name => {
     const x = getParamValue(name);
@@ -252,29 +253,7 @@ const start = async (zcf, { feeMintAccess }) => {
 
   /** @type { OfferHandler } */
   const makeLineOfCreditHook = seat => {
-    const {
-      runWanted,
-      attestationGiven,
-      amountLiened,
-    } = creditPolicy.checkOpenProposal(seat);
-
-    const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
-    runMint.mintGains(harden({ RUN: runWanted }), seat);
-    vaultSeat.incrementBy(
-      seat.decrementBy(harden({ Attestation: attestationGiven })),
-    );
-    zcf.reallocate(seat, vaultSeat);
-    seat.exit();
-
-    return makeLineOfCreditKit(
-      zcf,
-      vaultSeat,
-      creditPolicy,
-      runWanted,
-      attestationGiven,
-      amountLiened,
-      runMint,
-    );
+    return makeLineOfCreditKit(zcf, seat, creditPolicy, runMint, runBrand);
   };
 
   const publicFacet = wrapPublicFacet(

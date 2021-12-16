@@ -528,8 +528,7 @@ const testLoC = (
       t.deepEqual(state.value, {
         collateralizationRatio,
         debt: run(borrowed.after),
-        liened: AmountMath.make(bld.brand, liened.after),
-        vaultState: 'active',
+        locked: AmountMath.make(bld.brand, liened.after),
       });
     };
 
