@@ -1,10 +1,6 @@
 // @ts-check
 
 /**
- * @typedef {ReturnType<typeof import('./runLoC.js').makeLineOfCreditKit>} LineOfCreditKit
- */
-
-/**
  * @typedef  {Object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
  * @property {() => Invitation} makeSwapInvitation
@@ -61,12 +57,17 @@
  */
 
 /**
- * @typedef {Object} UIState
- * @property {Ratio} interestRate Annual interest rate charge
- * @property {Ratio} liquidationRatio
+ * @typedef {Object} BaseUIState
  * @property {Amount} locked Amount of Collateral locked
  * @property {Amount} debt Amount of Loan (including accrued interest)
  * @property {Ratio} collateralizationRatio
+ */
+
+/**
+ * @typedef {BaseUIState & LiquidationUIMixin} UIState
+ * @typedef {Object} LiquidationUIMixin
+ * @property {Ratio} interestRate Annual interest rate charge
+ * @property {Ratio} liquidationRatio
  * @property {boolean} liquidated boolean showing whether liquidation occurred
  */
 
@@ -123,13 +124,26 @@
  */
 
 /**
- * @typedef {Object} Vault
- * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
- * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @typedef {Object} BaseVault
  * @property {() => Amount} getCollateralAmount
  * @property {() => Amount} getDebtAmount
+ *
+ * @typedef {BaseVault & VaultMixin} Vault
+ * @typedef {Object} VaultMixin
+ * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
+ * @property {() => Promise<Invitation>} makeCloseInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Promise<string>} getLiquidationPromise
+ */
+
+/**
+ * @typedef {Object} LineOfCreditKit
+ * @property {Notifier<BaseUIState>} uiNotifier
+ * @property {BaseVault} vault
+ * @property {{
+ *    AdjustBalances: () => Promise<Invitation>,
+ *    CloseVault: () => Promise<Invitation>,
+ *  }} invitationMakers
  */
 
 /**

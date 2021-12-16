@@ -1,20 +1,78 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { resolve as metaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { E } from '@agoric/eventual-send';
 import { Far, makeLoopback } from '@agoric/captp';
-import { resolve as metaResolve } from 'import-meta-resolve';
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-// import { makeLoopback } from '@agoric/captp';
-
 import { ParamType } from '@agoric/governance';
+
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
+
+const contractRoots = {
+  runLoC: '../src/runLoC.js',
+  attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
+  electorate: '@agoric/governance/src/noActionElectorate.js',
+  governor: '@agoric/governance/src/contractGovernor.js',
+  faker: './attestationFaker.js',
+};
+
+const { assign, entries, fromEntries, keys, values } = Object;
+const { details: X } = assert;
+
+const Collect = {
+  /**
+   * @param {Record<string, V>} obj
+   * @param {(v: V) => U} f
+   * @returns {Record<string, U>}
+   * @template V
+   * @template U
+   */
+  mapValues: (obj, f) => fromEntries(entries(obj).map(([p, v]) => [p, f(v)])),
+  /**
+   * @param {X[]} xs
+   * @param {Y[]} ys
+   * @returns {[X, Y][]}
+   * @template X
+   * @template Y
+   */
+  zip: (xs, ys) => xs.map((x, i) => [x, ys[i]]),
+  /**
+   * @param {Record<string, ERef<V>>} obj
+   * @returns {Promise<Record<string, V>>}
+   * @template V
+   */
+  allValues: async obj =>
+    fromEntries(Collect.zip(keys(obj), await Promise.all(values(obj)))),
+};
+
+test.before(async t => {
+  /** @param { string } ref */
+  const asset = async ref =>
+    new URL(await metaResolve(ref, import.meta.url)).pathname;
+
+  t.log('bundling...', contractRoots);
+  const bundles = await Collect.allValues(
+    Collect.mapValues(contractRoots, spec => asset(spec).then(bundleSource)),
+  );
+  t.log(
+    'bundled:',
+    Collect.mapValues(bundles, b => b.endoZipBase64.length),
+  );
+  assign(t.context, { bundles });
+});
+
+/**
+ * @param {{ context: unknown }} t
+ * @returns { Record<string, Bundle> }
+ */
+const theBundles = t => /** @type { any } */ (t.context).bundles;
 
 const genesisBldBalances = {
   agoric30: 30n,
@@ -28,63 +86,31 @@ const genesisBldBalances = {
 };
 
 /**
- * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
- * @template T
+ * @param {Brand} stakingBrand
  */
-/** @typedef {Unpromise<ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>>} StartAttestationResult */
-/** @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit */
-
-const { assign, entries, fromEntries, keys, values } = Object;
-const { details: X } = assert;
-
-/**
- * @param {Record<string, V>} obj
- * @param {(v: V) => U} f
- * @returns {Record<string, U>}
- * @template V
- * @template U
- */
-const mapValues = (obj, f) =>
-  fromEntries(entries(obj).map(([p, v]) => [p, f(v)]));
-/**
- * @param {X[]} xs
- * @param {Y[]} ys
- * @returns {[X, Y][]}
- * @template X
- * @template Y
- */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-/**
- * @param {Record<string, ERef<V>>} obj
- * @returns {Promise<Record<string, V>>}
- * @template V
- */
-const allValues = async obj =>
-  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
-
-/** @param { string } ref */
-const asset = async ref =>
-  new URL(await metaResolve(ref, import.meta.url)).pathname;
-
-const contractRoots = {
-  runLoC: '../src/runLoC.js',
-  attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
-  electorate: '@agoric/governance/src/noActionElectorate.js',
-  governor: '@agoric/governance/src/contractGovernor.js',
-  faker: './attestationFaker.js',
+const mockBridge = stakingBrand => {
+  /** @param { bigint } v */
+  const ubld = v => AmountMath.make(stakingBrand, v);
+  let currentTime = 50n;
+  return Far('stakeReporter', {
+    /**
+     * @param { string } address
+     * @param { Brand } brand
+     */
+    getAccountState: (address, brand) => {
+      assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
+      assert(address in genesisBldBalances, X`no such account: ${address}`);
+      const balance = genesisBldBalances[address];
+      currentTime += 10n;
+      return harden({
+        total: ubld(balance + 5n),
+        bonded: ubld(balance),
+        locked: ubld(0n),
+        currentTime,
+      });
+    },
+  });
 };
-
-test.before(async t => {
-  t.log('bundling...', contractRoots);
-  const bundles = await allValues(
-    mapValues(contractRoots, spec => asset(spec).then(bundleSource)),
-  );
-  t.log(
-    'bundled:',
-    mapValues(bundles, b => b.endoZipBase64.length),
-  );
-  assign(t.context, { bundles });
-});
 
 const bootstrapZoeAndRun = async () => {
   let testJig;
@@ -119,37 +145,19 @@ test('RUN mint access', async t => {
 });
 
 /**
- * @param {Brand} uBrand
+ * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
+ * @template T
  */
-const makeStakeReporter = uBrand => {
-  /** @param { bigint } v */
-  const ubld = v => AmountMath.make(uBrand, v);
-  let currentTime = 50n;
-  return Far('stakeReporter', {
-    /**
-     * @param { string } address
-     * @param { Brand } brand
-     */
-    getAccountState: (address, brand) => {
-      assert(brand === uBrand, X`unexpected brand: ${brand}`);
-      assert(address in genesisBldBalances, X`no such account: ${address}`);
-      const balance = genesisBldBalances[address];
-      currentTime += 10n;
-      return harden({
-        total: ubld(balance + 5n),
-        bonded: ubld(balance),
-        locked: ubld(0n),
-        currentTime,
-      });
-    },
-  });
-};
 
 /**
  * @param {Bundle} bundle
  * @param {ERef<ZoeService>} zoe
  * @param {{issuer: Issuer, brand: Brand}} bld
- * @param {ReturnType<typeof makeStakeReporter>} reporter
+ * @param {ReturnType<typeof mockBridge>} reporter
+ *
+ * @typedef {Unpromise<
+ *   ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>
+ * >} StartAttestationResult
  */
 const bootstrapAttestation = async (bundle, zoe, bld, reporter) => {
   const installation = await E(zoe).install(bundle);
@@ -192,13 +200,12 @@ test('start attestation', async t => {
   const micro = harden({ decimalPlaces: 6 });
   const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
-  /** @type { Record<string, Bundle> } */
-  const bundles = /** @type {any} */ (t.context).bundles;
+  const { attestation: bundle } = theBundles(t);
   const { issuers, brands, provision } = await bootstrapAttestation(
-    bundles.attestation,
+    bundle,
     zoe,
     bld,
-    makeStakeReporter(bld.brand),
+    mockBridge(bld.brand),
   );
 
   const attMaker = provision('agoric3k').attMaker;
@@ -220,18 +227,20 @@ test('start attestation', async t => {
  * @param {Record<string, Bundle>} bundles
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
- * @param {Ratio} terms.collateralizationRate
+ * @param {Ratio} terms.collateralizationRatio
  * @param {Issuer} attIssuer
+ *
+ * @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit
  */
 const bootstrapRunLoC = async (
   zoe,
   timer,
   feeMintAccess,
   bundles,
-  { collateralPrice, collateralizationRate },
+  { collateralPrice, collateralizationRatio },
   attIssuer,
 ) => {
-  const installations = await allValues({
+  const installations = await Collect.allValues({
     governor: E(zoe).install(bundles.governor),
     electorate: E(zoe).install(bundles.electorate),
     runLoC: E(zoe).install(bundles.runLoC),
@@ -250,9 +259,9 @@ const bootstrapRunLoC = async (
       value: collateralPrice,
     },
     {
-      name: CreditTerms.CollateralizationRate,
+      name: CreditTerms.CollateralizationRatio,
       type: ParamType.RATIO,
-      value: collateralizationRate,
+      value: collateralizationRatio,
     },
   ]);
 
@@ -290,7 +299,9 @@ const bootstrapRunLoC = async (
  * @param {{ before: bigint, delta: bigint, after: bigint}} detail.liened
  * @param { boolean } [detail.failAttestation]
  * @param { boolean } [detail.failOffer]
- * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand) => Promise<[Amount, Payment]> } [mockAttestation]
+ * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand)
+ *            => Promise<[Amount, Payment]> } [mockAttestation]
+ *
  * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
  * @typedef { [bigint, bigint] } Rational
  */
@@ -299,7 +310,7 @@ const testLoC = (
   {
     testNum,
     description,
-    collateralizationRatio,
+    collateralizationRatio: cr,
     borrowed,
     staked,
     liened,
@@ -308,20 +319,24 @@ const testLoC = (
   },
   mockAttestation = undefined,
 ) => {
-  if (
-    (liened.delta < 0n && borrowed.after !== 0n) ||
-    collateralizationRatio.after ||
-    (liened.before > 0n && liened.delta > 0n) ||
-    borrowed.delta < 0n ||
-    description.match(/FAIL/)
-  ) {
-    test.skip(`${testNum} ${description} @@TODO`, _ => {});
+  const todo = fromEntries(
+    entries({
+      adjustLien:
+        liened.before !== 0n && liened.delta !== 0n && borrowed.after !== 0n,
+      collateralizationRatioChange: !!cr.after,
+      failing: !!description.match(/FAIL/),
+      unbonded: !!description.match(/unbonded/),
+    }).filter(([_why, cond]) => cond),
+  );
+
+  if (keys(todo).length > 0) {
+    const reasons = keys(todo).join(',');
+    test.skip(`${testNum} ${description} @@TODO ${reasons}`, _ => {});
     return;
   }
 
   test(`${testNum} ${description}`, async t => {
-    /** @type { Record<string, Bundle> } */
-    const bundles = /** @type { any } */ (t.context).bundles;
+    const bundles = theBundles(t);
 
     // Genesis: start Zoe etc.
     const { zoe, feeMintAccess, runBrand, getJig } = await bootstrapZoeAndRun();
@@ -337,20 +352,20 @@ const testLoC = (
       bundles.attestation,
       zoe,
       bld,
-      makeStakeReporter(bld.brand),
+      mockBridge(bld.brand),
     );
 
     // start RUN LoC
     const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
-    const rate = collateralizationRatio.before;
-    const collateralizationRate = makeRatio(rate[0], runBrand, rate[1]);
+    const rate = cr.before;
+    const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
     const timer = buildManualTimer(t.log, 0n, 1n);
     const { publicFacet } = await bootstrapRunLoC(
       zoe,
       timer,
       feeMintAccess,
       bundles,
-      { collateralPrice, collateralizationRate },
+      { collateralPrice, collateralizationRatio },
       attIssuer,
     );
 
@@ -400,14 +415,14 @@ const testLoC = (
         : getReturnableAttestation());
       // t.log({ attPmt });
 
-      // Offer the attestation in exchange for RUN
-      t.log({
-        give: { Attestation: attAmt },
-        want: { RUN: run(runValue) },
-        collateralPrice,
-        collateralizationRate,
-      });
+      // t.log({
+      //   give: { Attestation: attAmt },
+      //   want: { RUN: run(runValue) },
+      //   collateralPrice,
+      //   collateralizationRatio,
+      // });
 
+      // Offer the attestation in exchange for RUN
       const seat = await E(zoe).offer(
         lineOfCreditInvitation,
         harden({
@@ -431,7 +446,7 @@ const testLoC = (
       const state = await resultValue.uiNotifier.getUpdateSince();
       t.deepEqual(state.value.debt, run(runValue));
 
-      const p = await allValues(await E(seat).getPayouts());
+      const p = await Collect.allValues(await E(seat).getPayouts());
       t.deepEqual(Object.keys(p), ['Attestation', 'RUN']);
       t.deepEqual(await E(runIssuer).getAmountOf(p.RUN), run(runValue));
 
@@ -456,6 +471,7 @@ const testLoC = (
         }),
         harden({ RUN: payouts.RUN }),
       );
+      t.deepEqual(await E(seat).getOfferResult(), 'RUN line of credit closed');
       const attBack = await E(seat).getPayout('Attestation');
       const amt = await E(attIssuer).getAmountOf(attBack);
       t.deepEqual(amt, {
@@ -477,22 +493,42 @@ const testLoC = (
       } = step1;
 
       const adjustInvitation = invitationMakers.AdjustBalances();
-      const seat = await E(zoe).offer(
-        adjustInvitation,
-        harden({ want: { RUN: run(borrowed.delta) } }),
-      );
 
-      const payout = await E(seat).getPayout('RUN');
-      const amt = await E(runIssuer).getAmountOf(payout);
-      t.deepEqual(amt, run(borrowed.delta));
+      if (borrowed.delta > 0n) {
+        const seat = await E(zoe).offer(
+          adjustInvitation,
+          harden({ want: { RUN: run(borrowed.delta) } }),
+        );
+        const payout = await E(seat).getPayout('RUN');
+        const amt = await E(runIssuer).getAmountOf(payout);
+        t.deepEqual(amt, run(borrowed.delta));
+      } else {
+        const [runPayment, _rest] = await E(runIssuer).split(
+          step1.payouts.RUN,
+          run(-borrowed.delta),
+        );
+        const seat = await E(zoe).offer(
+          adjustInvitation,
+          harden({
+            give: { RUN: run(-borrowed.delta) },
+            want: {
+              Attestation: AmountMath.makeEmpty(attBrand, AssetKind.SET),
+            },
+          }),
+          harden({ RUN: runPayment }),
+        );
+        const actual = await E(attIssuer).getAmountOf(
+          E(seat).getPayout('Attestation'),
+        );
+        t.is(actual.brand, attBrand);
+      }
 
       const state = await uiNotifier.getUpdateSince();
-      t.log('@@', { state });
+      // t.log({ state });
       t.deepEqual(state.value, {
-        collateralizationRatio: collateralizationRate,
+        collateralizationRatio,
         debt: run(borrowed.after),
-        liened: AmountMath.make(bld.brand, liened.after),
-        vaultState: 'active',
+        locked: AmountMath.make(bld.brand, liened.after),
       });
     };
 
