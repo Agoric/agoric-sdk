@@ -1,10 +1,6 @@
 // @ts-check
 
 /**
- * @typedef {ReturnType<typeof import('./runLoC.js').makeLineOfCreditKit>} LineOfCreditKit
- */
-
-/**
  * @typedef  {Object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
  * @property {() => Invitation} makeSwapInvitation
