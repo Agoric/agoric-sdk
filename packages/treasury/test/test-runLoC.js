@@ -308,14 +308,20 @@ const testLoC = (
   },
   mockAttestation = undefined,
 ) => {
-  if (
-    (liened.delta < 0n && borrowed.after !== 0n) ||
-    collateralizationRatio.after ||
-    (liened.before > 0n && liened.delta > 0n) ||
-    borrowed.delta < 0n ||
-    description.match(/FAIL/)
-  ) {
-    test.skip(`${testNum} ${description} @@TODO`, _ => {});
+  const todo = fromEntries(
+    entries({
+      decreaseLien: liened.delta < 0n && borrowed.after !== 0n,
+      collateralizationRatioChange: !!collateralizationRatio.after,
+      increaseLien: liened.before > 0n && liened.delta > 0n,
+      failing: !!description.match(/FAIL/),
+      unbonded: !!description.match(/unbonded/),
+    }).filter(([_why, cond]) => cond),
+  );
+
+  if (keys(todo).length > 0) {
+    test.skip(`${testNum} ${description} @@TODO ${JSON.stringify(
+      todo,
+    )}`, _ => {});
     return;
   }
 
@@ -456,6 +462,7 @@ const testLoC = (
         }),
         harden({ RUN: payouts.RUN }),
       );
+      t.deepEqual(await E(seat).getOfferResult(), 'RUN line of credit closed');
       const attBack = await E(seat).getPayout('Attestation');
       const amt = await E(attIssuer).getAmountOf(attBack);
       t.deepEqual(amt, {
@@ -477,17 +484,38 @@ const testLoC = (
       } = step1;
 
       const adjustInvitation = invitationMakers.AdjustBalances();
-      const seat = await E(zoe).offer(
-        adjustInvitation,
-        harden({ want: { RUN: run(borrowed.delta) } }),
-      );
 
-      const payout = await E(seat).getPayout('RUN');
-      const amt = await E(runIssuer).getAmountOf(payout);
-      t.deepEqual(amt, run(borrowed.delta));
+      if (borrowed.delta > 0n) {
+        const seat = await E(zoe).offer(
+          adjustInvitation,
+          harden({ want: { RUN: run(borrowed.delta) } }),
+        );
+        const payout = await E(seat).getPayout('RUN');
+        const amt = await E(runIssuer).getAmountOf(payout);
+        t.deepEqual(amt, run(borrowed.delta));
+      } else {
+        const [runPayment, _rest] = await E(runIssuer).split(
+          step1.payouts.RUN,
+          run(-borrowed.delta),
+        );
+        const seat = await E(zoe).offer(
+          adjustInvitation,
+          harden({
+            give: { RUN: run(-borrowed.delta) },
+            want: {
+              Attestation: AmountMath.makeEmpty(attBrand, AssetKind.SET),
+            },
+          }),
+          harden({ RUN: runPayment }),
+        );
+        const actual = await E(attIssuer).getAmountOf(
+          E(seat).getPayout('Attestation'),
+        );
+        t.is(actual.brand, attBrand);
+      }
 
       const state = await uiNotifier.getUpdateSince();
-      t.log('@@', { state });
+      // t.log({ state });
       t.deepEqual(state.value, {
         collateralizationRatio: collateralizationRate,
         debt: run(borrowed.after),

@@ -29,8 +29,7 @@ const minAmt = (x, y) => (AmountMath.isGTE(x, y) ? y : x);
  * @param {Amount} initialDebtAmount
  * @param {Amount} attestationGiven
  * @param {Amount} amountLiened
- * @param { ZCFMint['burnLosses'] } burnRun
- * @param { (seat: ZCFSeat) => void } mintWantedRun
+ * @param { ZCFMint } runMint
  * @typedef { ReturnType<makeCreditPolicy>} CreditPolicy
  * @typedef { 'active' | 'closed' } LineOfCreditState
  * @typedef {{
@@ -47,8 +46,7 @@ export const makeLineOfCreditKit = (
   initialDebtAmount,
   attestationGiven,
   amountLiened,
-  burnRun,
-  mintWantedRun,
+  runMint,
 ) => {
   let debtAmount = initialDebtAmount;
 
@@ -97,10 +95,13 @@ export const makeLineOfCreditKit = (
         vaultSeat.getAmountAllocated('Attestation'),
         AmountMath.add(debtAmount, proposal.want.RUN),
       );
-      // TODO@@: bundle debtAmount increase / decrease
-      // with runMint mint / burn
       debtAmount = AmountMath.add(debtAmount, proposal.want.RUN);
-      mintWantedRun(seat);
+      runMint.mintGains(proposal.want, seat);
+      seat.exit();
+    } else if (proposal.give.RUN) {
+      const toPay = minAmt(proposal.give.RUN, debtAmount);
+      debtAmount = AmountMath.subtract(debtAmount, toPay);
+      runMint.burnLosses(harden({ RUN: toPay }), seat);
       seat.exit();
     } else {
       throw seat.fail(Error('not implemented @@@TODO'));
@@ -109,7 +110,6 @@ export const makeLineOfCreditKit = (
     return 'balance adjusted';
   };
 
-  // ISSUE: close() is not yet tested
   /**
    * Given sufficient RUN payoff, refund the attestation.
    *
@@ -121,20 +121,20 @@ export const makeLineOfCreditKit = (
       give: { RUN: null },
       want: { Attestation: null },
     });
-    const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
+
+    vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: debtAmount })));
     seat.incrementBy(
       vaultSeat.decrementBy(harden({ Attestation: attestationGiven })),
     );
-    const runDebt = harden({ RUN: debtAmount });
-    burnSeat.incrementBy(seat.decrementBy(runDebt));
-    zcf.reallocate(seat, vaultSeat, burnSeat);
 
-    burnRun(runDebt, burnSeat);
+    zcf.reallocate(seat, vaultSeat); // COMMIT POINT
+
+    runMint.burnLosses(harden({ RUN: debtAmount }), vaultSeat);
     seat.exit();
-    burnSeat.exit();
-    vaultState = 'closed';
     debtAmount = zeroRun;
+    vaultState = 'closed';
     updateUiState();
+
     return 'RUN line of credit closed';
   };
 
@@ -268,9 +268,6 @@ const start = async (zcf, { feeMintAccess }) => {
     zcf.reallocate(seat, vaultSeat);
     seat.exit();
 
-    /** @param { ZCFSeat } seat */
-    const mintWantedRun = seat =>
-      runMint.mintGains(seat.getProposal().want, seat);
     return makeLineOfCreditKit(
       zcf,
       vaultSeat,
@@ -278,8 +275,7 @@ const start = async (zcf, { feeMintAccess }) => {
       runWanted,
       attestationGiven,
       amountLiened,
-      runMint.burnLosses,
-      mintWantedRun,
+      runMint,
     );
   };
 
