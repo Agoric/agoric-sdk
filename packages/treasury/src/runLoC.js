@@ -15,7 +15,7 @@ const { details: X } = assert;
 
 export const CreditTerms = {
   CollateralPrice: 'CollateralPrice',
-  CollateralizationRate: 'CollateralizationRate',
+  CollateralizationRatio: 'CollateralizationRatio',
   // TODO: InterestRate
   // TODO: LoanFee
 };
@@ -54,7 +54,7 @@ export const makeLineOfCreditKit = (
   const zeroRun = AmountMath.makeEmpty(runBrand);
 
   /** @type { LineOfCreditState } */
-  let vaultState = 'active'; // ISSUE: OK to use "vault" for a RUN line of credit?
+  let vaultState = 'active';
   function assertVaultIsOpen() {
     assert(vaultState === 'active', X`line of credit must still be active`);
   }
@@ -64,13 +64,13 @@ export const makeLineOfCreditKit = (
 
   // call this whenever anything changes!
   const updateUiState = async () => {
-    const { collateralizationRate } = creditPolicy.getCurrentTerms();
+    const { collateralizationRatio } = creditPolicy.getCurrentTerms();
 
     const uiState = harden({
       // TODO: interestRate: manager.getInterestRate(),
       liened: amountLiened,
       debt: debtAmount,
-      collateralizationRatio: collateralizationRate,
+      collateralizationRatio,
       vaultState,
     });
 
@@ -140,9 +140,9 @@ export const makeLineOfCreditKit = (
 
   const vault = Far('line of credit', {
     makeAdjustBalancesInvitation: () =>
-      zcf.makeInvitation(adjustBalances, 'Adjust Balances'),
-    makeCloseInvitation: () => zcf.makeInvitation(close, 'Close'),
-    getAmountLiened: () => amountLiened, // ISSUE: getCollateralAmount?
+      zcf.makeInvitation(adjustBalances, 'AdjustBalances'),
+    makeCloseInvitation: () => zcf.makeInvitation(close, 'CloseVault'),
+    getCollateralAmount: () => amountLiened,
     getDebtAmount: () => debtAmount,
   });
 
@@ -175,7 +175,7 @@ const makeCreditPolicy = (brands, getParamValue) => {
    */
   const checkBorrow = (attestationGiven, runWanted) => {
     const collateralPrice = getRatio(CreditTerms.CollateralPrice);
-    const collateralizationRate = getRatio(CreditTerms.CollateralizationRate);
+    const collateralizationRatio = getRatio(CreditTerms.CollateralizationRatio);
     assert(
       collateralPrice.numerator.brand === brands.RUN,
       X`${collateralPrice} not in RUN`,
@@ -190,13 +190,12 @@ const makeCreditPolicy = (brands, getParamValue) => {
         attestationGiven.value.length === 1,
       X`expected SET value with 1 item; found ${attestationGiven.value}`,
     );
-    // NOTE: we accept any address
-    const [{ address, amountLiened }] = attestationGiven.value;
+    const [{ amountLiened }] = attestationGiven.value;
     const maxAvailable = floorMultiplyBy(amountLiened, collateralPrice);
-    const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRate);
+    const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRatio);
     assert(
       AmountMath.isGTE(maxAvailable, collateralizedRun),
-      X`${amountLiened} at price ${collateralPrice} not enough to borrow ${runWanted} with ${collateralizationRate}`,
+      X`${amountLiened} at price ${collateralPrice} not enough to borrow ${runWanted} with ${collateralizationRatio}`,
     );
 
     return { runWanted, attestationGiven, amountLiened };
@@ -205,7 +204,7 @@ const makeCreditPolicy = (brands, getParamValue) => {
   return harden({
     getCurrentTerms: () => ({
       collateralPrice: getRatio(CreditTerms.CollateralPrice),
-      collateralizationRate: getRatio(CreditTerms.CollateralizationRate),
+      collateralizationRatio: getRatio(CreditTerms.CollateralizationRatio),
     }),
     checkBorrow,
     /** @param { ZCFSeat } seat */

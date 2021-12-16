@@ -220,7 +220,7 @@ test('start attestation', async t => {
  * @param {Record<string, Bundle>} bundles
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
- * @param {Ratio} terms.collateralizationRate
+ * @param {Ratio} terms.collateralizationRatio
  * @param {Issuer} attIssuer
  */
 const bootstrapRunLoC = async (
@@ -228,7 +228,7 @@ const bootstrapRunLoC = async (
   timer,
   feeMintAccess,
   bundles,
-  { collateralPrice, collateralizationRate },
+  { collateralPrice, collateralizationRatio },
   attIssuer,
 ) => {
   const installations = await allValues({
@@ -250,9 +250,9 @@ const bootstrapRunLoC = async (
       value: collateralPrice,
     },
     {
-      name: CreditTerms.CollateralizationRate,
+      name: CreditTerms.CollateralizationRatio,
       type: ParamType.RATIO,
-      value: collateralizationRate,
+      value: collateralizationRatio,
     },
   ]);
 
@@ -299,7 +299,7 @@ const testLoC = (
   {
     testNum,
     description,
-    collateralizationRatio,
+    collateralizationRatio: cr,
     borrowed,
     staked,
     liened,
@@ -311,7 +311,7 @@ const testLoC = (
   const todo = fromEntries(
     entries({
       decreaseLien: liened.delta < 0n && borrowed.after !== 0n,
-      collateralizationRatioChange: !!collateralizationRatio.after,
+      collateralizationRatioChange: !!cr.after,
       increaseLien: liened.before > 0n && liened.delta > 0n,
       failing: !!description.match(/FAIL/),
       unbonded: !!description.match(/unbonded/),
@@ -348,15 +348,15 @@ const testLoC = (
 
     // start RUN LoC
     const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
-    const rate = collateralizationRatio.before;
-    const collateralizationRate = makeRatio(rate[0], runBrand, rate[1]);
+    const rate = cr.before;
+    const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
     const timer = buildManualTimer(t.log, 0n, 1n);
     const { publicFacet } = await bootstrapRunLoC(
       zoe,
       timer,
       feeMintAccess,
       bundles,
-      { collateralPrice, collateralizationRate },
+      { collateralPrice, collateralizationRatio },
       attIssuer,
     );
 
@@ -411,7 +411,7 @@ const testLoC = (
         give: { Attestation: attAmt },
         want: { RUN: run(runValue) },
         collateralPrice,
-        collateralizationRate,
+        collateralizationRatio,
       });
 
       const seat = await E(zoe).offer(
@@ -517,7 +517,7 @@ const testLoC = (
       const state = await uiNotifier.getUpdateSince();
       // t.log({ state });
       t.deepEqual(state.value, {
-        collateralizationRatio: collateralizationRate,
+        collateralizationRatio,
         debt: run(borrowed.after),
         liened: AmountMath.make(bld.brand, liened.after),
         vaultState: 'active',
