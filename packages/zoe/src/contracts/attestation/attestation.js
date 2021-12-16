@@ -16,7 +16,7 @@ import { makeGetAttMaker } from './attMaker.js';
 const { details: X } = assert;
 
 /**
- * @type {ContractStartFn}
+ * @param {ContractFacet} zcf
  */
 const start = async zcf => {
   const {
