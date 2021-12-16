@@ -15,15 +15,64 @@ import { ParamType } from '@agoric/governance';
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
-/**
- * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
- * @template T
- */
-/** @typedef {Unpromise<ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>>} StartAttestationResult */
-/** @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit */
+const contractRoots = {
+  runLoC: '../src/runLoC.js',
+  attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
+  electorate: '@agoric/governance/src/noActionElectorate.js',
+  governor: '@agoric/governance/src/contractGovernor.js',
+  faker: './attestationFaker.js',
+};
 
 const { assign, entries, fromEntries, keys, values } = Object;
 const { details: X } = assert;
+
+const Collect = {
+  /**
+   * @param {Record<string, V>} obj
+   * @param {(v: V) => U} f
+   * @returns {Record<string, U>}
+   * @template V
+   * @template U
+   */
+  mapValues: (obj, f) => fromEntries(entries(obj).map(([p, v]) => [p, f(v)])),
+  /**
+   * @param {X[]} xs
+   * @param {Y[]} ys
+   * @returns {[X, Y][]}
+   * @template X
+   * @template Y
+   */
+  zip: (xs, ys) => xs.map((x, i) => [x, ys[i]]),
+  /**
+   * @param {Record<string, ERef<V>>} obj
+   * @returns {Promise<Record<string, V>>}
+   * @template V
+   */
+  allValues: async obj =>
+    fromEntries(Collect.zip(keys(obj), await Promise.all(values(obj)))),
+};
+
+test.before(async t => {
+  /** @param { string } ref */
+  const asset = async ref =>
+    new URL(await metaResolve(ref, import.meta.url)).pathname;
+
+  t.log('bundling...', contractRoots);
+  const bundles = await Collect.allValues(
+    Collect.mapValues(contractRoots, spec => asset(spec).then(bundleSource)),
+  );
+  t.log(
+    'bundled:',
+    Collect.mapValues(bundles, b => b.endoZipBase64.length),
+  );
+  assign(t.context, { bundles });
+});
+
+/**
+ * @param {{ context: unknown }} t
+ * @returns { Record<string, Bundle> }
+ */
+const theBundles = t => /** @type { any } */ (t.context).bundles;
 
 const genesisBldBalances = {
   agoric30: 30n,
@@ -37,11 +86,11 @@ const genesisBldBalances = {
 };
 
 /**
- * @param {Brand} uBrand
+ * @param {Brand} stakingBrand
  */
-const mockBridge = uBrand => {
+const mockBridge = stakingBrand => {
   /** @param { bigint } v */
-  const ubld = v => AmountMath.make(uBrand, v);
+  const ubld = v => AmountMath.make(stakingBrand, v);
   let currentTime = 50n;
   return Far('stakeReporter', {
     /**
@@ -49,7 +98,7 @@ const mockBridge = uBrand => {
      * @param { Brand } brand
      */
     getAccountState: (address, brand) => {
-      assert(brand === uBrand, X`unexpected brand: ${brand}`);
+      assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
       assert(address in genesisBldBalances, X`no such account: ${address}`);
       const balance = genesisBldBalances[address];
       currentTime += 10n;
@@ -62,55 +111,6 @@ const mockBridge = uBrand => {
     },
   });
 };
-
-/**
- * @param {Record<string, V>} obj
- * @param {(v: V) => U} f
- * @returns {Record<string, U>}
- * @template V
- * @template U
- */
-const mapValues = (obj, f) =>
-  fromEntries(entries(obj).map(([p, v]) => [p, f(v)]));
-/**
- * @param {X[]} xs
- * @param {Y[]} ys
- * @returns {[X, Y][]}
- * @template X
- * @template Y
- */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-/**
- * @param {Record<string, ERef<V>>} obj
- * @returns {Promise<Record<string, V>>}
- * @template V
- */
-const allValues = async obj =>
-  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
-
-/** @param { string } ref */
-const asset = async ref =>
-  new URL(await metaResolve(ref, import.meta.url)).pathname;
-
-const contractRoots = {
-  runLoC: '../src/runLoC.js',
-  attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
-  electorate: '@agoric/governance/src/noActionElectorate.js',
-  governor: '@agoric/governance/src/contractGovernor.js',
-  faker: './attestationFaker.js',
-};
-
-test.before(async t => {
-  t.log('bundling...', contractRoots);
-  const bundles = await allValues(
-    mapValues(contractRoots, spec => asset(spec).then(bundleSource)),
-  );
-  t.log(
-    'bundled:',
-    mapValues(bundles, b => b.endoZipBase64.length),
-  );
-  assign(t.context, { bundles });
-});
 
 const bootstrapZoeAndRun = async () => {
   let testJig;
@@ -145,10 +145,19 @@ test('RUN mint access', async t => {
 });
 
 /**
+ * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
+
+/**
  * @param {Bundle} bundle
  * @param {ERef<ZoeService>} zoe
  * @param {{issuer: Issuer, brand: Brand}} bld
  * @param {ReturnType<typeof mockBridge>} reporter
+ *
+ * @typedef {Unpromise<
+ *   ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>
+ * >} StartAttestationResult
  */
 const bootstrapAttestation = async (bundle, zoe, bld, reporter) => {
   const installation = await E(zoe).install(bundle);
@@ -191,10 +200,9 @@ test('start attestation', async t => {
   const micro = harden({ decimalPlaces: 6 });
   const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
-  /** @type { Record<string, Bundle> } */
-  const bundles = /** @type {any} */ (t.context).bundles;
+  const { attestation: bundle } = theBundles(t);
   const { issuers, brands, provision } = await bootstrapAttestation(
-    bundles.attestation,
+    bundle,
     zoe,
     bld,
     mockBridge(bld.brand),
@@ -221,6 +229,8 @@ test('start attestation', async t => {
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRatio
  * @param {Issuer} attIssuer
+ *
+ * @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit
  */
 const bootstrapRunLoC = async (
   zoe,
@@ -230,7 +240,7 @@ const bootstrapRunLoC = async (
   { collateralPrice, collateralizationRatio },
   attIssuer,
 ) => {
-  const installations = await allValues({
+  const installations = await Collect.allValues({
     governor: E(zoe).install(bundles.governor),
     electorate: E(zoe).install(bundles.electorate),
     runLoC: E(zoe).install(bundles.runLoC),
@@ -289,7 +299,9 @@ const bootstrapRunLoC = async (
  * @param {{ before: bigint, delta: bigint, after: bigint}} detail.liened
  * @param { boolean } [detail.failAttestation]
  * @param { boolean } [detail.failOffer]
- * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand) => Promise<[Amount, Payment]> } [mockAttestation]
+ * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand)
+ *            => Promise<[Amount, Payment]> } [mockAttestation]
+ *
  * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
  * @typedef { [bigint, bigint] } Rational
  */
@@ -318,15 +330,13 @@ const testLoC = (
   );
 
   if (keys(todo).length > 0) {
-    test.skip(`${testNum} ${description} @@TODO ${JSON.stringify(
-      todo,
-    )}`, _ => {});
+    const reasons = keys(todo).join(',');
+    test.skip(`${testNum} ${description} @@TODO ${reasons}`, _ => {});
     return;
   }
 
   test(`${testNum} ${description}`, async t => {
-    /** @type { Record<string, Bundle> } */
-    const bundles = /** @type { any } */ (t.context).bundles;
+    const bundles = theBundles(t);
 
     // Genesis: start Zoe etc.
     const { zoe, feeMintAccess, runBrand, getJig } = await bootstrapZoeAndRun();
@@ -436,7 +446,7 @@ const testLoC = (
       const state = await resultValue.uiNotifier.getUpdateSince();
       t.deepEqual(state.value.debt, run(runValue));
 
-      const p = await allValues(await E(seat).getPayouts());
+      const p = await Collect.allValues(await E(seat).getPayouts());
       t.deepEqual(Object.keys(p), ['Attestation', 'RUN']);
       t.deepEqual(await E(runIssuer).getAmountOf(p.RUN), run(runValue));
 
