@@ -10,7 +10,7 @@ import engineGC from '../src/engine-gc.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeLiveSlots } from '../src/kernel/liveSlots.js';
+import { makeLiveSlots, makeMarshaller } from '../src/kernel/liveSlots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   capargs,
@@ -1197,4 +1197,226 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   // the vat should *not* emit `syscall.retireExport`, because it already
   // received a dispatch.retireExport
   t.deepEqual(log, []);
+});
+
+const oneSlot = { '@qclass': 'slot', index: 0 };
+
+// todo: test that ancillary promises cause syscall.resolve, also test
+// unserializable resolutions
+test('simple promise resolution', async t => {
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    const pkA = makePromiseKit();
+    const root = Far('root', {
+      export() {
+        return harden({ p: pkA.promise });
+      },
+      resolve() {
+        pkA.resolve('data');
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  const l1 = log.shift();
+  t.is(l1.type, 'resolve');
+  const expectedPA = 'p+5';
+  const expectedResult1 = { p: oneSlot };
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+  });
+  t.deepEqual(log, []);
+
+  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  // this should resolve pkA.promise
+  const l2 = log.shift();
+  t.is(l2.type, 'resolve');
+  t.is(l2.resolutions[0][0], expectedPA);
+  t.deepEqual(l2.resolutions[0][2], capargs('data'));
+});
+
+test('promise cycle', async t => {
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    const pkA = makePromiseKit();
+    const pkB = makePromiseKit();
+    pkA.resolve([pkB.promise]);
+    pkB.resolve([pkA.promise]);
+    const root = Far('root', {
+      export() {
+        return harden({ p: pkA.promise });
+      },
+      resolve() {
+        pkA.resolve('data');
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  const l1 = log.shift();
+  t.is(l1.type, 'resolve');
+  const expectedPA1 = 'p+5'; // pkA.promise first export
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capargs({ p: oneSlot }, [expectedPA1])]],
+  });
+  // liveslots will see pkA.promise resolve on the second-ish turn of the
+  // first delivery (of root~.export), to an array. When it serializes that
+  // array, it notices pkB.promise, and attaches a .then() to watch it. The
+  // first resolution syscall will announce the resolution of pkA, and will
+  // mention pkB in the resolution data.
+  const expectedPB = 'p+6'; // pkB.promise first export
+  const l2 = log.shift();
+  t.deepEqual(l2, {
+    type: 'resolve',
+    resolutions: [[expectedPA1, false, capargs([oneSlot], [expectedPB])]],
+  });
+
+  // When liveslots sees pkB resolve, the resolution will be to an array that
+  // includes pkA. Liveslots knows pkA is already resolved, so the
+  // syscall.resolve will include pkA as an "ancillary promise": it will be a
+  // batch that resolves both pkB and a new identifier for pkA, so the cycle
+  // is entirely contained within a single syscall.
+  const expectedPA2 = 'p+7'; // pkA.promise second export
+  const l3 = log.shift();
+
+  t.deepEqual(l3, {
+    type: 'resolve',
+    resolutions: [
+      [expectedPB, false, capargs([oneSlot], [expectedPA2])],
+      [expectedPA2, false, capargs([oneSlot], [expectedPB])],
+    ],
+  });
+  t.deepEqual(log, []);
+});
+
+test('unserializable promise resolution', async t => {
+  // method-bearing objects must be marked as Far, else they cannot be
+  // serialized
+  const unserializable = harden({ deliberate: () => {} });
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    const pkA = makePromiseKit();
+    const root = Far('root', {
+      export() {
+        return harden({ p: pkA.promise });
+      },
+      resolve() {
+        pkA.resolve(unserializable); // causes serialization error
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  const l1 = log.shift();
+  t.is(l1.type, 'resolve');
+  const expectedPA = 'p+5';
+  const expectedResult1 = { p: oneSlot };
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+  });
+  t.deepEqual(log, []);
+
+  console.log('generating deliberate error');
+  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  // This should reject pkA.promise, because the promise's resolution cannot
+  // be serialized. If liveSlots doesn't catch serialization errors, the
+  // promise won't get resolved, and the vat won't have made any syscalls
+  t.truthy(log.length, 'vat failed to resolve promise');
+
+  const l2 = log.shift();
+  t.is(l2.type, 'resolve');
+  t.is(l2.resolutions[0][0], expectedPA);
+
+  // one-off marshaller to find out what an Error should look like
+  const { m } = makeMarshaller(null, makeMockGC(), 'vatA');
+  let expectedError;
+  try {
+    m.serialize(unserializable);
+  } catch (e) {
+    expectedError = m.serialize(e);
+  }
+  const ebody = JSON.parse(expectedError.body);
+  t.is(ebody['@qclass'], 'error');
+  t.is(ebody.name, 'Error');
+  t.regex(ebody.message, /Remotables must be explicitly declared/);
+
+  t.deepEqual(l2.resolutions[0], [expectedPA, true, expectedError]);
+});
+
+test('unserializable promise rejection', async t => {
+  // method-bearing objects must be marked as Far, else they cannot be
+  // serialized
+  const unserializable = harden({ deliberate: () => {} });
+  const { log, syscall } = buildSyscall();
+  function build(_vatPowers) {
+    const pkA = makePromiseKit();
+    const root = Far('root', {
+      export() {
+        return harden({ p: pkA.promise });
+      },
+      resolve() {
+        pkA.reject(unserializable); // causes serialization error
+      },
+    });
+    return root;
+  }
+  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  t.deepEqual(log, []);
+  const rootA = 'o+0';
+
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  const l1 = log.shift();
+  t.is(l1.type, 'resolve');
+  const expectedPA = 'p+5';
+  const expectedResult1 = { p: oneSlot };
+  t.deepEqual(l1, {
+    type: 'resolve',
+    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+  });
+  t.deepEqual(log, []);
+
+  console.log('generating deliberate error');
+  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  // This should reject pkA.promise, because the promise's resolution cannot
+  // be serialized. If liveSlots doesn't catch serialization errors, the
+  // promise won't get resolved, and the vat won't have made any syscalls
+  t.truthy(log.length, 'vat failed to resolve promise');
+
+  const l2 = log.shift();
+  t.is(l2.type, 'resolve');
+  t.is(l2.resolutions[0][0], expectedPA);
+
+  // one-off marshaller to find out what an Error should look like
+  const { m } = makeMarshaller(null, makeMockGC(), 'vatA');
+  let expectedError;
+  try {
+    m.serialize(unserializable);
+  } catch (e) {
+    expectedError = m.serialize(e);
+  }
+  const ebody = JSON.parse(expectedError.body);
+  t.is(ebody['@qclass'], 'error');
+  t.is(ebody.name, 'Error');
+  t.regex(ebody.message, /Remotables must be explicitly declared/);
+
+  t.deepEqual(l2.resolutions[0], [expectedPA, true, expectedError]);
 });

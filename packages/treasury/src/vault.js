@@ -99,7 +99,10 @@ export function makeVaultKit(
     );
 
     // floorDivide because we want the debt ceiling lower
-    return floorDivideBy(getAmountOut(quoteAmount), manager.getInitialMargin());
+    return floorDivideBy(
+      getAmountOut(quoteAmount),
+      manager.getLiquidationMargin(),
+    );
   }
 
   async function assertSufficientCollateral(collateralAmount, wantedRun) {
