@@ -3,6 +3,9 @@ import { E } from '@agoric/eventual-send';
 
 import '@agoric/governance/exported.js';
 
+import { Far } from '@agoric/far';
+import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '@agoric/zoe/src/contracts/vpool-xyk-amm/params';
+
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import ammBundle from './bundle-amm.js';
 import stablecoinBundle from './bundle-stablecoinMachine.js';
@@ -10,8 +13,7 @@ import contractGovernorBundle from './bundle-contractGovernor.js';
 import noActionElectorateBundle from './bundle-noActionElectorate.js';
 import binaryVoteCounterBundle from './bundle-binaryVoteCounter.js';
 import { governedParameterTerms } from '../src/params';
-import { Far } from '@agoric/marshal';
-import { makeInitialValues } from '@agoric/zoe/src/contracts/vpool-xyk-amm/params';
+import { makeGovernedNat } from '@agoric/governance/src/paramGovernance/paramMakers';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -33,7 +35,10 @@ async function setupAmm(
     timer,
     poolFeeBP: poolFee,
     protocolFeeBP: protocolFee,
-    main: makeInitialValues(poolFee, protocolFee),
+    main: {
+      [PROTOCOL_FEE_KEY]: makeGovernedNat(protocolFee),
+      [POOL_FEE_KEY]: makeGovernedNat(poolFee),
+    },
   };
 
   const ammGovernorTerms = {

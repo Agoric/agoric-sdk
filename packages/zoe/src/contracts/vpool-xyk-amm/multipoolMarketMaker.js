@@ -15,7 +15,7 @@ import '../../../exported.js';
 import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import { makeInitialValues, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
 const { details: X } = assert;
 
@@ -76,7 +76,7 @@ const { details: X } = assert;
  *
  * The contract gets the initial values for those parameters from its terms, and
  * thereafter can be seen to only use the values provided by the
- * `getParamValue()` method returned by the paramManager.
+ * `getNat()` method returned by the paramManager.
  *
  * `handleParamGovernance()` adds several methods to the publicFacet of the
  * contract, and bundles the privateFacet to ensure that governance
@@ -107,19 +107,20 @@ const start = zcf => {
   const {
     brands: { Central: centralBrand },
     timer,
-    poolFeeBP,
-    protocolFeeBP,
+    main: {
+      [POOL_FEE_KEY]: poolFeeParam,
+      [PROTOCOL_FEE_KEY]: protocolFeeParam,
+    },
   } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
-  const {
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    getParamValue,
-  } = handleParamGovernance(zcf, makeInitialValues(poolFeeBP, protocolFeeBP));
-  const getPoolFeeBP = () => getParamValue(POOL_FEE_KEY);
-  const getProtocolFeeBP = () => getParamValue(PROTOCOL_FEE_KEY);
+  const { wrapPublicFacet, wrapCreatorFacet, getNat } = handleParamGovernance(
+    zcf,
+    makeParamManager(poolFeeParam.value, protocolFeeParam.value),
+  );
+  const getPoolFeeBP = () => getNat(POOL_FEE_KEY);
+  const getProtocolFeeBP = () => getNat(PROTOCOL_FEE_KEY);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');

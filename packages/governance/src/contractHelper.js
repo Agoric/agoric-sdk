@@ -3,8 +3,6 @@
 import { Far } from '@agoric/marshal';
 import { sameStructure } from '@agoric/same-structure';
 
-import { buildParamManager } from './paramManager.js';
-
 const { details: X, quote: q } = assert;
 
 /**
@@ -21,29 +19,38 @@ const { details: X, quote: q } = assert;
  *
  *  @type {HandleParamGovernance}
  */
-const handleParamGovernance = (zcf, governedParamsTemplate) => {
+const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   /** @type {ParamDescriptions} */
   const governedParams = terms.main;
   const { electionManager } = terms;
 
   assert(
-    sameStructure(governedParams, governedParamsTemplate),
-    X`Terms must include ${q(governedParamsTemplate)}, but were ${q(
+    sameStructure(governedParams, paramManager.getParams()),
+    X`Terms must include ${q(paramManager.getParams())}, but were ${q(
       governedParams,
     )}`,
   );
-  const paramManager = buildParamManager(governedParams);
+
+  const typedAccessors = {
+    getAmount: paramManager.getAmount,
+    getBrand: paramManager.getBrand,
+    getInstance: paramManager.getInstance,
+    getInstallation: paramManager.getInstallation,
+    getInvitationAmount: paramManager.getInvitationAmount,
+    getNat: paramManager.getNat,
+    getRatio: paramManager.getRatio,
+    getString: paramManager.getString,
+    getUnknown: paramManager.getUnknown,
+  };
 
   const wrapPublicFacet = (originalPublicFacet = {}) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
-      getGovernedParams: () => {
-        return paramManager.getParams();
-      },
-      getParamValue: name => paramManager.getParam(name).value,
+      getGovernedParams: () => paramManager.getParams(),
+      ...typedAccessors,
     });
   };
 
@@ -56,10 +63,13 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
 
   const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+
+    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     return Far('creatorFacet', {
       getParamMgrRetriever: () => {
         return Far('paramRetriever', { get: () => paramManager });
       },
+      getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
     });
   };
@@ -67,8 +77,9 @@ const handleParamGovernance = (zcf, governedParamsTemplate) => {
   return harden({
     wrapPublicFacet,
     wrapCreatorFacet,
-    getParamValue: name => paramManager.getParam(name).value,
+    ...typedAccessors,
   });
 };
 harden(handleParamGovernance);
+
 export { handleParamGovernance };

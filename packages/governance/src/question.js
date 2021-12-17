@@ -5,7 +5,7 @@ import { sameStructure } from '@agoric/same-structure';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';
 
-import { assertType, ParamType } from './paramManager.js';
+import { makeAssertInstance } from './paramGovernance/assertions.js';
 
 const { details: X, quote: q } = assert;
 
@@ -76,7 +76,8 @@ const looksLikeParamChangeIssue = issue => {
     X`Issue ("${issue}") must be a record with paramSpec: anObject`,
   );
   assert(issue && issue.proposedValue);
-  assertType(ParamType.INSTANCE, issue.contract, 'contract');
+  const assertInstance = makeAssertInstance('contract');
+  assertInstance(issue.contract);
 };
 
 /** @type {LooksLikeIssueForType} */

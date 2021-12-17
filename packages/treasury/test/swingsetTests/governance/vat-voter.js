@@ -4,9 +4,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { q } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
-import { validateQuestionFromCounter } from '@agoric/governance/src/contractGovernor';
-import { assertContractElectorate } from '@agoric/governance/src/validators';
-import { assertBallotConcernsQuestion } from '@agoric/governance/src/governParam';
+import {
+  validateQuestionFromCounter,
+  assertContractElectorate,
+  assertBallotConcernsQuestion,
+} from '@agoric/governance';
 
 const { details: X } = assert;
 

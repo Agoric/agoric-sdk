@@ -177,18 +177,10 @@ const setupServices = async (
   };
 };
 
-const ammInitialValues = harden([
-  {
-    name: POOL_FEE_KEY,
-    value: 24n,
-    type: ParamType.NAT,
-  },
-  {
-    name: PROTOCOL_FEE_KEY,
-    value: 6n,
-    type: ParamType.NAT,
-  },
-]);
+const ammInitialValues = harden({
+  [POOL_FEE_KEY]: { value: 24n, type: ParamType.NAT },
+  [PROTOCOL_FEE_KEY]: { value: 6n, type: ParamType.NAT },
+});
 
 test('amm with valid offers', async t => {
   // Set up central token

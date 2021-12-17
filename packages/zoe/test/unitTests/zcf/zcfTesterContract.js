@@ -1,6 +1,7 @@
 // @ts-check
 
 import '../../../exported.js';
+import { Far } from '@agoric/far';
 
 /**
  * Tests ZCF
@@ -12,7 +13,11 @@ const start = async zcf => {
   const instance = zcf.getInstance();
   zcf.setTestJig(() => harden({ instance }));
 
-  return {};
+  const publicFacet = Far('public facet', {
+    makeInvitation: () => zcf.makeInvitation(() => 17, 'simple'),
+  });
+
+  return { publicFacet };
 };
 
 harden(start);

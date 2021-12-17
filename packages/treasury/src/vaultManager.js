@@ -252,7 +252,6 @@ export function makeVaultManager(
       innerFacet,
       runMint,
       priceAuthority,
-      getLoanParams,
       startTimeStamp,
     );
 

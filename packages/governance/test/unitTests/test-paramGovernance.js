@@ -17,9 +17,9 @@ import path from 'path';
 import {
   setupGovernance,
   makeParamChangePositions,
-} from '../../src/governParam.js';
+} from '../../src/paramGovernance/governParam.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
-import { makeGovernedNat } from '../../src/paramMakers.js';
+import { makeGovernedNat } from '../../src/paramGovernance/paramMakers.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -45,7 +45,11 @@ test('governParam happy path with fakes', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
+    {
+      main: {
+        [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
+      },
+    },
   );
   const Retriever = governedFacets.creatorFacet.getParamMgrRetriever();
 
@@ -86,7 +90,6 @@ test('governParam happy path with fakes', async t => {
 
   t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
     MalleableNumber: {
-      name: MALLEABLE_NUMBER,
       type: 'nat',
       value: 25n,
     },
@@ -105,7 +108,11 @@ test('governParam no votes', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
+    {
+      main: {
+        [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
+      },
+    },
   );
   const Retriever = governedFacets.creatorFacet.getParamMgrRetriever();
 
@@ -152,7 +159,6 @@ test('governParam no votes', async t => {
 
   t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
     MalleableNumber: {
-      name: MALLEABLE_NUMBER,
       type: 'nat',
       value: 602214090000000000000000n,
     },
@@ -171,10 +177,14 @@ test('governParam bad update', async t => {
   const governedFacets = await E(zoe).startInstance(
     governedInstall,
     {},
-    { main: [makeGovernedNat(MALLEABLE_NUMBER, 602214090000000000000000n)] },
+    {
+      main: {
+        [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
+      },
+    },
   );
   const brokenParamMgr = Far('broken ParamMgr', {
-    getParam: () => {
+    getNat: () => {
       return harden({ type: 'nat' });
     },
   });
@@ -218,14 +228,13 @@ test('governParam bad update', async t => {
   await t.throwsAsync(
     outcomeOfUpdate,
     {
-      message: 'target has no method "updateMalleableNumber", has ["getParam"]',
+      message: 'target has no method "updateMalleableNumber", has ["getNat"]',
     },
     'Expected a throw',
   );
 
   t.deepEqual(governedFacets.publicFacet.getGovernedParams(), {
     MalleableNumber: {
-      name: MALLEABLE_NUMBER,
       type: 'nat',
       value: 602214090000000000000000n,
     },

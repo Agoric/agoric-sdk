@@ -20,8 +20,8 @@
  */
 
 /**
- * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'nat' |
- * 'ratio' | 'string' | 'unknown' } ParamType
+ * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'invitation' |
+ *   'nat' | 'ratio' | 'string' | 'unknown' } ParamType
  */
 
 /**
@@ -40,7 +40,7 @@
 
 /**
  * @template T
- * @typedef {{ type: T, name: string }} ParamRecord
+ * @typedef {{ type: T }} ParamRecord<T>
  */
 
 /**
@@ -48,6 +48,7 @@
  *   ParamRecord<'brand'> & { value: Brand } |
  *   ParamRecord<'installation'> & { value: Installation } |
  *   ParamRecord<'instance'> & { value: Instance } |
+ *   ParamRecord<'invitation'> & { value: Amount } |
  *   ParamRecord<'nat'> & { value: bigint } |
  *   ParamRecord<'ratio'> & { value: Ratio } |
  *   ParamRecord<'string'> & { value: string } |
@@ -391,16 +392,19 @@
  */
 
 /**
- * @callback GetParam - getParam() retrieves a description of a parameter under
- *    governance.
- * @param {string} name
- * @returns {ParamDescription}
- */
-
-/**
  * @typedef {Object} ParamManagerBase
  * @property {GetParams} getParams
- * @property {GetParam} getParam
+ * @property {(name: string) => Amount} getAmount
+ * @property {(name: string) => Brand} getBrand
+ * @property {(name: string) => Instance} getInstance
+ * @property {(name: string) => Installation} getInstallation
+ * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => bigint} getNat
+ * @property {(name: string) => Ratio} getRatio
+ * @property {(name: string) => string} getString
+ * @property {(name: string) => any} getUnknown
+ * @property {() => ParamDescriptions} getParamList
+ * @property {(name:string) => Invitation} getInternalParamValue
  * @property {() => Subscription<ParamDescription>} getSubscription
  */
 
@@ -511,8 +515,15 @@
  * @property {VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => ParamValue} getParamValue - get the value of a
- *   named parameter
+ * @property {(name: string) => Amount} getAmount
+ * @property {(name: string) => Brand} getBrand
+ * @property {(name: string) => Instance} getInstance
+ * @property {(name: string) => Installation} getInstallation
+ * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => bigint} getNat
+ * @property {(name: string) => Ratio} getRatio
+ * @property {(name: string) => string} getString
+ * @property {(name: string) => any} getUnknown
  */
 
 /**
@@ -541,13 +552,21 @@
  * @typedef {Object} ParamGovernorBundle
  * @property {WrapPublicFacet} wrapPublicFacet
  * @property {WrapCreatorFacet} wrapCreatorFacet
- * @property {(name: string) => ParamValue} getParamValue
+ * @property {(name: string) => Amount} getAmount
+ * @property {(name: string) => Brand} getBrand
+ * @property {(name: string) => Instance} getInstance
+ * @property {(name: string) => Installation} getInstallation
+ * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => bigint} getNat
+ * @property {(name: string) => Ratio} getRatio
+ * @property {(name: string) => string} getString
+ * @property {(name: string) => any} getUnknown
  */
 
 /**
  * @callback HandleParamGovernance
  * @param {ContractFacet} zcf
- * @param {ParamDescriptions} governedParamsTemplate
+ * @param {ParamManagerFull} paramManager
  * @returns {ParamGovernorBundle}
  */
 
@@ -667,4 +686,20 @@
  * parameter change for a governed contract.
  *
  * @param {ParamChangeIssueDetails} details
+ */
+
+/**
+ * @typedef {Object} ParamManagerBuilder
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmount
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addBrandedAmount
+ * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
+ * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
+ * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
+ * @property {(name: string, value: Invitation) => ERef<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
+ * @property {(name: string, value: string) => ParamManagerBuilder} addString
+ * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
+ * @property {() => ParamManagerFull} build
  */

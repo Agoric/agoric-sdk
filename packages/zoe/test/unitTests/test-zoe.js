@@ -72,6 +72,11 @@ function isEmptyFacet(t, facet) {
   t.deepEqual(Object.getOwnPropertyNames(facet), []);
 }
 
+function facetHasMethods(t, facet, names) {
+  t.is(passStyleOf(facet), 'remotable');
+  t.deepEqual(Object.getOwnPropertyNames(facet), names);
+}
+
 test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   const { zoe, installation } = await setupZCFTest();
   const result = await E(zoe).startInstance(installation);
@@ -85,7 +90,7 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  isEmptyFacet(t, result.publicFacet);
+  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
   ]);
@@ -112,7 +117,7 @@ test(`E(zoe).startInstance promise for installation`, async t => {
   ]);
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  isEmptyFacet(t, result.publicFacet);
+  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
   ]);

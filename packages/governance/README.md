@@ -9,18 +9,24 @@ connected to so that voters can verify that their votes mean what they say and
 will be tabulated as expected.
 
 Any occasion of governance starts with the creation of an Electorate. Two kinds
-exist currently that represent committees and stakeholders (Stakeholder support
-is in review). The electorate may deal with many questions governing many
-things, so the electorate has to exist before any questions can be posed.
+exist currently that represent committees (elected or appointed) and
+stakeholders (Stakeholder support is in review). The electorate may deal with
+many questions governing many things, so the electorate has to exist before any
+questions can be posed.
 
-The next piece to be created is an ElectionManager. (A Contract Governor, is a
-particular example, discussed below). An ElectionManager is tied to a particular
+The next piece to be created is an ElectionManager. (Contract Governor, one
+implementation, is discussed below). An ElectionManager is tied to a particular
 Electorate. It supports creation of questions, can manage what happens with the
 results, and may limit the kinds of questions it can handle. The ElectionManager
 is also responsible for specifying which VoteCounter will be used with any
 particular question. Different VoteCounters will handle elections with two
-positions or more, with plurality voting, single-transferable-vote, or
-instant-runoff-voting.
+positions or more. The architecture supports vote counters for
+[majority decisions](https://en.wikipedia.org/wiki/Majority_rule),
+[approval voting](https://en.wikipedia.org/wiki/Approval_voting), and
+[proportional representation](https://en.wikipedia.org/wiki/Proportional_representation),
+as well as [quadratic](https://en.wikipedia.org/wiki/Quadratic_voting),
+[instant runoff](https://en.wikipedia.org/wiki/Category:Instant-runoff_voting),
+and more esoteric approaches.
 
 When a question is posed, it is only with respect to a particular Electorate,
 (which identifies a collection of eligible voters) and a particular vote
@@ -66,7 +72,7 @@ voterHandle.
 
 We want some contracts to be able to make it visible that their internal
 parameters are controlled by a public process, and allow observers to see who
-has control, and how those changes can happen. To do so, the contract would
+has control, and how those changes can happen. To do so, the contract will
 use a ParamManager to hold its mutable state. ParamManager has facets for
 accessing the param values and for setting them. The governed contract would use
 the access facet internally, and make that visible to anyone who should be able
@@ -115,21 +121,49 @@ the governed contract's publicFacet, creatorFacet, instance, and
 ### ParamManager
 
 `ContractGovernor` expects to work with contracts that use `ParamManager` to
-manage their parameters. `buildParamManager()` is designed to be called within
-the managed contract so that internal access to the parameter values is
+manage their parameters. `makeParamManagerBuilder()` is designed to be called
+within the managed contract so that internal access to the parameter values is
 synchronous. A separate facet allows visible management of changes to the
 parameter values.
 
-`buildParamManager()` takes a list of parameter descriptions as its argument.
-Descriptions give `{ name, type, value }` for each parameter.  The parameter
-values are retrieved by name. A separate facet of the paramManager allows the
-holder to call `updateFoo()` to change the value. ContractGovernor wraps that
-facet up so that usage can be monitored.
+`makeParamManagerBuilder(zoe)` makes a builder for the ParamManager. The
+parameters that will be managed are specified by a sequence of calls to the
+builder, each describing one parameter. For instance, such a squence might look
+like this:
 
-The `type` part of the parameter description is a string. Current supported
-values are
-`{ AMOUNT, BRAND, INSTANCE, INSTALLATION, NAT, RATIO, STRING, UNKNOWN }`.
-The list can be extended as we find more types that contracts want to manage.
+``` javascript
+return makeParamManagerBuilder()
+  .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
+  .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+  .addRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
+  .addRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
+  .addRatio(INTEREST_RATE_KEY, rates.interestRate)
+  .addRatio(LOAN_FEE_KEY, rates.loanFee)
+  .build();
+```
+
+Each `addType()` call returns the builder, so the next call can continue the
+call cascade. At the end, `.build()` is called. One of the calls
+`addInvitation()`, is `async`, so it can't be cascaded.
+
+``` javascript
+  const paramManagerBuilder = makeParamManagerBuilder(zoe)
+    .addBrand('Currency', drachmaBrand)
+    .addAmount('Amt', drachmaAmount);
+  // addInvitation is async, so it can't be part of the cascade.
+  await paramManagerBuilder.addInvitation('Invite', invitation);
+  const paramManager = paramManagerBuilder.build();
+```
+
+The parameter values are retrieved by name. A separate facet of the paramManager
+allows the holder to call `updateFoo()` to change the value. ContractGovernor
+wraps that facet up so that usage can be monitored.
+
+Current supported methods for adding parameters include 'addAmount', 'addBrand',
+'addInstance', 'addInstallation', 'addInvitation', 'addNat', 'addRatio',
+'addString', and 'addUnknown'. The list can be extended as we find more types
+that contracts want to manage. (If you find yourself using 'addUnknown', let us
+know, as that's a sign that we should support a new type). 
 
 There's a contractHelper for the vast majority of expected clients that will
 have a single set of parameters to manage. A contract only has to define the

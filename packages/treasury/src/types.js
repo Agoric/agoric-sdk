@@ -183,7 +183,6 @@
  * @param {InnerVaultManager} manager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {GetParams} paramManager
  * @param {Timestamp} startTimeStamp
  * @returns {VaultKit}
  */
@@ -222,17 +221,10 @@
  */
 
 /**
- * @typedef {Object} FeeParamManager
- * @property {GetParams} getParams
- * @property {GetParam} getParam
- * @property {(fee: bigint) => void} updateProtocolFee
- * @property {(fee: bigint) => void} updatePoolFee
- */
-
-/**
  * @typedef {Object} VaultParamManager
  * @property {GetParams} getParams
- * @property {GetParam} getParam
+ * @property {(name: string) => bigint} getNat
+ * @property {(name: string) => Ratio} getRatio
  * @property {(period: bigint) => void} updateChargingPeriod
  * @property {(period: bigint) => void} updateRecordingPeriod
  * @property {(margin: Ratio) => void} updateInitialMargin
@@ -246,12 +238,6 @@
  * @param {LoanParams} loanParams
  * @param {Rates} rates
  * @returns {VaultParamManager}
- */
-
-/**
- * @callback MakeFeeParamManager
- * @param {AMMFees} ammFees
- * @returns {FeeParamManager}
  */
 
 /**
