@@ -1,0 +1,80 @@
+{
+    "init": [
+        {
+            "type": "initCreateVatRef",
+            "vat": "vt0",
+            "itemId": 0
+        },
+        {
+            "type": "initGiveItem",
+            "vat": "vt0",
+            "itemId": 0
+        }
+    ],
+    "transitions": [
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "targetVat": "vt1"
+        },
+        {
+            "type": "storeSelfRef",
+            "actor": "vt1",
+            "awaits": [],
+            "itemId": 1
+        },
+        {
+            "type": "storeSelfRef",
+            "actor": "vt1",
+            "awaits": [],
+            "itemId": 2
+        },
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "awaits": [],
+            "targetVat": "vt0"
+        },
+        {
+            "type": "storeSelfRef",
+            "actor": "vt0",
+            "awaits": [],
+            "itemId": 3
+        },
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "awaits": [],
+            "targetVat": "vt1"
+        },
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "awaits": [],
+            "targetVat": "vt0"
+        },
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "awaits": [],
+            "targetVat": "vt2"
+        },
+        {
+            "type": "transferControl",
+            "actor": "boot",
+            "awaits": [],
+            "targetVat": "vt1"
+        }
+    ],
+    "actions": [
+        "transferControl",
+        "storeSelfRef",
+        "storeSelfRef",
+        "transferControl",
+        "storeSelfRef",
+        "transferControl",
+        "transferControl",
+        "transferControl",
+        "transferControl"
+    ]
+}

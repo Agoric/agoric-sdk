@@ -7,16 +7,16 @@ import { buildVatController } from '../../src/index.js';
 cd packages/SwingSet && yarn test --verbose test/model-gc/test-mode.js
 */
 
-test('check GC model', async t => {
+test('check userspace', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
-        sourceSpec: new URL('vat-bootstrap.js', import.meta.url).pathname,
+        sourceSpec: new URL('demo_bootstrap.js', import.meta.url).pathname,
         parameters: { "hello": "world" }
       },
       one: {
-        sourceSpec: new URL('vat-one.js', import.meta.url).pathname,
+        sourceSpec: new URL('demo_vat.js', import.meta.url).pathname,
         parameters: { "hello": "world" }
       },
     },

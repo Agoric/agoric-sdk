@@ -11,96 +11,13 @@ TODO: del this comment
  --memdb --config demo/aaAdversarial/swingset.json run demo/aaAdversarial;
 */
 
-function getScript() {
-
-  trace = {
-    "init": [],
-    "transitions": [
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "targetVat": "vt1"
-      },
-      {
-        "type": "storeSelfRef",
-        "actor": "vt1",
-        "awaits": [],
-        "itemId": 0
-      },
-      {
-        "type": "storeSelfRef",
-        "actor": "vt1",
-        "awaits": [],
-        "itemId": 1
-      },
-      {
-        "type": "storeSelfRef",
-        "actor": "vt1",
-        "awaits": [],
-        "itemId": 2
-      },
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "awaits": [],
-        "targetVat": "vt0"
-      },
-      {
-        "type": "storeSelfRef",
-        "actor": "vt0",
-        "awaits": [],
-        "itemId": 3
-      },
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "awaits": [],
-        "targetVat": "vt2"
-      },
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "awaits": [],
-        "targetVat": "vt0"
-      },
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "awaits": [],
-        "targetVat": "vt1"
-      },
-      {
-        "type": "transferControl",
-        "actor": "boot",
-        "awaits": [],
-        "targetVat": "vt2"
-      }
-    ],
-    "actions": [
-      "transferControl",
-      "storeSelfRef",
-      "storeSelfRef",
-      "storeSelfRef",
-      "transferControl",
-      "storeSelfRef",
-      "transferControl",
-      "transferControl",
-      "transferControl",
-      "transferControl"
-    ]
-  }
-
-  return { trace, name: "3n4u10_1" }
-
-}
-
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(_vatPowers, vatParameters) {
 
   const log = vatPowers.testLog;
 
-  log(`bootstrap.js buildRootObject start`);
+  log(`vat_bootstrap.js buildRootObject start`);
 
-  let script;
+  let script = vatParameters.script;
 
   return Far('root', {
 
@@ -149,6 +66,15 @@ export function buildRootObject(_vatPowers) {
 
         for (const { vat, itemId } of giveItemCmds) {
           await E(vats[vat]).sendItem(itemId, tempStore[itemId])
+          /*
+          TODO:
+          I left off trying to figure out how to instruct each vat without
+          sending them a live object....
+
+          I also need to debug the kernel gc model because the retireImports step wasn't working
+
+          I also need to apply MBT to the comms GC
+          */
         }
 
       }
