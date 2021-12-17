@@ -3,6 +3,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../../src/index.js';
 
+/*
+cd packages/SwingSet && yarn test --verbose test/model-gc/test-mode.js
+*/
+
 test('check GC model', async t => {
   const config = {
     bootstrap: 'bootstrap',
